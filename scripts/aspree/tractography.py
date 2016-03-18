@@ -5,6 +5,7 @@ plots the resulting PNG
 """
 import os
 from argparse import ArgumentParser
+from mbi_pipelines.data_access.daris import DarisAccessor
 from mbi_pipelines.diffusion import DiffusionDataset
 
 parser = ArgumentParser()
@@ -18,3 +19,8 @@ parser.add_argument('--working_dir', type=str, default=None,
                     help=("The directory where the intermediate files are "
                           "stored"))
 args = parser.parse_args()
+
+dataset = DiffusionDataset(
+    DarisAccessor('tclose', os.environ['DARIS_PASSWORD']))
+for subject_id in args.subjects:
+    dataset.process_subject('brain_extraction', subject_id)
