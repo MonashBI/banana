@@ -26,12 +26,7 @@ args = parser.parse_args()
 if args.work_dir is not None:
     os.chdir(args.work_dir)
 # Create workflow
-if args.workflow == 'diffusion':
-    workflow = DiffusionDataset.mrtrix_workflow()
-elif args.workflow == 'brain_extraction':
-    workflow = DiffusionDataset.brain_extraction_workflow()
-else:
-    raise Exception("Unrecognised workflow '{}'".format(args.workflow))
+workflow, _, _ = getattr(DiffusionDataset, args.workflow + '_workflow')()
 # Write workflow
 workflow.write_graph(graph2use=args.style)
 # Plot worfklow
