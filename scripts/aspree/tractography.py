@@ -21,6 +21,6 @@ parser.add_argument('--working_dir', type=str, default=None,
 args = parser.parse_args()
 
 dataset = DiffusionDataset(
-    DarisAccessor('tclose', os.environ['DARIS_PASSWORD']))
+    DarisAccessor('tclose', os.environ['DARIS_PASSWORD']), 'Diffusion')
 for subject_id in args.subjects:
     dataset.process_subject('brain_extraction', subject_id)
