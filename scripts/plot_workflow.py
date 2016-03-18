@@ -7,7 +7,7 @@ import os
 from argparse import ArgumentParser
 import matplotlib.image as img
 import matplotlib.pyplot as plt
-from mbi_pipelines.diffusion import DiffusionProcessor
+from mbi_pipelines.diffusion import DiffusionDataset
 
 parser = ArgumentParser()
 parser.add_argument('workflow', type=str,
@@ -27,7 +27,9 @@ if args.work_dir is not None:
     os.chdir(args.work_dir)
 # Create workflow
 if args.workflow == 'diffusion':
-    workflow, _, _ = DiffusionProcessor()._create_mrtrix_workflow()
+    workflow = DiffusionDataset.mrtrix_workflow()
+elif args.workflow == 'brain_extraction':
+    workflow = DiffusionDataset.brain_extraction_workflow()
 else:
     raise Exception("Unrecognised workflow '{}'".format(args.workflow))
 # Write workflow
