@@ -1,4 +1,4 @@
-from mbi_pipelines.diffusion import DiffusionDataset
+from neuroanalysis.mri import DiffusionDataset
 from argparse import ArgumentParser
 import os
 

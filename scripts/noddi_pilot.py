@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from neuroanalysis.base import Scan
-from neuroanalysis.mri.diffusion import NODDIDataset
-from neuroanalysis.archive import LocalArchive
+from neuroanalysis import Scan, NODDIDataset, LocalArchive
 from neuroanalysis.file_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
