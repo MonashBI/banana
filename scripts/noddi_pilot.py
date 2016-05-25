@@ -4,6 +4,7 @@ import shutil
 from neuroanalysis.base import Scan
 from neuroanalysis.mri.diffusion import NODDIDataset
 from neuroanalysis.archive import LocalArchive
+from neuroanalysis.file_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'noddi_pilot'))
@@ -24,9 +25,9 @@ dataset = NODDIDataset(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, archive=LocalArchive(ARCHIVE_PATH),
     scans={'low_b_dw_scan': Scan('r_l_noddi_b700_30_directions',
-                                 'mrtrix'),
+                                 mrtrix_format),
            'high_b_dw_scan': Scan('r_l_noddi_b2000_60_directions',
-                                  'mrtrix'),
-           'forward_rpe': Scan('r_l_noddi_b0_6', 'mrtrix'),
-           'reverse_rpe': Scan('l_r_noddi_b0_6', 'mrtrix')})
+                                  mrtrix_format),
+           'forward_rpe': Scan('r_l_noddi_b0_6', mrtrix_format),
+           'reverse_rpe': Scan('l_r_noddi_b0_6', mrtrix_format)})
 dataset.brain_mask_pipeline().run(work_dir=WORK_PATH)
