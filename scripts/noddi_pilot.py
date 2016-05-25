@@ -28,4 +28,4 @@ dataset = NODDIDataset(
                                   mrtrix_format),
            'forward_rpe': Scan('r_l_noddi_b0_6', mrtrix_format),
            'reverse_rpe': Scan('l_r_noddi_b0_6', mrtrix_format)})
-dataset.test_extract_pipeline().run(work_dir=WORK_PATH)
+dataset.create_roi_pipeline().run(work_dir=WORK_PATH)
