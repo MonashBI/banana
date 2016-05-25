@@ -7,7 +7,7 @@ import os
 from argparse import ArgumentParser
 import matplotlib.image as img
 import matplotlib.pyplot as plt
-from mbi_pipelines.diffusion import DiffusionDataset
+from neuroanalysis.mri import DiffusionDataset
 
 parser = ArgumentParser()
 parser.add_argument('workflow', type=str,
