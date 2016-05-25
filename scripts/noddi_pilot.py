@@ -5,11 +5,11 @@ from neuroanalysis import Scan, NODDIDataset, LocalArchive
 from neuroanalysis.file_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
-    os.environ['HOME'], 'Data', 'MBI', 'noddi_pilot'))
+    os.environ['HOME'], 'Data', 'MBI'))
 BASE_WORK_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'work'))
 
-NODDI_PROJECT = 'noddi-test'
+NODDI_PROJECT = 'noddi_pilot'
 NODDI_SUBJECT = 'PILOT1'
 NODDI_SESSION = 'SESSION1'
 WORK_PATH = os.path.abspath(os.path.join(BASE_WORK_PATH, 'noddi'))
