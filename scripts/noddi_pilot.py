@@ -5,7 +5,7 @@ from neuroanalysis import Scan, NODDIDataset, LocalArchive
 from neuroanalysis.file_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
-    os.environ['HOME'], 'Data', 'MBI'))
+    os.environ['HOME'], 'Data', 'MBI', 'noddi'))
 BASE_WORK_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'work'))
 
@@ -22,10 +22,9 @@ os.makedirs(WORK_PATH)
 dataset = NODDIDataset(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, archive=LocalArchive(ARCHIVE_PATH),
-    scans={'low_b_dw_scan': Scan('r_l_noddi_b700_30_directions',
-                                 mrtrix_format),
-           'high_b_dw_scan': Scan('r_l_noddi_b2000_60_directions',
-                                  mrtrix_format),
-           'forward_rpe': Scan('r_l_noddi_b0_6', mrtrix_format),
-           'reverse_rpe': Scan('l_r_noddi_b0_6', mrtrix_format)})
+    input_scans={
+        'low_b_dw_scan': Scan('r_l_noddi_b700_30_directions', mrtrix_format),
+        'high_b_dw_scan': Scan('r_l_noddi_b2000_60_directions', mrtrix_format),
+        'forward_rpe': Scan('r_l_noddi_b0_6', mrtrix_format),
+        'reverse_rpe': Scan('l_r_noddi_b0_6', mrtrix_format)})
 dataset.noddi_fitting_pipeline().run(work_dir=WORK_PATH)
