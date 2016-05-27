@@ -9,8 +9,8 @@ ARCHIVE_PATH = os.path.abspath(os.path.join(
 BASE_WORK_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'work'))
 
-NODDI_PROJECT = 'noddi_pilot'
-NODDI_SUBJECT = 'PILOT1'
+NODDI_PROJECT = 'pilot'
+NODDI_SUBJECT = 'SUBJECT1'
 NODDI_SESSION = 'SESSION1'
 WORK_PATH = os.path.abspath(os.path.join(BASE_WORK_PATH, 'noddi'))
 SESSION_DIR = os.path.join(ARCHIVE_PATH, NODDI_PROJECT,
