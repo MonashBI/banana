@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from neuroanalysis import Scan, NODDIDataset, LocalArchive
-from neuroanalysis.file_formats import mrtrix_format
+from nianalysis import Scan, NODDIDataset, LocalArchive
+from nianalysis.file_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'noddi'))

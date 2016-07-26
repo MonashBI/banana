@@ -1,7 +1,7 @@
 import os.path
 from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, TraitedSpec, isdefined, traits)
-from neuroanalysis.utils import split_extension
+from nianalysis.utils import split_extension
 
 
 # TODO: Write MRtrixBaseInputSpec with all the generic options included

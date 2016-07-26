@@ -3,8 +3,8 @@ from nipype.interfaces.base import (
     BaseInterface, File, TraitedSpec, traits, isdefined,
     BaseInterfaceInputSpec)
 from nipype.interfaces.matlab import MatlabCommand
-from neuroanalysis.exception import NeuroAnalysisError
-from neuroanalysis.utils import split_extension
+from nianalysis.exception import NeuroAnalysisError
+from nianalysis.utils import split_extension
 
 
 class CreateROIInputSpec(BaseInterfaceInputSpec):
