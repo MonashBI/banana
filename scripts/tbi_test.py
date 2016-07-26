@@ -22,4 +22,6 @@ dataset = DiffusionDataset(
         'dwi_scan': Scan('R-L_60dir_b2000', mrtrix_format),
         'forward_rpe': Scan('R-L_6dir_b0', mrtrix_format),
         'reverse_rpe': Scan('L-R_6dir_b0', mrtrix_format)})
+dataset.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
 dataset.fod_pipeline().run(work_dir=WORK_PATH)
+dataset.fa_pipeline().run(work_dir=WORK_PATH)
