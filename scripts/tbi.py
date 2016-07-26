@@ -1,4 +1,4 @@
-from neuroanalysis.mri import DiffusionDataset
+from nianalysis.mri import DiffusionDataset
 from argparse import ArgumentParser
 import os
 
