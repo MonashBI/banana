@@ -3,7 +3,7 @@ from nipype.interfaces.base import (
     BaseInterface, File, TraitedSpec, traits, isdefined,
     BaseInterfaceInputSpec)
 from nipype.interfaces.matlab import MatlabCommand
-from nianalysis.exceptions import NeuroAnalysisError
+from nianalysis.exceptions import NiAnalysisError
 from nianalysis.utils import split_extension
 
 
@@ -55,7 +55,7 @@ class CreateROI(BaseInterface):
     def _gen_outfilename(self):
         if isdefined(self.inputs.out_file):
             if not self.inputs.out_file.endswith('.mat'):
-                raise NeuroAnalysisError(
+                raise NiAnalysisError(
                     "Output NODDI ROI should be saved with '.mat' extension "
                     "(provided '{}')".format(self.inputs.out_file))
             out_name = self.inputs.out_file
