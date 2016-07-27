@@ -3,7 +3,7 @@ from nipype.interfaces.base import (
     BaseInterface, File, TraitedSpec, traits, isdefined,
     BaseInterfaceInputSpec)
 from nipype.interfaces.matlab import MatlabCommand
-from nianalysis.exception import NeuroAnalysisError
+from nianalysis.exceptions import NeuroAnalysisError
 from nianalysis.utils import split_extension
 
 

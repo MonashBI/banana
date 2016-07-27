@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from nianalysis import Scan, DiffusionDataset, LocalArchive
-from nianalysis.file_formats import mrtrix_format
+from nianalysis.scans import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'tbi', ))
