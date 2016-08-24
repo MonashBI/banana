@@ -646,7 +646,7 @@ class MRCatInputSpec(CommandLineInputSpec):
         genfile=True, desc="Output filename", position=-1, hash_files=False,
         argstr="%s")
 
-    axis = traits.Str(  # @UndefinedVariable
+    axis = traits.Int(  # @UndefinedVariable
         desc="The axis along which the scans will be concatenated",
         argstr="-axis %s")
 
