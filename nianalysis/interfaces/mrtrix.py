@@ -1,6 +1,7 @@
 import os.path
 from nipype.interfaces.base import (
-    CommandLineInputSpec, CommandLine, File, TraitedSpec, isdefined, traits)
+    CommandLineInputSpec, CommandLine, File, TraitedSpec, isdefined, traits,
+    InputMultiPath)
 from nianalysis.utils import split_extension
 
 
@@ -67,16 +68,18 @@ class ExtractFSLGradients(CommandLine):
 # =============================================================================
 
 class MRMathInputSpec(CommandLineInputSpec):
-    in_file = File(exists=True, argstr='%s', mandatory=True, position=1,
-                   desc="Diffusion weighted images with graident info")
+
+    in_file = transforms = InputMultiPath(
+        File(exists=True), argstr='%s', mandatory=True,
+        position=3, desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
 
-    operator = traits.Str(mandatory=True, argstr='%s', position=-2,  # @UndefinedVariable @IgnorePep8
-                          desc=("Operand to apply to the files"))
+    operation = traits.Str(mandatory=True, argstr='%s', position=-2,  # @UndefinedVariable @IgnorePep8
+                           desc=("Operand to apply to the files"))
 
-    axis = traits.Int(mandatory=True, argstr="-axis %s", position=0,  # @UndefinedVariable @IgnorePep8
+    axis = traits.Int(argstr="-axis %s", position=0,  # @UndefinedVariable @IgnorePep8
                       desc=("The axis over which to apply the operator"))
 
     quiet = traits.Bool(  # @UndefinedVariable
