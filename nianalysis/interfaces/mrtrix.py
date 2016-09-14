@@ -69,7 +69,7 @@ class ExtractFSLGradients(CommandLine):
 
 class MRMathInputSpec(CommandLineInputSpec):
 
-    in_file = transforms = InputMultiPath(
+    in_files = InputMultiPath(
         File(exists=True), argstr='%s', mandatory=True,
         position=3, desc="Diffusion weighted images with graident info")
 
@@ -115,9 +115,10 @@ class MRMath(CommandLine):
         if isdefined(self.inputs.out_file):
             filename = self.inputs.out_file
         else:
-            base, ext = split_extension(os.path.basename(self.inputs.in_file))
+            base, ext = split_extension(
+                os.path.basename(self.inputs.in_files[0]))
             filename = os.path.join(
-                os.getcwd(), "{}_{}.{}".format(base, self.inputs.operator,
+                os.getcwd(), "{}_{}.{}".format(base, self.inputs.operation,
                                                ext))
         return filename
 
