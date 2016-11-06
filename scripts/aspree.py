@@ -5,7 +5,8 @@ plots the resulting PNG
 """
 import os
 from argparse import ArgumentParser
-from nianalysis import DarisArchive, DiffusionDataset
+from nianalysis.archive.daris import DarisArchive
+from nianalysis.dataset.mri.diffusion import DiffusionDataset
 
 parser = ArgumentParser()
 parser.add_argument('--subjects', type=str, nargs='+', default=None,
