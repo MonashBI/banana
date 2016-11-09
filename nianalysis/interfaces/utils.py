@@ -43,7 +43,7 @@ class SplitSessionOutpuSpec(TraitedSpec):
 
     subject = traits.Str(mandatory=True, desc="The subject ID")
 
-    study = traits.Str(1, mandatory=True, usedefult=True,
+    session = traits.Str(1, mandatory=True, usedefult=True,
                        desc="The session or processed group ID")
 
 
@@ -55,7 +55,7 @@ class SplitSession(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['subject'] = self.inputs.session[0]
-        outputs['study'] = self.inputs.session[1]
+        outputs['session'] = self.inputs.session[1]
         return outputs
 
     def _run_interface(self, runtime):
