@@ -4,7 +4,7 @@ Plots a workflow graph using NiPype's write_graph function and then loads and
 plots the resulting PNG
 """
 from argparse import ArgumentParser
-from nianalysis.base import Scan
+from nianalysis.base import Dataset
 from nianalysis import LocalArchive, DiffusionProject
 from nianalysis.formats import nifti_gz_format
 
@@ -24,8 +24,8 @@ archive = LocalArchive('/Users/tclose/Data/MBI/decra/local_archive')
 
 project = DiffusionProject(
     'DecraDiffusion', project_id='143', archive=archive,
-    input_scans={'dwi_scan': Scan('14', format=nifti_gz_format),
-                 'forward_rpe': Scan('13', format=nifti_gz_format),
-                 'reverse_rpe': Scan('12', format=nifti_gz_format)})
+    input_scans={'dwi_scan': Dataset('14', format=nifti_gz_format),
+                 'forward_rpe': Dataset('13', format=nifti_gz_format),
+                 'reverse_rpe': Dataset('12', format=nifti_gz_format)})
 
 project.fod_pipeline().run()
