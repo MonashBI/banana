@@ -56,22 +56,22 @@ try:
         else:
             subject_ids = args.subject_ids
         for subject_id in subject_ids:
-            files = daris.get_files(
+            datasets = daris.get_datasets(
                 session_id=args.timepoint, subject_id=subject_id,
                 project_id=SRC_PROJECT, repo_id=REPO_ID)
             new_names = {}
             for pattern in expected_patterns:
                 matched_file = None
-                for f in files:
+                for f in datasets:
                     if re.match(pattern, f.name) is not None:
                         if matched_file is not None:
                             raise Exception(
-                                "Multiple files match pattern '{}', {} and {}"
+                                "Multiple datasets match pattern '{}', {} and {}"
                                 .format(pattern, matched_file, f))
                         matched_file = f
                 if matched_file is None:
                     raise Exception(
-                        "No files match the pattern '{}'"
+                        "No datasets match the pattern '{}'"
                         .format(pattern, matched_file, f))
                 new_names[expected_patterns[pattern]] = matched_file
             session_id = daris.add_session(
@@ -80,12 +80,12 @@ try:
             for name, f in new_names.iteritems():
                 src_path = os.path.join(temp_dir, f.name)
                 dest_path = os.path.join(temp_dir, name + '.nii.gz')
-                daris.download(src_path, file_id=f.id, subject_id=subject_id,
+                daris.download(src_path, dataset_id=f.id, subject_id=subject_id,
                                project_id=SRC_PROJECT, repo_id=REPO_ID,
                                ex_method_id=1)
                 sp.check_call(
                     'mrconvert {} {}'.format(src_path, dest_path))
-                daris.add_file(subject_id=subject_id, ex_method_id=1,
+                daris.add_dataset(subject_id=subject_id, ex_method_id=1,
                                session_id=session_id, project_id=DEST_PROJECT,
                                repo_id=REPO_ID)
                 daris.upload(dest_path, subject_id=subject_id, ex_method_id=1,
