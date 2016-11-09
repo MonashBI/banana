@@ -57,7 +57,7 @@ try:
             subject_ids = args.subject_ids
         for subject_id in subject_ids:
             files = daris.get_files(
-                study_id=args.timepoint, subject_id=subject_id,
+                session_id=args.timepoint, subject_id=subject_id,
                 project_id=SRC_PROJECT, repo_id=REPO_ID)
             new_names = {}
             for pattern in expected_patterns:
@@ -74,7 +74,7 @@ try:
                         "No files match the pattern '{}'"
                         .format(pattern, matched_file, f))
                 new_names[expected_patterns[pattern]] = matched_file
-            study_id = daris.add_study(
+            session_id = daris.add_session(
                 subject_id=subject_id, ex_method_id=1, project_id=DEST_PROJECT,
                 repo_id=REPO_ID)
             for name, f in new_names.iteritems():
@@ -86,10 +86,10 @@ try:
                 sp.check_call(
                     'mrconvert {} {}'.format(src_path, dest_path))
                 daris.add_file(subject_id=subject_id, ex_method_id=1,
-                               study_id=study_id, project_id=DEST_PROJECT,
+                               session_id=session_id, project_id=DEST_PROJECT,
                                repo_id=REPO_ID)
                 daris.upload(dest_path, subject_id=subject_id, ex_method_id=1,
-                             study_id=study_id, project_id=DEST_PROJECT,
+                             session_id=session_id, project_id=DEST_PROJECT,
                              repo_id=REPO_ID)
 finally:
     shutil.rmtree(temp_dir)
