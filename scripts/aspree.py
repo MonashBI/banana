@@ -6,7 +6,7 @@ plots the resulting PNG
 import os
 from argparse import ArgumentParser
 from nianalysis.archive.daris import DarisArchive
-from nianalysis.dataset.mri.diffusion import DiffusionDataset
+from nianalysis.project.mri.diffusion import DiffusionProject
 
 parser = ArgumentParser()
 parser.add_argument('--subjects', type=str, nargs='+', default=None,
@@ -20,7 +20,7 @@ parser.add_argument('--working_dir', type=str, default=None,
                           "stored"))
 args = parser.parse_args()
 
-dataset = DiffusionDataset(
+project = DiffusionProject(
     DarisArchive('tclose', os.environ['DARIS_PASSWORD']), 'Diffusion')
 for subject_id in args.subjects:
-    dataset.process_subject('brain_extraction', subject_id)
+    project.process_subject('brain_extraction', subject_id)
