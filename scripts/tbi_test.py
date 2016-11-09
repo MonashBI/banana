@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis import Scan, DiffusionDataset, LocalArchive
+from nianalysis import Scan, DiffusionProject, LocalArchive
 from nianalysis.formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
@@ -14,7 +14,7 @@ DATASET_NAME = 'tbi_test'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-dataset = DiffusionDataset(
+project = DiffusionProject(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
     archive=LocalArchive(ARCHIVE_PATH),
@@ -22,6 +22,6 @@ dataset = DiffusionDataset(
         'dwi_scan': Scan('R-L_60dir_b2000', mrtrix_format),
         'forward_rpe': Scan('R-L_6dir_b0', mrtrix_format),
         'reverse_rpe': Scan('L-R_6dir_b0', mrtrix_format)})
-dataset.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
-dataset.fod_pipeline().run(work_dir=WORK_PATH)
-dataset.fa_pipeline().run(work_dir=WORK_PATH)
+project.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
+project.fod_pipeline().run(work_dir=WORK_PATH)
+project.fa_pipeline().run(work_dir=WORK_PATH)
