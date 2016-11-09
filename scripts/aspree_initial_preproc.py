@@ -4,7 +4,7 @@ import subprocess as sp
 import shutil
 import re
 import os.path
-from nianalysis.archive.daris import DarisSession
+from nianalysis.archive.daris import DarisLogin
 
 
 parser = ArgumentParser()
@@ -48,7 +48,7 @@ expected_patterns = {
 try:
     temp_dir = tempfile.mkdtemp()
 
-    with DarisSession(domain=DOMAIN, user=USER,
+    with DarisLogin(domain=DOMAIN, user=USER,
                       password=args.password) as daris:
         if args.subject_ids is None:
             subject_ids = daris.get_subjects(project_id=SRC_PROJECT,
