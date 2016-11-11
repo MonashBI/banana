@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from nianalysis import Dataset, NODDIProject, LocalArchive
-from nianalysis.formats import mrtrix_format
+from nianalysis.data_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'noddi'))
