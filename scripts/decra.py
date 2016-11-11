@@ -6,7 +6,7 @@ plots the resulting PNG
 from argparse import ArgumentParser
 from nianalysis.base import Dataset
 from nianalysis import LocalArchive, DiffusionProject
-from nianalysis.formats import nifti_gz_format
+from nianalysis.data_formats import nifti_gz_format
 
 parser = ArgumentParser()
 # parser.add_argument('--subjects', type=str, nargs='+', default=None,
