@@ -25,6 +25,7 @@ class TestMRI(TestCase):
             input_datasets={
                 'mri_scan': Dataset('mri_scan', nifti_gz_format)})
         study.brain_mask_pipeline().run()
+        print self._session_dir(self.EXAMPLE_INPUT_PROJECT)
         self.assert_(
             os.path.exists(os.path.join(
                 self._session_dir(self.EXAMPLE_INPUT_PROJECT),
