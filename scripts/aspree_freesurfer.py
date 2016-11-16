@@ -11,7 +11,7 @@ ARCHIVE_PATH = os.path.abspath(os.path.join(
 BASE_WORK_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'work'))
 
-ASPREE_FS_PROJECT = 'NEURO'
+ASPREE_FS_PROJECT = 'NEURO_NIFTI'
 DATASET_NAME = 'freesurfer'
 WORK_PATH = os.path.abspath(os.path.join(BASE_WORK_PATH, DATASET_NAME))
 
@@ -21,6 +21,6 @@ project = T1Project(
     name=ASPREE_FS_PROJECT,
     project_id=ASPREE_FS_PROJECT, archive=LocalArchive(ARCHIVE_PATH),
     input_datasets={
-        't1': Dataset('13_t1_mprage_sag_p2_iso_1_ADNI', dicom_format)})
-project.freesurfer_pipeline().run(work_dir=WORK_PATH)
+        't1': Dataset('13_t1_mprage_sag_p2_iso_1_ADNI.nii.gz', dicom_format)})
+project.freesurfer_pipeline().run(subject_ids=['NEURO_258', 'NEURO_303', 'NEURO_525'], work_dir=WORK_PATH)
 
