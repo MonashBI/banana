@@ -1,4 +1,4 @@
-from nianalysis.mri import DiffusionProject
+from nianalysis.mri import DiffusionStudy
 from argparse import ArgumentParser
 import os
 
@@ -13,6 +13,6 @@ parser.add_argument('--working_dir', type=str, default=None,
                     help=("The directory where the intermediate files are "
                           "stored"))
 args = parser.parse_args()
-processor = DiffusionProject('tclose', os.environ['DARIS_PASSWORD'])
+processor = DiffusionStudy('tclose', os.environ['DARIS_PASSWORD'])
 processor.process(args.input_image, args.output_dir,
                   working_dir=args.working_dir)

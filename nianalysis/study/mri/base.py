@@ -1,13 +1,13 @@
 from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
 from nianalysis.base import Dataset
-from nianalysis.project.base import Project, _create_component_dict
+from nianalysis.study.base import Study, _create_component_dict
 from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import nifti_gz_format
 
 
-class MRProject(Project):
+class MRStudy(Study):
 
     def brain_mask_pipeline(self, robust=True, **kwargs):  # @UnusedVariable
         """
