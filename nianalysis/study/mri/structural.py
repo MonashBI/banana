@@ -105,7 +105,7 @@ class CoregisteredT1T2Study(T1Study, T2Study):
 
     def segmentation_pipeline(self, segment_tool='spm', **kwargs):
         if segment_tool == 'spm':
-            pipeline = self._spm_coregistration_pipeline(**kwargs)
+            pipeline = self._spm_segmentation_pipeline(**kwargs)
         else:
             raise NotImplementedError(
                 "Unrecognised segmentation tool '{}'".format(segment_tool))

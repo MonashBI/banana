@@ -31,10 +31,6 @@ class TestCoregisteredT1T2Study(TestCase):
                             os.path.join(self._session_dir(self.PROJECT_NAME),
                                          fname))
 
-    def tearDown(self):
-#         shutil.rmtree(self.ARCHIVE_PATH, ignore_errors=True)
-        pass
-
     def test_coregistration_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
         study = CoregisteredT1T2Study(
@@ -45,12 +41,13 @@ class TestCoregisteredT1T2Study(TestCase):
                 't1': Dataset('t1', nifti_format),
                 't2': Dataset('t2', nifti_format)})
         study.coregistration_pipeline().run()
-        self.assert_(
-            os.path.exists(os.path.join(
-                self._session_dir(self.PROJECT_NAME),
-                't2_reg_to_t1.nii'.format(self.DATASET_NAME))))
+        output_path = os.path.join(self._session_dir(self.PROJECT_NAME),
+                                   't2_coreg_t1.nii'
+                                   .format(self.DATASET_NAME))
+        self.assert_(os.path.exists(output_path),
+                     "Output path '{}' was not created".format(output_path))
 
-    def test_joint_segmentation_pipeline(self):
+    def test_segmentation_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
         study = CoregisteredT1T2Study(
             name=self.DATASET_NAME,
@@ -59,13 +56,15 @@ class TestCoregisteredT1T2Study(TestCase):
             input_datasets={
                 't1': Dataset('t1', nifti_format),
                 't2': Dataset('t2', nifti_format)})
-        study.joint_segmentation_pipeline().run()
+        study.segmentation_pipeline().run()
         for fname in ('t1_grey_matter.nii', 't1_white_matter.nii',
                       't1_csf.nii'):
+            output_path = os.path.join(
+                self._session_dir(self.PROJECT_NAME), fname)
             self.assertTrue(
-                os.path.exists(os.path.join(
-                    self._session_dir(self.PROJECT_NAME), fname)))
+                os.path.exists(output_path),
+                "Output path '{}' was not created".format(output_path))
 
 if __name__ == '__main__':
-    tester = TestT1AndT2()
+    tester = TestCoregisteredT1T2Study()
     tester.test_coregistration_pipeline()
