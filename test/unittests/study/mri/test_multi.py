@@ -5,8 +5,8 @@ import shutil
 from nipype import config
 config.enable_debug_mode()
 from nianalysis.base import Dataset  # @IgnorePep8
-from nianalysis.study.mri import T1AndT2Study # @IgnorePep8
-from nianalysis.archive import LocalArchive  # @IgnorePep8
+from nianalysis.study.mri.structural import CoregisteredT1T2Study # @IgnorePep8
+from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
     nifti_format)
 if __name__ == '__main__':
@@ -37,7 +37,7 @@ class TestT1AndT2(TestCase):
 
     def test_coregistration_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
-        study = T1AndT2Study(
+        study = CoregisteredT1T2Study(
             name=self.DATASET_NAME,
             project_id=self.PROJECT_NAME,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -52,7 +52,7 @@ class TestT1AndT2(TestCase):
 
     def test_joint_segmentation_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
-        study = T1AndT2Study(
+        study = CoregisteredT1T2Study(
             name=self.DATASET_NAME,
             project_id=self.PROJECT_NAME,
             archive=LocalArchive(self.ARCHIVE_PATH),
