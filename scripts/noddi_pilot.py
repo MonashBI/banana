@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis import Dataset, NODDIProject, LocalArchive
+from nianalysis import Dataset, NODDIStudy, LocalArchive
 from nianalysis.data_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
@@ -19,7 +19,7 @@ DATASET_NAME = 'noddi'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-project = NODDIProject(
+study = NODDIStudy(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, archive=LocalArchive(ARCHIVE_PATH),
     input_scans={
@@ -27,4 +27,4 @@ project = NODDIProject(
         'high_b_dw_scan': Dataset('r_l_noddi_b2000_60_directions', mrtrix_format),
         'forward_rpe': Dataset('r_l_noddi_b0_6', mrtrix_format),
         'reverse_rpe': Dataset('l_r_noddi_b0_6', mrtrix_format)})
-project.noddi_fitting_pipeline().run(work_dir=WORK_PATH)
+study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)

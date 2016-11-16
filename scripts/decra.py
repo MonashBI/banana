@@ -5,7 +5,7 @@ plots the resulting PNG
 """
 from argparse import ArgumentParser
 from nianalysis.base import Dataset
-from nianalysis import LocalArchive, DiffusionProject
+from nianalysis import LocalArchive, DiffusionStudy
 from nianalysis.data_formats import nifti_gz_format
 
 parser = ArgumentParser()
@@ -22,10 +22,10 @@ args = parser.parse_args()
 
 archive = LocalArchive('/Users/tclose/Data/MBI/decra/local_archive')
 
-project = DiffusionProject(
+study = DiffusionStudy(
     'DecraDiffusion', project_id='143', archive=archive,
     input_scans={'dwi_scan': Dataset('14', format=nifti_gz_format),
                  'forward_rpe': Dataset('13', format=nifti_gz_format),
                  'reverse_rpe': Dataset('12', format=nifti_gz_format)})
 
-project.fod_pipeline().run()
+study.fod_pipeline().run()

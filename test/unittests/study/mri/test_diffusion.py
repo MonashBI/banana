@@ -3,7 +3,7 @@ from nipype import config
 config.enable_debug_mode()
 import os.path  # @IgnorePep8
 from nianalysis.base import Dataset  # @IgnorePep8
-from nianalysis.project.mri import DiffusionProject, NODDIProject  # @IgnorePep8
+from nianalysis.study.mri import DiffusionStudy, NODDIStudy  # @IgnorePep8
 from nianalysis.archive import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
     mrtrix_format, analyze_format, fsl_bvals_format, fsl_bvecs_format)
@@ -19,7 +19,7 @@ class TestDiffusion(TestCase):
 
     def test_preprocess(self):
         self._remove_generated_files(self.PILOT_PROJECT)
-        project = DiffusionProject(
+        study = DiffusionStudy(
             name=self.DATASET_NAME,
             project_id=self.PILOT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -28,7 +28,7 @@ class TestDiffusion(TestCase):
                 Dataset('r_l_noddi_b700_30_directions', mrtrix_format),
                 'forward_rpe': Dataset('r_l_noddi_b0_6', mrtrix_format),
                 'reverse_rpe': Dataset('l_r_noddi_b0_6', mrtrix_format)})
-        project.preprocess_pipeline().run()
+        study.preprocess_pipeline().run()
         self.assert_(
             os.path.exists(os.path.join(
                 self._session_dir(self.PILOT_PROJECT),
@@ -36,7 +36,7 @@ class TestDiffusion(TestCase):
 
     def test_extract_b0(self):
         self._remove_generated_files(self.EXAMPLE_INPUT_PROJECT)
-        project = DiffusionProject(
+        study = DiffusionStudy(
             name=self.DATASET_NAME,
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -44,7 +44,7 @@ class TestDiffusion(TestCase):
                 'dwi_preproc': Dataset('NODDI_DWI', analyze_format),
                 'grad_dirs': Dataset('NODDI_protocol', fsl_bvecs_format),
                 'bvalues': Dataset('NODDI_protocol', fsl_bvals_format)})
-        project.extract_b0_pipeline().run()
+        study.extract_b0_pipeline().run()
         self.assert_(
             os.path.exists(os.path.join(
                 self._session_dir(self.EXAMPLE_INPUT_PROJECT),
@@ -52,7 +52,7 @@ class TestDiffusion(TestCase):
 
     def test_bias_correct(self):
         self._remove_generated_files(self.EXAMPLE_INPUT_PROJECT)
-        project = DiffusionProject(
+        study = DiffusionStudy(
             name=self.DATASET_NAME,
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -60,7 +60,7 @@ class TestDiffusion(TestCase):
                 'dwi_preproc': Dataset('NODDI_DWI', analyze_format),
                 'grad_dirs': Dataset('NODDI_protocol', fsl_bvecs_format),
                 'bvalues': Dataset('NODDI_protocol', fsl_bvals_format)})
-        project.bias_correct_pipeline(mask_tool='dwi2mask').run()
+        study.bias_correct_pipeline(mask_tool='dwi2mask').run()
         self.assert_(
             os.path.exists(os.path.join(
                 self._session_dir(self.EXAMPLE_INPUT_PROJECT),
@@ -73,7 +73,7 @@ class TestNODDI(TestCase):
 
     def test_concatenate(self):
         self._remove_generated_files(self.PILOT_PROJECT)
-        project = NODDIProject(
+        study = NODDIStudy(
             name=self.DATASET_NAME,
             project_id=self.PILOT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -82,7 +82,7 @@ class TestNODDI(TestCase):
                                       mrtrix_format),
                 'high_b_dw_scan': Dataset('r_l_noddi_b2000_60_directions',
                                        mrtrix_format)})
-        project.concatenate_pipeline().run()
+        study.concatenate_pipeline().run()
         self.assert_(
             os.path.exists(os.path.join(
                 self._session_dir(self.PILOT_PROJECT),
@@ -92,7 +92,7 @@ class TestNODDI(TestCase):
 
     def test_noddi_fitting(self, nthreads=6):
         self._remove_generated_files(self.EXAMPLE_INPUT_PROJECT)
-        project = NODDIProject(
+        study = NODDIStudy(
             name=self.DATASET_NAME,
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -100,7 +100,7 @@ class TestNODDI(TestCase):
                          'brain_mask': Dataset('roi_mask', analyze_format),
                          'grad_dirs': Dataset('NODDI_protocol', fsl_bvecs_format),
                          'bvalues': Dataset('NODDI_protocol', fsl_bvals_format)})
-        project.noddi_fitting_pipeline(nthreads=nthreads).run()
+        study.noddi_fitting_pipeline(nthreads=nthreads).run()
         ref_out_path = os.path.join(
             self.ARCHIVE_PATH, self.EXAMPLE_OUTPUT_PROJECT, self.SUBJECT,
             self.SESSION)

@@ -11,10 +11,10 @@ from nipype.interfaces.spm.preprocess import Coregister
 from nipype.interfaces.utility import Merge, Split
 from .base import _create_component_dict, Dataset
 from nianalysis.interfaces.spm import MultiChannelSegment
-from .base import MRProject
+from .base import MRStudy
 
 
-class T1Project(MRProject):
+class T1Study(MRStudy):
 
     def freesurfer_pipeline(self):
         """
@@ -43,21 +43,21 @@ class T1Project(MRProject):
     _components = _create_component_dict(
         Dataset('t1', nifti_gz_format),
         Dataset('freesurfer', freesurfer_format, freesurfer_pipeline),
-        inherit_from=chain(MRProject.generated_components()))
+        inherit_from=chain(MRStudy.generated_components()))
 
 
-class T2Project(MRProject):
+class T2Study(MRStudy):
 
     _components = _create_component_dict(
         Dataset('t1', nifti_format),
-        inherit_from=chain(MRProject.generated_components()))
+        inherit_from=chain(MRStudy.generated_components()))
 
 
-class CoregisteredT1T2Project(T1Project, T2Project):
+class CoregisteredT1T2Study(T1Study, T2Study):
 
     def __init__(self, *args, **kwargs):
-        T1Project.__init__(self, *args, **kwargs)
-        T2Project.__init__(self, *args, **kwargs)
+        T1Study.__init__(self, *args, **kwargs)
+        T2Study.__init__(self, *args, **kwargs)
 
     def coregistration_pipeline(self, coreg_tool='spm', **kwargs):
         if coreg_tool == 'spm':
@@ -186,5 +186,5 @@ class CoregisteredT1T2Project(T1Project, T2Project):
         Dataset('t2_white_matter', nifti_format, segmentation_pipeline),
         Dataset('t2_grey_matter', nifti_format, segmentation_pipeline),
         Dataset('t2_csf', nifti_format, segmentation_pipeline),
-        inherit_from=chain(T1Project.generated_components(),
-                           T2Project.generated_components()))
+        inherit_from=chain(T1Study.generated_components(),
+                           T2Study.generated_components()))
