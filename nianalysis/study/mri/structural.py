@@ -3,10 +3,11 @@ from itertools import chain
 from copy import copy
 from nipype.pipeline import engine as pe
 from nipype.interfaces.freesurfer.preprocess import ReconAll
-from nipype.interfaces.spm import Info, NewSegment
+from nipype.interfaces.spm import Info
 from nianalysis.requirements import spm12_req, freesurfer_req
 from nianalysis.citations import spm_cite, freesurfer_cites
-from nianalysis.data_formats import nifti_gz_format, nifti_format, freesurfer_format
+from nianalysis.data_formats import (
+    nifti_gz_format, nifti_format, freesurfer_format)
 from nipype.interfaces.spm.preprocess import Coregister
 from nipype.interfaces.utility import Merge, Split
 from .base import _create_component_dict, Dataset
@@ -49,7 +50,7 @@ class T1Study(MRStudy):
 class T2Study(MRStudy):
 
     _components = _create_component_dict(
-        Dataset('t1', nifti_format),
+        Dataset('t2', nifti_format),
         inherit_from=chain(MRStudy.generated_components()))
 
 
