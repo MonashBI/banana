@@ -16,7 +16,7 @@ else:
 from nianalysis.testing import test_data_dir  # @IgnorePep8
 
 
-class TestT1AndT2(TestCase):
+class TestCoregisteredT1T2Study(TestCase):
 
     DATASET_NAME = 'T1AndT2'
     PROJECT_NAME = 'T1AndT2'

@@ -40,7 +40,7 @@ class TestDiffusion(TestCase):
             name=self.DATASET_NAME,
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
-            input_scans={
+            input_datasets={
                 'dwi_preproc': Dataset('NODDI_DWI', analyze_format),
                 'grad_dirs': Dataset('NODDI_protocol', fsl_bvecs_format),
                 'bvalues': Dataset('NODDI_protocol', fsl_bvals_format)})
