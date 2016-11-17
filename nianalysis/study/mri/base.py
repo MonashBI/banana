@@ -36,7 +36,7 @@ class MRStudy(Study):
     def eroded_mask_pipeline(self, **kwargs):
         raise NotImplementedError
 
-    _components = set_dataset_specs(
+    _dataset_specs = set_dataset_specs(
         Dataset('mri_scan', nifti_gz_format),
         Dataset('masked_mri_scan', nifti_gz_format, brain_mask_pipeline),
         Dataset('brain_mask', nifti_gz_format, brain_mask_pipeline),
