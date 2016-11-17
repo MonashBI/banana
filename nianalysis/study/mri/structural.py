@@ -41,17 +41,17 @@ class T1Study(MRStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _components = set_dataset_specs(
+    _dataset_specs = set_dataset_specs(
         Dataset('t1', nifti_gz_format),
         Dataset('freesurfer', freesurfer_format, freesurfer_pipeline),
-        inherit_from=chain(MRStudy.generated_components()))
+        inherit_from=chain(MRStudy.generated_dataset_specs()))
 
 
 class T2Study(MRStudy):
 
-    _components = set_dataset_specs(
+    _dataset_specs = set_dataset_specs(
         Dataset('t2', nifti_format),
-        inherit_from=chain(MRStudy.generated_components()))
+        inherit_from=chain(MRStudy.generated_dataset_specs()))
 
 
 class CoregisteredT1T2Study(T1Study, T2Study):
@@ -177,7 +177,7 @@ class CoregisteredT1T2Study(T1Study, T2Study):
         pipeline.connect_output('t1_csf', channel_splits[2], 'out2')
         return pipeline
 
-    _components = set_dataset_specs(
+    _dataset_specs = set_dataset_specs(
         Dataset('t1', nifti_format),
         Dataset('t2', nifti_format),
         Dataset('t2_coreg_t1', nifti_format, coregistration_pipeline),
@@ -187,5 +187,5 @@ class CoregisteredT1T2Study(T1Study, T2Study):
         Dataset('t2_white_matter', nifti_format, segmentation_pipeline),
         Dataset('t2_grey_matter', nifti_format, segmentation_pipeline),
         Dataset('t2_csf', nifti_format, segmentation_pipeline),
-        inherit_from=chain(T1Study.generated_components(),
-                           T2Study.generated_components()))
+        inherit_from=chain(T1Study.generated_dataset_specs(),
+                           T2Study.generated_dataset_specs()))

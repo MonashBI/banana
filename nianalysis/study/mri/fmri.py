@@ -1,6 +1,6 @@
 from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
-from nianalysis.base import Dataset
+from nianalysis.dataset import Dataset
 from nianalysis.study.base import set_dataset_specs
 from .base import MRStudy
 from nianalysis.requirements import Requirement
@@ -37,7 +37,7 @@ class FunctionalMRStudy(MRStudy):
     def eroded_mask_pipeline(self, **kwargs):
         raise NotImplementedError
 
-    _components = set_dataset_specs(
+    _dataset_specs = set_dataset_specs(
         Dataset('mri_scan', nifti_gz_format),
         Dataset('masked_mri_scan', nifti_gz_format, brain_mask_pipeline),
         Dataset('brain_mask', nifti_gz_format, brain_mask_pipeline),
