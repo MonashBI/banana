@@ -327,13 +327,13 @@ class DiffusionStudy(T2Study):
         Dataset('grad_dirs', fsl_bvecs_format, preprocess_pipeline),
         Dataset('bvalues', fsl_bvals_format, preprocess_pipeline),
         Dataset('tbss_mean_fa', nifti_gz_format, tbss_pipeline,
-             multiplicity='per_project'),
+                multiplicity='per_project'),
         Dataset('tbss_proj_fa', nifti_gz_format, tbss_pipeline,
-             multiplicity='per_project'),
+                multiplicity='per_project'),
         Dataset('tbss_skeleton', nifti_gz_format, tbss_pipeline,
-             multiplicity='per_project'),
+                multiplicity='per_project'),
         Dataset('tbss_skeleton_mask', nifti_gz_format, tbss_pipeline,
-             multiplicity='per_project'),
+                multiplicity='per_project'),
         inherit_from=T2Study.generated_components())
 
 
