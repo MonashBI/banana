@@ -10,7 +10,7 @@ from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, freesurfer_format)
 from nipype.interfaces.spm.preprocess import Coregister
 from nipype.interfaces.utility import Merge, Split
-from .base import _create_component_dict, Dataset
+from .base import set_dataset_specs, Dataset
 from nianalysis.interfaces.spm import MultiChannelSegment
 from .base import MRStudy
 
@@ -41,7 +41,7 @@ class T1Study(MRStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _components = _create_component_dict(
+    _components = set_dataset_specs(
         Dataset('t1', nifti_gz_format),
         Dataset('freesurfer', freesurfer_format, freesurfer_pipeline),
         inherit_from=chain(MRStudy.generated_components()))
@@ -49,7 +49,7 @@ class T1Study(MRStudy):
 
 class T2Study(MRStudy):
 
-    _components = _create_component_dict(
+    _components = set_dataset_specs(
         Dataset('t2', nifti_format),
         inherit_from=chain(MRStudy.generated_components()))
 
@@ -177,7 +177,7 @@ class CoregisteredT1T2Study(T1Study, T2Study):
         pipeline.connect_output('t1_csf', channel_splits[2], 'out2')
         return pipeline
 
-    _components = _create_component_dict(
+    _components = set_dataset_specs(
         Dataset('t1', nifti_format),
         Dataset('t2', nifti_format),
         Dataset('t2_coreg_t1', nifti_format, coregistration_pipeline),
