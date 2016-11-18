@@ -24,8 +24,8 @@ class TestDiffusion(TestCase):
             project_id=self.PILOT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
-                'dwi_scan':
-                Dataset('r_l_noddi_b700_30_directions', mrtrix_format),
+                'dwi_scan': Dataset('r_l_noddi_b700_30_directions',
+                                    mrtrix_format),
                 'forward_rpe': Dataset('r_l_noddi_b0_6', mrtrix_format),
                 'reverse_rpe': Dataset('l_r_noddi_b0_6', mrtrix_format)})
         study.preprocess_pipeline().run()
