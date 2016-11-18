@@ -10,7 +10,7 @@ from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, freesurfer_format)
 from nipype.interfaces.spm.preprocess import Coregister
 from nipype.interfaces.utility import Merge, Split
-from .base import set_dataset_specs, Dataset
+from .base import set_dataset_specs, DatasetSpec
 from nianalysis.interfaces.spm import MultiChannelSegment
 from .base import MRStudy
 
@@ -42,15 +42,15 @@ class T1Study(MRStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        Dataset('t1', nifti_gz_format),
-        Dataset('freesurfer', freesurfer_format, freesurfer_pipeline),
+        DatasetSpec('t1', nifti_gz_format),
+        DatasetSpec('freesurfer', freesurfer_format, freesurfer_pipeline),
         inherit_from=chain(MRStudy.generated_dataset_specs()))
 
 
 class T2Study(MRStudy):
 
     _dataset_specs = set_dataset_specs(
-        Dataset('t2', nifti_format),
+        DatasetSpec('t2', nifti_format),
         inherit_from=chain(MRStudy.generated_dataset_specs()))
 
 
@@ -178,14 +178,14 @@ class CoregisteredT1T2Study(T1Study, T2Study):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        Dataset('t1', nifti_format),
-        Dataset('t2', nifti_format),
-        Dataset('t2_coreg_t1', nifti_format, coregistration_pipeline),
-        Dataset('t1_white_matter', nifti_format, segmentation_pipeline),
-        Dataset('t1_grey_matter', nifti_format, segmentation_pipeline),
-        Dataset('t1_csf', nifti_format, segmentation_pipeline),
-        Dataset('t2_white_matter', nifti_format, segmentation_pipeline),
-        Dataset('t2_grey_matter', nifti_format, segmentation_pipeline),
-        Dataset('t2_csf', nifti_format, segmentation_pipeline),
+        DatasetSpec('t1', nifti_format),
+        DatasetSpec('t2', nifti_format),
+        DatasetSpec('t2_coreg_t1', nifti_format, coregistration_pipeline),
+        DatasetSpec('t1_white_matter', nifti_format, segmentation_pipeline),
+        DatasetSpec('t1_grey_matter', nifti_format, segmentation_pipeline),
+        DatasetSpec('t1_csf', nifti_format, segmentation_pipeline),
+        DatasetSpec('t2_white_matter', nifti_format, segmentation_pipeline),
+        DatasetSpec('t2_grey_matter', nifti_format, segmentation_pipeline),
+        DatasetSpec('t2_csf', nifti_format, segmentation_pipeline),
         inherit_from=chain(T1Study.generated_dataset_specs(),
                            T2Study.generated_dataset_specs()))

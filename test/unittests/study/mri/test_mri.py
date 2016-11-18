@@ -2,7 +2,7 @@
 from nipype import config
 config.enable_debug_mode()
 import os.path  # @IgnorePep8
-from nianalysis.base import Dataset  # @IgnorePep8
+from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format  # @IgnorePep8
 from nianalysis.study.mri import MRStudy  # @IgnorePep8
 from nianalysis.archive.local import LocalArchive  # @IgnorePep8

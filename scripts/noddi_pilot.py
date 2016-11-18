@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis import Dataset, NODDIStudy, LocalArchive
+from nianalysis.dataset import Dataset
+from nianalysis.study.mri.diffusion import NODDIStudy
+from nianalysis.archive.local import LocalArchive
 from nianalysis.data_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(
@@ -23,8 +25,10 @@ study = NODDIStudy(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, archive=LocalArchive(ARCHIVE_PATH),
     input_scans={
-        'low_b_dw_scan': Dataset('r_l_noddi_b700_30_directions', mrtrix_format),
-        'high_b_dw_scan': Dataset('r_l_noddi_b2000_60_directions', mrtrix_format),
+        'low_b_dw_scan': Dataset(
+            'r_l_noddi_b700_30_directions', mrtrix_format),
+        'high_b_dw_scan': Dataset(
+            'r_l_noddi_b2000_60_directions', mrtrix_format),
         'forward_rpe': Dataset('r_l_noddi_b0_6', mrtrix_format),
         'reverse_rpe': Dataset('l_r_noddi_b0_6', mrtrix_format)})
 study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)
