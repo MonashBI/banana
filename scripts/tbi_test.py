@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis import Dataset, DiffusionStudy, LocalArchive
+from nianalysis.dataset import Dataset
+from nianalysis.study.mri.diffusion import DiffusionStudy
+from nianalysis.archive.local import LocalArchive
 from nianalysis.data_formats import mrtrix_format
 
 ARCHIVE_PATH = os.path.abspath(os.path.join(

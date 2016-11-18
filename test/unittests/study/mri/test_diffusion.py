@@ -2,7 +2,7 @@
 from nipype import config
 config.enable_debug_mode()
 import os.path  # @IgnorePep8
-from nianalysis.base import Dataset  # @IgnorePep8
+from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.study.mri import DiffusionStudy, NODDIStudy  # @IgnorePep8
 from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
@@ -79,9 +79,9 @@ class TestNODDI(TestCase):
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
                 'low_b_dw_scan': Dataset('r_l_noddi_b700_30_directions',
-                                      mrtrix_format),
+                                         mrtrix_format),
                 'high_b_dw_scan': Dataset('r_l_noddi_b2000_60_directions',
-                                       mrtrix_format)})
+                                          mrtrix_format)})
         study.concatenate_pipeline().run()
         self.assert_(
             os.path.exists(os.path.join(
@@ -96,10 +96,11 @@ class TestNODDI(TestCase):
             name=self.DATASET_NAME,
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
-            input_datasets={'dwi_preproc': Dataset('NODDI_DWI', analyze_format),
-                         'brain_mask': Dataset('roi_mask', analyze_format),
-                         'grad_dirs': Dataset('NODDI_protocol', fsl_bvecs_format),
-                         'bvalues': Dataset('NODDI_protocol', fsl_bvals_format)})
+            input_datasets={
+                'dwi_preproc': Dataset('NODDI_DWI', analyze_format),
+                'brain_mask': Dataset('roi_mask', analyze_format),
+                'grad_dirs': Dataset('NODDI_protocol', fsl_bvecs_format),
+                'bvalues': Dataset('NODDI_protocol', fsl_bvals_format)})
         study.noddi_fitting_pipeline(nthreads=nthreads).run()
         ref_out_path = os.path.join(
             self.ARCHIVE_PATH, self.EXAMPLE_OUTPUT_PROJECT, self.SUBJECT,

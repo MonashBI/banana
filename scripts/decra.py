@@ -4,8 +4,9 @@ Plots a workflow graph using NiPype's write_graph function and then loads and
 plots the resulting PNG
 """
 from argparse import ArgumentParser
-from nianalysis.base import Dataset
-from nianalysis import LocalArchive, DiffusionStudy
+from nianalysis.dataset import Dataset
+from nianalysis.archive.local import LocalArchive
+from nianalysis.study.mri.diffusion import DiffusionStudy
 from nianalysis.data_formats import nifti_gz_format
 
 parser = ArgumentParser()

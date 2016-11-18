@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis import Dataset
+from nianalysis.dataset import Dataset
 from nianalysis.study.mri.structural import T1Study
 from nianalysis.archive.local import LocalArchive
 from nianalysis.data_formats import dicom_format
@@ -22,5 +22,6 @@ study = T1Study(
     study_id=ASPREE_FS_PROJECT, archive=LocalArchive(ARCHIVE_PATH),
     input_datasets={
         't1': Dataset('13_t1_mprage_sag_p2_iso_1_ADNI.nii.gz', dicom_format)})
-study.freesurfer_pipeline().run(subject_ids=['NEURO_258', 'NEURO_303', 'NEURO_525'], work_dir=WORK_PATH)
+study.freesurfer_pipeline().run(
+    subject_ids=['NEURO_258', 'NEURO_303', 'NEURO_525'], work_dir=WORK_PATH)
 

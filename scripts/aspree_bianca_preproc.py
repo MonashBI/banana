@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis import Dataset
+from nianalysis.dataset import Dataset
 from nianalysis.study.mri import MRStudy
 from nianalysis.archive.local import LocalArchive
 from nianalysis.data_formats import nifti_gz_format
