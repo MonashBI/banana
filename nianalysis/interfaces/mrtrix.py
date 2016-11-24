@@ -118,8 +118,8 @@ class MRMath(CommandLine):
             base, ext = split_extension(
                 os.path.basename(self.inputs.in_files[0]))
             filename = os.path.join(
-                os.getcwd(), "{}_{}.{}".format(base, self.inputs.operation,
-                                               ext))
+                os.getcwd(),
+                "{}_{}{}".format(base, self.inputs.operation, ext))
         return filename
 
 
