@@ -15,9 +15,9 @@ class MRStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='brain_mask',
-            inputs=['mri_scan'],
-            outputs=['masked_mri_scan', 'brain_mask'],
-            description="Generate brain mask from mri_scan",
+            inputs=['mr_scan'],
+            outputs=['masked_mr_scan', 'brain_mask'],
+            description="Generate brain mask from mr_scan",
             options={},
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
             citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5)
@@ -26,8 +26,8 @@ class MRStudy(Study):
         bet.inputs.mask = True
         bet.inputs.robust = robust
         # Connect inputs/outputs
-        pipeline.connect_input('mri_scan', bet, 'in_file')
-        pipeline.connect_output('masked_mri_scan', bet, 'out_file')
+        pipeline.connect_input('mr_scan', bet, 'in_file')
+        pipeline.connect_output('masked_mr_scan', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
         pipeline.assert_connected()
@@ -37,7 +37,7 @@ class MRStudy(Study):
         raise NotImplementedError
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('mri_scan', nifti_gz_format),
-        DatasetSpec('masked_mri_scan', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('mr_scan', nifti_gz_format),
+        DatasetSpec('masked_mr_scan', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('eroded_mask', nifti_gz_format, eroded_mask_pipeline))
