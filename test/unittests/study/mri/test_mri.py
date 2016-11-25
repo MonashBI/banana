@@ -23,7 +23,7 @@ class TestMRI(TestCase):
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
-                'mri_scan': Dataset('mri_scan', nifti_gz_format)})
+                'mr_scan': Dataset('mr_scan', nifti_gz_format)})
         study.brain_mask_pipeline().run()
         print self._session_dir(self.EXAMPLE_INPUT_PROJECT)
         self.assert_(
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--tester', default='diffusion', type=str,
                         help="Which tester to run the test from")
-    parser.add_argument('--test', default='preprocess', type=str,
+    parser.add_argument('--test', default='brain_mask', type=str,
                         help="Which test to run")
     args = parser.parse_args()
     tester = TestMRI()
