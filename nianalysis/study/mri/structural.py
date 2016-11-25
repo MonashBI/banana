@@ -8,7 +8,6 @@ from nianalysis.requirements import spm12_req, freesurfer_req
 from nianalysis.citations import spm_cite, freesurfer_cites
 from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, freesurfer_format)
-from nipype.interfaces.spm.preprocess import Coregister
 from nipype.interfaces.utility import Merge, Split
 from .base import set_dataset_specs, DatasetSpec
 from nianalysis.interfaces.spm import MultiChannelSegment
@@ -60,56 +59,13 @@ class CoregisteredT1T2Study(T1Study, T2Study):
         T1Study.__init__(self, *args, **kwargs)
         T2Study.__init__(self, *args, **kwargs)
 
-    def coregistration_pipeline(self, coreg_tool='spm', **kwargs):
-        if coreg_tool == 'spm':
-            pipeline = self._spm_coregistration_pipeline(**kwargs)
-        else:
-            raise NotImplementedError(
-                "Unrecognised coregistration tool '{}'".format(coreg_tool))
-        return pipeline
-
-    def _spm_coregistration_pipeline(self, **kwargs):  # @UnusedVariable
-        """
-        Coregisters T2 image to T1 image using SPM's
-        "Register" method.
-
-        NB: Default values come from the W2MHS toolbox
-        """
-        pipeline = self._create_pipeline(
-            name='coregistration',
-            inputs=['t1', 't2'],
-            outputs=['t2_coreg_t1'],
-            description="Coregister T2-weighted images to T1",
-            options={},
-            requirements=[spm12_req],
-            citations=[spm_cite],
-            approx_runtime=30)
-        coreg = pe.Node(Coregister(), name='coreg')
-        coreg.inputs.jobtype = 'estwrite'
-        coreg.inputs.cost_function = 'nmi'
-        coreg.inputs.separation = [4, 2]
-        coreg.inputs.tolerance = [
-            0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001,
-            0.001, 0.001]
-        coreg.inputs.fwhm = [7, 7]
-        coreg.inputs.write_interp = 4
-        coreg.inputs.write_wrap = [0, 0, 0]
-        coreg.inputs.write_mask = False
-        coreg.inputs.out_prefix = 'r'
-        # Connect inputs
-        pipeline.connect_input('t1', coreg, 'target')
-        pipeline.connect_input('t2', coreg, 'source')
-        # Connect outputs
-        pipeline.connect_output('t2_coreg_t1', coreg, 'coregistered_source')
-        pipeline.assert_connected()
-        return pipeline
-
-    def segmentation_pipeline(self, segment_tool='spm', **kwargs):
-        if segment_tool == 'spm':
+    def segmentation_pipeline(self, seg_tool='spm', **kwargs):
+        if seg_tool == 'spm':
             pipeline = self._spm_segmentation_pipeline(**kwargs)
         else:
             raise NotImplementedError(
-                "Unrecognised segmentation tool '{}'".format(segment_tool))
+                "Unrecognised segmentation tool '{}'. Can be one of 'spm'"
+                .format(seg_tool))
         return pipeline
 
     def _spm_segmentation_pipeline(self):
@@ -180,7 +136,7 @@ class CoregisteredT1T2Study(T1Study, T2Study):
     _dataset_specs = set_dataset_specs(
         DatasetSpec('t1', nifti_format),
         DatasetSpec('t2', nifti_format),
-        DatasetSpec('t2_coreg_t1', nifti_format, coregistration_pipeline),
+#         DatasetSpec('t2_coreg_t1', nifti_format, coregistration_pipeline),
         DatasetSpec('t1_white_matter', nifti_format, segmentation_pipeline),
         DatasetSpec('t1_grey_matter', nifti_format, segmentation_pipeline),
         DatasetSpec('t1_csf', nifti_format, segmentation_pipeline),
