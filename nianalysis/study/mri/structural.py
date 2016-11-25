@@ -12,9 +12,19 @@ from nipype.interfaces.utility import Merge, Split
 from .base import set_dataset_specs, DatasetSpec
 from nianalysis.interfaces.spm import MultiChannelSegment
 from .base import MRStudy
+from ..combined import CombinedStudy
 
 
 class T1Study(MRStudy):
+
+    def segmentation_pipeline(self, seg_tool='spm', **kwargs):
+        if seg_tool == 'spm':
+            pipeline = self._spm_segmentation_pipeline(**kwargs)
+        else:
+            raise NotImplementedError(
+                "Unrecognised segmentation tool '{}'. Can be one of 'spm'"
+                .format(seg_tool))
+        return pipeline
 
     def freesurfer_pipeline(self):
         """
@@ -53,20 +63,7 @@ class T2Study(MRStudy):
         inherit_from=chain(MRStudy.generated_dataset_specs()))
 
 
-class CoregisteredT1T2Study(T1Study, T2Study):
-
-    def __init__(self, *args, **kwargs):
-        T1Study.__init__(self, *args, **kwargs)
-        T2Study.__init__(self, *args, **kwargs)
-
-    def segmentation_pipeline(self, seg_tool='spm', **kwargs):
-        if seg_tool == 'spm':
-            pipeline = self._spm_segmentation_pipeline(**kwargs)
-        else:
-            raise NotImplementedError(
-                "Unrecognised segmentation tool '{}'. Can be one of 'spm'"
-                .format(seg_tool))
-        return pipeline
+class T1T2Study(CombinedStudy):
 
     def _spm_segmentation_pipeline(self):
         """
@@ -133,9 +130,20 @@ class CoregisteredT1T2Study(T1Study, T2Study):
         pipeline.connect_output('t1_csf', channel_splits[2], 'out2')
         return pipeline
 
+    def freesurfer_pipeline(self, **kwargs):
+        pipeline = self.TranslatedPipeline(
+            'freesurfer', self.t1.freesurfer_pipeline(**kwargs), self,
+            add_inputs=['t2'])
+        pipeline.connect_input('t2', pipeline.node('recon_all'), 't2')
+
+    sub_study_specs = {'t1_study':
+                       (T1Study, {'t1': 't1', 'freesurfer': 'freesurfer'}),
+                       't2_study': (T2Study, {'t2': 't2'})}
+
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('t1', nifti_format),
-        DatasetSpec('t2', nifti_format),
+        DatasetSpec('t1', nifti_gz_format),
+        DatasetSpec('t2', nifti_gz_format),
+        DatasetSpec('freesurfer', freesurfer_format, freesurfer_pipeline),
 #         DatasetSpec('t2_coreg_t1', nifti_format, coregistration_pipeline),
         DatasetSpec('t1_white_matter', nifti_format, segmentation_pipeline),
         DatasetSpec('t1_grey_matter', nifti_format, segmentation_pipeline),
