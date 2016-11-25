@@ -16,7 +16,7 @@ else:
 class TestCoregisteredStudy(TestCase):
 
     DATASET_NAME = 'coreg'
-    PROJECT_NAME = 'coregistration'
+    PROJECT_NAME = 't1t2'
 
     def test_registration(self):
         self._remove_generated_files(self.PROJECT_NAME)
