@@ -65,6 +65,24 @@ class TestT1T2Study(TestCase):
                 os.path.exists(output_path),
                 "Output path '{}' was not created".format(output_path))
 
+    def test_freesurfer_pipeline(self):
+        self._remove_generated_files(self.PROJECT_NAME)
+        study = T1T2Study(
+            name=self.DATASET_NAME,
+            project_id=self.PROJECT_NAME,
+            archive=LocalArchive(self.ARCHIVE_PATH),
+            input_datasets={
+                't1': Dataset('t1', nifti_format),
+                't2': Dataset('t2', nifti_format)})
+        study.segmentation_pipeline().run()
+        for fname in ('t1_grey_matter.nii', 't1_white_matter.nii',
+                      't1_csf.nii'):
+            output_path = os.path.join(
+                self._session_dir(self.PROJECT_NAME), fname)
+            self.assertTrue(
+                os.path.exists(output_path),
+                "Output path '{}' was not created".format(output_path))
+
 if __name__ == '__main__':
     tester = TestT1T2Study()
     tester.test_coregistration_pipeline()

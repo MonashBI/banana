@@ -15,7 +15,12 @@ class T1T2Study(CombinedStudy):
         pipeline = self.TranslatedPipeline(
             'freesurfer', self.t1.freesurfer_pipeline(**kwargs), self,
             add_inputs=['t2'])
-        pipeline.connect_input('t2', pipeline.node('recon_all'), 't2')
+        recon_all = pipeline.node('recon_all')
+        recon_all.inputs.use_T2 = True
+        # Connect T2-weighted input
+        pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
+        pipeline.assert_connected()
+        return pipeline
 
     registration_pipeline = CombinedStudy.translate(
         'coreg_study', CoregisteredStudy.registration_pipeline)

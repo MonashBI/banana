@@ -2,19 +2,19 @@ import os
 from itertools import chain
 from copy import copy
 from nipype.pipeline import engine as pe
-from nipype.interfaces.freesurfer.preprocess import ReconAll
+# from nipype.interfaces.freesurfer.preprocess import ReconAll
+from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nipype.interfaces.spm import Info
 from nianalysis.requirements import spm12_req, freesurfer_req
 from nianalysis.citations import spm_cite, freesurfer_cites
 from nianalysis.data_formats import (
-    nifti_gz_format, nifti_format, freesurfer_format, text_matrix_format)
+    nifti_gz_format, freesurfer_format)
 from nipype.interfaces.utility import Merge, Split
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.spm import MultiChannelSegment
+from nianalysis.interfaces.utils import JoinPath
 from ..base import MRStudy
-from ...combined import CombinedStudy
-from ..coregistered import CoregisteredStudy
 
 
 class T1Study(MRStudy):
@@ -28,7 +28,7 @@ class T1Study(MRStudy):
                 .format(seg_tool))
         return pipeline
 
-    def _spm_segmentation_pipeline(self):
+    def _spm_segmentation_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Segments grey matter, white matter and CSF from T1 and T2 images using
         SPM "NewSegment" function.
@@ -93,7 +93,7 @@ class T1Study(MRStudy):
         pipeline.connect_output('t1_csf', channel_splits[2], 'out2')
         return pipeline
 
-    def freesurfer_pipeline(self):
+    def freesurfer_pipeline(self, num_processes=16, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Segments grey matter, white matter and CSF from T1 images using
         SPM "NewSegment" function.
@@ -109,11 +109,17 @@ class T1Study(MRStudy):
             requirements=[freesurfer_req],
             citations=copy(freesurfer_cites),
             approx_runtime=500)
+        # FS ReconAll node
         recon_all = pe.Node(interface=ReconAll(), name='recon_all')
-        recon_all.inputs.openmp = 8
+        recon_all.inputs.directive = 'all'
+        recon_all.inputs.openmp = num_processes
+        # Wrapper around os.path.join
+        join = pe.Node(interface=JoinPath(), name='join')
+        pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')
+        pipeline.connect(recon_all, 'subject_id', join, 'filename')
         # Connect inputs/outputs
         pipeline.connect_input('t1', recon_all, 'T1_files')
-        pipeline.connect_output('freesurfer', recon_all, 'subject_id')
+        pipeline.connect_output('freesurfer', join, 'path')
         pipeline.assert_connected()
         return pipeline
 
