@@ -5,7 +5,7 @@ import shutil
 from nipype import config
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
-from nianalysis.study.mri.structural import CoregisteredT1T2Study # @IgnorePep8
+from nianalysis.study.mri.structural.t1t2 import T1T2Study # @IgnorePep8
 from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
     nifti_format)
@@ -16,7 +16,7 @@ else:
 from nianalysis.testing import test_data_dir  # @IgnorePep8
 
 
-class TestCoregisteredT1T2Study(TestCase):
+class TestT1T2Study(TestCase):
 
     DATASET_NAME = 'T1AndT2'
     PROJECT_NAME = 'T1AndT2'
@@ -33,7 +33,7 @@ class TestCoregisteredT1T2Study(TestCase):
 
     def test_coregistration_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
-        study = CoregisteredT1T2Study(
+        study = T1T2Study(
             name=self.DATASET_NAME,
             project_id=self.PROJECT_NAME,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -49,7 +49,7 @@ class TestCoregisteredT1T2Study(TestCase):
 
     def test_segmentation_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
-        study = CoregisteredT1T2Study(
+        study = T1T2Study(
             name=self.DATASET_NAME,
             project_id=self.PROJECT_NAME,
             archive=LocalArchive(self.ARCHIVE_PATH),
@@ -66,5 +66,5 @@ class TestCoregisteredT1T2Study(TestCase):
                 "Output path '{}' was not created".format(output_path))
 
 if __name__ == '__main__':
-    tester = TestCoregisteredT1T2Study()
+    tester = TestT1T2Study()
     tester.test_coregistration_pipeline()
