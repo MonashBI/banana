@@ -5,7 +5,7 @@ import shutil
 from nipype import config
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
-from nianalysis.study.mri.structural.t1t2 import T1T2Study # @IgnorePep8
+from nianalysis.study.mri.structural.coregistered import T1T2Study # @IgnorePep8
 from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
     nifti_format)
