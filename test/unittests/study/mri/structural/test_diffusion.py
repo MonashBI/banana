@@ -3,7 +3,8 @@ from nipype import config
 config.enable_debug_mode()
 import os.path  # @IgnorePep8
 from nianalysis.dataset import Dataset  # @IgnorePep8
-from nianalysis.study.mri import DiffusionStudy, NODDIStudy  # @IgnorePep8
+from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
+    DiffusionStudy, NODDIStudy)
 from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
     mrtrix_format, analyze_format, fsl_bvals_format, fsl_bvecs_format)
