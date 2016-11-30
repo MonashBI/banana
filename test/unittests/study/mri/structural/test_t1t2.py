@@ -74,9 +74,8 @@ class TestT1T2Study(TestCase):
             input_datasets={
                 't1': Dataset('t1', nifti_format),
                 't2': Dataset('t2', nifti_format)})
-        study.segmentation_pipeline().run()
-        for fname in ('t1_grey_matter.nii', 't1_white_matter.nii',
-                      't1_csf.nii'):
+        study.freesurfer_pipeline().run()
+        for fname in ('freesurfer',):
             output_path = os.path.join(
                 self._session_dir(self.PROJECT_NAME), fname)
             self.assertTrue(
