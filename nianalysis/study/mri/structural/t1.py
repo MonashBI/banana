@@ -7,12 +7,14 @@ from nipype.interfaces.spm import Info
 from nianalysis.requirements import spm12_req, freesurfer_req
 from nianalysis.citations import spm_cite, freesurfer_cites
 from nianalysis.data_formats import (
-    nifti_gz_format, nifti_format, freesurfer_format)
+    nifti_gz_format, nifti_format, freesurfer_format, text_matrix_format)
 from nipype.interfaces.utility import Merge, Split
-from .base import set_dataset_specs, DatasetSpec
+from nianalysis.study.base import set_dataset_specs
+from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.spm import MultiChannelSegment
-from .base import MRStudy
-from ..combined import CombinedStudy
+from ..base import MRStudy
+from ...combined import CombinedStudy
+from ..coregistered import CoregisteredStudy
 
 
 class T1Study(MRStudy):
@@ -25,45 +27,6 @@ class T1Study(MRStudy):
                 "Unrecognised segmentation tool '{}'. Can be one of 'spm'"
                 .format(seg_tool))
         return pipeline
-
-    def freesurfer_pipeline(self):
-        """
-        Segments grey matter, white matter and CSF from T1 images using
-        SPM "NewSegment" function.
-
-        NB: Default values come from the W2MHS toolbox
-        """
-        pipeline = self._create_pipeline(
-            name='segmentation',
-            inputs=['t1'],
-            outputs=['freesurfer'],
-            description="Segment white/grey matter and csf",
-            options={},
-            requirements=[freesurfer_req],
-            citations=copy(freesurfer_cites),
-            approx_runtime=500)
-        recon_all = pe.Node(interface=ReconAll(), name='recon_all')
-        recon_all.inputs.openmp = 8
-        # Connect inputs/outputs
-        pipeline.connect_input('t1', recon_all, 'T1_files')
-        pipeline.connect_output('freesurfer', recon_all, 'subject_id')
-        pipeline.assert_connected()
-        return pipeline
-
-    _dataset_specs = set_dataset_specs(
-        DatasetSpec('t1', nifti_gz_format),
-        DatasetSpec('freesurfer', freesurfer_format, freesurfer_pipeline),
-        inherit_from=chain(MRStudy.generated_dataset_specs()))
-
-
-class T2Study(MRStudy):
-
-    _dataset_specs = set_dataset_specs(
-        DatasetSpec('t2', nifti_format),
-        inherit_from=chain(MRStudy.generated_dataset_specs()))
-
-
-class T1T2Study(CombinedStudy):
 
     def _spm_segmentation_pipeline(self):
         """
@@ -130,26 +93,31 @@ class T1T2Study(CombinedStudy):
         pipeline.connect_output('t1_csf', channel_splits[2], 'out2')
         return pipeline
 
-    def freesurfer_pipeline(self, **kwargs):
-        pipeline = self.TranslatedPipeline(
-            'freesurfer', self.t1.freesurfer_pipeline(**kwargs), self,
-            add_inputs=['t2'])
-        pipeline.connect_input('t2', pipeline.node('recon_all'), 't2')
+    def freesurfer_pipeline(self):
+        """
+        Segments grey matter, white matter and CSF from T1 images using
+        SPM "NewSegment" function.
 
-    sub_study_specs = {'t1_study':
-                       (T1Study, {'t1': 't1', 'freesurfer': 'freesurfer'}),
-                       't2_study': (T2Study, {'t2': 't2'})}
+        NB: Default values come from the W2MHS toolbox
+        """
+        pipeline = self._create_pipeline(
+            name='segmentation',
+            inputs=['t1'],
+            outputs=['freesurfer'],
+            description="Segment white/grey matter and csf",
+            options={},
+            requirements=[freesurfer_req],
+            citations=copy(freesurfer_cites),
+            approx_runtime=500)
+        recon_all = pe.Node(interface=ReconAll(), name='recon_all')
+        recon_all.inputs.openmp = 8
+        # Connect inputs/outputs
+        pipeline.connect_input('t1', recon_all, 'T1_files')
+        pipeline.connect_output('freesurfer', recon_all, 'subject_id')
+        pipeline.assert_connected()
+        return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('t1', nifti_gz_format),
-        DatasetSpec('t2', nifti_gz_format),
         DatasetSpec('freesurfer', freesurfer_format, freesurfer_pipeline),
-#         DatasetSpec('t2_coreg_t1', nifti_format, coregistration_pipeline),
-        DatasetSpec('t1_white_matter', nifti_format, segmentation_pipeline),
-        DatasetSpec('t1_grey_matter', nifti_format, segmentation_pipeline),
-        DatasetSpec('t1_csf', nifti_format, segmentation_pipeline),
-        DatasetSpec('t2_white_matter', nifti_format, segmentation_pipeline),
-        DatasetSpec('t2_grey_matter', nifti_format, segmentation_pipeline),
-        DatasetSpec('t2_csf', nifti_format, segmentation_pipeline),
-        inherit_from=chain(T1Study.generated_dataset_specs(),
-                           T2Study.generated_dataset_specs()))
+        inherit_from=chain(MRStudy.generated_dataset_specs()))
