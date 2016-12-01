@@ -84,4 +84,4 @@ class TestT1T2Study(TestCase):
 
 if __name__ == '__main__':
     tester = TestT1T2Study()
-    tester.test_coregistration_pipeline()
+    tester.test_freesurfer_pipeline()

@@ -121,6 +121,12 @@ class DummyReconAllIOutputSpec(FreeSurferSource.output_spec):
 
 class DummyReconAll(BaseInterface):
 
+    input_spec = DummyReconAllInputSpec
+    output_spec = DummyReconAllIOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['subjects_dir'] = '/Users/tclose/Desktop/FSTest'

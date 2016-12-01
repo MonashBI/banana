@@ -180,7 +180,7 @@ class MRCrop(CommandLine):
         else:
             base, ext = split_extension(os.path.basename(self.inputs.in_file))
             filename = os.path.join(os.getcwd(),
-                                    "{}_crop.{}".format(base, ext))
+                                    "{}_crop{}".format(base, ext))
         return filename
 
 
@@ -243,7 +243,7 @@ class MRPad(CommandLine):
         else:
             base, ext = split_extension(os.path.basename(self.inputs.in_file))
             filename = os.path.join(os.getcwd(),
-                                    "{}_pad.{}".format(base, ext))
+                                    "{}_pad{}".format(base, ext))
         return filename
 
 
@@ -317,7 +317,7 @@ class ExtractDWIorB0(CommandLine):
             else:
                 suffix = 'dw'
             filename = os.path.join(
-                os.getcwd(), "{}_{}.{}".format(base, suffix, ext))
+                os.getcwd(), "{}_{}{}".format(base, suffix, ext))
         return filename
 
 
@@ -439,7 +439,7 @@ class MRConvert(CommandLine):
             ext = (self.inputs.out_ext
                    if isdefined(self.inputs.out_ext) else orig_ext)
             out_name = os.path.join(os.getcwd(),
-                                    "{}_conv.{}".format(base, ext))
+                                    "{}_conv{}".format(base, ext))
         return out_name
 
 
@@ -499,7 +499,7 @@ class DWIPreproc(CommandLine):
             base, ext = split_extension(
                 os.path.basename(self.inputs.in_file))
             out_name = os.path.join(
-                os.getcwd(), "{}_preproc.{}".format(base, ext))
+                os.getcwd(), "{}_preproc{}".format(base, ext))
         return out_name
 
 
@@ -565,7 +565,7 @@ class DWI2Mask(CommandLine):
             base, ext = split_extension(
                 os.path.basename(self.inputs.in_file))
             out_name = os.path.join(
-                os.getcwd(), "{}_biascorrect.{}".format(base, ext))
+                os.getcwd(), "{}_biascorrect{}".format(base, ext))
         return out_name
 
 
@@ -632,7 +632,7 @@ class DWIBiasCorrect(CommandLine):
             base, ext = split_extension(
                 os.path.basename(self.inputs.in_file))
             out_name = os.path.join(
-                os.getcwd(), "{}_biascorrect.{}".format(base, ext))
+                os.getcwd(), "{}_biascorrect{}".format(base, ext))
         return out_name
 
 
@@ -829,7 +829,7 @@ class MRCat(CommandLine):
 #             base, ext = split_extension(
 #                 os.path.basename(self.inputs.in_file))
 #             out_name = os.path.join(
-#                 os.getcwd(), "{}_biascorrect.{}".format(base, ext))
+#                 os.getcwd(), "{}_biascorrect{}".format(base, ext))
 #         return out_name
 
 
