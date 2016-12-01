@@ -10,11 +10,14 @@ from .t2 import T2Study
 
 
 class T1T2Study(CombinedStudy):
+    """
+    T1 and T2 weighted MR dataset, with the T2-weighted coregistered to the T1.
+    """
 
     def freesurfer_pipeline(self, **kwargs):
         pipeline = self.TranslatedPipeline(
-            'freesurfer', self.t1.freesurfer_pipeline(**kwargs), self,
-            add_inputs=['t2'])
+            'freesurfer', self.t1_study.freesurfer_pipeline(**kwargs), self,
+            add_inputs=['t2_coreg'])
         recon_all = pipeline.node('recon_all')
         recon_all.inputs.use_T2 = True
         # Connect T2-weighted input
@@ -26,7 +29,8 @@ class T1T2Study(CombinedStudy):
         'coreg_study', CoregisteredStudy.registration_pipeline)
 
     sub_study_specs = {'t1_study': (T1Study,
-                                    {'t1': 't1', 'freesurfer': 'freesurfer'}),
+                                    {'t1': 't1',
+                                     'freesurfer': 'freesurfer'}),
                        't2_study': (T2Study, {'t2_coreg': 't2'}),
                        'coreg_study': (CoregisteredStudy,
                                        {'t1': 'reference',
