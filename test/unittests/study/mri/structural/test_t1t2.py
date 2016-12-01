@@ -73,7 +73,7 @@ class TestT1T2Study(TestCase):
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
                 't1': Dataset('t1', nifti_format),
-.
+                't2': Dataset('t2', nifti_format)})
         study.freesurfer_pipeline().run()
         for fname in ('freesurfer',):
             output_path = os.path.join(
