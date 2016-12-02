@@ -54,9 +54,8 @@ class ExtractFSLGradients(CommandLine):
         return fname
 
     def _gen_grad_filename(self, comp):
-        if isdefined(self.inputs.bvecs_file):
-            filename = getattr(self.inputs, comp + '_file')
-        else:
+        filename = getattr(self.inputs, comp + '_file')
+        if not isdefined(filename):
             base, _ = split_extension(os.path.basename(self.inputs.in_file))
             filename = os.path.join(
                 os.getcwd(), "{}_{}".format(base, comp))

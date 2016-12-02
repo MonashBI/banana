@@ -1,8 +1,8 @@
 import os.path
 from nipype.interfaces.utility import Merge, MergeInputSpec
 from nipype.interfaces.base import (
-    TraitedSpec, traits, BaseInterface, CommandLineInputSpec, File,
-    Directory, InputMultiPath)
+    TraitedSpec, traits, BaseInterface, File,
+    Directory, InputMultiPath, CommandLineInputSpec, CommandLine)
 from nipype.interfaces.io import FreeSurferSource
 
 
@@ -91,6 +91,64 @@ class JoinPath(BaseInterface):
         return runtime
 
 
+class ZipDirInputSpec(CommandLineInputSpec):
+    dirname = Directory(mandatory=True, desc='directory name', argstr='%s',
+                        position=1)
+    zipped = File(genfile=True, argstr='%s', position=0,
+                  desc=("The zipped directory"))
+    extension = traits.Str(
+        desc="Additional extension to be appended before the '.zip'")
+
+
+class ZipDirOutputSpec(TraitedSpec):
+    zipped = File(exists=True, desc="The zipped directory")
+
+
+class ZipDir(CommandLine):
+    """Joins a filename to a directory name"""
+
+    _cmd = 'zip -rq'
+    input_spec = ZipDirInputSpec
+    output_spec = ZipDirOutputSpec
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['zipped'] = os.path.join(os.getcwd(),
+                                         self._gen_filename('zipped'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'zipped':
+            fname = (
+                os.path.basename(self.inputs.dirname) + self.inputs.extension +
+                '.zip')
+        else:
+            assert False
+        return fname
+
+
+class UnzipDirInputSpec(CommandLineInputSpec):
+    zipped = Directory(mandatory=True, desc='zipped file name', argstr='%s',
+                       position=0)
+
+
+class UnzipDirOutputSpec(TraitedSpec):
+    unzipped = File(exists=True, desc="The unzipped directory")
+
+
+class UnzipDir(CommandLine):
+    """Joins a filename to a directory name"""
+
+    _cmd = 'unzip -q'
+    input_spec = UnzipDirInputSpec
+    output_spec = UnzipDirOutputSpec
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['unzipped'] = os.path.splitext(self.inputs.zipped)[0]
+        return outputs
+
+
 class DummyReconAllInputSpec(CommandLineInputSpec):
     subject_id = traits.Str("recon_all", argstr='-subjid %s',
                             desc='subject name', usedefault=True)
@@ -130,5 +188,5 @@ class DummyReconAll(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['subjects_dir'] = '/Users/tclose/Desktop/FSTest'
-        outputs['subject_id'] = '1'
+        outputs['subject_id'] = 'recon_all'
         return outputs
