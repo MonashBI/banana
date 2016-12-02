@@ -1,6 +1,6 @@
 from itertools import chain
 from nianalysis.data_formats import (
-    nifti_gz_format, freesurfer_format, text_matrix_format)
+    nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from ...combined import CombinedStudy
@@ -19,7 +19,7 @@ class T1T2Study(CombinedStudy):
             'freesurfer', self.t1_study.freesurfer_pipeline(**kwargs), self,
             add_inputs=['t2_coreg'])
         recon_all = pipeline.node('recon_all')
-        print recon_all.inputs
+#         print recon_all.inputs
         recon_all.inputs.use_T2 = True
         # Connect T2-weighted input
         pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
@@ -31,7 +31,7 @@ class T1T2Study(CombinedStudy):
 
     sub_study_specs = {'t1_study': (T1Study,
                                     {'t1': 't1',
-                                     'freesurfer': 'freesurfer'}),
+                                     'fs_recon_all': 'fs_recon_all'}),
                        't2_study': (T2Study, {'t2_coreg': 't2'}),
                        'coreg_study': (CoregisteredStudy,
                                        {'t1': 'reference',
@@ -44,6 +44,7 @@ class T1T2Study(CombinedStudy):
         DatasetSpec('t2', nifti_gz_format),
         DatasetSpec('t2_coreg', nifti_gz_format, registration_pipeline),
         DatasetSpec('coreg_matrix', text_matrix_format, registration_pipeline),
-        DatasetSpec('freesurfer', freesurfer_format, freesurfer_pipeline),
+        DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
+                    freesurfer_pipeline),
         inherit_from=chain(T1Study.generated_dataset_specs(),
                            T2Study.generated_dataset_specs()))

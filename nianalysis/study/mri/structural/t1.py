@@ -2,18 +2,18 @@ import os
 from itertools import chain
 from copy import copy
 from nipype.pipeline import engine as pe
-from nipype.interfaces.freesurfer.preprocess import ReconAll
-#from nianalysis.interfaces.utils import DummyReconAll as ReconAll
+# from nipype.interfaces.freesurfer.preprocess import ReconAll
+from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nipype.interfaces.spm import Info
 from nianalysis.requirements import spm12_req, freesurfer_req
 from nianalysis.citations import spm_cite, freesurfer_cites
 from nianalysis.data_formats import (
-    nifti_gz_format, freesurfer_format)
+    nifti_gz_format, freesurfer_recon_all_format)
 from nipype.interfaces.utility import Merge, Split
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.spm import MultiChannelSegment
-from nianalysis.interfaces.utils import JoinPath
+from nianalysis.interfaces.utils import ZipDir, JoinPath
 from ..base import MRStudy
 
 
@@ -103,7 +103,7 @@ class T1Study(MRStudy):
         pipeline = self._create_pipeline(
             name='segmentation',
             inputs=['t1'],
-            outputs=['freesurfer'],
+            outputs=['fs_recon_all'],
             description="Segment white/grey matter and csf",
             options={},
             requirements=[freesurfer_req],
@@ -117,13 +117,18 @@ class T1Study(MRStudy):
         join = pe.Node(interface=JoinPath(), name='join')
         pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')
         pipeline.connect(recon_all, 'subject_id', join, 'filename')
+        # Zip directory before returning
+        zip_dir = pe.Node(interface=ZipDir(), name='zip_dir')
+        zip_dir.inputs.extension = '.fs'
+        pipeline.connect(join, 'path', zip_dir, 'dirname')
         # Connect inputs/outputs
         pipeline.connect_input('t1', recon_all, 'T1_files')
-        pipeline.connect_output('freesurfer', join, 'path')
+        pipeline.connect_output('fs_recon_all', zip_dir, 'zipped')
         pipeline.assert_connected()
         return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('t1', nifti_gz_format),
-        DatasetSpec('freesurfer', freesurfer_format, freesurfer_pipeline),
+        DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
+                    freesurfer_pipeline),
         inherit_from=chain(MRStudy.generated_dataset_specs()))

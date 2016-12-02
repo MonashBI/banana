@@ -75,7 +75,7 @@ class TestT1T2Study(TestCase):
                 't1': Dataset('t1', nifti_format),
                 't2': Dataset('t2', nifti_format)})
         study.freesurfer_pipeline().run()
-        for fname in ('freesurfer',):
+        for fname in ('fs_recon_all.fs.zip',):
             output_path = os.path.join(
                 self._session_dir(self.PROJECT_NAME), fname)
             self.assertTrue(
