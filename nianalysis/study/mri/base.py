@@ -9,35 +9,34 @@ from nianalysis.data_formats import nifti_gz_format
 
 class MRStudy(Study):
 
-    def brain_mask_pipeline(self, robust=True, **kwargs):  # @UnusedVariable
+    def brain_mask_pipeline(self, robust=False, threshold=0.5,
+                            reduce_bias=False, **kwargs):  # @UnusedVariable
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
         """
         pipeline = self._create_pipeline(
             name='brain_mask',
-            inputs=['mr_scan'],
+            inputs=['acquired'],
             outputs=['masked_mr_scan', 'brain_mask'],
             description="Generate brain mask from mr_scan",
-            options={},
+            options=dict(robust=robust, threshold=threshold),
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
             citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5)
         # Create mask node
         bet = pe.Node(interface=fsl.BET(), name="bet")
         bet.inputs.mask = True
         bet.inputs.robust = robust
+        bet.inputs.frac = threshold
+        bet.inputs.reduce_bias = reduce_bias
         # Connect inputs/outputs
-        pipeline.connect_input('mr_scan', bet, 'in_file')
+        pipeline.connect_input('acquired', bet, 'in_file')
         pipeline.connect_output('masked_mr_scan', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
         pipeline.assert_connected()
         return pipeline
 
-    def eroded_mask_pipeline(self, **kwargs):
-        raise NotImplementedError
-
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('mr_scan', nifti_gz_format),
-        DatasetSpec('masked_mr_scan', nifti_gz_format, brain_mask_pipeline),
-        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
-        DatasetSpec('eroded_mask', nifti_gz_format, eroded_mask_pipeline))
+        DatasetSpec('acquired', nifti_gz_format),
+        DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline))
