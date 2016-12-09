@@ -4,7 +4,8 @@ from nipype.pipeline import engine as pe
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nianalysis.requirements import freesurfer_req
-from nianalysis.citations import freesurfer_cites
+from nianalysis.citations import (
+    freesurfer_cites, optimal_t1_bet_params_cite)
 from nianalysis.data_formats import freesurfer_recon_all_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
@@ -16,9 +17,10 @@ class T1Study(MRStudy):
 
     def brain_mask_pipeline(self, robust=False, threshold=0.1,
                             reduce_bias=True, **kwargs):
-        return super(T1Study, self).brain_mask_pipeline(
+        pipeline = super(T1Study, self).brain_mask_pipeline(
             robust=robust, threshold=threshold, reduce_bias=reduce_bias,
             **kwargs)
+        pipeline.citations.append(optimal_t1_bet_params_cite)
 
     def freesurfer_pipeline(self, num_processes=16, **kwargs):  # @UnusedVariable @IgnorePep8
         """
