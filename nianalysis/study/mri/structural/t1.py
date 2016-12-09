@@ -2,8 +2,8 @@ import os
 from itertools import chain
 from copy import copy
 from nipype.pipeline import engine as pe
-# from nipype.interfaces.freesurfer.preprocess import ReconAll
-from nianalysis.interfaces.utils import DummyReconAll as ReconAll
+from nipype.interfaces.freesurfer.preprocess import ReconAll
+# from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nipype.interfaces.spm import Info
 from nianalysis.requirements import spm12_req, freesurfer_req
 from nianalysis.citations import spm_cite, freesurfer_cites
