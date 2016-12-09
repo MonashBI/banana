@@ -25,9 +25,11 @@ class MRStudy(Study):
         # Create mask node
         bet = pe.Node(interface=fsl.BET(), name="bet")
         bet.inputs.mask = True
-        bet.inputs.robust = robust
+        if robust:
+            bet.inputs.robust = True
+        if reduce_bias:
+            bet.inputs.reduce_bias = True
         bet.inputs.frac = threshold
-        bet.inputs.reduce_bias = reduce_bias
         # Connect inputs/outputs
         pipeline.connect_input('acquired', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
