@@ -17,7 +17,7 @@ class MRStudy(Study):
         pipeline = self._create_pipeline(
             name='brain_mask',
             inputs=['acquired'],
-            outputs=['masked_mr_scan', 'brain_mask'],
+            outputs=['masked', 'brain_mask'],
             description="Generate brain mask from mr_scan",
             options=dict(robust=robust, threshold=threshold),
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
@@ -30,7 +30,7 @@ class MRStudy(Study):
         bet.inputs.reduce_bias = reduce_bias
         # Connect inputs/outputs
         pipeline.connect_input('acquired', bet, 'in_file')
-        pipeline.connect_output('masked_mr_scan', bet, 'out_file')
+        pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
         pipeline.assert_connected()
