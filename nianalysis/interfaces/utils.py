@@ -2,7 +2,8 @@ import os.path
 from nipype.interfaces.utility import Merge, MergeInputSpec
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, File,
-    Directory, InputMultiPath, CommandLineInputSpec, CommandLine)
+    Directory, InputMultiPath, CommandLineInputSpec, CommandLine,
+    isdefined)
 from nipype.interfaces.io import FreeSurferSource
 
 
@@ -95,33 +96,36 @@ class ZipDirInputSpec(CommandLineInputSpec):
     dirname = Directory(mandatory=True, desc='directory name', argstr='%s',
                         position=1)
     zipped = File(genfile=True, argstr='%s', position=0,
-                  desc=("The zipped directory"))
+                  desc=("The zipped zip file"))
     extension = traits.Str(
         desc="Additional extension to be appended before the '.zip'")
 
 
 class ZipDirOutputSpec(TraitedSpec):
     zipped = File(exists=True, desc="The zipped directory")
+    extension = traits.Str(desc="The extension passed as an input + '.zip'")
 
 
 class ZipDir(CommandLine):
-    """Joins a filename to a directory name"""
+    """Creates a zip archive from a given folder"""
 
-    _cmd = 'zip -rq'
+    _cmd = 'nianalysis_zip'
     input_spec = ZipDirInputSpec
     output_spec = ZipDirOutputSpec
+    zip_ext = '.zip'
 
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['zipped'] = os.path.join(os.getcwd(),
                                          self._gen_filename('zipped'))
+        outputs['extension'] = self.inputs.extension + self.zip_ext
         return outputs
 
     def _gen_filename(self, name):
         if name == 'zipped':
             fname = (
                 os.path.basename(self.inputs.dirname) + self.inputs.extension +
-                '.zip')
+                self.zip_ext)
         else:
             assert False
         return fname
@@ -130,14 +134,16 @@ class ZipDir(CommandLine):
 class UnzipDirInputSpec(CommandLineInputSpec):
     zipped = Directory(mandatory=True, desc='zipped file name', argstr='%s',
                        position=0)
+    extension = traits.Str(
+        desc="Additional extension to be appended before the '.zip'")
 
 
 class UnzipDirOutputSpec(TraitedSpec):
-    unzipped = File(exists=True, desc="The unzipped directory")
+    unzipped = Directory(exists=True, desc="The unzipped directory")
 
 
 class UnzipDir(CommandLine):
-    """Joins a filename to a directory name"""
+    """Unzips a folder that was zipped by ZipDir"""
 
     _cmd = 'unzip -q'
     input_spec = UnzipDirInputSpec
@@ -145,7 +151,12 @@ class UnzipDir(CommandLine):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['unzipped'] = os.path.splitext(self.inputs.zipped)[0]
+        if isdefined(self.inputs.extension):
+            ext_len = len(self.inputs.extension)
+        else:
+            ext_len = len(ZipDir.zip_ext)
+        outputs['unzipped'] = os.path.join(
+            os.getcwd(), os.path.basename(self.inputs.zipped)[:-ext_len])
         return outputs
 
 
