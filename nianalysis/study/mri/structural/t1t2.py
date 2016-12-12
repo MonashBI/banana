@@ -26,7 +26,7 @@ class T1T2Study(CombinedStudy):
             'manual_wmh_mask_coreg': 'manual_wmh_mask',
             't2_masked': 'masked',
             'brain_mask': 'brain_mask'}),
-        'coreg_t2_study': (CoregisteredStudy, {
+        'coreg_t2_to_t1_study': (CoregisteredStudy, {
             't1': 'reference',
             't2': 'to_register',
             't2_coreg': 'registered',
@@ -49,13 +49,14 @@ class T1T2Study(CombinedStudy):
         return pipeline
 
     t2_registration_pipeline = CombinedStudy.translate(
-        'coreg_t2_study', CoregisteredStudy.registration_pipeline)
+        'coreg_t2_to_t1_study', CoregisteredStudy.registration_pipeline)
 
     manual_wmh_mask_registration_pipeline = CombinedStudy.translate(
-        'coreg_t2_study', CoregisteredToMatrixStudy.registration_pipeline)
+        'coreg_t2_to_t1_study',
+        CoregisteredToMatrixStudy.registration_pipeline)
 
     t2_brain_mask_pipeline = CombinedStudy.translate(
-        'coreg_t2_study', T2Study.brain_mask_pipeline)
+        't2_study', T2Study.brain_mask_pipeline)
 
     def t1_brain_mask_pipeline(self):
         """
@@ -66,9 +67,11 @@ class T1T2Study(CombinedStudy):
             name='t1_brain_mask_pipeline',
             inputs=['t1', 'brain_mask'],
             outputs=['t1_masked'],
+            options={},
             description="Mask T1 with T2 brain mask",
             requirements=[fsl5_req],
-            citations=[fsl_cite], approx_runtime=1)
+            citations=[fsl_cite],
+            approx_runtime=1)
         # Create apply mask node
         apply_mask = pe.Node(ApplyMask(), 'appy_mask')
         # Connect inputs
