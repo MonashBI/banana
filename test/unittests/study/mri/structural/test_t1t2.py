@@ -24,9 +24,9 @@ class TestT1T2Study(TestCase):
     WORK_DIR = os.path.join(test_data_dir, 'work', 'test_t1t2')
 
     def setUp(self):
-        shutil.rmtree(self.WORK_DIR, ignore_errors=True)
-        os.mkdir(self.WORK_DIR)
-        shutil.rmtree(self.ARCHIVE_PATH, ignore_errors=True)
+#         shutil.rmtree(self.WORK_DIR, ignore_errors=True)
+#         os.mkdir(self.WORK_DIR)
+#         shutil.rmtree(self.ARCHIVE_PATH, ignore_errors=True)
         if not os.path.exists(self._session_dir(self.PROJECT_NAME)):
             os.makedirs(self._session_dir(self.PROJECT_NAME))
             for fname in ('t1.nii', 't2.nii', 'mprage.nii.gz', 'flair.nii.gz',
@@ -69,7 +69,7 @@ class TestT1T2Study(TestCase):
                 "Output path '{}' was not created".format(output_path))
 
     def test_brain_mask_pipelines(self):
-        self._remove_generated_files(self.PROJECT_NAME)
+#         self._remove_generated_files(self.PROJECT_NAME)
         study = T1T2Study(
             name=self.DATASET_NAME,
             project_id=self.PROJECT_NAME,

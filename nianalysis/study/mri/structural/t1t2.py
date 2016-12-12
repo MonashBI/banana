@@ -52,7 +52,7 @@ class T1T2Study(CombinedStudy):
         'coreg_t2_to_t1_study', CoregisteredStudy.registration_pipeline)
 
     manual_wmh_mask_registration_pipeline = CombinedStudy.translate(
-        'coreg_t2_to_t1_study',
+        'coreg_manual_wmh_mask_study',
         CoregisteredToMatrixStudy.registration_pipeline)
 
     t2_brain_mask_pipeline = CombinedStudy.translate(
