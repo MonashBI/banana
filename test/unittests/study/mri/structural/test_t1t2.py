@@ -29,7 +29,8 @@ class TestT1T2Study(TestCase):
         shutil.rmtree(self.ARCHIVE_PATH, ignore_errors=True)
         if not os.path.exists(self._session_dir(self.PROJECT_NAME)):
             os.makedirs(self._session_dir(self.PROJECT_NAME))
-            for fname in ('t1.nii', 't2.nii'):
+            for fname in ('t1.nii', 't2.nii', 'mprage.nii.gz', 'flair.nii.gz',
+                          'manual_wmh_mask.nii.gz'):
                 shutil.copy(os.path.join(test_data_dir, fname),
                             os.path.join(self._session_dir(self.PROJECT_NAME),
                                          fname))
@@ -74,12 +75,15 @@ class TestT1T2Study(TestCase):
             project_id=self.PROJECT_NAME,
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
-                't1': Dataset('mprage', nifti_format),
-                't2': Dataset('flair', nifti_format),
-                'wmh_manual_mask': Dataset('wmh_mask', nifti_gz_format)})
+                't1': Dataset('mprage', nifti_gz_format),
+                't2': Dataset('flair', nifti_gz_format),
+                'manual_wmh_mask': Dataset('manual_wmh_mask',
+                                           nifti_gz_format)})
         study.t1_brain_mask_pipeline().run(work_dir=self.WORK_DIR)
+        study.manual_wmh_mask_registration_pipeline().run(
+            work_dir=self.WORK_DIR)
         for fname in ('t1_masked.nii.gz', 't2_masked.nii.gz',
-                      'brain_mask.nii.gz'):
+                      'brain_mask.nii.gz', 'manual_wmh_mask_coreg.nii.gz'):
             output_path = os.path.join(
                 self._session_dir(self.PROJECT_NAME), fname)
             self.assertTrue(
