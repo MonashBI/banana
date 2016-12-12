@@ -12,7 +12,7 @@ class MRStudy(Study):
     def brain_mask_pipeline(self, robust=False, threshold=0.5,
                             reduce_bias=False, **kwargs):  # @UnusedVariable
         """
-        Generates a whole brain mask using MRtrix's 'dwi2mask' command
+        Generates a whole brain mask using FSL's BET command
         """
         pipeline = self._create_pipeline(
             name='brain_mask',
