@@ -1,6 +1,5 @@
-import os
 from nipype.pipeline import engine as pe
-from itertools import chain
+from nipype.interfaces.fsl import ApplyMask
 from nianalysis.data_formats import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from nianalysis.study.base import set_dataset_specs
@@ -9,11 +8,8 @@ from ...combined import CombinedStudy
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
-from nipype.interfaces.spm import Info
-from nianalysis.requirements import spm12_req
-from nianalysis.citations import spm_cite
-from nipype.interfaces.utility import Merge, Split
-from nianalysis.interfaces.spm import MultiChannelSegment
+from nianalysis.requirements import fsl5_req
+from nianalysis.citations import fsl_cite
 
 
 class T1T2Study(CombinedStudy):
@@ -60,6 +56,29 @@ class T1T2Study(CombinedStudy):
 
     t2_brain_mask_pipeline = CombinedStudy.translate(
         'coreg_t2_study', T2Study.brain_mask_pipeline)
+
+    def t1_brain_mask_pipeline(self):
+        """
+        Masks the T1 image using the coregistered T2 brain mask as the brain
+        mask from T2 is usually more reliable (using BET in any case)
+        """
+        pipeline = self._create_pipeline(
+            name='t1_brain_mask_pipeline',
+            inputs=['t1', 'brain_mask'],
+            outputs=['t1_masked'],
+            description="Mask T1 with T2 brain mask",
+            requirements=[fsl5_req],
+            citations=[fsl_cite], approx_runtime=1)
+        # Create apply mask node
+        apply_mask = pe.Node(ApplyMask(), 'appy_mask')
+        # Connect inputs
+        pipeline.connect_input('t1', apply_mask, 'in_file')
+        pipeline.connect_input('brain_mask', apply_mask, 'mask_file')
+        # Connect outputs
+        pipeline.connect_output('t1_masked', apply_mask, 'out_file')
+        # Check and return
+        pipeline.assert_connected()
+        return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('t1', nifti_gz_format,
