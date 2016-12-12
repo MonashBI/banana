@@ -1,5 +1,7 @@
 from itertools import chain
 from nianalysis.study.base import set_dataset_specs
+from nianalysis.dataset import DatasetSpec
+from nianalysis.data_formats import nifti_gz_format
 from ..base import MRStudy
 
 
@@ -12,4 +14,5 @@ class T2Study(MRStudy):
             **kwargs)
 
     _dataset_specs = set_dataset_specs(
+        DatasetSpec('manual_wmh_mask', nifti_gz_format),
         inherit_from=chain(MRStudy.dataset_specs()))

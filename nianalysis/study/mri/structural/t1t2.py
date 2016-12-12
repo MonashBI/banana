@@ -6,7 +6,7 @@ from nianalysis.data_formats import (
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from ...combined import CombinedStudy
-from ..coregistered import CoregisteredStudy
+from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
 from nipype.interfaces.spm import Info
@@ -26,12 +26,20 @@ class T1T2Study(CombinedStudy):
             't1': 'acquired',
             'fs_recon_all': 'fs_recon_all'}),
         't2_study': (T2Study, {
-            't2_coreg': 'acquired'}),
-        'coreg_study': (CoregisteredStudy, {
+            't2_coreg': 'acquired',
+            'manual_wmh_mask_coreg': 'manual_wmh_mask',
+            't2_masked': 'masked',
+            'brain_mask': 'brain_mask'}),
+        'coreg_t2_study': (CoregisteredStudy, {
             't1': 'reference',
             't2': 'to_register',
             't2_coreg': 'registered',
-            'coreg_matrix': 'matrix'})}
+            't2_coreg_matrix': 'matrix'}),
+        'coreg_manual_wmh_mask_study': (CoregisteredToMatrixStudy, {
+            't1': 'reference',
+            'manual_wmh_mask': 'to_register',
+            't2_coreg_matrix': 'matrix',
+            'manual_wmh_mask_coreg': 'registered'})}
 
     def freesurfer_pipeline(self, **kwargs):
         pipeline = self.TranslatedPipeline(
@@ -44,8 +52,14 @@ class T1T2Study(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    registration_pipeline = CombinedStudy.translate(
-        'coreg_study', CoregisteredStudy.registration_pipeline)
+    t2_registration_pipeline = CombinedStudy.translate(
+        'coreg_t2_study', CoregisteredStudy.registration_pipeline)
+
+    manual_wmh_mask_registration_pipeline = CombinedStudy.translate(
+        'coreg_t2_study', CoregisteredToMatrixStudy.registration_pipeline)
+
+    t2_brain_mask_pipeline = CombinedStudy.translate(
+        'coreg_t2_study', T2Study.brain_mask_pipeline)
 
     def segmentation_pipeline(self, seg_tool='spm', **kwargs):
         if seg_tool == 'spm':
@@ -122,11 +136,26 @@ class T1T2Study(CombinedStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('t1', nifti_gz_format),
-        DatasetSpec('t2', nifti_gz_format),
-        DatasetSpec('t2_coreg', nifti_gz_format, registration_pipeline),
-        DatasetSpec('coreg_matrix', text_matrix_format, registration_pipeline),
+        DatasetSpec('t1', nifti_gz_format,
+                    description="Raw T1-weighted image (e.g. MPRAGE)"),
+        DatasetSpec('t2', nifti_gz_format,
+                    description="Raw T2-weighted image (e.g. FLAIR)"),
+        DatasetSpec('manual_wmh_mask', nifti_gz_format,
+                    description="Manual WMH segmentations"),
+        DatasetSpec('t2_coreg', nifti_gz_format, t2_registration_pipeline,
+                    description="T2 registered to T1 weighted"),
+        DatasetSpec('t1_masked', nifti_gz_format, t1_brain_mask_pipeline,
+                    description="T1 masked by brain mask"),
+        DatasetSpec('t2_masked', nifti_gz_format, t2_brain_mask_pipeline,
+                    description="Coregistered T2 masked by brain mask"),
+        DatasetSpec('brain_mask', nifti_gz_format, t2_brain_mask_pipeline,
+                    description="Brain mask generated from coregistered T2"),
+        DatasetSpec('manual_wmh_mask_coreg', nifti_gz_format,
+                    manual_wmh_mask_registration_pipeline,
+                    description="Manual WMH segmentations coregistered to T1"),
+        DatasetSpec('t2_coreg_matrix', text_matrix_format,
+                    t2_registration_pipeline,
+                    description="Coregistration matrix for T2 to T1"),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
-                    freesurfer_pipeline),
-        inherit_from=chain(T1Study.generated_dataset_specs(),
-                           T2Study.generated_dataset_specs()))
+                    freesurfer_pipeline,
+                    description="Output directory from Freesurfer recon_all"))
