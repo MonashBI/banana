@@ -19,10 +19,10 @@ class T1T2Study(CombinedStudy):
 
     sub_study_specs = {
         't1': (T1Study, {
-            't1': 'acquired',
+            't1': 'primary',
             'fs_recon_all': 'fs_recon_all'}),
         't2': (T2Study, {
-            't2_coreg': 'acquired',
+            't2_coreg': 'primary',
             'manual_wmh_mask_coreg': 'manual_wmh_mask',
             't2_masked': 'masked',
             'brain_mask': 'brain_mask'}),

@@ -27,7 +27,7 @@ class TestMR(TestCase):
             project_id=self.EXAMPLE_INPUT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
-                'acquired': Dataset('mri_scan', nifti_gz_format)})
+                'primary': Dataset('mri_scan', nifti_gz_format)})
         study.brain_mask_pipeline().run(work_dir=self.work_dir)
         print self._session_dir(self.EXAMPLE_INPUT_PROJECT)
         self.assert_(
