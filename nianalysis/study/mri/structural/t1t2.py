@@ -18,20 +18,20 @@ class T1T2Study(CombinedStudy):
     """
 
     sub_study_specs = {
-        't1_study': (T1Study, {
+        't1': (T1Study, {
             't1': 'acquired',
             'fs_recon_all': 'fs_recon_all'}),
-        't2_study': (T2Study, {
+        't2': (T2Study, {
             't2_coreg': 'acquired',
             'manual_wmh_mask_coreg': 'manual_wmh_mask',
             't2_masked': 'masked',
             'brain_mask': 'brain_mask'}),
-        'coreg_t2_to_t1_study': (CoregisteredStudy, {
+        't2coregt1': (CoregisteredStudy, {
             't1': 'reference',
             't2': 'to_register',
             't2_coreg': 'registered',
             't2_coreg_matrix': 'matrix'}),
-        'coreg_manual_wmh_mask_study': (CoregisteredToMatrixStudy, {
+        'wmhcoregt1': (CoregisteredToMatrixStudy, {
             't1': 'reference',
             'manual_wmh_mask': 'to_register',
             't2_coreg_matrix': 'matrix',
@@ -49,14 +49,14 @@ class T1T2Study(CombinedStudy):
         return pipeline
 
     t2_registration_pipeline = CombinedStudy.translate(
-        'coreg_t2_to_t1_study', CoregisteredStudy.registration_pipeline)
+        't2coregt1', CoregisteredStudy.registration_pipeline)
 
     manual_wmh_mask_registration_pipeline = CombinedStudy.translate(
-        'coreg_manual_wmh_mask_study',
+        'wmhcoregt1',
         CoregisteredToMatrixStudy.registration_pipeline)
 
     t2_brain_mask_pipeline = CombinedStudy.translate(
-        't2_study', T2Study.brain_mask_pipeline)
+        't2', T2Study.brain_mask_pipeline)
 
     def t1_brain_mask_pipeline(self):
         """
