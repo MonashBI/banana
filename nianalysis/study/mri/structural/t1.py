@@ -31,7 +31,7 @@ class T1Study(MRStudy):
         """
         pipeline = self._create_pipeline(
             name='segmentation',
-            inputs=['acquired'],
+            inputs=['primary'],
             outputs=['fs_recon_all'],
             description="Segment white/grey matter and csf",
             options={},

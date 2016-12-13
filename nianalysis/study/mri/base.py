@@ -16,7 +16,7 @@ class MRStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='brain_mask',
-            inputs=['acquired'],
+            inputs=['primary'],
             outputs=['masked', 'brain_mask'],
             description="Generate brain mask from mr_scan",
             options=dict(robust=robust, threshold=threshold),
@@ -31,7 +31,7 @@ class MRStudy(Study):
             bet.inputs.reduce_bias = True
         bet.inputs.frac = threshold
         # Connect inputs/outputs
-        pipeline.connect_input('acquired', bet, 'in_file')
+        pipeline.connect_input('primary', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
@@ -39,6 +39,6 @@ class MRStudy(Study):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('acquired', nifti_gz_format),
+        DatasetSpec('primary', nifti_gz_format),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline))
