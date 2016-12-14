@@ -690,7 +690,7 @@ class MRCat(CommandLine):
             second, _ = split_extension(
                 os.path.basename(self.inputs.second_scan))
             out_name = os.path.join(
-                os.getcwd(), "{}_{}_concat.{}".format(first, second, ext))
+                os.getcwd(), "{}_{}_concat{}".format(first, second, ext))
         return out_name
 
 # 
