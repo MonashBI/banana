@@ -54,7 +54,7 @@ class ExtractFSLGradients(CommandLine):
         return fname
 
     def _gen_grad_filename(self, comp):
-        filename = getattr(self.inputs, comp + '_file')
+        filename = getattr(self.inputs, comp + 's_file')
         if not isdefined(filename):
             base, _ = split_extension(os.path.basename(self.inputs.in_file))
             filename = os.path.join(
