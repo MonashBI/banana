@@ -8,7 +8,7 @@ from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
 from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 from nianalysis.data_formats import (  # @IgnorePep8
-    mrtrix_format, analyze_format, fsl_bvals_format, fsl_bvecs_format)
+    mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format)
 if __name__ == '__main__':
     from nianalysis.testing import DummyTestCase as TestCase  # @IgnorePep8 @UnusedImport
 else:
@@ -66,7 +66,7 @@ class TestDiffusion(TestCase):
             project_id=self.PILOT_PROJECT,
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
-                'dwi_preproc': Dataset('dwi_preproc', analyze_format),
+                'dwi_preproc': Dataset('dwi_preproc', nifti_gz_format),
                 'grad_dirs': Dataset('noddi_gradient_directions',
                                      fsl_bvecs_format),
                 'bvalues': Dataset('noddi_bvalues', fsl_bvals_format)})
