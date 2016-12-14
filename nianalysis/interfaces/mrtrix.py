@@ -40,8 +40,8 @@ class ExtractFSLGradients(CommandLine):
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
-        outputs['bvecs_file'] = self._gen_grad_filename('bvecs')
-        outputs['bvals_file'] = self._gen_grad_filename('bvals')
+        outputs['bvecs_file'] = self._gen_grad_filename('bvec')
+        outputs['bvals_file'] = self._gen_grad_filename('bval')
         return outputs
 
     def _gen_filename(self, name):
