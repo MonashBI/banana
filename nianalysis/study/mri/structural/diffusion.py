@@ -67,7 +67,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def brain_mask_pipeline(self, mask_tool='bet', **kwargs):  # @UnusedVariable @IgnorePep8
+    def brain_mask_pipeline(self, mask_tool='mrtrix', **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
 
@@ -77,12 +77,12 @@ class DiffusionStudy(T2Study):
             Can be either 'bet' or 'dwi2mask' depending on which mask tool you
             want to use
         """
-        if mask_tool == 'bet':
+        if mask_tool == 'fsl':
             if 'f' not in kwargs:
                 kwargs['f'] = 0.25
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
-        elif mask_tool == 'dwi2mask':
+        elif mask_tool == 'mrtrix':
             pipeline = self._create_pipeline(
                 name='brain_mask',
                 inputs=['bias_correct', 'grad_dirs', 'bvalues'],
