@@ -95,12 +95,12 @@ class DiffusionStudy(T2Study):
             dwi2mask = pe.Node(BrainMask(), name='dwi2mask')
             dwi2mask.inputs.out_file = 'brain_mask.nii.gz'
             # Gradient merge node
-            fsl_grads = pe.Node(MergeTuple(2), name="fsl_grads")
+            grad_fsl = pe.Node(MergeTuple(2), name="grad_fsl")
             # Connect nodes
-            pipeline.connect(fsl_grads, 'out', dwi2mask, 'fslgrad')
+            pipeline.connect(grad_fsl, 'out', dwi2mask, 'grad_fsl')
             # Connect inputs
-            pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-            pipeline.connect_input('bvalues', fsl_grads, 'in2')
+            pipeline.connect_input('grad_dirs', grad_fsl, 'in1')
+            pipeline.connect_input('bvalues', grad_fsl, 'in2')
             pipeline.connect_input('bias_correct', dwi2mask, 'in_file')
             # Connect outputs
             pipeline.connect_output('brain_mask', dwi2mask, 'out_file')
