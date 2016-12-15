@@ -27,7 +27,7 @@ class CoregisteredStudy(Study):
                 " 'spm'.".format(coreg_tool))
         return pipeline
 
-    def _fsl_flirt_pipeline(self, degrees_of_freedom=12,
+    def _fsl_flirt_pipeline(self, degrees_of_freedom=6,
                             cost_func='mutualinfo', qsform=False, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
