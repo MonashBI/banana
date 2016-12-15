@@ -85,7 +85,7 @@ class DiffusionStudy(T2Study):
         elif mask_tool == 'dwi2mask':
             pipeline = self._create_pipeline(
                 name='brain_mask',
-                inputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
+                inputs=['bias_correct', 'grad_dirs', 'bvalues'],
                 outputs=['brain_mask'],
                 description="Generate brain mask from b0 images",
                 options={'mask_tool': mask_tool},
@@ -101,7 +101,7 @@ class DiffusionStudy(T2Study):
             # Connect inputs
             pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
             pipeline.connect_input('bvalues', fsl_grads, 'in2')
-            pipeline.connect_input('dwi_preproc', dwi2mask, 'in_file')
+            pipeline.connect_input('bias_correct', dwi2mask, 'in_file')
             # Connect outputs
             pipeline.connect_output('brain_mask', dwi2mask, 'out_file')
             # Check inputs/outputs are connected
@@ -281,7 +281,7 @@ class DiffusionStudy(T2Study):
         """
         pipeline = self._create_pipeline(
             name='extract_b0',
-            inputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
+            inputs=['bias_correct', 'grad_dirs', 'bvalues'],
             outputs=['primary'],
             description="Extract b0 image from a DWI study",
             options={}, requirements=[mrtrix3_req], citations=[mrtrix_cite],
@@ -303,7 +303,7 @@ class DiffusionStudy(T2Study):
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect inputs
-        pipeline.connect_input('dwi_preproc', extract_b0s, 'in_file')
+        pipeline.connect_input('bias_correct', extract_b0s, 'in_file')
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
         # Connect between nodes
@@ -319,7 +319,7 @@ class DiffusionStudy(T2Study):
     def track_gen_pipeline(self):
         pipeline = self._create_pipeline(
             name='extract_b0',
-            inputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
+            inputs=['bias_correct', 'grad_dirs', 'bvalues'],
             outputs=['primary'],
             description="Extract b0 image from a DWI study",
             options={}, requirements=[mrtrix3_req], citations=[mrtrix_cite],
@@ -525,7 +525,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline = self._create_pipeline(
             name='concatenation',
             inputs=['low_b_dw_scan', 'high_b_dw_scan'],
-            outputs=['primary'],
+            outputs=['dwi_scan'],
             description=(
                 "Concatenate low and high b-value dMRI datasets for NODDI "
                 "processing"),
@@ -545,7 +545,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
         pipeline.connect_input('high_b_dw_scan', mrcat, 'second_scan')
         # Connect outputs
-        pipeline.connect_output('primary', mrconvert, 'out_file')
+        pipeline.connect_output('dwi_scan', mrconvert, 'out_file')
         # Check inputs/outputs are connected
         pipeline.assert_connected()
         return pipeline
@@ -566,7 +566,7 @@ class NODDIStudy(DiffusionStudy):
         nthreads: Int
             Number of processes to use
         """
-        inputs = ['dwi_preproc', 'grad_dirs', 'bvalues']
+        inputs = ['bias_correct', 'grad_dirs', 'bvalues']
         if single_slice is None:
             inputs.append('brain_mask')
         else:
@@ -586,15 +586,15 @@ class NODDIStudy(DiffusionStudy):
                           Requirement('niftimatlib', (1, 2))],
             citations=[noddi_cite], approx_runtime=60)
         # Create node to unzip the nifti files
-        unzip_preproc = pe.Node(MRConvert(), name="unzip_preproc")
-        unzip_preproc.inputs.out_ext = 'nii'
-        unzip_preproc.inputs.quiet = True
+        unzip_bias_correct = pe.Node(MRConvert(), name="unzip_bias_correct")
+        unzip_bias_correct.inputs.out_ext = 'nii'
+        unzip_bias_correct.inputs.quiet = True
         unzip_mask = pe.Node(MRConvert(), name="unzip_mask")
         unzip_mask.inputs.out_ext = 'nii'
         unzip_mask.inputs.quiet = True
         # Create create-roi node
         create_roi = pe.Node(CreateROI(), name='create_roi')
-        pipeline.connect(unzip_preproc, 'out_file', create_roi, 'in_file')
+        pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
         batch_fit = pe.Node(BatchNODDIFitting(), name="batch_fit")
@@ -609,7 +609,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline.connect(unzip_mask, 'out_file', save_params,
                          'brain_mask_file')
         # Connect inputs
-        pipeline.connect_input('dwi_preproc', unzip_preproc, 'in_file')
+        pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
         if single_slice is None:
             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
         else:
