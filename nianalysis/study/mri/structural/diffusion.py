@@ -77,7 +77,9 @@ class DiffusionStudy(T2Study):
             Can be either 'bet' or 'dwi2mask' depending on which mask tool you
             want to use
         """
-        if mask_tool == 'fsl':
+        if mask_tool == 'bet':
+            if 'f' not in kwargs:
+                kwargs['f'] = 0.25
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
         elif mask_tool == 'dwi2mask':
@@ -347,6 +349,8 @@ class DiffusionStudy(T2Study):
                     multiplicity='per_project'),
         DatasetSpec('tbss_skeleton_mask', nifti_gz_format, tbss_pipeline,
                     multiplicity='per_project'),
+        DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         inherit_from=T2Study.generated_dataset_specs())
 
 

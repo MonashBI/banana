@@ -15,4 +15,6 @@ class T2Study(MRStudy):
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('manual_wmh_mask', nifti_gz_format),
+        DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         inherit_from=chain(MRStudy.dataset_specs()))
