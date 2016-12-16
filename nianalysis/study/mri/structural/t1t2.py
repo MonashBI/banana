@@ -39,7 +39,7 @@ class T1T2Study(CombinedStudy):
 
     def freesurfer_pipeline(self, **kwargs):
         pipeline = self.TranslatedPipeline(
-            'freesurfer', self.t1_study.freesurfer_pipeline(**kwargs), self,
+            'freesurfer', self.t1.freesurfer_pipeline(**kwargs), self,
             add_inputs=['t2_coreg'])
         recon_all = pipeline.node('recon_all')
         recon_all.inputs.use_T2 = True
