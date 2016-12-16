@@ -51,7 +51,7 @@ class T1Study(MRStudy):
         zip_dir.inputs.extension = '.fs'
         pipeline.connect(join, 'path', zip_dir, 'dirname')
         # Connect inputs/outputs
-        pipeline.connect_input('acquired', recon_all, 'T1_files')
+        pipeline.connect_input('primary', recon_all, 'T1_files')
         pipeline.connect_output('fs_recon_all', zip_dir, 'zipped')
         pipeline.assert_connected()
         return pipeline
