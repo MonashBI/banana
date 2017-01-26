@@ -5,6 +5,10 @@ from nianalysis.study.base import Study, set_dataset_specs
 from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import nifti_gz_format
+from nianalysis.requirements import fsl5_req
+from nipype.interfaces.fsl import FNIRT
+from nianalysis.utils import get_atlas_path
+from nianalysis.exceptions import NiAnalysisError
 
 
 class MRStudy(Study):
@@ -38,7 +42,58 @@ class MRStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
+    def coregister_to_atlas_pipeline(self, tool='fnirt', atlas='mni_nl6',
+                                     **kwargs):
+        if tool == 'fnirt':
+            pipeline = self._fsl_fnirt_pipeline(atlas=atlas, **kwargs)
+        else:
+            raise NiAnalysisError("Unrecognised coregistration tool '{}'"
+                                  .format(tool))
+        return pipeline
+
+
+    def _fsl_fnirt_to_atlas_pipeline(self, atlas, **kwargs):  # @UnusedVariable @IgnorePep8
+        """
+        Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
+        command
+
+        Parameters
+        ----------
+        atlas : Which atlas to use, can be one of 'mni_nl6'
+        """
+        pipeline = self._create_pipeline(
+            name='registration',
+            inputs=self._registration_inputs,
+            outputs=self._registration_outputs,
+            description="Registers a MR scan against a reference image",
+            options=dict(),
+            requirements=[fsl5_req],
+            citations=[fsl_cite],
+            approx_runtime=5)
+        fnirt = pe.Node(interface=FNIRT(), name='fnirt')
+        fnirt.inputs.ref_file = get_atlas_path(atlas, 'image')
+        fnirt.inputs.ref_mask_file = get_atlas_path(atlas, 'mask')
+        try:
+            subsampling = kwargs['subsampling']
+        except KeyError:
+            subsampling = [4, 2, 1, 1]
+        fnirt.inputs.subsampling_scheme = subsampling
+        # Apply mask if corresponding subsampling scheme is 1
+        # (i.e. 1-to-1 resolution) otherwise don't.
+        fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
+        # Set registration options
+        # TODO: Need to work out which options to use
+        # Connect inputs
+        pipeline.connect_input('primary', fnirt, 'in_file')
+        pipeline.connect_input('brain_mask', fnirt, 'inmask_file')
+        # Connect outputs
+        pipeline.connect_output('warp_to_atlas', fnirt, 'field_file')
+        pipeline.assert_connected()
+        return pipeline
+
     _dataset_specs = set_dataset_specs(
         DatasetSpec('primary', nifti_gz_format),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
-        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline))
+        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('warp_to_atlas', nifti_gz_format,
+                    coregister_to_atlas_pipeline))
