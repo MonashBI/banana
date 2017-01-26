@@ -1,5 +1,5 @@
 from nipype.pipeline import engine as pe
-from nipype.interfaces.fsl import FLIRT
+from nipype.interfaces.fsl import FLIRT, FNIRT
 from nipype.interfaces.spm.preprocess import Coregister
 from nianalysis.requirements import fsl5_req
 from nianalysis.citations import fsl_cite
@@ -19,6 +19,8 @@ class CoregisteredStudy(Study):
     def registration_pipeline(self, coreg_tool='flirt', **kwargs):
         if coreg_tool == 'flirt':
             pipeline = self._fsl_flirt_pipeline(**kwargs)
+        elif coreg_tool == 'fnirt':
+            pipeline = self._fsl_fnirt_pipeline(**kwargs)
         elif coreg_tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**kwargs)
         else:
@@ -71,6 +73,50 @@ class CoregisteredStudy(Study):
         pipeline.connect_output('registered', flirt, 'out_file')
         # Connect matrix
         self._connect_matrix(pipeline, flirt)
+        pipeline.assert_connected()
+        return pipeline
+
+    def _fsl_fnirt_pipeline(self, degrees_of_freedom=6,
+                            cost_func='mutualinfo', qsform=False, **kwargs):  # @UnusedVariable @IgnorePep8
+        """
+        Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
+        command
+
+        Parameters
+        ----------
+        degrees_of_freedom : int
+            Number of degrees of freedom used in the registration. Default is
+            6 -> affine transformation.
+        cost_func : str
+            Cost function used for the registration. Can be one of
+            'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',
+            'labeldiff', 'bbr'
+        qsform : bool
+            Whether to use the QS form supplied in the input image header (
+            the image coordinates of the FOV supplied by the scanner)
+        """
+
+        pipeline = self._create_pipeline(
+            name='registration',
+            inputs=self._registration_inputs,
+            outputs=self._registration_outputs,
+            description="Registers a MR scan against a reference image",
+            options=dict(
+                degree_of_freedom=degrees_of_freedom, cost_func=cost_func,
+                qsform=qsform),
+            requirements=[fsl5_req],
+            citations=[fsl_cite],
+            approx_runtime=5)
+        fnirt = pe.Node(interface=FNIRT(), name='fnirt')
+        # Set registration options
+        # TODO: Need to work out which options to use
+        # Connect inputs
+        pipeline.connect_input('to_register', fnirt, 'in_file')
+        pipeline.connect_input('reference', fnirt, 'ref_file')
+        # Connect outputs
+        pipeline.connect_output('registered', fnirt, 'warped_image')
+        # Connect matrix
+        self._connect_matrix(pipeline, fnirt)
         pipeline.assert_connected()
         return pipeline
 
