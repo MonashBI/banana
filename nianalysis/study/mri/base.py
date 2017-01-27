@@ -78,6 +78,7 @@ class MRStudy(Study):
         except KeyError:
             subsampling = [4, 2, 1, 1]
         fnirt.inputs.subsampling_scheme = subsampling
+        fnirt.inputs.field_file = True
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
         fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
