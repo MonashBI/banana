@@ -63,8 +63,8 @@ class MRStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='registration',
-            inputs=self._registration_inputs,
-            outputs=self._registration_outputs,
+            inputs=['primary', 'brain_mask'],
+            outputs=['warp_to_atlas'],
             description="Registers a MR scan against a reference image",
             options=dict(),
             requirements=[fsl5_req],
