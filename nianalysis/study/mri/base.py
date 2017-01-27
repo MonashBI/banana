@@ -72,7 +72,7 @@ class MRStudy(Study):
             approx_runtime=5)
         fnirt = pe.Node(interface=FNIRT(), name='fnirt')
         fnirt.inputs.ref_file = get_atlas_path(atlas, 'image')
-        fnirt.inputs.ref_mask_file = get_atlas_path(atlas, 'mask')
+        fnirt.inputs.refmask_file = get_atlas_path(atlas, 'mask')
         try:
             subsampling = kwargs['subsampling']
         except KeyError:
