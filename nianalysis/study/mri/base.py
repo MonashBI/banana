@@ -86,7 +86,7 @@ class MRStudy(Study):
         fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
         # Connect nodes
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
-        pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
+        pipeline.connect(reorient_mask, 'out_file', fnirt, 'in_file')
         # Set registration options
         # TODO: Need to work out which options to use
         # Connect inputs
