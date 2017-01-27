@@ -20,6 +20,7 @@ class T1T2Study(CombinedStudy):
     sub_study_specs = {
         't1': (T1Study, {
             't1': 'primary',
+            'warp_to_atlas': 'warp_to_atlas',
             'fs_recon_all': 'fs_recon_all'}),
         't2': (T2Study, {
             't2_coreg': 'primary',
@@ -47,6 +48,9 @@ class T1T2Study(CombinedStudy):
         pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
         pipeline.assert_connected()
         return pipeline
+
+    coregister_to_atlas_pipeline = CombinedStudy.translate(
+        't1', T1Study.coregister_to_atlas_pipeline)
 
     t2_registration_pipeline = CombinedStudy.translate(
         't2coregt1', CoregisteredStudy.registration_pipeline)
@@ -104,6 +108,8 @@ class T1T2Study(CombinedStudy):
         DatasetSpec('t2_coreg_matrix', text_matrix_format,
                     t2_registration_pipeline,
                     description="Coregistration matrix for T2 to T1"),
+        DatasetSpec('warp_to_atlas', nifti_gz_format,
+                    coregister_to_atlas_pipeline),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline,
                     description="Output directory from Freesurfer recon_all"))
