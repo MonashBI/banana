@@ -6,7 +6,7 @@ from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import nifti_gz_format
 from nianalysis.requirements import fsl5_req
-from nipype.interfaces.fsl import FNIRT
+from nipype.interfaces.fsl import FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 
@@ -70,6 +70,8 @@ class MRStudy(Study):
             requirements=[fsl5_req],
             citations=[fsl_cite],
             approx_runtime=5)
+        reorient = pe.Node(Reorient2Std(), name='reorient')
+        reorient_mask = pe.Node(Reorient2Std(), name='reorient_mask')
         fnirt = pe.Node(interface=FNIRT(), name='fnirt')
         fnirt.inputs.ref_file = get_atlas_path(atlas, 'image')
         fnirt.inputs.refmask_file = get_atlas_path(atlas, 'mask')
@@ -82,11 +84,14 @@ class MRStudy(Study):
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
         fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
+        # Connect nodes
+        pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
+        pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
         # Set registration options
         # TODO: Need to work out which options to use
         # Connect inputs
-        pipeline.connect_input('primary', fnirt, 'in_file')
-        pipeline.connect_input('brain_mask', fnirt, 'inmask_file')
+        pipeline.connect_input('primary', reorient, 'in_file')
+        pipeline.connect_input('brain_mask', reorient_mask, 'inmask_file')
         # Connect outputs
         pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('warp_to_atlas', fnirt, 'field_file')
