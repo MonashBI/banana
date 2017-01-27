@@ -45,7 +45,7 @@ class MRStudy(Study):
     def coregister_to_atlas_pipeline(self, tool='fnirt', atlas='mni_nl6',
                                      **kwargs):
         if tool == 'fnirt':
-            pipeline = self._fsl_fnirt_pipeline(atlas=atlas, **kwargs)
+            pipeline = self._fsl_fnirt_to_atlas_pipeline(atlas=atlas, **kwargs)
         else:
             raise NiAnalysisError("Unrecognised coregistration tool '{}'"
                                   .format(tool))
