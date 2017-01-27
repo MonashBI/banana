@@ -20,6 +20,7 @@ class T1T2Study(CombinedStudy):
     sub_study_specs = {
         't1': (T1Study, {
             't1': 'primary',
+            't1_coreg_to_atlas': 'coreg_to_atlas',
             'warp_to_atlas': 'warp_to_atlas',
             'brain_mask': 'brain_mask',
             'fs_recon_all': 'fs_recon_all'}),
@@ -109,6 +110,8 @@ class T1T2Study(CombinedStudy):
         DatasetSpec('t2_coreg_matrix', text_matrix_format,
                     t2_registration_pipeline,
                     description="Coregistration matrix for T2 to T1"),
+        DatasetSpec('t1_coreg_to_atlas', nifti_gz_format,
+                    coregister_to_atlas_pipeline),
         DatasetSpec('warp_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
