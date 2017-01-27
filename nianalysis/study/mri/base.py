@@ -64,7 +64,7 @@ class MRStudy(Study):
         pipeline = self._create_pipeline(
             name='registration',
             inputs=['primary', 'brain_mask'],
-            outputs=['warp_to_atlas'],
+            outputs=['coreg_to_atlas', 'warp_to_atlas'],
             description="Registers a MR scan against a reference image",
             options=dict(),
             requirements=[fsl5_req],
@@ -87,6 +87,7 @@ class MRStudy(Study):
         pipeline.connect_input('primary', fnirt, 'in_file')
         pipeline.connect_input('brain_mask', fnirt, 'inmask_file')
         # Connect outputs
+        pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('warp_to_atlas', fnirt, 'field_file')
         pipeline.assert_connected()
         return pipeline
@@ -95,5 +96,7 @@ class MRStudy(Study):
         DatasetSpec('primary', nifti_gz_format),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('coreg_to_atlas', nifti_gz_format,
+                    coregister_to_atlas_pipeline),
         DatasetSpec('warp_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline))
