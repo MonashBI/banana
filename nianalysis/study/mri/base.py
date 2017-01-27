@@ -86,12 +86,12 @@ class MRStudy(Study):
         fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
         # Connect nodes
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
-        pipeline.connect(reorient_mask, 'out_file', fnirt, 'in_file')
+        pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
         # Set registration options
         # TODO: Need to work out which options to use
         # Connect inputs
         pipeline.connect_input('primary', reorient, 'in_file')
-        pipeline.connect_input('brain_mask', reorient_mask, 'inmask_file')
+        pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
         # Connect outputs
         pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('warp_to_atlas', fnirt, 'field_file')
