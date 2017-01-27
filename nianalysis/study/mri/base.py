@@ -42,7 +42,7 @@ class MRStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def coregister_to_atlas_pipeline(self, tool='fnirt', atlas='mni_nl6',
+    def coregister_to_atlas_pipeline(self, tool='fnirt', atlas='MNI152',
                                      **kwargs):
         if tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(atlas=atlas, **kwargs)
