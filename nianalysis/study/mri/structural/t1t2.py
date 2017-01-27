@@ -21,6 +21,7 @@ class T1T2Study(CombinedStudy):
         't1': (T1Study, {
             't1': 'primary',
             'warp_to_atlas': 'warp_to_atlas',
+            'brain_mask': 'brain_mask',
             'fs_recon_all': 'fs_recon_all'}),
         't2': (T2Study, {
             't2_coreg': 'primary',
