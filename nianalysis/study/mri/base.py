@@ -51,8 +51,8 @@ class MRStudy(Study):
                                   .format(tool))
         return pipeline
 
-
-    def _fsl_fnirt_to_atlas_pipeline(self, atlas, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _fsl_fnirt_to_atlas_pipeline(self, atlas,
+                                     intensity_model='local_linear', **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -84,6 +84,9 @@ class MRStudy(Study):
         fnirt = pe.Node(interface=FNIRT(), name='fnirt')
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
+        if intensity_model is None:
+            intensity_model = 'none'
+        fnirt.inputs.intensity_mapping_model = intensity_model
         try:
             subsampling = kwargs['subsampling']
         except KeyError:
