@@ -6,7 +6,7 @@ from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import nifti_gz_format
 from nianalysis.requirements import fsl5_req
-from nipype.interfaces.fsl import FNIRT, Reorient2Std
+from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 
@@ -70,11 +70,20 @@ class MRStudy(Study):
             requirements=[fsl5_req],
             citations=[fsl_cite],
             approx_runtime=5)
+        # Get the reference atlas from FSL directory
+        ref_atlas = get_atlas_path(atlas, 'image')
+        ref_mask = get_atlas_path(atlas, 'mask')
+        # Basic reorientation to standard MNI space
         reorient = pe.Node(Reorient2Std(), name='reorient')
         reorient_mask = pe.Node(Reorient2Std(), name='reorient_mask')
+        # Affine transformation to MNI space
+        flirt = pe.Node(interface=FLIRT(), name='flirt')
+        flirt.inputs.reference = ref_atlas
+        flirt.inputs.dof = 12
+        # Nonlinear transformation to MNI space
         fnirt = pe.Node(interface=FNIRT(), name='fnirt')
-        fnirt.inputs.ref_file = get_atlas_path(atlas, 'image')
-        fnirt.inputs.refmask_file = get_atlas_path(atlas, 'mask')
+        fnirt.inputs.ref_file = ref_atlas
+        fnirt.inputs.refmask_file = ref_mask
         try:
             subsampling = kwargs['subsampling']
         except KeyError:
@@ -85,8 +94,10 @@ class MRStudy(Study):
         # (i.e. 1-to-1 resolution) otherwise don't.
         fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
         # Connect nodes
+        pipeline.connect(reorient, 'out_file', flirt, 'in_file')
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
         pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
+        pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
         # Set registration options
         # TODO: Need to work out which options to use
         # Connect inputs
