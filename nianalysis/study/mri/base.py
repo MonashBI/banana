@@ -92,7 +92,9 @@ class MRStudy(Study):
         fnirt.inputs.field_file = True
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
-        fnirt.inputs.apply_inmask = [int(s == 1) for s in subsampling]
+        apply_mask = [int(s == 1) for s in subsampling]
+        fnirt.inputs.apply_inmask = apply_mask
+        fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
         pipeline.connect(reorient, 'out_file', flirt, 'in_file')
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
