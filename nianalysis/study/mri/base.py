@@ -52,7 +52,7 @@ class MRStudy(Study):
         return pipeline
 
     def _fsl_fnirt_to_atlas_pipeline(self, atlas,
-                                     intensity_model='local_linear', **kwargs):  # @UnusedVariable @IgnorePep8
+                                     intensity_model='global_non_linear_with_bias', **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -63,7 +63,7 @@ class MRStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='registration',
-            inputs=['primary', 'brain_mask'],
+            inputs=['primary', 'brain_mask', 'masked'],
             outputs=['coreg_to_atlas', 'warp_to_atlas'],
             description="Registers a MR scan against a reference image",
             options=dict(),
@@ -71,14 +71,16 @@ class MRStudy(Study):
             citations=[fsl_cite],
             approx_runtime=5)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(atlas, 'image')
-        ref_mask = get_atlas_path(atlas, 'mask')
+        ref_atlas = get_atlas_path(atlas, 'image', resolution='2mm')
+        ref_mask = get_atlas_path(atlas, 'mask', resolution='2mm')
+        ref_masked = get_atlas_path(atlas, 'masked', resolution='2mm')
         # Basic reorientation to standard MNI space
         reorient = pe.Node(Reorient2Std(), name='reorient')
         reorient_mask = pe.Node(Reorient2Std(), name='reorient_mask')
+        reorient_masked = pe.Node(Reorient2Std(), name='reorient_masked')
         # Affine transformation to MNI space
         flirt = pe.Node(interface=FLIRT(), name='flirt')
-        flirt.inputs.reference = ref_atlas
+        flirt.inputs.reference = ref_masked
         flirt.inputs.dof = 12
         # Nonlinear transformation to MNI space
         fnirt = pe.Node(interface=FNIRT(), name='fnirt')
@@ -90,16 +92,21 @@ class MRStudy(Study):
         try:
             subsampling = kwargs['subsampling']
         except KeyError:
-            subsampling = [4, 2, 1, 1]
+            subsampling = [4, 4, 2, 2, 1, 1]
         fnirt.inputs.subsampling_scheme = subsampling
         fnirt.inputs.field_file = True
+        fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
+        fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
+        fnirt.inputs.regularization_lambda = [300, 150, 100, 50, 40, 30]
+        fnirt.inputs.apply_intensity_mapping = [1, 1, 1, 1, 1, 0]
+        fnirt.inputs.max_nonlin_iter = [5, 5, 5, 5, 5, 10]
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
         apply_mask = [int(s == 1) for s in subsampling]
         fnirt.inputs.apply_inmask = apply_mask
         fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
-        pipeline.connect(reorient, 'out_file', flirt, 'in_file')
+        pipeline.connect(reorient_masked, 'out_file', flirt, 'in_file')
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
         pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
@@ -108,6 +115,7 @@ class MRStudy(Study):
         # Connect inputs
         pipeline.connect_input('primary', reorient, 'in_file')
         pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
+        pipeline.connect_input('masked', reorient_masked, 'in_file')
         # Connect outputs
         pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('warp_to_atlas', fnirt, 'field_file')
