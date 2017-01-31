@@ -72,7 +72,7 @@ class MRStudy(Study):
             approx_runtime=5)
         # Get the reference atlas from FSL directory
         ref_atlas = get_atlas_path(atlas, 'image', resolution='2mm')
-        ref_mask = get_atlas_path(atlas, 'mask', resolution='2mm')
+        ref_mask = get_atlas_path(atlas, 'mask_dilated', resolution='2mm')
         ref_masked = get_atlas_path(atlas, 'masked', resolution='2mm')
         # Basic reorientation to standard MNI space
         reorient = pe.Node(Reorient2Std(), name='reorient')
