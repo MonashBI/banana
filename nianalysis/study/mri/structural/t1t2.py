@@ -113,7 +113,7 @@ class T1T2Study(CombinedStudy):
                     description="Coregistration matrix for T2 to T1"),
         DatasetSpec('t1_coreg_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
-        DatasetSpec('warp_to_atlas', nifti_gz_format,
+        DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline,
