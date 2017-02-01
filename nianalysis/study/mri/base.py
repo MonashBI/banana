@@ -65,7 +65,8 @@ class MRStudy(Study):
             name='registration',
             inputs=['primary', 'brain_mask', 'masked'],
             outputs=['coreg_to_atlas', 'coreg_to_atlas_coeff'],
-            description="Registers a MR scan against a reference image",
+            description=("Nonlinearly registers a MR scan to a standard space, "
+                        "e.g. MNI-space"),
             options=dict(),
             requirements=[fsl5_req],
             citations=[fsl_cite],
