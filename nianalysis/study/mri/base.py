@@ -51,7 +51,7 @@ class MRStudy(Study):
                                   .format(tool))
         return pipeline
 
-    def _fsl_fnirt_to_atlas_pipeline(self, atlas,
+    def _fsl_fnirt_to_atlas_pipeline(self, atlas, resolution='2mm',
                                      intensity_model='global_non_linear_with_bias', **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
@@ -72,9 +72,9 @@ class MRStudy(Study):
             citations=[fsl_cite],
             approx_runtime=5)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(atlas, 'image', resolution='2mm')
-        ref_mask = get_atlas_path(atlas, 'mask_dilated', resolution='2mm')
-        ref_masked = get_atlas_path(atlas, 'masked', resolution='2mm')
+        ref_atlas = get_atlas_path(atlas, 'image', resolution=resolution)
+        ref_mask = get_atlas_path(atlas, 'mask_dilated', resolution=resolution)
+        ref_masked = get_atlas_path(atlas, 'masked', resolution=resolution)
         # Basic reorientation to standard MNI space
         reorient = pe.Node(Reorient2Std(), name='reorient')
         reorient_mask = pe.Node(Reorient2Std(), name='reorient_mask')
@@ -95,7 +95,7 @@ class MRStudy(Study):
         except KeyError:
             subsampling = [4, 4, 2, 2, 1, 1]
         fnirt.inputs.subsampling_scheme = subsampling
-        fnirt.inputs.field_file = True
+        fnirt.inputs.fieldcoeff_file = True
         fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
         fnirt.inputs.regularization_lambda = [300, 150, 100, 50, 40, 30]
