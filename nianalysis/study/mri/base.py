@@ -94,7 +94,7 @@ class MRStudy(Study):
         except KeyError:
             subsampling = [4, 4, 2, 2, 1, 1]
         fnirt.inputs.subsampling_scheme = subsampling
-        fnirt.inputs.field_file = True
+        fnirt.inputs.fieldcoeff_file = True
         fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
         fnirt.inputs.regularization_lambda = [300, 150, 100, 50, 40, 30]
