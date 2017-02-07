@@ -1,7 +1,7 @@
 import os.path
 from nipype.interfaces.base import (
-    CommandLineInputSpec, CommandLine, File, TraitedSpec, isdefined, traits,
-    InputMultiPath)
+    CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
+    traits, InputMultiPath)
 from nianalysis.utils import split_extension
 
 
@@ -327,9 +327,10 @@ class ExtractDWIorB0(CommandLine):
 
 
 class MRConvertInputSpec(CommandLineInputSpec):
-    in_file = File(
-        mandatory=True, exists=True, argstr='%s', position=-2,
-        desc="Input file")
+    in_file = traits.Either(
+        File(exists=True, desc="Input file"),
+        Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
+        mandatory=True, argstr='%s', position=-2)
     out_file = File(
         genfile=True, argstr='%s', position=-1, hash_files=False,
         desc=("Output (converted) file. If no path separators (i.e. '/' on "
