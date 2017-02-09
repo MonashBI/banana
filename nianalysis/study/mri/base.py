@@ -13,8 +13,7 @@ from nianalysis.exceptions import NiAnalysisError
 
 class MRStudy(Study):
 
-    def brain_mask_pipeline(self, robust=False, threshold=0.5,
-                            reduce_bias=False, **kwargs):  # @UnusedVariable
+    def brain_mask_pipeline(self, **options):  # @UnusedVariable
         """
         Generates a whole brain mask using FSL's BET command
         """
@@ -23,17 +22,19 @@ class MRStudy(Study):
             inputs=['primary'],
             outputs=['masked', 'brain_mask'],
             description="Generate brain mask from mr_scan",
-            options=dict(robust=robust, threshold=threshold),
+            default_options={'robust': False, 'threshold': 0.5,
+                             'reduce_bias': False},
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
-            citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5)
+            citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5,
+            options=options)
         # Create mask node
         bet = pe.Node(interface=fsl.BET(), name="bet")
         bet.inputs.mask = True
-        if robust:
+        if pipeline.option('robust'):
             bet.inputs.robust = True
-        if reduce_bias:
+        if pipeline.option('reduce_bias'):
             bet.inputs.reduce_bias = True
-        bet.inputs.frac = threshold
+        bet.inputs.frac = pipeline.option('threshold')
         # Connect inputs/outputs
         pipeline.connect_input('primary', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
@@ -42,17 +43,16 @@ class MRStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def coregister_to_atlas_pipeline(self, tool='fnirt', atlas='MNI152',
-                                     **kwargs):
-        if tool == 'fnirt':
-            pipeline = self._fsl_fnirt_to_atlas_pipeline(atlas=atlas, **kwargs)
+    def coregister_to_atlas_pipeline(self, atlas_reg_tool='fnirt',
+                                     **options):
+        if atlas_reg_tool == 'fnirt':
+            pipeline = self._fsl_fnirt_to_atlas_pipeline(**options)
         else:
             raise NiAnalysisError("Unrecognised coregistration tool '{}'"
-                                  .format(tool))
+                                  .format(atlas_reg_tool))
         return pipeline
 
-    def _fsl_fnirt_to_atlas_pipeline(self, atlas, resolution='2mm',
-                                     intensity_model='global_non_linear_with_bias', **kwargs):  # @UnusedVariable @IgnorePep8
+    def _fsl_fnirt_to_atlas_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -62,19 +62,26 @@ class MRStudy(Study):
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
         pipeline = self._create_pipeline(
-            name='registration',
+            name='coregister_to_atlas_fnirt',
             inputs=['primary', 'brain_mask', 'masked'],
             outputs=['coreg_to_atlas', 'coreg_to_atlas_coeff'],
-            description=("Nonlinearly registers a MR scan to a standard space, "
-                        "e.g. MNI-space"),
-            options=dict(),
+            description=("Nonlinearly registers a MR scan to a standard space,"
+                         "e.g. MNI-space"),
+            default_options={'atlas': 'MNI152',
+                             'resolution': '2mm',
+                             'intensity_model': 'global_non_linear_with_bias',
+                             'subsampling': [4, 4, 2, 2, 1, 1]},
             requirements=[fsl5_req],
             citations=[fsl_cite],
-            approx_runtime=5)
+            approx_runtime=5,
+            options=options)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(atlas, 'image', resolution=resolution)
-        ref_mask = get_atlas_path(atlas, 'mask_dilated', resolution=resolution)
-        ref_masked = get_atlas_path(atlas, 'masked', resolution=resolution)
+        ref_atlas = get_atlas_path(pipeline.option('atlas'), 'image',
+                                   resolution=pipeline.option('resolution'))
+        ref_mask = get_atlas_path(pipeline.option('atlas'), 'mask_dilated',
+                                  resolution=pipeline.option('resolution'))
+        ref_masked = get_atlas_path(pipeline.option('atlas'), 'masked',
+                                    resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
         reorient = pe.Node(Reorient2Std(), name='reorient')
         reorient_mask = pe.Node(Reorient2Std(), name='reorient_mask')
@@ -87,14 +94,11 @@ class MRStudy(Study):
         fnirt = pe.Node(interface=FNIRT(), name='fnirt')
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
+        intensity_model = pipeline.option('intensity_model')
         if intensity_model is None:
             intensity_model = 'none'
         fnirt.inputs.intensity_mapping_model = intensity_model
-        try:
-            subsampling = kwargs['subsampling']
-        except KeyError:
-            subsampling = [4, 4, 2, 2, 1, 1]
-        fnirt.inputs.subsampling_scheme = subsampling
+        fnirt.inputs.subsampling_scheme = pipeline.option('subsampling')
         fnirt.inputs.fieldcoeff_file = True
         fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
@@ -103,7 +107,7 @@ class MRStudy(Study):
         fnirt.inputs.max_nonlin_iter = [5, 5, 5, 5, 5, 10]
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
-        apply_mask = [int(s == 1) for s in subsampling]
+        apply_mask = [int(s == 1) for s in pipeline.option('subsampling')]
         fnirt.inputs.apply_inmask = apply_mask
         fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
