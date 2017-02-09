@@ -52,9 +52,10 @@ class CoregisteredStudy(Study):
             inputs=self._registration_inputs,
             outputs=self._registration_outputs,
             description="Registers a MR scan against a reference image",
-            options={
+            default_options={
                 'degree_of_freedom': 6, 'cost_func': 'mutualinfo',
                 'qsform': False},
+            version=1,
             requirements=[fsl5_req],
             citations=[fsl_cite],
             approx_runtime=5,
@@ -98,6 +99,7 @@ class CoregisteredStudy(Study):
             outputs=['t2_coreg_t1'],
             description="Coregister T2-weighted images to T1",
             default_options={},
+            version=1,
             requirements=[spm12_req],
             citations=[spm_cite],
             approx_runtime=30,

@@ -40,6 +40,7 @@ class DiffusionStudy(T2Study):
             outputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
             description="Preprocess dMRI studies using distortion correction",
             default_options={'phase_dir': 'LR'},
+            version=1,
             requirements=[mrtrix3_req, fsl5_req],
             citations=[fsl_cite, eddy_cite, topup_cite, distort_correct_cite],
             approx_runtime=30, options=options)
@@ -89,6 +90,7 @@ class DiffusionStudy(T2Study):
                 outputs=['brain_mask'],
                 description="Generate brain mask from b0 images",
                 default_options={},
+                version=1,
                 requirements=[mrtrix3_req],
                 citations=[mrtrix_cite], approx_runtime=1,
                 options=options)
@@ -130,6 +132,7 @@ class DiffusionStudy(T2Study):
             outputs=['bias_correct'],
             description="Corrects for B1 field inhomogeneity",
             default_options={'method': bias_method_default},
+            version=1,
             requirements=[mrtrix3_req,
                           (ants2_req if bias_method == 'ants' else fsl5_req)],
             citations=[fast_cite,
@@ -165,6 +168,7 @@ class DiffusionStudy(T2Study):
             description=("Estimates the apparrent diffusion tensor in each "
                          "voxel"),
             default_options={},
+            version=1,
             citations=[],
             requirements=[mrtrix3_req],
             approx_runtime=1,
@@ -197,6 +201,7 @@ class DiffusionStudy(T2Study):
             outputs=['fa', 'adc'],
             description=("Calculates the FA and ADC from a tensor image"),
             default_options={},
+            version=1,
             citations=[],
             requirements=[mrtrix3_req],
             approx_runtime=1,
@@ -230,6 +235,7 @@ class DiffusionStudy(T2Study):
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
             default_options={},
+            version=1,
             citations=[mrtrix_cite],
             requirements=[mrtrix3_req],
             approx_runtime=1,
@@ -262,6 +268,7 @@ class DiffusionStudy(T2Study):
             outputs=['tbss_mean_fa', 'tbss_proj_fa', 'tbss_skeleton',
                      'tbss_skeleton_mask'],
             default_options={'tbss_skel_thresh': 0.2},
+            version=1,
             citations=[tbss_cite, fsl_cite],
             requirements=[fsl5_req],
             approx_runtime=1,
@@ -292,7 +299,9 @@ class DiffusionStudy(T2Study):
             inputs=['bias_correct', 'grad_dirs', 'bvalues'],
             outputs=['primary'],
             description="Extract b0 image from a DWI study",
-            default_options={}, requirements=[mrtrix3_req],
+            default_options={},
+            version=1,
+            requirements=[mrtrix3_req],
             citations=[mrtrix_cite],
             approx_runtime=0.5,
             options=options)
@@ -332,7 +341,9 @@ class DiffusionStudy(T2Study):
             inputs=['bias_correct', 'grad_dirs', 'bvalues'],
             outputs=['primary'],
             description="Extract b0 image from a DWI study",
-            default_options={}, requirements=[mrtrix3_req],
+            default_options={},
+            version=1,
+            requirements=[mrtrix3_req],
             citations=[mrtrix_cite], approx_runtime=0.5, options=options)
         pipeline.assert_connected()
         return pipeline

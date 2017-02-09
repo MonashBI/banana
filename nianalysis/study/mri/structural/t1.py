@@ -35,6 +35,7 @@ class T1Study(MRStudy):
             outputs=['fs_recon_all'],
             description="Segment white/grey matter and csf",
             default_options={},
+            version=1,
             requirements=[freesurfer_req],
             citations=copy(freesurfer_cites),
             approx_runtime=500,

@@ -75,6 +75,7 @@ class T1T2Study(CombinedStudy):
             inputs=['t1', 'brain_mask'],
             outputs=['t1_masked'],
             default_options={},
+            version=1,
             description="Mask T1 with T2 brain mask",
             requirements=[fsl5_req],
             citations=[fsl_cite],
