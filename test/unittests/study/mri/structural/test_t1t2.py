@@ -20,6 +20,7 @@ class TestT1T2Study(TestCase):
 
     STUDY_NAME = 't1t2'
     PROJECT_NAME = 'T1AndT2'
+    DATASET_NAME = 'T1T2'
     ARCHIVE_PATH = os.path.join(test_data_dir, 'archives', 't1_and_t2')
     WORK_DIR = os.path.join(test_data_dir, 'work', 'test_t1t2')
 
