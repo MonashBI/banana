@@ -48,7 +48,7 @@ class CoregisteredStudy(Study):
         """
 
         pipeline = self._create_pipeline(
-            name='registration',
+            name='registration_fsl',
             inputs=self._registration_inputs,
             outputs=self._registration_outputs,
             description="Registers a MR scan against a reference image",
@@ -94,7 +94,7 @@ class CoregisteredStudy(Study):
         NB: Default values come from the W2MHS toolbox
         """
         pipeline = self._create_pipeline(
-            name='coregistration',
+            name='registration_spm',
             inputs=['t1', 't2'],
             outputs=['t2_coreg_t1'],
             description="Coregister T2-weighted images to T1",
