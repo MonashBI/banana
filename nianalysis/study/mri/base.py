@@ -24,6 +24,7 @@ class MRStudy(Study):
             description="Generate brain mask from mr_scan",
             default_options={'robust': False, 'threshold': 0.5,
                              'reduce_bias': False},
+            version=1,
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
             citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5,
             options=options)
@@ -71,6 +72,7 @@ class MRStudy(Study):
                              'resolution': '2mm',
                              'intensity_model': 'global_non_linear_with_bias',
                              'subsampling': [4, 4, 2, 2, 1, 1]},
+            version=1,
             requirements=[fsl5_req],
             citations=[fsl_cite],
             approx_runtime=5,

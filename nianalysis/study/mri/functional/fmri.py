@@ -20,6 +20,7 @@ class FunctionalMRStudy(MRStudy):
             outputs=['fix', 'melodicl1'],
             description="Run FSL's MELODIC fMRI ICA analysis and FIX",
             default_options={'robust': True},
+            version=1,
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
             citations=[fsl_cite], approx_runtime=5, options=options)
         # Create mask node
