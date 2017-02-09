@@ -25,7 +25,7 @@ from nianalysis.dataset import DatasetSpec
 
 class DiffusionStudy(T2Study):
 
-    def preprocess_pipeline(self, phase_dir='LR', **kwargs):  # @UnusedVariable @IgnorePep8
+    def preprocess_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
@@ -39,13 +39,13 @@ class DiffusionStudy(T2Study):
             inputs=['dwi_scan', 'forward_rpe', 'reverse_rpe'],
             outputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
             description="Preprocess dMRI studies using distortion correction",
-            options={'phase_dir': phase_dir},
+            default_options={'phase_dir': 'LR'},
             requirements=[mrtrix3_req, fsl5_req],
             citations=[fsl_cite, eddy_cite, topup_cite, distort_correct_cite],
-            approx_runtime=30)
+            approx_runtime=30, options=options)
         # Create preprocessing node
         dwipreproc = pe.Node(DWIPreproc(), name='dwipreproc')
-        dwipreproc.inputs.pe_dir = phase_dir
+        dwipreproc.inputs.pe_dir = self.option('phase_dir')
         # Create nodes to convert preprocessed dataset and gradients to FSL
         # format
         mrconvert = pe.Node(MRConvert(), name='mrconvert')
@@ -67,7 +67,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def brain_mask_pipeline(self, mask_tool='mrtrix', **kwargs):  # @UnusedVariable @IgnorePep8
+    def brain_mask_pipeline(self, mask_tool='mrtrix', **options):  # @UnusedVariable @IgnorePep8
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
 
@@ -78,19 +78,20 @@ class DiffusionStudy(T2Study):
             want to use
         """
         if mask_tool == 'fsl':
-            if 'f' not in kwargs:
-                kwargs['f'] = 0.25
+            if 'f' not in options:
+                options['f'] = 0.25
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
-                **kwargs)
+                **options)
         elif mask_tool == 'mrtrix':
             pipeline = self._create_pipeline(
-                name='brain_mask',
+                name='brain_mask_mrtrix',
                 inputs=['bias_correct', 'grad_dirs', 'bvalues'],
                 outputs=['brain_mask'],
                 description="Generate brain mask from b0 images",
-                options={'mask_tool': mask_tool},
+                default_options={},
                 requirements=[mrtrix3_req],
-                citations=[mrtrix_cite], approx_runtime=1)
+                citations=[mrtrix_cite], approx_runtime=1,
+                options=options)
             # Create mask node
             dwi2mask = pe.Node(BrainMask(), name='dwi2mask')
             dwi2mask.inputs.out_file = 'brain_mask.nii.gz'
@@ -112,26 +113,29 @@ class DiffusionStudy(T2Study):
                 "'dwi2mask')")
         return pipeline
 
-    def bias_correct_pipeline(self, bias_method='ants', **kwargs):  # @UnusedVariable @IgnorePep8
+    def bias_correct_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Corrects B1 field inhomogeneities
         """
+        bias_method_default = 'ants'
+        bias_method = options.get('bias_method', bias_method_default)
         if bias_method not in ('ants', 'fsl'):
             raise NiAnalysisError(
-                "Unrecognised value for 'bias_method' option '{}'. It can be "
-                "one of 'ants' or 'fsl'.".format(bias_method))
+                "Unrecognised value for 'bias_method' option '{}'. It can "
+                "be one of 'ants' or 'fsl'.".format(bias_method))
         pipeline = self._create_pipeline(
             name='bias_correct',
             inputs=['dwi_preproc', 'brain_mask', 'grad_dirs',
                     'bvalues'],
             outputs=['bias_correct'],
             description="Corrects for B1 field inhomogeneity",
-            options={'method': bias_method},
+            default_options={'method': bias_method_default},
             requirements=[mrtrix3_req,
                           (ants2_req if bias_method == 'ants' else fsl5_req)],
             citations=[fast_cite,
                        (n4_cite if bias_method == 'ants' else fsl_cite)],
-            approx_runtime=1)
+            approx_runtime=1,
+            options=options)
         # Create bias correct node
         bias_correct = pe.Node(DWIBiasCorrect(), name="bias_correct")
         bias_correct.inputs.method = bias_method
@@ -150,7 +154,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def tensor_pipeline(self, **kwargs):  # @UnusedVariable
+    def tensor_pipeline(self, **options):  # @UnusedVariable
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -160,10 +164,11 @@ class DiffusionStudy(T2Study):
             outputs=['tensor'],
             description=("Estimates the apparrent diffusion tensor in each "
                          "voxel"),
-            options={},
+            default_options={},
             citations=[],
             requirements=[mrtrix3_req],
-            approx_runtime=1)
+            approx_runtime=1,
+            options=options)
         # Create tensor fit node
         dwi2tensor = pe.Node(FitTensor(), name='dwi2tensor')
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
@@ -182,7 +187,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def fa_pipeline(self, **kwargs):  # @UnusedVariable
+    def fa_pipeline(self, **options):  # @UnusedVariable
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -191,10 +196,11 @@ class DiffusionStudy(T2Study):
             inputs=['tensor', 'brain_mask'],
             outputs=['fa', 'adc'],
             description=("Calculates the FA and ADC from a tensor image"),
-            options={},
+            default_options={},
             citations=[],
             requirements=[mrtrix3_req],
-            approx_runtime=1)
+            approx_runtime=1,
+            options=options)
         # Create tensor fit node
         metrics = pe.Node(TensorMetrics(), name='metrics')
         metrics.inputs.out_fa = 'fa.nii.gz'
@@ -209,7 +215,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def fod_pipeline(self, **kwargs):  # @UnusedVariable
+    def fod_pipeline(self, **options):  # @UnusedVariable
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -223,10 +229,11 @@ class DiffusionStudy(T2Study):
             outputs=['fod'],
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
-            options={},
+            default_options={},
             citations=[mrtrix_cite],
             requirements=[mrtrix3_req],
-            approx_runtime=1)
+            approx_runtime=1,
+            options=options)
         # Create fod fit node
         dwi2fod = pe.Node(EstimateFOD(), name='dwi2fod')
         response = pe.Node(ResponseSD(), name='response')
@@ -248,16 +255,17 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def tbss_pipeline(self, tbss_skel_thresh=0.2, **kwargs):  # @UnusedVariable
+    def tbss_pipeline(self, **options):  # @UnusedVariable
         pipeline = self._create_pipeline(
-            'tbss',
+            name='tbss',
             inputs=['fa'],
             outputs=['tbss_mean_fa', 'tbss_proj_fa', 'tbss_skeleton',
                      'tbss_skeleton_mask'],
-            options={'tbss_skel_thresh': tbss_skel_thresh},
+            default_options={'tbss_skel_thresh': 0.2},
             citations=[tbss_cite, fsl_cite],
             requirements=[fsl5_req],
-            approx_runtime=1)
+            approx_runtime=1,
+            options=options)
         # Create TBSS workflow
         tbss = create_tbss_all(name='tbss')
         # Connect inputs
@@ -275,7 +283,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def extract_b0_pipeline(self, **kwargs):  # @UnusedVariable
+    def extract_b0_pipeline(self, **options):  # @UnusedVariable
         """
         Extracts the b0 images from a DWI study and takes their mean
         """
@@ -284,8 +292,10 @@ class DiffusionStudy(T2Study):
             inputs=['bias_correct', 'grad_dirs', 'bvalues'],
             outputs=['primary'],
             description="Extract b0 image from a DWI study",
-            options={}, requirements=[mrtrix3_req], citations=[mrtrix_cite],
-            approx_runtime=0.5)
+            default_options={}, requirements=[mrtrix3_req],
+            citations=[mrtrix_cite],
+            approx_runtime=0.5,
+            options=options)
         # Gradient merge node
         fsl_grads = pe.Node(MergeTuple(2), name="fsl_grads")
         # Extraction node
@@ -316,14 +326,16 @@ class DiffusionStudy(T2Study):
         # Check inputs/outputs are connected
         return pipeline
 
-    def track_gen_pipeline(self):
+    def track_gen_pipeline(self, **options):
         pipeline = self._create_pipeline(
             name='extract_b0',
             inputs=['bias_correct', 'grad_dirs', 'bvalues'],
             outputs=['primary'],
             description="Extract b0 image from a DWI study",
-            options={}, requirements=[mrtrix3_req], citations=[mrtrix_cite],
-            approx_runtime=0.5)
+            default_options={}, requirements=[mrtrix3_req],
+            citations=[mrtrix_cite], approx_runtime=0.5, options=options)
+        pipeline.assert_connected()
+        return pipeline
 
     # The list of study dataset_specs that are either primary from the scanner
     # (i.e. without a specified pipeline) or generated by processing pipelines
@@ -517,7 +529,7 @@ class DiffusionStudy(T2Study):
 
 class NODDIStudy(DiffusionStudy):
 
-    def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
+    def concatenate_pipeline(self, **options):  # @UnusedVariable
         """
         Concatenates two dMRI datasets (with different b-values) along the
         DW encoding (4th) axis
@@ -529,9 +541,10 @@ class NODDIStudy(DiffusionStudy):
             description=(
                 "Concatenate low and high b-value dMRI datasets for NODDI "
                 "processing"),
-            options={},
+            default_options={},
             requirements=[mrtrix3_req],
-            citations=[mrtrix_cite], approx_runtime=1)
+            citations=[mrtrix_cite], approx_runtime=1,
+            options=options)
         # Create concatenation node
         mrcat = pe.Node(MRCat(), name='mrcat')
         mrcat.inputs.quiet = True
@@ -550,9 +563,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def noddi_fitting_pipeline(
-            self, noddi_model='WatsonSHStickTortIsoV_B0', single_slice=None,
-            nthreads=4, **kwargs):  # @UnusedVariable
+    def noddi_fitting_pipeline(self, nthreads=4, **options):  # @UnusedVariable
         """
         Creates a ROI in which the NODDI processing will be performed
 
@@ -567,10 +578,10 @@ class NODDIStudy(DiffusionStudy):
             Number of processes to use
         """
         inputs = ['bias_correct', 'grad_dirs', 'bvalues']
-        if single_slice is None:
-            inputs.append('brain_mask')
-        else:
+        if options.get('single_slice', False):
             inputs.append('eroded_mask')
+        else:
+            inputs.append('brain_mask')
         pipeline = self._create_pipeline(
             name='noddi_fitting',
             inputs=inputs,
@@ -580,11 +591,13 @@ class NODDIStudy(DiffusionStudy):
             description=(
                 "Creates a ROI in which the NODDI processing will be "
                 "performed"),
-            options={'noddi_model': noddi_model},
+            default_options={'noddi_model': 'WatsonSHStickTortIsoV_B0',
+                             'single_slice': False},
             requirements=[Requirement('matlab', min_version=(2016, 'a')),
                           Requirement('noddi', min_version=(0, 9)),
                           Requirement('niftimatlib', (1, 2))],
-            citations=[noddi_cite], approx_runtime=60)
+            citations=[noddi_cite], approx_runtime=60,
+            options=options)
         # Create node to unzip the nifti files
         unzip_bias_correct = pe.Node(MRConvert(), name="unzip_bias_correct")
         unzip_bias_correct.inputs.out_ext = 'nii'
@@ -598,7 +611,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
         batch_fit = pe.Node(BatchNODDIFitting(), name="batch_fit")
-        batch_fit.inputs.model = noddi_model
+        batch_fit.inputs.model = self.option('noddi_model')
         batch_fit.inputs.nthreads = nthreads
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
@@ -610,10 +623,10 @@ class NODDIStudy(DiffusionStudy):
                          'brain_mask_file')
         # Connect inputs
         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
-        if single_slice is None:
-            pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
-        else:
+        if self.option('single_slice') is None:
             pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
+        else:
+            pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
         pipeline.connect_input('grad_dirs', batch_fit, 'bvecs_file')
         pipeline.connect_input('bvalues', batch_fit, 'bvals_file')
         # Connect outputs

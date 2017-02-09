@@ -22,7 +22,7 @@ class T1Study(MRStudy):
             **kwargs)
         pipeline.citations.append(optimal_t1_bet_params_cite)
 
-    def freesurfer_pipeline(self, num_processes=16, **kwargs):  # @UnusedVariable @IgnorePep8
+    def freesurfer_pipeline(self, num_processes=16, **options):  # @UnusedVariable @IgnorePep8
         """
         Segments grey matter, white matter and CSF from T1 images using
         SPM "NewSegment" function.
@@ -34,10 +34,11 @@ class T1Study(MRStudy):
             inputs=['primary'],
             outputs=['fs_recon_all'],
             description="Segment white/grey matter and csf",
-            options={},
+            default_options={},
             requirements=[freesurfer_req],
             citations=copy(freesurfer_cites),
-            approx_runtime=500)
+            approx_runtime=500,
+            options=options)
         # FS ReconAll node
         recon_all = pe.Node(interface=ReconAll(), name='recon_all')
         recon_all.inputs.directive = 'all'

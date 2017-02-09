@@ -41,9 +41,9 @@ class T1T2Study(CombinedStudy):
             't2_coreg_matrix': 'matrix',
             'manual_wmh_mask_coreg': 'registered'})}
 
-    def freesurfer_pipeline(self, **kwargs):
+    def freesurfer_pipeline(self, **options):
         pipeline = self.TranslatedPipeline(
-            'freesurfer', self.t1.freesurfer_pipeline(**kwargs), self,
+            'freesurfer', self.t1.freesurfer_pipeline(**options), self,
             add_inputs=['t2_coreg'])
         recon_all = pipeline.node('recon_all')
         recon_all.inputs.use_T2 = True
@@ -65,7 +65,7 @@ class T1T2Study(CombinedStudy):
     t2_brain_mask_pipeline = CombinedStudy.translate(
         't2', T2Study.brain_mask_pipeline)
 
-    def t1_brain_mask_pipeline(self):
+    def t1_brain_mask_pipeline(self, **options):
         """
         Masks the T1 image using the coregistered T2 brain mask as the brain
         mask from T2 is usually more reliable (using BET in any case)
@@ -74,11 +74,12 @@ class T1T2Study(CombinedStudy):
             name='t1_brain_mask_pipeline',
             inputs=['t1', 'brain_mask'],
             outputs=['t1_masked'],
-            options={},
+            default_options={},
             description="Mask T1 with T2 brain mask",
             requirements=[fsl5_req],
             citations=[fsl_cite],
-            approx_runtime=1)
+            approx_runtime=1,
+            options=options)
         # Create apply mask node
         apply_mask = pe.Node(ApplyMask(), 'appy_mask')
         # Connect inputs

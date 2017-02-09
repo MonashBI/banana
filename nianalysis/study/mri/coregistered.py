@@ -16,21 +16,20 @@ class CoregisteredStudy(Study):
     _registration_inputs = ['reference', 'to_register']
     _registration_outputs = ['registered', 'matrix']
 
-    def registration_pipeline(self, coreg_tool='flirt', **kwargs):
+    def registration_pipeline(self, coreg_tool='flirt', **options):
         if coreg_tool == 'flirt':
-            pipeline = self._fsl_flirt_pipeline(**kwargs)
+            pipeline = self._fsl_flirt_pipeline(**options)
         elif coreg_tool == 'fnirt':
-            pipeline = self._fsl_fnirt_pipeline(**kwargs)
+            pipeline = self._fsl_fnirt_pipeline(**options)
         elif coreg_tool == 'spm':
-            pipeline = self._spm_coreg_pipeline(**kwargs)
+            pipeline = self._spm_coreg_pipeline(**options)
         else:
             raise NotImplementedError(
                 "Unrecognised coregistration tool '{}'. Can be one of 'flirt',"
                 " 'spm'.".format(coreg_tool))
         return pipeline
 
-    def _fsl_flirt_pipeline(self, degrees_of_freedom=6,
-                            cost_func='mutualinfo', qsform=False, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -53,19 +52,19 @@ class CoregisteredStudy(Study):
             inputs=self._registration_inputs,
             outputs=self._registration_outputs,
             description="Registers a MR scan against a reference image",
-            options=dict(
-                degree_of_freedom=degrees_of_freedom, cost_func=cost_func,
-                qsform=qsform),
+            options={
+                'degree_of_freedom': 6, 'cost_func': 'mutualinfo',
+                'qsform': False},
             requirements=[fsl5_req],
             citations=[fsl_cite],
-            approx_runtime=5)
+            approx_runtime=5,
+            options=options)
         flirt = pe.Node(interface=FLIRT(), name='flirt')
         # Set registration options
-
-        flirt.inputs.dof = degrees_of_freedom
-        flirt.inputs.cost = cost_func
-        flirt.inputs.cost_func = cost_func
-        flirt.inputs.uses_qform = qsform
+        flirt.inputs.dof = pipeline.option('degrees_of_freedom')
+        flirt.inputs.cost = pipeline.option('cost_func')
+        flirt.inputs.cost_func = pipeline.option('cost_func')
+        flirt.inputs.uses_qform = pipeline.option('qsform')
         # Connect inputs
         pipeline.connect_input('to_register', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')
@@ -76,51 +75,17 @@ class CoregisteredStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def _fsl_fnirt_pipeline(self, degrees_of_freedom=6,
-                            cost_func='mutualinfo', qsform=False, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _fsl_fnirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
 
         Parameters
         ----------
-        degrees_of_freedom : int
-            Number of degrees of freedom used in the registration. Default is
-            6 -> affine transformation.
-        cost_func : str
-            Cost function used for the registration. Can be one of
-            'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',
-            'labeldiff', 'bbr'
-        qsform : bool
-            Whether to use the QS form supplied in the input image header (
-            the image coordinates of the FOV supplied by the scanner)
         """
+        raise NotImplementedError
 
-        pipeline = self._create_pipeline(
-            name='registration',
-            inputs=self._registration_inputs,
-            outputs=self._registration_outputs,
-            description="Registers a MR scan against a reference image",
-            options=dict(
-                degree_of_freedom=degrees_of_freedom, cost_func=cost_func,
-                qsform=qsform),
-            requirements=[fsl5_req],
-            citations=[fsl_cite],
-            approx_runtime=5)
-        fnirt = pe.Node(interface=FNIRT(), name='fnirt')
-        # Set registration options
-        # TODO: Need to work out which options to use
-        # Connect inputs
-        pipeline.connect_input('to_register', fnirt, 'in_file')
-        pipeline.connect_input('reference', fnirt, 'ref_file')
-        # Connect outputs
-        pipeline.connect_output('registered', fnirt, 'warped_image')
-        # Connect matrix
-        self._connect_matrix(pipeline, fnirt)
-        pipeline.assert_connected()
-        return pipeline
-
-    def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
+    def _spm_coreg_pipeline(self, **options):  # @UnusedVariable
         """
         Coregisters T2 image to T1 image using SPM's
         "Register" method.
@@ -132,10 +97,11 @@ class CoregisteredStudy(Study):
             inputs=['t1', 't2'],
             outputs=['t2_coreg_t1'],
             description="Coregister T2-weighted images to T1",
-            options={},
+            default_options={},
             requirements=[spm12_req],
             citations=[spm_cite],
-            approx_runtime=30)
+            approx_runtime=30,
+            options=options)
         coreg = pe.Node(Coregister(), name='coreg')
         coreg.inputs.jobtype = 'estwrite'
         coreg.inputs.cost_function = 'nmi'
@@ -156,9 +122,9 @@ class CoregisteredStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def segmentation_pipeline(self, segment_tool='spm', **kwargs):
+    def segmentation_pipeline(self, segment_tool='spm', **options):
         if segment_tool == 'spm':
-            pipeline = self._spm_segmentation_pipeline(**kwargs)
+            pipeline = self._spm_segmentation_pipeline(**options)
         else:
             raise NotImplementedError(
                 "Unrecognised segmentation tool '{}'".format(segment_tool))
@@ -183,9 +149,9 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
     _registration_inputs = ['reference', 'to_register', 'matrix']
     _registration_outputs = ['registered']
 
-    def _fsl_flirt_pipeline(self, interpolate='trilinear', **kwargs):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
-        Registers a MR scan to a refernce MR scan using FSL's FLIRT command
+        Registers a MR scan to a reference MR scan with FSL's FLIRT command
         using an existing registration matrix
 
         Parameters
@@ -197,15 +163,22 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
 
         (NB: see CoregisteredStudy.registration_pipeline for remaining params)
         """
+        default_interp = 'trilinear'
         pipeline = super(
-            CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(**kwargs)
-        pipeline.node('flirt').inputs.apply_xfm = (interpolate is not None)
-        if interpolate is not None:
-            pipeline.node('flirt').inputs.interp = interpolate
-        pipeline.options['interpolate'] = interpolate
+            CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(**options)
+        # Edit the coregister pipeline from CoregisteredStudy
+        pipeline._name += '_to_matrix'
+        pipeline.default_options['interpolate'] = default_interp
+        pipeline.options['interpolate'] = options.get('interpolate',
+                                                      default_interp)
+        pipeline.node('flirt').inputs.apply_xfm = pipeline.option(
+            'interpolate')
+        if pipeline.option('interpolate') is not None:
+            pipeline.node('flirt').inputs.interp = pipeline.option(
+                'interpolate')
         return pipeline
 
-    def _spm_coreg_pipeline(self, **kwargs):
+    def _spm_coreg_pipeline(self, **options):
         raise NotImplementedError(
             "SPM pipeline doesn't have (or at least it isn't implemented in "
             "NiAnalysis) a registration pipeline")
