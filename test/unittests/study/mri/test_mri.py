@@ -16,12 +16,13 @@ else:
 class TestMR(TestCase):
 
     STUDY_NAME = 'mr'
+    PROJECT_NAME = 'MR'
 
     def setUp(self):
         self.work_dir = tempfile.mkdtemp()
 
     def test_brain_mask(self):
-        self._remove_generated_files(self.EXAMPLE_INPUT_PROJECT)
+        self._remove_generated_files(self.PROJECT_NAME)
         study = MRStudy(
             name=self.STUDY_NAME,
             project_id=self.EXAMPLE_INPUT_PROJECT,

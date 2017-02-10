@@ -174,7 +174,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         pipeline.options['interpolate'] = options.get('interpolate',
                                                       default_interp)
         pipeline.node('flirt').inputs.apply_xfm = pipeline.option(
-            'interpolate')
+            'interpolate') is not None
         if pipeline.option('interpolate') is not None:
             pipeline.node('flirt').inputs.interp = pipeline.option(
                 'interpolate')

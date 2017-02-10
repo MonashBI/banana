@@ -36,7 +36,7 @@ class TestT1T2Study(TestCase):
                             os.path.join(self._session_dir(self.PROJECT_NAME),
                                          fname))
 
-    def test_coregistration_pipeline(self):
+    def test_t2_registration_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
         study = T1T2Study(
             name=self.DATASET_NAME,
@@ -45,29 +45,29 @@ class TestT1T2Study(TestCase):
             input_datasets={
                 't1': Dataset('t1', nifti_format),
                 't2': Dataset('t2', nifti_format)})
-        study.coregistration_pipeline().run(work_dir=self.WORK_DIR)
+        study.t2_registration_pipeline().run(work_dir=self.WORK_DIR)
         output_path = os.path.join(self._session_dir(self.PROJECT_NAME),
                                    't2_coreg_t1.nii'
                                    .format(self.DATASET_NAME))
         self.assert_(os.path.exists(output_path),
                      "Output path '{}' was not created".format(output_path))
 
-    def test_freesurfer_pipeline(self):
-        self._remove_generated_files(self.PROJECT_NAME)
-        study = T1T2Study(
-            name=self.DATASET_NAME,
-            project_id=self.PROJECT_NAME,
-            archive=LocalArchive(self.ARCHIVE_PATH),
-            input_datasets={
-                't1': Dataset('t1', nifti_format),
-                't2': Dataset('t2', nifti_format)})
-        study.freesurfer_pipeline().run(work_dir=self.WORK_DIR)
-        for fname in ('fs_recon_all.fs.zip',):
-            output_path = os.path.join(
-                self._session_dir(self.PROJECT_NAME), fname)
-            self.assertTrue(
-                os.path.exists(output_path),
-                "Output path '{}' was not created".format(output_path))
+#     def test_freesurfer_pipeline(self):
+#         self._remove_generated_files(self.PROJECT_NAME)
+#         study = T1T2Study(
+#             name=self.DATASET_NAME,
+#             project_id=self.PROJECT_NAME,
+#             archive=LocalArchive(self.ARCHIVE_PATH),
+#             input_datasets={
+#                 't1': Dataset('t1', nifti_format),
+#                 't2': Dataset('t2', nifti_format)})
+#         study.freesurfer_pipeline().run(work_dir=self.WORK_DIR)
+#         for fname in ('fs_recon_all.fs.zip',):
+#             output_path = os.path.join(
+#                 self._session_dir(self.PROJECT_NAME), fname)
+#             self.assertTrue(
+#                 os.path.exists(output_path),
+#                 "Output path '{}' was not created".format(output_path))
 
     def test_brain_mask_pipelines(self):
         self._remove_generated_files(self.PROJECT_NAME)
