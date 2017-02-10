@@ -14,7 +14,7 @@ else:
     from nianalysis.testing import BaseImageTestCase as TestCase  # @IgnorePep8 @Reimport
 
 from nianalysis.data_formats import coils_zip_format  # @IgnorePep8
-from nianalysis.study.mri.structural.qsm import QSMStudy  # @IgnorePep8
+from nianalysis.study.mri.structural.t2star_kspace import T2StarKSpaceStudy  # @IgnorePep8
 
 logger = logging.getLogger('NiAnalysis')
 
@@ -87,13 +87,16 @@ class TestQSM(TestCase):
 
     def test_qsm_pipeline(self):
         self._remove_generated_files(self.PROJECT_NAME)
-        study = QSMStudy(
-            name=self.DATASET_NAME,
+        study = T2StarKSpaceStudy(
+            name=self.STUDY_NAME,
             project_id=self.PROJECT_NAME,
             archive=LocalArchive(self.ARCHIVE_PATH),
             input_datasets={
-                'swi_coils': Dataset('swi_coils', coils_zip_format)})
+                't2starkspace': Dataset('swi_coils', coils_zip_format)})
         study.qsm_pipeline().run(work_dir=self.WORK_DIR)
         output_path = os.path.join(self.session_dir, 'qsm.nii.gz')
         self.assert_(os.path.exists(output_path),
                      "Output path '{}' was not created".format(output_path))
+        
+if __name__ == '__main__':
+    TestQSM().test_qsm_pipeline()
