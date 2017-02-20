@@ -10,7 +10,7 @@ from nianalysis.archive.local import LocalArchive  # @IgnorePep8
 if __name__ == '__main__':
     from nianalysis.testing import DummyTestCase as TestCase  # @IgnorePep8 @UnusedImport
 else:
-    from nianalysis.testing import BaseImageTestCase as TestCase  # @IgnorePep8 @Reimport
+    from nianalysis.testing import PipelineTeseCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestMR(TestCase):

@@ -26,7 +26,7 @@ class FunctionalMRStudy(MRStudy):
         # Create mask node
         bet = pe.Node(interface=SomeInterface(), name="fmri")
         bet.inputs.mask = True
-        bet.inputs.robust = self.options['robust']
+        bet.inputs.robust = pipeline.option('robust')
         # Connect inputs/outputs
         pipeline.connect_input('mri_scan', bet, 'in_file')
         pipeline.connect_output('masked_mri_scan', bet, 'out_file')
