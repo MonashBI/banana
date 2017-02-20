@@ -46,7 +46,7 @@ class DiffusionStudy(T2Study):
             approx_runtime=30, options=options)
         # Create preprocessing node
         dwipreproc = pe.Node(DWIPreproc(), name='dwipreproc')
-        dwipreproc.inputs.pe_dir = self.option('phase_dir')
+        dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
         # Create nodes to convert preprocessed dataset and gradients to FSL
         # format
         mrconvert = pe.Node(MRConvert(), name='mrconvert')
@@ -622,7 +622,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
         batch_fit = pe.Node(BatchNODDIFitting(), name="batch_fit")
-        batch_fit.inputs.model = self.option('noddi_model')
+        batch_fit.inputs.model = pipeline.option('noddi_model')
         batch_fit.inputs.nthreads = nthreads
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
@@ -634,7 +634,7 @@ class NODDIStudy(DiffusionStudy):
                          'brain_mask_file')
         # Connect inputs
         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
-        if self.option('single_slice') is None:
+        if pipeline.option('single_slice') is None:
             pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
         else:
             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
