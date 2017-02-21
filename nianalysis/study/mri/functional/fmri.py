@@ -2,13 +2,14 @@ from nipype.interfaces.fsl.model import FEAT
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET
 from nipype.interfaces.fsl.utils import SwapDimensions
-from nianalysis.interfaces.fsl import MelodicL1FSF
+from nianalysis.interfaces.fsl import MelodicL1FSF, FSLFIX
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
-from nianalysis.requirements import fsl5_req
+from nianalysis.requirements import fsl5_req, fix_req
 from nianalysis.citations import fsl_cite
-from nianalysis.data_formats import nifti_gz_format, zip_format
+from nianalysis.data_formats import (
+    nifti_gz_format, zip_format, directory_format, rdata_format)
 
 
 class FunctionalMRIStudy(MRIStudy):
@@ -79,7 +80,32 @@ class FunctionalMRIStudy(MRIStudy):
         return pipeline
 
     def fix_pipeline(self, **options):
-        raise NotImplementedError
+
+        pipeline = self._create_pipeline(
+            name='fix',
+            inputs=['fear_dir', 'train_data'],
+            outputs=['cleaned_file'],
+            description=("Automatic classification and removal of noisy"
+                         "components from the rsfMRI data"),
+            default_options={'component_threshold': 20, 'motion_reg': True},
+            version=1,
+            requirements=[fsl5_req, fix_req],
+            citations=[fsl_cite],
+            approx_runtime=10,
+            options=options)
+        finter = FSLFIX()
+
+        fix = pe.Node(interface=finter, name="fix")
+        pipeline.connect_input("feat_dir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        finter.inputs.component_threshold = pipeline.option(
+            'component_threshold')
+        finter.inputs.motion_reg = pipeline.option('motion_reg')
+
+        pipeline.connect_output('cleaned_file', fix, 'output')
+
+        pipeline.assert_connected()
+        return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('field_map_mag', nifti_gz_format),
@@ -87,4 +113,6 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('t1', nifti_gz_format),
         DatasetSpec('rs_fmri', nifti_gz_format),
         DatasetSpec('rs_fmri_ref', nifti_gz_format),
-        DatasetSpec('feat_dir', zip_format, feat_pipeline))
+        DatasetSpec('feat_dir', directory_format, feat_pipeline),
+        DatasetSpec('train_data', rdata_format),
+        DatasetSpec('cleaned_data', nifti_gz_format, fix_pipeline))

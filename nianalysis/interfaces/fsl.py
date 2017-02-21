@@ -4,6 +4,12 @@ from string import Template
 from nibabel import load
 from nipype.interfaces.base import (
     File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec)
+from glob import glob
+from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec, Info)
+from nipype.interfaces.base import (load_template, File, traits, isdefined,
+                                    TraitedSpec, BaseInterface, Directory,
+                                    InputMultiPath, OutputMultiPath,
+                                    BaseInterfaceInputSpec)
 
 warn = warnings.warn
 warnings.filterwarnings('always', category=UserWarning)
@@ -84,4 +90,28 @@ class MelodicL1FSF(BaseInterface):
 
         outputs = self.output_spec().get()
         outputs['fsf_file'] = os.path.abspath('./melodic.fsf')
+        return outputs
+    
+    
+class FSLFIXInputSpec(FSLCommandInputSpec):
+    feat_dir = Directory(exists=True,mandatory=True, argstr="%s",position=0,desc="Input feat preprocessed directory")
+    train_data = File(exists=True,mandatory=True,argstr="%s",position=1,desc="Training file")
+    component_threshold= traits.Int(argstr="%d",mandatory = True,position=2,desc="threshold for the number of components")
+    motion_reg = traits.Bool(position=3, argstr='-m', desc="motion parameters regression")
+
+class FSLFIXOutputSpec(TraitedSpec):
+    output = File (exists=True,desc="cleaned output")
+    
+
+class FSLFIX(FSLCommand):
+    
+    _cmd = 'fix'
+    input_spec = FSLFIXInputSpec
+    output_spec = FSLFIXOutputSpec
+
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        print self.inputs.feat_dir+'./filtered_func_data_clean.nii*' 
+        outputs['output'] = os.path.abspath(glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
         return outputs
