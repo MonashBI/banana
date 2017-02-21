@@ -11,7 +11,7 @@ from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 
 
-class MRStudy(Study):
+class MRIStudy(Study):
 
     def brain_mask_pipeline(self, **options):  # @UnusedVariable
         """

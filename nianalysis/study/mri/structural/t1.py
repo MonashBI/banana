@@ -10,10 +10,10 @@ from nianalysis.data_formats import freesurfer_recon_all_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
-from ..base import MRStudy
+from ..base import MRIStudy
 
 
-class T1Study(MRStudy):
+class T1Study(MRIStudy):
 
     def brain_mask_pipeline(self, robust=False, threshold=0.1,
                             reduce_bias=True, **kwargs):
@@ -61,4 +61,4 @@ class T1Study(MRStudy):
     _dataset_specs = set_dataset_specs(
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline),
-        inherit_from=chain(MRStudy.dataset_specs()))
+        inherit_from=chain(MRIStudy.dataset_specs()))

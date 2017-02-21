@@ -2,10 +2,10 @@ from itertools import chain
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.data_formats import nifti_gz_format
-from ..base import MRStudy
+from ..base import MRIStudy
 
 
-class T2Study(MRStudy):
+class T2Study(MRIStudy):
 
     def brain_mask_pipeline(self, robust=True, threshold=0.5,
                             reduce_bias=False, **kwargs):
@@ -17,4 +17,4 @@ class T2Study(MRStudy):
         DatasetSpec('manual_wmh_mask', nifti_gz_format),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
-        inherit_from=chain(MRStudy.dataset_specs()))
+        inherit_from=chain(MRIStudy.dataset_specs()))

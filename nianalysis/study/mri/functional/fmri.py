@@ -2,13 +2,13 @@ from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
-from ..base import MRStudy
+from ..base import MRIStudy
 from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import nifti_gz_format
 
 
-class FunctionalMRStudy(MRStudy):
+class FunctionalMRIStudy(MRIStudy):
 
     def melodic_pipeline(self, **options):  # @UnusedVariable
         """
