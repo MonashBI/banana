@@ -29,15 +29,15 @@ class TestDiffusion(TestCase):
                 'forward_rpe': Dataset('r_l_dwi_b0_6', mrtrix_format),
                 'reverse_rpe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
         study.preprocess_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('dwi_preproc.mif')
+        self.assertDatasetCreated('dwi_preproc.nii.gz')
 
     def test_extract_b0(self):
         study = self.create_study(
             DiffusionStudy, 'extract_b0', {
-                'dwi_preproc': Dataset('noddi_dwi', mrtrix_format),
-                'grad_dirs': Dataset('noddi_gradient_directions',
+                'dwi_preproc': Dataset('dwi_preproc', nifti_gz_format),
+                'grad_dirs': Dataset('gradient_dirs',
                                      fsl_bvecs_format),
-                'bvalues': Dataset('noddi_bvalues', fsl_bvals_format)})
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
         study.extract_b0_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('primary.nii.gz')
 
