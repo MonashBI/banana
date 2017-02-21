@@ -174,8 +174,9 @@ class DummyReconAllInputSpec(CommandLineInputSpec):
                               desc='name of T1 file to process')
     T2_file = File(exists=True, argstr="-T2 %s", min_ver='5.3.0',
                    desc='Convert T2 image to orig directory')
-    use_T2 = traits.Bool(argstr="-T2pial", min_ver='5.3.0',
-                         desc='Use converted T2 to refine the cortical surface')
+    use_T2 = traits.Bool(
+        argstr="-T2pial", min_ver='5.3.0',
+        desc='Use converted T2 to refine the cortical surface')
     openmp = traits.Int(argstr="-openmp %d",
                         desc="Number of processors to use in parallel")
     subjects_dir = Directory(exists=True, argstr='-sd %s', hash_files=False,
@@ -184,7 +185,8 @@ class DummyReconAllInputSpec(CommandLineInputSpec):
 
 
 class DummyReconAllIOutputSpec(FreeSurferSource.output_spec):
-    subjects_dir = Directory(exists=True, desc='Freesurfer subjects directory.')
+    subjects_dir = Directory(exists=True,
+                             desc='Freesurfer subjects directory.')
     subject_id = traits.Str(desc='Subject name for whom to retrieve data')
 
 
