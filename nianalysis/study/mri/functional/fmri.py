@@ -77,7 +77,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def eroded_mask_pipeline(self, **options):
+    def fix_pipeline(self, **options):
         raise NotImplementedError
 
     _dataset_specs = set_dataset_specs(
