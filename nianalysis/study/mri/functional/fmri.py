@@ -66,7 +66,8 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(create_fmap, "out_fieldmap", ml1, "fmap")
         pipeline.connect(bet, "out_file", ml1, "fmap_mag")
         pipeline.connect(bet2, "out_file", ml1, "structural")
-        #ml1.inputs.output_dir = output+subject+"/T1/melodic.ica"
+        ml1.inputs.output_dir = ("/mnt/rar/project/test_ASPREE/test_pipeline"
+                                 "/T1/melodic.ica")
         # fix next
         feat = pipeline.create_node(FEAT(), "featL1", [fsl5_req])
         feat.inputs.terminal_output = 'none'
