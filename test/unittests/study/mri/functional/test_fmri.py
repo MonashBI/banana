@@ -4,10 +4,10 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format, rdata_format  # @IgnorePep8
 from nianalysis.study.mri.functional.fmri import FunctionalMRIStudy  # @IgnorePep8
-from nianalysis.testing import PipelineTeseCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.testing import PipelineTeseCase  # @IgnorePep8 @Reimport
 
 
-class TestFMRI(TestCase):
+class TestFMRI(PipelineTeseCase):
 
     def test_feat(self):
         study = self.create_study(
