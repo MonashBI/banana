@@ -10,10 +10,10 @@ from nianalysis.data_formats import freesurfer_recon_all_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
-from ..base import MRStudy
+from ..base import MRIStudy
 
 
-class T1Study(MRStudy):
+class T1Study(MRIStudy):
 
     def brain_mask_pipeline(self, robust=False, threshold=0.1,
                             reduce_bias=True, **kwargs):
@@ -22,7 +22,7 @@ class T1Study(MRStudy):
             **kwargs)
         pipeline.citations.append(optimal_t1_bet_params_cite)
 
-    def freesurfer_pipeline(self, num_processes=16, **kwargs):  # @UnusedVariable @IgnorePep8
+    def freesurfer_pipeline(self, num_processes=16, **options):  # @UnusedVariable @IgnorePep8
         """
         Segments grey matter, white matter and CSF from T1 images using
         SPM "NewSegment" function.
@@ -34,10 +34,12 @@ class T1Study(MRStudy):
             inputs=['primary'],
             outputs=['fs_recon_all'],
             description="Segment white/grey matter and csf",
-            options={},
+            default_options={},
+            version=1,
             requirements=[freesurfer_req],
             citations=copy(freesurfer_cites),
-            approx_runtime=500)
+            approx_runtime=500,
+            options=options)
         # FS ReconAll node
         recon_all = pe.Node(interface=ReconAll(), name='recon_all')
         recon_all.inputs.directive = 'all'
@@ -59,4 +61,4 @@ class T1Study(MRStudy):
     _dataset_specs = set_dataset_specs(
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline),
-        inherit_from=chain(MRStudy.dataset_specs()))
+        inherit_from=chain(MRIStudy.dataset_specs()))

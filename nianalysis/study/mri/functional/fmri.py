@@ -2,15 +2,15 @@ from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
-from .base import MRStudy
+from ..base import MRIStudy
 from nianalysis.requirements import Requirement
-from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
+from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import nifti_gz_format
 
 
-class FunctionalMRStudy(MRStudy):
+class FunctionalMRIStudy(MRIStudy):
 
-    def melodic_pipeline(self, robust=True, **kwargs):  # @UnusedVariable
+    def melodic_pipeline(self, **options):  # @UnusedVariable
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
         """
@@ -19,13 +19,14 @@ class FunctionalMRStudy(MRStudy):
             inputs=['mri_scan'],
             outputs=['fix', 'melodicl1'],
             description="Run FSL's MELODIC fMRI ICA analysis and FIX",
-            options={},
+            default_options={'robust': True},
+            version=1,
             requirements=[Requirement('fsl', min_version=(0, 5, 0))],
-            citations=[fsl_cite], approx_runtime=5)
+            citations=[fsl_cite], approx_runtime=5, options=options)
         # Create mask node
-        bet = pe.Node(interface=fsl.BET(), name="bet")
+        bet = pe.Node(interface=SomeInterface(), name="fmri")
         bet.inputs.mask = True
-        bet.inputs.robust = robust
+        bet.inputs.robust = pipeline.option('robust')
         # Connect inputs/outputs
         pipeline.connect_input('mri_scan', bet, 'in_file')
         pipeline.connect_output('masked_mri_scan', bet, 'out_file')
@@ -34,11 +35,8 @@ class FunctionalMRStudy(MRStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def eroded_mask_pipeline(self, **kwargs):
+    def eroded_mask_pipeline(self, **options):
         raise NotImplementedError
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('mri_scan', nifti_gz_format),
-        DatasetSpec('masked_mri_scan', nifti_gz_format, brain_mask_pipeline),
-        DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
-        DatasetSpec('eroded_mask', nifti_gz_format, eroded_mask_pipeline))
+        DatasetSpec('primary', nifti_gz_format))
