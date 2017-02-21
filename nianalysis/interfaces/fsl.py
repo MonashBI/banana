@@ -1,4 +1,4 @@
-import os
+import os.path
 import warnings
 from string import Template
 from nibabel import load
@@ -8,8 +8,8 @@ from nipype.interfaces.base import (
 warn = warnings.warn
 warnings.filterwarnings('always', category=UserWarning)
 
-template_filename = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "temp.fsf")
+feat_template_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "resources", 'temp.fsf')
 
 
 class MelodicL1FSFInputSpec(BaseInterfaceInputSpec):
@@ -51,7 +51,7 @@ class MelodicL1FSF(BaseInterface):
     output_spec = MelodicL1FSFOutputSpec
 
     def _run_interface(self, runtime):
-        template_file = open(template_filename)
+        template_file = open(feat_template_path)
         template = Template(template_file.read())
         template_file.close()
 #        inputs = self.input_spec().get()
