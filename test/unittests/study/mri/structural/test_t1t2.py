@@ -9,7 +9,7 @@ from nianalysis.data_formats import (  # @IgnorePep8
 if __name__ == '__main__':
     from nianalysis.testing import DummyTestCase as TestCase  # @IgnorePep8 @UnusedImport
 else:
-    from nianalysis.testing import PipelineTeseCase as TestCase  # @IgnorePep8 @Reimport
+    from nianalysis.testing import PipelineTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestT1T2Study(TestCase):
