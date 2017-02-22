@@ -29,4 +29,4 @@ class TestCoregistered(TestCase):
                 'reference': Dataset('mprage', nifti_gz_format),
                 'matrix': Dataset('matrix', text_matrix_format)})
         study.registration_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('registered', study.name)
+        self.assertDatasetCreated('registered.nii.gz', study.name)
