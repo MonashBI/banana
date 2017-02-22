@@ -86,7 +86,7 @@ class DiffusionStudy(T2Study):
         elif mask_tool == 'mrtrix':
             pipeline = self._create_pipeline(
                 name='brain_mask_mrtrix',
-                inputs=['bias_correct', 'grad_dirs', 'bvalues'],
+                inputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
                 outputs=['brain_mask'],
                 description="Generate brain mask from b0 images",
                 default_options={},
@@ -104,7 +104,7 @@ class DiffusionStudy(T2Study):
             # Connect inputs
             pipeline.connect_input('grad_dirs', grad_fsl, 'in1')
             pipeline.connect_input('bvalues', grad_fsl, 'in2')
-            pipeline.connect_input('bias_correct', dwi2mask, 'in_file')
+            pipeline.connect_input('dwi_preproc', dwi2mask, 'in_file')
             # Connect outputs
             pipeline.connect_output('brain_mask', dwi2mask, 'out_file')
             # Check inputs/outputs are connected

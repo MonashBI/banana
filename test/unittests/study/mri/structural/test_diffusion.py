@@ -5,8 +5,7 @@ from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
 from nianalysis.data_formats import (  # @IgnorePep8
-    mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
-    analyze_format)
+    mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format)
 from nianalysis.testing import PipelineTeseCase as TestCase  # @IgnorePep8 @Reimport
 
 
@@ -20,7 +19,7 @@ class TestDiffusion(TestCase):
                 'forward_rpe': Dataset('r_l_dwi_b0_6', mrtrix_format),
                 'reverse_rpe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
         study.preprocess_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('dwi_preproc.nii.gz')
+        self.assertDatasetCreated('dwi_preproc.nii.gz', study.name)
 
     def test_extract_b0(self):
         study = self.create_study(
@@ -30,18 +29,17 @@ class TestDiffusion(TestCase):
                                      fsl_bvecs_format),
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
         study.extract_b0_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('primary.nii.gz')
+        self.assertDatasetCreated('primary.nii.gz', study.name)
 
     def test_bias_correct(self):
         study = self.create_study(
             DiffusionStudy, 'bias_correct', {
                 'dwi_preproc': Dataset('dwi_preproc', nifti_gz_format),
-                'grad_dirs': Dataset('noddi_gradient_directions',
-                                     fsl_bvecs_format),
-                'bvalues': Dataset('noddi_bvalues', fsl_bvals_format)})
+                'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
         study.bias_correct_pipeline(mask_tool='dwi2mask').run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('bias_correct.nii.gz')
+        self.assertDatasetCreated('bias_correct.nii.gz', study.name)
 
 
 class TestNODDI(TestCase):
