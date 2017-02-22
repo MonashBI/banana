@@ -9,7 +9,7 @@ from ..base import MRIStudy
 from nianalysis.requirements import fsl5_req, fix_req
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
-    nifti_gz_format, zip_format, directory_format, rdata_format)
+    nifti_gz_format, ica_format, rdata_format)
 
 
 class FunctionalMRIStudy(MRIStudy):
@@ -113,6 +113,6 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('t1', nifti_gz_format),
         DatasetSpec('rs_fmri', nifti_gz_format),
         DatasetSpec('rs_fmri_ref', nifti_gz_format),
-        DatasetSpec('feat_dir', directory_format, feat_pipeline),
+        DatasetSpec('feat_dir', ica_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format),
         DatasetSpec('cleaned_data', nifti_gz_format, fix_pipeline))
