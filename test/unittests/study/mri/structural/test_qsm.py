@@ -2,7 +2,7 @@ import logging  # @IgnorePep8
 from nipype import config
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
-from nianalysis.testing import PipelineTestCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 from nianalysis.data_formats import zip_format  # @IgnorePep8
 from nianalysis.study.mri.structural.t2star_kspace import T2StarKSpaceStudy  # @IgnorePep8
