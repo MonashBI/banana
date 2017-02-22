@@ -6,7 +6,7 @@ from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
 from nianalysis.data_formats import (  # @IgnorePep8
     mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format)
-from nianalysis.testing import PipelineTeseCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.testing import PipelineTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestDiffusion(TestCase):

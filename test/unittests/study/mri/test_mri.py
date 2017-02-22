@@ -4,7 +4,7 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format  # @IgnorePep8
 from nianalysis.study.mri.base import MRIStudy  # @IgnorePep8
-from nianalysis.testing import PipelineTeseCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.testing import PipelineTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestMRI(TestCase):
