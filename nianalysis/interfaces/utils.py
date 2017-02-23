@@ -97,13 +97,10 @@ class ZipDirInputSpec(CommandLineInputSpec):
                         position=1)
     zipped = File(genfile=True, argstr='%s', position=0,
                   desc=("The zipped zip file"))
-    extension = traits.Str(
-        desc="Additional extension to be appended before the '.zip'")
 
 
 class ZipDirOutputSpec(TraitedSpec):
     zipped = File(exists=True, desc="The zipped directory")
-    extension = traits.Str(desc="The extension passed as an input + '.zip'")
 
 
 class ZipDir(CommandLine):
@@ -118,14 +115,11 @@ class ZipDir(CommandLine):
         outputs = self._outputs().get()
         outputs['zipped'] = os.path.join(os.getcwd(),
                                          self._gen_filename('zipped'))
-        outputs['extension'] = self.inputs.extension + self.zip_ext
         return outputs
 
     def _gen_filename(self, name):
         if name == 'zipped':
-            fname = (
-                os.path.basename(self.inputs.dirname) + self.inputs.extension +
-                self.zip_ext)
+            fname = os.path.basename(self.inputs.dirname) + self.zip_ext
         else:
             assert False
         return fname
@@ -134,8 +128,6 @@ class ZipDir(CommandLine):
 class UnzipDirInputSpec(CommandLineInputSpec):
     zipped = Directory(mandatory=True, desc='zipped file name', argstr='%s',
                        position=0)
-    extension = traits.Str(
-        desc="Additional extension to be appended before the '.zip'")
 
 
 class UnzipDirOutputSpec(TraitedSpec):
@@ -151,10 +143,7 @@ class UnzipDir(CommandLine):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        if isdefined(self.inputs.extension):
-            ext_len = len(self.inputs.extension)
-        else:
-            ext_len = len(ZipDir.zip_ext)
+        ext_len = len(ZipDir.zip_ext)
         outputs['unzipped'] = os.path.join(
             os.getcwd(), os.path.basename(self.inputs.zipped)[:-ext_len])
         return outputs
