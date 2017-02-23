@@ -6,15 +6,17 @@ from nianalysis.citations import fsl_cite
 from nianalysis.requirements import spm12_req
 from nianalysis.citations import spm_cite
 from nianalysis.data_formats import (
-    nifti_gz_format, text_matrix_format)
+    nifti_gz_format, nifti_format, text_matrix_format)
 from ..base import set_dataset_specs, Study
 from nianalysis.dataset import DatasetSpec
 
 
 class CoregisteredStudy(Study):
 
-    _registration_inputs = ['reference', 'to_register']
-    _registration_outputs = ['registered', 'matrix']
+    _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
+                            DatasetSpec('to_register', nifti_gz_format)]
+    _registration_outputs = [DatasetSpec('registered', nifti_gz_format),
+                             DatasetSpec('matrix', text_matrix_format)]
 
     def registration_pipeline(self, coreg_tool='flirt', **options):
         if coreg_tool == 'flirt':
@@ -95,8 +97,9 @@ class CoregisteredStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='registration_spm',
-            inputs=['t1', 't2'],
-            outputs=['t2_coreg_t1'],
+            inputs=[DatasetSpec('t1', nifti_format),
+                    DatasetSpec('t2', nifti_format)],
+            outputs=[DatasetSpec('t2_coreg_t1', nifti_format)],
             description="Coregister T2-weighted images to T1",
             default_options={},
             version=1,
