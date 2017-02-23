@@ -44,7 +44,7 @@ class T1T2Study(CombinedStudy):
     def freesurfer_pipeline(self, **options):
         pipeline = self.TranslatedPipeline(
             'freesurfer', self.t1.freesurfer_pipeline(**options), self,
-            add_inputs=['t2_coreg'])
+            add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
         recon_all = pipeline.node('recon_all')
         recon_all.inputs.use_T2 = True
         # Connect T2-weighted input
@@ -72,8 +72,9 @@ class T1T2Study(CombinedStudy):
         """
         pipeline = self._create_pipeline(
             name='t1_brain_mask_pipeline',
-            inputs=['t1', 'brain_mask'],
-            outputs=['t1_masked'],
+            inputs=[DatasetSpec('t1', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('t1_masked', nifti_gz_format)],
             default_options={},
             version=1,
             description="Mask T1 with T2 brain mask",

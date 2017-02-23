@@ -36,8 +36,12 @@ class DiffusionStudy(T2Study):
         """
         pipeline = self._create_pipeline(
             name='preprocess',
-            inputs=['dwi_scan', 'forward_rpe', 'reverse_rpe'],
-            outputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
+            inputs=[DatasetSpec('dwi_scan', mrtrix_format),
+                    DatasetSpec('forward_rpe', mrtrix_format),
+                    DatasetSpec('reverse_rpe', mrtrix_format)],
+            outputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
+                     DatasetSpec('grad_dirs', fsl_bvecs_format),
+                     DatasetSpec('bvalues', fsl_bvals_format)],
             description="Preprocess dMRI studies using distortion correction",
             default_options={'phase_dir': 'LR'},
             version=1,
@@ -86,8 +90,10 @@ class DiffusionStudy(T2Study):
         elif mask_tool == 'mrtrix':
             pipeline = self._create_pipeline(
                 name='brain_mask_mrtrix',
-                inputs=['dwi_preproc', 'grad_dirs', 'bvalues'],
-                outputs=['brain_mask'],
+                inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
+                        DatasetSpec('grad_dirs', fsl_bvecs_format),
+                        DatasetSpec('bvalues', fsl_bvals_format)],
+                outputs=[DatasetSpec('brain_mask', nifti_gz_format)],
                 description="Generate brain mask from b0 images",
                 default_options={},
                 version=1,
@@ -127,9 +133,11 @@ class DiffusionStudy(T2Study):
                 "be one of 'ants' or 'fsl'.".format(bias_method))
         pipeline = self._create_pipeline(
             name='bias_correct',
-            inputs=['dwi_preproc', 'brain_mask', 'grad_dirs',
-                    'bvalues'],
-            outputs=['bias_correct'],
+            inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format)],
+            outputs=[DatasetSpec('bias_correct', nifti_gz_format)],
             description="Corrects for B1 field inhomogeneity",
             default_options={'method': bias_method_default},
             version=1,
@@ -163,8 +171,11 @@ class DiffusionStudy(T2Study):
         """
         pipeline = self._create_pipeline(
             name='tensor',
-            inputs=['bias_correct', 'grad_dirs', 'bvalues', 'brain_mask'],
-            outputs=['tensor'],
+            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('tensor', nifti_gz_format)],
             description=("Estimates the apparrent diffusion tensor in each "
                          "voxel"),
             default_options={},
@@ -197,8 +208,10 @@ class DiffusionStudy(T2Study):
         """
         pipeline = self._create_pipeline(
             name='fa',
-            inputs=['tensor', 'brain_mask'],
-            outputs=['fa', 'adc'],
+            inputs=[DatasetSpec('tensor', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('fa', nifti_gz_format),
+                     DatasetSpec('adc', nifti_gz_format)],
             description=("Calculates the FA and ADC from a tensor image"),
             default_options={},
             version=1,
@@ -230,8 +243,11 @@ class DiffusionStudy(T2Study):
         """
         pipeline = self._create_pipeline(
             name='fod',
-            inputs=['bias_correct', 'grad_dirs', 'bvalues', 'brain_mask'],
-            outputs=['fod'],
+            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('fod', nifti_gz_format)],
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
             default_options={},
@@ -264,9 +280,11 @@ class DiffusionStudy(T2Study):
     def tbss_pipeline(self, **options):  # @UnusedVariable
         pipeline = self._create_pipeline(
             name='tbss',
-            inputs=['fa'],
-            outputs=['tbss_mean_fa', 'tbss_proj_fa', 'tbss_skeleton',
-                     'tbss_skeleton_mask'],
+            inputs=[DatasetSpec('fa', nifti_gz_format)],
+            outputs=[DatasetSpec('tbss_mean_fa', nifti_gz_format),
+                     DatasetSpec('tbss_proj_fa', nifti_gz_format),
+                     DatasetSpec('tbss_skeleton', nifti_gz_format),
+                     DatasetSpec('tbss_skeleton_mask', nifti_gz_format)],
             default_options={'tbss_skel_thresh': 0.2},
             version=1,
             citations=[tbss_cite, fsl_cite],
@@ -296,8 +314,10 @@ class DiffusionStudy(T2Study):
         """
         pipeline = self._create_pipeline(
             name='extract_b0',
-            inputs=['bias_correct', 'grad_dirs', 'bvalues'],
-            outputs=['primary'],
+            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format)],
+            outputs=[DatasetSpec('primary', nifti_gz_format)],
             description="Extract b0 image from a DWI study",
             default_options={},
             version=1,
@@ -338,8 +358,10 @@ class DiffusionStudy(T2Study):
     def track_gen_pipeline(self, **options):
         pipeline = self._create_pipeline(
             name='extract_b0',
-            inputs=['bias_correct', 'grad_dirs', 'bvalues'],
-            outputs=['primary'],
+            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format)],
+            outputs=[DatasetSpec('primary', nifti_gz_format)],
             description="Extract b0 image from a DWI study",
             default_options={},
             version=1,
@@ -380,18 +402,18 @@ class DiffusionStudy(T2Study):
 # class TractographyInputSpec(MRTrix3BaseInputSpec):
 #     sph_trait = traits.Tuple(traits.Float, traits.Float, traits.Float,
 #                              traits.Float, argstr='%f,%f,%f,%f')
-# 
+#
 #     in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
 #                    desc='input file to be processed')
-# 
+#
 #     out_file = File('tracked.tck', argstr='%s', mandatory=True, position=-1,
 #                     usedefault=True, desc='output file containing tracks')
-# 
+#
 #     algorithm = traits.Enum(
 #         'iFOD2', 'FACT', 'iFOD1', 'Nulldist', 'SD_Stream', 'Tensor_Det',
 #         'Tensor_Prob', usedefault=True, argstr='-algorithm %s',
 #         desc='tractography algorithm to be used')
-# 
+#
 #     # ROIs processing options
 #     roi_incl = traits.Either(
 #         File(exists=True), sph_trait, argstr='-include %s',
@@ -405,7 +427,7 @@ class DiffusionStudy(T2Study):
 #         File(exists=True), sph_trait, argstr='-mask %s',
 #         desc=('specify a masking region of interest. If defined,'
 #               'streamlines exiting the mask will be truncated'))
-# 
+#
 #     # Streamlines tractography options
 #     step_size = traits.Float(
 #         argstr='-step %f',
@@ -477,7 +499,7 @@ class DiffusionStudy(T2Study):
 #     downsample = traits.Float(
 #         argstr='-downsample %f',
 #         desc='downsample the generated streamlines to reduce output file size')
-# 
+#
 #     # Anatomically-Constrained Tractography options
 #     act_file = File(
 #         exists=True, argstr='-act %s',
@@ -486,12 +508,12 @@ class DiffusionStudy(T2Study):
 #               '(five - tissue - type) format'))
 #     backtrack = traits.Bool(argstr='-backtrack',
 #                             desc='allow tracks to be truncated')
-# 
+#
 #     crop_at_gmwmi = traits.Bool(
 #         argstr='-crop_at_gmwmi',
 #         desc=('crop streamline endpoints more '
 #               'precisely as they cross the GM-WM interface'))
-# 
+#
 #     # Tractography seeding options
 #     seed_sphere = traits.Tuple(
 #         traits.Float, traits.Float, traits.Float, traits.Float,
@@ -547,8 +569,9 @@ class NODDIStudy(DiffusionStudy):
         """
         pipeline = self._create_pipeline(
             name='concatenation',
-            inputs=['low_b_dw_scan', 'high_b_dw_scan'],
-            outputs=['dwi_scan'],
+            inputs=[DatasetSpec('low_b_dw_scan', mrtrix_format),
+                    DatasetSpec('high_b_dw_scan', mrtrix_format)],
+            outputs=[DatasetSpec('dwi_scan', mrtrix_format)],
             description=(
                 "Concatenate low and high b-value dMRI datasets for NODDI "
                 "processing"),
@@ -588,17 +611,25 @@ class NODDIStudy(DiffusionStudy):
         nthreads: Int
             Number of processes to use
         """
-        inputs = ['bias_correct', 'grad_dirs', 'bvalues']
+        inputs = [DatasetSpec('bias_correct', nifti_gz_format),
+                  DatasetSpec('grad_dirs', fsl_bvecs_format),
+                  DatasetSpec('bvalues', fsl_bvals_format)]
         if options.get('single_slice', False):
-            inputs.append('eroded_mask')
+            inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
         else:
-            inputs.append('brain_mask')
+            inputs.append(DatasetSpec('brain_mask', nifti_gz_format))
         pipeline = self._create_pipeline(
             name='noddi_fitting',
             inputs=inputs,
-            outputs=['ficvf', 'odi', 'fiso', 'fibredirs_xvec',
-                     'fibredirs_yvec', 'fibredirs_zvec', 'fmin', 'kappa',
-                     'error_code'],
+            outputs=[DatasetSpec('ficvf', nifti_format),
+                     DatasetSpec('odi', nifti_format),
+                     DatasetSpec('fiso', nifti_format),
+                     DatasetSpec('fibredirs_xvec', nifti_format),
+                     DatasetSpec('fibredirs_yvec', nifti_format),
+                     DatasetSpec('fibredirs_zvec', nifti_format),
+                     DatasetSpec('fmin', nifti_format),
+                     DatasetSpec('kappa', nifti_format),
+                     DatasetSpec('error_code', nifti_format)],
             description=(
                 "Creates a ROI in which the NODDI processing will be "
                 "performed"),
