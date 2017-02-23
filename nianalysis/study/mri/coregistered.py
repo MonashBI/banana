@@ -151,8 +151,10 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
     supplied as an input (typically by another sub-study)
     """
 
-    _registration_inputs = ['reference', 'to_register', 'matrix']
-    _registration_outputs = ['registered']
+    _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
+                            DatasetSpec('to_register', nifti_gz_format),
+                            DatasetSpec('matrix', text_matrix_format)]
+    _registration_outputs = [DatasetSpec('registered', nifti_gz_format)]
 
     def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
