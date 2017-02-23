@@ -17,9 +17,12 @@ class FunctionalMRIStudy(MRIStudy):
     def feat_pipeline(self, **options):
         pipeline = self._create_pipeline(
             name='feat',
-            inputs=['field_map_mag', 'field_map_phase', 't1', 'rs_fmri',
-                    'rs_fmri_ref'],
-            outputs=['feat_dir'],
+            inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
+                    DatasetSpec('field_map_phase', nifti_gz_format),
+                    DatasetSpec('t1', nifti_gz_format),
+                    DatasetSpec('rs_fmri', nifti_gz_format),
+                    DatasetSpec('rs_fmri_ref', nifti_gz_format)],
+            outputs=[DatasetSpec('feat_dir', nifti_gz_format)],
             description="MELODIC Level 1",
             default_options={'brain_thresh_percent': 5},
             version=1,
@@ -70,31 +73,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(ml1, 'fsf_file', feat, 'fsf_file')
         pipeline.connect_output('feat_dir', feat, 'feat_dir')
 
-        pipeline.assert_connected()
-        return pipeline
-
-    def melodic_pipeline(self, **options):  # @UnusedVariable
-        """
-        Generates a whole brain mask using MRtrix's 'dwi2mask' command
-        """
-        pipeline = self._create_pipeline(
-            name='melodic',
-            inputs=['mri_scan'],
-            outputs=['fix', 'melodicl1'],
-            description="Run FSL's MELODIC fMRI ICA analysis and FIX",
-            default_options={'robust': True},
-            version=1,
-            requirements=[Requirement('fsl', min_version=(0, 5, 0))],
-            citations=[fsl_cite], approx_runtime=5, options=options)
-        # Create mask node
-        bet = pe.Node(interface=SomeInterface(), name="fmri")
-        bet.inputs.mask = True
-        bet.inputs.robust = pipeline.option('robust')
-        # Connect inputs/outputs
-        pipeline.connect_input('mri_scan', bet, 'in_file')
-        pipeline.connect_output('masked_mri_scan', bet, 'out_file')
-        pipeline.connect_output('brain_mask', bet, 'mask_file')
-        # Check inputs/outputs are connected
         pipeline.assert_connected()
         return pipeline
 

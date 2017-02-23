@@ -19,8 +19,9 @@ class MRIStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='brain_mask',
-            inputs=['primary'],
-            outputs=['masked', 'brain_mask'],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            outputs=[DatasetSpec('masked', nifti_gz_format),
+                     DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
             default_options={'robust': False, 'threshold': 0.5,
                              'reduce_bias': False},
@@ -64,8 +65,11 @@ class MRIStudy(Study):
         """
         pipeline = self._create_pipeline(
             name='coregister_to_atlas_fnirt',
-            inputs=['primary', 'brain_mask', 'masked'],
-            outputs=['coreg_to_atlas', 'coreg_to_atlas_coeff'],
+            inputs=[DatasetSpec('primary', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('masked', nifti_gz_format)],
+            outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
+                     DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             description=("Nonlinearly registers a MR scan to a standard space,"
                          "e.g. MNI-space"),
             default_options={'atlas': 'MNI152',
