@@ -2,7 +2,8 @@ from nipype.pipeline import engine as pe
 from nianalysis.requirements import fsl5_req, matlab_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
-from nianalysis.data_formats import directory_format, nifti_gz_format
+from nianalysis.data_formats import (
+    zip_format, directory_format, nifti_gz_format)
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.qsm import STI, Prepare
@@ -21,8 +22,10 @@ class T2StarKSpaceStudy(MRIStudy):
         """
         pipeline = self._create_pipeline(
             name='qsmrecon',
-            inputs=['t2starkspace'],  # TODO should this be primary?
-            outputs=['qsm', 'tissue_phase', 'qsm_mask'],
+            inputs=[DatasetSpec('t2starkspace', directory_format)],  # TODO should this be primary?
+            outputs=[DatasetSpec('qsm', nifti_gz_format),
+                     DatasetSpec('tissue_phase', nifti_gz_format),
+                     DatasetSpec('qsm_mask', nifti_gz_format)],
             description="Resolve QSM from t2star kspace",
             default_options={},
             requirements=[fsl5_req, matlab_req],
@@ -53,7 +56,7 @@ class T2StarKSpaceStudy(MRIStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('t2starkspace', directory_format),
+        DatasetSpec('t2starkspace', zip_format),
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline),
         DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline),
         DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline))

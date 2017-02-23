@@ -6,7 +6,8 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 from nianalysis.requirements import freesurfer_req
 from nianalysis.citations import (
     freesurfer_cites, optimal_t1_bet_params_cite)
-from nianalysis.data_formats import freesurfer_recon_all_format
+from nianalysis.data_formats import (freesurfer_recon_all_format,
+                                     nifti_gz_format)
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
@@ -31,8 +32,8 @@ class T1Study(MRIStudy):
         """
         pipeline = self._create_pipeline(
             name='segmentation',
-            inputs=['primary'],
-            outputs=['fs_recon_all'],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            outputs=[DatasetSpec('fs_recon_all', freesurfer_recon_all_format)],
             description="Segment white/grey matter and csf",
             default_options={},
             version=1,
