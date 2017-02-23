@@ -9,7 +9,8 @@ from ..base import MRIStudy
 from nianalysis.requirements import fsl5_req, fix_req
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
-    nifti_gz_format, ica_format, rdata_format)
+    nifti_gz_format, ica_format, rdata_format, directory_format,
+    zip_format)
 
 
 class FunctionalMRIStudy(MRIStudy):
@@ -22,7 +23,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('t1', nifti_gz_format),
                     DatasetSpec('rs_fmri', nifti_gz_format),
                     DatasetSpec('rs_fmri_ref', nifti_gz_format)],
-            outputs=[DatasetSpec('feat_dir', nifti_gz_format)],
+            outputs=[DatasetSpec('feat_dir', directory_format)],
             description="MELODIC Level 1",
             default_options={'brain_thresh_percent': 5},
             version=1,
@@ -83,8 +84,10 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline = self._create_pipeline(
             name='fix',
-            inputs=['fear_dir', 'train_data'],
-            outputs=['cleaned_file'],
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('fear_dir', directory_format),
+                    DatasetSpec('train_data', rdata_format)],
+            outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
             description=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             default_options={'component_threshold': 20, 'motion_reg': True},
@@ -113,6 +116,6 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('t1', nifti_gz_format),
         DatasetSpec('rs_fmri', nifti_gz_format),
         DatasetSpec('rs_fmri_ref', nifti_gz_format),
-        DatasetSpec('feat_dir', ica_format, feat_pipeline),
+        DatasetSpec('feat_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format),
         DatasetSpec('cleaned_data', nifti_gz_format, fix_pipeline))
