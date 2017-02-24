@@ -85,7 +85,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self._create_pipeline(
             name='fix',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('fear_dir', directory_format),
+            inputs=[DatasetSpec('feat_dir', directory_format),
                     DatasetSpec('train_data', rdata_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
             description=("Automatic classification and removal of noisy"
@@ -118,4 +118,4 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('rs_fmri_ref', nifti_gz_format),
         DatasetSpec('feat_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format),
-        DatasetSpec('cleaned_data', nifti_gz_format, fix_pipeline))
+        DatasetSpec('cleaned_file', nifti_gz_format, fix_pipeline))
