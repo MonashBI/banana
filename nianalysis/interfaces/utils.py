@@ -2,9 +2,12 @@ import os.path
 from nipype.interfaces.utility import Merge, MergeInputSpec
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, File,
-    Directory, InputMultiPath, CommandLineInputSpec, CommandLine,
-    isdefined)
+    Directory, InputMultiPath, CommandLineInputSpec, CommandLine)
 from nipype.interfaces.io import FreeSurferSource
+from nianalysis.exceptions import NiAnalysisUsageError
+
+zip_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                        'resources', 'bash', 'zip.sh'))
 
 
 class MergeTupleOutputSpec(TraitedSpec):
@@ -106,7 +109,7 @@ class ZipDirOutputSpec(TraitedSpec):
 class ZipDir(CommandLine):
     """Creates a zip archive from a given folder"""
 
-    _cmd = 'nianalysis_zip'
+    _cmd = zip_path
     input_spec = ZipDirInputSpec
     output_spec = ZipDirOutputSpec
     zip_ext = '.zip'
@@ -141,11 +144,23 @@ class UnzipDir(CommandLine):
     input_spec = UnzipDirInputSpec
     output_spec = UnzipDirOutputSpec
 
+    def _run_interface(self, *args, **kwargs):
+        self.listdir_before = set(os.listdir(os.getcwd()))
+        return super(UnzipDir, self)._run_interface(*args, **kwargs)
+
     def _list_outputs(self):
         outputs = self._outputs().get()
-        ext_len = len(ZipDir.zip_ext)
-        outputs['unzipped'] = os.path.join(
-            os.getcwd(), os.path.basename(self.inputs.zipped)[:-ext_len])
+        new_files = set(os.listdir(os.getcwd())) - self.listdir_before
+        if len(new_files) > 1:
+            raise NiAnalysisUsageError(
+                "Zip archives can only contain a single directory, found '{}'"
+                .format("', '".join(new_files)))
+        try:
+            unzipped = next(iter(new_files))
+        except StopIteration:
+            raise NiAnalysisUsageError(
+                "No files or directories found in unzipped directory")
+        outputs['unzipped'] = os.path.join(os.getcwd(), unzipped)
         return outputs
 
 
