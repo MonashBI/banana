@@ -10,6 +10,42 @@ zip_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         'resources', 'bash', 'zip.sh'))
 
 
+class InputSessionsInputSpec(TraitedSpec):
+    prereq_sessions = traits.List(
+        traits.List(
+            traits.Tuple(
+                traits.Str(desc="Subject ID from prerequisites"),
+                traits.Str(desc="Session ID from prerequisites"))),
+        desc=("Subject and session IDs processed by prerequisitie pipelines. "
+              "Ignored by the interface at this stage but used to ensure that "
+              "the prerequisite pipelines are run first"))
+    session_id = traits.Str(mandatory=True, desc=("The session ID"))
+    subject_id = traits.Str(mandatory=True, desc=("The session ID"))
+
+
+class InputSessionsOutputSpec(TraitedSpec):
+
+    session_id = traits.Str(mandatory=True, desc=("The session ID"))
+    subject_id = traits.Str(mandatory=True, desc=("The session ID"))
+
+
+class InputSessions(BaseInterface):
+    """
+    Basically an IndentityInterface with an extra input to feed the output
+    of prerequisite pipelines into to make sure they are run before the
+    current pipeline.
+    """
+
+    input_spec = InputSessionsInputSpec
+    output_spec = InputSessionsOutputSpec
+
+    def _list_outputs(self):
+        outputs = super(InputSessions, self)._list_outputs()
+        outputs['session_id'] = self.inputs.session_id
+        outputs['subject_id'] = self.inputs.subject_id
+        return outputs
+
+
 class MergeTupleOutputSpec(TraitedSpec):
     out = traits.Tuple(desc='Merged output')  # @UndefinedVariable
 
