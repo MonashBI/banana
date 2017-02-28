@@ -33,9 +33,11 @@ class InputSessions(BaseInterface):
     input_spec = InputSessionsInputSpec
     output_spec = InputSessionsOutputSpec
 
+    def _run_interface(self, runtime):
+        return runtime
+
     def _list_outputs(self):
-        assert self.inputs.prereqs_satisfied
-        outputs = super(InputSessions, self)._list_outputs()
+        outputs = {}
         outputs['session_id'] = self.inputs.session_id
         outputs['subject_id'] = self.inputs.subject_id
         return outputs
@@ -49,7 +51,7 @@ class OutputSummaryInputSpec(TraitedSpec):
     project = traits.Str(desc="Project ID from per-project sink")
 
 
-class OutputSummaryOutputSpec():
+class OutputSummaryOutputSpec(TraitedSpec):
     sessions = traits.List(traits.Tuple(
         traits.Str, traits.Str),
         desc="Session & subject pairs from per-session sink")
@@ -62,9 +64,11 @@ class OutputSummary(BaseInterface):
     input_spec = OutputSummaryInputSpec
     output_spec = OutputSummaryOutputSpec
 
+    def _run_interface(self, runtime):
+        return runtime
+
     def _list_outputs(self):
-        assert self.inputs.prereqs_satisfied
-        outputs = super(InputSessions, self)._list_outputs()
+        outputs = {}
         outputs['sessions'] = self.inputs.sessions
         outputs['subjects'] = self.inputs.subjects
         outputs['project'] = self.inputs.project
