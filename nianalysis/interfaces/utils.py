@@ -2,8 +2,7 @@ import os.path
 from nipype.interfaces.utility import Merge, MergeInputSpec
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, File,
-    Directory, InputMultiPath, CommandLineInputSpec, CommandLine,
-    DynamicTraitedSpec)
+    Directory, InputMultiPath, CommandLineInputSpec, CommandLine)
 from nipype.interfaces.io import FreeSurferSource
 from nianalysis.exceptions import NiAnalysisUsageError
 
@@ -11,7 +10,7 @@ zip_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         'resources', 'bash', 'zip.sh'))
 
 
-class InputSessionsInputSpec(DynamicTraitedSpec):
+class InputSessionsInputSpec(TraitedSpec):
 
     session_id = traits.Str(mandatory=True, desc=("The session ID"))
     subject_id = traits.Str(mandatory=True, desc=("The session ID"))
