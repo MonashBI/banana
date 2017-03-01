@@ -10,23 +10,53 @@ zip_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         'resources', 'bash', 'zip.sh'))
 
 
+class InputSubjectsInputSpec(TraitedSpec):
+
+    subject_id = traits.Str(mandatory=True, desc=("The subject ID"))
+    prereq_summaries = traits.List(
+        traits.Str,
+        desc=("A list of output summaries from all prerequisite pipelines"))
+
+
+class InputSubjectsOutputSpec(TraitedSpec):
+
+    subject_id = traits.Str(mandatory=True, desc=("The subject ID"))
+
+
+class InputSubjects(BaseInterface):
+    """
+    Basically an IndentityInterface for iterating over all subjects with an
+    extra input to feed the output summaries of prerequisite pipelines into to
+    make sure they are run before the current pipeline.
+    """
+
+    input_spec = InputSubjectsInputSpec
+    output_spec = InputSubjectsOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = {}
+        outputs['subject_id'] = self.inputs.subject_id
+        return outputs
+
+
 class InputSessionsInputSpec(TraitedSpec):
 
     session_id = traits.Str(mandatory=True, desc=("The session ID"))
-    subject_id = traits.Str(mandatory=True, desc=("The session ID"))
+    subject_id = traits.Str(mandatory=True, desc=("The subject ID"))
 
 
 class InputSessionsOutputSpec(TraitedSpec):
 
     session_id = traits.Str(mandatory=True, desc=("The session ID"))
-    subject_id = traits.Str(mandatory=True, desc=("The session ID"))
+    subject_id = traits.Str(mandatory=True, desc=("The subject ID"))
 
 
 class InputSessions(BaseInterface):
     """
-    Basically an IndentityInterface with an extra input to feed the output
-    of prerequisite pipelines into to make sure they are run before the
-    current pipeline.
+    Basically an IndentityInterface for iterating over all session.
     """
 
     input_spec = InputSessionsInputSpec
@@ -42,16 +72,70 @@ class InputSessions(BaseInterface):
         return outputs
 
 
+class SubjectSummaryInputSpec(TraitedSpec):
+
+    subjects = traits.List(traits.Str)
+
+
+class SubjectSummaryOutputSpec(TraitedSpec):
+
+    subjects = traits.List(traits.Str)
+
+
+class SubjectSummary(BaseInterface):
+    """
+    Basically an IndentityInterface for summarising over subjects
+    """
+
+    input_spec = SubjectSummaryInputSpec
+    output_spec = SubjectSummaryOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = {}
+        outputs['subjects'] = self.inputs.subjects
+        return outputs
+
+
+class SubjectSessionSummaryInputSpec(TraitedSpec):
+
+    subject_session_pairs = traits.List(traits.Tuple(traits.Str, traits.Str))
+
+
+class SubjectSessionSummaryOutputSpec(TraitedSpec):
+
+    subject_session_pairs = traits.List(traits.Tuple(traits.Str, traits.Str))
+
+
+class SubjectSessionSummary(BaseInterface):
+    """
+    Basically an IndentityInterface for summarising over subjects
+    """
+
+    input_spec = SubjectSessionSummaryInputSpec
+    output_spec = SubjectSessionSummaryOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = {}
+        outputs['subject_session_pairs'] = self.inputs.subject_session_pairs
+        return outputs
+
+
 class OutputSummaryInputSpec(TraitedSpec):
-    sessions = traits.List(traits.Tuple(
+    subject_session_pairs = traits.List(traits.Tuple(
         traits.Str, traits.Str),
-        desc="Session & subject pairs from per-session sink")
+        desc="Subject & session pairs from per-session sink")
     subjects = traits.List(traits.Str, desc="Subjects from per-subject sink")
     project = traits.Str(desc="Project ID from per-project sink")
 
 
 class OutputSummaryOutputSpec(TraitedSpec):
-    sessions = traits.List(traits.Tuple(
+    subject_session_pairs = traits.List(traits.Tuple(
         traits.Str, traits.Str),
         desc="Session & subject pairs from per-session sink")
     subjects = traits.List(traits.Str, desc="Subjects from per-subject sink")
@@ -68,7 +152,7 @@ class OutputSummary(BaseInterface):
 
     def _list_outputs(self):
         outputs = {}
-        outputs['sessions'] = self.inputs.sessions
+        outputs['subject_session_pairs'] = self.inputs.subject_session_pairs
         outputs['subjects'] = self.inputs.subjects
         outputs['project'] = self.inputs.project
         return outputs
