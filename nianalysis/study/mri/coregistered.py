@@ -62,7 +62,7 @@ class CoregisteredStudy(Study):
             citations=[fsl_cite],
             approx_runtime=5,
             options=options)
-        flirt = pe.Node(interface=FLIRT(), name='flirt')
+        flirt = pipeline.node(interface=FLIRT(), name='flirt')
         # Set registration options
         flirt.inputs.dof = pipeline.option('degrees_of_freedom')
         flirt.inputs.cost = pipeline.option('cost_func')
@@ -107,7 +107,7 @@ class CoregisteredStudy(Study):
             citations=[spm_cite],
             approx_runtime=30,
             options=options)
-        coreg = pe.Node(Coregister(), name='coreg')
+        coreg = pipeline.node(Coregister(), name='coreg')
         coreg.inputs.jobtype = 'estwrite'
         coreg.inputs.cost_function = 'nmi'
         coreg.inputs.separation = [4, 2]

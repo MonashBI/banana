@@ -1,4 +1,5 @@
 import os.path
+from itertools import chain
 from nipype.interfaces.utility import Merge, MergeInputSpec
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, File,
@@ -39,31 +40,26 @@ class MergeTuple(Merge):
         return outputs
 
 
-class SplitSessionInputSpec(TraitedSpec):
+class ChainInputSpec(TraitedSpec):
 
-    session = traits.Tuple(
-        traits.Str(mandatory=True, desc="The subject ID"),
-        traits.Str(1, mandatory=True, usedefult=True,
-                   desc="The session or processed group ID"),)
+    in_lists = traits.List(traits.List(traits.Any()),
+                           desc=("List of lists to chain"))
 
 
-class SplitSessionOutputSpec(TraitedSpec):
+class ChainOutputSpec(TraitedSpec):
 
-    subject = traits.Str(mandatory=True, desc="The subject ID")
-
-    session = traits.Str(1, mandatory=True, usedefult=True,
-                         desc="The session or processed group ID")
+    out_list = traits.List(traits.Any(),
+                           desc=("Out chained list"))
 
 
-class SplitSession(BaseInterface):
+class Chain(BaseInterface):
 
-    input_spec = SplitSessionInputSpec
-    output_spec = SplitSessionOutputSpec
+    input_spec = ChainInputSpec
+    output_spec = ChainOutputSpec
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['subject'] = self.inputs.session[0]
-        outputs['session'] = self.inputs.session[1]
+        outputs['out_list'] = list(chain(*self.inputs.in_lists))
         return outputs
 
     def _run_interface(self, runtime):

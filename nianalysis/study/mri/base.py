@@ -30,7 +30,7 @@ class MRIStudy(Study):
             citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5,
             options=options)
         # Create mask node
-        bet = pe.Node(interface=fsl.BET(), name="bet")
+        bet = pipeline.node(interface=fsl.BET(), name="bet")
         bet.inputs.mask = True
         if pipeline.option('robust'):
             bet.inputs.robust = True
@@ -89,15 +89,15 @@ class MRIStudy(Study):
         ref_masked = get_atlas_path(pipeline.option('atlas'), 'masked',
                                     resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
-        reorient = pe.Node(Reorient2Std(), name='reorient')
-        reorient_mask = pe.Node(Reorient2Std(), name='reorient_mask')
-        reorient_masked = pe.Node(Reorient2Std(), name='reorient_masked')
+        reorient = pipeline.node(Reorient2Std(), name='reorient')
+        reorient_mask = pipeline.node(Reorient2Std(), name='reorient_mask')
+        reorient_masked = pipeline.node(Reorient2Std(), name='reorient_masked')
         # Affine transformation to MNI space
-        flirt = pe.Node(interface=FLIRT(), name='flirt')
+        flirt = pipeline.node(interface=FLIRT(), name='flirt')
         flirt.inputs.reference = ref_masked
         flirt.inputs.dof = 12
         # Nonlinear transformation to MNI space
-        fnirt = pe.Node(interface=FNIRT(), name='fnirt')
+        fnirt = pipeline.node(interface=FNIRT(), name='fnirt')
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
         intensity_model = pipeline.option('intensity_model')

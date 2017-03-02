@@ -83,7 +83,7 @@ class T1T2Study(CombinedStudy):
             approx_runtime=1,
             options=options)
         # Create apply mask node
-        apply_mask = pe.Node(ApplyMask(), 'appy_mask')
+        apply_mask = pipeline.node(ApplyMask(), 'appy_mask')
         # Connect inputs
         pipeline.connect_input('t1', apply_mask, 'in_file')
         pipeline.connect_input('brain_mask', apply_mask, 'mask_file')
