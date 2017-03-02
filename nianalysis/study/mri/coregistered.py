@@ -174,7 +174,6 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         pipeline = super(
             CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(**options)
         # Edit the coregister pipeline from CoregisteredStudy
-        pipeline._name += '_to_matrix'
         pipeline.default_options['interpolate'] = default_interp
         pipeline.options['interpolate'] = options.get('interpolate',
                                                       default_interp)
