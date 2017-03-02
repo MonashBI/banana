@@ -30,7 +30,7 @@ class T1Study(MRIStudy):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = selfcreate_pipeline(
+        pipeline = self.create_pipeline(
             name='segmentation',
             inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('fs_recon_all', freesurfer_recon_all_format)],

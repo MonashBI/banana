@@ -20,7 +20,7 @@ class T2StarKSpaceStudy(MRIStudy):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = selfcreate_pipeline(
+        pipeline = self.create_pipeline(
             name='qsmrecon',
             inputs=[DatasetSpec('t2starkspace', directory_format)],  # TODO should this be primary?
             outputs=[DatasetSpec('qsm', nifti_gz_format),

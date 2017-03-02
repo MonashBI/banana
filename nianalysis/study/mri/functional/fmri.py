@@ -15,7 +15,7 @@ from nianalysis.data_formats import nifti_gz_format, zip_format
 class FunctionalMRIStudy(MRIStudy):
 
     def feat_pipeline(self, **options):
-        pipeline = selfcreate_pipeline(
+        pipeline = self.create_pipeline(
             name='feat',
             inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
                     DatasetSpec('field_map_phase', nifti_gz_format),
