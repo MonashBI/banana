@@ -89,9 +89,9 @@ class MRIStudy(Study):
         ref_masked = get_atlas_path(pipeline.option('atlas'), 'masked',
                                     resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
-        reorient = pipeline.node(Reorient2Std(), name='reorient')
-        reorient_mask = pipeline.node(Reorient2Std(), name='reorient_mask')
-        reorient_masked = pipeline.node(Reorient2Std(), name='reorient_masked')
+        reorient = pipeline.create_node(Reorient2Std(), name='reorient')
+        reorient_mask = pipeline.create_node(Reorient2Std(), name='reorient_mask')
+        reorient_masked = pipeline.create_node(Reorient2Std(), name='reorient_masked')
         # Affine transformation to MNI space
         flirt = pipeline.node(interface=FLIRT(), name='flirt')
         flirt.inputs.reference = ref_masked
