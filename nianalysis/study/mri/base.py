@@ -17,7 +17,7 @@ class MRIStudy(Study):
         """
         Generates a whole brain mask using FSL's BET command
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='brain_mask',
             inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
@@ -63,7 +63,7 @@ class MRIStudy(Study):
         ----------
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='coregister_to_atlas_fnirt',
             inputs=[DatasetSpec('primary', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),

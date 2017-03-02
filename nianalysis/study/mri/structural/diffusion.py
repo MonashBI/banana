@@ -34,7 +34,7 @@ class DiffusionStudy(T2Study):
         phase_dir : str{AP|LR|IS}
             The phase encode direction
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='preprocess',
             inputs=[DatasetSpec('dwi_scan', mrtrix_format),
                     DatasetSpec('forward_rpe', mrtrix_format),
@@ -88,7 +88,7 @@ class DiffusionStudy(T2Study):
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **options)
         elif mask_tool == 'mrtrix':
-            pipeline = self._create_pipeline(
+            pipeline = selfcreate_pipeline(
                 name='brain_mask_mrtrix',
                 inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
                         DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -131,7 +131,7 @@ class DiffusionStudy(T2Study):
             raise NiAnalysisError(
                 "Unrecognised value for 'bias_method' option '{}'. It can "
                 "be one of 'ants' or 'fsl'.".format(bias_method))
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='bias_correct',
             inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
@@ -169,7 +169,7 @@ class DiffusionStudy(T2Study):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='tensor',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -206,7 +206,7 @@ class DiffusionStudy(T2Study):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='fa',
             inputs=[DatasetSpec('tensor', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
@@ -241,7 +241,7 @@ class DiffusionStudy(T2Study):
         Parameters
         ----------
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='fod',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -278,7 +278,7 @@ class DiffusionStudy(T2Study):
         return pipeline
 
     def tbss_pipeline(self, **options):  # @UnusedVariable
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='tbss',
             inputs=[DatasetSpec('fa', nifti_gz_format)],
             outputs=[DatasetSpec('tbss_mean_fa', nifti_gz_format),
@@ -312,7 +312,7 @@ class DiffusionStudy(T2Study):
         """
         Extracts the b0 images from a DWI study and takes their mean
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='extract_b0',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -356,7 +356,7 @@ class DiffusionStudy(T2Study):
         return pipeline
 
     def track_gen_pipeline(self, **options):
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='extract_b0',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -567,7 +567,7 @@ class NODDIStudy(DiffusionStudy):
         Concatenates two dMRI datasets (with different b-values) along the
         DW encoding (4th) axis
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='concatenation',
             inputs=[DatasetSpec('low_b_dw_scan', mrtrix_format),
                     DatasetSpec('high_b_dw_scan', mrtrix_format)],
@@ -619,7 +619,7 @@ class NODDIStudy(DiffusionStudy):
             inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(DatasetSpec('brain_mask', nifti_gz_format))
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='noddi_fitting',
             inputs=inputs,
             outputs=[DatasetSpec('ficvf', nifti_format),

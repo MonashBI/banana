@@ -49,7 +49,7 @@ class CoregisteredStudy(Study):
             the image coordinates of the FOV supplied by the scanner)
         """
 
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='registration_fsl',
             inputs=self._registration_inputs,
             outputs=self._registration_outputs,
@@ -95,7 +95,7 @@ class CoregisteredStudy(Study):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self._create_pipeline(
+        pipeline = selfcreate_pipeline(
             name='registration_spm',
             inputs=[DatasetSpec('t1', nifti_format),
                     DatasetSpec('t2', nifti_format)],
