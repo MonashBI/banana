@@ -49,14 +49,14 @@ class DiffusionStudy(T2Study):
             citations=[fsl_cite, eddy_cite, topup_cite, distort_correct_cite],
             approx_runtime=30, options=options)
         # Create preprocessing node
-        dwipreproc = pipeline.node(DWIPreproc(), name='dwipreproc')
+        dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
         dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
         # Create nodes to convert preprocessed dataset and gradients to FSL
         # format
-        mrconvert = pipeline.node(MRConvert(), name='mrconvert')
+        mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
-        extract_grad = pipeline.node(ExtractFSLGradients(), name="extract_grad")
+        extract_grad = pipeline.create_node(ExtractFSLGradients(), name="extract_grad")
         pipeline.connect(dwipreproc, 'out_file', mrconvert, 'in_file')
         pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
         # Connect inputs
@@ -101,10 +101,10 @@ class DiffusionStudy(T2Study):
                 citations=[mrtrix_cite], approx_runtime=1,
                 options=options)
             # Create mask node
-            dwi2mask = pipeline.node(BrainMask(), name='dwi2mask')
+            dwi2mask = pipeline.create_node(BrainMask(), name='dwi2mask')
             dwi2mask.inputs.out_file = 'brain_mask.nii.gz'
             # Gradient merge node
-            grad_fsl = pipeline.node(MergeTuple(2), name="grad_fsl")
+            grad_fsl = pipeline.create_node(MergeTuple(2), name="grad_fsl")
             # Connect nodes
             pipeline.connect(grad_fsl, 'out', dwi2mask, 'grad_fsl')
             # Connect inputs
@@ -148,10 +148,10 @@ class DiffusionStudy(T2Study):
             approx_runtime=1,
             options=options)
         # Create bias correct node
-        bias_correct = pipeline.node(DWIBiasCorrect(), name="bias_correct")
+        bias_correct = pipeline.create_node(DWIBiasCorrect(), name="bias_correct")
         bias_correct.inputs.method = bias_method
         # Gradient merge node
-        fsl_grads = pipeline.node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', bias_correct, 'fslgrad')
         # Connect to inputs
@@ -185,10 +185,10 @@ class DiffusionStudy(T2Study):
             approx_runtime=1,
             options=options)
         # Create tensor fit node
-        dwi2tensor = pipeline.node(FitTensor(), name='dwi2tensor')
+        dwi2tensor = pipeline.create_node(FitTensor(), name='dwi2tensor')
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
         # Gradient merge node
-        fsl_grads = pipeline.node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', dwi2tensor, 'grad_fsl')
         # Connect to inputs
@@ -220,7 +220,7 @@ class DiffusionStudy(T2Study):
             approx_runtime=1,
             options=options)
         # Create tensor fit node
-        metrics = pipeline.node(TensorMetrics(), name='metrics')
+        metrics = pipeline.create_node(TensorMetrics(), name='metrics')
         metrics.inputs.out_fa = 'fa.nii.gz'
         metrics.inputs.out_adc = 'adc.nii.gz'
         # Connect to inputs
@@ -257,10 +257,10 @@ class DiffusionStudy(T2Study):
             approx_runtime=1,
             options=options)
         # Create fod fit node
-        dwi2fod = pipeline.node(EstimateFOD(), name='dwi2fod')
-        response = pipeline.node(ResponseSD(), name='response')
+        dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod')
+        response = pipeline.create_node(ResponseSD(), name='response')
         # Gradient merge node
-        fsl_grads = pipeline.node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
         pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
@@ -326,19 +326,19 @@ class DiffusionStudy(T2Study):
             approx_runtime=0.5,
             options=options)
         # Gradient merge node
-        fsl_grads = pipeline.node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Extraction node
-        extract_b0s = pipeline.node(ExtractDWIorB0(), name='extract_b0s')
+        extract_b0s = pipeline.create_node(ExtractDWIorB0(), name='extract_b0s')
         extract_b0s.inputs.bzero = True
         extract_b0s.inputs.quiet = True
         # FIXME: Need a registration step before the mean
         # Mean calculation node
-        mean = pipeline.node(MRMath(), name="mean")
+        mean = pipeline.create_node(MRMath(), name="mean")
         mean.inputs.axis = 3
         mean.inputs.operation = 'mean'
         mean.inputs.quiet = True
         # Convert to Nifti
-        mrconvert = pipeline.node(MRConvert(), name="output_conversion")
+        mrconvert = pipeline.create_node(MRConvert(), name="output_conversion")
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect inputs
@@ -576,14 +576,15 @@ class NODDIStudy(DiffusionStudy):
                 "Concatenate low and high b-value dMRI datasets for NODDI "
                 "processing"),
             default_options={},
+            version=1,
             requirements=[mrtrix3_req],
             citations=[mrtrix_cite], approx_runtime=1,
             options=options)
         # Create concatenation node
-        mrcat = pipeline.node(MRCat(), name='mrcat')
+        mrcat = pipeline.create_node(MRCat(), name='mrcat')
         mrcat.inputs.quiet = True
         # Output conversion to nifti_gz
-        mrconvert = pipeline.node(MRConvert(), name="output_conversion")
+        mrconvert = pipeline.create_node(MRConvert(), name="output_conversion")
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect nodes
@@ -641,23 +642,23 @@ class NODDIStudy(DiffusionStudy):
             citations=[noddi_cite], approx_runtime=60,
             options=options)
         # Create node to unzip the nifti files
-        unzip_bias_correct = pipeline.node(MRConvert(), name="unzip_bias_correct")
+        unzip_bias_correct = pipeline.create_node(MRConvert(), name="unzip_bias_correct")
         unzip_bias_correct.inputs.out_ext = 'nii'
         unzip_bias_correct.inputs.quiet = True
-        unzip_mask = pipeline.node(MRConvert(), name="unzip_mask")
+        unzip_mask = pipeline.create_node(MRConvert(), name="unzip_mask")
         unzip_mask.inputs.out_ext = 'nii'
         unzip_mask.inputs.quiet = True
         # Create create-roi node
-        create_roi = pipeline.node(CreateROI(), name='create_roi')
+        create_roi = pipeline.create_node(CreateROI(), name='create_roi')
         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
-        batch_fit = pipeline.node(BatchNODDIFitting(), name="batch_fit")
+        batch_fit = pipeline.create_node(BatchNODDIFitting(), name="batch_fit")
         batch_fit.inputs.model = pipeline.option('noddi_model')
         batch_fit.inputs.nthreads = nthreads
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
-        save_params = pipeline.node(SaveParamsAsNIfTI(), name="save_params")
+        save_params = pipeline.create_node(SaveParamsAsNIfTI(), name="save_params")
         save_params.inputs.output_prefix = 'params'
         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')

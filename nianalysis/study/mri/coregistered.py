@@ -107,7 +107,7 @@ class CoregisteredStudy(Study):
             citations=[spm_cite],
             approx_runtime=30,
             options=options)
-        coreg = pipeline.node(Coregister(), name='coreg')
+        coreg = pipeline.create_node(Coregister(), name='coreg')
         coreg.inputs.jobtype = 'estwrite'
         coreg.inputs.cost_function = 'nmi'
         coreg.inputs.separation = [4, 2]
