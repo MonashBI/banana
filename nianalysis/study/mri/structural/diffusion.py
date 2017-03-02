@@ -583,17 +583,11 @@ class NODDIStudy(DiffusionStudy):
         # Create concatenation node
         mrcat = pipeline.create_node(MRCat(), name='mrcat')
         mrcat.inputs.quiet = True
-        # Output conversion to nifti_gz
-        mrconvert = pipeline.create_node(MRConvert(), name="output_conversion")
-        mrconvert.inputs.out_ext = '.nii.gz'
-        mrconvert.inputs.quiet = True
-        # Connect nodes
-        pipeline.connect(mrcat, 'out_file', mrconvert, 'in_file')
         # Connect inputs
         pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
         pipeline.connect_input('high_b_dw_scan', mrcat, 'second_scan')
         # Connect outputs
-        pipeline.connect_output('dwi_scan', mrconvert, 'out_file')
+        pipeline.connect_output('dwi_scan', mrcat, 'out_file')
         # Check inputs/outputs are connected
         pipeline.assert_connected()
         return pipeline

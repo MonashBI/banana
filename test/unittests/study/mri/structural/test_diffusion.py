@@ -47,12 +47,10 @@ class TestNODDI(TestCase):
     def test_concatenate(self):
         study = self.create_study(
             NODDIStudy, 'concatenate', input_datasets={
-                'low_b_dw_scan': Dataset('r_l_noddi_b700_30_directions',
-                                         mrtrix_format),
-                'high_b_dw_scan': Dataset('r_l_noddi_b2000_60_directions',
-                                          mrtrix_format)})
+                'low_b_dw_scan': Dataset('r_l_dwi_b700_30', mrtrix_format),
+                'high_b_dw_scan': Dataset('r_l_dwi_b2000_60', mrtrix_format)})
         study.concatenate_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('dwi.mif')
+        self.assertDatasetCreated('dwi_scan.mif', study.name)
         # TODO: More thorough testing required
 
 #     def test_noddi_fitting(self, nthreads=6):
