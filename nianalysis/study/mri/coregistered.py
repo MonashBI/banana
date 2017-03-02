@@ -49,7 +49,7 @@ class CoregisteredStudy(Study):
             the image coordinates of the FOV supplied by the scanner)
         """
 
-        pipeline = selfcreate_pipeline(
+        pipeline = self.create_pipeline(
             name='registration_fsl',
             inputs=self._registration_inputs,
             outputs=self._registration_outputs,
@@ -95,7 +95,7 @@ class CoregisteredStudy(Study):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = selfcreate_pipeline(
+        pipeline = self.create_pipeline(
             name='registration_spm',
             inputs=[DatasetSpec('t1', nifti_format),
                     DatasetSpec('t2', nifti_format)],
@@ -178,10 +178,10 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         pipeline.default_options['interpolate'] = default_interp
         pipeline.options['interpolate'] = options.get('interpolate',
                                                       default_interp)
-        pipeline.create_node('flirt').inputs.apply_xfm = pipeline.option(
+        pipeline.node('flirt').inputs.apply_xfm = pipeline.option(
             'interpolate') is not None
         if pipeline.option('interpolate') is not None:
-            pipeline.create_node('flirt').inputs.interp = pipeline.option(
+            pipeline.node('flirt').inputs.interp = pipeline.option(
                 'interpolate')
         return pipeline
 
