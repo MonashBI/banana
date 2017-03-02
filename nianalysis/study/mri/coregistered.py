@@ -62,7 +62,7 @@ class CoregisteredStudy(Study):
             citations=[fsl_cite],
             approx_runtime=5,
             options=options)
-        flirt = pipeline.node(interface=FLIRT(), name='flirt')
+        flirt = pipeline.create_node(interface=FLIRT(), name='flirt')
         # Set registration options
         flirt.inputs.dof = pipeline.option('degrees_of_freedom')
         flirt.inputs.cost = pipeline.option('cost_func')
@@ -178,10 +178,10 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         pipeline.default_options['interpolate'] = default_interp
         pipeline.options['interpolate'] = options.get('interpolate',
                                                       default_interp)
-        pipeline.node('flirt').inputs.apply_xfm = pipeline.option(
+        pipeline.create_node('flirt').inputs.apply_xfm = pipeline.option(
             'interpolate') is not None
         if pipeline.option('interpolate') is not None:
-            pipeline.node('flirt').inputs.interp = pipeline.option(
+            pipeline.create_node('flirt').inputs.interp = pipeline.option(
                 'interpolate')
         return pipeline
 
