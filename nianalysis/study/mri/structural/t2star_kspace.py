@@ -34,14 +34,14 @@ class T2StarKSpaceStudy(MRIStudy):
             version=1,
             options=options)
         # Prepare and reformat SWI_COILS
-        prepare = pipeline.node(interface=Prepare(), name='prepare')
+        prepare = pipeline.create_node(interface=Prepare(), name='prepare')
         # Brain Mask
-        mask = pipeline.node(interface=fsl.BET(), name='bet')
+        mask = pipeline.create_node(interface=fsl.BET(), name='bet')
         mask.inputs.reduce_bias = True
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
         # Phase and QSM for single echo
-        qsmrecon = pipeline.node(interface=STI(), name='qsmrecon')
+        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon')
         # Connect inputs/outputs
         pipeline.connect_input('t2starkspace', prepare, 'in_dir')
         pipeline.connect_output('qsm_mask', mask, 'out_file')
