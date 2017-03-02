@@ -49,7 +49,7 @@ class CoregisteredStudy(Study):
             the image coordinates of the FOV supplied by the scanner)
         """
 
-        pipeline = self._create_pipeline(
+        pipeline = self.create_pipeline(
             name='registration_fsl',
             inputs=self._registration_inputs,
             outputs=self._registration_outputs,
@@ -62,7 +62,7 @@ class CoregisteredStudy(Study):
             citations=[fsl_cite],
             approx_runtime=5,
             options=options)
-        flirt = pe.Node(interface=FLIRT(), name='flirt')
+        flirt = pipeline.create_node(interface=FLIRT(), name='flirt')
         # Set registration options
         flirt.inputs.dof = pipeline.option('degrees_of_freedom')
         flirt.inputs.cost = pipeline.option('cost_func')
@@ -95,7 +95,7 @@ class CoregisteredStudy(Study):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self._create_pipeline(
+        pipeline = self.create_pipeline(
             name='registration_spm',
             inputs=[DatasetSpec('t1', nifti_format),
                     DatasetSpec('t2', nifti_format)],
@@ -107,7 +107,7 @@ class CoregisteredStudy(Study):
             citations=[spm_cite],
             approx_runtime=30,
             options=options)
-        coreg = pe.Node(Coregister(), name='coreg')
+        coreg = pipeline.create_node(Coregister(), name='coreg')
         coreg.inputs.jobtype = 'estwrite'
         coreg.inputs.cost_function = 'nmi'
         coreg.inputs.separation = [4, 2]
@@ -174,7 +174,6 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         pipeline = super(
             CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(**options)
         # Edit the coregister pipeline from CoregisteredStudy
-        pipeline._name += '_to_matrix'
         pipeline.default_options['interpolate'] = default_interp
         pipeline.options['interpolate'] = options.get('interpolate',
                                                       default_interp)

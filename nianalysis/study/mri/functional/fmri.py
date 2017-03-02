@@ -15,7 +15,7 @@ from nianalysis.data_formats import nifti_gz_format, zip_format
 class FunctionalMRIStudy(MRIStudy):
 
     def feat_pipeline(self, **options):
-        pipeline = self._create_pipeline(
+        pipeline = self.create_pipeline(
             name='feat',
             inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
                     DatasetSpec('field_map_phase', nifti_gz_format),
@@ -30,20 +30,20 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             approx_runtime=60,
             options=options)
-        swap_dims = pe.Node(interface=SwapDimensions(), name="swap_dims")
+        swap_dims = pipeline.create_node(SwapDimensions(), "swap_dims")
         swap_dims.inputs.new_dims = ('LR', 'PA', 'IS')
         pipeline.connect_input('t1', swap_dims, 'in_file')
 
-        bet = pe.Node(interface=BET(), name="bet")
+        bet = pipeline.create_node(interface=BET(), name="bet")
         bet.inputs.frac = 0.2
         bet.inputs.reduce_bias = True
         pipeline.connect_input('field_map_mag', bet, 'in_file')
 
-        bet2 = pe.Node(interface=BET(), name="bet2")
+        bet2 = pipeline.create_node(BET(), "bet2")
         bet2.inputs.frac = 0.2
         bet2.inputs.reduce_bias = True
         pipeline.connect(swap_dims, "out_file", bet2, "in_file")
-        create_fmap = pe.Node(interface=PrepareFieldmap(), name="prepfmap")
+        create_fmap = pipeline.create_node(PrepareFieldmap(), "prepfmap")
 #       create_fmap.inputs.in_magnitude = fmap_mag[0]
 
         create_fmap.inputs.delta_TE = 2.46
@@ -52,7 +52,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         mel = MelodicL1FSF()
         mel.inputs.brain_thresh = pipeline.option('brain_thresh_percent')
-        ml1 = pe.Node(interface=mel, name="mL1FSF")
+        ml1 = pipeline.create_node(mel, "mL1FSF")
         ml1.inputs.tr = 0.754
         ml1.inputs.dwell_time = 0.39
         ml1.inputs.te = 21
@@ -68,7 +68,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(bet2, "out_file", ml1, "structural")
         #ml1.inputs.output_dir = output+subject+"/T1/melodic.ica"
         # fix next
-        feat = pe.Node(interface=FEAT(), name="featL1")
+        feat = pipeline.create_node(FEAT(), "featL1")
         feat.inputs.terminal_output = 'none'
         pipeline.connect(ml1, 'fsf_file', feat, 'fsf_file')
         pipeline.connect_output('feat_dir', feat, 'feat_dir')

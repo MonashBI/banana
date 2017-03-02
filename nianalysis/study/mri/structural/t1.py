@@ -30,7 +30,7 @@ class T1Study(MRIStudy):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self._create_pipeline(
+        pipeline = self.create_pipeline(
             name='segmentation',
             inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('fs_recon_all', freesurfer_recon_all_format)],
@@ -42,15 +42,15 @@ class T1Study(MRIStudy):
             approx_runtime=500,
             options=options)
         # FS ReconAll node
-        recon_all = pe.Node(interface=ReconAll(), name='recon_all')
+        recon_all = pipeline.create_node(interface=ReconAll(), name='recon_all')
         recon_all.inputs.directive = 'all'
         recon_all.inputs.openmp = num_processes
         # Wrapper around os.path.join
-        join = pe.Node(interface=JoinPath(), name='join')
+        join = pipeline.create_node(interface=JoinPath(), name='join')
         pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')
         pipeline.connect(recon_all, 'subject_id', join, 'filename')
         # Zip directory before returning
-        zip_dir = pe.Node(interface=ZipDir(), name='zip_dir')
+        zip_dir = pipeline.create_node(interface=ZipDir(), name='zip_dir')
         zip_dir.inputs.extension = '.fs'
         pipeline.connect(join, 'path', zip_dir, 'dirname')
         # Connect inputs/outputs

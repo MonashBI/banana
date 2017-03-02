@@ -17,13 +17,13 @@ class TestT1T2Study(BaseTestCase):
         study.t2_registration_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('t2_coreg.nii.gz', study.name)
 
-    def test_freesurfer_pipeline(self):
-        study = self.create_study(
-            T1T2Study, 'freesurfer', input_datasets={
-                't1': Dataset('mprage', nifti_gz_format),
-                't2': Dataset('flair', nifti_gz_format)})
-        study.freesurfer_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('fs_recon_all.fs.zip')
+#     def test_freesurfer_pipeline(self):
+#         study = self.create_study(
+#             T1T2Study, 'freesurfer', input_datasets={
+#                 't1': Dataset('mprage', nifti_gz_format),
+#                 't2': Dataset('flair', nifti_gz_format)})
+#         study.freesurfer_pipeline().run(work_dir=self.work_dir)
+#         self.assertDatasetCreated('fs_recon_all.fs.zip')
 
     def test_brain_mask_pipelines(self):
         study = self.create_study(

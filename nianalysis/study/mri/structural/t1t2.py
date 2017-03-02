@@ -45,7 +45,7 @@ class T1T2Study(CombinedStudy):
         pipeline = self.TranslatedPipeline(
             'freesurfer', self.t1.freesurfer_pipeline(**options), self,
             add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
-        recon_all = pipeline.node('recon_all')
+        recon_all = pipeline.create_node('recon_all')
         recon_all.inputs.use_T2 = True
         # Connect T2-weighted input
         pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
@@ -70,7 +70,7 @@ class T1T2Study(CombinedStudy):
         Masks the T1 image using the coregistered T2 brain mask as the brain
         mask from T2 is usually more reliable (using BET in any case)
         """
-        pipeline = self._create_pipeline(
+        pipeline = self.create_pipeline(
             name='t1_brain_mask_pipeline',
             inputs=[DatasetSpec('t1', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
@@ -83,7 +83,7 @@ class T1T2Study(CombinedStudy):
             approx_runtime=1,
             options=options)
         # Create apply mask node
-        apply_mask = pe.Node(ApplyMask(), 'appy_mask')
+        apply_mask = pipeline.create_node(ApplyMask(), 'appy_mask')
         # Connect inputs
         pipeline.connect_input('t1', apply_mask, 'in_file')
         pipeline.connect_input('brain_mask', apply_mask, 'mask_file')
