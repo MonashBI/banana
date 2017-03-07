@@ -16,15 +16,16 @@ class Prepare(BaseInterface):
     output_spec = PrepareOutputSpec
 
     def _run_interface(self, runtime):
+        self.working_dir = os.path.abspath(os.getcwd())
+        
         d = dict(in_dir=self.inputs.in_dir,
-        matlab_dir=os.path.abspath(os.path.join(os.path.dirname(nianalysis.interfaces.__file__),'matlab', 'qsm')))
+                 out_dir=self.working_dir,
+                 matlab_dir=os.path.abspath(os.path.join(os.path.dirname(nianalysis.interfaces.__file__),'matlab', 'qsm')))
         
         #this is your MATLAB code template
-        script = Template("""in_dir = '$in_dir';
-addpath(genpath('$matlab_dir'));
-Prepare_Raw_Channels(in_dir);
-exit;
-""").substitute(d)
+        script = Template("""addpath(genpath('$matlab_dir'));
+                Prepare_Raw_Channels('$in_dir', '$out_dir');
+                exit;""").substitute(d)
 
 # 
 
@@ -44,8 +45,8 @@ exit;
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_dir'] = os.path.abspath('Raw/')
-        outputs['out_file'] = os.path.abspath('Raw/Raw_MAGNITUDE.nii.gz')
+        outputs['out_dir'] = os.path.join(self.working_dir,'Raw')
+        outputs['out_file'] = os.path.join(self.working_dir,'Raw','Raw_MAGNITUDE.nii.gz')
         return outputs
     
     
@@ -64,16 +65,16 @@ class STI(BaseInterface):
     output_spec = STIOutputSpec
 
     def _run_interface(self, runtime):
+        self.working_dir = os.path.abspath(os.getcwd())
+        
         d = dict(in_dir=self.inputs.in_dir,
                  mask_file=self.inputs.mask_file,
+                 out_dir=self.working_dir,
                  matlab_dir=os.path.abspath(os.path.join(os.path.dirname(nianalysis.interfaces.__file__),'matlab', 'qsm')))
         #this is your MATLAB code template
-        script = Template("""in_dir = '$in_dir';
-mask_file = '$mask_file';
-addpath(genpath('$matlab_dir'));
-QSM_SingleEcho(in_dir, mask_file);
-exit;
-""").substitute(d)
+        script = Template("""addpath(genpath('$matlab_dir'));
+                QSM_SingleEcho('$in_dir', '$mask_file', '$out_dir');
+                exit;""").substitute(d)
 
         # mfile = True  will create an .m file with your script and executed.
         # Alternatively
@@ -91,7 +92,7 @@ exit;
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['qsm'] = os.path.abspath('QSM/QSM.nii.gz')
-        outputs['tissue_phase'] = os.path.abspath('TissuePhase/TissuePhase.nii.gz')
-        outputs['tissue_mask'] = os.path.abspath('TissuePhase/CoilMasks.nii.gz')
+        outputs['qsm'] = os.path.join(self.working_dir,'QSM','QSM.nii.gz')
+        outputs['tissue_phase'] = os.path.join(self.working_dir,'TissuePhase','TissuePhase.nii.gz')
+        outputs['tissue_mask'] = os.path.join(self.working_dir,'TissuePhase','CoilMasks.nii.gz')
         return outputs

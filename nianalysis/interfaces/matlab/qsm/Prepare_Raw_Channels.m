@@ -1,4 +1,4 @@
-function Prepare_Raw_Channels(inDir)
+function Prepare_Raw_Channels(inDir, outDir)
 %PREPARE_RAW_CHANNELS
 %   Takes all REAL and IMAGINARY pairs in current directory and prepares
 %   them for Phase and QSM processing.
@@ -8,7 +8,7 @@ function Prepare_Raw_Channels(inDir)
 %   3. Magnitude and Phase components are produced
 %   4. Coils are combined for a single magnitude image
 
-outDir = [pwd '/Raw/'];
+outDir = [outDir '/Raw/'];
 outFile = [outDir 'Raw_MAGNITUDE.nii.gz'];
 
 % Check output directory exists
