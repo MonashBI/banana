@@ -1,14 +1,13 @@
-function QSM_SingleEcho( inDir, maskFile )
+function QSM_SingleEcho( inDir, maskFile, outDir )
 %COIL_QSM Summary of this function goes here
 %   Detailed explanation goes here
 
-outDir = [pwd '/QSM/'];
 rawDir = inDir;
-maskDir = [pwd '/Masks/'];
-unwrapDir = [pwd '/Unwrapped/'];
-tissueDir = [pwd '/TissuePhase/'];
-qsmDir = [pwd '/QSM/'];
-nCoils = 32;
+maskDir = [outDir '/Masks/'];
+unwrapDir = [outDir '/Unwrapped/'];
+tissueDir = [outDir '/TissuePhase/'];
+qsmDir = [outDir '/QSM/'];
+nCoils = 2;
 
 % Check output directories exists
 dirList = {maskDir, unwrapDir, tissueDir, qsmDir};
