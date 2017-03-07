@@ -7,7 +7,7 @@ maskDir = [outDir '/Masks/'];
 unwrapDir = [outDir '/Unwrapped/'];
 tissueDir = [outDir '/TissuePhase/'];
 qsmDir = [outDir '/QSM/'];
-nCoils = 2;
+nCoils = 32;
 
 % Check output directories exists
 dirList = {maskDir, unwrapDir, tissueDir, qsmDir};
