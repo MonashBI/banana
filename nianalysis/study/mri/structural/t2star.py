@@ -30,7 +30,7 @@ class T2StarStudy(MRIStudy):
             default_options={},
             requirements=[fsl5_req, matlab_req],
             citations=[sti_cites, fsl_cite, matlab_cite],
-            approx_runtime=30,
+            approx_runtime=100,
             version=1,
             options=options)
 
