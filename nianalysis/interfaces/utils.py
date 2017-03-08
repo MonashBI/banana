@@ -1,6 +1,6 @@
 import os.path
 from itertools import chain
-from nipype.interfaces.utility import Merge, MergeInputSpec
+from nipype.interfaces.utility.base import Merge, MergeInputSpec
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, File,
     Directory, InputMultiPath, CommandLineInputSpec, CommandLine)

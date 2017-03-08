@@ -1,4 +1,3 @@
-from nipype.pipeline import engine as pe
 from nianalysis.requirements import fsl5_req, matlab_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
