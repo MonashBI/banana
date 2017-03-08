@@ -17,4 +17,6 @@ class TestQSM(TestCase):
             T2StarKSpaceStudy, 'qsm', input_datasets={
                 't2starkspace': Dataset('swi_coils', zip_format)})
         study.qsm_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('qsm.nii.gz')
+        
+        for fname in ('qsm.nii.gz', 'tissue_phase.nii.gz', 'tissue_mask.nii.gz', 'qsm_mask.nii.gz'):
+            self.assertDatasetCreated(dataset_name=fname, study_name=study.name)
