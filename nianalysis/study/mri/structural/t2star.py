@@ -9,7 +9,7 @@ from ..base import MRIStudy
 from nipype.interfaces import fsl
 
 
-class T2StarKSpaceStudy(MRIStudy):
+class T2StarStudy(MRIStudy):
 
     def qsm_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
@@ -20,7 +20,8 @@ class T2StarKSpaceStudy(MRIStudy):
         """
         pipeline = self.create_pipeline(
             name='qsmrecon',
-            inputs=[DatasetSpec('t2starkspace', directory_format)],  # TODO should this be primary?
+            inputs=[DatasetSpec('kspace', directory_format)],
+            # TODO should this be primary?
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format),
@@ -32,21 +33,21 @@ class T2StarKSpaceStudy(MRIStudy):
             approx_runtime=30,
             version=1,
             options=options)
-        
+
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare')
-        
+
         # Brain Mask
         mask = pipeline.create_node(interface=fsl.BET(), name='bet')
         mask.inputs.reduce_bias = True
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
-        
+
         # Phase and QSM for single echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon')
-        
+
         # Connect inputs/outputs
-        pipeline.connect_input('t2starkspace', prepare, 'in_dir')
+        pipeline.connect_input('kspace', prepare, 'in_dir')
         pipeline.connect_output('qsm_mask', mask, 'mask_file')
         pipeline.connect_output('qsm', qsmrecon, 'qsm')
         pipeline.connect_output('tissue_phase', qsmrecon, 'tissue_phase')
@@ -60,13 +61,17 @@ class T2StarKSpaceStudy(MRIStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('t2starkspace', directory_format,
-                    description="Raw reconstructed k-space from T2* image for each coil"),
+        DatasetSpec('kspace', directory_format,
+                    description=("Raw reconstructed k-space from T2* image for"
+                                 " each coil")),
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
-                    description="Quantitative susceptibility image resolved from T2* coil images"),
+                    description=("Quantitative susceptibility image resolved "
+                                 "from T2* coil images")),
         DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline,
-                    description="Phase map for each coil following unwrapping and background field removal"),
+                    description=("Phase map for each coil following unwrapping"
+                                 " and background field removal")),
         DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline,
-                    description="Mask for each coil corresponding to areas of high magnitude"),
+                    description=("Mask for each coil corresponding to areas of"
+                                 " high magnitude")),
         DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline,
-                    description="Brain mask generated from T2* image"))
+                    description=("Brain mask generated from T2* image")))
