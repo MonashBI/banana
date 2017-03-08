@@ -24,6 +24,7 @@ class T2StarKSpaceStudy(MRIStudy):
             inputs=[DatasetSpec('t2starkspace', directory_format)],  # TODO should this be primary?
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
+                     DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
             description="Resolve QSM from t2star kspace",
             default_options={},
@@ -32,15 +33,19 @@ class T2StarKSpaceStudy(MRIStudy):
             approx_runtime=30,
             version=1,
             options=options)
+        
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare')
+        
         # Brain Mask
         mask = pipeline.create_node(interface=fsl.BET(), name='bet')
         mask.inputs.reduce_bias = True
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
+        
         # Phase and QSM for single echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon')
+        
         # Connect inputs/outputs
         pipeline.connect_input('t2starkspace', prepare, 'in_dir')
         pipeline.connect_output('qsm_mask', mask, 'mask_file')
@@ -56,8 +61,13 @@ class T2StarKSpaceStudy(MRIStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('t2starkspace', directory_format),
-        DatasetSpec('qsm', nifti_gz_format, qsm_pipeline),
-        DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline),
-        DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline),
-        DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline))
+        DatasetSpec('t2starkspace', directory_format,
+                    description="Raw reconstructed k-space from T2* image for each coil"),
+        DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
+                    description="Quantitative susceptibility image resolved from T2* coil images"),
+        DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline,
+                    description="Phase map for each coil following unwrapping and background field removal"),
+        DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline,
+                    description="Mask for each coil corresponding to areas of high magnitude"),
+        DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline,
+                    description="Brain mask generated from T2* image"))
