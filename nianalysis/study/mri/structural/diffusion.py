@@ -17,7 +17,8 @@ from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format)
 from nianalysis.requirements import (
-    fsl5_req, mrtrix3_req, Requirement, ants2_req)
+    fsl5_req, mrtrix3_req, Requirement, ants2_req, matlab2016_req, noddi_req,
+    niftimatlab_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
@@ -45,18 +46,21 @@ class DiffusionStudy(T2Study):
             description="Preprocess dMRI studies using distortion correction",
             default_options={'phase_dir': 'LR'},
             version=1,
-            requirements=[mrtrix3_req, fsl5_req],
             citations=[fsl_cite, eddy_cite, topup_cite, distort_correct_cite],
-            approx_runtime=30, options=options)
+            options=options)
         # Create preprocessing node
-        dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
+        dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc',
+                                          requirements=[mrtrix3_req, fsl5_req])
         dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
         # Create nodes to convert preprocessed dataset and gradients to FSL
         # format
-        mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
+        mrconvert = pipeline.create_node(MRConvert(), name='mrconvert',
+                                         requirements=[mrtrix3_req])
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
-        extract_grad = pipeline.create_node(ExtractFSLGradients(), name="extract_grad")
+        extract_grad = pipeline.create_node(
+            ExtractFSLGradients(), name="extract_grad",
+            requirements=[fsl5_req])
         pipeline.connect(dwipreproc, 'out_file', mrconvert, 'in_file')
         pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
         # Connect inputs
@@ -97,11 +101,11 @@ class DiffusionStudy(T2Study):
                 description="Generate brain mask from b0 images",
                 default_options={},
                 version=1,
-                requirements=[mrtrix3_req],
                 citations=[mrtrix_cite], approx_runtime=1,
                 options=options)
             # Create mask node
-            dwi2mask = pipeline.create_node(BrainMask(), name='dwi2mask')
+            dwi2mask = pipeline.create_node(BrainMask(), name='dwi2mask',
+                                            requirements=[mrtrix3_req])
             dwi2mask.inputs.out_file = 'brain_mask.nii.gz'
             # Gradient merge node
             grad_fsl = pipeline.create_node(MergeTuple(2), name="grad_fsl")
@@ -141,14 +145,15 @@ class DiffusionStudy(T2Study):
             description="Corrects for B1 field inhomogeneity",
             default_options={'method': bias_method_default},
             version=1,
-            requirements=[mrtrix3_req,
-                          (ants2_req if bias_method == 'ants' else fsl5_req)],
             citations=[fast_cite,
                        (n4_cite if bias_method == 'ants' else fsl_cite)],
-            approx_runtime=1,
             options=options)
         # Create bias correct node
-        bias_correct = pipeline.create_node(DWIBiasCorrect(), name="bias_correct")
+        bias_correct = pipeline.create_node(
+            DWIBiasCorrect(), name="bias_correct",
+            requirements=(
+                [mrtrix3_req] +
+                [ants2_req if bias_method == 'ants' else fsl5_req]))
         bias_correct.inputs.method = bias_method
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
@@ -181,8 +186,6 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[],
-            requirements=[mrtrix3_req],
-            approx_runtime=1,
             options=options)
         # Create tensor fit node
         dwi2tensor = pipeline.create_node(FitTensor(), name='dwi2tensor')
@@ -216,11 +219,10 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[],
-            requirements=[mrtrix3_req],
-            approx_runtime=1,
             options=options)
         # Create tensor fit node
-        metrics = pipeline.create_node(TensorMetrics(), name='metrics')
+        metrics = pipeline.create_node(TensorMetrics(), name='metrics',
+                                       requirements=[mrtrix3_req])
         metrics.inputs.out_fa = 'fa.nii.gz'
         metrics.inputs.out_adc = 'adc.nii.gz'
         # Connect to inputs
@@ -253,12 +255,13 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[mrtrix_cite],
-            requirements=[mrtrix3_req],
             approx_runtime=1,
             options=options)
         # Create fod fit node
-        dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod')
-        response = pipeline.create_node(ResponseSD(), name='response')
+        dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
+                                       requirements=[mrtrix3_req])
+        response = pipeline.create_node(ResponseSD(), name='response',
+                                        requirements=[mrtrix3_req])
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -288,8 +291,6 @@ class DiffusionStudy(T2Study):
             default_options={'tbss_skel_thresh': 0.2},
             version=1,
             citations=[tbss_cite, fsl_cite],
-            requirements=[fsl5_req],
-            approx_runtime=1,
             options=options)
         # Create TBSS workflow
         tbss = create_tbss_all(name='tbss')
@@ -321,24 +322,26 @@ class DiffusionStudy(T2Study):
             description="Extract b0 image from a DWI study",
             default_options={},
             version=1,
-            requirements=[mrtrix3_req],
             citations=[mrtrix_cite],
-            approx_runtime=0.5,
             options=options)
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Extraction node
-        extract_b0s = pipeline.create_node(ExtractDWIorB0(), name='extract_b0s')
+        extract_b0s = pipeline.create_node(
+            ExtractDWIorB0(), name='extract_b0s',
+            requirements=[mrtrix3_req])
         extract_b0s.inputs.bzero = True
         extract_b0s.inputs.quiet = True
         # FIXME: Need a registration step before the mean
         # Mean calculation node
-        mean = pipeline.create_node(MRMath(), name="mean")
+        mean = pipeline.create_node(MRMath(), name="mean",
+                                    requirements=[mrtrix3_req])
         mean.inputs.axis = 3
         mean.inputs.operation = 'mean'
         mean.inputs.quiet = True
         # Convert to Nifti
-        mrconvert = pipeline.create_node(MRConvert(), name="output_conversion")
+        mrconvert = pipeline.create_node(MRConvert(), name="output_conversion",
+                                         requirements=[mrtrix3_req])
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect inputs
@@ -365,7 +368,6 @@ class DiffusionStudy(T2Study):
             description="Extract b0 image from a DWI study",
             default_options={},
             version=1,
-            requirements=[mrtrix3_req],
             citations=[mrtrix_cite], approx_runtime=0.5, options=options)
         pipeline.assert_connected()
         return pipeline
@@ -577,11 +579,11 @@ class NODDIStudy(DiffusionStudy):
                 "processing"),
             default_options={},
             version=1,
-            requirements=[mrtrix3_req],
             citations=[mrtrix_cite], approx_runtime=1,
             options=options)
         # Create concatenation node
-        mrcat = pipeline.create_node(MRCat(), name='mrcat')
+        mrcat = pipeline.create_node(MRCat(), name='mrcat',
+                                     requirements=[mrtrix3_req])
         mrcat.inputs.quiet = True
         # Connect inputs
         pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
@@ -630,29 +632,36 @@ class NODDIStudy(DiffusionStudy):
                 "performed"),
             default_options={'noddi_model': 'WatsonSHStickTortIsoV_B0',
                              'single_slice': False},
-            requirements=[Requirement('matlab', min_version=(2016, 'a')),
-                          Requirement('noddi', min_version=(0, 9)),
-                          Requirement('niftimatlib', (1, 2))],
-            citations=[noddi_cite], approx_runtime=60,
+            citations=[noddi_cite],
             options=options)
         # Create node to unzip the nifti files
-        unzip_bias_correct = pipeline.create_node(MRConvert(), name="unzip_bias_correct")
+        unzip_bias_correct = pipeline.create_node(
+            MRConvert(), name="unzip_bias_correct",
+            requirements=[mrtrix3_req])
         unzip_bias_correct.inputs.out_ext = 'nii'
         unzip_bias_correct.inputs.quiet = True
-        unzip_mask = pipeline.create_node(MRConvert(), name="unzip_mask")
+        unzip_mask = pipeline.create_node(MRConvert(), name="unzip_mask",
+                                          requirements=[mrtrix3_req])
         unzip_mask.inputs.out_ext = 'nii'
         unzip_mask.inputs.quiet = True
         # Create create-roi node
-        create_roi = pipeline.create_node(CreateROI(), name='create_roi')
+        create_roi = pipeline.create_node(CreateROI(), name='create_roi',
+                                          requirements=[noddi_req,
+                                                        matlab2016_req])
         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
-        batch_fit = pipeline.create_node(BatchNODDIFitting(), name="batch_fit")
+        batch_fit = pipeline.create_node(BatchNODDIFitting(), name="batch_fit",
+                                         requirements=[noddi_req,
+                                                       matlab2016_req],
+                                         wall_time=60)
         batch_fit.inputs.model = pipeline.option('noddi_model')
         batch_fit.inputs.nthreads = nthreads
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
-        save_params = pipeline.create_node(SaveParamsAsNIfTI(), name="save_params")
+        save_params = pipeline.create_node(
+            SaveParamsAsNIfTI(), name="save_params",
+            requirements=[noddi_req, matlab2016_req])
         save_params.inputs.output_prefix = 'params'
         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')
