@@ -1,4 +1,4 @@
-from nianalysis.requirements import fsl5_req, matlab_req
+from nianalysis.requirements import fsl5_req, matlab2016_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format
@@ -28,23 +28,26 @@ class T2StarStudy(MRIStudy):
                      DatasetSpec('qsm_mask', nifti_gz_format)],
             description="Resolve QSM from t2star kspace",
             default_options={},
-            requirements=[fsl5_req, matlab_req],
             citations=[sti_cites, fsl_cite, matlab_cite],
-            approx_runtime=100,
             version=1,
             options=options)
 
         # Prepare and reformat SWI_COILS
-        prepare = pipeline.create_node(interface=Prepare(), name='prepare')
+        prepare = pipeline.create_node(interface=Prepare(), name='prepare',
+                                       requirements=[matlab2016_req],
+                                       wall_runtime=10)
 
         # Brain Mask
-        mask = pipeline.create_node(interface=fsl.BET(), name='bet')
+        mask = pipeline.create_node(interface=fsl.BET(), name='bet',
+                                    requirements=[fsl5_req])
         mask.inputs.reduce_bias = True
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
 
         # Phase and QSM for single echo
-        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon')
+        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
+                                        requirements=[matlab2016_req],
+                                        wall_time=100)
 
         # Connect inputs/outputs
         pipeline.connect_input('kspace', prepare, 'in_dir')
