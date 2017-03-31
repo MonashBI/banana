@@ -1,4 +1,4 @@
-from nianalysis.requirements import fsl5_req, matlab2016_req
+from nianalysis.requirements import fsl5_req, matlab2015_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format
@@ -34,7 +34,7 @@ class T2StarStudy(MRIStudy):
 
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
-                                       requirements=[matlab2016_req],
+                                       requirements=[matlab2015_req],
                                        wall_runtime=10)
 
         # Brain Mask
@@ -46,7 +46,7 @@ class T2StarStudy(MRIStudy):
 
         # Phase and QSM for single echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
-                                        requirements=[matlab2016_req],
+                                        requirements=[matlab2015_req],
                                         wall_time=100)
 
         # Connect inputs/outputs

@@ -26,7 +26,7 @@ class MRIStudy(Study):
             default_options={'robust': False, 'threshold': 0.5,
                              'reduce_bias': False},
             version=1,
-            citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5,
+            citations=[fsl_cite, bet_cite, bet2_cite],
             options=options)
         # Create mask node
         bet = pipeline.create_node(interface=fsl.BET(), name="bet",
