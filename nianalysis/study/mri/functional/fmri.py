@@ -31,7 +31,8 @@ class FunctionalMRIStudy(MRIStudy):
         swap_dims.inputs.new_dims = ('LR', 'PA', 'IS')
         pipeline.connect_input('t1', swap_dims, 'in_file')
 
-        bet = pipeline.create_node(interface=BET(), name="bet", [fsl5_req])
+        bet = pipeline.create_node(interface=BET(), name="bet",
+                                   requirements=[fsl5_req])
         bet.inputs.frac = 0.2
         bet.inputs.reduce_bias = True
         pipeline.connect_input('field_map_mag', bet, 'in_file')

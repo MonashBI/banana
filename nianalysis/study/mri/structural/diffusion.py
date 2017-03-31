@@ -17,7 +17,7 @@ from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format)
 from nianalysis.requirements import (
-    fsl5_req, mrtrix3_req, Requirement, ants2_req, matlab2016_req, noddi_req,
+    fsl5_req, mrtrix3_req, Requirement, ants2_req, matlab2015_req, noddi_req,
     niftimatlab_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
@@ -101,7 +101,7 @@ class DiffusionStudy(T2Study):
                 description="Generate brain mask from b0 images",
                 default_options={},
                 version=1,
-                citations=[mrtrix_cite], approx_runtime=1,
+                citations=[mrtrix_cite],
                 options=options)
             # Create mask node
             dwi2mask = pipeline.create_node(BrainMask(), name='dwi2mask',
@@ -647,13 +647,13 @@ class NODDIStudy(DiffusionStudy):
         # Create create-roi node
         create_roi = pipeline.create_node(CreateROI(), name='create_roi',
                                           requirements=[noddi_req,
-                                                        matlab2016_req])
+                                                        matlab2015_req])
         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
         batch_fit = pipeline.create_node(BatchNODDIFitting(), name="batch_fit",
                                          requirements=[noddi_req,
-                                                       matlab2016_req],
+                                                       matlab2015_req],
                                          wall_time=60)
         batch_fit.inputs.model = pipeline.option('noddi_model')
         batch_fit.inputs.nthreads = nthreads
@@ -661,7 +661,7 @@ class NODDIStudy(DiffusionStudy):
         # Create output node
         save_params = pipeline.create_node(
             SaveParamsAsNIfTI(), name="save_params",
-            requirements=[noddi_req, matlab2016_req])
+            requirements=[noddi_req, matlab2015_req])
         save_params.inputs.output_prefix = 'params'
         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')
