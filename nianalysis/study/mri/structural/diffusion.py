@@ -580,7 +580,7 @@ class NODDIStudy(DiffusionStudy):
                 "processing"),
             default_options={},
             version=1,
-            citations=[mrtrix_cite], approx_runtime=1,
+            citations=[mrtrix_cite],
             options=options)
         # Create concatenation node
         mrcat = pipeline.create_node(MRCat(), name='mrcat',
