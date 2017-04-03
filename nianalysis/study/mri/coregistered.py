@@ -67,6 +67,7 @@ class CoregisteredStudy(Study):
         flirt.inputs.cost = pipeline.option('cost_func')
         flirt.inputs.cost_func = pipeline.option('cost_func')
         flirt.inputs.uses_qform = pipeline.option('qsform')
+        flirt.inputs.output_type = 'NIFTI_GZ'
         # Connect inputs
         pipeline.connect_input('to_register', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')

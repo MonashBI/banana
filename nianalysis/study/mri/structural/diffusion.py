@@ -1,4 +1,3 @@
-from nipype.pipeline import engine as pe
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
 from nipype.interfaces.mrtrix3.preprocess import ResponseSD
@@ -61,7 +60,7 @@ class DiffusionStudy(T2Study):
         mrconvert.inputs.quiet = True
         extract_grad = pipeline.create_node(
             ExtractFSLGradients(), name="extract_grad",
-            requirements=[fsl5_req])
+            requirements=[mrtrix3_req])
         pipeline.connect(dwipreproc, 'out_file', mrconvert, 'in_file')
         pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
         # Connect inputs
