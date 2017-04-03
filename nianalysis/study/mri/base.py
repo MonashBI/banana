@@ -95,12 +95,14 @@ class MRIStudy(Study):
             Reorient2Std(), name='reorient_masked', requirements=[fsl5_req])
         # Affine transformation to MNI space
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req])
+                                     requirements=[fsl5_req],
+                                     wall_time=5)
         flirt.inputs.reference = ref_masked
         flirt.inputs.dof = 12
         # Nonlinear transformation to MNI space
         fnirt = pipeline.create_node(interface=FNIRT(), name='fnirt',
-                                     requirements=[fsl5_req])
+                                     requirements=[fsl5_req],
+                                     wall_time=60)
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
         intensity_model = pipeline.option('intensity_model')
