@@ -42,6 +42,7 @@ class T2StarStudy(MRIStudy):
                                     requirements=[fsl5_req],
                                     wall_time=10)
         mask.inputs.reduce_bias = True
+        mask.inputs.output_type = 'NIFTI_GZ'
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
 

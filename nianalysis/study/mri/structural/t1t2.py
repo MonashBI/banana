@@ -83,6 +83,7 @@ class T1T2Study(CombinedStudy):
         # Create apply mask node
         apply_mask = pipeline.create_node(ApplyMask(), 'appy_mask',
                                           [fsl5_req])
+        apply_mask.inputs.output_type = 'NIFTI_GZ'
         # Connect inputs
         pipeline.connect_input('t1', apply_mask, 'in_file')
         pipeline.connect_input('brain_mask', apply_mask, 'mask_file')

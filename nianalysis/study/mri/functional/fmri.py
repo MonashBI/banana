@@ -40,6 +40,7 @@ class FunctionalMRIStudy(MRIStudy):
         bet2 = pipeline.create_node(BET(), "bet2", [fsl5_req])
         bet2.inputs.frac = 0.2
         bet2.inputs.reduce_bias = True
+        bet2.inputs.output_type = 'NIFTI_GZ'
         pipeline.connect(swap_dims, "out_file", bet2, "in_file")
         create_fmap = pipeline.create_node(PrepareFieldmap(), "prepfmap")
 #       create_fmap.inputs.in_magnitude = fmap_mag[0]
@@ -56,6 +57,7 @@ class FunctionalMRIStudy(MRIStudy):
         ml1.inputs.te = 21
         ml1.inputs.unwarp_dir = "x"
         ml1.inputs.sfwhm = 3
+        ml1.inputs.output_type = 'NIFTI_GZ'
         pipeline.connect_input('rs_fmri', ml1, 'fmri')
         pipeline.connect_input('rs_fmri_ref', ml1, 'fmri_ref')
 #        ml1.inputs.fmap_mag = [0]
@@ -68,6 +70,7 @@ class FunctionalMRIStudy(MRIStudy):
         # fix next
         feat = pipeline.create_node(FEAT(), "featL1", [fsl5_req])
         feat.inputs.terminal_output = 'none'
+        feat.inputs.output_type = 'NIFTI_GZ'
         pipeline.connect(ml1, 'fsf_file', feat, 'fsf_file')
         pipeline.connect_output('feat_dir', feat, 'feat_dir')
 
