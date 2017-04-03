@@ -35,11 +35,12 @@ class T2StarStudy(MRIStudy):
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
-                                       wall_runtime=10)
+                                       wall_time=10)
 
         # Brain Mask
         mask = pipeline.create_node(interface=fsl.BET(), name='bet',
-                                    requirements=[fsl5_req])
+                                    requirements=[fsl5_req],
+                                    wall_time=10)
         mask.inputs.reduce_bias = True
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
