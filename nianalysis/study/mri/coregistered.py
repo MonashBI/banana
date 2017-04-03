@@ -61,7 +61,7 @@ class CoregisteredStudy(Study):
             citations=[fsl_cite],
             options=options)
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req])
+                                     requirements=[fsl5_req], wall_time=5)
         # Set registration options
         flirt.inputs.dof = pipeline.option('degrees_of_freedom')
         flirt.inputs.cost = pipeline.option('cost_func')

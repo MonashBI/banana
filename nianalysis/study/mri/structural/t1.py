@@ -42,7 +42,7 @@ class T1Study(MRIStudy):
         # FS ReconAll node
         recon_all = pipeline.create_node(
             interface=ReconAll(), name='recon_all',
-            requirements=[freesurfer_req], wall_time=500)
+            requirements=[freesurfer_req], wall_time=2000)
         recon_all.inputs.directive = 'all'
         recon_all.inputs.openmp = num_processes
         # Wrapper around os.path.join

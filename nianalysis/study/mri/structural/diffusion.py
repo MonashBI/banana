@@ -50,7 +50,8 @@ class DiffusionStudy(T2Study):
             options=options)
         # Create preprocessing node
         dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc',
-                                          requirements=[mrtrix3_req, fsl5_req])
+                                          requirements=[mrtrix3_req, fsl5_req],
+                                          wall_time=60)
         dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
         # Create nodes to convert preprocessed dataset and gradients to FSL
         # format
@@ -579,7 +580,7 @@ class NODDIStudy(DiffusionStudy):
                 "processing"),
             default_options={},
             version=1,
-            citations=[mrtrix_cite], approx_runtime=1,
+            citations=[mrtrix_cite],
             options=options)
         # Create concatenation node
         mrcat = pipeline.create_node(MRCat(), name='mrcat',
