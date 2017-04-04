@@ -645,23 +645,25 @@ class NODDIStudy(DiffusionStudy):
         unzip_mask.inputs.out_ext = 'nii'
         unzip_mask.inputs.quiet = True
         # Create create-roi node
-        create_roi = pipeline.create_node(CreateROI(), name='create_roi',
-                                          requirements=[noddi_req,
-                                                        matlab2015_req])
+        create_roi = pipeline.create_node(
+            CreateROI(), name='create_roi',
+            requirements=[noddi_req, matlab2015_req],
+            memory=4000)
         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
-        batch_fit = pipeline.create_node(BatchNODDIFitting(), name="batch_fit",
-                                         requirements=[noddi_req,
-                                                       matlab2015_req],
-                                         wall_time=60)
+        batch_fit = pipeline.create_node(
+            BatchNODDIFitting(), name="batch_fit",
+            requirements=[noddi_req, matlab2015_req], wall_time=180,
+            memory=8000)
         batch_fit.inputs.model = pipeline.option('noddi_model')
         batch_fit.inputs.nthreads = nthreads
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
         save_params = pipeline.create_node(
             SaveParamsAsNIfTI(), name="save_params",
-            requirements=[noddi_req, matlab2015_req])
+            requirements=[noddi_req, matlab2015_req],
+            memory=4000)
         save_params.inputs.output_prefix = 'params'
         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')
