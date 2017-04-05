@@ -1,4 +1,4 @@
-from nianalysis.requirements import fsl5_req, matlab_req
+from nianalysis.requirements import fsl5_req, matlab2015_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format
@@ -20,34 +20,39 @@ class T2StarStudy(MRIStudy):
         """
         pipeline = self.create_pipeline(
             name='qsmrecon',
-            inputs=[DatasetSpec('kspace', directory_format)],
+            inputs=[DatasetSpec('coils', directory_format)],
             # TODO should this be primary?
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
-            description="Resolve QSM from t2star kspace",
+            description="Resolve QSM from t2star coils",
             default_options={},
-            requirements=[fsl5_req, matlab_req],
             citations=[sti_cites, fsl_cite, matlab_cite],
-            approx_runtime=100,
             version=1,
             options=options)
 
         # Prepare and reformat SWI_COILS
-        prepare = pipeline.create_node(interface=Prepare(), name='prepare')
+        prepare = pipeline.create_node(interface=Prepare(), name='prepare',
+                                       requirements=[matlab2015_req],
+                                       wall_time=10, memory=4000)
 
         # Brain Mask
-        mask = pipeline.create_node(interface=fsl.BET(), name='bet')
+        mask = pipeline.create_node(interface=fsl.BET(), name='bet',
+                                    requirements=[fsl5_req],
+                                    wall_time=10, memory=4000)
         mask.inputs.reduce_bias = True
+        mask.inputs.output_type = 'NIFTI_GZ'
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
 
         # Phase and QSM for single echo
-        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon')
+        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
+                                        requirements=[matlab2015_req],
+                                        wall_time=100, memory=8000)
 
         # Connect inputs/outputs
-        pipeline.connect_input('kspace', prepare, 'in_dir')
+        pipeline.connect_input('coils', prepare, 'in_dir')
         pipeline.connect_output('qsm_mask', mask, 'mask_file')
         pipeline.connect_output('qsm', qsmrecon, 'qsm')
         pipeline.connect_output('tissue_phase', qsmrecon, 'tissue_phase')
@@ -61,9 +66,9 @@ class T2StarStudy(MRIStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('kspace', directory_format,
-                    description=("Raw reconstructed k-space from T2* image for"
-                                 " each coil")),
+        DatasetSpec('coils', directory_format,
+                    description=("Reconstructed T2* complex image for each "
+                                 "coil")),
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
                     description=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),

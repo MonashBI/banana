@@ -26,12 +26,13 @@ class MRIStudy(Study):
             default_options={'robust': False, 'threshold': 0.5,
                              'reduce_bias': False},
             version=1,
-            requirements=[Requirement('fsl', min_version=(0, 5, 0))],
-            citations=[fsl_cite, bet_cite, bet2_cite], approx_runtime=5,
+            citations=[fsl_cite, bet_cite, bet2_cite],
             options=options)
         # Create mask node
-        bet = pipeline.create_node(interface=fsl.BET(), name="bet")
+        bet = pipeline.create_node(interface=fsl.BET(), name="bet",
+                                   requirements=[fsl5_req])
         bet.inputs.mask = True
+        bet.inputs.output_type = 'NIFTI_GZ'
         if pipeline.option('robust'):
             bet.inputs.robust = True
         if pipeline.option('reduce_bias'):
@@ -77,9 +78,7 @@ class MRIStudy(Study):
                              'intensity_model': 'global_non_linear_with_bias',
                              'subsampling': [4, 4, 2, 2, 1, 1]},
             version=1,
-            requirements=[fsl5_req],
             citations=[fsl_cite],
-            approx_runtime=5,
             options=options)
         # Get the reference atlas from FSL directory
         ref_atlas = get_atlas_path(pipeline.option('atlas'), 'image',
@@ -89,17 +88,29 @@ class MRIStudy(Study):
         ref_masked = get_atlas_path(pipeline.option('atlas'), 'masked',
                                     resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
-        reorient = pipeline.create_node(Reorient2Std(), name='reorient')
-        reorient_mask = pipeline.create_node(Reorient2Std(), name='reorient_mask')
-        reorient_masked = pipeline.create_node(Reorient2Std(), name='reorient_masked')
+        reorient = pipeline.create_node(Reorient2Std(), name='reorient',
+                                        requirements=[fsl5_req])
+        reorient.inputs.output_type = 'NIFTI_GZ'
+        reorient_mask = pipeline.create_node(
+            Reorient2Std(), name='reorient_mask', requirements=[fsl5_req])
+        reorient_mask.inputs.output_type = 'NIFTI_GZ'
+        reorient_masked = pipeline.create_node(
+            Reorient2Std(), name='reorient_masked', requirements=[fsl5_req])
+        reorient_masked.inputs.output_type = 'NIFTI_GZ'
         # Affine transformation to MNI space
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt')
+        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
+                                     requirements=[fsl5_req],
+                                     wall_time=5)
         flirt.inputs.reference = ref_masked
         flirt.inputs.dof = 12
+        flirt.inputs.output_type = 'NIFTI_GZ'
         # Nonlinear transformation to MNI space
-        fnirt = pipeline.create_node(interface=FNIRT(), name='fnirt')
+        fnirt = pipeline.create_node(interface=FNIRT(), name='fnirt',
+                                     requirements=[fsl5_req],
+                                     wall_time=60)
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
+        fnirt.inputs.output_type = 'NIFTI_GZ'
         intensity_model = pipeline.option('intensity_model')
         if intensity_model is None:
             intensity_model = 'none'
