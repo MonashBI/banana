@@ -58,16 +58,16 @@ class CoregisteredStudy(Study):
                 'degrees_of_freedom': 6, 'cost_func': 'mutualinfo',
                 'qsform': False},
             version=1,
-            requirements=[fsl5_req],
             citations=[fsl_cite],
-            approx_runtime=5,
             options=options)
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt')
+        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
+                                     requirements=[fsl5_req], wall_time=5)
         # Set registration options
         flirt.inputs.dof = pipeline.option('degrees_of_freedom')
         flirt.inputs.cost = pipeline.option('cost_func')
         flirt.inputs.cost_func = pipeline.option('cost_func')
         flirt.inputs.uses_qform = pipeline.option('qsform')
+        flirt.inputs.output_type = 'NIFTI_GZ'
         # Connect inputs
         pipeline.connect_input('to_register', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')
@@ -103,11 +103,10 @@ class CoregisteredStudy(Study):
             description="Coregister T2-weighted images to T1",
             default_options={},
             version=1,
-            requirements=[spm12_req],
             citations=[spm_cite],
-            approx_runtime=30,
             options=options)
-        coreg = pipeline.create_node(Coregister(), name='coreg')
+        coreg = pipeline.create_node(Coregister(), name='coreg',
+                                     requirements=[spm12_req], wall_time=30)
         coreg.inputs.jobtype = 'estwrite'
         coreg.inputs.cost_function = 'nmi'
         coreg.inputs.separation = [4, 2]

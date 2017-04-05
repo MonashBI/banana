@@ -37,12 +37,12 @@ class T1Study(MRIStudy):
             description="Segment white/grey matter and csf",
             default_options={},
             version=1,
-            requirements=[freesurfer_req],
             citations=copy(freesurfer_cites),
-            approx_runtime=500,
             options=options)
         # FS ReconAll node
-        recon_all = pipeline.create_node(interface=ReconAll(), name='recon_all')
+        recon_all = pipeline.create_node(
+            interface=ReconAll(), name='recon_all',
+            requirements=[freesurfer_req], wall_time=2000)
         recon_all.inputs.directive = 'all'
         recon_all.inputs.openmp = num_processes
         # Wrapper around os.path.join
