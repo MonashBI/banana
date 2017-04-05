@@ -49,7 +49,7 @@ for i=0:(nCoils-1)
 end
 
 % Adjust header for extra dimension
-nii.hdr.dime.dim(4) = nCoils;
+nii.hdr.dime.dim(5) = nCoils;
 
 % Save outputs
 nii.img = tissueVol;
