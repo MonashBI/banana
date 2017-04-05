@@ -20,13 +20,13 @@ class T2StarStudy(MRIStudy):
         """
         pipeline = self.create_pipeline(
             name='qsmrecon',
-            inputs=[DatasetSpec('kspace', directory_format)],
+            inputs=[DatasetSpec('coils', directory_format)],
             # TODO should this be primary?
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
-            description="Resolve QSM from t2star kspace",
+            description="Resolve QSM from t2star coils",
             default_options={},
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
@@ -52,7 +52,7 @@ class T2StarStudy(MRIStudy):
                                         wall_time=100, memory=8000)
 
         # Connect inputs/outputs
-        pipeline.connect_input('kspace', prepare, 'in_dir')
+        pipeline.connect_input('coils', prepare, 'in_dir')
         pipeline.connect_output('qsm_mask', mask, 'mask_file')
         pipeline.connect_output('qsm', qsmrecon, 'qsm')
         pipeline.connect_output('tissue_phase', qsmrecon, 'tissue_phase')
@@ -66,9 +66,9 @@ class T2StarStudy(MRIStudy):
         return pipeline
 
     _dataset_specs = set_dataset_specs(
-        DatasetSpec('kspace', directory_format,
-                    description=("Raw reconstructed k-space from T2* image for"
-                                 " each coil")),
+        DatasetSpec('coils', directory_format,
+                    description=("Reconstructed T2* complex image for each "
+                                 "coil")),
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
                     description=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
