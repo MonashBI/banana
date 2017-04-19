@@ -49,7 +49,7 @@ class T2StarStudy(MRIStudy):
         # Phase and QSM for single echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
                                         requirements=[matlab2015_req],
-                                        wall_time=100, memory=8000)
+                                        wall_time=150, memory=8000)
 
         # Connect inputs/outputs
         pipeline.connect_input('coils', prepare, 'in_dir')
