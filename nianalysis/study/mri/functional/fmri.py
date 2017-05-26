@@ -1,16 +1,22 @@
-from nipype.interfaces.fsl.model import FEAT
+from nipype.interfaces.fsl.model import FEAT, MELODIC
 from nipype.interfaces.fsl.epi import PrepareFieldmap
-from nipype.interfaces.fsl.preprocess import BET
+from nipype.interfaces.fsl.preprocess import BET, FUGUE, FLIRT
+from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import SwapDimensions
 from nianalysis.interfaces.fsl import MelodicL1FSF, FSLFIX
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
-from nianalysis.requirements import fsl5_req, fix_req
+from nianalysis.requirements import fsl5_req, fix_req, ants2_req, afni_req
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
-    nifti_gz_format, ica_format, rdata_format, directory_format,
+    nifti_gz_format, rdata_format, directory_format,
     zip_format)
+from nianalysis.interfaces.utils import OptiBET, AntsRegSyn, SetANTsPath
+from nianalysis.interfaces.afni import Tproject
+import os
+import subprocess as sp
+from logging import raiseExceptions
 
 
 class FunctionalMRIStudy(MRIStudy):
@@ -109,6 +115,104 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.assert_connected()
         return pipeline
+
+    def ASPREE_preproc(self, **options):
+
+        pipeline = self._create_pipeline(
+            name='ASPREE_preprocessing',
+            inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
+                    DatasetSpec('field_map_phase', nifti_gz_format),
+                    DatasetSpec('t1', nifti_gz_format),
+                    DatasetSpec('rs_fmri', nifti_gz_format),
+                    DatasetSpec('rs_fmri_ref', nifti_gz_format)],
+            outputs=[DatasetSpec('filtered_data', nifti_gz_format)],
+            description=("Funtional MRI preprocessing using state-of-the-art"
+                         "toolboxes"),
+            default_options={'brain_thresh_percent': 5,
+                             'MNI_template': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain.nii.gz'},
+            version=1,
+            requirements=[fsl5_req, ants2_req, afni_req],
+            citations=[fsl_cite],
+            approx_runtime=60,
+            options=options)
+        try:
+            cmd = 'which ANTS'
+            antspath = sp.check_output(cmd, shell=True)
+            antspath = '/'.join(antspath.split('/')[0:-2])
+            os.environ['ANTSPATH'] = antspath
+        except ImportError:
+            print "NO ANTs module found. Please ensure to have it in you PATH."
+        swap_dims = pe.Node(interface=SwapDimensions(), name="swap_dims")
+        swap_dims.inputs.new_dims = ('LR', 'PA', 'IS')
+        pipeline.connect_input('t1', swap_dims, 'in_file')
+
+        bet = pe.Node(interface=BET(), name="bet")
+        bet.inputs.robust = True
+        pipeline.connect_input('field_map_mag', bet, 'in_file')
+
+        bet_rsfmri = pe.Node(interface=BET(), name="bet_rsfmri")
+        bet_rsfmri.inputs.robust = True
+        bet_rsfmri.inputs.frac = 0.4
+        bet_rsfmri.inputs.mask = True
+        pipeline.connect_input('rsfmri', bet_rsfmri, 'in_file')
+
+        create_fmap = pe.Node(interface=PrepareFieldmap(), name="prepfmap")
+        create_fmap.inputs.delta_TE = 2.46
+        pipeline.connect(bet, "out_file", create_fmap, "in_magnitude")
+        pipeline.connect_input('field_map_phase', create_fmap, 'in_phase')
+
+        fugue = pe.Node(interface=FUGUE(), name='fugue')
+        fugue.inputs.unwarp_direction = 'x'
+        fugue.inputs.dwell_time = 0.00039
+        fugue.inputs.unwarped_file = 'unwarped_rsfmri'
+        pipeline.connect_input(create_fmap, 'out_fieldmap', fugue,
+                               'fmap_in_file')
+        pipeline.connect_input('rs_fmri', fugue, 'in_file')
+
+        optibet = pe.Node(interface=OptiBET(), name='optiBET')
+        pipeline.connect_input('t1', optibet, 'input_file')
+
+        antreg_rsfmri = pe.Node(interface=AntsRegSyn, name='ANTsReg')
+        antreg_rsfmri.inputs.num_dimensions = 3
+        antreg_rsfmri.inputs.transformation = 'r'
+        antreg_rsfmri.inputs.out_prefix = 'epi2T1'
+        pipeline.connect_input(
+            optibet, 'betted_file', antreg_rsfmri, 'ref_file')
+        pipeline.connect_input(
+            bet_rsfmri, 'out_file', antreg_rsfmri, 'input_file')
+
+        antreg_t1 = pe.Node(interface=AntsRegSyn, name='ANTsReg_T1')
+        antreg_t1.inputs.num_dimensions = 3
+        antreg_t1.inputs.transformation = 's'
+        antreg_t1.inputs.out_prefix = 'T12MNI'
+        pipeline.connect_input(
+            optibet, 'betted_file', antreg_t1, 'input_file')
+        pipeline.connect_input(
+            pipeline.option('MNI_template'), antreg_t1, 'ref_file')
+
+        flirt_t1 = pe.Node(interface=FLIRT(), name='FLIRT_T1')
+        flirt_t1.inputs.dof = 6
+        flirt_t1.inputs.out_matrix_file = 'example2hires.mat'
+        pipeline.connect_input('rs_fmri', flirt_t1, 'in_file')
+        pipeline.connect_input(pipeline.option('MNI_template'), flirt_t1,
+                               'reference')
+        afni_mc = pe.Node(interface=Volreg(), name='AFNI_MC')
+        afni_mc.inputs.zpad = 1
+        afni_mc.inputs.out_file = 'rsfmri_mc.nii.gz'
+        afni_mc.inputs.oned_file = 'prefiltered_func_data_mcf.par'
+        afni_mc.inputs.oned_matrix_save = 'motion_matrices.mat'
+        pipeline.connect_input(fugue, 'unwarped_file', afni_mc, 'in_file')
+
+        filt = pe.Node(interface=Tproject, name='filtering')
+        filt.inputs.stopband = (0, 0.01)
+        filt.inputs.delta_t = 0.754
+        filt.inputs.polort = 3
+        filt.inputs.blur = 3
+        pipeline.connect_input(afni_mc, 'out_file', filt, 'in_file')
+        pipeline.connect_input(bet_rsfmri, 'mask_file', filt, 'mask')
+
+        melodicL1 = pe.Node(interface=MELODIC(), name='MelodicL1')
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('field_map_mag', nifti_gz_format),
