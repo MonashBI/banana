@@ -3,19 +3,23 @@ import warnings
 from string import Template
 from nibabel import load
 from nipype.interfaces.base import (
-    File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec)
+    File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec,
+    Directory)
 from glob import glob
-from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec, Info)
-from nipype.interfaces.base import (load_template, File, traits, isdefined,
-                                    TraitedSpec, BaseInterface, Directory,
-                                    InputMultiPath, OutputMultiPath,
-                                    BaseInterfaceInputSpec)
+from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
+from nipype.interfaces.base import (CommandLineInputSpec, CommandLine)
+import nipype.pipeline.engine as pe
+import nipype.interfaces.utility as util
+import nipype.interfaces.fsl as fsl
+from nipype.utils.filemanip import list_to_filename
 
 warn = warnings.warn
 warnings.filterwarnings('always', category=UserWarning)
 
 feat_template_path = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "resources", 'temp.fsf')
+optiBET_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                            'resources', 'bash', 'optiBET.sh'))
 
 
 class MelodicL1FSFInputSpec(BaseInterfaceInputSpec):
@@ -122,3 +126,57 @@ class FSLFIX(FSLCommand):
         outputs['output'] = os.path.abspath(
             glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
         return outputs
+
+# class OptiBETInputSpec(CommandLineInputSpec):
+#     input_file = File(mandatory=True, desc='existing input image',
+#                       argstr='-i %s', position=1, exists=True)
+#     use_FSL = traits.Bool(desc='use FSL for initial extraction', argstr='-f',
+#                           xor=['use_AFNI'])
+#     use_AFNI = traits.Bool(desc='use AFNI for initial extraction', argstr='-a',
+#                            xor=['use_FSL'])
+#     _xor_mask = ('mni_1mm', 'mni_2mm', 'avg')
+#     use_MNI_1mm = traits.Bool(
+#         desc='use MNI152_T1_1mm_brain_mask.nii.gz for mask', argstr='-o',
+#         xor=_xor_mask)
+#     use_MNI_2mm = traits.Bool(
+#         desc='use MNI152_T1_2mm_brain_mask.nii.gz for mask', argstr='-t',
+#         xor=_xor_mask)
+#     use_avg = traits.Bool(
+#         desc='use avg152T1_brain.nii.gz for mask', argstr='-g', xor=_xor_mask)
+#     debug = traits.Bool(
+#         desc='use debug mode (will NOT delete intermediate files)',
+#         argstr='-d')
+# 
+# 
+# class OptiBETOutputSpec(TraitedSpec):
+#     betted_file = File(exists=True, desc="The optiBETted image")
+#     betted_mask = File(exists=True, desc="The optiBETted binary mask")
+# 
+# 
+# class OptiBET(CommandLine):
+#     """Run optiBET.sh on an input image and return one brain extracted image
+#     and its binary mask."""
+# 
+#     _cmd = optiBET_path
+#     input_spec = OptiBETInputSpec
+#     output_spec = OptiBETOutputSpec
+#     betted_ext = '.nii.gz'
+# 
+#     def _list_outputs(self):
+#         outputs = self._outputs().get()
+#         outputs['betted_file'] = os.path.join(
+#             os.getcwd(), self._gen_filename('betted_file'))
+#         outputs['betted_mask'] = os.path.join(
+#             os.getcwd(), self._gen_filename('betted_mask'))
+#         return outputs
+# 
+#     def _gen_filename(self, name):
+#         if name == 'betted_file':
+#             fid = os.path.basename(self.inputs.input_file).split('.')[0]
+#             fname = fid + '_optiBET_brain' + self.betted_ext
+#         elif name == 'betted_mask':
+#             fid = os.path.basename(self.inputs.input_file).split('.')[0]
+#             fname = fid + '_optiBET_brain_mask' + self.betted_ext
+#         else:
+#             assert False
+#         return fname
