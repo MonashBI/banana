@@ -37,19 +37,31 @@ class TestFMRI(BaseTestCase):
 #         self.assertDatasetCreated('betted_file.nii.gz', study.name)
 #         self.assertDatasetCreated('betted_mask.nii.gz', study.name)
 
-    def test_ants(self):
+#     def test_ants(self):
+#         study = self.create_study(
+#             FunctionalMRIStudy, 'optibet', input_datasets={
+#                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
+#                 'betted_file': Dataset('betted_file', nifti_gz_format)})
+#         study.ANTsRegistration().run(work_dir=self.work_dir,
+#                                      plugin='MultiProc')
+#         self.assertDatasetCreated('epi2T1.nii.gz', study.name)
+#         self.assertDatasetCreated('epi2T1_mat.mat', study.name)
+#         self.assertDatasetCreated('T12MNI_linear.nii.gz', study.name)
+#         self.assertDatasetCreated('T12MNI_mat.mat', study.name)
+#         self.assertDatasetCreated('12MNI_warp.nii.gz', study.name)
+#         self.assertDatasetCreated('12MNI_invwarp.nii.gz', study.name)
+
+    def test_filtering(self):
         study = self.create_study(
-            FunctionalMRIStudy, 'optibet', input_datasets={
+            FunctionalMRIStudy, 'filtering', input_datasets={
                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
-                'betted_file': Dataset('betted_file', nifti_gz_format)})
+                'betted_file': Dataset('betted_file', nifti_gz_format),
+                'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
+                'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
+                't1': Dataset('mprage', nifti_gz_format)})
         study.ANTsRegistration().run(work_dir=self.work_dir,
                                      plugin='MultiProc')
-        self.assertDatasetCreated('epi2T1.nii.gz', study.name)
-        self.assertDatasetCreated('epi2T1_mat.mat', study.name)
-        self.assertDatasetCreated('T12MNI_linear.nii.gz', study.name)
-        self.assertDatasetCreated('T12MNI_mat.mat', study.name)
-        self.assertDatasetCreated('12MNI_warp.nii.gz', study.name)
-        self.assertDatasetCreated('12MNI_invwarp.nii.gz', study.name)
+        self.assertDatasetCreated('filtered_data.nii.gz', study.name)
 
 #     def test_feat(self):
 #         study = self.create_study(

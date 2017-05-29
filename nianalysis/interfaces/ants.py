@@ -78,7 +78,7 @@ class AntsRegSyn(CommandLine):
     def _gen_filename(self, name):
         if name == 'regmat':
             fid = os.path.basename(self.inputs.out_prefix)
-            fname = fid + '0GenericAffine' + self.mat_ext
+            fname = fid + '_0GenericAffine' + self.mat_ext
         elif name == 'warp_file':
             fid = os.path.basename(self.inputs.out_prefix)
             fname = fid + '_1Warp' + self.img_ext

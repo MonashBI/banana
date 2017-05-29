@@ -318,6 +318,8 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
         pipeline.connect(bet_rsfmri, 'mask_file', filt, 'mask')
 
+        pipeline.connect_output('filtered_data', filt, 'out_file')
+
         pipeline.assert_connected()
         return pipeline
 
