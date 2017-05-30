@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 from nipype import config
+from nianalysis.data_formats import text_matrix_format
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import (nifti_gz_format, rdata_format, # @IgnorePep8
-                                     directory_format, zip_format) # @IgnorePep8
+                                     directory_format, zip_format, par_format) # @IgnorePep8
 from nianalysis.study.mri.functional.fmri import FunctionalMRIStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 
@@ -62,14 +63,28 @@ class TestFMRI(BaseTestCase):
 #                                      plugin='MultiProc')
 #         self.assertDatasetCreated('filtered_data.nii.gz', study.name)
 
-    def test_melodic(self):
+#     def test_melodic(self):
+#         study = self.create_study(
+#             FunctionalMRIStudy, 'melodic', input_datasets={
+#                 'filtered_data': Dataset('filtered_func_data', nifti_gz_format)})
+#         study.MelodicL1().run(work_dir=self.work_dir,
+#                               plugin='MultiProc')
+#         self.assertDatasetCreated('melodic_ica.zip', study.name)
+ 
+    def test_fix(self):
         study = self.create_study(
-            FunctionalMRIStudy, 'melodic', input_datasets={
-                'filtered_data': Dataset('filtered_func_data', nifti_gz_format)})
-        study.MelodicL1().run(work_dir=self.work_dir,
-                              plugin='MultiProc')
-        self.assertDatasetCreated('melodic_ica.zip', study.name)
-
+            FunctionalMRIStudy, 'fix', input_datasets={
+                'rsfmri_mask': Dataset('rsfmri_mask', nifti_gz_format),
+                'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
+                'melodic_ica': Dataset('melodic_ica', zip_format),
+#                 'train_data': Dataset('train_data', rdata_format),
+                'hires2example': Dataset('hires2example', text_matrix_format),
+                'filtered_data': Dataset('filtered_func_data', nifti_gz_format),
+                'unwarped_file': Dataset('unwarped', nifti_gz_format),
+                't1': Dataset('mprage', nifti_gz_format),
+                'mc_par': Dataset('mc_par', par_format)})
+        study.fix_pipeline().run(work_dir=self.work_dir, plugin='Linear')
+        self.assertDatasetCreated('fix_dir.zip', study.name)
 #     def test_feat(self):
 #         study = self.create_study(
 #             FunctionalMRIStudy, 'preprocessing', input_datasets={

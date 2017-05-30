@@ -16,6 +16,8 @@ zip_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         'resources', 'bash', 'zip.sh'))
 cp_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                        'resources', 'bash', 'copy_file.sh'))
+cp_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                           'resources', 'bash', 'copy_dir.sh'))
 mkdir_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                              'resources', 'bash', 'make_dir.sh'))
 
@@ -292,7 +294,6 @@ class CopyFileInputSpec(CommandLineInputSpec):
                          position=1)
     dst = File(genfile=True, argstr='%s', position=2,
                desc=("The destination file"))
-    method = traits.Int(mandatory=True, desc='method', argstr='%s', position=3)
 
 
 class CopyFileOutputSpec(TraitedSpec):
@@ -308,8 +309,47 @@ class CopyFile(CommandLine):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['copied'] = os.path.join(os.getcwd(),
+
+        outputs['copied'] = os.path.join(self.inputs.base_dir,
                                          self._gen_filename('copied'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'copied':
+            fname = os.path.basename(self.inputs.dst)
+        else:
+            assert False
+        return fname
+
+
+class CopyDirInputSpec(CommandLineInputSpec):
+    src = File(mandatory=True, desc='source file', argstr='%s',
+               position=0)
+    base_dir = Directory(mandatory=True, desc='root directory', argstr='%s',
+                         position=1)
+    dst = File(genfile=True, argstr='%s', position=2,
+               desc=("The destination file"))
+    method = traits.Int(mandatory=True, desc='method', argstr='%s', position=3)
+
+
+class CopyDirOutputSpec(TraitedSpec):
+    copied = Directory(exists=True, desc="The copied file")
+
+
+class CopyDir(CommandLine):
+    """Creates a copy of a given file"""
+
+    _cmd = cp_dir_path
+    input_spec = CopyDirInputSpec
+    output_spec = CopyDirOutputSpec
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        if self.inputs.method == 1:
+            outputs['copied'] = os.path.join(self.inputs.base_dir)
+        elif self.inputs.method == 2:
+            outputs['copied'] = os.path.join(self.inputs.base_dir,
+                                             self._gen_filename('copied'))
         return outputs
 
     def _gen_filename(self, name):
@@ -340,13 +380,13 @@ class MakeDir(CommandLine):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['new_dir'] = os.path.join(os.getcwd(),
+        outputs['new_dir'] = os.path.join(self.inputs.base_dir,
                                           self._gen_filename('new_dir'))
         return outputs
 
     def _gen_filename(self, name):
         if name == 'new_dir':
-            fname = os.path.basename(self.inputs.base_dir)+self.inputs.new_dir
+            fname = os.path.basename(self.inputs.name_dir)
         else:
             assert False
         return fname
