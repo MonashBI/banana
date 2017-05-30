@@ -14,6 +14,10 @@ from nianalysis.exceptions import NiAnalysisUsageError
 
 zip_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         'resources', 'bash', 'zip.sh'))
+cp_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                       'resources', 'bash', 'copy_file.sh'))
+mkdir_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                             'resources', 'bash', 'make_dir.sh'))
 
 
 class MergeInputSpec(DynamicTraitedSpec, BaseInterfaceInputSpec):
@@ -279,3 +283,70 @@ class DummyReconAll(BaseInterface):
         outputs['subjects_dir'] = '/Users/tclose/Desktop/FSTest'
         outputs['subject_id'] = 'recon_all'
         return outputs
+
+
+class CopyFileInputSpec(CommandLineInputSpec):
+    src = File(mandatory=True, desc='source file', argstr='%s',
+               position=0)
+    base_dir = Directory(mandatory=True, desc='root directory', argstr='%s',
+                         position=1)
+    dst = File(genfile=True, argstr='%s', position=2,
+               desc=("The destination file"))
+    method = traits.Int(mandatory=True, desc='method', argstr='%s', position=3)
+
+
+class CopyFileOutputSpec(TraitedSpec):
+    copied = File(exists=True, desc="The copied file")
+
+
+class CopyFile(CommandLine):
+    """Creates a copy of a given file"""
+
+    _cmd = cp_path
+    input_spec = CopyFileInputSpec
+    output_spec = CopyFileOutputSpec
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['copied'] = os.path.join(os.getcwd(),
+                                         self._gen_filename('copied'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'copied':
+            fname = os.path.basename(self.inputs.dst)
+        else:
+            assert False
+        return fname
+
+
+class MakeDirInputSpec(CommandLineInputSpec):
+    base_dir = Directory(mandatory=True, desc='root directory', argstr='%s',
+                         position=0)
+    name_dir = Directory(genfile=True, argstr='%s', position=1,
+                         desc=("name of the new directory"))
+
+
+class MakeDirOutputSpec(TraitedSpec):
+    new_dir = Directory(exists=True, desc="The created directory")
+
+
+class MakeDir(CommandLine):
+    """Creates a new directory"""
+
+    _cmd = mkdir_path
+    input_spec = MakeDirInputSpec
+    output_spec = MakeDirOutputSpec
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['new_dir'] = os.path.join(os.getcwd(),
+                                          self._gen_filename('new_dir'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'new_dir':
+            fname = os.path.basename(self.inputs.base_dir)+self.inputs.new_dir
+        else:
+            assert False
+        return fname

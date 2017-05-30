@@ -48,20 +48,27 @@ class TestFMRI(BaseTestCase):
 #         self.assertDatasetCreated('epi2T1_mat.mat', study.name)
 #         self.assertDatasetCreated('T12MNI_linear.nii.gz', study.name)
 #         self.assertDatasetCreated('T12MNI_mat.mat', study.name)
-#         self.assertDatasetCreated('12MNI_warp.nii.gz', study.name)
-#         self.assertDatasetCreated('12MNI_invwarp.nii.gz', study.name)
+#         self.assertDatasetCreated('T12MNI_warp.nii.gz', study.name)
+#         self.assertDatasetCreated('T12MNI_invwarp.nii.gz', study.name)
 
-    def test_filtering(self):
+#     def test_filtering(self):
+#         study = self.create_study(
+#             FunctionalMRIStudy, 'filtering', input_datasets={
+#                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
+#                 'betted_file': Dataset('betted_file', nifti_gz_format),
+#                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
+#                 'field_map_phase': Dataset('field_map_phase', nifti_gz_format)})
+#         study.rsfMRI_filtering().run(work_dir=self.work_dir,
+#                                      plugin='MultiProc')
+#         self.assertDatasetCreated('filtered_data.nii.gz', study.name)
+
+    def test_melodic(self):
         study = self.create_study(
-            FunctionalMRIStudy, 'filtering', input_datasets={
-                'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
-                'betted_file': Dataset('betted_file', nifti_gz_format),
-                'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
-                'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
-                't1': Dataset('mprage', nifti_gz_format)})
-        study.ANTsRegistration().run(work_dir=self.work_dir,
-                                     plugin='MultiProc')
-        self.assertDatasetCreated('filtered_data.nii.gz', study.name)
+            FunctionalMRIStudy, 'melodic', input_datasets={
+                'filtered_data': Dataset('filtered_func_data', nifti_gz_format)})
+        study.MelodicL1().run(work_dir=self.work_dir,
+                              plugin='MultiProc')
+        self.assertDatasetCreated('melodic_ica.zip', study.name)
 
 #     def test_feat(self):
 #         study = self.create_study(
