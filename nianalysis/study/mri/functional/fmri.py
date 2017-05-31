@@ -95,7 +95,7 @@ class FunctionalMRIStudy(MRIStudy):
             name='fix',
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('melodic_ica', directory_format),
-#                     DatasetSpec('train_data', rdata_format),
+                    DatasetSpec('train_data', rdata_format),
                     DatasetSpec('filtered_data', nifti_gz_format),
                     DatasetSpec('hires2example', text_matrix_format),
                     DatasetSpec('unwarped_file', nifti_gz_format),
@@ -103,7 +103,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('mc_par', par_format),
                     DatasetSpec('rsfmri_mask', nifti_gz_format),
                     DatasetSpec('rs_fmri', nifti_gz_format)],
-            outputs=[DatasetSpec('fix_dir', directory_format)],
+            outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
             description=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             default_options={'component_threshold': 20, 'motion_reg': True},
@@ -155,7 +155,7 @@ class FunctionalMRIStudy(MRIStudy):
         cp6 = pipeline.create_node(CopyFile(), name='copyfile6')
         cp6.inputs.dst = 'mean_func.nii.gz'
         pipeline.connect(meanfunc, 'out_file', cp6, 'src')
-        pipeline.connect_input('melodic_ica', cp6, 'base_dir')
+        pipeline.connect(cp5, 'basedir', cp6, 'base_dir')
 
         cp7 = pipeline.create_node(CopyDir(), name='copyfile7')
         cp7.inputs.dst = 'filtered_func_data.ica'
@@ -166,23 +166,23 @@ class FunctionalMRIStudy(MRIStudy):
         cp8 = pipeline.create_node(CopyFile(), name='copyfile8')
         cp8.inputs.dst = 'filtered_func_data.nii.gz'
         pipeline.connect_input('filtered_data', cp8, 'src')
-        pipeline.connect_input('melodic_ica', cp8, 'base_dir')
-    
-        cp9 = pipeline.create_node(CopyDir(), name='copyfile9')
-        cp9.inputs.dst = 'dir_for_fix'
-        cp9.inputs.method = 2
-        pipeline.connect_input('melodic_ica', cp9, 'src')
-        pipeline.connect_input('melodic_ica', cp9, 'base_dir')
-#         finter = FSLFIX()
-# 
-#         fix = pipeline.create_node(finter, name="fix")
-#         pipeline.connect_input("melodic_ica", fix, "feat_dir")
-#         pipeline.connect_input("train_data", fix, "train_data")
-#         finter.inputs.component_threshold = pipeline.option(
-#             'component_threshold')
-#         finter.inputs.motion_reg = pipeline.option('motion_reg')
-# 
-        pipeline.connect_output('fix_dir', cp9, 'copied')
+        pipeline.connect(cp6, 'basedir', cp8, 'base_dir')
+
+#         cp9 = pipeline.create_node(CopyDir(), name='copyfile9')
+#         cp9.inputs.dst = 'dir_for_fix'
+#         cp9.inputs.method = 2
+#         pipeline.connect_input('melodic_ica', cp9, 'src')
+#         pipeline.connect_input('melodic_ica', cp9, 'base_dir')
+        finter = FSLFIX()
+
+        fix = pipeline.create_node(finter, name="fix")
+        pipeline.connect(cp8, "basedir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        finter.inputs.component_threshold = pipeline.option(
+            'component_threshold')
+        finter.inputs.motion_reg = pipeline.option('motion_reg')
+
+        pipeline.connect_output('cleaned_file', fix, 'output')
 
         pipeline.assert_connected()
         return pipeline
