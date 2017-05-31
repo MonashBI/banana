@@ -46,8 +46,8 @@ for i=1:numel(reFiles)
     inIm = load_nii([imFile]);
     inRe.img(inRe.img==2048) = 0;
     inIm.img(inIm.img==2048) = 0;
-    save_nii(inRe, [fileName '_REAL.nii.gz']);
-    save_nii(inIm, [fileName '_IMAGINARY.nii.gz']);
+    %save_nii(inRe, [fileName '_REAL.nii.gz']);
+    %save_nii(inIm, [fileName '_IMAGINARY.nii.gz']);
     
     % Constructave polar images
     complexVol = complex(inRe.img,inIm.img);
