@@ -298,6 +298,7 @@ class CopyFileInputSpec(CommandLineInputSpec):
 
 class CopyFileOutputSpec(TraitedSpec):
     copied = File(exists=True, desc="The copied file")
+    basedir = Directory(exists=True, desc='base directory')
 
 
 class CopyFile(CommandLine):
@@ -312,6 +313,7 @@ class CopyFile(CommandLine):
 
         outputs['copied'] = os.path.join(self.inputs.base_dir,
                                          self._gen_filename('copied'))
+        outputs['basedir'] = os.path.join(self.inputs.base_dir)
         return outputs
 
     def _gen_filename(self, name):
