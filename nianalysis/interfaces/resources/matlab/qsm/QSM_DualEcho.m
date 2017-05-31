@@ -4,14 +4,16 @@ function QSM_DualEcho( inDir, maskFile, outDir )
 addpath(genpath('/data/project/Phil/ASPREE_QSM/scripts/'))
 
 % Prepare directory structure
+mkdir([outDir '/QSM']);
 phaseFile = [outDir '/QSM/Raw_PHASE.nii.gz'];
 newMaskFile = [outDir '/QSM/PhaseMask.nii.gz'];
 unwrapFile = [outDir '/QSM/Unwrapped.nii.gz'];
 tissueFile = [outDir '/QSM/TissuePhase.nii.gz'];
 qsmFile = [outDir '/QSM/QSM.nii.gz'];
+nCoils = 32;
 
 % Combine channels
-HIP_ChannelCombination(inDir, outDir, nCoils);
+HIP_ChannelCombination(inDir, [outDir '/QSM'], nCoils);
 
 % Load Inputs (Raw phase and mask)
 mask = load_nii(maskFile);
