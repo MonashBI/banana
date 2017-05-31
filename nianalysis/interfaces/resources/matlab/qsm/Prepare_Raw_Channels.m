@@ -23,7 +23,7 @@ reFiles = dir([inDir '/*REAL.nii.gz']);
 sumSqrMag = [];
 sumMag = [];
 
-disp(['Number of files = ' numel(reFiles)])
+disp(['Number of files = ' num2str(numel(reFiles))])
 disp(['Directory searched = ' inDir])
 
 % Loop over channels/coils
