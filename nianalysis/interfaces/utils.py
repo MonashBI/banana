@@ -311,8 +311,7 @@ class CopyFile(CommandLine):
     def _list_outputs(self):
         outputs = self._outputs().get()
 
-        outputs['copied'] = os.path.join(self.inputs.base_dir,
-                                         self._gen_filename('copied'))
+        outputs['copied'] = os.path.join(self.inputs.base_dir, self.inputs.dst)
         outputs['basedir'] = os.path.join(self.inputs.base_dir)
         return outputs
 
@@ -336,6 +335,7 @@ class CopyDirInputSpec(CommandLineInputSpec):
 
 class CopyDirOutputSpec(TraitedSpec):
     copied = Directory(exists=True, desc="The copied file")
+    basedir = Directory(exists=True, desc='base directory')
 
 
 class CopyDir(CommandLine):
@@ -349,9 +349,11 @@ class CopyDir(CommandLine):
         outputs = self._outputs().get()
         if self.inputs.method == 1:
             outputs['copied'] = os.path.join(self.inputs.base_dir)
+            outputs['basedir'] = os.path.join(self.inputs.base_dir)
         elif self.inputs.method == 2:
             outputs['copied'] = os.path.join(self.inputs.base_dir,
                                              self._gen_filename('copied'))
+            outputs['basedir'] = os.path.join(self.inputs.base_dir)
         return outputs
 
     def _gen_filename(self, name):
@@ -382,8 +384,8 @@ class MakeDir(CommandLine):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['new_dir'] = os.path.join(self.inputs.base_dir,
-                                          self._gen_filename('new_dir'))
+        outputs['new_dir'] = os.path.join(self.inputs.base_dir)
+#                                           self._gen_filename('new_dir'))
         return outputs
 
     def _gen_filename(self, name):

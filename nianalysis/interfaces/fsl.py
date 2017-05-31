@@ -108,6 +108,9 @@ class FSLFIXInputSpec(FSLCommandInputSpec):
         desc="threshold for the number of components")
     motion_reg = traits.Bool(position=3, argstr='-m',
                              desc="motion parameters regression")
+    highpass = traits.Float(
+        position=4, argstr='-h %f', desc='apply highpass of the motion '
+        'confound with <highpass> being full-width (2*sigma) in seconds.')
 
 
 class FSLFIXOutputSpec(TraitedSpec):

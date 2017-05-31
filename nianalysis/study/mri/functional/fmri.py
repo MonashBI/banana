@@ -10,7 +10,7 @@ from nianalysis.interfaces.fsl import MelodicL1FSF, FSLFIX
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
-from nianalysis.requirements import fsl5_req, fix_req
+from nianalysis.requirements import fsl5_req
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
@@ -99,7 +99,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('filtered_data', nifti_gz_format),
                     DatasetSpec('hires2example', text_matrix_format),
                     DatasetSpec('unwarped_file', nifti_gz_format),
-                    DatasetSpec('t1', nifti_gz_format),
+                    DatasetSpec('betted_file', nifti_gz_format),
                     DatasetSpec('mc_par', par_format),
                     DatasetSpec('rsfmri_mask', nifti_gz_format),
                     DatasetSpec('rs_fmri', nifti_gz_format)],
@@ -115,38 +115,34 @@ class FunctionalMRIStudy(MRIStudy):
         mkdir1.inputs.name_dir = 'reg'
         pipeline.connect_input('melodic_ica', mkdir1, 'base_dir')
 
-        mkdir2 = pipeline.create_node(MakeDir(), name='makedir2')
-        mkdir2.inputs.name_dir = 'mc'
-        pipeline.connect_input('melodic_ica', mkdir2, 'base_dir')
-
-        mkdir3 = pipeline.create_node(MakeDir(), name='makedir3')
-        mkdir3.inputs.name_dir = 'filtered_func_data.ica'
-        pipeline.connect_input('melodic_ica', mkdir3, 'base_dir')
-
         cp1 = pipeline.create_node(CopyFile(), name='copyfile1')
-        cp1.inputs.dst = 'highres.nii.gz'
-        pipeline.connect_input('t1', cp1, 'src')
+        cp1.inputs.dst = 'reg/highres.nii.gz'
+        pipeline.connect_input('betted_file', cp1, 'src')
         pipeline.connect(mkdir1, 'new_dir', cp1, 'base_dir')
 
         cp2 = pipeline.create_node(CopyFile(), name='copyfile2')
-        cp2.inputs.dst = 'example_func.nii.gz'
+        cp2.inputs.dst = 'reg/example_func.nii.gz'
         pipeline.connect_input('unwarped_file', cp2, 'src')
-        pipeline.connect(mkdir1, 'new_dir', cp2, 'base_dir')
+        pipeline.connect(cp1, 'basedir', cp2, 'base_dir')
 
         cp3 = pipeline.create_node(CopyFile(), name='copyfile3')
-        cp3.inputs.dst = 'highres2example_func.mat'
+        cp3.inputs.dst = 'reg/highres2example_func.mat'
         pipeline.connect_input('hires2example', cp3, 'src')
-        pipeline.connect(mkdir1, 'new_dir', cp3, 'base_dir')
+        pipeline.connect(cp2, 'basedir', cp3, 'base_dir')
+
+        mkdir2 = pipeline.create_node(MakeDir(), name='makedir2')
+        mkdir2.inputs.name_dir = 'mc'
+        pipeline.connect(cp3, 'basedir', mkdir2, 'base_dir')
 
         cp4 = pipeline.create_node(CopyFile(), name='copyfile4')
-        cp4.inputs.dst = 'prefiltered_func_data_mcf.par'
+        cp4.inputs.dst = 'mc/prefiltered_func_data_mcf.par'
         pipeline.connect_input('mc_par', cp4, 'src')
         pipeline.connect(mkdir2, 'new_dir', cp4, 'base_dir')
 
         cp5 = pipeline.create_node(CopyFile(), name='copyfile5')
         cp5.inputs.dst = 'mask.nii.gz'
         pipeline.connect_input('rsfmri_mask', cp5, 'src')
-        pipeline.connect_input('melodic_ica', cp5, 'base_dir')
+        pipeline.connect(cp4, 'basedir', cp5, 'base_dir')
 
         meanfunc = pipeline.create_node(
             ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc')
@@ -157,6 +153,10 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(meanfunc, 'out_file', cp6, 'src')
         pipeline.connect(cp5, 'basedir', cp6, 'base_dir')
 
+        mkdir3 = pipeline.create_node(MakeDir(), name='makedir3')
+        mkdir3.inputs.name_dir = 'filtered_func_data.ica'
+        pipeline.connect(cp6, 'basedir', mkdir3, 'base_dir')
+
         cp7 = pipeline.create_node(CopyDir(), name='copyfile7')
         cp7.inputs.dst = 'filtered_func_data.ica'
         cp7.inputs.method = 1
@@ -166,21 +166,15 @@ class FunctionalMRIStudy(MRIStudy):
         cp8 = pipeline.create_node(CopyFile(), name='copyfile8')
         cp8.inputs.dst = 'filtered_func_data.nii.gz'
         pipeline.connect_input('filtered_data', cp8, 'src')
-        pipeline.connect(cp6, 'basedir', cp8, 'base_dir')
+        pipeline.connect(cp7, 'basedir', cp8, 'base_dir')
 
-#         cp9 = pipeline.create_node(CopyDir(), name='copyfile9')
-#         cp9.inputs.dst = 'dir_for_fix'
-#         cp9.inputs.method = 2
-#         pipeline.connect_input('melodic_ica', cp9, 'src')
-#         pipeline.connect_input('melodic_ica', cp9, 'base_dir')
-        finter = FSLFIX()
-
-        fix = pipeline.create_node(finter, name="fix")
+        fix = pipeline.create_node(FSLFIX(), name="fix")
         pipeline.connect(cp8, "basedir", fix, "feat_dir")
         pipeline.connect_input("train_data", fix, "train_data")
-        finter.inputs.component_threshold = pipeline.option(
+        fix.inputs.component_threshold = pipeline.option(
             'component_threshold')
-        finter.inputs.motion_reg = pipeline.option('motion_reg')
+        fix.inputs.motion_reg = pipeline.option('motion_reg')
+        fix.inputs.highpass = 200
 
         pipeline.connect_output('cleaned_file', fix, 'output')
 
@@ -189,7 +183,7 @@ class FunctionalMRIStudy(MRIStudy):
 
     def optiBET(self, **options):
 
-        optibet = self.create_pipeline(
+        pipeline = self.create_pipeline(
             name='optiBET',
             inputs=[DatasetSpec('t1', nifti_gz_format)],
             outputs=[DatasetSpec('betted_file', nifti_gz_format),
@@ -203,44 +197,44 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        bet1 = optibet.create_node(BET(frac=0.1, reduce_bias=True), name='bet')
-        optibet.connect_input('t1', bet1, 'in_file')
-        flirt = optibet.create_node(
+        bet1 = pipeline.create_node(BET(frac=0.1, reduce_bias=True), name='bet')
+        pipeline.connect_input('t1', bet1, 'in_file')
+        flirt = pipeline.create_node(
             FLIRT(out_matrix_file='linear_mat.mat',
                   out_file='linear_reg.nii.gz', searchr_x=[-30, 30],
                   searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt')
-        flirt.inputs.reference = optibet.option('MNI_template')
-        optibet.connect(bet1, 'out_file', flirt, 'in_file')
-        fnirt = optibet.create_node(
+        flirt.inputs.reference = pipeline.option('MNI_template')
+        pipeline.connect(bet1, 'out_file', flirt, 'in_file')
+        fnirt = pipeline.create_node(
             FNIRT(config_file='T1_2_MNI152_2mm',
                   fieldcoeff_file='warp_file.nii.gz'), name='fnirt')
-        fnirt.inputs.ref_file = optibet.option('MNI_template')
-        optibet.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
-        optibet.connect_input('t1', fnirt, 'in_file')
-        invwarp = optibet.create_node(InvWarp(), name='invwarp')
-        optibet.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
-        optibet.connect_input('t1', invwarp, 'reference')
-        applywarp = optibet.create_node(
+        fnirt.inputs.ref_file = pipeline.option('MNI_template')
+        pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
+        pipeline.connect_input('t1', fnirt, 'in_file')
+        invwarp = pipeline.create_node(InvWarp(), name='invwarp')
+        pipeline.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
+        pipeline.connect_input('t1', invwarp, 'reference')
+        applywarp = pipeline.create_node(
             ApplyWarp(interp='nn', out_file='warped_file.nii.gz'),
             name='applywarp')
-        applywarp.inputs.in_file = optibet.option('MNI_template_mask')
-        optibet.connect_input('t1', applywarp, 'ref_file')
-        optibet.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
-        maths1 = optibet.create_node(
+        applywarp.inputs.in_file = pipeline.option('MNI_template_mask')
+        pipeline.connect_input('t1', applywarp, 'ref_file')
+        pipeline.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
+        maths1 = pipeline.create_node(
             ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
             name='binarize')
-        optibet.connect(applywarp, 'out_file', maths1, 'in_file')
-        maths2 = optibet.create_node(
+        pipeline.connect(applywarp, 'out_file', maths1, 'in_file')
+        maths2 = pipeline.create_node(
             ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
             name='mask')
-        optibet.connect_input('t1', maths2, 'in_file')
-        optibet.connect(maths1, 'out_file', maths2, 'in_file2')
+        pipeline.connect_input('t1', maths2, 'in_file')
+        pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
 
-        optibet.connect_output('betted_mask', maths1, 'out_file')
-        optibet.connect_output('betted_file', maths2, 'out_file')
+        pipeline.connect_output('betted_mask', maths1, 'out_file')
+        pipeline.connect_output('betted_file', maths2, 'out_file')
 
-        optibet.assert_connected()
-        return optibet
+        pipeline.assert_connected()
+        return pipeline
 
     def ANTsRegistration(self, **options):
 
@@ -425,5 +419,4 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('mc_par', par_format, rsfMRI_filtering),
         DatasetSpec('rsfmri_mask', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
-        DatasetSpec('melodic_ica', zip_format, MelodicL1),
-        DatasetSpec('fix_dir', zip_format, fix_pipeline))
+        DatasetSpec('melodic_ica', zip_format, MelodicL1))
