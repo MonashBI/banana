@@ -1,6 +1,10 @@
-function Prepare_Masks( inDir, maskFile, outDir, nCoils)
+function Prepare_Masks( inDir, maskFile, outDir, nCoils, echoId)
 %PREPARE_MASKS
 %   Coil specific and whole-brain masks using FSL-BET
+
+if nargin<5
+    echoId=1;
+end
 
 % Spherical structure element
 SE = fspecial3('ellipsoid',[11 11 11]);
@@ -12,7 +16,7 @@ mask = imdilate(mask,SE>0);
 
 %Generate coil specific masks by thresholding magnitude image
 for i=0:(nCoils-1)
-    inMag = load_nii([inDir '/Raw_Coil_' num2str(i) '_1_MAGNITUDE.nii.gz']);
+    inMag = load_nii([inDir '/Raw_Coil_' num2str(i) '_' num2str(echoId) '_MAGNITUDE.nii.gz']);
     
     % Blur to remove tissue based contrast
     outVol = convn(inMag.img,SE,'same');
