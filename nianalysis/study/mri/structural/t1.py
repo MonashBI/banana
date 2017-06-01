@@ -1,6 +1,5 @@
 from itertools import chain
 from copy import copy
-from nipype.pipeline import engine as pe
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nianalysis.requirements import freesurfer_req
