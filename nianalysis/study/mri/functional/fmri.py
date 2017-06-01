@@ -2,11 +2,11 @@ from nipype.interfaces.fsl.model import FEAT, MELODIC
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import (
     BET, FUGUE, FLIRT, FNIRT, ApplyWarp)
-from nipype.interfaces.afni.preprocess import Volreg
+from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
-                                         ConvertXFM)
+                                         ConvertXFM, Split, Merge)
 from nianalysis.interfaces.fsl import MelodicL1FSF, FSLFIX
-
+from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
@@ -197,7 +197,8 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        bet1 = pipeline.create_node(BET(frac=0.1, reduce_bias=True), name='bet')
+        bet1 = pipeline.create_node(
+            BET(frac=0.1, reduce_bias=True), name='bet')
         pipeline.connect_input('t1', bet1, 'in_file')
         flirt = pipeline.create_node(
             FLIRT(out_matrix_file='linear_mat.mat',
@@ -398,6 +399,51 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def applyTransform(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='ANTsApplyTransform',
+            inputs=[DatasetSpec('cleaned_file', nifti_gz_format),
+                    DatasetSpec('T12MNI_warp', nifti_gz_format),
+                    DatasetSpec('T12MNI_mat', text_matrix_format),
+                    DatasetSpec('epi2T1_mat', text_matrix_format)],
+            outputs=[DatasetSpec('registered_file', nifti_gz_format)],
+            description=("Spatial and temporal rsfMRI filtering"),
+            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain.nii.gz'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        split = pipeline.create_node(Split(), name='fslsplit')
+        split.inputs.dimension = 't'
+        split.inputs.out_base_name = 'epivol_'
+        pipeline.connect_input('cleaned_file', split, 'in_file')
+
+        apply_trans = pipeline.create_node(ApplyTransforms(),
+                                           name='ApplyTransform')
+
+    def applySmooth(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='3dBlurToFWHM',
+            inputs=[DatasetSpec('registered_file', nifti_gz_format)],
+            outputs=[DatasetSpec('smoothed_file', nifti_gz_format)],
+            description=("Spatial and temporal rsfMRI filtering"),
+            default_options={'MNI_template_mask': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        smooth = pipeline.create_node(BlurToFWHM(), name='3dBlurToFWHM')
+        smooth.inputs.fwhm = 5
+        smooth.inputs.out_file = 'rs-fmri_filtered_reg_smooth.nii.gz'
+        smooth.inputs.mask = pipeline.option('MNI_template_mask')
+        pipeline.connect_input('registered_file', smooth, 'in_file')
+
+        pipeline.connect_output('smoothed_file', smooth, 'out_file')
+
     _dataset_specs = set_dataset_specs(
         DatasetSpec('field_map_mag', nifti_gz_format),
         DatasetSpec('field_map_phase', nifti_gz_format),
@@ -419,4 +465,6 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('mc_par', par_format, rsfMRI_filtering),
         DatasetSpec('rsfmri_mask', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
-        DatasetSpec('melodic_ica', zip_format, MelodicL1))
+        DatasetSpec('melodic_ica', zip_format, MelodicL1),
+        DatasetSpec('registered_file', nifti_gz_format, applyTransform),
+        DatasetSpec('smoothed_file', nifti_gz_format, applySmooth))
