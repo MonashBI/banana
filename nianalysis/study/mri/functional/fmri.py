@@ -198,7 +198,7 @@ class FunctionalMRIStudy(MRIStudy):
             options=options)
 
         bet1 = pipeline.create_node(
-            BET(frac=0.1, reduce_bias=True), name='bet')
+            BET(frac=0.1, reduce_bias=True), name='bet', wall_time=10)
         pipeline.connect_input('t1', bet1, 'in_file')
         flirt = pipeline.create_node(
             FLIRT(out_matrix_file='linear_mat.mat',
@@ -208,7 +208,8 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(bet1, 'out_file', flirt, 'in_file')
         fnirt = pipeline.create_node(
             FNIRT(config_file='T1_2_MNI152_2mm',
-                  fieldcoeff_file='warp_file.nii.gz'), name='fnirt')
+                  fieldcoeff_file='warp_file.nii.gz'), name='fnirt',
+            wall_time=15)
         fnirt.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
         pipeline.connect_input('t1', fnirt, 'in_file')
