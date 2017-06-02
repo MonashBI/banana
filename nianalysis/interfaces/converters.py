@@ -2,7 +2,6 @@ import os.path
 from nipype.interfaces.base import (
     TraitedSpec, File, Directory, CommandLineInputSpec, CommandLine, isdefined,
     traits)
-from nianalysis.utils import split_extension
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -57,7 +56,5 @@ class Dcm2niix(CommandLine):
         if isdefined(self.inputs.filename):
             out_name = self.inputs.filename
         else:
-            base, orig_ext = split_extension(
-                os.path.basename(self.inputs.input_dir))
-            out_name = os.path.join("{}".format(base))
+            out_name = os.path.basename(self.inputs.input_dir)
         return out_name
