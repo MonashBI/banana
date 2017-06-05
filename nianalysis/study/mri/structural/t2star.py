@@ -34,36 +34,21 @@ class T2StarStudy(MRIStudy):
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
-<<<<<<< HEAD
                                        wall_time=30, memory=16000)
-=======
-                                       wall_time=10, memory=4000)
->>>>>>> QSM DE
 
         # Brain Mask
         mask = pipeline.create_node(interface=fsl.BET(), name='bet',
                                     requirements=[fsl5_req],
-<<<<<<< HEAD
                                     wall_time=30, memory=8000)
-=======
-                                    wall_time=10, memory=4000)
->>>>>>> QSM DE
         mask.inputs.reduce_bias = True
         mask.inputs.output_type = 'NIFTI_GZ'
         mask.inputs.frac = 0.3
         mask.inputs.mask = True
 
-<<<<<<< HEAD
         # Phase and QSM for dual echo
         qsmrecon = pipeline.create_node(interface=STI_DE(), name='qsmrecon',
                                         requirements=[matlab2015_req],
                                         wall_time=600, memory=24000)
-=======
-        # Phase and QSM for single echo
-        qsmrecon = pipeline.create_node(interface=STI_DE(), name='qsmrecon',
-                                        requirements=[matlab2015_req],
-                                        wall_time=150, memory=8000)
->>>>>>> QSM DE
 
         # Connect inputs/outputs
         pipeline.connect_input('coils', prepare, 'in_dir')
