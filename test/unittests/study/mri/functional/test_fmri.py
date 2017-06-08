@@ -71,22 +71,22 @@ class TestFMRI(BaseTestCase):
 #                               plugin='MultiProc')
 #         self.assertDatasetCreated('melodic_ica.zip', study.name)
  
-    def test_fix(self):
-        study = self.create_study(
-            FunctionalMRIStudy, 'fix', input_datasets={
-                'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
-                'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
-#                 'rsfmri_mask': Dataset('rsfmri_mask', nifti_gz_format),
-                'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
-#                 'melodic_ica': Dataset('melodic_ica', zip_format),
-                'train_data': Dataset('train_data_new', rdata_format),
-#                 'hires2example': Dataset('hires2example', text_matrix_format),
-#                 'filtered_data': Dataset('filtered_func_data', nifti_gz_format),
-#                 'unwarped_file': Dataset('unwarped', nifti_gz_format),
-#                 'betted_file': Dataset('betted_file', nifti_gz_format),
-                't1': Dataset('mprage', nifti_gz_format)})
-        study.fix_pipeline().run(work_dir=self.work_dir, plugin='Linear')
-        self.assertDatasetCreated('cleaned_file.nii.gz', study.name)
+#     def test_fix(self):
+#         study = self.create_study(
+#             FunctionalMRIStudy, 'fix', input_datasets={
+#                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
+#                 'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
+# #                 'rsfmri_mask': Dataset('rsfmri_mask', nifti_gz_format),
+#                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
+# #                 'melodic_ica': Dataset('melodic_ica', zip_format),
+#                 'train_data': Dataset('train_data_new', rdata_format),
+# #                 'hires2example': Dataset('hires2example', text_matrix_format),
+# #                 'filtered_data': Dataset('filtered_func_data', nifti_gz_format),
+# #                 'unwarped_file': Dataset('unwarped', nifti_gz_format),
+# #                 'betted_file': Dataset('betted_file', nifti_gz_format),
+#                 't1': Dataset('mprage', nifti_gz_format)})
+#         study.fix_pipeline().run(work_dir=self.work_dir, plugin='Linear')
+#         self.assertDatasetCreated('cleaned_file.nii.gz', study.name)
 #     def test_feat(self):
 #         study = self.create_study(
 #             FunctionalMRIStudy, 'preprocessing', input_datasets={
@@ -96,3 +96,16 @@ class TestFMRI(BaseTestCase):
 #                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format)})
 #         study.ASPREE_preproc().run(work_dir=self.work_dir, plugin='MultiProc')
 #         self.assertDatasetCreated('melodic_dir.zip', study.name)
+    def test_apply_trans(self):
+        study = self.create_study(
+            FunctionalMRIStudy, 'apply_smooth', input_datasets={
+                'cleaned_file': Dataset('filtered_func_data', nifti_gz_format),
+                'T12MNI_warp': Dataset('T12MNI_1Warp', nifti_gz_format),
+                'T12MNI_mat': Dataset('T12MNI_0GenericAffine', text_matrix_format),
+#                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
+#                 't1': Dataset('mprage', nifti_gz_format),
+#                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
+#                 'train_data': Dataset('train_data_new', rdata_format),
+                'epi2T1_mat': Dataset('epi2T1_0GenericAffine', text_matrix_format)})
+        study.applySmooth().run(work_dir=self.work_dir, plugin='Linear')
+        self.assertDatasetCreated('smoothed_file.nii.gz', study.name)

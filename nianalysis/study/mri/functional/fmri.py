@@ -4,7 +4,8 @@ from nipype.interfaces.fsl.preprocess import (
     BET, FUGUE, FLIRT, FNIRT, ApplyWarp)
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
-                                         ConvertXFM, Split, Merge)
+                                         ConvertXFM, Split)
+from nipype.interfaces.fsl.utils import Merge as fslmerge
 from nianalysis.interfaces.fsl import MelodicL1FSF, FSLFIX
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
@@ -17,7 +18,7 @@ from nianalysis.data_formats import (
     zip_format, text_matrix_format, par_format)
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.afni import Tproject
-from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
+from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir, Merge
 import os
 import subprocess as sp
 
@@ -411,18 +412,30 @@ class FunctionalMRIStudy(MRIStudy):
             outputs=[DatasetSpec('registered_file', nifti_gz_format)],
             description=("Spatial and temporal rsfMRI filtering"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz'},
+                             'standard/MNI152_T1_2mm_brain.nii.gz',
+                             'TR': 0.754},
             version=1,
             citations=[fsl_cite],
             options=options)
 
-        split = pipeline.create_node(Split(), name='fslsplit')
-        split.inputs.dimension = 't'
-        split.inputs.out_base_name = 'epivol_'
-        pipeline.connect_input('cleaned_file', split, 'in_file')
+        merge_trans = pipeline.create_node(Merge(3), name='merge_transforms')
+        pipeline.connect_input('T12MNI_warp', merge_trans, 'in1')
+        pipeline.connect_input('T12MNI_mat', merge_trans, 'in2')
+        pipeline.connect_input('epi2T1_mat', merge_trans, 'in3')
 
-        apply_trans = pipeline.create_node(ApplyTransforms(),
-                                           name='ApplyTransform')
+        apply_trans = pipeline.create_node(
+            ApplyTransforms(), name='ApplyTransform')
+        apply_trans.inputs.reference_image = pipeline.option('MNI_template')
+#         apply_trans.inputs.dimension = 3
+        apply_trans.inputs.interpolation = 'Linear'
+        apply_trans.inputs.input_image_type = 3
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        pipeline.connect_input('cleaned_file', apply_trans, 'input_image')
+
+        pipeline.connect_output('registered_file', apply_trans, 'output_image')
+
+        pipeline.assert_connected()
+        return pipeline
 
     def applySmooth(self, **options):
 
@@ -444,6 +457,9 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_input('registered_file', smooth, 'in_file')
 
         pipeline.connect_output('smoothed_file', smooth, 'out_file')
+
+        pipeline.assert_connected()
+        return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('field_map_mag', nifti_gz_format),
