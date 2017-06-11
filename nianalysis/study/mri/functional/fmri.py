@@ -4,8 +4,7 @@ from nipype.interfaces.fsl.preprocess import (
     BET, FUGUE, FLIRT, FNIRT, ApplyWarp)
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
-                                         ConvertXFM, Split)
-from nipype.interfaces.fsl.utils import Merge as fslmerge
+                                         ConvertXFM)
 from nianalysis.interfaces.fsl import MelodicL1FSF, FSLFIX
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
@@ -309,7 +308,7 @@ class FunctionalMRIStudy(MRIStudy):
         mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC')
         mel.inputs.no_bet = True
         mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
-        mel.inputs.tr_sec = 0.754
+        mel.inputs.tr_sec = 2.45
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
@@ -360,7 +359,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         fugue = pipeline.create_node(FUGUE(), name='fugue')
         fugue.inputs.unwarp_direction = 'x'
-        fugue.inputs.dwell_time = 0.00039
+        fugue.inputs.dwell_time = 0.000275
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
         pipeline.connect_input('rs_fmri', fugue, 'in_file')
@@ -385,14 +384,23 @@ class FunctionalMRIStudy(MRIStudy):
 
         filt = pipeline.create_node(Tproject(), name='Tproject')
         filt.inputs.stopband = (0, 0.01)
-        filt.inputs.delta_t = 0.754
+        filt.inputs.delta_t = 2.45
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
         pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
         pipeline.connect(bet_rsfmri, 'mask_file', filt, 'mask')
 
-        pipeline.connect_output('filtered_data', filt, 'out_file')
+        meanfunc = pipeline.create_node(
+            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc')
+        pipeline.connect(afni_mc, 'out_file', meanfunc, 'in_file')
+
+        add_mean = pipeline.create_node(
+            ImageMaths(op_string='-add'), name='add_mean')
+        pipeline.connect(filt, 'out_file', add_mean, 'in_file')
+        pipeline.connect(meanfunc, 'out_file', add_mean, 'in_file2')
+
+        pipeline.connect_output('filtered_data', add_mean, 'out_file')
         pipeline.connect_output('hires2example', convxfm, 'out_file')
         pipeline.connect_output('rsfmri_mask', bet_rsfmri, 'mask_file')
         pipeline.connect_output('mc_par', afni_mc, 'oned_file')
@@ -412,8 +420,7 @@ class FunctionalMRIStudy(MRIStudy):
             outputs=[DatasetSpec('registered_file', nifti_gz_format)],
             description=("Spatial and temporal rsfMRI filtering"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz',
-                             'TR': 0.754},
+                             'standard/MNI152_T1_2mm_brain.nii.gz'},
             version=1,
             citations=[fsl_cite],
             options=options)
