@@ -16,8 +16,8 @@ nCoils = 32;
 HIP_ChannelCombination(inDir, [outDir '/QSM'], nCoils);
 
 % Load Inputs (Raw phase and mask)
-mask = load_nii(maskFile);
-nii = load_nii(phaseFile);
+mask = load_untouch_nii(maskFile);
+nii = load_untouch_nii(phaseFile);
 
 % Calc params
 params.H = [0 0 1];
@@ -35,7 +35,7 @@ params.Kthreshold = 0.1;
 
 % Save Intermediate Results
 nii.img = Unwrapped_Phase;
-save_nii(nii,unwrapFile);
+save_untouch_nii(nii,unwrapFile);
 
 % Step 2: Remove background phase
 % Apply V-Shape             
@@ -43,16 +43,16 @@ save_nii(nii,unwrapFile);
 
 % Save Intermediate Results
 nii.img = TissuePhase;
-save_nii(nii,tissueFile);
-nii.img = NewMask<0;
-save_nii(nii,newMaskFile);
+save_untouch_nii(nii,tissueFile);
+nii.img = NewMask>0;
+save_untouch_nii(nii,newMaskFile);
 
 % Step 3: Reconstruct QSM
 [Susceptibility]= QSM_iLSQR(TissuePhase,NewMask>0,'params',params);
 nii.img = Susceptibility;
 
 % Save QSM
-save_nii(nii,qsmFile);
+save_untouch_nii(nii,qsmFile);
 
 end
    
