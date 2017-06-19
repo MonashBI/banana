@@ -42,8 +42,8 @@ for i=1:numel(reFiles)
     suffixInd = strfind(reFiles(i).name,'_Coil');
     fileName = [outDir 'Raw' reFiles(i).name(suffixInd:(end-length('_REAL.nii.gz')))];
     
-    inRe = load_nii([inDir '/' reFiles(i).name]);
-    inIm = load_nii([imFile]);
+    inRe = load_untouch_nii([inDir '/' reFiles(i).name]);
+    inIm = load_untouch_nii([imFile]);
     inRe.img(inRe.img==2048) = 0;
     inIm.img(inIm.img==2048) = 0;
     %save_nii(inRe, [fileName '_REAL.nii.gz']);
@@ -55,8 +55,10 @@ for i=1:numel(reFiles)
     outMag.img = abs(complexVol);
     outPha = inRe;
     outPha.img = angle(complexVol);
-    save_nii(outMag, [fileName '_MAGNITUDE.nii.gz']);
-    save_nii(outPha, [fileName '_PHASE.nii.gz']);
+    disp(['Debug 00001: ' num2str(i)])
+    save_untouch_nii(outMag, [fileName '_MAGNITUDE.nii.gz']);
+    disp(['Debug 00002: ' num2str(i)])
+    save_untouch_nii(outPha, [fileName '_PHASE.nii.gz']);
     
     % Accumulate whole brain image
     if isempty(sumSqrMag)
@@ -69,9 +71,18 @@ for i=1:numel(reFiles)
 end
 
 % Normalise magnitude weighted whole brain and save
-outMag.img = sumSqrMag./sumMag;
-outMag.img(isnan(outMag.img)) = 0;
-save_nii(outMag, outFile);
+if numel(reFiles)==0
+    ME = MException('Prepare_Raw_Channels:noRawFiles', ...
+        'No input files found to prepare.');
+    throw(ME);
+else
+    outMag.img = sumSqrMag./sumMag;
+    outMag.img(isnan(outMag.img)) = 0;
+        disp('Debug 00003')
+    disp(outFile)
+    disp(outMag)
+    save_untouch_nii(outMag, outFile);
+end
 
 end
 
