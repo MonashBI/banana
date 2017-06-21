@@ -4,7 +4,7 @@ from string import Template
 from nibabel import load
 from nipype.interfaces.base import (
     File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec,
-    Directory)
+    Directory, InputMultiPath)
 from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
 from nipype.interfaces.base import (CommandLineInputSpec, CommandLine)
@@ -130,56 +130,64 @@ class FSLFIX(FSLCommand):
             glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
         return outputs
 
-# class OptiBETInputSpec(CommandLineInputSpec):
-#     input_file = File(mandatory=True, desc='existing input image',
-#                       argstr='-i %s', position=1, exists=True)
-#     use_FSL = traits.Bool(desc='use FSL for initial extraction', argstr='-f',
-#                           xor=['use_AFNI'])
-#     use_AFNI = traits.Bool(desc='use AFNI for initial extraction', argstr='-a',
-#                            xor=['use_FSL'])
-#     _xor_mask = ('mni_1mm', 'mni_2mm', 'avg')
-#     use_MNI_1mm = traits.Bool(
-#         desc='use MNI152_T1_1mm_brain_mask.nii.gz for mask', argstr='-o',
-#         xor=_xor_mask)
-#     use_MNI_2mm = traits.Bool(
-#         desc='use MNI152_T1_2mm_brain_mask.nii.gz for mask', argstr='-t',
-#         xor=_xor_mask)
-#     use_avg = traits.Bool(
-#         desc='use avg152T1_brain.nii.gz for mask', argstr='-g', xor=_xor_mask)
-#     debug = traits.Bool(
-#         desc='use debug mode (will NOT delete intermediate files)',
-#         argstr='-d')
-# 
-# 
-# class OptiBETOutputSpec(TraitedSpec):
-#     betted_file = File(exists=True, desc="The optiBETted image")
-#     betted_mask = File(exists=True, desc="The optiBETted binary mask")
-# 
-# 
-# class OptiBET(CommandLine):
-#     """Run optiBET.sh on an input image and return one brain extracted image
-#     and its binary mask."""
-# 
-#     _cmd = optiBET_path
-#     input_spec = OptiBETInputSpec
-#     output_spec = OptiBETOutputSpec
-#     betted_ext = '.nii.gz'
-# 
-#     def _list_outputs(self):
-#         outputs = self._outputs().get()
-#         outputs['betted_file'] = os.path.join(
-#             os.getcwd(), self._gen_filename('betted_file'))
-#         outputs['betted_mask'] = os.path.join(
-#             os.getcwd(), self._gen_filename('betted_mask'))
-#         return outputs
-# 
-#     def _gen_filename(self, name):
-#         if name == 'betted_file':
-#             fid = os.path.basename(self.inputs.input_file).split('.')[0]
-#             fname = fid + '_optiBET_brain' + self.betted_ext
-#         elif name == 'betted_mask':
-#             fid = os.path.basename(self.inputs.input_file).split('.')[0]
-#             fname = fid + '_optiBET_brain_mask' + self.betted_ext
-#         else:
-#             assert False
-#         return fname
+
+class FSLFixTrainingInputSpec(FSLCommandInputSpec):
+    training = traits.Bool(mandatory=True, argstr="-t", position=1)
+    list_dir = traits.List(mandatory=True, argstr="%s", position=-1,
+                           desc="Input feat preprocessed directory")
+    outname = traits.Str(mandatory=True, argstr="%s", position=2,
+                         desc="output name")
+
+
+class FSLFixTrainingOutputSpec(TraitedSpec):
+    training_set = File(exists=True, desc="training set")
+
+
+class FSLFixTraining(FSLCommand):
+
+    _cmd = 'fix'
+    input_spec = FSLFixTrainingInputSpec
+    output_spec = FSLFixTrainingOutputSpec
+    ext = '.RData'
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        # print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
+        outputs['training_set'] = os.path.join(
+            os.getcwd(), self._gen_filename('train_file'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'train_file':
+            fid = os.path.basename(self.inputs.outname)
+            fname = fid + self.ext
+        else:
+            assert False
+        return fname
+
+
+class CheckLabelFileInputSpec(BaseInterfaceInputSpec):
+    in_list = traits.List(desc='melodic directory', mandatory=True)
+
+
+class CheckLabelFileOutputSpec(TraitedSpec):
+    out_list = traits.List(desc="List of melodic dirs that contain "
+                                "label file")
+
+
+class CheckLabelFile(BaseInterface):
+    input_spec = CheckLabelFileInputSpec
+    output_spec = CheckLabelFileOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        out = []
+        for s in self.inputs.in_list:
+            if 'hand_labels_noise.txt' in os.listdir(s):
+                out.append(s)
+
+        outputs["out_list"] = out
+        return outputs
