@@ -12,6 +12,8 @@ import nipype.pipeline.engine as pe
 import nipype.interfaces.utility as util
 import nipype.interfaces.fsl as fsl
 from nipype.utils.filemanip import list_to_filename
+import logging
+
 
 warn = warnings.warn
 warnings.filterwarnings('always', category=UserWarning)
@@ -21,6 +23,7 @@ feat_template_path = os.path.join(
 optiBET_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             'resources', 'bash', 'optiBET.sh'))
 
+logger = logging.getLogger('NiAnalysis')
 
 class MelodicL1FSFInputSpec(BaseInterfaceInputSpec):
 
@@ -185,9 +188,23 @@ class CheckLabelFile(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         out = []
+
         for s in self.inputs.in_list:
             if 'hand_labels_noise.txt' in os.listdir(s):
-                out.append(s)
+                with open(s+'/hand_labels_noise.txt', 'r') as f:
+                    for line in f:
+                        el = [x for x in
+                              line.strip().strip('[').strip(']').split(',')]
+                    f.close()
+                    ic = sorted(glob(s+'/report/f*.txt'))
+                    if [x for x in el if int(x) > len(ic)]:
+                        logger.warning('Subject {} has wrong number of '
+                                       'components in the '
+                                       'hand_labels_noise.txt file. It will '
+                                       'not be used for the FIX training.'
+                                       .format(s))
+                    else:
+                        out.append(s)
 
         outputs["out_list"] = out
         return outputs
