@@ -5,14 +5,19 @@ addpath(genpath('/data/project/Phil/ASPREE_QSM/scripts/'))
 
 % Prepare directory structure
 <<<<<<< HEAD
+<<<<<<< HEAD
 mkdir([outDir '/QSM']);
 =======
 >>>>>>> QSM DE
+=======
+mkdir([outDir '/QSM']);
+>>>>>>> FRDA DE Code, tests passed
 phaseFile = [outDir '/QSM/Raw_PHASE.nii.gz'];
 newMaskFile = [outDir '/QSM/PhaseMask.nii.gz'];
 unwrapFile = [outDir '/QSM/Unwrapped.nii.gz'];
 tissueFile = [outDir '/QSM/TissuePhase.nii.gz'];
 qsmFile = [outDir '/QSM/QSM.nii.gz'];
+<<<<<<< HEAD
 <<<<<<< HEAD
 nCoils = 32;
 
@@ -23,9 +28,12 @@ HIP_ChannelCombination(inDir, [outDir '/QSM'], nCoils);
 mask = load_untouch_nii(maskFile);
 nii = load_untouch_nii(phaseFile);
 =======
+=======
+nCoils = 32;
+>>>>>>> FRDA DE Code, tests passed
 
 % Combine channels
-HIP_ChannelCombination(inDir, outDir, nCoils);
+HIP_ChannelCombination(inDir, [outDir '/QSM'], nCoils);
 
 % Load Inputs (Raw phase and mask)
 mask = load_nii(maskFile);
