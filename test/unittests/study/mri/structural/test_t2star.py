@@ -22,6 +22,7 @@ class TestQSM(TestCase):
 #            self.assertDatasetCreated(dataset_name=fname,
 #                                      study_name=study.name)
 #            
+<<<<<<< HEAD
             
     def test_qsm_de_pipeline(self):
         study = self.create_study(
@@ -40,6 +41,8 @@ class TestQSM(TestCase):
             self.assertDatasetCreated(dataset_name=fname,
                                       study_name=study.name)
             
+=======
+>>>>>>> FRDA DE Code, tests passed
             
     def test_qsm_de_pipeline(self):
         study = self.create_study(
