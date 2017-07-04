@@ -30,4 +30,4 @@ class TestQSM(TestCase):
         for fname in ('qsm.nii.gz', 'tissue_phase.nii.gz',
                       'tissue_mask.nii.gz', 'qsm_mask.nii.gz'):
             self.assertDatasetCreated(dataset_name=fname,
-                                      study_name=study.name)
+                                      study_name=study.name)        
