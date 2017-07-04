@@ -1,16 +1,29 @@
-import os
+import os.path
 import warnings
 from string import Template
 from nibabel import load
 from nipype.interfaces.base import (
-    File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec)
+    File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec,
+    Directory, InputMultiPath)
+from glob import glob
+from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
+from nipype.interfaces.base import (CommandLineInputSpec, CommandLine)
+import nipype.pipeline.engine as pe
+import nipype.interfaces.utility as util
+import nipype.interfaces.fsl as fsl
+from nipype.utils.filemanip import list_to_filename
+import logging
+
 
 warn = warnings.warn
 warnings.filterwarnings('always', category=UserWarning)
 
-template_filename = os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "temp.fsf")
+feat_template_path = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "resources", 'temp.fsf')
+optiBET_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                            'resources', 'bash', 'optiBET.sh'))
 
+logger = logging.getLogger('NiAnalysis')
 
 class MelodicL1FSFInputSpec(BaseInterfaceInputSpec):
 
@@ -51,7 +64,7 @@ class MelodicL1FSF(BaseInterface):
     output_spec = MelodicL1FSFOutputSpec
 
     def _run_interface(self, runtime):
-        template_file = open(template_filename)
+        template_file = open(feat_template_path)
         template = Template(template_file.read())
         template_file.close()
 #        inputs = self.input_spec().get()
@@ -84,4 +97,114 @@ class MelodicL1FSF(BaseInterface):
 
         outputs = self.output_spec().get()
         outputs['fsf_file'] = os.path.abspath('./melodic.fsf')
+        return outputs
+
+
+class FSLFIXInputSpec(FSLCommandInputSpec):
+    feat_dir = Directory(
+        exists=True, mandatory=True, argstr="%s", position=0,
+        desc="Input feat preprocessed directory")
+    train_data = File(exists=True, mandatory=True, argstr="%s", position=1,
+                      desc="Training file")
+    component_threshold = traits.Int(
+        argstr="%d", mandatory=True, position=2,
+        desc="threshold for the number of components")
+    motion_reg = traits.Bool(position=3, argstr='-m',
+                             desc="motion parameters regression")
+    highpass = traits.Float(
+        position=4, argstr='-h %f', desc='apply highpass of the motion '
+        'confound with <highpass> being full-width (2*sigma) in seconds.')
+
+
+class FSLFIXOutputSpec(TraitedSpec):
+    output = File(exists=True, desc="cleaned output")
+
+
+class FSLFIX(FSLCommand):
+
+    _cmd = 'fix'
+    input_spec = FSLFIXInputSpec
+    output_spec = FSLFIXOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
+        outputs['output'] = os.path.abspath(
+            glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
+        return outputs
+
+
+class FSLFixTrainingInputSpec(FSLCommandInputSpec):
+    training = traits.Bool(mandatory=True, argstr="-t", position=1)
+    list_dir = traits.List(mandatory=True, argstr="%s", position=-1,
+                           desc="Input feat preprocessed directory")
+    outname = traits.Str(mandatory=True, argstr="%s", position=2,
+                         desc="output name")
+
+
+class FSLFixTrainingOutputSpec(TraitedSpec):
+    training_set = File(exists=True, desc="training set")
+
+
+class FSLFixTraining(FSLCommand):
+
+    _cmd = 'fix'
+    input_spec = FSLFixTrainingInputSpec
+    output_spec = FSLFixTrainingOutputSpec
+    ext = '.RData'
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        # print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
+        outputs['training_set'] = os.path.join(
+            os.getcwd(), self._gen_filename('train_file'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'train_file':
+            fid = os.path.basename(self.inputs.outname)
+            fname = fid + self.ext
+        else:
+            assert False
+        return fname
+
+
+class CheckLabelFileInputSpec(BaseInterfaceInputSpec):
+    in_list = traits.List(desc='melodic directory', mandatory=True)
+
+
+class CheckLabelFileOutputSpec(TraitedSpec):
+    out_list = traits.List(desc="List of melodic dirs that contain "
+                                "label file")
+
+
+class CheckLabelFile(BaseInterface):
+    input_spec = CheckLabelFileInputSpec
+    output_spec = CheckLabelFileOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        out = []
+
+        for s in self.inputs.in_list:
+            if 'hand_labels_noise.txt' in os.listdir(s):
+                with open(s+'/hand_labels_noise.txt', 'r') as f:
+                    for line in f:
+                        el = [x for x in
+                              line.strip().strip('[').strip(']').split(',')]
+                    f.close()
+                    ic = sorted(glob(s+'/report/f*.txt'))
+                    if [x for x in el if int(x) > len(ic)]:
+                        logger.warning('Subject {} has wrong number of '
+                                       'components in the '
+                                       'hand_labels_noise.txt file. It will '
+                                       'not be used for the FIX training.'
+                                       .format(s))
+                    else:
+                        out.append(s)
+
+        outputs["out_list"] = out
         return outputs
