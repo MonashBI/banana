@@ -55,9 +55,7 @@ for i=1:numel(reFiles)
     outMag.img = abs(complexVol);
     outPha = inRe;
     outPha.img = angle(complexVol);
-    disp(['Debug 00001: ' num2str(i)])
     save_untouch_nii(outMag, [fileName '_MAGNITUDE.nii.gz']);
-    disp(['Debug 00002: ' num2str(i)])
     save_untouch_nii(outPha, [fileName '_PHASE.nii.gz']);
     
     % Accumulate whole brain image
@@ -78,9 +76,6 @@ if numel(reFiles)==0
 else
     outMag.img = sumSqrMag./sumMag;
     outMag.img(isnan(outMag.img)) = 0;
-        disp('Debug 00003')
-    disp(outFile)
-    disp(outMag)
     save_untouch_nii(outMag, outFile);
 end
 

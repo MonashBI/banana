@@ -141,7 +141,15 @@ function nii = load_untouch_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx,
          filename2 = gunzip(filename2, tmpDir);
          filename = char(filename1);	% convert from cell to string
       elseif strcmp(filename(end-6:end), '.nii.gz')
-         tmpDir = ['/scratch/dq13' tempname];
+          
+         % prefix tempname for MASSIVE
+         %[~,hostname]=system('hostname');
+         %if strcmp(hostname(1:2),'m3')
+         %   tmpDir = ['/scratch/dq13' tempname];
+         %else
+            tmpDir = tempname;
+         %end
+         
          mkdir(tmpDir);
          gzFileName = filename;
          filename = gunzip(filename, tmpDir);

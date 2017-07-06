@@ -21,6 +21,7 @@ class Prepare(BaseInterface):
     def _run_interface(self, runtime):  # @UnusedVariable
         self.working_dir = os.path.abspath(os.getcwd())
         script = (
+            "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
             "Prepare_Raw_Channels('{in_dir}', '{out_dir}');\n"
             "exit;\n").format(
@@ -54,13 +55,14 @@ class STIOutputSpec(TraitedSpec):
     tissue_mask = File(exists=True)
 
 
-class STI_DE(BaseInterface):
+class STI(BaseInterface):
     input_spec = STIInputSpec
     output_spec = STIOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
         self.working_dir = os.path.abspath(os.getcwd())
         script = (
+            "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
             "QSM_DualEcho('{in_dir}', '{mask_file}', '{out_dir}');\n"
             "exit;").format(
@@ -87,13 +89,14 @@ class STI_DE(BaseInterface):
             'PhaseMask.nii.gz')
         return outputs
 
-class STI(BaseInterface):
+class STI_SE(BaseInterface):
     input_spec = STIInputSpec
     output_spec = STIOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
         self.working_dir = os.path.abspath(os.getcwd())
         script = (
+            "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
             "QSM_SingleEcho('{in_dir}', '{mask_file}', '{out_dir}');\n"
             "exit;").format(
