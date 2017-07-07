@@ -1,4 +1,4 @@
-from nianalysis.requirements import fsl5_req, matlab2015_req
+from nianalysis.requirements import fsl5_req, matlab2015_req, ants2_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format
@@ -146,18 +146,18 @@ class T2StarStudy(MRIStudy):
             options=options)
 
         bet1 = pipeline.create_node(
-            fsl.BET(frac=0.1, reduce_bias=True), name='bet', wall_time=30)
+            fsl.BET(frac=0.1, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=16000, wall_time=30)
         pipeline.connect_input('t1', bet1, 'in_file')
         flirt = pipeline.create_node(
             fsl.FLIRT(out_matrix_file='linear_mat.mat',
                   out_file='linear_reg.nii.gz', searchr_x=[-30, 30],
-                  searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt')
+                  searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt', requirements=[fsl5_req], memory=16000, wall_time=30)
         flirt.inputs.reference = pipeline.option('MNI_template')
         pipeline.connect(bet1, 'out_file', flirt, 'in_file')
         fnirt = pipeline.create_node(
             fsl.FNIRT(config_file='T1_2_MNI152_2mm',
                   fieldcoeff_file='warp_file.nii.gz'), name='fnirt',
-            wall_time=15)
+            requirements=[fsl5_req], memory=16000, wall_time=30)
         fnirt.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
         pipeline.connect_input('t1', fnirt, 'in_file')
@@ -166,17 +166,17 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input('t1', invwarp, 'reference')
         applywarp = pipeline.create_node(
             fsl.ApplyWarp(interp='nn', out_file='warped_file.nii.gz'),
-            name='applywarp')
+            name='applywarp', requirements=[fsl5_req], memory=16000, wall_time=30)
         applywarp.inputs.in_file = pipeline.option('MNI_template_mask')
         pipeline.connect_input('t1', applywarp, 'ref_file')
         pipeline.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
         maths1 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
-            name='binarize')
+            name='binarize', requirements=[fsl5_req], memory=16000, wall_time=30)
         pipeline.connect(applywarp, 'out_file', maths1, 'in_file')
         maths2 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
-            name='mask')
+            name='mask', requirements=[fsl5_req], memory=16000, wall_time=30)
         pipeline.connect_input('t1', maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
 
@@ -214,20 +214,20 @@ class T2StarStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        bet_t2s = antsreg.create_node(fsl.BET(), name="bet_t2s")
+        bet_t2s = antsreg.create_node(fsl.BET(), name="bet_t2s", requirements=[fsl5_req], memory=16000, wall_time=30)
         bet_t2s.inputs.robust = True
         bet_t2s.inputs.frac = 0.4
         bet_t2s.inputs.mask = True
         antsreg.connect_input('t2s', bet_t2s, 'in_file')
         t2sreg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='T2s2T1'), name='ANTsReg')
+                       out_prefix='T2s2T1'), name='ANTsReg', requirements=[ants2_req], memory=16000, wall_time=30)
         antsreg.connect_input('betted_file', t2sreg, 'ref_file')
         antsreg.connect(bet_t2s, 'out_file', t2sreg, 'input_file')
 
         t1reg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI'), name='T1_reg')
+                       out_prefix='T12MNI'), name='T1_reg', requirements=[ants2_req], memory=16000, wall_time=30)
         t1reg.inputs.ref_file = antsreg.option('MNI_template')
         antsreg.connect_input('betted_file', t1reg, 'input_file')
 
@@ -263,7 +263,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input('T2s2T1_mat', merge_trans, 'in3')
 
         apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform')
+            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants2_req], memory=16000, wall_time=30)
         apply_trans.inputs.reference_image = pipeline.option('MNI_template')
 #         apply_trans.inputs.dimension = 3
         apply_trans.inputs.interpolation = 'Linear'
