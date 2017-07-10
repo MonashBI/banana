@@ -31,9 +31,16 @@ class Dcm2niix(CommandLine):
         else:
             im_ext = '.nii'
         outputs = self._outputs().get()
-        outputs['converted'] = os.path.join(self._gen_filename('out_dir'),
-                                            self._gen_filename('filename') +
-                                            im_ext)
+        # As Dcm2niix sometimes prepends a prefix onto the filenames to avoid
+        # name clashes with multiple echos, we need to check the output folder
+        # for all filenames that end with the "generated filename".
+        out_dir = self._gen_filename('out_dir')
+        fname = self._gen_filename('filename') + im_ext
+        products = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
+                    if f.endswith(fname)]
+        if len(products) == 1:
+            products = products[0]
+        outputs['converted'] = products
         return outputs
 
     def _gen_filename(self, name):
