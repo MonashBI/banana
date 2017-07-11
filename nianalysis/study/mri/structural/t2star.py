@@ -188,14 +188,14 @@ class T2StarStudy(MRIStudy):
 
     def ANTsRegistration(self, **options):
 
-        try:
-            cmd = 'which ANTS'
-            antspath = sp.check_output(cmd, shell=True)
-            antspath = '/'.join(antspath.split('/')[0:-1])
-            os.environ['ANTSPATH'] = antspath
-            print antspath
-        except ImportError:
-            print "NO ANTs module found. Please ensure to have it in you PATH."
+#        try:
+#            cmd = 'which ANTS'
+#            antspath = sp.check_output(cmd, shell=True)
+#            antspath = '/'.join(antspath.split('/')[0:-1])
+#            os.environ['ANTSPATH'] = antspath
+#            print antspath
+#        except ImportError:
+#            print "NO ANTs module found. Please ensure to have it in you PATH."
 
         antsreg = self.create_pipeline(
             name='ANTsReg',
