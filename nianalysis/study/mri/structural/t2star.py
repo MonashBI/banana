@@ -246,6 +246,7 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='ANTsApplyTransform',
             inputs=[DatasetSpec('qsm', nifti_gz_format),
+                    DatasetSpec('t2s', nifti_gz_format),
                     DatasetSpec('T12MNI_warp', nifti_gz_format),
                     DatasetSpec('T12MNI_mat', text_matrix_format),
                     DatasetSpec('T2s2T1_mat', text_matrix_format)],
@@ -257,6 +258,10 @@ class T2StarStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
+        cp_geom = pipeline.create_node(fsl.CopyGeom(), name='copy_geomery', requirements=[fsl5_req], memory=8000, wall_time=5)
+        pipeline.connect_input('qsm', cp_geom, 'dest_file')
+        pipeline.connect_input('t2s', cp_geom, 'in_file')
+        
         merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
         pipeline.connect_input('T12MNI_warp', merge_trans, 'in1')
         pipeline.connect_input('T12MNI_mat', merge_trans, 'in2')
@@ -270,7 +275,7 @@ class T2StarStudy(MRIStudy):
         apply_trans.inputs.input_image_type = 3
         
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect_input('qsm', apply_trans, 'input_image')
+        pipeline.connect(cp_geom, 'out_file', apply_trans, 'input_image')
 
         pipeline.connect_output('qsm_in_mni', apply_trans, 'output_image')
 
