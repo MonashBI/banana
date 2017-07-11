@@ -111,6 +111,14 @@ function nii = load_untouch_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx,
 
          error('Please check filename.');
       end
+      
+      % prefix tempname for MASSIVE
+      [~,hostname]=system('hostname');
+      if strcmp(hostname(1:2),'m3')
+         tmpDir = ['/scratch/dq13' tempname];
+      else
+         tmpDir = tempname;
+      end
 
       if str2num(v(1:3)) < 7.1 | ~usejava('jvm')
          error('Please use MATLAB 7.1 (with java) and above, or run gunzip outside MATLAB.');
@@ -120,7 +128,7 @@ function nii = load_untouch_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx,
          filename2(end-6:end) = '';
          filename2 = [filename2, '.hdr.gz'];
 
-         tmpDir = tempname;
+         %tmpDir = tempname;
          mkdir(tmpDir);
          gzFileName = filename;
 
@@ -133,7 +141,7 @@ function nii = load_untouch_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx,
          filename2(end-6:end) = '';
          filename2 = [filename2, '.img.gz'];
 
-         tmpDir = tempname;
+         %tmpDir = tempname;
          mkdir(tmpDir);
          gzFileName = filename;
 
@@ -141,15 +149,7 @@ function nii = load_untouch_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx,
          filename2 = gunzip(filename2, tmpDir);
          filename = char(filename1);	% convert from cell to string
       elseif strcmp(filename(end-6:end), '.nii.gz')
-          
-         % prefix tempname for MASSIVE
-         %[~,hostname]=system('hostname');
-         %if strcmp(hostname(1:2),'m3')
-         %   tmpDir = ['/scratch/dq13' tempname];
-         %else
-            tmpDir = tempname;
-         %end
-         
+      	 %tmpDir = tempname;         
          mkdir(tmpDir);
          gzFileName = filename;
          filename = gunzip(filename, tmpDir);
