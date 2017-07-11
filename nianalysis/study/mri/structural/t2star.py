@@ -1,4 +1,4 @@
-from nianalysis.requirements import fsl5_req, matlab2015_req, ants2_req
+from nianalysis.requirements import fsl5_req, matlab2015_req, ants19_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format
@@ -221,13 +221,13 @@ class T2StarStudy(MRIStudy):
         antsreg.connect_input('t2s', bet_t2s, 'in_file')
         t2sreg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='T2s2T1'), name='ANTsReg', requirements=[ants2_req], memory=16000, wall_time=30)
+                       out_prefix='T2s2T1'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=30)
         antsreg.connect_input('betted_file', t2sreg, 'ref_file')
         antsreg.connect(bet_t2s, 'out_file', t2sreg, 'input_file')
 
         t1reg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI'), name='T1_reg', requirements=[ants2_req], memory=16000, wall_time=30)
+                       out_prefix='T12MNI'), name='T1_reg', requirements=[ants19_req], memory=16000, wall_time=30)
         t1reg.inputs.ref_file = antsreg.option('MNI_template')
         antsreg.connect_input('betted_file', t1reg, 'input_file')
 
@@ -263,7 +263,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input('T2s2T1_mat', merge_trans, 'in3')
 
         apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants2_req], memory=16000, wall_time=30)
+            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
         apply_trans.inputs.reference_image = pipeline.option('MNI_template')
 #         apply_trans.inputs.dimension = 3
         apply_trans.inputs.interpolation = 'Linear'
