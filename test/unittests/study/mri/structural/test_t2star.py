@@ -60,6 +60,6 @@ class TestQSM(TestCase):
             T2StarStudy, 'apply_tfm', input_datasets={
                 't1': Dataset('t1', nifti_gz_format),
                 't2s': Dataset('t2s', nifti_gz_format),
-                'coils': Dataset('swi_coils', zip_format)})
+                'qsm': Dataset('qsm', nifti_gz_format)})
         study.applyTransform().run(work_dir=self.work_dir, plugin='Linear')
         self.assertDatasetCreated('qsm_in_mni.nii.gz', study.name)
