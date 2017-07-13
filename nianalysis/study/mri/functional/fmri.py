@@ -189,7 +189,7 @@ class FunctionalMRIStudy(MRIStudy):
         antsreg = self.create_pipeline(
             name='ANTsReg',
             inputs=[DatasetSpec('betted_file', nifti_gz_format),
-                    DatasetSpec('rs_fmri', nifti_gz_format)],
+                    DatasetSpec('unwarped_file', nifti_gz_format)],
             outputs=[DatasetSpec('epi2T1', nifti_gz_format),
                      DatasetSpec('epi2T1_mat', text_matrix_format),
                      DatasetSpec('T12MNI_linear', nifti_gz_format),
@@ -207,7 +207,7 @@ class FunctionalMRIStudy(MRIStudy):
         bet_rsfmri.inputs.robust = True
         bet_rsfmri.inputs.frac = 0.4
         bet_rsfmri.inputs.mask = True
-        antsreg.connect_input('rs_fmri', bet_rsfmri, 'in_file')
+        antsreg.connect_input('unwarped_file', bet_rsfmri, 'in_file')
         epireg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
                        out_prefix='epi2T1'), name='ANTsReg')
