@@ -445,9 +445,13 @@ class MRConvert(CommandLine):
 
 
 class DWIPreprocInputSpec(CommandLineInputSpec):
+    rpe_header = traits.Bool(  # @UndefinedVariable
+        mandatory=False, argstr="-rpe_header",
+        description=(
+            "Attempt to read the phase-encoding information from headeer"))
     # Arguments
     pe_dir = traits.Str(  # @UndefinedVariable
-        mandatory=True, argstr='%s', desc=(
+        argstr='-pe_dir %s', desc=(
             "The phase encode direction; can be a signed axis "
             "number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)"),
         position=-3)
