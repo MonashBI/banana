@@ -41,6 +41,13 @@ class TestDiffusion(TestCase):
             work_dir=self.work_dir)
         self.assertDatasetCreated('bias_correct.nii.gz', study.name)
 
+    def test_forward_pe_pipeline(self):
+        study = self.create_study(
+            DiffusionStudy, 'forward_pe', {
+                'dwi_scan': Dataset('r_l_dwi_b700_30', mrtrix_format)})
+        study.extract_forward_pe_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('forward_pe.mif', study.name)
+
 
 class TestNODDI(TestCase):
 
