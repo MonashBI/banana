@@ -33,13 +33,14 @@ class TestQSM(TestCase):
 #            self.assertDatasetCreated(dataset_name=fname,
 #                                      study_name=study.name)        
 
-#    def test_optibet(self):
-#        study = self.create_study(
-#            T2StarStudy, 'optibet', input_datasets={
-#                't1': Dataset('t1', nifti_gz_format)})
-#        study.optiBET().run(work_dir=self.work_dir, plugin='MultiProc')
-#        self.assertDatasetCreated('betted_file.nii.gz', study.name)
-#        self.assertDatasetCreated('betted_mask.nii.gz', study.name)
+    def test_optibet(self):
+        study = self.create_study(
+            T2StarStudy, 'optibet_t2s', input_datasets={
+                't1': Dataset('t1', nifti_gz_format),
+                't2s': Dataset('t2s', nifti_gz_format)})
+        study.optiBET_T2s().run(work_dir=self.work_dir, plugin='MultiProc')
+        self.assertDatasetCreated('optibet_t2s_opti_betted_T2s.nii.gz', study.name)
+        self.assertDatasetCreated('optibet_t2s_opti_betted_T2s_mask.nii.gz', study.name)
         
 #    def test_ants(self):
 #        study = self.create_study(
@@ -55,11 +56,11 @@ class TestQSM(TestCase):
 #        self.assertDatasetCreated('T12MNI_warp.nii.gz', study.name)
 #        self.assertDatasetCreated('T12MNI_invwarp.nii.gz', study.name)
        
-    def test_apply_trans(self):
-        study = self.create_study(
-            T2StarStudy, 'apply_tfm', input_datasets={
-                't1': Dataset('t1', nifti_gz_format),
-                't2s': Dataset('t2s', nifti_gz_format),
-                'qsm': Dataset('qsm', nifti_gz_format)})
-        study.applyTransform().run(work_dir=self.work_dir, plugin='Linear')
-        self.assertDatasetCreated('qsm_in_mni.nii.gz', study.name)
+#    def test_apply_trans(self):
+#        study = self.create_study(
+#            T2StarStudy, 'apply_tfm', input_datasets={
+#                't1': Dataset('t1', nifti_gz_format),
+#                't2s': Dataset('t2s', nifti_gz_format),
+#                'qsm': Dataset('qsm', nifti_gz_format)})
+#        study.applyTransform().run(work_dir=self.work_dir, plugin='Linear')
+#        self.assertDatasetCreated('qsm_in_mni.nii.gz', study.name)

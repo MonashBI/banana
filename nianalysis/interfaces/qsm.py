@@ -43,6 +43,46 @@ class Prepare(BaseInterface):
             'Raw_MAGNITUDE.nii.gz')
         return outputs
 
+class FillHolesInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True)
+
+class FillHolesOutputSpec(TraitedSpec):
+    out_file = File(desc='Filled mask file')
+
+
+class FillHoles(BaseInterface):
+    input_spec = FillHolesInputSpec
+    output_spec = FillHolesOutputSpec
+
+    def _run_interface(self, runtime):  # @UnusedVariable
+        self.working_dir = os.path.abspath(os.getcwd())
+        script = (
+            "set_param(0,'CharacterEncoding','UTF-8');\n"
+            "addpath(genpath('{matlab_dir}'));\n"
+            "fillholes('{in_file}', '{out_file}');\n"
+            "exit;\n").format(
+                in_file=self.inputs.in_file,
+                out_file=os.path.join(os.getcwd(),
+                                         self._gen_filename('out_file')),
+                matlab_dir=os.path.abspath(os.path.join(
+                    os.path.dirname(nianalysis.interfaces.__file__),
+                    'resources', 'matlab', 'qsm')))
+        mlab = MatlabCommand(script=script, mfile=True)
+        result = mlab.run()
+        return result.runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_file'] = os.path.join(os.getcwd(),
+                                         self._gen_filename('out_file'))
+        return outputs
+    
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = 'Filled_Mask.nii.gz'
+        else:
+            assert False
+        return fname
 
 class STIInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
