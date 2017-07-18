@@ -16,8 +16,8 @@ class TestDiffusion(TestCase):
             DiffusionStudy, 'preprocess', {
                 'dwi_scan': Dataset('r_l_dwi_b700_30',
                                     mrtrix_format),
-                'forward_rpe': Dataset('r_l_dwi_b0_6', mrtrix_format),
-                'reverse_rpe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
+                'forward_pe': Dataset('r_l_dwi_b0_6', mrtrix_format),
+                'reverse_pe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
         study.preprocess_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('dwi_preproc.nii.gz', study.name)
 
@@ -44,8 +44,9 @@ class TestDiffusion(TestCase):
     def test_forward_pe_pipeline(self):
         study = self.create_study(
             DiffusionStudy, 'forward_pe', {
-                'dwi_scan': Dataset('r_l_dwi_b700_30', mrtrix_format)})
-        study.extract_forward_pe_pipeline().run(work_dir=self.work_dir)
+                'dwi_scan': Dataset('r_l_dwi_b700_30', mrtrix_format),
+                'reverse_pe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
+        study.preprocess_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('forward_pe.mif', study.name)
 
 

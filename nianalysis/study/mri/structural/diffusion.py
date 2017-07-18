@@ -17,7 +17,7 @@ from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format)
 from nianalysis.requirements import (
-    fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
+    fsl5_req, mrtrix3_req, mrtrix3rc_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
@@ -43,32 +43,27 @@ class DiffusionStudy(T2Study):
                      DatasetSpec('grad_dirs', fsl_bvecs_format),
                      DatasetSpec('bvalues', fsl_bvals_format)],
             description="Preprocess dMRI studies using distortion correction",
-            default_options={'phase_dir': 'LR'},
+            default_options={},
             version=1,
             citations=[fsl_cite, eddy_cite, topup_cite, distort_correct_cite],
             options=options)
         # Create preprocessing node
-        dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc',
-                                          requirements=[mrtrix3_req, fsl5_req],
-                                          wall_time=60)
-        dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
-        # Create nodes to convert preprocessed dataset and gradients to FSL
-        # format
-        mrconvert = pipeline.create_node(MRConvert(), name='mrconvert',
-                                         requirements=[mrtrix3_req])
-        mrconvert.inputs.out_ext = '.nii.gz'
-        mrconvert.inputs.quiet = True
+        dwipreproc = pipeline.create_node(
+            DWIPreproc(), name='dwipreproc',
+            requirements=[mrtrix3rc_req, fsl5_req], wall_time=60)
+        dwipreproc.inputs.rpe_header = True
+#         dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
+        # Create nodes to gradients to FSL format
         extract_grad = pipeline.create_node(
             ExtractFSLGradients(), name="extract_grad",
             requirements=[mrtrix3_req])
-        pipeline.connect(dwipreproc, 'out_file', mrconvert, 'in_file')
         pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
         # Connect inputs
         pipeline.connect_input('dwi_scan', dwipreproc, 'in_file')
-        pipeline.connect_input('forward_pe', dwipreproc, 'forward_pe')
-        pipeline.connect_input('reverse_pe', dwipreproc, 'reverse_pe')
+        pipeline.connect_input('forward_pe', dwipreproc, 'forward_rpe')
+        pipeline.connect_input('reverse_pe', dwipreproc, 'reverse_rpe')
         # Connect outputs
-        pipeline.connect_output('dwi_preproc', mrconvert, 'out_file')
+        pipeline.connect_output('dwi_preproc', dwipreproc, 'out_file')
         pipeline.connect_output('grad_dirs', extract_grad,
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
@@ -365,7 +360,7 @@ class DiffusionStudy(T2Study):
         pipeline = self.create_pipeline(
             name='extract_forward_pe',
             inputs=[DatasetSpec('dwi_scan', mrtrix_format)],
-            outputs=[DatasetSpec('forward_pe', mrtrix_format)],
+            outputs=[DatasetSpec('forward_pe', nifti_gz_format)],
             description="Extract b0 image from a DWI study",
             default_options={},
             version=1,
@@ -376,9 +371,13 @@ class DiffusionStudy(T2Study):
             ExtractDWIorB0(), name='extract_b0s', requirements=[mrtrix3_req])
         extract_b0s.inputs.bzero = True
         extract_b0s.inputs.quiet = True
-        
+        mrconvert = pipeline.create_node(MRConvert(), name="b0_conv",
+                                         requirements=[mrtrix3_req])
+        mrconvert.inputs.out_ext = '.nii.gz'
+        mrconvert.inputs.quiet = True
         crop = pipeline.create_node(ExtractROI(), name='crop',
                                     requirements=[fsl5_req])
+        # Extract out the first volume from the selected b=0 volumes
         crop.inputs.x_min = 0
         crop.inputs.x_size = -1
         crop.inputs.y_min = 0
@@ -386,12 +385,12 @@ class DiffusionStudy(T2Study):
         crop.inputs.z_min = 0
         crop.inputs.z_size = -1
         crop.inputs.t_min = 0
-        crop.inputs.t_size = -1
-        
+        crop.inputs.t_size = 1
         # Connect inputs
         pipeline.connect_input('dwi_scan', extract_b0s, 'in_file')
         # Connect nodes
-        pipeline.connect(extract_b0s, 'out_file', crop, 'in_file')
+        pipeline.connect(extract_b0s, 'out_file', mrconvert, 'in_file')
+        pipeline.connect(mrconvert, 'out_file', crop, 'in_file')
         # Connect outputs
         pipeline.connect_output('forward_pe', crop, 'roi_file')
         pipeline.assert_connected()
