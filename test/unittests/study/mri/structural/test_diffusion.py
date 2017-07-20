@@ -16,9 +16,10 @@ class TestDiffusion(TestCase):
             DiffusionStudy, 'preprocess', {
                 'dwi_scan': Dataset('r_l_dwi_b700_30',
                                     mrtrix_format),
-                'forward_pe': Dataset('r_l_dwi_b0_6', mrtrix_format),
                 'reverse_pe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
-        study.preprocess_pipeline().run(work_dir=self.work_dir)
+        study.preprocess_pipeline(preproc_pe_dir='RL',
+                                  preproc_denoise=True).run(
+            work_dir=self.work_dir)
         self.assertDatasetCreated('dwi_preproc.nii.gz', study.name)
 
     def test_extract_b0(self):
@@ -40,14 +41,6 @@ class TestDiffusion(TestCase):
         study.bias_correct_pipeline(mask_tool='dwi2mask').run(
             work_dir=self.work_dir)
         self.assertDatasetCreated('bias_correct.nii.gz', study.name)
-
-    def test_forward_pe_pipeline(self):
-        study = self.create_study(
-            DiffusionStudy, 'forward_pe', {
-                'dwi_scan': Dataset('r_l_dwi_b700_30', mrtrix_format),
-                'reverse_pe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
-        study.preprocess_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('forward_pe.mif', study.name)
 
 
 class TestNODDI(TestCase):
