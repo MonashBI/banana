@@ -77,12 +77,12 @@ class MRMathInputSpec(CommandLineInputSpec):
                     desc="Extracted DW or b-zero images")
 
     operation = traits.Str(mandatory=True, argstr='%s', position=-2,  # @UndefinedVariable @IgnorePep8
-                           desc=("Operand to apply to the files"))
+                           desc=("Operation to apply to the files"))
 
     axis = traits.Int(argstr="-axis %s", position=0,  # @UndefinedVariable @IgnorePep8
                       desc=("The axis over which to apply the operator"))
 
-    quiet = traits.Bool(  # @UndefinedVariable
+    quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         description="Don't display output during operation")
 
@@ -124,6 +124,69 @@ class MRMath(CommandLine):
 
 
 # =============================================================================
+# MR math
+# =============================================================================
+
+class MRCalcInputSpec(CommandLineInputSpec):
+
+    in_files = InputMultiPath(
+        File(exists=True), argstr='%s', mandatory=True,
+        position=3, desc="Diffusion weighted images with graident info")
+
+    out_file = File(genfile=True, argstr='%s', position=-1,
+                    desc="Extracted DW or b-zero images")
+
+    operation = traits.Enum(
+        'abs', 'neg', 'sqrt', 'exp', 'log', 'log10', 'cos', 'sin', 'tan',
+        'cosh', 'sinh', 'tanh', 'acos', 'asin', 'atan', 'acosh', 'asinh',
+        'atanh', 'round', 'ceil', 'floor', 'isnan', 'isinf', 'finite', 'real',
+        'imag', 'phase', 'conj', 'add', 'subtract', 'multiply', 'divide',
+        'pow', 'min', 'max', 'lt', 'gt', 'le', 'ge', 'eq', 'neq', 'complex',
+        'if', mandatory=True, argstr='\-%s',
+        position=0, desc=("Operation to apply to the files"))
+
+    quiet = traits.Bool(
+        mandatory=False, argstr="-quiet",
+        description="Don't display output during operation")
+
+
+class MRCalcOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='The resultant image')
+
+
+class MRCalc(CommandLine):
+    """
+    Extracts the gradient information in MRtrix format from a DWI image
+    """
+    _cmd = 'mrcalc'
+    input_spec = MRMathInputSpec
+    output_spec = MRMathOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out_file'] = self._gen_outfilename()
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = self._gen_outfilename()
+        else:
+            assert False
+        return fname
+
+    def _gen_outfilename(self):
+        if isdefined(self.inputs.out_file):
+            filename = self.inputs.out_file
+        else:
+            base, ext = split_extension(
+                os.path.basename(self.inputs.in_files[0]))
+            filename = os.path.join(
+                os.getcwd(),
+                "{}_{}{}".format(base, self.inputs.operation, ext))
+        return filename
+
+
+# =============================================================================
 # MR Crop
 # =============================================================================
 
@@ -134,7 +197,7 @@ class MRCropInputSpec(CommandLineInputSpec):
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
 
-    axis = traits.Tuple(  # @UndefinedVariable
+    axis = traits.Tuple(
         traits.Int(desc="index"),  # @UndefinedVariable
         traits.Int(desc="start"),  # @UndefinedVariable
         traits.Int(desc='end'),  # @UndefinedVariable
@@ -145,7 +208,7 @@ class MRCropInputSpec(CommandLineInputSpec):
                 desc=("Crop the input image according to the spatial extent of"
                       " a mask image"))
 
-    quiet = traits.Bool(  # @UndefinedVariable
+    quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         description="Don't display output during operation")
 
@@ -195,7 +258,7 @@ class MRPadInputSpec(CommandLineInputSpec):
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
 
-    axis = traits.Tuple(  # @UndefinedVariable
+    axis = traits.Tuple(
         traits.Int(desc="index"),  # @UndefinedVariable
         traits.Int(desc="lower"),  # @UndefinedVariable
         traits.Int(desc='upper'),  # @UndefinedVariable
@@ -208,7 +271,7 @@ class MRPadInputSpec(CommandLineInputSpec):
                    desc=("Pad the input image by a uniform number of voxels on"
                          " all sides (in 3D)"))
 
-    quiet = traits.Bool(  # @UndefinedVariable
+    quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         description="Don't display output during operation")
 
@@ -261,11 +324,11 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
     bzero = traits.Bool(argstr='-bzero', position=1,  # @UndefinedVariable
                         desc="Extract b-zero images instead of DDW images")
 
-    quiet = traits.Bool(  # @UndefinedVariable
+    quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         description="Don't display output during operation")
 
-    grad = traits.Str(  # @UndefinedVariable
+    grad = traits.Str(
         mandatory=False, argstr='-grad %s',
         desc=("specify the diffusion-weighted gradient scheme used in the  "
               "acquisition. The program will normally attempt to use the  "
@@ -274,7 +337,7 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
               " where [ X Y Z ] describe the direction of the applied  "
               "gradient, and b gives the b-value in units of s/mm^2."))
 
-    fslgrad = traits.Tuple(  # @UndefinedVariable
+    fslgrad = traits.Tuple(
         File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
         File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
         argstr='-fslgrad %s %s', mandatory=False,
@@ -337,22 +400,23 @@ class MRConvertInputSpec(CommandLineInputSpec):
               "*nix) are found in the provided output file then the CWD (when "
               "the workflow is run, i.e. the working directory) will be "
               "prepended to the output path."))
-    out_ext = traits.Str(  # @UndefinedVariable
+    out_ext = traits.Str(
         mandatory=False,
         desc=("The extension (and therefore the file format) to use when the "
               "output file path isn't provided explicitly"))
-    coord = traits.Str(  # @UndefinedVariable
-        mandatory=False, argstr='-coord %s',
+    coord = traits.Tuple(
+        traits.Int(), traits.Int(),
+        mandatory=False, argstr='-coord %d %d',
         desc=("extract data from the input image only at the coordinates "
               "specified."))
-    vox = traits.Str(  # @UndefinedVariable
+    vox = traits.Str(
         mandatory=False, argstr='-vox %s',
         desc=("change the voxel dimensions of the output image. The new sizes "
               "should be provided as a comma-separated list of values. Only "
               "those values specified will be changed. For example: 1,,3.5 "
               "will change the voxel size along the x & z axes, and leave the "
               "y-axis voxel size unchanged."))
-    axes = traits.Str(  # @UndefinedVariable
+    axes = traits.Str(
         mandatory=False, argstr='-axes %s',
         desc=("specify the axes from the input image that will be used to form"
               " the output image. This allows the permutation, ommission, or "
@@ -360,7 +424,7 @@ class MRConvertInputSpec(CommandLineInputSpec):
               "supplied as a comma-separated list of axes. Any ommitted axes "
               "must have dimension 1. Axes can be inserted by supplying -1 at "
               "the corresponding position in the list."))
-    scaling = traits.Str(  # @UndefinedVariable
+    scaling = traits.Str(
         mandatory=False, argstr='-scaling %s',
         desc=("specify the data scaling parameters used to rescale the "
               "intensity values. These take the form of a comma-separated "
@@ -371,12 +435,12 @@ class MRConvertInputSpec(CommandLineInputSpec):
               "when writing to an integer image, and reset to 0,1 (no scaling)"
               " for floating-point and binary images. Note that his option has"
               " no effect for floating-point and binary images."))
-    stride = traits.Str(  # @UndefinedVariable
+    stride = traits.Str(
         mandatory=False, argstr='-stride %s',
         desc=("specify the strides of the output data in memory, as a "
               "comma-separated list. The actual strides produced will depend "
               "on whether the output image format can support it."))
-    dataset = traits.Str(  # @UndefinedVariable
+    dataset = traits.Str(
         mandatory=False, argstr='-dataset %s',
         desc=("specify output image data type. Valid choices are: float32, "
               "float32le, float32be, float64, float64le, float64be, int64, "
@@ -384,7 +448,7 @@ class MRConvertInputSpec(CommandLineInputSpec):
               "int32le, uint32le, int32be, uint32be, int16, uint16, int16le, "
               "uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, "
               "cfloat64, cfloat64le, cfloat64be, int8, uint8, bit."))
-    grad = traits.Str(  # @UndefinedVariable
+    grad = traits.Str(
         mandatory=False, argstr='-grad %s',
         desc=("specify the diffusion-weighted gradient scheme used in the  "
               "acquisition. The program will normally attempt to use the  "
@@ -392,19 +456,19 @@ class MRConvertInputSpec(CommandLineInputSpec):
               "as a 4xN text file with each line is in the format [ X Y Z b ],"
               " where [ X Y Z ] describe the direction of the applied  "
               "gradient, and b gives the b-value in units of s/mm^2."))
-    fslgrad = traits.Str(  # @UndefinedVariable
+    fslgrad = traits.Str(
         mandatory=False, argstr='-fslgrad %s',
         desc=("specify the diffusion-weighted gradient scheme used in the "
               "acquisition in FSL bvecs/bvals format."))
-    export_grad_mrtrix = traits.Str(  # @UndefinedVariable
+    export_grad_mrtrix = traits.Str(
         mandatory=False, argstr='-export_grad_mrtrix %s',
         desc=("export the diffusion-weighted gradient table to file in MRtrix "
               "format"))
-    export_grad_fsl = traits.Str(  # @UndefinedVariable
+    export_grad_fsl = traits.Str(
         mandatory=False, argstr='-export_grad_fsl %s',
         desc=("export the diffusion-weighted gradient table to files in FSL "
               "(bvecs / bvals) format"))
-    quiet = traits.Bool(  # @UndefinedVariable
+    quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         description="Don't display output during conversion")
 
@@ -445,33 +509,31 @@ class MRConvert(CommandLine):
 
 
 class DWIPreprocInputSpec(CommandLineInputSpec):
-    rpe_header = traits.Bool(  # @UndefinedVariable
-        mandatory=False, argstr="-rpe_header",
-        description=(
-            "Attempt to read the phase-encoding information from headeer"))
-    # Arguments
-    pe_dir = traits.Str(  # @UndefinedVariable
-        argstr='-pe_dir %s', desc=(
-            "The phase encode direction; can be a signed axis "
-            "number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)"),
-        position=-3)
-    in_file = traits.Str(  # @UndefinedVariable
+    in_file = traits.File(
         mandatory=True, argstr='%s',
         desc=("The input DWI series to be corrected"), position=-2)
     out_file = File(
         genfile=True, argstr='%s', position=-1, hash_files=False,
         desc="Output preprocessed filename")
-    forward_rpe = traits.Str(  # @UndefinedVariable
-        argstr='-rpe_pair %s',
+    rpe_pair = traits.Bool(
+        mandatory=False, argstr="-rpe_pair",
         desc=("forward reverse Provide a pair of images to use for "
               "inhomogeneity field estimation; note that the FIRST of these "
-              "two images must have the same phase"),
-        position=0)
-    reverse_rpe = traits.Str(  # @UndefinedVariable
-        argstr=' %s',
-        desc=("forward reverse Provide a pair of images to use for "
-              "inhomogeneity field estimation; note that the FIRST of these "
-              "two images must have the same phase"),
+              "two images must have the same phase"))
+    rpe_header = traits.Bool(
+        mandatory=False, argstr="-rpe_header",
+        description=(
+            "Attempt to read the phase-encoding information from headeer"))
+    # Arguments
+    pe_dir = traits.Str(
+        argstr='-pe_dir %s', desc=(
+            "The phase encode direction; can be a signed axis "
+            "number (e.g. -0, 1, +2) or a code (e.g. AP, LR, IS)"))
+    se_epi = traits.File(
+        argstr='-se_epi %s',
+        desc=("forward and reverse pair concanenated into a single 4D image "
+              "for inhomogeneity field estimation; note that the FIRST of "
+              "these two images must have the same phase"),
         position=1)
 
 
@@ -518,13 +580,13 @@ class DWI2MaskInputSpec(CommandLineInputSpec):
               "can also be set in the MRtrix config file, under the "
               "BValueScaling entry. Valid choices are yes/no, true/false, "
               "0/1 (default: true)."))
-    in_file = traits.Str(  # @UndefinedVariable
-        mandatory=True, argstr='%s',
+    in_file = traits.File(
+        mandatory=True, argstr='%s', exists=True,
         desc=("The input DWI series to be corrected"), position=-2)
     out_file = File(
         genfile=True, argstr='%s', position=-1, hash_files=False,
         desc="Output preprocessed filename")
-    grad = traits.Str(  # @UndefinedVariable
+    grad = traits.Str(
         mandatory=False, argstr='-grad %s',
         desc=("specify the diffusion-weighted gradient scheme used in the  "
               "acquisition. The program will normally attempt to use the  "
@@ -533,7 +595,7 @@ class DWI2MaskInputSpec(CommandLineInputSpec):
               " where [ X Y Z ] describe the direction of the applied  "
               "gradient, and b gives the b-value in units of s/mm^2."))
 
-    fslgrad = traits.Tuple(  # @UndefinedVariable
+    fslgrad = traits.Tuple(
         File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
         File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
         argstr='-fslgrad %s %s', mandatory=False,
@@ -579,19 +641,19 @@ class DWIBiasCorrectInputSpec(CommandLineInputSpec):
     mask = File(
         mandatory=True, argstr='-mask %s',
         desc=("Whole brain mask"))
-    method = traits.Str(  # @UndefinedVariable
+    method = traits.Str(
         mandatory=False, argstr='-%s',
         desc=("Method used to correct for biases (either 'fsl' or 'ants')"))
     bias = File(
         mandatory=False, argstr='-bias %s',
         desc=("Output the estimated bias field"))
-    in_file = traits.Str(  # @UndefinedVariable
+    in_file = traits.Str(
         mandatory=True, argstr='%s',
         desc=("The input DWI series to be corrected"), position=-2)
     out_file = File(
         genfile=True, argstr='%s', position=-1, hash_files=False,
         desc="Output preprocessed filename")
-    grad = traits.Str(  # @UndefinedVariable
+    grad = traits.Str(
         mandatory=False, argstr='-grad %s',
         desc=("specify the diffusion-weighted gradient scheme used in the  "
               "acquisition. The program will normally attempt to use the  "
@@ -600,7 +662,7 @@ class DWIBiasCorrectInputSpec(CommandLineInputSpec):
               " where [ X Y Z ] describe the direction of the applied  "
               "gradient, and b gives the b-value in units of s/mm^2."))
 
-    fslgrad = traits.Tuple(  # @UndefinedVariable
+    fslgrad = traits.Tuple(
         File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
         File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
         argstr='-fslgrad %s %s', mandatory=False,
@@ -643,23 +705,23 @@ class DWIBiasCorrect(CommandLine):
 
 class MRCatInputSpec(CommandLineInputSpec):
 
-    first_scan = traits.File(  # @UndefinedVariable
+    first_scan = traits.File(
         exists=True, mandatory=True, desc="First input image", argstr="%s",
         position=-3)
 
-    second_scan = traits.File(  # @UndefinedVariable
+    second_scan = traits.File(
         exists=True, mandatory=True, desc="Second input image", argstr="%s",
         position=-2)
 
-    out_file = traits.File(  # @UndefinedVariable
+    out_file = traits.File(
         genfile=True, desc="Output filename", position=-1, hash_files=False,
         argstr="%s")
 
-    axis = traits.Int(  # @UndefinedVariable
+    axis = traits.Int(
         desc="The axis along which the scans will be concatenated",
         argstr="-axis %s")
 
-    quiet = traits.Bool(  # @UndefinedVariable
+    quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         description="Don't display output during concatenation")
 
@@ -699,6 +761,81 @@ class MRCat(CommandLine):
                 os.getcwd(), "{}_{}_concat{}".format(first, second, ext))
         return out_name
 
+
+# =============================================================================
+# MR Convert
+# =============================================================================
+
+
+class DWIDenoiseInputSpec(CommandLineInputSpec):
+    in_file = traits.Either(
+        File(exists=True, desc="Input file"),
+        Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
+        mandatory=True, argstr='%s', position=-2)
+    out_file = File(
+        genfile=True, argstr='%s', position=-1, hash_files=False,
+        desc=("Output (converted) file. If no path separators (i.e. '/' on "
+              "*nix) are found in the provided output file then the CWD (when "
+              "the workflow is run, i.e. the working directory) will be "
+              "prepended to the output path."))
+    noise = File(
+        genfile=True, argstr="-noise %s",
+        desc=("The estimated spatially-varying noise level"))
+    mask = File(
+        argstr="-mask %s",
+        desc=("Perform the de-noising in the specified mask"))
+    extent = traits.Tuple(
+        traits.Int(), traits.Int(), traits.Int(), argstr="-extent %d,%d,%d",
+        desc="Extent of the kernel")
+
+
+class DWIDenoiseOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='De noised image')
+    noise = File(desc=("The estimated spatially-varying noise level"))
+
+
+class DWIDenoise(CommandLine):
+
+    _cmd = 'dwidenoise'
+    input_spec = DWIDenoiseInputSpec
+    output_spec = DWIDenoiseOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out_file'] = self._gen_outfname()
+        outputs['noise'] = self._gen_noisefname()
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            gen_name = self._gen_outfname()
+        elif name == 'noise':
+            gen_name = self._gen_noisefname()
+        else:
+            assert False
+        return gen_name
+
+    def _gen_outfname(self):
+        if isdefined(self.inputs.out_file):
+            out_name = self.inputs.out_file
+        else:
+            base, ext = split_extension(
+                os.path.basename(self.inputs.in_file))
+            out_name = os.path.join(os.getcwd(),
+                                    "{}_conv{}".format(base, ext))
+        return out_name
+
+    def _gen_noisefname(self):
+        if isdefined(self.inputs.out_file):
+            out_name = self.inputs.out_file
+        else:
+            base, ext = split_extension(
+                os.path.basename(self.inputs.in_file))
+            out_name = os.path.join(os.getcwd(),
+                                    "{}_noise{}".format(base, ext))
+        return out_name
+
+
 # 
 # class DWI2ResponseTournierInputSpec(CommandLineInputSpec):
 #     in_file = File(exists=True, argstr='%s', mandatory=True, position=0,
@@ -710,11 +847,11 @@ class MRCat(CommandLine):
 #     bzero = traits.Bool(argstr='-bzero', position=1,  # @UndefinedVariable
 #                         desc="Extract b-zero images instead of DDW images")
 # 
-#     quiet = traits.Bool(  # @UndefinedVariable
+#     quiet = traits.Bool(
 #         mandatory=False, argstr="-quiet",
 #         description="Don't display output during operation")
 # 
-#     grad = traits.Str(  # @UndefinedVariable
+#     grad = traits.Str(
 #         mandatory=False, argstr='-grad %s',
 #         desc=("specify the diffusion-weighted gradient scheme used in the  "
 #               "acquisition. The program will normally attempt to use the  "
@@ -723,7 +860,7 @@ class MRCat(CommandLine):
 #               " where [ X Y Z ] describe the direction of the applied  "
 #               "gradient, and b gives the b-value in units of s/mm^2."))
 # 
-#     fslgrad = traits.Tuple(  # @UndefinedVariable
+#     fslgrad = traits.Tuple(
 #         File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
 #         File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
 #         argstr='-fslgrad %s %s', mandatory=False,

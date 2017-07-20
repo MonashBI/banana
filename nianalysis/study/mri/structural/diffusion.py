@@ -1,10 +1,11 @@
+from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
 from nipype.interfaces.mrtrix3.preprocess import ResponseSD
 from nianalysis.interfaces.mrtrix import (
-    DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect)
+    DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
+    MRCalc)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
-from nipype.interfaces.fsl import ExtractROI
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from .t2 import T2Study
@@ -12,7 +13,7 @@ from nianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from nianalysis.interfaces.utils import MergeTuple
 from nianalysis.citations import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
-    noddi_cite, fast_cite, n4_cite, tbss_cite)
+    noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format)
@@ -34,39 +35,81 @@ class DiffusionStudy(T2Study):
         phase_dir : str{AP|LR|IS}
             The phase encode direction
         """
+        outputs = [DatasetSpec('dwi_preproc', nifti_gz_format),
+                   DatasetSpec('grad_dirs', fsl_bvecs_format),
+                   DatasetSpec('bvalues', fsl_bvals_format)]
+        if options.get('preproc_denoise', True):
+            outputs.append(DatasetSpec('noise_residual', mrtrix_format))
         pipeline = self.create_pipeline(
             name='preprocess',
             inputs=[DatasetSpec('dwi_scan', mrtrix_format),
-                    DatasetSpec('forward_pe', mrtrix_format),
                     DatasetSpec('reverse_pe', mrtrix_format)],
-            outputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
-                     DatasetSpec('grad_dirs', fsl_bvecs_format),
-                     DatasetSpec('bvalues', fsl_bvals_format)],
+            outputs=outputs,
             description="Preprocess dMRI studies using distortion correction",
-            default_options={},
+            default_options={'preproc_pe_dir': None,
+                             'preproc_denoise': True},
             version=1,
-            citations=[fsl_cite, eddy_cite, topup_cite, distort_correct_cite],
+            citations=(
+                [fsl_cite, eddy_cite, topup_cite, distort_correct_cite] +
+                dwidenoise_cites),
             options=options)
+        # Denoise the dwi-scan
+        if pipeline.option('preproc_denoise'):
+            # Run denoising
+            denoise = pipeline.create_node(DWIDenoise(), name='denoise')
+            # Calculate residual noise
+            subtract_operands = pipeline.create_node(Merge(2),
+                                                     name='subtract_operands')
+            subtract = pipeline.create_node(MRCalc(), name='subtract')
+            subtract.inputs.operation = 'subtract'
+        # Extract b=0 volumes
+        dwiextract = pipeline.create_node(
+            ExtractDWIorB0(), name='dwiextract')
+        dwiextract.inputs.bzero = True
+        # Get first b=0 from dwi b=0 volumes
+        mrconvert = pipeline.create_node(MRConvert(), name="mrconvert")
+        mrconvert.inputs.coord = (3, 0)
+        # Concatenate extracted forward rpe with reverse rpe
+        mrcat = pipeline.create_node(
+            MRCat(), name='mrcat', requirements=[mrtrix3rc_req])
         # Create preprocessing node
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
             requirements=[mrtrix3rc_req, fsl5_req], wall_time=60)
-        dwipreproc.inputs.rpe_header = True
-#         dwipreproc.inputs.pe_dir = pipeline.option('phase_dir')
+        dwipreproc.inputs.rpe_pair = True
+        if pipeline.option('preproc_pe_dir') is None:
+            raise NiAnalysisError(
+                "Required option 'preproc_pe_dir' was not provided to '{}' "
+                "pipeline in {}".format(pipeline.name, self))
+        dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
         # Create nodes to gradients to FSL format
         extract_grad = pipeline.create_node(
             ExtractFSLGradients(), name="extract_grad",
             requirements=[mrtrix3_req])
-        pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
         # Connect inputs
-        pipeline.connect_input('dwi_scan', dwipreproc, 'in_file')
-        pipeline.connect_input('forward_pe', dwipreproc, 'forward_rpe')
-        pipeline.connect_input('reverse_pe', dwipreproc, 'reverse_rpe')
+        pipeline.connect_input('reverse_pe', mrcat, 'second_scan')
+        if pipeline.option('preproc_denoise'):
+            pipeline.connect_input('dwi_scan', denoise, 'in_file')
+            pipeline.connect_input('dwi_scan', subtract_operands, 'in1')
+        else:
+            pipeline.connect_input('dwi_scan', dwipreproc, 'in_file')
+        pipeline.connect_input('dwi_scan', dwiextract, 'in_file')
+        # Connect inter-nodes
+        if pipeline.option('preproc_denoise'):
+            pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
+            pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
+            pipeline.connect(subtract_operands, 'out', subtract, 'in_files')
+        pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
+        pipeline.connect(mrconvert, 'out_file', mrcat, 'first_scan')
+        pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
+        pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
         # Connect outputs
         pipeline.connect_output('dwi_preproc', dwipreproc, 'out_file')
         pipeline.connect_output('grad_dirs', extract_grad,
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
+        if pipeline.option('preproc_denoise'):
+            pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
         pipeline.assert_connected()
         return pipeline
@@ -353,50 +396,6 @@ class DiffusionStudy(T2Study):
         # Check inputs/outputs are connected
         return pipeline
 
-    def extract_forward_pe_pipeline(self, **options):  # @UnusedVariable
-        """
-        Extracts the b0 images from a DWI study and takes their mean
-        """
-        pipeline = self.create_pipeline(
-            name='extract_forward_pe',
-            inputs=[DatasetSpec('dwi_scan', mrtrix_format)],
-            outputs=[DatasetSpec('forward_pe', nifti_gz_format)],
-            description="Extract b0 image from a DWI study",
-            default_options={},
-            version=1,
-            citations=[mrtrix_cite],
-            options=options)
-        # Extraction node
-        extract_b0s = pipeline.create_node(
-            ExtractDWIorB0(), name='extract_b0s', requirements=[mrtrix3_req])
-        extract_b0s.inputs.bzero = True
-        extract_b0s.inputs.quiet = True
-        mrconvert = pipeline.create_node(MRConvert(), name="b0_conv",
-                                         requirements=[mrtrix3_req])
-        mrconvert.inputs.out_ext = '.nii.gz'
-        mrconvert.inputs.quiet = True
-        crop = pipeline.create_node(ExtractROI(), name='crop',
-                                    requirements=[fsl5_req])
-        # Extract out the first volume from the selected b=0 volumes
-        crop.inputs.x_min = 0
-        crop.inputs.x_size = -1
-        crop.inputs.y_min = 0
-        crop.inputs.y_size = -1
-        crop.inputs.z_min = 0
-        crop.inputs.z_size = -1
-        crop.inputs.t_min = 0
-        crop.inputs.t_size = 1
-        # Connect inputs
-        pipeline.connect_input('dwi_scan', extract_b0s, 'in_file')
-        # Connect nodes
-        pipeline.connect(extract_b0s, 'out_file', mrconvert, 'in_file')
-        pipeline.connect(mrconvert, 'out_file', crop, 'in_file')
-        # Connect outputs
-        pipeline.connect_output('forward_pe', crop, 'roi_file')
-        pipeline.assert_connected()
-        # Check inputs/outputs are connected
-        return pipeline
-
     def track_gen_pipeline(self, **options):
         pipeline = self.create_pipeline(
             name='extract_b0',
@@ -416,9 +415,9 @@ class DiffusionStudy(T2Study):
     _dataset_specs = set_dataset_specs(
         DatasetSpec('dwi_scan', mrtrix_format),
         DatasetSpec('reverse_pe', mrtrix_format),
-        DatasetSpec('forward_pe', mrtrix_format, extract_forward_pe_pipeline),
         DatasetSpec('primary', nifti_gz_format, extract_b0_pipeline,
                     description="b0 image"),
+        DatasetSpec('noise_residual', mrtrix_format, preprocess_pipeline),
         DatasetSpec('tensor', nifti_gz_format, tensor_pipeline),
         DatasetSpec('fa', nifti_gz_format, tensor_pipeline),
         DatasetSpec('adc', nifti_gz_format, tensor_pipeline),
