@@ -1,10 +1,10 @@
 from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
-from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
+from nipype.interfaces.mrtrix3.reconst import FitTensor
 from nipype.interfaces.mrtrix3.preprocess import ResponseSD
 from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc)
+    MRCalc, EstimateFOD)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
@@ -98,7 +98,7 @@ class DiffusionStudy(T2Study):
         if pipeline.option('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
             pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
-            pipeline.connect(subtract_operands, 'out', subtract, 'in_files')
+            pipeline.connect(subtract_operands, 'out', subtract, 'operands')
         pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
         pipeline.connect(mrconvert, 'out_file', mrcat, 'first_scan')
         pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
@@ -298,6 +298,7 @@ class DiffusionStudy(T2Study):
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
+        dwi2fod.inputs.algorithm = 'csd'
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
         # Gradient merge node
@@ -323,9 +324,12 @@ class DiffusionStudy(T2Study):
             name='tbss',
             inputs=[DatasetSpec('fa', nifti_gz_format)],
             outputs=[DatasetSpec('tbss_mean_fa', nifti_gz_format),
-                     DatasetSpec('tbss_proj_fa', nifti_gz_format),
-                     DatasetSpec('tbss_skeleton', nifti_gz_format),
-                     DatasetSpec('tbss_skeleton_mask', nifti_gz_format)],
+                     DatasetSpec('tbss_proj_fa', nifti_gz_format,
+                                 multiplicity='per_project'),
+                     DatasetSpec('tbss_skeleton', nifti_gz_format,
+                                 multiplicity='per_project'),
+                     DatasetSpec('tbss_skeleton_mask', nifti_gz_format,
+                                 multiplicity='per_project')],
             default_options={'tbss_skel_thresh': 0.2},
             version=1,
             citations=[tbss_cite, fsl_cite],
