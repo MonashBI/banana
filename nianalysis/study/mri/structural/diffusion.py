@@ -208,6 +208,39 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
+    def intensity_normalization_pipeline(self, **options):
+        pipeline = self.create_pipeline(
+            name='intensity_normalization',
+            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format)],
+            outputs=[DatasetSpec('normalised', mrtrix_format),
+                     DatasetSpec('fa_template', mrtrix_format),
+                     DatasetSpec('fa_template_wm_mask', mrtrix_format)],
+            description="Corrects for B1 field inhomogeneity",
+            default_options={},
+            version=1,
+            citations=[],
+            options=options)
+        # Convert from nifti to mrtrix format
+        grad_merge = pipeline.create(Merge(2), name="grad_merge")
+        mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
+        mrconvert.inputs.out_ext = '.mif'
+        # Intensity normalization
+        intensitiy_norm = pipeline.create_join_subjects_node(
+            DWIIntensityNorm(), name='dwiintensitynorm',
+            joinfield=[''])
+        # Connect inputs
+        pipeline.connect_input('bias_correct', mrconvert, 'in_file')
+        pipeline.connect_input('grad_dirs', grad_merge, 'in1')
+        pipeline.connect_input('bvalues', grad_merge, 'in1')
+        # Internal connections
+        pipeline.connect(grad_merge, 'out', mrconvert, 'fsl_grad')
+        pipeline.connect()
+        # Connect outputs
+        
+
     def tensor_pipeline(self, **options):  # @UnusedVariable
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
