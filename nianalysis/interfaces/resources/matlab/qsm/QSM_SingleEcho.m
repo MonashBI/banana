@@ -1,4 +1,4 @@
-function QSM_SingleEcho( inDir, maskFile, outDir )
+function QSM_SingleEcho( inDir, maskFile, outDir, echoTime )
 %COIL_QSM Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -32,7 +32,7 @@ Background_Phase_Removal(unwrapDir, maskDir, tissueDir, nCoils);
 
 % Step 4: Invert Field
 % Execute iLSQR on each coil
-Coil_QSM(tissueDir, maskDir, qsmDir, nCoils);
+Coil_QSM(tissueDir, maskDir, qsmDir, echoTime, nCoils);
 
 % Step 5: Combine Coils
 Combined_Coil_QSM_p50(qsmDir, tissueDir, maskFile, maskDir, nCoils);

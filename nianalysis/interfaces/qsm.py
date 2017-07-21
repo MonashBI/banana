@@ -1,9 +1,8 @@
 from nipype.interfaces.matlab import MatlabCommand
 import nianalysis.interfaces
 from nipype.interfaces.base import (
-    TraitedSpec, BaseInterface, BaseInterfaceInputSpec, File, Directory)
+    TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File, Directory)
 import os
-
 
 class PrepareInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
@@ -84,16 +83,55 @@ class FillHoles(BaseInterface):
             assert False
         return fname
 
+class CSVSummaryInputsSpec(BaseInterfaceInputSpec):
+    in_ldn_mean = traits.List(traits.Float())
+    in_ldn_std = traits.List(traits.Float())
+    in_ldn_hist = traits.List(traits.List(traits.Float()))
+    in_rdn_mean = traits.List(traits.Float())
+    in_rdn_std = traits.List(traits.Float())
+    in_rdn_hist = traits.List(traits.List(traits.Float()))
+    
+class CSVSummaryOutputSpec(TraitedSpec):
+    out_file = File(exists=True)
+
+class CSVSummary(BaseInterface):
+    input_spec = CSVSummaryInputsSpec
+    output_spec = CSVSummaryOutputSpec
+
+    def _run_interface(self, runtime):  # @UnusedVariable
+        with open(os.path.join(os.getcwd(),
+                               self._gen_filename('out_file')), 'w') as fp:
+            fp.write('ldn_mean, ldn_std, ldn_hist,'+
+                'rdn_mean, rdn_std, rdn_hist'+
+                '\n')
+            for tple in zip(self.inputs.in_ldn_mean, self.inputs.in_ldn_std, self.inputs.in_ldn_hist, 
+                            self.inputs.in_rdn_mean, self.inputs.in_rdn_std, self.inputs.in_rdn_hist):
+                fp.write(','.join(str(t) for t in tple) + '\n')
+        
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_file'] = os.path.join(os.getcwd(),
+                                         self._gen_filename('out_file'))
+        return outputs
+    
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = 'qsm_summary.csv'
+        else:
+            assert False
+        return fname
+    
 class STIInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     mask_file = File(exists=True, mandatory=True)
-
+    echo_times = traits.List(traits.Float(), value=[20.0], desc='Echo times in ms')
 
 class STIOutputSpec(TraitedSpec):
     qsm = File(exists=True)
     tissue_phase = File(exists=True)
     tissue_mask = File(exists=True)
-
 
 class STI(BaseInterface):
     input_spec = STIInputSpec
@@ -104,11 +142,12 @@ class STI(BaseInterface):
         script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
-            "QSM_DualEcho('{in_dir}', '{mask_file}', '{out_dir}');\n"
+            "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times});\n"
             "exit;").format(
                 in_dir=self.inputs.in_dir,
                 mask_file=self.inputs.mask_file,
                 out_dir=self.working_dir,
+                echo_times=self.inputs.echo_times,
                 matlab_dir=os.path.abspath(os.path.join(
                     os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))

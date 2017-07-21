@@ -35,14 +35,17 @@ class TestQSM(TestCase):
 
     def test_optibet(self):
         study = self.create_study(
-            T2StarStudy, 'optibet_t2s', input_datasets={
+            T2StarStudy, 'test_tfms', input_datasets={
                 't1': Dataset('t1', nifti_gz_format),
-                't2s': Dataset('t2s', nifti_gz_format)})
-        study.optiBET_T2s().run(work_dir=self.work_dir, plugin='MultiProc')
-        self.assertDatasetCreated('optibet_t2s_opti_betted_T2s.nii.gz', study.name)
-        self.assertDatasetCreated('optibet_t2s_opti_betted_T2s_mask.nii.gz', study.name)
+                'raw_coils': Dataset('swi_coils', zip_format)
+                #'qsm': Dataset('test_analysis_qsm', nifti_gz_format),
+                #'right_dentate_in_qsm': Dataset('test_analysis_right_dentate_in_qsm', nifti_gz_format),
+                #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
+                })
+        study.dentate_masks().run(work_dir=self.work_dir, plugin='MultiProc')
+        self.assertDatasetCreated(dataset_name='right_dentate_in_qsm.nii.gz', study_name=study.name)
         
-#    def test_ants(self):
+#    def test_ants(self):    
 #        study = self.create_study(
 #            T2StarStudy, 'optibet', input_datasets={
 #                't2s': Dataset('t2s', nifti_gz_format),

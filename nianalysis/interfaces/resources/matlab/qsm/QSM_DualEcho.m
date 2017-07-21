@@ -1,4 +1,4 @@
-function QSM_DualEcho( inDir, maskFile, outDir )
+function QSM_DualEcho( inDir, maskFile, outDir, echoTimes )
 
 % Add libraries for nifti and STI suite
 addpath(genpath('/data/project/Phil/ASPREE_QSM/scripts/'))
@@ -23,10 +23,10 @@ nii = load_untouch_nii(phaseFile);
 params.H = [0 0 1];
 params.voxelsize = nii.hdr.dime.pixdim(2:4);
 params.padsize = [12 12 12];
-params.TE = 14.76; % (22.14-7.38)
+params.TE = echoTimes(2)-echoTimes(1); % 14.76 = (22.14-7.38)
 params.B0 = 3;
-params.tol_step1 = 0.05;
-params.tol_step2 = 0.001;
+params.tol_step1 = 0.1;
+params.tol_step2 = 0.01;
 params.Kthreshold = 0.1;
 
 % Step 1: Unwrap phase
