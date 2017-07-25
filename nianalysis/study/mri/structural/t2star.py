@@ -1,7 +1,7 @@
 from nianalysis.requirements import fsl5_req, matlab2015_req, ants19_req, mrtrix3_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
-from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format, csv_format
+from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format, csv_format, zip_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.qsm import STI, Prepare, FillHoles, CSVSummary
@@ -623,7 +623,7 @@ class T2StarStudy(MRIStudy):
                     description=("Reconstructed T2* complex image for each "
                                  "coil without standardisation.")),
                                        
-        DatasetSpec('prepared_coils', directory_format, prepare_swi_coils),
+        DatasetSpec('prepared_coils', zip_format, prepare_swi_coils),
         DatasetSpec('t2s', nifti_gz_format, prepare_swi_coils),
                                            
         DatasetSpec('betted_T1', nifti_gz_format, bet_T1), 
