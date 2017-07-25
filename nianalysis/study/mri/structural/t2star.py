@@ -619,7 +619,7 @@ class T2StarStudy(MRIStudy):
     
     _dataset_specs = set_dataset_specs(
         DatasetSpec('t1', nifti_gz_format),
-        DatasetSpec('raw_coils', directory_format,
+        DatasetSpec('raw_coils', zip_format,
                     description=("Reconstructed T2* complex image for each "
                                  "coil without standardisation.")),
                                        
