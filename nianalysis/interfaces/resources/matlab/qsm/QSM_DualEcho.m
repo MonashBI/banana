@@ -5,6 +5,7 @@ addpath(genpath('/data/project/Phil/ASPREE_QSM/scripts/'))
 
 % Prepare directory structure
 mkdir([outDir '/QSM']);
+mkdir([outDir '/Unwrapped']);
 phaseFile = [outDir '/QSM/Raw_PHASE.nii.gz'];
 newMaskFile = [outDir '/QSM/PhaseMask.nii.gz'];
 unwrapFile = [outDir '/QSM/Unwrapped.nii.gz'];
@@ -15,7 +16,7 @@ nCoils = 32;
 % Combine channels
 HIP_ChannelCombination(inDir, [outDir '/QSM'], nCoils);
 
-% Load Inputs (Raw phase and mask)
+% Load Inputs (Raw mask)
 mask = load_untouch_nii(maskFile);
 nii = load_untouch_nii(phaseFile);
 
