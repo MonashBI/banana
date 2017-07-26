@@ -688,7 +688,7 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('left_caudate_in_qsm', nifti_gz_format, subcortical_structure_masks),
         DatasetSpec('right_caudate_in_qsm', nifti_gz_format, subcortical_structure_masks),
     
-        DatasetSpec('qsm_summary', csv_format, dentate_analysis))
+        DatasetSpec('qsm_summary', csv_format, dentate_analysis)
     
 
 ''' Deprecated (to be removed in future versions)          

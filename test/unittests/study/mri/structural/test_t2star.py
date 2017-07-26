@@ -45,7 +45,7 @@ class TestQSM(TestCase):
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
                 })
         study.qsm_pipeline().run(work_dir=self.work_dir, plugin='MultiProc')
-        self.assertDatasetCreated(dataset_name='betted_T2s.nii.gz', study_name=study.name)
+        self.assertDatasetCreated(dataset_name='test_tfms_qsm.nii.gz', study_name=study.name)
         
 #    def test_ants(self):    
 #        study = self.create_study(
