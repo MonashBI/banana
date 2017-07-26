@@ -5,6 +5,9 @@ from nipype.interfaces.base import (
 from nipype.interfaces.mrtrix3.reconst import (
     EstimateFODInputSpec as NiPypeEstimateFODInputSpec,
     EstimateFOD as NiPypeEstimateFOD)
+from nipype.interfaces.mrtrix3.preprocess import (
+    ResponseSD as NipypeResponseSD,
+    ResponseSDInputSpec as NipypeResponseSDInputSpec)
 from nianalysis.utils import split_extension
 
 
@@ -13,6 +16,16 @@ from nianalysis.utils import split_extension
 # =============================================================================
 # Extract MR gradients
 # =============================================================================
+
+class ResponseSDInputSpec(NipypeResponseSDInputSpec):
+
+    algorithm = traits.Str(mandatory=True, argstr='%s', position=0,
+                           desc="The algorithm used to estimate the response")
+
+
+class ResponseSD(NipypeResponseSD):
+
+    input_spec = ResponseSDInputSpec
 
 
 class ExtractFSLGradientsInputSpec(CommandLineInputSpec):
