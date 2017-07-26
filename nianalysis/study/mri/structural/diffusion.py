@@ -1,10 +1,9 @@
 from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor
-from nipype.interfaces.mrtrix3.preprocess import ResponseSD
 from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, EstimateFOD)
+    MRCalc, EstimateFOD, ResponseSD)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
@@ -323,10 +322,9 @@ class DiffusionStudy(T2Study):
             outputs=[DatasetSpec('fod', nifti_gz_format)],
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
-            default_options={},
+            default_options={'fod_response_algorithm': 'tax'},
             version=1,
             citations=[mrtrix_cite],
-            approx_runtime=1,
             options=options)
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
@@ -334,6 +332,7 @@ class DiffusionStudy(T2Study):
         dwi2fod.inputs.algorithm = 'csd'
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
+        response.inputs.algorithm = pipeline.option('fod_response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
