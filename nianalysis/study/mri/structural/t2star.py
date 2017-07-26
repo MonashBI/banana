@@ -36,9 +36,8 @@ class T2StarStudy(MRIStudy):
         """
         pipeline = self.create_pipeline(
             name='qsmrecon',
-            inputs=[DatasetSpec('prepared_coils', directory_format),
-                    DatasetSpec('opti_betted_T2s_mask', nifti_gz_format),
-                    DatasetSpec('t2s', nifti_gz_format)],
+            inputs=[DatasetSpec('raw_coils', directory_format),
+                    DatasetSpec('opti_betted_T2s_mask', nifti_gz_format)],
             # TODO should this be primary?
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
@@ -48,27 +47,33 @@ class T2StarStudy(MRIStudy):
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             options=options)
-
+        
+        # Prepare and reformat SWI_COILS
+        prepare = pipeline.create_node(interface=Prepare(), name='prepare',
+                                       requirements=[matlab2015_req],
+                                       wall_time=30, memory=16000)
+        pipeline.connect_input('raw_coils', prepare, 'in_dir')
+        
         # Phase and QSM for dual echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
                                         requirements=[matlab2015_req],
                                         wall_time=300, memory=24000)
         qsmrecon.inputs.echo_times = pipeline.option('qsm_echo_times')
         pipeline.connect_input('opti_betted_T2s_mask', qsmrecon, 'mask_file')
-        pipeline.connect_input('prepared_coils', qsmrecon, 'in_dir')
+        pipeline.connect(prepare,'out_dir', qsmrecon, 'in_dir')
         
         # Use geometry from scanner image
         qsm_geom = pipeline.create_node(fsl.CopyGeom(), name='qsm_copy_geomery', requirements=[fsl5_req], memory=4000, wall_time=5)
         pipeline.connect(qsmrecon, 'qsm', qsm_geom, 'dest_file')
-        pipeline.connect_input('t2s', qsm_geom, 'in_file')
+        pipeline.connect(prepare,'out_file', qsm_geom, 'in_file')
         
         phase_geom = pipeline.create_node(fsl.CopyGeom(), name='qsm_phase_copy_geomery', requirements=[fsl5_req], memory=4000, wall_time=5)
         pipeline.connect(qsmrecon, 'tissue_phase', phase_geom, 'dest_file')
-        pipeline.connect_input('t2s', phase_geom, 'in_file')
+        pipeline.connect(prepare,'out_file', phase_geom, 'in_file')
         
         mask_geom = pipeline.create_node(fsl.CopyGeom(), name='qsm_mask_copy_geomery', requirements=[fsl5_req], memory=4000, wall_time=5)
         pipeline.connect(qsmrecon, 'tissue_mask', mask_geom, 'dest_file')
-        pipeline.connect_input('t2s', mask_geom, 'in_file')
+        pipeline.connect(prepare,'out_file', mask_geom, 'in_file')
         
         # Connect inputs/outputs
         pipeline.connect_output('qsm', qsm_geom, 'out_file')
@@ -78,24 +83,25 @@ class T2StarStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
+    # Standalone coil combination code for producing an icerecon space t2s image for registration and segmentation in QSM space
     def prepare_swi_coils(self, **options):
         pipeline = self.create_pipeline(
             name='swi_coils_preparation',
             inputs=[DatasetSpec('raw_coils', directory_format)],
-            outputs=[DatasetSpec('prepared_coils', directory_format),
-                     DatasetSpec('t2s', nifti_gz_format)],
+            outputs=[DatasetSpec('t2s', nifti_gz_format)],
             description="Perform preprocessing on raw coils",
             default_options={},
             citations=[matlab_cite],
             version=1,
             options=options)
         
-        # Prepare and reformat SWI_COILS
+        # Prepare and reformat SWI_COILS for T2s only
+        # Prepared output not saved to avoid being uploaded into xnat
+        # Only required prior to QSM, so node incorporated into QSM pipeline
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
                                        wall_time=30, memory=16000)
         pipeline.connect_input('raw_coils', prepare, 'in_dir')
-        pipeline.connect_output('prepared_coils', prepare,'out_dir')
         pipeline.connect_output('t2s', prepare,'out_file')
         
         return pipeline
@@ -623,7 +629,6 @@ class T2StarStudy(MRIStudy):
                     description=("Reconstructed T2* complex image for each "
                                  "coil without standardisation.")),
                                        
-        DatasetSpec('prepared_coils', zip_format, prepare_swi_coils),
         DatasetSpec('t2s', nifti_gz_format, prepare_swi_coils),
                                            
         DatasetSpec('betted_T1', nifti_gz_format, bet_T1), 
