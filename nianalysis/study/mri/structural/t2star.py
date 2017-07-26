@@ -4,7 +4,7 @@ from nianalysis.citations import (
 from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format, csv_format, zip_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.qsm import STI, Prepare, FillHoles, CSVSummary
+from nianalysis.interfaces.qsm import STI, Prepare, FillHoles, QSMSummary
 from nianalysis.interfaces import utils
 from ..base import MRIStudy
 from nipype.interfaces import fsl, ants, mrtrix
@@ -16,6 +16,7 @@ from nianalysis.pipeline import Pipeline
 import nianalysis
 from nipype.interfaces.base import traits
 import nianalysis.utils
+from nipype.interfaces.utility.base import IdentityInterface
 
 #from nipype.interfaces.fsl.preprocess import (
 #    BET, FUGUE, FLIRT, FNIRT, ApplyWarp)
@@ -600,16 +601,33 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input('qsm', left_apply_mask_hist, 'in_file')
         pipeline.connect_input('left_dentate_in_qsm', left_apply_mask_hist, 'mask_file')
         
+        identity_node = pipeline.create_join_visits_node(interface=IdentityInterface(['in_subject_id','in_visit_id','in_ldn_mean',
+                                                                    'in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist']),
+                                                         name='Join_Visits_Identity',
+                                                         joinfield=['in_subject_id','in_visit_id','in_ldn_mean',
+                                                                    'in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist'],
+                                                         wall_time=60, memory=4000)
+        pipeline.connect_subject_id(identity_node, 'in_subject_id')
+        pipeline.connect_visit_id(identity_node,'in_visit_id')
+        pipeline.connect(left_apply_mask_mean,'out_stat',identity_node, 'in_ldn_mean')
+        pipeline.connect(left_apply_mask_std,'out_stat',identity_node, 'in_ldn_std')
+        pipeline.connect(left_apply_mask_hist,'out_stat',identity_node, 'in_ldn_hist')        
+        pipeline.connect(right_apply_mask_mean,'out_stat',identity_node, 'in_rdn_mean')
+        pipeline.connect(right_apply_mask_std,'out_stat',identity_node, 'in_rdn_std')
+        pipeline.connect(right_apply_mask_hist,'out_stat',identity_node, 'in_rdn_hist')
+        
         summarise_results = pipeline.create_join_subjects_node(
-            interface=CSVSummary(), 
-            joinfield=['in_ldn_mean','in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist'],
+            interface=QSMSummary(), 
+            joinfield=['in_subject_id','in_visit_id','in_ldn_mean','in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist'],
             name='summarise_qsm', wall_time=60, memory=4000)
-        pipeline.connect(left_apply_mask_mean,'out_stat',summarise_results, 'in_ldn_mean')
-        pipeline.connect(left_apply_mask_std,'out_stat',summarise_results, 'in_ldn_std')
-        pipeline.connect(left_apply_mask_hist,'out_stat',summarise_results, 'in_ldn_hist')        
-        pipeline.connect(right_apply_mask_mean,'out_stat',summarise_results, 'in_rdn_mean')
-        pipeline.connect(right_apply_mask_std,'out_stat',summarise_results, 'in_rdn_std')
-        pipeline.connect(right_apply_mask_hist,'out_stat',summarise_results, 'in_rdn_hist')
+        pipeline.connect(identity_node, 'in_subject_id', summarise_results, 'in_subject_id')
+        pipeline.connect(identity_node,'in_visit_id', summarise_results,'in_visit_id')
+        pipeline.connect(identity_node,'in_ldn_mean',summarise_results, 'in_ldn_mean')
+        pipeline.connect(identity_node,'in_ldn_std',summarise_results, 'in_ldn_std')
+        pipeline.connect(identity_node,'in_ldn_hist',summarise_results, 'in_ldn_hist')        
+        pipeline.connect(identity_node,'in_rdn_mean',summarise_results, 'in_rdn_mean')
+        pipeline.connect(identity_node,'in_rdn_std',summarise_results, 'in_rdn_std')
+        pipeline.connect(identity_node,'in_rdn_hist',summarise_results, 'in_rdn_hist')
         
         pipeline.connect_output('qsm_summary', summarise_results, 'out_file')
         
@@ -688,7 +706,7 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('left_caudate_in_qsm', nifti_gz_format, subcortical_structure_masks),
         DatasetSpec('right_caudate_in_qsm', nifti_gz_format, subcortical_structure_masks),
     
-        DatasetSpec('qsm_summary', csv_format, dentate_analysis)
+        DatasetSpec('qsm_summary', csv_format, dentate_analysis, multiplicity='per_project'))
     
 
 ''' Deprecated (to be removed in future versions)          

@@ -81,31 +81,37 @@ class FillHoles(BaseInterface):
             assert False
         return fname
 
-class CSVSummaryInputsSpec(BaseInterfaceInputSpec):
-    in_ldn_mean = traits.List(traits.Float())
-    in_ldn_std = traits.List(traits.Float())
-    in_ldn_hist = traits.List(traits.List(traits.Float()))
-    in_rdn_mean = traits.List(traits.Float())
-    in_rdn_std = traits.List(traits.Float())
-    in_rdn_hist = traits.List(traits.List(traits.Float()))
+class QSMSummaryInputsSpec(BaseInterfaceInputSpec):
+    in_ldn_mean = traits.List(traits.List(traits.Float()))
+    in_ldn_std = traits.List(traits.List(traits.Float()))
+    in_ldn_hist = traits.List(traits.List(traits.List(traits.Float())))
+    in_rdn_mean = traits.List(traits.List(traits.Float()))
+    in_rdn_std = traits.List(traits.List(traits.Float()))
+    in_rdn_hist = traits.List(traits.List(traits.List(traits.Float())))
+    in_subject_id = traits.List(traits.List(traits.Str()))
+    in_visit_id = traits.List(traits.List(traits.Str()))
     
-class CSVSummaryOutputSpec(TraitedSpec):
+class QSMSummaryOutputSpec(TraitedSpec):
     out_file = File(exists=True)
 
-class CSVSummary(BaseInterface):
-    input_spec = CSVSummaryInputsSpec
-    output_spec = CSVSummaryOutputSpec
+class QSMSummary(BaseInterface):
+    input_spec = QSMSummaryInputsSpec
+    output_spec = QSMSummaryOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
         with open(os.path.join(os.getcwd(),
                                self._gen_filename('out_file')), 'w') as fp:
-            fp.write('ldn_mean, ldn_std, ldn_hist,'+
+            fp.write('visit, subject, ldn_mean, ldn_std, ldn_hist,'+
                 'rdn_mean, rdn_std, rdn_hist'+
                 '\n')
-            for tple in zip(self.inputs.in_ldn_mean, self.inputs.in_ldn_std, self.inputs.in_ldn_hist, 
-                            self.inputs.in_rdn_mean, self.inputs.in_rdn_std, self.inputs.in_rdn_hist):
-                fp.write(','.join(str(t) for t in tple) + '\n')
-        
+            for v, s, lm, ls, lh, rm, rs, rh in zip(self.inputs.in_visit_id, self.inputs.in_subject_id, 
+                                                    self.inputs.in_ldn_mean, self.inputs.in_ldn_std, 
+                                                    self.inputs.in_ldn_hist, self.inputs.in_rdn_mean, 
+                                                    self.inputs.in_rdn_std, self.inputs.in_rdn_hist):
+                for tple in zip(v, s, lm, ls, lh, rm, rs, rh):
+                    fp.write(','.join(str(t) for t in tple) + '\n')
+        print os.path.join(os.getcwd(),
+                               self._gen_filename('out_file'))
         return runtime
 
     def _list_outputs(self):
