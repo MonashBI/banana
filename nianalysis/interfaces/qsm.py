@@ -7,11 +7,9 @@ import os
 class PrepareInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
 
-
 class PrepareOutputSpec(TraitedSpec):
     out_dir = Directory(exists=True)
     out_file = File(exists=True)
-
 
 class Prepare(BaseInterface):
     input_spec = PrepareInputSpec
