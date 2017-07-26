@@ -42,6 +42,28 @@ class TestDiffusion(TestCase):
             work_dir=self.work_dir)
         self.assertDatasetCreated('bias_correct.nii.gz', study.name)
 
+    def test_tensor(self):
+        study = self.create_study(
+            DiffusionStudy, 'tensor', {
+                'bias_correct': Dataset('bias_correct', nifti_gz_format),
+                'brain_mask': Dataset('brain_mask', nifti_gz_format),
+                'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.tensor_pipeline().run(
+            work_dir=self.work_dir)
+        self.assertDatasetCreated('tensor.nii.gz', study.name)
+
+    def test_fod(self):
+        study = self.create_study(
+            DiffusionStudy, 'fod', {
+                'bias_correct': Dataset('bias_correct', nifti_gz_format),
+                'brain_mask': Dataset('brain_mask', nifti_gz_format),
+                'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.fod_pipeline().run(
+            work_dir=self.work_dir)
+        self.assertDatasetCreated('tensor.nii.gz', study.name)
+
 
 class TestNODDI(TestCase):
 
