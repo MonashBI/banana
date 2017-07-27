@@ -38,7 +38,7 @@ class TestDiffusion(TestCase):
                 'dwi_preproc': Dataset('dwi_preproc', nifti_gz_format),
                 'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
-        study.bias_correct_pipeline(mask_tool='dwi2mask').run(
+        study.bias_correct_pipeline(mask_tool='mrtrix').run(
             work_dir=self.work_dir)
         self.assertDatasetCreated('bias_correct.nii.gz', study.name)
 
