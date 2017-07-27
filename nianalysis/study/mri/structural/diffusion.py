@@ -159,7 +159,7 @@ class DiffusionStudy(T2Study):
         else:
             raise NiAnalysisError(
                 "Unrecognised mask_tool '{}' (valid options 'bet' or "
-                "'dwi2mask')")
+                "'mrtrix')".format(mask_tool))
         return pipeline
 
     def bias_correct_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
