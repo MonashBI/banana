@@ -17,7 +17,7 @@ from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format)
 from nianalysis.requirements import (
-    fsl5_req, mrtrix3_req, mrtrix3rc_req, ants2_req, matlab2015_req, noddi_req)
+    fsl5_req, mrtrix3_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
@@ -55,7 +55,8 @@ class DiffusionStudy(T2Study):
         # Denoise the dwi-scan
         if pipeline.option('preproc_denoise'):
             # Run denoising
-            denoise = pipeline.create_node(DWIDenoise(), name='denoise')
+            denoise = pipeline.create_node(DWIDenoise(), name='denoise',
+                                           requirements=[mrtrix3_req])
             # Calculate residual noise
             subtract_operands = pipeline.create_node(Merge(2),
                                                      name='subtract_operands')
@@ -63,18 +64,20 @@ class DiffusionStudy(T2Study):
             subtract.inputs.operation = 'subtract'
         # Extract b=0 volumes
         dwiextract = pipeline.create_node(
-            ExtractDWIorB0(), name='dwiextract')
+            ExtractDWIorB0(), name='dwiextract',
+            requirements=[mrtrix3_req])
         dwiextract.inputs.bzero = True
         # Get first b=0 from dwi b=0 volumes
-        mrconvert = pipeline.create_node(MRConvert(), name="mrconvert")
+        mrconvert = pipeline.create_node(MRConvert(), name="mrconvert",
+                                         requirements=[mrtrix3_req])
         mrconvert.inputs.coord = (3, 0)
         # Concatenate extracted forward rpe with reverse rpe
         mrcat = pipeline.create_node(
-            MRCat(), name='mrcat', requirements=[mrtrix3rc_req])
+            MRCat(), name='mrcat', requirements=[mrtrix3_req])
         # Create preprocessing node
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
-            requirements=[mrtrix3rc_req, fsl5_req], wall_time=60)
+            requirements=[mrtrix3_req, fsl5_req], wall_time=60)
         dwipreproc.inputs.rpe_pair = True
         if pipeline.option('preproc_pe_dir') is None:
             raise NiAnalysisError(
@@ -238,7 +241,6 @@ class DiffusionStudy(T2Study):
         pipeline.connect(grad_merge, 'out', mrconvert, 'fsl_grad')
         pipeline.connect()
         # Connect outputs
-        
 
     def tensor_pipeline(self, **options):  # @UnusedVariable
         """
