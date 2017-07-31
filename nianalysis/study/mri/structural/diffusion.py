@@ -34,7 +34,7 @@ class DiffusionStudy(T2Study):
         phase_dir : str{AP|LR|IS}
             The phase encode direction
         """
-        outputs = [DatasetSpec('dwi_preproc', nifti_gz_format),
+        outputs = [DatasetSpec('dwi_preproc', mrtrix_format),
                    DatasetSpec('grad_dirs', fsl_bvecs_format),
                    DatasetSpec('bvalues', fsl_bvals_format)]
         if options.get('preproc_denoise', True):
@@ -60,7 +60,8 @@ class DiffusionStudy(T2Study):
             # Calculate residual noise
             subtract_operands = pipeline.create_node(Merge(2),
                                                      name='subtract_operands')
-            subtract = pipeline.create_node(MRCalc(), name='subtract')
+            subtract = pipeline.create_node(MRCalc(), name='subtract',
+                                            requirements=[mrtrix3_req])
             subtract.inputs.operation = 'subtract'
         # Extract b=0 volumes
         dwiextract = pipeline.create_node(
