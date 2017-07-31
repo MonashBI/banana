@@ -16,9 +16,10 @@ class TestDiffusion(TestCase):
             DiffusionStudy, 'preprocess', {
                 'dwi_scan': Dataset('r_l_dwi_b700_30',
                                     mrtrix_format),
-                'forward_rpe': Dataset('r_l_dwi_b0_6', mrtrix_format),
-                'reverse_rpe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
-        study.preprocess_pipeline().run(work_dir=self.work_dir)
+                'reverse_pe': Dataset('l_r_dwi_b0_6', mrtrix_format)})
+        study.preprocess_pipeline(preproc_pe_dir='RL',
+                                  preproc_denoise=True).run(
+            work_dir=self.work_dir)
         self.assertDatasetCreated('dwi_preproc.nii.gz', study.name)
 
     def test_extract_b0(self):
@@ -37,9 +38,31 @@ class TestDiffusion(TestCase):
                 'dwi_preproc': Dataset('dwi_preproc', nifti_gz_format),
                 'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
-        study.bias_correct_pipeline(mask_tool='dwi2mask').run(
+        study.bias_correct_pipeline(mask_tool='mrtrix').run(
             work_dir=self.work_dir)
         self.assertDatasetCreated('bias_correct.nii.gz', study.name)
+
+    def test_tensor(self):
+        study = self.create_study(
+            DiffusionStudy, 'tensor', {
+                'bias_correct': Dataset('bias_correct', nifti_gz_format),
+                'brain_mask': Dataset('brain_mask', nifti_gz_format),
+                'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.tensor_pipeline().run(
+            work_dir=self.work_dir)
+        self.assertDatasetCreated('tensor.nii.gz', study.name)
+
+    def test_fod(self):
+        study = self.create_study(
+            DiffusionStudy, 'fod', {
+                'bias_correct': Dataset('bias_correct', nifti_gz_format),
+                'brain_mask': Dataset('brain_mask', nifti_gz_format),
+                'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.fod_pipeline().run(
+            work_dir=self.work_dir)
+        self.assertDatasetCreated('tensor.nii.gz', study.name)
 
 
 class TestNODDI(TestCase):
