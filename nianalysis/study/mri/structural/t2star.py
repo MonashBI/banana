@@ -19,7 +19,7 @@ import nianalysis
 from nipype.interfaces.base import traits
 import nianalysis.utils
 from nipype.interfaces.utility.base import IdentityInterface
-from StdSuites.AppleScript_Suite import space
+#from StdSuites.AppleScript_Suite import space
 from scipy.interpolate.interpolate_wrapper import linear
 
 #from nipype.interfaces.fsl.preprocess import (
