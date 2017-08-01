@@ -445,7 +445,7 @@ class DiffusionStudy(T2Study):
             description="Extract b0 image from a DWI study",
             default_options={},
             version=1,
-            citations=[mrtrix_cite], approx_runtime=0.5, options=options)
+            citations=[mrtrix_cite], options=options)
         pipeline.assert_connected()
         return pipeline
 
