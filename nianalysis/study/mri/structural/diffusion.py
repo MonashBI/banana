@@ -15,7 +15,7 @@ from nianalysis.citations import (
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
-    nifti_format)
+    nifti_format, text_format)
 from nianalysis.requirements import (
     fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
@@ -322,7 +322,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('response', mrtrix_format)],
+            outputs=[DatasetSpec('response', text_format)],
             description=("Estimates the fibre orientation distribution "
                          "response"),
             default_options={'fod_response_algorithm': 'tax'},
@@ -362,7 +362,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
 #                     DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('response', mrtrix_format)
+                    DatasetSpec('response', text_format)
                     ],
             outputs=[DatasetSpec('fod', nifti_gz_format),
 #                      DatasetSpec('response', mrtrix_format)
@@ -506,7 +506,7 @@ class DiffusionStudy(T2Study):
         DatasetSpec('tensor', nifti_gz_format, tensor_pipeline),
         DatasetSpec('fa', nifti_gz_format, tensor_pipeline),
         DatasetSpec('adc', nifti_gz_format, tensor_pipeline),
-        DatasetSpec('response', mrtrix_format, response_pipeline),
+        DatasetSpec('response', text_format, response_pipeline),
         DatasetSpec('fod', mrtrix_format, fod_pipeline),
         DatasetSpec('dwi_preproc', nifti_gz_format, preprocess_pipeline),
         DatasetSpec('bias_correct', nifti_gz_format, bias_correct_pipeline),
