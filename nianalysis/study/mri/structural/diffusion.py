@@ -17,7 +17,7 @@ from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format)
 from nianalysis.requirements import (
-    fsl5_req, mrtrix3_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
+    fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
@@ -322,7 +322,8 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('fod', nifti_gz_format)],
+            outputs=[DatasetSpec('fod', nifti_gz_format),
+                     DatasetSpec('response', mrtrix_format)],
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
             default_options={'fod_response_algorithm': 'tax'},
@@ -350,6 +351,7 @@ class DiffusionStudy(T2Study):
         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
         pipeline.connect_output('fod', dwi2fod, 'out_file')
+        pipeline.connect_output('response', response, 'out_file')
         # Check inputs/output are connected
         pipeline.assert_connected()
         return pipeline
@@ -460,7 +462,8 @@ class DiffusionStudy(T2Study):
         DatasetSpec('tensor', nifti_gz_format, tensor_pipeline),
         DatasetSpec('fa', nifti_gz_format, tensor_pipeline),
         DatasetSpec('adc', nifti_gz_format, tensor_pipeline),
-        DatasetSpec('fod', mrtrix_format, tensor_pipeline),
+        DatasetSpec('response', mrtrix_format, fod_pipeline),
+        DatasetSpec('fod', mrtrix_format, fod_pipeline),
         DatasetSpec('dwi_preproc', nifti_gz_format, preprocess_pipeline),
         DatasetSpec('bias_correct', nifti_gz_format, bias_correct_pipeline),
         DatasetSpec('grad_dirs', fsl_bvecs_format, preprocess_pipeline),
