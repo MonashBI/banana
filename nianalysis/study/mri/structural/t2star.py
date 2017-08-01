@@ -781,8 +781,7 @@ class T2StarStudy(MRIStudy):
             memory=4000)
             
         # Create the mean and standard deviation nodes for left and right of each structure
-        i = 1
-        for structure_name in self._lookup_study_structures(study_name):
+        for i, structure_name in enumerate(self._lookup_study_structures(study_name)):
             mask_names = self._lookup_structure_output_names(structure_name)
                
             right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Mean_'+structure_name,
@@ -790,32 +789,28 @@ class T2StarStudy(MRIStudy):
             right_apply_mask_mean.inputs.op_string = '-k %s -m'        
             pipeline.connect_input('qsm', right_apply_mask_mean, 'in_file')
             pipeline.connect_input(mask_names[1], right_apply_mask_mean, 'mask_file')
-            pipeline.connect(right_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(i))
-            i = i + 1
+            pipeline.connect(right_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(4*i+1))
         
             right_apply_mask_std = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Std_'+structure_name,
                                                 requirements=[fsl5_req], memory=4000, wall_time=15)
             right_apply_mask_std.inputs.op_string = '-k %s -s'        
             pipeline.connect_input('qsm', right_apply_mask_std, 'in_file')
             pipeline.connect_input(mask_names[1], right_apply_mask_std, 'mask_file')
-            pipeline.connect(right_apply_mask_std, 'out_stat', merge_stats, 'in'+str(i))
-            i = i + 1
+            pipeline.connect(right_apply_mask_std, 'out_stat', merge_stats, 'in'+str(4*i+2))
         
             left_apply_mask_mean = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Mean_'+structure_name,
                                                 requirements=[fsl5_req], memory=4000, wall_time=15)
             left_apply_mask_mean.inputs.op_string = '-k %s -m'        
             pipeline.connect_input('qsm', left_apply_mask_mean, 'in_file')
             pipeline.connect_input(mask_names[0], left_apply_mask_mean, 'mask_file')
-            pipeline.connect(left_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(i))
-            i = i + 1
+            pipeline.connect(left_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(4*i+3))
         
             left_apply_mask_std = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Std_'+structure_name,
                                                 requirements=[fsl5_req], memory=4000, wall_time=15)
             left_apply_mask_std.inputs.op_string = '-k %s -s'        
             pipeline.connect_input('qsm', left_apply_mask_std, 'in_file')
             pipeline.connect_input(mask_names[0], left_apply_mask_std, 'mask_file')
-            pipeline.connect(left_apply_mask_std, 'out_stat', merge_stats, 'in'+str(i))
-            i = i + 1
+            pipeline.connect(left_apply_mask_std, 'out_stat', merge_stats, 'in'+str(4*i+4))
         
         identity_node = pipeline.create_join_subjects_node(interface=IdentityInterface(['in_subject_id','in_visit_id','in_field_values']),
                                                          name='Join_Subjects_Identity',
