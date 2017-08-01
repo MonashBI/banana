@@ -316,9 +316,6 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_output('T1_in_MNI', t1reg, 'reg_file')
         
         return pipeline
-                
-    def nonLinearT1ToATAG(self, **options):
-        return []
     
     def nonLinearT1ToSUIT(self, **options):
         
@@ -491,30 +488,19 @@ class T2StarStudy(MRIStudy):
             outputNames = ['left_substantia_nigra_in_qsm', 'right_substantia_nigra_in_qsm']
         else:
             raise NiAnalysisError(
-                    "Invalid structure_name in _lookup_structure_output_names:" + structure_name)
+                    "Invalid structure_name in _lookup_structure_output_names: {structure_name}".format(structure_name=structure_name))
         return outputNames
     
     def _lookup_structure_thr(self, structure_name):
-        if structure_name == 'dentate_nuclei':
-            number = '75'
-        elif structure_name == 'caudate':
-            number = '75'
-        elif structure_name == 'putamen':
-            number = '75'
-        elif structure_name == 'pallidum':
-            number = '75'
-        elif structure_name == 'thalamus':
-            number = '75'
-        elif structure_name == 'red_nuclei':
-            number = '75'
-        elif structure_name == 'substantia_nigra':
-            number = '75'
+        if structure_name in ['dentate_nuclei', 'caudate', 'putamen', 'pallidum', 
+                              'thalamus', 'red_nuclei', 'substantia_nigra']:
+            thr = '75'
         else:
             raise NiAnalysisError(
-                    "Invalid structure_name in _lookup_structure_thr:" + structure_name)
-        return number
+                    "Invalid structure_name in _lookup_structure_thr: {structure_name}".format(structure_name=structure_name))
+        return thr
 
-    def _lookup_structure_number(self, structure_name): # [LEFT RIGHT]
+    def _lookup_structure_number(self, structure_name): # [LEFT, RIGHT]
         if structure_name == 'dentate_nuclei':
             number = [28, 29]
         elif structure_name == 'caudate':
@@ -531,58 +517,37 @@ class T2StarStudy(MRIStudy):
             number = [1, 3]
         else:
             raise NiAnalysisError(
-                    "Invalid structure_name in _lookup_structure_number:" + structure_name)
+                    "Invalid structure_name in _lookup_structure_number: {structure_name}".format(structure_name=structure_name))
         return number
     
     def _lookup_structure_atlas_path(self, structure_name):
-        if structure_name == 'dentate_nuclei':
-            atlas = os.path.abspath(os.path.join(os.path.dirname(nianalysis.__file__),
-                                                          'atlases','Cerebellum-SUIT-prob.nii'))
-        elif structure_name == 'caudate':
-            atlas = os.path.abspath(os.path.join(os.environ['FSLDIR'],
-                                                         'data','atlases','HarvardOxford',
-                                                         'HarvardOxford-sub-prob-2mm.nii.gz'))
-        elif structure_name == 'putamen':
-            atlas = os.path.abspath(os.path.join(os.environ['FSLDIR'],
-                                                         'data','atlases','HarvardOxford',
-                                                         'HarvardOxford-sub-prob-2mm.nii.gz'))
-        elif structure_name == 'pallidum':
-            atlas = os.path.abspath(os.path.join(os.environ['FSLDIR'],
-                                                         'data','atlases','HarvardOxford',
-                                                         'HarvardOxford-sub-prob-2mm.nii.gz'))
-        elif structure_name == 'thalamus':
-            atlas = os.path.abspath(os.path.join(os.environ['FSLDIR'],
-                                                         'data','atlases','HarvardOxford',
-                                                         'HarvardOxford-sub-prob-2mm.nii.gz'))
-        elif structure_name == 'red_nuclei':
-            atlas = os.path.abspath(os.path.join(os.path.dirname(nianalysis.__file__),
-                                                          'atlases','ATAG-prob.nii.gz'))
-        elif structure_name == 'substantia_nigra':
-            atlas = os.path.abspath(os.path.join(os.path.dirname(nianalysis.__file__),
-                                                          'atlases','ATAG-prob.nii.gz'))
+        if structure_name in ['dentate_nuclei']:
+            atlas = os.path.abspath(os.path.join(
+                os.path.dirname(nianalysis.__file__),
+                'atlases','Cerebellum-SUIT-prob.nii'))
+        elif structure_name in ['caudate', 'putamen', 'pallidum', 'thalamus']:
+            atlas = os.path.abspath(os.path.join(
+                os.environ['FSLDIR'],'data','atlases',
+                'HarvardOxford','HarvardOxford-sub-prob-2mm.nii.gz'))
+        elif structure_name in ['red_nuclei', 'substantia_nigra']:
+            atlas = os.path.abspath(os.path.join(
+                os.path.dirname(nianalysis.__file__),
+                'atlases','ATAG-prob.nii.gz'))
         else:
             raise NiAnalysisError(
-                    "Invalid structure_name in _lookup_structure_atlas:" + structure_name)
+                    "Invalid structure_name in _lookup_structure_atlas: {structure_name}".format(structure_name=structure_name))
         return atlas
     
     def _lookup_structure_space(self, structure_name):
         if structure_name == 'dentate_nuclei':
             space = 'SUIT'
-        elif structure_name == 'caudate':
+        elif structure_name in ['caudate', 'putamen', 'pallidum', 'thalamus']:
             space = 'MNI'
-        elif structure_name == 'putamen':
-            space = 'MNI'
-        elif structure_name == 'pallidum':
-            space = 'MNI'
-        elif structure_name == 'thalamus':
-            space = 'MNI'
-        elif structure_name == 'red_nuclei':
-            space = 'MNI' #ATAG
-        elif structure_name == 'substantia_nigra':
+        elif structure_name in ['red_nuclei', 'substantia_nigra']:
             space = 'MNI' #ATAG
         else:
             raise NiAnalysisError(
-                    "Invalid structure_name in _lookup_structure_space:" + structure_name)
+                    "Invalid structure_name in _lookup_structure_space: {structure_name}".format(structure_name=structure_name))
         return space
     
     def _lookup_template_path(self, space_name):
@@ -596,7 +561,7 @@ class T2StarStudy(MRIStudy):
             template_path = ''
         else:
             raise NiAnalysisError(
-                    "Invalid space_name in _lookup_template_path:" + space_name)
+                    "Invalid space_name in _lookup_template_path: {space_name}".format(space_name=space_name))
         return template_path
         
     def _lookup_l_tfm_to_name(self, space_name, isStruct=False):
@@ -611,7 +576,7 @@ class T2StarStudy(MRIStudy):
             inputSpec = 'T1_to_ATAG_mat'
         else:
             raise NiAnalysisError(
-                    "Invalid space_name in _lookup_l_tfm_to_name:" + space_name)
+                    "Invalid space_name in _lookup_l_tfm_to_name: {space_name}".format(space_name=space_name))
         return inputSpec
     
     def _lookup_nl_tfm_inv_name(self, space_name, isStruct=False):
@@ -626,7 +591,7 @@ class T2StarStudy(MRIStudy):
             input_name = 'ATAG_to_T1_warp'
         else:
             raise NiAnalysisError(
-                    "Invalid space_name in _lookup_nl_tfm_inv_name:" + space_name)
+                    "Invalid space_name in _lookup_nl_tfm_inv_name: {space_name}".format(space_name=space_name))
         return input_name
     
     def _lookup_nl_tfm_to_name(self, space_name, isStruct=False):
@@ -641,18 +606,18 @@ class T2StarStudy(MRIStudy):
             input_name = 'T1_to_ATAG_warp'
         else:
             raise NiAnalysisError(
-                    "Invalid space_name in _lookup_nl_tfm_to_names:" + space_name)
+                    "Invalid space_name in _lookup_nl_tfm_to_names: {space_name}".format(space_name=space_name))
         return input_name
     
     def _mask_pipeline(self, structure_name, **options):
         pipeline = self.create_pipeline(
-            name='ANTsApplyTransform_'+structure_name,
+            name='ANTsApplyTransform_{structure_name}'.format(structure_name=structure_name),
             inputs=[DatasetSpec('t2s', nifti_gz_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format),
                     DatasetSpec(self._lookup_nl_tfm_inv_name(structure_name,True), nifti_gz_format),
                     DatasetSpec(self._lookup_l_tfm_to_name(structure_name,True), text_matrix_format)],
             outputs=self._lookup_structure_output(structure_name),
-            description=("Transform " + structure_name + " atlas to T2s space"),
+            description=("Transform {structure_name} atlas to T2s space".format(structure_name=structure_name)),
             default_options={'atlas' : self._lookup_structure_atlas_path(structure_name)},
             version=1,
             citations=[ants19_req],
@@ -667,37 +632,45 @@ class T2StarStudy(MRIStudy):
         
         left_roi = pipeline.create_node(
             fsl.utils.ExtractROI(t_min=structure_index[0], t_size=1),
-            name='left_' + structure_name + '_mask', requirements=[fsl5_req], memory=16000, wall_time=15)
+            name='left_{structure_name}_mask'.format(structure_name=structure_name), 
+            requirements=[fsl5_req], memory=16000, wall_time=15)
         left_roi.inputs.in_file = pipeline.option('atlas')
-        left_roi.inputs.roi_file = 'left_' + structure_name + '_mask.nii.gz'
+        left_roi.inputs.roi_file = 'left_{structure_name}_mask.nii.gz'.format(structure_name=structure_name)
         
         right_roi = pipeline.create_node(
             fsl.utils.ExtractROI(t_min=structure_index[1], t_size=1),
-            name='right_' + structure_name + '_mask', requirements=[fsl5_req], memory=16000, wall_time=15)
+            name='right_{structure_name}_mask'.format(structure_name=structure_name), 
+            requirements=[fsl5_req], memory=16000, wall_time=15)
         right_roi.inputs.in_file = pipeline.option('atlas')
-        right_roi.inputs.roi_file = 'right_' + structure_name + '_mask.nii.gz'
+        right_roi.inputs.roi_file = 'right_{structure_name}_mask.nii.gz'.format(structure_name=structure_name)
         
         structure_thr = self._lookup_structure_thr(structure_name)
         
         left_mask = pipeline.create_node(
-            fsl.utils.ImageMaths(op_string = '-thr ' + structure_thr + ' -bin'),
-            name='left_' + structure_name + '_thr', requirements=[fsl5_req], memory=8000, wall_time=15)
+            fsl.utils.ImageMaths(op_string = '-thr {structure_thr} -bin'.format(structure_thr=structure_thr)),
+            name='left_{structure_name}_thr'.format(structure_name=structure_name), 
+            requirements=[fsl5_req], memory=8000, wall_time=15)
         pipeline.connect(left_roi,'roi_file', left_mask, 'in_file')
         
         right_mask = pipeline.create_node(
-            fsl.utils.ImageMaths(op_string = '-thr ' + structure_thr + ' -bin'),
-            name='right_' + structure_name + '_thr', requirements=[fsl5_req], memory=8000, wall_time=15)
+            fsl.utils.ImageMaths(op_string = '-thr {structure_thr} -bin'.format(structure_thr=structure_thr)),
+            name='right_{structure_name}_thr'.format(structure_name=structure_name),
+            requirements=[fsl5_req], memory=8000, wall_time=15)
         pipeline.connect(right_roi,'roi_file', right_mask, 'in_file')
         
         left_apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform_Left_' + structure_name, requirements=[ants19_req], memory=16000, wall_time=30)
+            ants.resampling.ApplyTransforms(), 
+            name='ApplyTransform_Left_{structure_name}'.format(structure_name=structure_name),
+            requirements=[ants19_req], memory=16000, wall_time=30)
         left_apply_trans.inputs.interpolation = 'NearestNeighbor'
         left_apply_trans.inputs.input_image_type = 3
         left_apply_trans.inputs.invert_transform_flags = [True, True, False]
         pipeline.connect(left_mask,'out_file',left_apply_trans,'input_image')
         
         right_apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform_Right_' + structure_name, requirements=[ants19_req], memory=16000, wall_time=30)
+            ants.resampling.ApplyTransforms(),
+             name='ApplyTransform_Right_{structure_name}'.format(structure_name=structure_name),
+             requirements=[ants19_req], memory=16000, wall_time=30)
         right_apply_trans.inputs.interpolation = 'NearestNeighbor'
         right_apply_trans.inputs.input_image_type = 3
         right_apply_trans.inputs.invert_transform_flags = [True, True, False]
@@ -739,74 +712,76 @@ class T2StarStudy(MRIStudy):
         return self._mask_pipeline('substantia_nigra')
     
     def _lookup_study_structures(self, study_name):
-        if study_name == 'FRDA':
+        if study_name in ['ASPREE', 'FRDA']:
             structure_list = ['dentate_nuclei', 'caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra']
         else:
             raise NiAnalysisError(
-                    "Invalid study_name in _lookup_study_structures:" + study_name)
+                    "Invalid study_name in _lookup_study_structures: {study_name}".format(study_name=study_name))
         return structure_list
-    
-    def frda_pipeline(self, **options):
-        return self._analysis_pipeline('FRDA')
         
-    def _analysis_pipeline(self, study_name, **options):
+    def analysis_pipeline(self, **options):
         
         # Build list of inputs before creating the pipeline (Tom said so!)
+        # Cannot use pipeline options and pipeline default for 'study_name'
         input_list = [DatasetSpec('qsm', nifti_gz_format)]
-        for structure_name in self._lookup_study_structures(study_name):
+        for structure_name in self._lookup_study_structures(options.get('study_name','FRDA')):
             input_list.extend(self._lookup_structure_output(structure_name))
         
         pipeline = self.create_pipeline(
-            name=study_name + '_QSM_Analysis',
+            name='QSM_Analysis',
             inputs=input_list,
             outputs=[DatasetSpec('qsm_summary', csv_format)],
-            description=("Regional statistics of QSM images for " + study_name + " study."),
-            default_options={},
+            default_options={'study_name' : 'FRDA'},
+            description=("Regional statistics of QSM images."),
             version=1,
             citations=[ants19_req, fsl5_req],
             options=options)
         
         # Build list of fields for summary
         field_list = [] #['in_subject_id','in_visit_id']
-        for structure_name in self._lookup_study_structures(study_name):
-            field_list.extend(['in_left_'+structure_name+'_mean'])
-            field_list.extend(['in_left_'+structure_name+'_std'])
-            field_list.extend(['in_right_'+structure_name+'_mean'])
-            field_list.extend(['in_right_'+structure_name+'_std'])
+        for structure_name in self._lookup_study_structures(pipeline.option('study_name')):
+            field_list.extend(['in_left_{structure_name}_mean'.format(structure_name=structure_name), 
+                               'in_left_{structure_name}_std'.format(structure_name=structure_name),
+                               'in_right_{structure_name}_mean'.format(structure_name=structure_name), 
+                               'in_right_{structure_name}_std'.format(structure_name=structure_name)])
             
         merge_stats = pipeline.create_node(
             interface=utils.Merge(2*len(field_list)), 
-            name='merge_stats_'+study_name,
+            name='merge_stats_{study_name}'.format(study_name=pipeline.option('study_name')),
             wall_time=60, 
             memory=4000)
             
         # Create the mean and standard deviation nodes for left and right of each structure
-        for i, structure_name in enumerate(self._lookup_study_structures(study_name)):
+        for i, structure_name in enumerate(self._lookup_study_structures(pipeline.option('study_name'))):
             mask_names = self._lookup_structure_output_names(structure_name)
                
-            right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Mean_'+structure_name,
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
+            right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
+                                                         name='Stats_Right_Mean_{structure_name}'.format(structure_name=structure_name),
+                                                         requirements=[fsl5_req], memory=4000, wall_time=15)
             right_apply_mask_mean.inputs.op_string = '-k %s -m'        
             pipeline.connect_input('qsm', right_apply_mask_mean, 'in_file')
             pipeline.connect_input(mask_names[1], right_apply_mask_mean, 'mask_file')
             pipeline.connect(right_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(4*i+1))
         
-            right_apply_mask_std = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Std_'+structure_name,
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
+            right_apply_mask_std = pipeline.create_node(fsl.ImageStats(),
+                                                         name='Stats_Right_Std_{structure_name}'.format(structure_name=structure_name),
+                                                         requirements=[fsl5_req], memory=4000, wall_time=15)
             right_apply_mask_std.inputs.op_string = '-k %s -s'        
             pipeline.connect_input('qsm', right_apply_mask_std, 'in_file')
             pipeline.connect_input(mask_names[1], right_apply_mask_std, 'mask_file')
             pipeline.connect(right_apply_mask_std, 'out_stat', merge_stats, 'in'+str(4*i+2))
         
-            left_apply_mask_mean = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Mean_'+structure_name,
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
+            left_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
+                                                         name='Stats_Left_Mean_{structure_name}'.format(structure_name=structure_name),
+                                                         requirements=[fsl5_req], memory=4000, wall_time=15)
             left_apply_mask_mean.inputs.op_string = '-k %s -m'        
             pipeline.connect_input('qsm', left_apply_mask_mean, 'in_file')
             pipeline.connect_input(mask_names[0], left_apply_mask_mean, 'mask_file')
             pipeline.connect(left_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(4*i+3))
         
-            left_apply_mask_std = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Std_'+structure_name,
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
+            left_apply_mask_std = pipeline.create_node(fsl.ImageStats(),
+                                                         name='Stats_Left_Std_{structure_name}'.format(structure_name=structure_name),
+                                                         requirements=[fsl5_req], memory=4000, wall_time=15)
             left_apply_mask_std.inputs.op_string = '-k %s -s'        
             pipeline.connect_input('qsm', left_apply_mask_std, 'in_file')
             pipeline.connect_input(mask_names[0], left_apply_mask_std, 'mask_file')
@@ -836,100 +811,18 @@ class T2StarStudy(MRIStudy):
         
         return pipeline
     
-    def dentate_analysis(self, **options):
-        
-        pipeline = self.create_pipeline(
-            name='MaskQSM_Dentate',
-            inputs=[DatasetSpec('qsm', nifti_gz_format),
-                    DatasetSpec('right_dentate_in_qsm', nifti_gz_format),
-                    DatasetSpec('left_dentate_in_qsm', nifti_gz_format)],
-            outputs=[DatasetSpec('qsm_summary', csv_format)],
-                    #DatasetSpec('left_dentate_qsm', traits.Str),
-                    #DatasetSpec('right_dentate_qsm', traits.Str),
-            description=("Mask out QSM based on dentate regions"),
-            default_options={},
-            version=1,
-            citations=[ants19_req],
-            options=options)
-            
-        right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Mean',
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
-        right_apply_mask_mean.inputs.op_string = '-k %s -m'        
-        pipeline.connect_input('qsm', right_apply_mask_mean, 'in_file')
-        pipeline.connect_input('right_dentate_in_qsm', right_apply_mask_mean, 'mask_file')
-        
-        
-        right_apply_mask_std = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Std',
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
-        right_apply_mask_std.inputs.op_string = '-k %s -s'        
-        pipeline.connect_input('qsm', right_apply_mask_std, 'in_file')
-        pipeline.connect_input('right_dentate_in_qsm', right_apply_mask_std, 'mask_file')
-        
-        right_apply_mask_hist = pipeline.create_node(fsl.ImageStats(), name='Stats_Right_Hist',
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
-        right_apply_mask_hist.inputs.op_string = '-k %s -h 5'        
-        pipeline.connect_input('qsm', right_apply_mask_hist, 'in_file')
-        pipeline.connect_input('right_dentate_in_qsm', right_apply_mask_hist, 'mask_file')
-
-        left_apply_mask_mean = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Mean',
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
-        left_apply_mask_mean.inputs.op_string = '-k %s -m'        
-        pipeline.connect_input('qsm', left_apply_mask_mean, 'in_file')
-        pipeline.connect_input('left_dentate_in_qsm', left_apply_mask_mean, 'mask_file')
-        
-        
-        left_apply_mask_std = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Std',
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
-        left_apply_mask_std.inputs.op_string = '-k %s -s'        
-        pipeline.connect_input('qsm', left_apply_mask_std, 'in_file')
-        pipeline.connect_input('left_dentate_in_qsm', left_apply_mask_std, 'mask_file')
-        
-        left_apply_mask_hist = pipeline.create_node(fsl.ImageStats(), name='Stats_Left_Hist',
-                                                requirements=[fsl5_req], memory=4000, wall_time=15)
-        left_apply_mask_hist.inputs.op_string = '-k %s -h 5'        
-        pipeline.connect_input('qsm', left_apply_mask_hist, 'in_file')
-        pipeline.connect_input('left_dentate_in_qsm', left_apply_mask_hist, 'mask_file')
-        
-        identity_node = pipeline.create_join_visits_node(interface=IdentityInterface(['in_subject_id','in_visit_id','in_ldn_mean',
-                                                                    'in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist']),
-                                                         name='Join_Visits_Identity',
-                                                         joinfield=['in_subject_id','in_visit_id','in_ldn_mean',
-                                                                    'in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist'],
-                                                         wall_time=60, memory=4000)
-        pipeline.connect_subject_id(identity_node, 'in_subject_id')
-        pipeline.connect_visit_id(identity_node,'in_visit_id')
-        pipeline.connect(left_apply_mask_mean,'out_stat',identity_node, 'in_ldn_mean')
-        pipeline.connect(left_apply_mask_std,'out_stat',identity_node, 'in_ldn_std')
-        pipeline.connect(left_apply_mask_hist,'out_stat',identity_node, 'in_ldn_hist')        
-        pipeline.connect(right_apply_mask_mean,'out_stat',identity_node, 'in_rdn_mean')
-        pipeline.connect(right_apply_mask_std,'out_stat',identity_node, 'in_rdn_std')
-        pipeline.connect(right_apply_mask_hist,'out_stat',identity_node, 'in_rdn_hist')
-        
-        summarise_results = pipeline.create_join_subjects_node(
-            interface=QSMSummary(), 
-            joinfield=['in_subject_id','in_visit_id','in_ldn_mean','in_ldn_std','in_ldn_hist','in_rdn_mean','in_rdn_std','in_rdn_hist'],
-            name='summarise_qsm', wall_time=60, memory=4000)
-        pipeline.connect(identity_node, 'in_subject_id', summarise_results, 'in_subject_id')
-        pipeline.connect(identity_node,'in_visit_id', summarise_results,'in_visit_id')
-        pipeline.connect(identity_node,'in_ldn_mean',summarise_results, 'in_ldn_mean')
-        pipeline.connect(identity_node,'in_ldn_std',summarise_results, 'in_ldn_std')
-        pipeline.connect(identity_node,'in_ldn_hist',summarise_results, 'in_ldn_hist')        
-        pipeline.connect(identity_node,'in_rdn_mean',summarise_results, 'in_rdn_mean')
-        pipeline.connect(identity_node,'in_rdn_std',summarise_results, 'in_rdn_std')
-        pipeline.connect(identity_node,'in_rdn_hist',summarise_results, 'in_rdn_hist')
-        
-        pipeline.connect_output('qsm_summary', summarise_results, 'out_file')
-        
-        return pipeline
     
     _dataset_specs = set_dataset_specs(
+        
+        # Primary inputs
         DatasetSpec('t1', nifti_gz_format),
         DatasetSpec('raw_coils', zip_format,
                     description=("Reconstructed T2* complex image for each "
                                  "coil without standardisation.")),
                                        
         DatasetSpec('t2s', nifti_gz_format, prepare_swi_coils),
-                                           
+                          
+        # Brain extraction and bias correction                                   
         DatasetSpec('betted_T1', nifti_gz_format, bet_T1), 
         DatasetSpec('betted_T1_mask', nifti_gz_format, bet_T1),   
              
@@ -942,9 +835,11 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('opti_betted_T2s', nifti_gz_format, optiBET_T2s),
         DatasetSpec('opti_betted_T2s_mask', nifti_gz_format, optiBET_T2s),
         
+        # Transformation between contrasts in subject space
         DatasetSpec('T2s_to_T1_mat', text_matrix_format, linearT2sToT1),
         DatasetSpec('T2s_in_T1', nifti_gz_format, linearT2sToT1),
         
+        # Transformation into standard MNI space
         DatasetSpec('T1_to_MNI_mat', text_matrix_format, nonLinearT1ToMNI),
         DatasetSpec('T1_to_MNI_warp', nifti_gz_format, nonLinearT1ToMNI),
         DatasetSpec('MNI_to_T1_warp', nifti_gz_format, nonLinearT1ToMNI),
@@ -952,20 +847,15 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('T1_in_MNI', nifti_gz_format, nonLinearT1ToMNI),
         DatasetSpec('MNI_in_T1', nifti_gz_format, nonLinearT1ToMNI),
         
+        # Transformation into standard SUIT space
         DatasetSpec('T1_to_SUIT_mat', text_matrix_format, nonLinearT1ToSUIT),
         DatasetSpec('T1_to_SUIT_warp', nifti_gz_format, nonLinearT1ToSUIT),
         DatasetSpec('SUIT_to_T1_warp', nifti_gz_format, nonLinearT1ToSUIT),
         
         DatasetSpec('T1_in_SUIT', nifti_gz_format, nonLinearT1ToSUIT),
         DatasetSpec('SUIT_in_T1', nifti_gz_format, nonLinearT1ToSUIT),
-        
-        DatasetSpec('T1_to_ATAG_mat', text_matrix_format, nonLinearT1ToATAG),
-        DatasetSpec('T1_to_ATAG_warp', nifti_gz_format, nonLinearT1ToATAG),
-        DatasetSpec('ATAG_to_T1_warp', nifti_gz_format, nonLinearT1ToATAG),
-        
-        DatasetSpec('T1_in_ATAG', nifti_gz_format, nonLinearT1ToATAG),
-        DatasetSpec('ATAG_in_T1', nifti_gz_format, nonLinearT1ToATAG),
                                 
+        # QSM and phase processing                        
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
                     description=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
@@ -975,10 +865,12 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline,
                     description=("Mask for each coil corresponding to areas of"
                                  " high magnitude")),
-                                           
+        
+        # Data for analysis in MNI space (and quality control)                                   
         DatasetSpec('qsm_in_mni', nifti_gz_format, qsmInMNI),
         DatasetSpec('mni_in_qsm', nifti_gz_format, qsmInMNI),
         
+        # Masks for analysis in subject space
         DatasetSpec('left_dentate_in_qsm', nifti_gz_format, dentate_masks),
         DatasetSpec('right_dentate_in_qsm', nifti_gz_format, dentate_masks),
         DatasetSpec('left_red_nuclei_in_qsm', nifti_gz_format, red_nuclei_masks),
@@ -994,4 +886,5 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('left_caudate_in_qsm', nifti_gz_format, caudate_masks),
         DatasetSpec('right_caudate_in_qsm', nifti_gz_format, caudate_masks),
     
-        DatasetSpec('qsm_summary', csv_format, dentate_analysis, multiplicity='per_project'))
+        # Study-specific analysis summary files
+        DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'))
