@@ -3,7 +3,7 @@ from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
     traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpec, MRTrix3BaseOutputSpec)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 from nipype.interfaces.mrtrix3.preprocess import (
     ResponseSD as NipypeResponseSD,
     ResponseSDInputSpec as NipypeResponseSDInputSpec)
