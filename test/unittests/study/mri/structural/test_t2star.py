@@ -37,15 +37,15 @@ class TestQSM(TestCase):
         study = self.create_study(
             T2StarStudy, 'test_stats', input_datasets={
                 't1': Dataset('t1', nifti_gz_format),
-                #'raw_coils': Dataset('swi_coils', zip_format),
+                'raw_coils': Dataset('swi_coils', zip_format),
                 'opti_betted_T2s_mask': Dataset('test_opti_betted_T2s_mask', nifti_gz_format),
                 't2s': Dataset('test_T2s', nifti_gz_format),
                 'T2s_to_T1_mat': Dataset('test_T2s_to_T1_mat', text_matrix_format),
                 'SUIT_to_T1_warp': Dataset('test_SUIT_to_T1_warp', nifti_gz_format),
                 'T1_to_SUIT_mat': Dataset('test_T1_to_SUIT_mat', text_matrix_format),
                 'MNI_to_T1_warp': Dataset('test_MNI_to_T1_warp', nifti_gz_format),
-                'T1_to_MNI_mat': Dataset('test_T1_to_MNI_mat', text_matrix_format),
-                'qsm': Dataset('test_analysis_qsm', nifti_gz_format)
+                'T1_to_MNI_mat': Dataset('test_T1_to_MNI_mat', text_matrix_format)
+                #'qsm': Dataset('test_analysis_qsm', nifti_gz_format)
                 #'right_dentate_in_qsm': Dataset('test_analysis_right_dentate_in_qsm', nifti_gz_format),
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
                 })
