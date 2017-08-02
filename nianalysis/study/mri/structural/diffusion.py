@@ -15,9 +15,9 @@ from nianalysis.citations import (
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
-    nifti_format)
+    nifti_format, text_format)
 from nianalysis.requirements import (
-    fsl5_req, mrtrix3_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
+    fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
@@ -308,6 +308,46 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
+    def response_pipeline(self, **options):  # @UnusedVariable
+        """
+        Estimates the fibre orientation distribution (FOD) using constrained
+        spherical deconvolution
+
+        Parameters
+        ----------
+        """
+        pipeline = self.create_pipeline(
+            name='response',
+            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
+                    DatasetSpec('grad_dirs', fsl_bvecs_format),
+                    DatasetSpec('bvalues', fsl_bvals_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('response', text_format)],
+            description=("Estimates the fibre orientation distribution "
+                         "response"),
+            default_options={'fod_response_algorithm': 'tax'},
+            version=1,
+            citations=[mrtrix_cite],
+            options=options)
+        # Create fod fit node
+        response = pipeline.create_node(ResponseSD(), name='response',
+                                        requirements=[mrtrix3_req])
+        response.inputs.algorithm = pipeline.option('fod_response_algorithm')
+        # Gradient merge node
+        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
+        # Connect nodes
+        pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
+        # Connect to inputs
+        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
+        pipeline.connect_input('bvalues', fsl_grads, 'in2')
+        pipeline.connect_input('bias_correct', response, 'in_file')
+        pipeline.connect_input('brain_mask', response, 'in_mask')
+        # Connect to outputs
+        pipeline.connect_output('response', response, 'out_file')
+        # Check inputs/output are connected
+        pipeline.assert_connected()
+        return pipeline
+
     def fod_pipeline(self, **options):  # @UnusedVariable
         """
         Estimates the fibre orientation distribution (FOD) using constrained
@@ -321,8 +361,12 @@ class DiffusionStudy(T2Study):
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('fod', nifti_gz_format)],
+#                     DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('response', text_format)
+                    ],
+            outputs=[DatasetSpec('fod', nifti_gz_format),
+#                      DatasetSpec('response', mrtrix_format)
+                     ],
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
             default_options={'fod_response_algorithm': 'tax'},
@@ -333,23 +377,25 @@ class DiffusionStudy(T2Study):
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
         dwi2fod.inputs.algorithm = 'csd'
-        response = pipeline.create_node(ResponseSD(), name='response',
-                                        requirements=[mrtrix3_req])
-        response.inputs.algorithm = pipeline.option('fod_response_algorithm')
+#         response = pipeline.create_node(ResponseSD(), name='response',
+#                                         requirements=[mrtrix3_req])
+#         response.inputs.algorithm = pipeline.option('fod_response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
-        pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
+#         pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
         pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
-        pipeline.connect(response, 'out_file', dwi2fod, 'response')
+#         pipeline.connect(response, 'out_file', dwi2fod, 'response')
         # Connect to inputs
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
         pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
-        pipeline.connect_input('bias_correct', response, 'in_file')
-        pipeline.connect_input('brain_mask', response, 'in_mask')
+        pipeline.connect_input('response', dwi2fod, 'response')
+#         pipeline.connect_input('bias_correct', response, 'in_file')
+#         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
         pipeline.connect_output('fod', dwi2fod, 'out_file')
+#         pipeline.connect_output('response', response, 'out_file')
         # Check inputs/output are connected
         pipeline.assert_connected()
         return pipeline
@@ -460,7 +506,8 @@ class DiffusionStudy(T2Study):
         DatasetSpec('tensor', nifti_gz_format, tensor_pipeline),
         DatasetSpec('fa', nifti_gz_format, tensor_pipeline),
         DatasetSpec('adc', nifti_gz_format, tensor_pipeline),
-        DatasetSpec('fod', mrtrix_format, tensor_pipeline),
+        DatasetSpec('response', text_format, response_pipeline),
+        DatasetSpec('fod', mrtrix_format, fod_pipeline),
         DatasetSpec('dwi_preproc', nifti_gz_format, preprocess_pipeline),
         DatasetSpec('bias_correct', nifti_gz_format, bias_correct_pipeline),
         DatasetSpec('grad_dirs', fsl_bvecs_format, preprocess_pipeline),
