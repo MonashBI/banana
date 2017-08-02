@@ -26,6 +26,8 @@ params.voxelsize = nii.hdr.dime.pixdim(2:4);
 params.padsize = [12 12 12];
 params.TE = echoTimes(2)-echoTimes(1); % 14.76 = (22.14-7.38)
 params.B0 = 3;
+
+% opti params
 params.tol_step1 = 0.1;
 params.tol_step2 = 0.01;
 params.Kthreshold = 0.1;

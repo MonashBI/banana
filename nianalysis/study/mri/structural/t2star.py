@@ -397,7 +397,6 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='ANTsApplyTransform',
             inputs=[DatasetSpec('qsm', nifti_gz_format),
-                    DatasetSpec('t2s', nifti_gz_format),
                     DatasetSpec('T1_to_MNI_warp', nifti_gz_format),
                     DatasetSpec('T1_to_MNI_mat', text_matrix_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
