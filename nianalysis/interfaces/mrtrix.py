@@ -3,8 +3,7 @@ from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
     traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
-    EstimateFODInputSpec as NiPypeEstimateFODInputSpec,
-    EstimateFOD as NiPypeEstimateFOD)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 from nipype.interfaces.mrtrix3.preprocess import (
     ResponseSD as NipypeResponseSD,
     ResponseSDInputSpec as NipypeResponseSDInputSpec)
@@ -145,9 +144,10 @@ class MRMath(CommandLine):
 
 class MRCalcInputSpec(CommandLineInputSpec):
 
-    operands = InputMultiPath(
-        File(exists=True), argstr='%s', mandatory=True,
-        position=-3, desc="Diffusion weighted images with graident info")
+    operands = traits.List(
+        traits.Any(), argstr='%s',
+        mandatory=True, position=-3,
+        desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
@@ -199,21 +199,131 @@ class MRCalc(CommandLine):
             filename = os.path.join(
                 os.getcwd(),
                 "{}_{}{}".format(
-                    '_'.join(split_extension(os.path.basename(o))[0]
+                    '_'.join((split_extension(os.path.basename(o))[0]
+                              if isinstance(o, str) else str(o))
                              for o in self.inputs.operands),
                     self.inputs.operation, ext))
         return filename
 
 
-class EstimateFODInputSpec(NiPypeEstimateFODInputSpec):
+class EstimateFODInputSpec(MRTrix3BaseInputSpec):
 
-    algorithm = traits.Enum('csd', 'msmt_csd', mandatory=True, position=-4,
+    algorithm = traits.Enum('csd', 'msmt_csd', mandatory=True, position=0,
                             desc="Algorithm used for CSD estimation")
 
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input diffusion weighted images')
+    response = File(
+        exists=True, argstr='%s', mandatory=True, position=-2,
+        desc=('a text file containing the diffusion-weighted signal response '
+              'function coefficients for a single fibre population'))
+    out_file = File(
+        'fods.mif', argstr='%s', mandatory=True, position=-1,
+        usedefault=True, desc=('the output spherical harmonics coefficients'
+                               ' image'))
 
-class EstimateFOD(NiPypeEstimateFOD):
+    # DW Shell selection options
+    shell = traits.List(traits.Float, sep=',', argstr='-shell %s',
+                        desc='specify one or more dw gradient shells')
 
+    # Spherical deconvolution options
+    max_sh = traits.Int(8, argstr='-lmax %d',
+                        desc='maximum harmonic degree of response function')
+    in_mask = File(exists=True, argstr='-mask %s',
+                   desc='provide initial mask image')
+    in_dirs = File(
+        exists=True, argstr='-directions %s',
+        desc=('specify the directions over which to apply the non-negativity '
+              'constraint (by default, the built-in 300 direction set is '
+              'used). These should be supplied as a text file containing the '
+              '[ az el ] pairs for the directions.'))
+    sh_filter = File(
+        exists=True, argstr='-filter %s',
+        desc=('the linear frequency filtering parameters used for the initial '
+              'linear spherical deconvolution step (default = [ 1 1 1 0 0 ]). '
+              'These should be supplied as a text file containing the '
+              'filtering coefficients for each even harmonic order.'))
+
+    neg_lambda = traits.Float(
+        1.0, argstr='-neg_lambda %f',
+        desc=('the regularisation parameter lambda that controls the strength'
+              ' of the non-negativity constraint'))
+    thres = traits.Float(
+        0.0, argstr='-threshold %f',
+        desc=('the threshold below which the amplitude of the FOD is assumed '
+              'to be zero, expressed as an absolute amplitude'))
+
+    n_iter = traits.Int(
+        50, argstr='-niter %d', desc=('the maximum number of iterations '
+                                      'to perform for each voxel'))
+
+
+class EstimateFODOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='the output response file')
+
+
+class EstimateFOD(MRTrix3Base):
+
+    """
+    Convert diffusion-weighted images to tensor images
+
+    Note that this program makes use of implied symmetries in the diffusion
+    profile. First, the fact the signal attenuation profile is real implies
+    that it has conjugate symmetry, i.e. Y(l,-m) = Y(l,m)* (where * denotes
+    the complex conjugate). Second, the diffusion profile should be
+    antipodally symmetric (i.e. S(x) = S(-x)), implying that all odd l
+    components should be zero. Therefore, this program only computes the even
+    elements.
+
+    Note that the spherical harmonics equations used here differ slightly from
+    those conventionally used, in that the (-1)^m factor has been omitted.
+    This should be taken into account in all subsequent calculations.
+    The spherical harmonic coefficients are stored as follows. First, since
+    the signal attenuation profile is real, it has conjugate symmetry, i.e.
+    Y(l,-m) = Y(l,m)* (where * denotes the complex conjugate). Second, the
+    diffusion profile should be antipodally symmetric (i.e. S(x) = S(-x)),
+    implying that all odd l components should be zero. Therefore, only the
+    even elements are computed.
+
+    Note that the spherical harmonics equations used here differ slightly from
+    those conventionally used, in that the (-1)^m factor has been omitted.
+    This should be taken into account in all subsequent calculations.
+    Each volume in the output image corresponds to a different spherical
+    harmonic component. Each volume will correspond to the following:
+
+    volume 0: l = 0, m = 0
+    volume 1: l = 2, m = -2 (imaginary part of m=2 SH)
+    volume 2: l = 2, m = -1 (imaginary part of m=1 SH)
+    volume 3: l = 2, m = 0
+    volume 4: l = 2, m = 1 (real part of m=1 SH)
+    volume 5: l = 2, m = 2 (real part of m=2 SH)
+    etc...
+
+
+
+    Example
+    -------
+
+    >>> import nipype.interfaces.mrtrix3 as mrt
+    >>> fod = mrt.EstimateFOD()
+    >>> fod.inputs.in_file = 'dwi.mif'
+    >>> fod.inputs.response = 'response.txt'
+    >>> fod.inputs.in_mask = 'mask.nii.gz'
+    >>> fod.inputs.grad_fsl = ('bvecs', 'bvals')
+    >>> fod.cmdline                               # doctest: +ELLIPSIS +ALLOW_UNICODE
+    'dwi2fod -fslgrad bvecs bvals -mask mask.nii.gz dwi.mif response.txt\
+ fods.mif'
+    >>> fod.run()                                 # doctest: +SKIP
+    """
+
+    _cmd = 'dwi2fod'
     input_spec = EstimateFODInputSpec
+    output_spec = EstimateFODOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out_file'] = os.path.abspath(self.inputs.out_file)
+        return outputs
 
 
 # =============================================================================
