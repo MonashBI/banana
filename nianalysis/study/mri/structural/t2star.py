@@ -430,7 +430,45 @@ class T2StarStudy(MRIStudy):
 
         pipeline.assert_connected()
         return pipeline    
+
+    def qsmInSUIT(self, **options):
         
+        pipeline = self.create_pipeline(
+            name='ANTsApplyTransform_SUIT',
+            inputs=[DatasetSpec('qsm', nifti_gz_format),
+                    DatasetSpec('T1_to_SUIT_warp', nifti_gz_format),
+                    DatasetSpec('T1_to_SUIT_mat', text_matrix_format),
+                    DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
+            outputs=[DatasetSpec('qsm_in_suit', nifti_gz_format)],
+            description=("Transform data from T2s to SUIT space"),
+            default_options={'SUIT_template': self._lookup_template_path('SUIT')},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        #cp_geom = pipeline.create_node(fsl.CopyGeom(), name='copy_geomery', requirements=[fsl5_req], memory=8000, wall_time=5)
+        #pipeline.connect_input('qsm', cp_geom, 'dest_file')
+        #pipeline.connect_input('t2s', cp_geom, 'in_file')
+        
+        merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
+        pipeline.connect_input('T1_to_SUIT_warp', merge_trans, 'in1')
+        pipeline.connect_input('T1_to_SUIT_mat', merge_trans, 'in2')
+        pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in3')
+
+        apply_trans = pipeline.create_node(
+            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
+        apply_trans.inputs.reference_image = pipeline.option('SUIT_template')
+        apply_trans.inputs.interpolation = 'Linear'
+        apply_trans.inputs.input_image_type = 3
+        
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        #pipeline.connect(cp_geom, 'out_file', apply_trans, 'input_image')
+        pipeline.connect_input('qsm', apply_trans, 'input_image')
+        pipeline.connect_output('qsm_in_suit', apply_trans, 'output_image')
+
+        pipeline.assert_connected()
+        return pipeline  
+            
     def mniInT2s(self, **options):
         
         pipeline = self.create_pipeline(
@@ -867,7 +905,10 @@ class T2StarStudy(MRIStudy):
         
         # Data for analysis in MNI space (and quality control)                                   
         DatasetSpec('qsm_in_mni', nifti_gz_format, qsmInMNI),
-        DatasetSpec('mni_in_qsm', nifti_gz_format, qsmInMNI),
+        DatasetSpec('mni_in_qsm', nifti_gz_format, mniInT2s),
+        
+        # Data for analysis in SUIT space (and quality control)                                   
+        DatasetSpec('qsm_in_suit', nifti_gz_format, qsmInSUIT),
         
         # Masks for analysis in subject space
         DatasetSpec('left_dentate_in_qsm', nifti_gz_format, dentate_masks),
