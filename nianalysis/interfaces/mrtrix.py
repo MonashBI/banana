@@ -144,9 +144,10 @@ class MRMath(CommandLine):
 
 class MRCalcInputSpec(CommandLineInputSpec):
 
-    operands = InputMultiPath(
-        File(exists=True), argstr='%s', mandatory=True,
-        position=-3, desc="Diffusion weighted images with graident info")
+    operands = traits.List(
+        traits.Any(), argstr='%s',
+        mandatory=True, position=-3,
+        desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
@@ -198,7 +199,8 @@ class MRCalc(CommandLine):
             filename = os.path.join(
                 os.getcwd(),
                 "{}_{}{}".format(
-                    '_'.join(split_extension(os.path.basename(o))[0]
+                    '_'.join((split_extension(os.path.basename(o))[0]
+                              if isinstance(o, str) else str(o))
                              for o in self.inputs.operands),
                     self.inputs.operation, ext))
         return filename
