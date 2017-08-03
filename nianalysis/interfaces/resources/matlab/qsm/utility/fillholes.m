@@ -5,7 +5,7 @@ function fillholes( inFile, outFile )
 % test input for debugging
 %inFile = '/usr/local/fsl/data/standard/MNI152_T1_2mm_brain_mask_dil1.nii.gz';
 
-nii = load_nii(inFile);
+nii = load_untouch_nii(inFile);
 
 vol = nii.img==0;
 
@@ -17,7 +17,7 @@ for i=1:numel(smallHoles)
     nii.img(CC.PixelIdxList{smallHoles(i)}) = 1;
 end
 
-save_nii(nii,outFile);
+save_untouch_nii(nii,outFile);
 
 end
 

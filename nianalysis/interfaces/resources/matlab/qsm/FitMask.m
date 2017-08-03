@@ -2,7 +2,7 @@ function FitMask(inputFile, initialMaskFile, outputFile)
 
 %maskFile = 'test_suit_right_dentate_in_qsm.nii.gz';
 %qsmFile = 'optibet_t1p04_params.nii.gz';
-addpath(genpath('/Users/philward/git/NiAnalysis/nianalysis/interfaces/resources/matlab/qsm'));
+%addpath(genpath('/Users/philward/git/NiAnalysis/nianalysis/interfaces/resources/matlab/qsm'));
 graphDisplay = false;
 
 initialMask = load_untouch_nii(initialMaskFile);
@@ -27,7 +27,6 @@ meanArray = zeros(2000,1);
 difArray = zeros(2000,1);
 i = 0;
 while areaGrowing && (i < (regionSize*3))
-    i = i + 1;
     dilMap = convn(newMask,ball(1),'same');
     adjMap = (dilMap>0)&~newMask;
     
@@ -43,11 +42,18 @@ while areaGrowing && (i < (regionSize*3))
         adjDif = abs(mean(smoothQSM(newMask))-smoothQSM(adjList));
     end
     
-    [~,newVox] = min(adjDif);
-    newMask(adjList(newVox(1))) = 1;
+    % Add 3 at a time
+    for j=1:3
+        i = i+1;
+        
+        [~,newVox] = min(adjDif);
+        newMask(adjList(newVox(1))) = 1;
     
-    meanArray(i) = mean(qsm.img(newMask));
-    difArray(i) = adjDif(newVox(1))/meanArray(i);
+        meanArray(i) = mean(qsm.img(newMask));
+        difArray(i) = adjDif(newVox(1))/meanArray(i);
+    
+        adjDif(newVox) = 99;
+    end
 
     if graphDisplay
     
@@ -88,7 +94,7 @@ while areaGrowing && (i < (regionSize*3))
     
     if initialGrowth && nnz(newMask)>(regionSize*0.5)
         initialGrowth = false;
-        fprintf('Initial period over')
+        %fprintf('Initial period over')
     end
     
     if ~initialGrowth
@@ -96,6 +102,14 @@ while areaGrowing && (i < (regionSize*3))
         areaGrowing = linFit.p1 > 0;
     end
 end
+
+newMask = imerode(newMask,ball(2));
+CC = bwconncomp(newMask);
+numOfPixels = cellfun(@numel,CC.PixelIdxList);
+[~, largestComponent] = max(numOfPixels);
+newMask(:) = 0;
+newMask(CC.PixelIdxList{largestComponent}) = 1;
+newMask = imdilate(newMask,ball(2));
 
 initialMask.img = double(newMask);
 save_untouch_nii(initialMask, outputFile);
