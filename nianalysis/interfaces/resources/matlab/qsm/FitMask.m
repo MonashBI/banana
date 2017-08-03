@@ -104,7 +104,7 @@ while areaGrowing && (i < (regionSize*3))
 end
 
 newMask = imerode(newMask,ball(2));
-CC = bwconncomp(newMask);
+CC = bwconncomp(newMask>0);
 numOfPixels = cellfun(@numel,CC.PixelIdxList);
 [~, largestComponent] = max(numOfPixels);
 newMask(:) = 0;
