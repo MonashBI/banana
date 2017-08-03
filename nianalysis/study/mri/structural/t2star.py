@@ -4,7 +4,7 @@ from nianalysis.citations import (
 from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format, csv_format, zip_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.qsm import STI, Prepare, FillHoles, QSMSummary
+from nianalysis.interfaces.qsm import STI, Prepare, FillHoles, FitMask, QSMSummary
 from nianalysis.interfaces import utils
 from nianalysis.exceptions import (
     NiAnalysisDatasetNameError, NiAnalysisError, NiAnalysisMissingDatasetError)
@@ -556,6 +556,26 @@ class T2StarStudy(MRIStudy):
             raise NiAnalysisError(
                     "Invalid structure_name in _lookup_structure_number: {structure_name}".format(structure_name=structure_name))
         return number
+
+    def _lookup_structure_fitting(self, structure_name):
+        if structure_name == 'dentate_nuclei':
+            fit = True
+        elif structure_name == 'caudate':
+            fit = False
+        elif structure_name == 'putamen':
+            fit = False
+        elif structure_name == 'pallidum':
+            fit = False
+        elif structure_name == 'thalamus':
+            fit = False
+        elif structure_name == 'red_nuclei':
+            fit = True
+        elif structure_name == 'substantia_nigra':
+            fit = False
+        else:
+            raise NiAnalysisError(
+                    "Invalid structure_name in _lookup_structure_fitting: {structure_name}".format(structure_name=structure_name))
+        return fit
     
     def _lookup_structure_atlas_path(self, structure_name):
         if structure_name in ['dentate_nuclei']:
@@ -650,6 +670,7 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='ANTsApplyTransform_{structure_name}'.format(structure_name=structure_name),
             inputs=[DatasetSpec('t2s', nifti_gz_format),
+                    DatasetSpec('qsm', text_matrix_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format),
                     DatasetSpec(self._lookup_nl_tfm_inv_name(structure_name,True), nifti_gz_format),
                     DatasetSpec(self._lookup_l_tfm_to_name(structure_name,True), text_matrix_format)],
@@ -702,7 +723,9 @@ class T2StarStudy(MRIStudy):
         left_apply_trans.inputs.interpolation = 'NearestNeighbor'
         left_apply_trans.inputs.input_image_type = 3
         left_apply_trans.inputs.invert_transform_flags = [True, True, False]
+        pipeline.connect_input('t2s', left_apply_trans, 'reference_image')
         pipeline.connect(left_mask,'out_file',left_apply_trans,'input_image')
+        pipeline.connect(merge_trans, 'out', left_apply_trans, 'transforms')
         
         right_apply_trans = pipeline.create_node(
             ants.resampling.ApplyTransforms(),
@@ -711,17 +734,33 @@ class T2StarStudy(MRIStudy):
         right_apply_trans.inputs.interpolation = 'NearestNeighbor'
         right_apply_trans.inputs.input_image_type = 3
         right_apply_trans.inputs.invert_transform_flags = [True, True, False]
+        pipeline.connect_input('t2s', right_apply_trans, 'reference_image')
         pipeline.connect(right_mask,'out_file',right_apply_trans,'input_image')
+        pipeline.connect(merge_trans, 'out', right_apply_trans, 'transforms')
         
         output_names = self._lookup_structure_output_names(structure_name)
         
-        pipeline.connect_input('t2s', left_apply_trans, 'reference_image')
-        pipeline.connect(merge_trans, 'out', left_apply_trans, 'transforms')
-        pipeline.connect_output(output_names[0], left_apply_trans, 'output_image')
-        
-        pipeline.connect_input('t2s', right_apply_trans, 'reference_image')
-        pipeline.connect(merge_trans, 'out', right_apply_trans, 'transforms')
-        pipeline.connect_output(output_names[1], right_apply_trans, 'output_image')
+        if self._lookup_structure_fitting(structure_name):
+            fit_left_mask = pipeline.create_node(interface=FitMask(), 
+                                                 name='fit_left_mask_{structure_name}'.format(structure_name=structure_name),
+                                                 requirements=[matlab2015_req],
+                                                 wall_time=20, memory=16000)
+            pipeline.connect_input('qsm', fit_left_mask, 'in_file')
+            pipeline.connect(left_apply_trans, 'output_image', fit_left_mask, 'initial_mask_file')
+            
+            fit_right_mask = pipeline.create_node(interface=FitMask(), 
+                                                 name='fit_right_mask_{structure_name}'.format(structure_name=structure_name),
+                                                 requirements=[matlab2015_req],
+                                                 wall_time=20, memory=16000)
+            pipeline.connect_input('qsm', fit_right_mask, 'in_file')
+            pipeline.connect(right_apply_trans, 'output_image', fit_right_mask, 'initial_mask_file')
+            
+            pipeline.connect_output(output_names[0], fit_left_mask, 'out_file')
+            pipeline.connect_output(output_names[1], fit_right_mask, 'out_file')
+            
+        else:
+            pipeline.connect_output(output_names[0], left_apply_trans, 'output_image')
+            pipeline.connect_output(output_names[1], right_apply_trans, 'output_image')
 
         pipeline.assert_connected()
         

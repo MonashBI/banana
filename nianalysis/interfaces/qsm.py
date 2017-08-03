@@ -81,6 +81,48 @@ class FillHoles(BaseInterface):
             assert False
         return fname
 
+class FitMaskInputSpec(BaseInterfaceInputSpec):
+    in_file = File(exists=True, mandatory=True)
+    initial_mask_file = File(exists=True, mandatory=True)
+
+class FitMaskOutputSpec(TraitedSpec):
+    out_file = File(desc='Fitted mask file')
+
+class FitMask(BaseInterface):
+    input_spec = FitMaskInputSpec
+    output_spec = FitMaskOutputSpec
+
+    def _run_interface(self, runtime):  # @UnusedVariable
+        self.working_dir = os.path.abspath(os.getcwd())
+        script = (
+            "set_param(0,'CharacterEncoding','UTF-8');\n"
+            "addpath(genpath('{matlab_dir}'));\n"
+            "FitMask('{in_file}', '{initial_mask_file}', '{out_file}');\n"
+            "exit;\n").format(
+                in_file=self.inputs.in_file,
+                initial_mask_file=self.inputs.initial_mask_file,
+                out_file=os.path.join(os.getcwd(),
+                                         self._gen_filename('out_file')),
+                matlab_dir=os.path.abspath(os.path.join(
+                    os.path.dirname(nianalysis.interfaces.__file__),
+                    'resources', 'matlab', 'qsm')))
+        mlab = MatlabCommand(script=script, mfile=True)
+        result = mlab.run()
+        return result.runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_file'] = os.path.join(os.getcwd(),
+                                         self._gen_filename('out_file'))
+        return outputs
+    
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = 'Fitted_Mask.nii.gz'
+        else:
+            assert False
+        return fname
+
 class QSMSummaryInputsSpec(BaseInterfaceInputSpec):
     in_field_names = traits.List(traits.Str())
     in_field_values = traits.List(traits.List(traits.List(traits.Any())))
