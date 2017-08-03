@@ -5,11 +5,11 @@ function FitMask(inputFile, initialMaskFile, outputFile)
 addpath(genpath('/Users/philward/git/NiAnalysis/nianalysis/interfaces/resources/matlab/qsm'));
 graphDisplay = false;
 
-initialMask = load_nii(initialMaskFile);
+initialMask = load_untouch_nii(initialMaskFile);
 smoothInitialMask = imdilate(initialMask.img,ball(3))>0;
 regionSize = nnz(initialMask.img);
 
-qsm = load_nii(inputFile);
+qsm = load_untouch_nii(inputFile);
 smoothQSM = convn(qsm.img,fspecial3('gaussian',[7 7 7]),'same');
 initialSeed = find(smoothInitialMask&(smoothQSM==max(smoothQSM(smoothInitialMask(:)))));
 
@@ -98,7 +98,7 @@ while areaGrowing && (i < (regionSize*3))
 end
 
 initialMask.img = double(newMask);
-save_nii(initialMask, outputFile);
+save_untouch_nii(initialMask, outputFile);
 
 end
    
