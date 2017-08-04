@@ -115,7 +115,8 @@ function nii = load_untouch_nii(filename, img_idx, dim5_idx, dim6_idx, dim7_idx,
       % prefix tempname for MASSIVE
       [~,hostname]=system('hostname');
       if strcmp(hostname(1:2),'m3')
-         tmpDir = ['/scratch/dq13' tempname];
+      	 rng('shuffle')
+         tmpDir = ['/scratch/dq13' tempname '_' num2str(rand(1)*9999)];
       else
          tmpDir = tempname;
       end
