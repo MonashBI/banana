@@ -92,7 +92,7 @@ while areaGrowing && (i < (regionSize*3))
         drawnow
     end
     
-    if initialGrowth && nnz(newMask)>(regionSize*0.5)
+    if initialGrowth && nnz(newMask)>(regionSize*0.7)
         initialGrowth = false;
         %fprintf('Initial period over')
     end
@@ -103,14 +103,13 @@ while areaGrowing && (i < (regionSize*3))
     end
 end
 
-newMask = imerode(newMask,ball(2));
-CC = bwconncomp(newMask>0);
-numOfPixels = cellfun(@numel,CC.PixelIdxList);
-[~, largestComponent] = max(numOfPixels);
-newMask(:) = 0;
-newMask(CC.PixelIdxList{largestComponent}) = 1;
-newMask = imdilate(newMask,ball(2));
-
+%newMask = imerode(newMask,ball(1));
+%CC = bwconncomp(newMask>0);
+%numOfPixels = cellfun(@numel,CC.PixelIdxList);
+%[~, largestComponent] = max(numOfPixels);
+%newMask(:) = 0;
+%newMask(CC.PixelIdxList{largestComponent}) = 1;
+%newMask = imdilate(newMask,ball(1));
 initialMask.img = double(newMask);
 save_untouch_nii(initialMask, outputFile);
 
