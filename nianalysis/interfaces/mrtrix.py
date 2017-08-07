@@ -196,13 +196,14 @@ class MRCalc(CommandLine):
         else:
             _, ext = split_extension(
                 os.path.basename(self.inputs.operands[0]))
-            filename = os.path.join(
-                os.getcwd(),
-                "{}_{}{}".format(
-                    '_'.join((split_extension(os.path.basename(o))[0]
-                              if isinstance(o, str) else str(o))
-                             for o in self.inputs.operands),
-                    self.inputs.operation, ext))
+            filename = os.getcwd()
+            for op in self.inputs.operands:
+                try:
+                    op_str = split_extension(os.path.basename(op))[0]
+                except:
+                    op_str = str(float(op))
+                filename += '_' + op_str
+            filename += '_' + self.inputs.operation + ext
         return filename
 
 
