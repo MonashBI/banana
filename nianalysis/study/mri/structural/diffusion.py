@@ -3,13 +3,13 @@ from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor
 from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, EstimateFOD, ResponseSD)
+    MRCalc, EstimateFOD, ResponseSD, DWIIntensityNorm)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from .t2 import T2Study
 from nianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
-from nianalysis.interfaces.utils import MergeTuple
+from nianalysis.interfaces.utils import MergeTuple, InDir, ListDir
 from nianalysis.citations import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
@@ -227,13 +227,19 @@ class DiffusionStudy(T2Study):
             citations=[],
             options=options)
         # Convert from nifti to mrtrix format
-        grad_merge = pipeline.create(Merge(2), name="grad_merge")
+        grad_merge = pipeline.create_node(Merge(2), name="grad_merge")
         mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
         mrconvert.inputs.out_ext = '.mif'
         # Intensity normalization
-        intensitiy_norm = pipeline.create_join_subjects_node(
-            DWIIntensityNorm(), name='dwiintensitynorm',
-            joinfield=[''])
+        intensitiy_norm = pipeline.create_node(DWIIntensityNorm(),
+                                               name='dwiintensitynorm')
+        # Collate inputs into directories
+        in_dir = pipeline.create_join_subjects_node(InDir(), name="in_dir",
+                                                    joinfield=['in_files'])
+        mask_dir = pipeline.create_join_subjects_node(InDir(), name="mask_dir",
+                                                      joinfield=['in_files'])
+        # Expand outputs into lists
+        outputs = pipeline.create_node(ListDir(), name="outputs")
         # Connect inputs
         pipeline.connect_input('bias_correct', mrconvert, 'in_file')
         pipeline.connect_input('grad_dirs', grad_merge, 'in1')

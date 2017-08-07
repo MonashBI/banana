@@ -1,11 +1,12 @@
 import os.path
+import errno
 from itertools import chain
 from nipype.interfaces.utility.base import Merge, MergeInputSpec
 from nipype.interfaces.base import (
     DynamicTraitedSpec, BaseInterfaceInputSpec, isdefined)
 from nipype.interfaces.io import IOBase, add_traits
 from nipype.utils.filemanip import filename_to_list
-
+from nianalysis.utils import split_extension
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, File,
     Directory, InputMultiPath, CommandLineInputSpec, CommandLine)
@@ -284,6 +285,105 @@ class DummyReconAll(BaseInterface):
         outputs = self._outputs().get()
         outputs['subjects_dir'] = '/Users/tclose/Desktop/FSTest'
         outputs['subject_id'] = 'recon_all'
+        return outputs
+
+
+class InDirInputSpec(TraitedSpec):
+
+    in_files = InputMultiPath(File(exists=True),
+                              desc='name of T1 file to process')
+
+    out_dir = Directory(
+        genfile=True, hash_files=False,
+        desc=("The output directory containing all of the intensity normalised"
+              " DWI images"))
+
+
+class InDirOutputSpec(TraitedSpec):
+
+    out_dir = Directory(
+        exists=True, desc=("The output directory containing the linked files"))
+
+
+class InDir(BaseInterface):
+    """
+    Takes an a list of files as an input and creates a dictionary with
+    symlinks to the original files (for input to commands that take a directory
+    of files. Is designed to round trip with ListDir, preserving order of
+    inputs by naming the generated symlinks by their index.
+    """
+
+    input_spec = InDirInputSpec
+    output_spec = InDirOutputSpec
+
+    def _run_interface(self, runtime):
+        try:
+            os.makedirs(self.inputs.out_dir)
+        except OSError as e:
+            # Ignore if the directory already exists
+            if e.errno != errno.EEXIST:
+                raise
+        for i, fpath in enumerate(self.inputs.in_files):
+            _, ext = split_extension(fpath)
+            os.symlink(fpath, os.path.join(self.inputs.out_dir, '{}{}'.format(
+                i, ext)))
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_dir'] = self._gen_out_dir_name()
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_dir':
+            gen_name = self._gen_out_dir_name()
+        else:
+            assert False
+        return gen_name
+
+    def _gen_out_dir_name(self):
+        if isdefined(self.inputs.out_dir):
+            out_name = self.inputs.out_dir
+        else:
+            out_name = os.path.join(os.getcwd(), "out_dir")
+        return out_name
+
+
+class ListDirInputSpec(TraitedSpec):
+
+    in_dir = Directory(
+        exists=True, hash_files=False,
+        desc=("The input directory to read the files from"))
+
+
+class ListDirOutputSpec(TraitedSpec):
+
+    out_files = traits.List(
+        File(exists=True), desc="The list of files in the directory")
+
+
+class ListDir(BaseInterface):
+    """
+    Takes an a list of files as an input and creates a dictionary with
+    symlinks to the original files (for input to commands that take a directory
+    of files. Is designed to round trip with ListDir, preserving order of
+    inputs.
+    """
+
+    input_spec = ListDirInputSpec
+    output_spec = ListDirOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        out_files = []
+        for fname in os.listdir(self.inputs.in_dir):
+            path = os.path.join(self.inputs.in_dir, fname)
+            if os.path.isfile(path):
+                out_files.append(path)
+        outputs['out_files'] = out_files
         return outputs
 
 

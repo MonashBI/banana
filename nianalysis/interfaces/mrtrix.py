@@ -904,7 +904,7 @@ class MRCat(CommandLine):
 
 
 # =============================================================================
-# MR Convert
+# DWI Denoise
 # =============================================================================
 
 
@@ -974,4 +974,107 @@ class DWIDenoise(CommandLine):
                 os.path.basename(self.inputs.in_file))
             out_name = os.path.join(os.getcwd(),
                                     "{}_noise{}".format(base, ext))
+        return out_name
+
+
+class DWIIntensityNormInputSpec(MRTrix3BaseInputSpec):
+
+    in_dir = Directory(
+        exists=True,
+        desc="The input directory containing all DWI images",
+        mandatory=True, argstr='%s', position=-5)
+
+    mask_dir = File(
+        exists=True,
+        desc=("Input directory containing brain masks, corresponding to "
+              "one per input image (with the same file name prefix"),
+        mandatory=True, argstr='%s', position=-4)
+
+    out_dir = Directory(
+        genfile=True, argstr='%s', position=-3, hash_files=False,
+        desc=("The output directory containing all of the intensity normalised"
+              " DWI images"))
+
+    fa_template = File(
+        genfile=True, hash_files=False,
+        desc=("The output population specific FA template, which is "
+              "threshold to estimate a white matter mask"),
+        argstr='%s', position=-2)
+
+    wm_mask = File(
+        genfile=True, hash_files=False,
+        desc=("Input directory containing brain masks, corresponding to "
+              "one per input image (with the same file name prefix"),
+        argstr='%s', position=-1)
+
+    fa_threshold = traits.Float(
+        argstr='-fa_threshold %s',
+        desc=("The threshold applied to the Fractional Anisotropy group "
+              "template used to derive an approximate white matter mask"))
+
+
+class DWIIntensityNormOutputSpec(TraitedSpec):
+
+    out_dir = Directory(
+        exists=True,
+        desc=("The output directory containing all of the intensity normalised"
+              " DWI images"))
+
+    fa_template = File(
+        exists=True,
+        desc=("The output population specific FA template, which is "
+              "threshold to estimate a white matter mask"))
+
+    wm_mask = File(
+        exists=True,
+        desc=("Input directory containing brain masks, corresponding to "
+              "one per input image (with the same file name prefix"))
+
+
+class DWIIntensityNorm(MRTrix3Base):
+
+    _cmd = 'dwiintensitynorm'
+    input_spec = DWIIntensityNormInputSpec
+    output_spec = DWIIntensityNormOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out_dir'] = self._gen_out_dir_name()
+        outputs['fa_template'] = self._gen_fa_template_name()
+        outputs['wm_mask'] = self._gen_wm_mask_name()
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_dir':
+            gen_name = self._gen_out_dir_name()
+        elif name == 'fa_template':
+            gen_name = self._gen_fa_template_name()
+        elif name == 'wm_mask':
+            gen_name = self._gen_wm_mask_name()
+        else:
+            assert False
+        return gen_name
+
+    def _gen_out_dir_name(self):
+        if isdefined(self.inputs.out_dir):
+            out_name = self.inputs.out_dir
+        else:
+            base = os.path.basename(self.inputs.in_dir)
+            out_name = os.path.join(os.getcwd(), "{}_out".format(base))
+        return out_name
+
+    def _gen_fa_template_name(self):
+        if isdefined(self.inputs.fa_template):
+            out_name = self.inputs.fa_template
+        else:
+            base = os.path.basename(self.inputs.in_dir)
+            out_name = os.path.join(os.getcwd(), "{}_fa_tmpl.mif".format(base))
+        return out_name
+
+    def _gen_wm_mask_name(self):
+        if isdefined(self.inputs.wm_mask):
+            out_name = self.inputs.wm_mask
+        else:
+            base = os.path.basename(self.inputs.in_dir)
+            out_name = os.path.join(os.getcwd(), "{}_wm_mask.mif".format(base))
         return out_name
