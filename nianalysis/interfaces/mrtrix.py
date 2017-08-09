@@ -532,7 +532,7 @@ class ExtractDWIorB0(CommandLine):
 # =============================================================================
 
 
-class MRConvertInputSpec(CommandLineInputSpec):
+class MRConvertInputSpec(MRTrix3BaseInputSpec):
     in_file = traits.Either(
         File(exists=True, desc="Input file"),
         Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
@@ -591,18 +591,6 @@ class MRConvertInputSpec(CommandLineInputSpec):
               "int32le, uint32le, int32be, uint32be, int16, uint16, int16le, "
               "uint16le, int16be, uint16be, cfloat32, cfloat32le, cfloat32be, "
               "cfloat64, cfloat64le, cfloat64be, int8, uint8, bit."))
-    grad = traits.Str(
-        mandatory=False, argstr='-grad %s',
-        desc=("specify the diffusion-weighted gradient scheme used in the  "
-              "acquisition. The program will normally attempt to use the  "
-              "encoding stored in the image header. This should be supplied  "
-              "as a 4xN text file with each line is in the format [ X Y Z b ],"
-              " where [ X Y Z ] describe the direction of the applied  "
-              "gradient, and b gives the b-value in units of s/mm^2."))
-    fslgrad = traits.Str(
-        mandatory=False, argstr='-fslgrad %s',
-        desc=("specify the diffusion-weighted gradient scheme used in the "
-              "acquisition in FSL bvecs/bvals format."))
     export_grad_mrtrix = traits.Str(
         mandatory=False, argstr='-export_grad_mrtrix %s',
         desc=("export the diffusion-weighted gradient table to file in MRtrix "
@@ -620,7 +608,7 @@ class MRConvertOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Extracted encoding gradients')
 
 
-class MRConvert(CommandLine):
+class MRConvert(MRTrix3Base):
 
     _cmd = 'mrconvert'
     input_spec = MRConvertInputSpec
@@ -1081,40 +1069,37 @@ class DWIIntensityNorm(MRTrix3Base):
         if isdefined(self.inputs.in_dir):
             out_name = self.inputs.in_dir
         else:
-            base = os.path.basename(self.inputs.in_dir)
-            out_name = os.path.join(os.getcwd(), "{}_in".format(base))
+            out_name = os.path.join(os.getcwd(), 'in_dir')
         return out_name
 
     def _gen_mask_dir_name(self):
         if isdefined(self.inputs.mask_dir):
             out_name = self.inputs.mask_dir
         else:
-            base = os.path.basename(self.inputs.mask_dir)
-            out_name = os.path.join(os.getcwd(), "{}_mask".format(base))
+            out_name = os.path.join(os.getcwd(), 'mask_dir')
         return out_name
 
     def _gen_out_dir_name(self):
         if isdefined(self.inputs.out_dir):
             out_name = self.inputs.out_dir
         else:
-            base = os.path.basename(self.inputs.in_dir)
-            out_name = os.path.join(os.getcwd(), "{}_out".format(base))
+            out_name = os.path.join(os.getcwd(), 'out_dir')
         return out_name
 
     def _gen_fa_template_name(self):
         if isdefined(self.inputs.fa_template):
             out_name = self.inputs.fa_template
         else:
-            base = os.path.basename(self.inputs.in_dir)
-            out_name = os.path.join(os.getcwd(), "{}_fa_tmpl.mif".format(base))
+            ext = split_extension(self.inputs.in_files[0])[0]
+            out_name = os.path.join(os.getcwd(), 'fa_template' + ext)
         return out_name
 
     def _gen_wm_mask_name(self):
         if isdefined(self.inputs.wm_mask):
             out_name = self.inputs.wm_mask
         else:
-            base = os.path.basename(self.inputs.in_dir)
-            out_name = os.path.join(os.getcwd(), "{}_wm_mask.mif".format(base))
+            ext = split_extension(self.inputs.in_files[0])[0]
+            out_name = os.path.join(os.getcwd(), 'wm_mask' + ext)
         return out_name
 
     def _link_into_dir(self, fpaths, dirpath):

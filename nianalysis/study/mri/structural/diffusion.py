@@ -214,17 +214,17 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def intensity_normalization_pipeline(self, **options):
+    def intensity_normalisation_pipeline(self, **options):
         pipeline = self.create_pipeline(
             name='intensity_normalization',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format)],
-            outputs=[DatasetSpec('normalised', mrtrix_format),
-                     DatasetSpec('fa_template', mrtrix_format,
+            outputs=[DatasetSpec('norm_intensity', mrtrix_format),
+                     DatasetSpec('norm_intens_fa_template', mrtrix_format,
                                  multiplicity='per_project'),
-                     DatasetSpec('fa_template_wm_mask', mrtrix_format,
+                     DatasetSpec('norm_intens_wm_mask', mrtrix_format,
                                  multiplicity='per_project')],
             description="Corrects for B1 field inhomogeneity",
             default_options={},
@@ -232,7 +232,7 @@ class DiffusionStudy(T2Study):
             citations=[mrtrix3_req],
             options=options)
         # Convert from nifti to mrtrix format
-        grad_merge = pipeline.create_node(Merge(2), name="grad_merge")
+        grad_merge = pipeline.create_node(MergeTuple(2), name="grad_merge")
         mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
         mrconvert.inputs.out_ext = '.mif'
         # Set up join nodes
@@ -252,14 +252,14 @@ class DiffusionStudy(T2Study):
         # Connect inputs
         pipeline.connect_input('bias_correct', mrconvert, 'in_file')
         pipeline.connect_input('grad_dirs', grad_merge, 'in1')
-        pipeline.connect_input('bvalues', grad_merge, 'in1')
+        pipeline.connect_input('bvalues', grad_merge, 'in2')
         pipeline.connect_subject_id(join_subjects, 'subject_ids')
         pipeline.connect_visit_id(join_subjects, 'visit_ids')
         pipeline.connect_subject_id(select, 'subject_id')
         pipeline.connect_visit_id(select, 'visit_id')
         pipeline.connect_input('brain_mask', join_subjects, 'masks')
         # Internal connections
-        pipeline.connect(grad_merge, 'out', mrconvert, 'fsl_grad')
+        pipeline.connect(grad_merge, 'out', mrconvert, 'grad_fsl')
         pipeline.connect(mrconvert, 'out_file', join_subjects, 'dwis')
         pipeline.connect(join_subjects, 'dwis', join_visits, 'dwis')
         pipeline.connect(join_subjects, 'masks', join_visits, 'masks')
@@ -273,9 +273,9 @@ class DiffusionStudy(T2Study):
         pipeline.connect(join_visits, 'visit_ids', select, 'visit_ids')
         pipeline.connect(intensity_norm, 'out_files', select, 'items')
         # Connect outputs
-        pipeline.connect_output('normalised', select, 'item')
-        pipeline.connect_output('fa_template', intensity_norm, 'fa_template')
-        pipeline.connect_output('fa_template_wm_mask', intensity_norm,
+        pipeline.connect_output('norm_intensity', select, 'item')
+        pipeline.connect_output('norm_intens_fa_template', intensity_norm, 'fa_template')
+        pipeline.connect_output('norm_intens_wm_mask', intensity_norm,
                                 'wm_mask')
         pipeline.assert_connected()
         return pipeline
@@ -559,6 +559,14 @@ class DiffusionStudy(T2Study):
                     multiplicity='per_project'),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
+        DatasetSpec('norm_intensity', mrtrix_format,
+                    intensity_normalisation_pipeline),
+        DatasetSpec('norm_intens_fa_template', mrtrix_format,
+                    intensity_normalisation_pipeline,
+                    multiplicity='per_project'),
+        DatasetSpec('norm_intens_wm_mask', mrtrix_format,
+                    intensity_normalisation_pipeline,
+                    multiplicity='per_project'),
         inherit_from=T2Study.generated_dataset_specs())
 
 
