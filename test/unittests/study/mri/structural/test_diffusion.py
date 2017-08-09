@@ -6,10 +6,10 @@ from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
 from nianalysis.data_formats import (  # @IgnorePep8
     mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format)
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.testing import BaseTestCase, BaseMultiSubjectTestCase  # @IgnorePep8 @Reimport
 
 
-class TestDiffusion(TestCase):
+class TestDiffusion(BaseTestCase):
 
     def test_preprocess(self):
         study = self.create_study(
@@ -65,7 +65,25 @@ class TestDiffusion(TestCase):
         self.assertDatasetCreated('tensor.nii.gz', study.name)
 
 
-class TestNODDI(TestCase):
+class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
+
+    def test_intensity_normalization(self):
+        study = self.create_study(
+            DiffusionStudy, 'intens_norm', {
+                'bias_correct': Dataset('biascorrect', nifti_gz_format),
+                'brain_mask': Dataset('brainmask', nifti_gz_format),
+                'grad_dirs': Dataset('gradientdirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.intensity_normalisation_pipeline().run(
+            work_dir=self.work_dir)
+        self.assertDatasetCreated('norm_intensity.mif', study.name)
+        self.assertDatasetCreated('norm_intens_fa_template.mif', study.name,
+                                  multiplicity='per_project')
+        self.assertDatasetCreated('norm_intens_wm_mask.mif', study.name,
+                                  multiplicity='per_project')
+
+
+class TestNODDI(BaseTestCase):
 
     def test_concatenate(self):
         study = self.create_study(
