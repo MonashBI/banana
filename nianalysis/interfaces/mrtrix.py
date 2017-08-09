@@ -1,4 +1,6 @@
 import os.path
+import errno
+import math
 from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
     traits, InputMultiPath)
@@ -979,21 +981,21 @@ class DWIDenoise(CommandLine):
 
 class DWIIntensityNormInputSpec(MRTrix3BaseInputSpec):
 
-    in_dir = Directory(
-        exists=True,
-        desc="The input directory containing all DWI images",
-        mandatory=True, argstr='%s', position=-5)
+    in_files = InputMultiPath(
+        File(exists=True),
+        desc="The input DWI images to normalize",
+        mandatory=True)
 
-    mask_dir = File(
-        exists=True,
+    masks = InputMultiPath(
+        File(exists=True),
         desc=("Input directory containing brain masks, corresponding to "
-              "one per input image (with the same file name prefix"),
-        mandatory=True, argstr='%s', position=-4)
+              "one per input image in the same order"),
+        mandatory=True)
 
-    out_dir = Directory(
-        genfile=True, argstr='%s', position=-3, hash_files=False,
-        desc=("The output directory containing all of the intensity normalised"
-              " DWI images"))
+    fa_threshold = traits.Float(
+        argstr='-fa_threshold %s',
+        desc=("The threshold applied to the Fractional Anisotropy group "
+              "template used to derive an approximate white matter mask"))
 
     fa_template = File(
         genfile=True, hash_files=False,
@@ -1007,22 +1009,30 @@ class DWIIntensityNormInputSpec(MRTrix3BaseInputSpec):
               "one per input image (with the same file name prefix"),
         argstr='%s', position=-1)
 
-    fa_threshold = traits.Float(
-        argstr='-fa_threshold %s',
-        desc=("The threshold applied to the Fractional Anisotropy group "
-              "template used to derive an approximate white matter mask"))
+    in_dir = Directory(
+        genfile=True,
+        desc="The input directory to collate the DWI images within",
+        argstr='%s', position=-5)
+
+    mask_dir = File(
+        genfile=True,
+        desc=("Input directory to collate the brain masks within"),
+        argstr='%s', position=-4)
+
+    out_dir = Directory(
+        genfile=True, argstr='%s', position=-3, hash_files=False,
+        desc=("The output directory to containing the normalised DWI images"))
 
 
 class DWIIntensityNormOutputSpec(TraitedSpec):
 
-    out_dir = Directory(
-        exists=True,
-        desc=("The output directory containing all of the intensity normalised"
-              " DWI images"))
+    out_files = traits.List(
+        File(exists=True),
+        desc=("The intensity normalised DWI images"))
 
     fa_template = File(
         exists=True,
-        desc=("The output population specific FA template, which is "
+        desc=("The output population specific FA templates, which is "
               "threshold to estimate a white matter mask"))
 
     wm_mask = File(
@@ -1037,15 +1047,27 @@ class DWIIntensityNorm(MRTrix3Base):
     input_spec = DWIIntensityNormInputSpec
     output_spec = DWIIntensityNormOutputSpec
 
+    def _run_interface(self, *args, **kwargs):
+        self._link_into_dir(self.inputs.in_files, self._gen_in_dir_name())
+        self._link_into_dir(self.inputs.masks, self._gen_mask_dir_name())
+        return super(DWIIntensityNorm, self)._run_interface(*args, **kwargs)
+
     def _list_outputs(self):
         outputs = self.output_spec().get()
-        outputs['out_dir'] = self._gen_out_dir_name()
+        out_dir = self._gen_out_dir_name()
+        outputs['out_files'] = sorted(
+            f for f in os.listdir(out_dir)
+            if os.path.isfile(os.path.join(out_dir), f))
         outputs['fa_template'] = self._gen_fa_template_name()
         outputs['wm_mask'] = self._gen_wm_mask_name()
         return outputs
 
     def _gen_filename(self, name):
-        if name == 'out_dir':
+        if name == 'in_dir':
+            gen_name = self._gen_in_dir_name()
+        elif name == 'mask_dir':
+            gen_name = self._gen_mask_dir_name()
+        elif name == 'out_dir':
             gen_name = self._gen_out_dir_name()
         elif name == 'fa_template':
             gen_name = self._gen_fa_template_name()
@@ -1054,6 +1076,22 @@ class DWIIntensityNorm(MRTrix3Base):
         else:
             assert False
         return gen_name
+
+    def _gen_in_dir_name(self):
+        if isdefined(self.inputs.in_dir):
+            out_name = self.inputs.in_dir
+        else:
+            base = os.path.basename(self.inputs.in_dir)
+            out_name = os.path.join(os.getcwd(), "{}_in".format(base))
+        return out_name
+
+    def _gen_mask_dir_name(self):
+        if isdefined(self.inputs.mask_dir):
+            out_name = self.inputs.mask_dir
+        else:
+            base = os.path.basename(self.inputs.mask_dir)
+            out_name = os.path.join(os.getcwd(), "{}_mask".format(base))
+        return out_name
 
     def _gen_out_dir_name(self):
         if isdefined(self.inputs.out_dir):
@@ -1078,3 +1116,19 @@ class DWIIntensityNorm(MRTrix3Base):
             base = os.path.basename(self.inputs.in_dir)
             out_name = os.path.join(os.getcwd(), "{}_wm_mask.mif".format(base))
         return out_name
+
+    def _link_into_dir(self, fpaths, dirpath):
+        """
+        Symlinks the given file paths into the given directory, making the
+        directory if necessary
+        """
+        try:
+            os.makedirs(dirpath)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+        num_digits = int(math.ceil(math.log(len(fpaths), 10)))
+        for i, fpath in enumerate(fpaths):
+            _, ext = split_extension(fpath)
+            os.symlink(fpath,
+                       os.path.join(dirpath, str(i).zfill(num_digits) + ext))
