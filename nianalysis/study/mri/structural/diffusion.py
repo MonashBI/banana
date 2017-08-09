@@ -9,7 +9,8 @@ from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from .t2 import T2Study
 from nianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
-from nianalysis.interfaces.utils import MergeTuple, InDir, ListDir
+from nianalysis.interfaces.utils import MergeTuple, Chain
+from nipype.interfaces.utility import IdentityInterface
 from nianalysis.citations import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
@@ -21,6 +22,7 @@ from nianalysis.requirements import (
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
+from nianalysis.interfaces.iterators import SelectSession
 
 
 class DiffusionStudy(T2Study):
@@ -34,10 +36,11 @@ class DiffusionStudy(T2Study):
         phase_dir : str{AP|LR|IS}
             The phase encode direction
         """
+        denoise_default = True
         outputs = [DatasetSpec('dwi_preproc', mrtrix_format),
                    DatasetSpec('grad_dirs', fsl_bvecs_format),
                    DatasetSpec('bvalues', fsl_bvals_format)]
-        if options.get('preproc_denoise', True):
+        if options.get('preproc_denoise', denoise_default):
             outputs.append(DatasetSpec('noise_residual', mrtrix_format))
         pipeline = self.create_pipeline(
             name='preprocess',
@@ -46,7 +49,7 @@ class DiffusionStudy(T2Study):
             outputs=outputs,
             description="Preprocess dMRI studies using distortion correction",
             default_options={'preproc_pe_dir': None,
-                             'preproc_denoise': True},
+                             'preproc_denoise': denoise_default},
             version=1,
             citations=(
                 [fsl_cite, eddy_cite, topup_cite, distort_correct_cite] +
@@ -219,35 +222,63 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format)],
             outputs=[DatasetSpec('normalised', mrtrix_format),
-                     DatasetSpec('fa_template', mrtrix_format),
-                     DatasetSpec('fa_template_wm_mask', mrtrix_format)],
+                     DatasetSpec('fa_template', mrtrix_format,
+                                 multiplicity='per_project'),
+                     DatasetSpec('fa_template_wm_mask', mrtrix_format,
+                                 multiplicity='per_project')],
             description="Corrects for B1 field inhomogeneity",
             default_options={},
             version=1,
-            citations=[],
+            citations=[mrtrix3_req],
             options=options)
         # Convert from nifti to mrtrix format
         grad_merge = pipeline.create_node(Merge(2), name="grad_merge")
         mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
         mrconvert.inputs.out_ext = '.mif'
+        # Set up join nodes
+        fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
+        join_subjects = pipeline.create_join_subjects_node(
+            IdentityInterface(fields), joinfield=fields,
+            name='join_subjects')
+        join_visits = pipeline.create_join_visits_node(
+            Chain(fields), joinfield=fields,
+            name='join_visits')
+        # Set up expand nodes
+        select = pipeline.create_node(
+            SelectSession(), name='expand')
         # Intensity normalization
-        intensitiy_norm = pipeline.create_node(DWIIntensityNorm(),
-                                               name='dwiintensitynorm')
-        # Collate inputs into directories
-        in_dir = pipeline.create_join_subjects_node(InDir(), name="in_dir",
-                                                    joinfield=['in_files'])
-        mask_dir = pipeline.create_join_subjects_node(InDir(), name="mask_dir",
-                                                      joinfield=['in_files'])
-        # Expand outputs into lists
-        outputs = pipeline.create_node(ListDir(), name="outputs")
+        intensity_norm = pipeline.create_node(
+            DWIIntensityNorm(), name='dwiintensitynorm')
         # Connect inputs
         pipeline.connect_input('bias_correct', mrconvert, 'in_file')
         pipeline.connect_input('grad_dirs', grad_merge, 'in1')
         pipeline.connect_input('bvalues', grad_merge, 'in1')
+        pipeline.connect_subject_id(join_subjects, 'subject_ids')
+        pipeline.connect_visit_id(join_subjects, 'visit_ids')
+        pipeline.connect_subject_id(select, 'subject_id')
+        pipeline.connect_visit_id(select, 'visit_id')
+        pipeline.connect_input('brain_mask', join_subjects, 'masks')
         # Internal connections
         pipeline.connect(grad_merge, 'out', mrconvert, 'fsl_grad')
-        pipeline.connect()
+        pipeline.connect(mrconvert, 'out_file', join_subjects, 'dwis')
+        pipeline.connect(join_subjects, 'dwis', join_visits, 'dwis')
+        pipeline.connect(join_subjects, 'masks', join_visits, 'masks')
+        pipeline.connect(join_subjects, 'subject_ids', join_visits,
+                         'subject_ids')
+        pipeline.connect(join_subjects, 'visit_ids', join_visits,
+                         'visit_ids')
+        pipeline.connect(join_visits, 'dwis', intensity_norm, 'in_files')
+        pipeline.connect(join_visits, 'masks', intensity_norm, 'masks')
+        pipeline.connect(join_visits, 'subject_ids', select, 'subject_ids')
+        pipeline.connect(join_visits, 'visit_ids', select, 'visit_ids')
+        pipeline.connect(intensity_norm, 'out_files', select, 'items')
         # Connect outputs
+        pipeline.connect_output('normalised', select, 'item')
+        pipeline.connect_output('fa_template', intensity_norm, 'fa_template')
+        pipeline.connect_output('fa_template_wm_mask', intensity_norm,
+                                'wm_mask')
+        pipeline.assert_connected()
+        return pipeline
 
     def tensor_pipeline(self, **options):  # @UnusedVariable
         """
@@ -260,7 +291,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('tensor', nifti_gz_format)],
-            description=("Estimates the apparrent diffusion tensor in each "
+            description=("Estimates the apparent diffusion tensor in each "
                          "voxel"),
             default_options={},
             version=1,
