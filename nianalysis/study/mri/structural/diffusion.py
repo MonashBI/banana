@@ -352,6 +352,8 @@ class DiffusionStudy(T2Study):
 
         Parameters
         ----------
+        fod_response_algorithm : str
+            Algorithm used to estimate the response
         """
         pipeline = self.create_pipeline(
             name='response',
@@ -360,8 +362,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('response', text_format)],
-            description=("Estimates the fibre orientation distribution "
-                         "response"),
+            description=("Estimates the fibre response function"),
             default_options={'fod_response_algorithm': 'tax'},
             version=1,
             citations=[mrtrix_cite],
@@ -385,6 +386,27 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
+    def average_response_pipeline(self, **options):
+        """
+        Averages the estimate response function over all subjects in the
+        project
+        """
+        pipeline = self.create_pipeline(
+            name='average_response',
+            inputs=[DatasetSpec('response', text_format)],
+            outputs=[DatasetSpec('avg_response', text_format,
+                                 multiplicity='per_project')],
+            description=(
+                "Averages the fibre response function over the project"),
+            default_options={},
+            version=1,
+            citations=[mrtrix_cite],
+            options=options)
+        
+        # Check inputs/output are connected
+        pipeline.assert_connected()
+        return pipeline
+
     def fod_pipeline(self, **options):  # @UnusedVariable
         """
         Estimates the fibre orientation distribution (FOD) using constrained
@@ -398,12 +420,8 @@ class DiffusionStudy(T2Study):
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
-#                     DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('response', text_format)
-                    ],
-            outputs=[DatasetSpec('fod', nifti_gz_format),
-#                      DatasetSpec('response', mrtrix_format)
-                     ],
+                    DatasetSpec('response', text_format)],
+            outputs=[DatasetSpec('fod', nifti_gz_format)],
             description=("Estimates the fibre orientation distribution in each"
                          " voxel"),
             default_options={'fod_response_algorithm': 'tax'},
@@ -414,25 +432,17 @@ class DiffusionStudy(T2Study):
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
         dwi2fod.inputs.algorithm = 'csd'
-#         response = pipeline.create_node(ResponseSD(), name='response',
-#                                         requirements=[mrtrix3_req])
-#         response.inputs.algorithm = pipeline.option('fod_response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
-#         pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
         pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
-#         pipeline.connect(response, 'out_file', dwi2fod, 'response')
         # Connect to inputs
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
         pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
         pipeline.connect_input('response', dwi2fod, 'response')
-#         pipeline.connect_input('bias_correct', response, 'in_file')
-#         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
         pipeline.connect_output('fod', dwi2fod, 'out_file')
-#         pipeline.connect_output('response', response, 'out_file')
         # Check inputs/output are connected
         pipeline.assert_connected()
         return pipeline
@@ -544,6 +554,7 @@ class DiffusionStudy(T2Study):
         DatasetSpec('fa', nifti_gz_format, tensor_pipeline),
         DatasetSpec('adc', nifti_gz_format, tensor_pipeline),
         DatasetSpec('response', text_format, response_pipeline),
+        DatasetSpec('avg_response', text_format, average_response_pipeline),
         DatasetSpec('fod', mrtrix_format, fod_pipeline),
         DatasetSpec('dwi_preproc', nifti_gz_format, preprocess_pipeline),
         DatasetSpec('bias_correct', nifti_gz_format, bias_correct_pipeline),
