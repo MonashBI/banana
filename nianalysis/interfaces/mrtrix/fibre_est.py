@@ -1,8 +1,75 @@
 import os.path
 from nipype.interfaces.base import (
-    CommandLineInputSpec, File, TraitedSpec, traits)
+    traits, InputMultiPath, File, TraitedSpec, isdefined)
 from nipype.interfaces.mrtrix3.reconst import (
     MRTrix3Base, MRTrix3BaseInputSpec)
+from nipype.interfaces.mrtrix3.preprocess import (
+    ResponseSD as NipypeResponseSD,
+    ResponseSDInputSpec as NipypeResponseSDInputSpec)
+from nianalysis.utils import split_extension
+
+# fod2fixel
+# fixel2voxel
+# fixelcorrespondence
+# fixelcfestats
+# tcksift
+# warp2metric
+
+
+class ResponseSDInputSpec(NipypeResponseSDInputSpec):
+
+    algorithm = traits.Str(mandatory=True, argstr='%s', position=0,
+                           desc="The algorithm used to estimate the response")
+
+
+class ResponseSD(NipypeResponseSD):
+
+    input_spec = ResponseSDInputSpec
+
+
+class AverageReponseInputSpec(MRTrix3BaseInputSpec):
+
+    in_files = InputMultiPath(
+        File(exists=True), argstr='%s', mandatory=True,
+        position=0, desc="Average response")
+
+    out_file = File(
+        genfile=True, argstr='%s', mandatory=True, position=-1,
+        desc=("the output spherical harmonics coefficients image"))
+
+
+class AverageReponseOutputSpec(TraitedSpec):
+
+    out_file = File(exists=True, desc='the output response file')
+
+
+class AverageResponse(MRTrix3Base):
+
+    _cmd = 'average_response'
+    input_spec = AverageReponseInputSpec
+    output_spec = AverageReponseOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out_file'] = os.path.abspath(self.inputs.out_file)
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = self._gen_outfilename()
+        else:
+            assert False
+        return fname
+
+    def _gen_outfilename(self):
+        if isdefined(self.inputs.out_file):
+            filename = self.inputs.out_file
+        else:
+            base, ext = split_extension(
+                os.path.basename(self.inputs.in_files[0]))
+            filename = os.path.join(os.getcwd(),
+                                    "{}_avg{}".format(base, ext))
+        return filename
 
 
 class EstimateFODInputSpec(MRTrix3BaseInputSpec):
