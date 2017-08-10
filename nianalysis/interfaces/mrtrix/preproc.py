@@ -2,13 +2,9 @@ import os.path
 import errno
 import math
 from nipype.interfaces.base import (
-    CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
-    traits, InputMultiPath)
+    File, Directory, TraitedSpec, isdefined, traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
     MRTrix3Base, MRTrix3BaseInputSpec)
-from nipype.interfaces.mrtrix3.preprocess import (
-    ResponseSD as NipypeResponseSD,
-    ResponseSDInputSpec as NipypeResponseSDInputSpec)
 from nianalysis.utils import split_extension
 
 
@@ -18,18 +14,7 @@ from nianalysis.utils import split_extension
 # Extract MR gradients
 # =============================================================================
 
-class ResponseSDInputSpec(NipypeResponseSDInputSpec):
-
-    algorithm = traits.Str(mandatory=True, argstr='%s', position=0,
-                           desc="The algorithm used to estimate the response")
-
-
-class ResponseSD(NipypeResponseSD):
-
-    input_spec = ResponseSDInputSpec
-
-
-class DWIPreprocInputSpec(CommandLineInputSpec):
+class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
     in_file = traits.File(
         mandatory=True, argstr='%s',
         desc=("The input DWI series to be corrected"), position=-2)
@@ -62,7 +47,7 @@ class DWIPreprocOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Pre-processed DWI dataset')
 
 
-class DWIPreproc(CommandLine):
+class DWIPreproc(MRTrix3Base):
 
     _cmd = 'dwipreproc'
     input_spec = DWIPreprocInputSpec
@@ -91,7 +76,7 @@ class DWIPreproc(CommandLine):
         return out_name
 
 
-class DWI2MaskInputSpec(CommandLineInputSpec):
+class DWI2MaskInputSpec(MRTrix3BaseInputSpec):
     # Arguments
     bvalue_scaling = File(
         mandatory=False, argstr='-bvalue_scaling %s',
@@ -107,28 +92,13 @@ class DWI2MaskInputSpec(CommandLineInputSpec):
     out_file = File(
         genfile=True, argstr='%s', position=-1, hash_files=False,
         desc="Output preprocessed filename")
-    grad = traits.Str(
-        mandatory=False, argstr='-grad %s',
-        desc=("specify the diffusion-weighted gradient scheme used in the  "
-              "acquisition. The program will normally attempt to use the  "
-              "encoding stored in the image header. This should be supplied  "
-              "as a 4xN text file with each line is in the format [ X Y Z b ],"
-              " where [ X Y Z ] describe the direction of the applied  "
-              "gradient, and b gives the b-value in units of s/mm^2."))
-
-    fslgrad = traits.Tuple(
-        File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
-        File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
-        argstr='-fslgrad %s %s', mandatory=False,
-        desc=("specify the diffusion-weighted gradient scheme used in the "
-              "acquisition in FSL bvecs/bvals format."))
 
 
 class DWI2MaskOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Bias-corrected DWI dataset')
 
 
-class DWI2Mask(CommandLine):
+class DWI2Mask(MRTrix3Base):
 
     _cmd = 'dwi2mask'
     input_spec = DWI2MaskInputSpec
@@ -157,7 +127,7 @@ class DWI2Mask(CommandLine):
         return out_name
 
 
-class DWIBiasCorrectInputSpec(CommandLineInputSpec):
+class DWIBiasCorrectInputSpec(MRTrix3BaseInputSpec):
     # Arguments
     mask = File(
         mandatory=True, argstr='-mask %s',
@@ -174,28 +144,13 @@ class DWIBiasCorrectInputSpec(CommandLineInputSpec):
     out_file = File(
         genfile=True, argstr='%s', position=-1, hash_files=False,
         desc="Output preprocessed filename")
-    grad = traits.Str(
-        mandatory=False, argstr='-grad %s',
-        desc=("specify the diffusion-weighted gradient scheme used in the  "
-              "acquisition. The program will normally attempt to use the  "
-              "encoding stored in the image header. This should be supplied  "
-              "as a 4xN text file with each line is in the format [ X Y Z b ],"
-              " where [ X Y Z ] describe the direction of the applied  "
-              "gradient, and b gives the b-value in units of s/mm^2."))
-
-    fslgrad = traits.Tuple(
-        File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
-        File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
-        argstr='-fslgrad %s %s', mandatory=False,
-        desc=("specify the diffusion-weighted gradient scheme used in the "
-              "acquisition in FSL bvecs/bvals format."))
 
 
 class DWIBiasCorrectOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Bias-corrected DWI dataset')
 
 
-class DWIBiasCorrect(CommandLine):
+class DWIBiasCorrect(MRTrix3Base):
 
     _cmd = 'dwibiascorrect'
     input_spec = DWIBiasCorrectInputSpec
@@ -228,7 +183,7 @@ class DWIBiasCorrect(CommandLine):
 # =============================================================================
 
 
-class DWIDenoiseInputSpec(CommandLineInputSpec):
+class DWIDenoiseInputSpec(MRTrix3BaseInputSpec):
     in_file = traits.Either(
         File(exists=True, desc="Input file"),
         Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
@@ -255,7 +210,7 @@ class DWIDenoiseOutputSpec(TraitedSpec):
     noise = File(desc=("The estimated spatially-varying noise level"))
 
 
-class DWIDenoise(CommandLine):
+class DWIDenoise(MRTrix3Base):
 
     _cmd = 'dwidenoise'
     input_spec = DWIDenoiseInputSpec

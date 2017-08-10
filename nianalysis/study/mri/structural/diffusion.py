@@ -3,7 +3,7 @@ from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor
 from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, EstimateFOD, ResponseSD, DWIIntensityNorm)
+    MRCalc, EstimateFOD, ResponseSD, DWIIntensityNorm, AverageResponse)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
@@ -274,7 +274,8 @@ class DiffusionStudy(T2Study):
         pipeline.connect(intensity_norm, 'out_files', select, 'items')
         # Connect outputs
         pipeline.connect_output('norm_intensity', select, 'item')
-        pipeline.connect_output('norm_intens_fa_template', intensity_norm, 'fa_template')
+        pipeline.connect_output('norm_intens_fa_template', intensity_norm,
+                                'fa_template')
         pipeline.connect_output('norm_intens_wm_mask', intensity_norm,
                                 'wm_mask')
         pipeline.assert_connected()
@@ -402,7 +403,20 @@ class DiffusionStudy(T2Study):
             version=1,
             citations=[mrtrix_cite],
             options=options)
-        
+        join_subjects = pipeline.create_join_subjects_node(
+            IdentityInterface(['responses']), name='join_subjects',
+            joinfield=['responses'])
+        join_visits = pipeline.create_join_visits_node(
+            Chain(['responses']), name='join_visits', join_field=['responses'])
+        avg_response = pipeline.create_join_visits_node(
+            AverageResponse(), name='avg_response', joinfield=['in_files'])
+        # Connect inputs
+        pipeline.connect_input('response', join_subjects, 'response')
+        # Connect inter-nodes
+        pipeline.connect(join_subjects, 'responses', join_visits, 'responses')
+        pipeline.connect(join_visits, 'responses', avg_response, 'in_files')
+        # Connect outputs
+        pipeline.connect_output('avg_response', avg_response, 'out_file')
         # Check inputs/output are connected
         pipeline.assert_connected()
         return pipeline
