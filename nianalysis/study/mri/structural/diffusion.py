@@ -407,7 +407,7 @@ class DiffusionStudy(T2Study):
             IdentityInterface(['responses']), name='join_subjects',
             joinfield=['responses'])
         join_visits = pipeline.create_join_visits_node(
-            Chain(['responses']), name='join_visits', join_field=['responses'])
+            Chain(['responses']), name='join_visits', joinfield=['responses'])
         avg_response = pipeline.create_join_visits_node(
             AverageResponse(), name='avg_response', joinfield=['in_files'])
         # Connect inputs

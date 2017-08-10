@@ -61,7 +61,7 @@ class TestDiffusion(BaseTestCase):
                 'brain_mask': Dataset('brain_mask', nifti_gz_format),
                 'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
-        study.fod_pipeline().run(
+        study.response_pipeline().run(
             work_dir=self.work_dir)
         self.assertDatasetCreated('response.txt', study.name)
 
@@ -71,6 +71,7 @@ class TestDiffusion(BaseTestCase):
                 'bias_correct': Dataset('bias_correct', nifti_gz_format),
                 'brain_mask': Dataset('brain_mask', nifti_gz_format),
                 'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'response': Dataset('response', text_format),
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
         study.fod_pipeline().run(
             work_dir=self.work_dir)
