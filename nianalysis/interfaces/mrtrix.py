@@ -1044,8 +1044,7 @@ class DWIIntensityNorm(MRTrix3Base):
         outputs = self.output_spec().get()
         out_dir = self._gen_out_dir_name()
         outputs['out_files'] = sorted(
-            f for f in os.listdir(out_dir)
-            if os.path.isfile(os.path.join(out_dir), f))
+            os.path.join(out_dir, f) for f in os.listdir(out_dir))
         outputs['fa_template'] = self._gen_fa_template_name()
         outputs['wm_mask'] = self._gen_wm_mask_name()
         return outputs
@@ -1090,7 +1089,7 @@ class DWIIntensityNorm(MRTrix3Base):
         if isdefined(self.inputs.fa_template):
             out_name = self.inputs.fa_template
         else:
-            ext = split_extension(self.inputs.in_files[0])[0]
+            ext = split_extension(self.inputs.in_files[0])[1]
             out_name = os.path.join(os.getcwd(), 'fa_template' + ext)
         return out_name
 
@@ -1098,7 +1097,7 @@ class DWIIntensityNorm(MRTrix3Base):
         if isdefined(self.inputs.wm_mask):
             out_name = self.inputs.wm_mask
         else:
-            ext = split_extension(self.inputs.in_files[0])[0]
+            ext = split_extension(self.inputs.in_files[0])[1]
             out_name = os.path.join(os.getcwd(), 'wm_mask' + ext)
         return out_name
 

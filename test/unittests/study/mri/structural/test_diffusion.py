@@ -76,11 +76,16 @@ class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
         study.intensity_normalisation_pipeline().run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('norm_intensity.mif', study.name)
-        self.assertDatasetCreated('norm_intens_fa_template.mif', study.name,
-                                  multiplicity='per_project')
-        self.assertDatasetCreated('norm_intens_wm_mask.mif', study.name,
-                                  multiplicity='per_project')
+        for subject_id in self.subject_ids:
+            for visit_id in self.visit_ids(subject_id):
+                self.assertDatasetCreated('norm_intensity.mif', study.name,
+                                          subject=subject_id, visit=visit_id)
+        self.assertDatasetCreated(
+            'norm_intens_fa_template.mif', study.name,
+            multiplicity='per_project')
+        self.assertDatasetCreated(
+            'norm_intens_wm_mask.mif', study.name,
+            multiplicity='per_project')
 
 
 class TestNODDI(BaseTestCase):
