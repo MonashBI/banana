@@ -16,6 +16,144 @@ from nianalysis.utils import split_extension
 # warp2metric
 
 
+class Fod2FixelInputSpec(MRTrix3BaseInputSpec):
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input files')
+    out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
+
+
+class Fod2FixelOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc=(""))
+
+
+class Fod2Fixel(MRTrix3Base):
+    """Fod2Fixel"""
+
+    _cmd = "fod2fixel"
+    input_spec = Fod2FixelInputSpec
+    output_spec = Fod2FixelOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self.output_spec().get()
+        return outputs
+
+
+class Fixel2VoxelInputSpec(MRTrix3BaseInputSpec):
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input files')
+    out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
+
+
+class Fixel2VoxelOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc=(""))
+
+
+class Fixel2Voxel(MRTrix3Base):
+    """Fixel2Voxel"""
+
+    _cmd = "fixel2voxel"
+    input_spec = Fixel2VoxelInputSpec
+    output_spec = Fixel2VoxelOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self.output_spec().get()
+        return outputs
+
+
+class FixelCorrespondenceInputSpec(MRTrix3BaseInputSpec):
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input files')
+    out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
+
+
+class FixelCorrespondenceOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc=(""))
+
+
+class FixelCorrespondence(MRTrix3Base):
+    """FixelCorrespondence"""
+
+    _cmd = "fixelcorrespondence"
+    input_spec = FixelCorrespondenceInputSpec
+    output_spec = FixelCorrespondenceOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self.output_spec().get()
+        return outputs
+
+
+class FixelCFEStatsInputSpec(MRTrix3BaseInputSpec):
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input files')
+    out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
+
+
+class FixelCFEStatsOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc=(""))
+
+
+class FixelCFEStats(MRTrix3Base):
+    """FixelCFEStats"""
+
+    _cmd = "fixelcfestats"
+    input_spec = FixelCFEStatsInputSpec
+    output_spec = FixelCFEStatsOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self.output_spec().get()
+        return outputs
+
+
+class TckSiftInputSpec(MRTrix3BaseInputSpec):
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input files')
+    out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
+
+
+class TckSiftOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc=(""))
+
+
+class TckSift(MRTrix3Base):
+    """TckSift"""
+
+    _cmd = "tcksift"
+    input_spec = TckSiftInputSpec
+    output_spec = TckSiftOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self.output_spec().get()
+        return outputs
+
+
+class Warp2MetricInputSpec(MRTrix3BaseInputSpec):
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
+                   desc='input files')
+    out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
+
+
+class Warp2MetricOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc=(""))
+
+
+class Warp2Metric(MRTrix3Base):
+    """Warp2Metric"""
+
+    _cmd = "warp2metric"
+    input_spec = Warp2MetricInputSpec
+    output_spec = Warp2MetricOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self.output_spec().get()
+        return outputs
+
+
 class ResponseSDInputSpec(NipypeResponseSDInputSpec):
 
     algorithm = traits.Str(mandatory=True, argstr='%s', position=0,
@@ -74,7 +212,8 @@ class AverageResponse(MRTrix3Base):
 
 class EstimateFODInputSpec(MRTrix3BaseInputSpec):
 
-    algorithm = traits.Enum('csd', 'msmt_csd', mandatory=True, position=0,
+    algorithm = traits.Enum('csd', 'msmt_csd', argstr='%s', mandatory=True,
+                            position=0,
                             desc="Algorithm used for CSD estimation")
 
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
