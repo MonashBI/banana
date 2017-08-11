@@ -172,7 +172,7 @@ class AverageReponseInputSpec(MRTrix3BaseInputSpec):
         position=0, desc="Average response")
 
     out_file = File(
-        genfile=True, argstr='%s', mandatory=True, position=-1,
+        genfile=True, argstr='%s', position=-1,
         desc=("the output spherical harmonics coefficients image"))
 
 
@@ -189,7 +189,7 @@ class AverageResponse(MRTrix3Base):
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
-        outputs['out_file'] = os.path.abspath(self.inputs.out_file)
+        outputs['out_file'] = os.path.abspath(self._gen_outfilename())
         return outputs
 
     def _gen_filename(self, name):

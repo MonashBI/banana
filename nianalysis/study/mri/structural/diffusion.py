@@ -408,10 +408,10 @@ class DiffusionStudy(T2Study):
             joinfield=['responses'])
         join_visits = pipeline.create_join_visits_node(
             Chain(['responses']), name='join_visits', joinfield=['responses'])
-        avg_response = pipeline.create_join_visits_node(
-            AverageResponse(), name='avg_response', joinfield=['in_files'])
+        avg_response = pipeline.create_node(AverageResponse(),
+                                            name='avg_response')
         # Connect inputs
-        pipeline.connect_input('response', join_subjects, 'response')
+        pipeline.connect_input('response', join_subjects, 'responses')
         # Connect inter-nodes
         pipeline.connect(join_subjects, 'responses', join_visits, 'responses')
         pipeline.connect(join_visits, 'responses', avg_response, 'in_files')
