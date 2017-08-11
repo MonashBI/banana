@@ -8,13 +8,6 @@ from nipype.interfaces.mrtrix3.preprocess import (
     ResponseSDInputSpec as NipypeResponseSDInputSpec)
 from nianalysis.utils import split_extension
 
-# fod2fixel
-# fixel2voxel
-# fixelcorrespondence
-# fixelcfestats
-# tcksift
-# warp2metric
-
 
 class Fod2FixelInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
