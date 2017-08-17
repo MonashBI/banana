@@ -48,12 +48,12 @@ class TestQSM(TestCase):
                 'MNI_to_T1_warp': Dataset('test_MNI_to_T1_warp', nifti_gz_format),
                 'T1_to_MNI_warp': Dataset('test_T1_to_MNI_warp', nifti_gz_format),
                 'T1_to_MNI_mat': Dataset('test_T1_to_MNI_mat', text_matrix_format),
-                #'first_segmentation_in_qsm': Dataset('test_first_segmentation_in_qsm', nifti_gz_format),
+                'first_segmentation_in_qsm': Dataset('test_first_segmentation_in_qsm', nifti_gz_format),
                 'qsm': Dataset('test_analysis_qsm', nifti_gz_format)
                 #'right_dentate_in_qsm': Dataset('test_analysis_right_dentate_in_qsm', nifti_gz_format),
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
                 })
-        study.calc_first_masks().run(work_dir=self.work_dir, plugin='MultiProc')
+        study.analysis_pipeline().run(work_dir=self.work_dir, plugin='MultiProc')
         self.assertDatasetCreated(dataset_name='left_putamen_in_qsm.nii.gz', study_name=study.name)
         #self.assertDatasetCreated(multiplicity='per_project',dataset_name='qsm_summary.csv', study_name=study.name)
         
