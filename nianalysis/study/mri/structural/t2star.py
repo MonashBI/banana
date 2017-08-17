@@ -908,13 +908,13 @@ class T2StarStudy(MRIStudy):
     def frontal_wm_masks(self, **options):
         return self._mask_pipeline('frontal_wm')    
        
-#    def _lookup_study_structures(self, study_name):
-#        if study_name in ['ASPREE', 'FRDA']:
-#            structure_list = ['dentate_nuclei', 'caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra', 'frontal_wm']
-#        else:
-#            raise NiAnalysisError(
-#                    "Invalid study_name in _lookup_study_structures: {study_name}".format(study_name=study_name))
-#        return structure_list
+    def _lookup_study_structures(self, study_name):
+        if study_name in ['ASPREE', 'FRDA']:
+            structure_list = ['dentate_nuclei', 'caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra', 'frontal_wm']
+        else:
+            raise NiAnalysisError(
+                    "Invalid study_name in _lookup_study_structures: {study_name}".format(study_name=study_name))
+        return structure_list
         
     def analysis_pipeline(self, **options):
         
