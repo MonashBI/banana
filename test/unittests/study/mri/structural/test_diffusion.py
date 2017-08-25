@@ -5,11 +5,12 @@ from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
 from nianalysis.data_formats import (  # @IgnorePep8
-    mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format)
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+    mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
+    text_format)
+from nianalysis.testing import BaseTestCase, BaseMultiSubjectTestCase  # @IgnorePep8 @Reimport
 
 
-class TestDiffusion(TestCase):
+class TestDiffusion(BaseTestCase):
 
     def test_preprocess(self):
         study = self.create_study(
@@ -53,19 +54,64 @@ class TestDiffusion(TestCase):
             work_dir=self.work_dir)
         self.assertDatasetCreated('tensor.nii.gz', study.name)
 
+    def test_response(self):
+        study = self.create_study(
+            DiffusionStudy, 'response', {
+                'bias_correct': Dataset('bias_correct', nifti_gz_format),
+                'brain_mask': Dataset('brain_mask', nifti_gz_format),
+                'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.response_pipeline().run(
+            work_dir=self.work_dir)
+        self.assertDatasetCreated('response.txt', study.name)
+
     def test_fod(self):
         study = self.create_study(
             DiffusionStudy, 'fod', {
                 'bias_correct': Dataset('bias_correct', nifti_gz_format),
                 'brain_mask': Dataset('brain_mask', nifti_gz_format),
                 'grad_dirs': Dataset('gradient_dirs', fsl_bvecs_format),
+                'response': Dataset('response', text_format),
                 'bvalues': Dataset('bvalues', fsl_bvals_format)})
         study.fod_pipeline().run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('tensor.nii.gz', study.name)
+        self.assertDatasetCreated('fod.mif', study.name)
 
 
-class TestNODDI(TestCase):
+class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
+
+    def test_intensity_normalization(self):
+        study = self.create_study(
+            DiffusionStudy, 'intens_norm', {
+                'bias_correct': Dataset('biascorrect', nifti_gz_format),
+                'brain_mask': Dataset('brainmask', nifti_gz_format),
+                'grad_dirs': Dataset('gradientdirs', fsl_bvecs_format),
+                'bvalues': Dataset('bvalues', fsl_bvals_format)})
+        study.intensity_normalisation_pipeline().run(
+            work_dir=self.work_dir)
+        for subject_id in self.subject_ids:
+            for visit_id in self.visit_ids(subject_id):
+                self.assertDatasetCreated('norm_intensity.mif', study.name,
+                                          subject=subject_id, visit=visit_id)
+        self.assertDatasetCreated(
+            'norm_intens_fa_template.mif', study.name,
+            multiplicity='per_project')
+        self.assertDatasetCreated(
+            'norm_intens_wm_mask.mif', study.name,
+            multiplicity='per_project')
+
+    def test_average_response(self):
+        study = self.create_study(
+            DiffusionStudy, 'response', {
+                'response': Dataset('response', text_format)})
+        study.average_response_pipeline().run(work_dir=self.work_dir)
+        for subject_id in self.subject_ids:
+            for visit_id in self.visit_ids(subject_id):
+                self.assertDatasetCreated('avg_response.txt', study.name,
+                                          subject=subject_id, visit=visit_id)
+
+
+class TestNODDI(BaseTestCase):
 
     def test_concatenate(self):
         study = self.create_study(
