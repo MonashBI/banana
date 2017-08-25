@@ -202,7 +202,7 @@ class DiffusionStudy(T2Study):
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
-        pipeline.connect(fsl_grads, 'out', bias_correct, 'fslgrad')
+        pipeline.connect(fsl_grads, 'out', bias_correct, 'grad_fsl')
         # Connect to inputs
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
@@ -534,7 +534,7 @@ class DiffusionStudy(T2Study):
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
         # Connect between nodes
         pipeline.connect(extract_b0s, 'out_file', mean, 'in_files')
-        pipeline.connect(fsl_grads, 'out', extract_b0s, 'fslgrad')
+        pipeline.connect(fsl_grads, 'out', extract_b0s, 'grad_fsl')
         pipeline.connect(mean, 'out_file', mrconvert, 'in_file')
         # Connect outputs
         pipeline.connect_output('primary', mrconvert, 'out_file')
