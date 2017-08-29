@@ -2,7 +2,7 @@ from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, File, TraitedSpec)
 import nibabel as nib
 import numpy as np
-from sklearn.decomposition import FastICA
+from sklearn.decomposition import FastICA, PCA
 from nipype.utils.filemanip import split_filename
 import os
 
