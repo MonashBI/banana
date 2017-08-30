@@ -28,10 +28,10 @@ params.TE = echoTimes(2)-echoTimes(1); % 14.76 = (22.14-7.38)
 params.B0 = 3;
 
 % opti params
-%params.tol_step1 = 0.04;
-%params.tol_step1 = 0.1;
-%params.tol_step2 = 0.01;
-%params.Kthreshold = 0.1;
+%params.tol_step1 = 0.01;
+%params.tol_step1 = 0.01;
+%params.tol_step2 = 0.001;
+%params.Kthreshold = 0.5;
 
 % Step 1: Unwrap phase
 % Apply Laplacian unwrapping
