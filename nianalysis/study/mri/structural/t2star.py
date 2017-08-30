@@ -309,7 +309,7 @@ class T2StarStudy(MRIStudy):
                 
         t2sreg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='T2s2T1'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=30)
+                       out_prefix='T2s2T1'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=60)
         pipeline.connect_input('betted_T1', t2sreg, 'ref_file')
         pipeline.connect_input('betted_T2s', t2sreg, 'input_file')
         pipeline.connect_output('T2s_to_T1_mat', t2sreg, 'regmat')
@@ -334,7 +334,7 @@ class T2StarStudy(MRIStudy):
                 
         t1reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T1_to_MNI'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=30)
+                       out_prefix='T1_to_MNI'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=120)
         t1reg.inputs.ref_file = pipeline.option('atlas_template')
         
         pipeline.connect_input('betted_T1', t1reg, 'input_file')
@@ -369,7 +369,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input(self._lookup_l_tfm_to_name('MNI'), merge_trans, 'in1')
 
         apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
+            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=120)
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         apply_trans.inputs.invert_transform_flags = [True, False]
@@ -392,7 +392,7 @@ class T2StarStudy(MRIStudy):
         # Use initial SUIT mask to mask out T1 and then register SUIT to T1 only in cerebellum areas
         t1reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T1_to_SUIT'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=30)
+                       out_prefix='T1_to_SUIT'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=120)
         t1reg.inputs.ref_file = pipeline.option('SUIT_template')
         
         # Interpolate SUIT into T1 for QC
