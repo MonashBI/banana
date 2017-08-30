@@ -43,12 +43,14 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='qsmrecon',
             inputs=[DatasetSpec('raw_coils', directory_format),
-                    DatasetSpec('opti_betted_T2s_mask', nifti_gz_format)],
+                    DatasetSpec('betted_T2s_mask', nifti_gz_format)],
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format)],
             description="Resolve QSM from t2star coils",
-            default_options={'qsm_echo_times': [7.38, 22.14]},
+            default_options={'qsm_echo_times': [7.38, 22.14],
+                             'qsm_num_channels': 32,
+                             'swi_coils_filename': 'T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil'},
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             options=options)
@@ -57,14 +59,24 @@ class T2StarStudy(MRIStudy):
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
                                        wall_time=30, memory=16000)
+        prepare.inputs.echo_times = pipeline.option('qsm_echo_times')
+        prepare.inputs.num_channels = pipeline.option('qsm_num_channels')
+        prepare.inputs.base_filename = pipeline.option('swi_coils_filename')
         pipeline.connect_input('raw_coils', prepare, 'in_dir')
+        
+        erosion = pipeline.create_node(interface=fsl.ErodeImage(), name='mask_erosion',
+                                       requirements=[fsl5_req],
+                                       wall_time=15, memory=12000)
+        erosion.inputs.kernel_shape = 'sphere'
+        erosion.inputs.kernel_size = 6;
+        pipeline.connect_input('betted_T2s_mask', erosion, 'in_file')
         
         # Phase and QSM for dual echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
                                         requirements=[matlab2015_req],
                                         wall_time=300, memory=24000)
         qsmrecon.inputs.echo_times = pipeline.option('qsm_echo_times')
-        pipeline.connect_input('opti_betted_T2s_mask', qsmrecon, 'mask_file')
+        pipeline.connect(erosion, 'out_file', qsmrecon, 'mask_file')
         pipeline.connect(prepare,'out_dir', qsmrecon, 'in_dir')
         
         # Use geometry from scanner image
@@ -95,7 +107,9 @@ class T2StarStudy(MRIStudy):
             inputs=[DatasetSpec('raw_coils', directory_format)],
             outputs=[DatasetSpec('t2s', nifti_gz_format)],
             description="Perform preprocessing on raw coils",
-            default_options={},
+            default_options={'qsm_echo_times': [7.38, 22.14],
+                             'qsm_num_channels': 32,
+                             'swi_coils_filename': 'T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil'},
             citations=[matlab_cite],
             version=1,
             options=options)
@@ -106,8 +120,11 @@ class T2StarStudy(MRIStudy):
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
                                        wall_time=30, memory=16000)
+        prepare.inputs.echo_times = pipeline.option('qsm_echo_times')
+        prepare.inputs.num_channels = pipeline.option('qsm_num_channels')
+        prepare.inputs.base_filename = pipeline.option('swi_coils_filename')
         pipeline.connect_input('raw_coils', prepare, 'in_dir')
-        pipeline.connect_output('t2s', prepare,'out_file')
+        pipeline.connect_output('t2s', prepare, 'out_file')
         
         return pipeline
 
@@ -115,16 +132,14 @@ class T2StarStudy(MRIStudy):
        
         pipeline = self.create_pipeline(
             name='optiBET_T1',
-            inputs=[DatasetSpec('t1', nifti_gz_format),
+            inputs=[DatasetSpec('betted_T1', nifti_gz_format),
                     DatasetSpec('T1_to_MNI_mat', text_matrix_format),
                     DatasetSpec('MNI_to_T1_warp', nifti_gz_format)],
             outputs=[DatasetSpec('opti_betted_T1', nifti_gz_format),
                      DatasetSpec('opti_betted_T1_mask', nifti_gz_format)],
             description=("python implementation of optiBET.sh"),
-            default_options={'MNI_template_T1': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz',
-                             'MNI_template_mask': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
+            default_options={'MNI_template_T1': self._lookup_template_path('MNI'),
+                             'MNI_template_mask': self._lookup_template_mask_path('MNI')},
             version=1,
             citations=[fsl_cite, ants19_req],
             options=options)
@@ -146,7 +161,7 @@ class T2StarStudy(MRIStudy):
         
         pipeline.connect(fill_holes,'out_file', apply_trans, 'input_image')
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect_input('t1', apply_trans, 'reference_image')
+        pipeline.connect_input('betted_t1', apply_trans, 'reference_image')
         
         maths1 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
@@ -156,7 +171,7 @@ class T2StarStudy(MRIStudy):
         maths2 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
             name='mask', requirements=[fsl5_req], memory=16000, wall_time=5)
-        pipeline.connect_input('t1', maths2, 'in_file')
+        pipeline.connect_input('betted_t1', maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
 
         pipeline.connect_output('opti_betted_T1_mask', maths1, 'out_file')
@@ -169,17 +184,15 @@ class T2StarStudy(MRIStudy):
        
         pipeline = self.create_pipeline(
             name='optiBET_T2',
-            inputs=[DatasetSpec('t2s', nifti_gz_format),
+            inputs=[DatasetSpec('betted_T2s', nifti_gz_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format),
                     DatasetSpec('T1_to_MNI_mat', text_matrix_format),
                     DatasetSpec('MNI_to_T1_warp', nifti_gz_format)],
             outputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format),
                      DatasetSpec('opti_betted_T2s_mask', nifti_gz_format)],
             description=("python implementation of optiBET.sh"),
-            default_options={'MNI_template_T1': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz',
-                             'MNI_template_mask_T2s': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
+            default_options={'MNI_template_T1': self._lookup_template_path('MNI'),
+                             'MNI_template_mask_T2s': self._lookup_template_mask_path('MNI')},
             version=1,
             citations=[fsl_cite, ants19_req, matlab2015_req],
             options=options)
@@ -202,7 +215,7 @@ class T2StarStudy(MRIStudy):
         
         pipeline.connect(fill_holes,'out_file', apply_trans, 'input_image')
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect_input('t2s', apply_trans, 'reference_image')
+        pipeline.connect_input('betted_T2s', apply_trans, 'reference_image')
         
         maths1 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
@@ -212,7 +225,7 @@ class T2StarStudy(MRIStudy):
         maths2 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
             name='mask', requirements=[fsl5_req], memory=16000, wall_time=5)
-        pipeline.connect_input('t2s', maths2, 'in_file')
+        pipeline.connect_input('betted_T2s', maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
 
         pipeline.connect_output('opti_betted_T2s_mask', maths1, 'out_file')
@@ -236,10 +249,17 @@ class T2StarStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
         
+        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
+                                    name='n4_bias_correction', requirements=[ants19_req],
+                                    wall_time=60, memory=12000)
+        bias.inputs.n_iterations = [90,90,30,90]
+        bias.inputs.convergence_threshold = 5e-7
+        pipeline.connect_input('t1', bias, 'input_image')
+        
         bet = pipeline.create_node(
             fsl.BET(frac=0.15, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
             
-        pipeline.connect_input('t1', bet, 'in_file')
+        pipeline.connect(bias,'output_image', bet, 'in_file')
         pipeline.connect_output('betted_T1', bet, 'out_file')
         pipeline.connect_output('betted_T1_mask', bet, 'mask_file')
         
@@ -258,12 +278,19 @@ class T2StarStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
         
+        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
+                                    name='n4_bias_correction', requirements=[ants19_req],
+                                    wall_time=60, memory=12000)
+        bias.inputs.n_iterations = [90,90,30,90]
+        bias.inputs.convergence_threshold = 5e-7
+        pipeline.connect_input('t2s', bias, 'input_image')
+        
         bet = pipeline.create_node(
-            fsl.BET(frac=0.1, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
-            
-        pipeline.connect_input('t2s', bet, 'in_file')
+            fsl.BET(frac=0.3, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
+        pipeline.connect(bias,'output_image', bet, 'in_file')
         pipeline.connect_output('betted_T2s', bet, 'out_file')
         pipeline.connect_output('betted_T2s_mask', bet, 'mask_file')
+        
         return pipeline
     
     def linearT2sToT1(self, **options):
@@ -392,7 +419,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_output('SUIT_in_T1', apply_trans_inv, 'output_image')
         
         return pipeline    
-        
+       
     def qsmInMNI(self, **options):
         
         pipeline = self.create_pipeline(
@@ -402,9 +429,8 @@ class T2StarStudy(MRIStudy):
                     DatasetSpec('T1_to_MNI_mat', text_matrix_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
             outputs=[DatasetSpec('qsm_in_mni', nifti_gz_format)],
-            description=("Transform data from T2s to MNI space"),
-            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz'},
+            description=("Transform QSM data from T2s to MNI space"),
+            default_options={'MNI_template': self._lookup_template_path('MNI')},
             version=1,
             citations=[fsl_cite],
             options=options)
@@ -430,6 +456,44 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_output('qsm_in_mni', apply_trans, 'output_image')
 
         pipeline.assert_connected()
+        return pipeline
+        
+    def t2sInMNI(self, **options):
+        
+        pipeline = self.create_pipeline(
+            name='ANTsApplyTransform',
+            inputs=[DatasetSpec('betted_T2s', nifti_gz_format),
+                    DatasetSpec('T1_to_MNI_warp', nifti_gz_format),
+                    DatasetSpec('T1_to_MNI_mat', text_matrix_format),
+                    DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
+            outputs=[DatasetSpec('t2s_in_mni', nifti_gz_format)],
+            description=("Transform magnitude data from T2s to MNI space"),
+            default_options={'MNI_template': self._lookup_template_path('MNI')},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        #cp_geom = pipeline.create_node(fsl.CopyGeom(), name='copy_geomery', requirements=[fsl5_req], memory=8000, wall_time=5)
+        #pipeline.connect_input('qsm', cp_geom, 'dest_file')
+        #pipeline.connect_input('t2s', cp_geom, 'in_file')
+        
+        merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
+        pipeline.connect_input('T1_to_MNI_warp', merge_trans, 'in1')
+        pipeline.connect_input('T1_to_MNI_mat', merge_trans, 'in2')
+        pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in3')
+
+        apply_trans = pipeline.create_node(
+            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
+        apply_trans.inputs.reference_image = pipeline.option('MNI_template')
+        apply_trans.inputs.interpolation = 'Linear'
+        apply_trans.inputs.input_image_type = 3
+        
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        #pipeline.connect(cp_geom, 'out_file', apply_trans, 'input_image')
+        pipeline.connect_input('t2s', apply_trans, 'input_image')
+        pipeline.connect_output('t2s_in_mni', apply_trans, 'output_image')
+
+        pipeline.assert_connected()
         return pipeline    
 
     def qsmInSUIT(self, **options):
@@ -441,7 +505,7 @@ class T2StarStudy(MRIStudy):
                     DatasetSpec('T1_to_SUIT_mat', text_matrix_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
             outputs=[DatasetSpec('qsm_in_suit', nifti_gz_format)],
-            description=("Transform data from T2s to SUIT space"),
+            description=("Transform QSM data from T2s to SUIT space"),
             default_options={'SUIT_template': self._lookup_template_path('SUIT')},
             version=1,
             citations=[fsl_cite],
@@ -480,8 +544,7 @@ class T2StarStudy(MRIStudy):
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
             outputs=[DatasetSpec('mni_in_qsm', nifti_gz_format)],
             description=("Transform data from T2s to MNI space"),
-            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz'},
+            default_options={'MNI_template': self._lookup_template_path('MNI')},
             version=1,
             citations=[ants19_req],
             options=options)
@@ -594,7 +657,7 @@ class T2StarStudy(MRIStudy):
         elif structure_name in ['caudate', 'putamen', 'pallidum', 'thalamus']:
             atlas = os.path.abspath(os.path.join(
                 os.environ['FSLDIR'],'data','atlases',
-                'HarvardOxford','HarvardOxford-sub-prob-2mm.nii.gz'))
+                'HarvardOxford','HarvardOxford-sub-prob-1mm.nii.gz'))
         elif structure_name in ['red_nuclei', 'substantia_nigra']:
             atlas = os.path.abspath(os.path.join(
                 os.path.dirname(nianalysis.__file__),
@@ -630,13 +693,22 @@ class T2StarStudy(MRIStudy):
                     "Invalid structure_name in _lookup_structure_space: {structure_name}".format(structure_name=structure_name))
         return space
     
+    def _lookup_template_mask_path(self, space_name):
+        if space_name == 'MNI':
+            template_path = os.path.abspath(os.path.join(os.environ['FSLDIR'],
+                                                         'data','standard','MNI152_T1_1mm_brain_mask.nii.gz'))
+        else:
+            raise NiAnalysisError(
+                    "Invalid space_name in _lookup_template_path: {space_name}".format(space_name=space_name))
+        return template_path
+    
     def _lookup_template_path(self, space_name):
         if space_name == 'SUIT':
             template_path = os.path.abspath(os.path.join(os.path.dirname(nianalysis.__file__),
                                                           'atlases','SUIT.nii'))
         elif space_name == 'MNI':
             template_path = os.path.abspath(os.path.join(os.environ['FSLDIR'],
-                                                         'data','standard','MNI152_T1_2mm_brain.nii.gz'))
+                                                         'data','standard','MNI152_T1_1mm_brain.nii.gz'))
         else:
             raise NiAnalysisError(
                     "Invalid space_name in _lookup_template_path: {space_name}".format(space_name=space_name))
@@ -1019,6 +1091,41 @@ class T2StarStudy(MRIStudy):
         
         return pipeline
     
+    def t2s_atlas(self, **options):
+        
+        pipeline = self.create_pipeline(
+            name='T2s_Atlas',
+            inputs=DatasetSpec('t2s_in_mni', nifti_gz_format),
+            outputs=DatasetSpec('t2s_atlas', nifti_gz_format),
+            default_options={},
+            description=("Cohort average of T2s magnitude images in MNI space."),
+            version=1,
+            citations=[ants19_req, fsl5_req],
+            options=options)
+                  
+        identity_node = pipeline.create_join_subjects_node(interface=IdentityInterface(['in_subject_id','in_visit_id','t2s']),
+                                                         name='Join_Subjects_Identity',
+                                                         joinfield=['in_subject_id','in_visit_id','t2s_in_mni'],
+                                                         wall_time=60, memory=4000)
+        
+        pipeline.connect_input('t2s_in_mni', identity_node, 't2s_in_mni')
+        pipeline.connect_subject_id(identity_node, 'in_subject_id')
+        pipeline.connect_visit_id(identity_node,'in_visit_id')
+        
+        average_t2s = pipeline.create_join_visits_node(
+            interface=ants.AverageImages(), 
+            name='average_t2s',
+            joinfield=['in_subject_id','in_visit_id','t2s_in_mni'],
+            wall_time=300, 
+            memory=8000)
+        pipeline.connect(identity_node, 't2s_in_mni', average_t2s, 'images')
+        pipeline.connect(identity_node, 'in_subject_id', average_t2s, 'in_subject_id')
+        pipeline.connect(identity_node, 'in_visit_id', average_t2s, 'in_visit_id')
+        
+        pipeline.connect_output('t2s_atlas', average_t2s, 'output_average_image')
+        
+        return pipeline
+    
     _dataset_specs = set_dataset_specs(
         
         # Primary inputs
@@ -1074,7 +1181,8 @@ class T2StarStudy(MRIStudy):
                                  " high magnitude")),
         
         # Data for analysis in MNI space (and quality control)                                   
-        DatasetSpec('qsm_in_mni', nifti_gz_format, qsmInMNI),
+        DatasetSpec('qsm_in_mni', nifti_gz_format, qsmInMNI),                              
+        DatasetSpec('t2s_in_mni', nifti_gz_format, t2sInMNI),
         DatasetSpec('mni_in_qsm', nifti_gz_format, mniInT2s),
         
         # Data for analysis in SUIT space (and quality control)                                   
@@ -1100,4 +1208,5 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('right_frontal_wm_in_qsm', nifti_gz_format, frontal_wm_masks),
     
         # Study-specific analysis summary files
-        DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'))
+        DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'),
+        DatasetSpec('t2s_atlas', nifti_gz_format, t2s_atlas, multiplicity='per_project'))

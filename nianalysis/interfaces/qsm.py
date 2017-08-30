@@ -6,6 +6,9 @@ import os
 
 class PrepareInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
+    base_filename = traits.Str(value='T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil', mandatory=True, desc='Base filename of coil files');
+    echo_times = traits.List(traits.Float(), mandatory=True, value=[20.0], desc='Echo times in ms')
+    num_channels = traits.Int(value=32, mandatory=True, desc='Number of channels')
 
 class PrepareOutputSpec(TraitedSpec):
     out_dir = Directory(exists=True)
@@ -20,25 +23,40 @@ class Prepare(BaseInterface):
         script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
-            "Prepare_Raw_Channels('{in_dir}', '{out_dir}');\n"
+            "Prepare_Raw_Channels('{in_dir}', '{filename}', {echo_times}, {num_channels}, '{out_dir}', '{out_file}');\n"
             "exit;\n").format(
                 in_dir=self.inputs.in_dir,
-                out_dir=self.working_dir,
+                filename=self.inputs.base_filename,
+                out_dir=self._gen_filename('out_dir'),
+                out_file=self._gen_filename('out_file'),
+                echo_times=self.inputs.echo_times,
+                num_channels=self.inputs.num_channels,
                 matlab_dir=os.path.abspath(os.path.join(
                     os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
         mlab = MatlabCommand(script=script, mfile=True)
         result = mlab.run()
         return result.runtime
-
+    
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_dir'] = os.path.join(self.working_dir, 'Raw')
-        outputs['out_file'] = os.path.join(
-            self.working_dir,
-            'Raw',
-            'Raw_MAGNITUDE.nii.gz')
+        outputs['out_dir'] = self._gen_filename('out_dir')
+        outputs['out_file'] = self._gen_filename('out_file')
+
         return outputs
+    
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = os.path.join(self.working_dir,
+                                 'Raw',
+                                 'Raw_MAGNITUDE.nii.gz')
+        elif name == 'out_dir':
+            fname = os.path.join(self.working_dir,
+                                 'Raw')
+        else:
+            assert False
+        return fname
+    
 
 class FillHolesInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, mandatory=True)
