@@ -35,9 +35,9 @@ class TestQSM(TestCase):
 
     def test_optibet(self):
         study = self.create_study(
-            T2StarStudy, 'test_n4_opti', input_datasets={
+            T2StarStudy, 'test_se', input_datasets={
                 't1': Dataset('t1', nifti_gz_format),
-                'raw_coils': Dataset('swi_coils', zip_format)
+                'raw_coils': Dataset('swi_coils_se', zip_format)
                 #'opti_betted_T2s_mask': Dataset('test_opti_betted_T2s_mask', nifti_gz_format),
                 #'betted_T2s_mask': Dataset('test_1mm_betted_T2s_mask', nifti_gz_format),
                 #'t2s': Dataset('test_1mm_t2s', nifti_gz_format),
@@ -53,8 +53,8 @@ class TestQSM(TestCase):
                 #'right_dentate_in_qsm': Dataset('test_analysis_right_dentate_in_qsm', nifti_gz_format),
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
                 })
-        study.optiBET_T2s().run(work_dir=self.work_dir, plugin='MultiProc')
-        self.assertDatasetCreated(dataset_name='opti_betted_T2s.nii.gz', study_name=study.name)
+        study.bet_T2s(qsm_echo_times=[20]).run(work_dir=self.work_dir, plugin='MultiProc')
+        self.assertDatasetCreated(dataset_name='betted_T2s.nii.gz', study_name=study.name)
         #self.assertDatasetCreated(multiplicity='per_project',dataset_name='qsm_summary.csv', study_name=study.name)
         
 #    def test_ants(self):    
