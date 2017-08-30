@@ -334,7 +334,7 @@ class T2StarStudy(MRIStudy):
                 
         t1reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T1_to_MNI'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=120)
+                       out_prefix='T1_to_MNI'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)
         t1reg.inputs.ref_file = pipeline.option('atlas_template')
         
         pipeline.connect_input('betted_T1', t1reg, 'input_file')
