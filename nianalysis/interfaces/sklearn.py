@@ -1,8 +1,9 @@
+from __future__ import absolute_import
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, File, TraitedSpec)
 import nibabel as nib
 import numpy as np
-from sklearn.decomposition import FastICA, PCA
+from sklearn.decomposition import FastICA as fICA
 from nipype.utils.filemanip import split_filename
 import os
 
@@ -34,6 +35,7 @@ class FastICA(BaseInterface):
     def _run_interface(self, runtime):
         fname = self.inputs.volume
         img = nib.load(fname)
+        comp = self.inputs.n_components
         data = np.array(img.get_data())
 
         n_voxels = data.shape[0]*data.shape[1]*data.shape[2]
@@ -48,7 +50,7 @@ class FastICA(BaseInterface):
             outname = 'tICA'
 
         # Run ICA
-        ica = FastICA(self.inputs.n_components)
+        ica = fICA(n_components=comp)
         ica.fit(ica_input)
         S_ = ica.fit_transform(ica_input)
         if self.inputs.ica_type == 'spatial':
@@ -62,9 +64,9 @@ class FastICA(BaseInterface):
                                data.shape[2], self.inputs.n_components))
         ica_tc = np.zeros((data.shape[3], self.inputs.n_components))
         for i in range(self.inputs.n_components):
-            data = sm[:, i]-np.mean(sm[:, i])
-            num = np.mean(data**3)
-            denom = (np.mean(data**2))**1.5
+            dt = sm[:, i]-np.mean(sm[:, i])
+            num = np.mean(dt**3)
+            denom = (np.mean(dt**2))**1.5
             s = num / denom
             print s
             if np.sign(s) == -1:
