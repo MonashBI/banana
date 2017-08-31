@@ -149,3 +149,52 @@ class GlobalTrendRemoval(BaseInterface):
             '{}_baseline_removed.nii.gz'.format(base))
 
         return outputs
+
+
+class SUVRCalculationInputSpec(BaseInterfaceInputSpec):
+
+    volume = File(exists=True, desc='3D input file',
+                  mandatory=True)
+    base_mask = File(exists=True, desc='3D baseline mask',
+                     mandatory=True)
+
+
+class SUVRCalculationOutputSpec(TraitedSpec):
+
+    SUVR_file = File(
+        exists=True, desc='3D SUVR file')
+
+
+class SUVRCalculation(BaseInterface):
+
+    input_spec = SUVRCalculationInputSpec
+    output_spec = SUVRCalculationOutputSpec
+
+    def _run_interface(self, runtime):
+
+        fname = self.inputs.volume
+        maskname = self.inputs.base_mask
+        _, base, _ = split_filename(fname)
+
+        img = nib.load(fname)
+        data = np.array(img.get_data())
+        mask = nib.load(maskname)
+        mask = np.array(mask.get_data())
+        
+        [x, y, z] = np.where(mask > 0)
+        ii = np.arange(x.shape[0])
+        mean_uptake = np.mean(data[x[ii], y[ii], z[ii]])
+        new_data = data / mean_uptake
+        im2save = nib.Nifti1Image(new_data, affine=img.affine)
+        nib.save(im2save, '{}_SUVR.nii.gz'.format(base))
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        fname = self.inputs.volume
+
+        _, base, _ = split_filename(fname)
+
+        outputs["SUVR_file"] = os.path.abspath(
+            '{}_SUVR.nii.gz'.format(base))
+
+        return outputs

@@ -12,7 +12,7 @@ class TestdPET(BaseTestCase):
     def test_reg(self):
         study = self.create_study(
             DynamicPETStudy, 'reg', input_datasets={
-                'registered_volumes': Dataset('reg_registered_volumes', nifti_gz_format)})
+                'pet_volumes': Dataset('pet_image', nifti_gz_format)})
         study.ICA_pipeline().run(work_dir=self.work_dir,
                                              plugin='Linear')
         self.assertDatasetCreated('decomposed_file.nii.gz', study.name)
