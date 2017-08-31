@@ -174,8 +174,8 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
             CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(**options)
         # Edit the coregister pipeline from CoregisteredStudy
         pipeline.default_options['interpolate'] = default_interp
-        pipeline.options['interpolate'] = options.get('interpolate',
-                                                      default_interp)
+        pipeline._options['interpolate'] = options.get('interpolate',
+                                                       default_interp)
         pipeline.node('flirt').inputs.apply_xfm = pipeline.option(
             'interpolate') is not None
         if pipeline.option('interpolate') is not None:
