@@ -9,7 +9,7 @@ from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestUTE(TestCase):
-
+    '''
     def test_ute(self):
         study = self.create_study(
             UTEStudy, 'registration', {
@@ -19,3 +19,14 @@ class TestUTE(TestCase):
         study.registration_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('ute1_registered.nii.gz', study.name)
         self.assertDatasetCreated('ute2_registered.nii.gz', study.name)
+    '''
+
+    def test_ute(self):
+        study = self.create_study(
+            UTEStudy, 'segmentation', {
+                'ute_echo1': Dataset('ute_echo1', dicom_format),
+                'ute_echo2': Dataset('ute_echo2', dicom_format),
+                'umap_ute': Dataset('umap_ute', dicom_format)})
+        study.segmentation_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('bones_mask.nii.gz', study.name)
+        self.assertDatasetCreated('air_mask.nii.gz', study.name)
