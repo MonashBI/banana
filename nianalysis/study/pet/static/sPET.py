@@ -11,9 +11,9 @@ template_path = os.path.abspath(
 
 
 class StaticPETStudy(PETStudy):
-    
+
     def suvr_pipeline(self, **options):
-        
+
         pipeline = self.create_pipeline(
             name='SUVR',
             inputs=[DatasetSpec('registered_volume', nifti_gz_format),
@@ -24,17 +24,19 @@ class StaticPETStudy(PETStudy):
             version=1,
             citations=[],
             options=options)
-    
-        suvr = pipeline.create_node(SUVRCalculation())
+
+        suvr = pipeline.create_node(SUVRCalculation(), name='SUVR')
         pipeline.connect_input('registered_volume', suvr, 'volume')
         pipeline.connect_input('base_mask', suvr, 'base_mask')
         pipeline.connect_output('SUVR_image', suvr, 'SUVR_file')
         pipeline.assert_connected()
         return pipeline
 
+    def _ica_inputs(self):
+        pass
+
     _dataset_specs = set_dataset_specs(
+        DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('base_mask', nifti_gz_format),
         DatasetSpec('SUVR_image', nifti_gz_format, suvr_pipeline),
-#         DatasetSpec('example_output', nifti_gz_format,
-#                     example_pipeline_switch),
         inherit_from=PETStudy.generated_dataset_specs())

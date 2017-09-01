@@ -5,6 +5,7 @@ from nianalysis.data_formats import (nifti_gz_format, text_format,
 from nianalysis.interfaces.sklearn import FastICA
 from nianalysis.interfaces.ants import AntsRegSyn
 import os
+from abc import abstractmethod
 
 
 template_path = os.path.abspath(
@@ -14,11 +15,19 @@ template_path = os.path.abspath(
 
 class PETStudy(Study):
 
+    @abstractmethod
+    def _ica_inputs(self):
+        pass
+
     def ICA_pipeline(self, **options):
+        return self._ICA_pipeline_factory(
+            input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
+
+    def _ICA_pipeline_factory(self, input_dataset, **options):
 
         pipeline = self.create_pipeline(
             name='ICA',
-            inputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
+            inputs=[input_dataset],
             outputs=[DatasetSpec('decomposed_file', nifti_gz_format),
                      DatasetSpec('timeseries', nifti_gz_format),
                      DatasetSpec('mixing_mat', text_format)],
