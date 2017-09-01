@@ -4,6 +4,9 @@ from nipype.interfaces.base import (
     TraitedSpec, File, Directory, CommandLineInputSpec, CommandLine, isdefined,
     traits)
 from nianalysis.utils import split_extension
+from nianalysis.exceptions import NiAnalysisError
+import numpy as np
+import nibabel as nib
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -44,8 +47,21 @@ class Dcm2niix(CommandLine):
         products = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
                     if match_re.match(f) is not None]
         if len(products) == 1:
-            products = products[0]
-        outputs['converted'] = products
+            converted = products[0]
+        elif len(products) > 1:
+            ex_file = nib.load(products[0])
+            data = ex_file.get_data()
+            merged_file = np.zeros((data.shape, len(products)))
+            for i, el in enumerate(products):
+                f = nib.load(el)
+                merged_file[:, :, :, i] = f.get_data()
+            im2save = nib.Nifti1Image(merged_file, ex_file.affine)
+            nib.save(im2save, fname)
+            converted = fname
+        else:
+            raise NiAnalysisError("No products produced by dcm2niix ({})"
+                                  .format(', '.join(os.listdir(out_dir))))
+        outputs['converted'] = converted
         return outputs
 
     def _gen_filename(self, name):
