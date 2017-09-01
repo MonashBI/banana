@@ -4,7 +4,7 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.study.mri.structural.ute import UTEStudy
 from nianalysis.data_formats import (  # @IgnorePep8
-    dicom_format, nifti_gz_format)
+    dicom_format, nifti_gz_format, text_matrix_format)
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
@@ -30,7 +30,7 @@ class TestUTE(TestCase):
         study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('sute_cont.nii.gz', study.name)
         self.assertDatasetCreated('sute_fix.nii.gz', study.name)
-    '''
+    
     
     def test_ute(self):
         study = self.create_study(
@@ -41,4 +41,19 @@ class TestUTE(TestCase):
                 'bones_mask': Dataset('bones_mask', nifti_gz_format)})
         study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('sute_cont_template.nii.gz', study.name)
-        self.assertDatasetCreated('sute_fix_template.nii.gz', study.name)
+        self.assertDatasetCreated('sute_fix_template.nii.gz', study.name)  
+    '''    
+    def test_ute(self):
+        study = self.create_study(
+            UTEStudy, 'umap_creation_ute', {
+                'ute1_registered':Dataset('ute1_registered', nifti_gz_format),
+                'ute_echo1':Dataset('ute_echo1', dicom_format),
+                'umap_ute':Dataset('umap_ute', dicom_format),
+                'template_to_ute_mat':Dataset('template_to_ute_mat', text_matrix_format),
+                'sute_cont_template':Dataset('sute_cont_template', nifti_gz_format),
+                'sute_fix_template':Dataset('sute_fix_template', nifti_gz_format)})
+        study.backwrap_to_ute_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('sute_cont_ute.nii.gz', study.name)
+        self.assertDatasetCreated('sute_fix_ute.nii.gz', study.name)
+        self.assertDatasetCreated('sute_cont_ute_background.nii.gz', study.name)
+        self.assertDatasetCreated('sute_fix_ute_background.nii.gz', study.name)

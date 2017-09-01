@@ -40,7 +40,9 @@ class CoreUmapCalc(BaseInterface):
         ute2 = nib.load(self.inputs.ute2_reg)
         
         r2star_map = 1000. *(np.log(np.array(ute1.get_data())) - np.log(np.array(ute2.get_data())))/(2.39)
-
+        nans = np.isnan(r2star_map)
+        r2star_map[nans] = 0
+        
         u_bone = 0.000001351*(r2star_map**3)-0.003617*(r2star_map**2)+3.841*r2star_map-19.46
         
         """
@@ -59,24 +61,26 @@ class CoreUmapCalc(BaseInterface):
         
         low_u = u_bone < 0.1134
         u_bone[low_u] = 0.1134
-        
-        u_soft_fixed = 0.1
-        u_air = 0.
         '''
         End of conversion
-        '''
+        '''        
+        u_soft_fixed = 0.1
+        u_air = 0.
         
         umap = 10000. * (u_air*np.array(air.get_data()) + u_bone*np.array(bones.get_data())
                        +(1-np.array(bones.get_data()))*(1-np.array(air.get_data()))*u_soft_fixed)
         
+        nans = np.isnan(umap)
+        umap[nans]=0
         save_im = nib.Nifti1Image(umap, affine = ute1.affine)
         nib.save(save_im, self._gen_filename('sute_cont_template'))
-
 
         u_bone = 0.151
         umap = 10000. * (u_air*np.array(air.get_data()) + u_bone*np.array(bones.get_data())
                        +(1-np.array(bones.get_data()))*(1-np.array(air.get_data()))*u_soft_fixed)
         
+        nans = np.isnan(umap)
+        umap[nans]=0
         save_im = nib.Nifti1Image(umap, affine = ute1.affine)
         nib.save(save_im, self._gen_filename('sute_fix_template'))
         
