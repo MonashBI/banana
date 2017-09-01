@@ -135,37 +135,40 @@ class FunctionalMRIStudy(MRIStudy):
             options=options)
 
         bet1 = pipeline.create_node(
-            BET(frac=0.1, reduce_bias=True), name='bet', wall_time=10)
+            BET(frac=0.1, reduce_bias=True), name='bet', wall_time=10,
+            requirements=[fsl5_req])
         pipeline.connect_input('t1', bet1, 'in_file')
         flirt = pipeline.create_node(
             FLIRT(out_matrix_file='linear_mat.mat',
                   out_file='linear_reg.nii.gz', searchr_x=[-30, 30],
-                  searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt')
+                  searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt',
+            wall_time=5, requirements=[fsl5_req])
         flirt.inputs.reference = pipeline.option('MNI_template')
         pipeline.connect(bet1, 'out_file', flirt, 'in_file')
         fnirt = pipeline.create_node(
             FNIRT(config_file='T1_2_MNI152_2mm',
                   fieldcoeff_file='warp_file.nii.gz'), name='fnirt',
-            wall_time=15)
+            wall_time=15, requirements=[fsl5_req])
         fnirt.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
         pipeline.connect_input('t1', fnirt, 'in_file')
-        invwarp = pipeline.create_node(InvWarp(), name='invwarp')
+        invwarp = pipeline.create_node(InvWarp(), name='invwarp', wall_time=5,
+                                       requirements=[fsl5_req])
         pipeline.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
         pipeline.connect_input('t1', invwarp, 'reference')
         applywarp = pipeline.create_node(
             ApplyWarp(interp='nn', out_file='warped_file.nii.gz'),
-            name='applywarp')
+            name='applywarp', wall_time=5, requirements=[fsl5_req])
         applywarp.inputs.in_file = pipeline.option('MNI_template_mask')
         pipeline.connect_input('t1', applywarp, 'ref_file')
         pipeline.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
         maths1 = pipeline.create_node(
             ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
-            name='binarize')
+            name='binarize', wall_time=5, requirements=[fsl5_req])
         pipeline.connect(applywarp, 'out_file', maths1, 'in_file')
         maths2 = pipeline.create_node(
             ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
-            name='mask')
+            name='mask', wall_time=5, requirements=[fsl5_req])
         pipeline.connect_input('t1', maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
 
