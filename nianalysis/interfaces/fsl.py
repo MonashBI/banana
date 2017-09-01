@@ -4,14 +4,9 @@ from string import Template
 from nibabel import load
 from nipype.interfaces.base import (
     File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec,
-    Directory, InputMultiPath)
+    Directory)
 from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
-from nipype.interfaces.base import (CommandLineInputSpec, CommandLine)
-import nipype.pipeline.engine as pe
-import nipype.interfaces.utility as util
-import nipype.interfaces.fsl as fsl
-from nipype.utils.filemanip import list_to_filename
 import logging
 
 
