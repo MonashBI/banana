@@ -1,7 +1,9 @@
 import os.path
+import re
 from nipype.interfaces.base import (
     TraitedSpec, File, Directory, CommandLineInputSpec, CommandLine, isdefined,
     traits)
+from nianalysis.utils import split_extension
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -36,8 +38,11 @@ class Dcm2niix(CommandLine):
         # for all filenames that end with the "generated filename".
         out_dir = self._gen_filename('out_dir')
         fname = self._gen_filename('filename') + im_ext
+        base, ext = split_extension(fname)
+        match_re = re.compile(r'(_e\d)?{}(_e\d)?{}'
+                              .format(base, ext if ext is not None else ''))
         products = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
-                    if f.endswith(fname)]
+                    if match_re.match(f) is not None]
         if len(products) == 1:
             products = products[0]
         outputs['converted'] = products
