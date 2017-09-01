@@ -51,13 +51,15 @@ class Dcm2niix(CommandLine):
         elif len(products) > 1:
             ex_file = nib.load(products[0])
             data = ex_file.get_data()
-            merged_file = np.zeros((data.shape, len(products)))
+            merged_file = np.zeros((data.shape[0], data.shape[1],
+                                    data.shape[2], len(products)))
             for i, el in enumerate(products):
                 f = nib.load(el)
                 merged_file[:, :, :, i] = f.get_data()
             im2save = nib.Nifti1Image(merged_file, ex_file.affine)
-            nib.save(im2save, fname)
-            converted = fname
+            nib.save(im2save, out_dir+fname)
+            print out_dir+fname
+            converted = out_dir+fname
         else:
             raise NiAnalysisError("No products produced by dcm2niix ({})"
                                   .format(', '.join(os.listdir(out_dir))))
