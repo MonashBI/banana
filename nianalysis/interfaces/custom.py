@@ -180,13 +180,15 @@ class SUVRCalculation(BaseInterface):
         data = np.array(img.get_data())
         mask = nib.load(maskname)
         mask = np.array(mask.get_data())
-        
+
         [x, y, z] = np.where(mask > 0)
         ii = np.arange(x.shape[0])
         mean_uptake = np.mean(data[x[ii], y[ii], z[ii]])
         new_data = data / mean_uptake
         im2save = nib.Nifti1Image(new_data, affine=img.affine)
         nib.save(im2save, '{}_SUVR.nii.gz'.format(base))
+
+        return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
