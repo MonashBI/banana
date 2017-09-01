@@ -11,7 +11,7 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
-from nianalysis.requirements import fsl5_req
+from nianalysis.requirements import fsl5_req, ants2_req, afni_req
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
@@ -206,20 +206,23 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        bet_rsfmri = antsreg.create_node(BET(), name="bet_rsfmri")
+        bet_rsfmri = antsreg.create_node(BET(), name="bet_rsfmri", wall_time=5,
+                                         requirements=[fsl5_req])
         bet_rsfmri.inputs.robust = True
         bet_rsfmri.inputs.frac = 0.4
         bet_rsfmri.inputs.mask = True
         antsreg.connect_input('unwarped_file', bet_rsfmri, 'in_file')
         epireg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='epi2T1'), name='ANTsReg')
+                       out_prefix='epi2T1'), name='ANTsReg', wall_time=7,
+            requirements=[ants2_req])
         antsreg.connect_input('betted_file', epireg, 'ref_file')
         antsreg.connect(bet_rsfmri, 'out_file', epireg, 'input_file')
 
         t1reg = antsreg.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI'), name='T1_reg')
+                       out_prefix='T12MNI'), name='T1_reg', wall_time=20,
+            requirements=[ants2_req])
         t1reg.inputs.ref_file = antsreg.option('MNI_template')
         antsreg.connect_input('betted_file', t1reg, 'input_file')
 
@@ -245,7 +248,8 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC')
+        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC', wall_time=10,
+                                   requirements=[fsl5_req])
         mel.inputs.no_bet = True
         mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
         mel.inputs.tr_sec = 2.45
@@ -282,47 +286,56 @@ class FunctionalMRIStudy(MRIStudy):
             version=1,
             citations=[fsl_cite],
             options=options)
-        bet = pipeline.create_node(BET(), name="bet")
+        bet = pipeline.create_node(BET(), name="bet", wall_time=5,
+                                   requirements=[fsl5_req])
         bet.inputs.robust = True
         pipeline.connect_input('field_map_mag', bet, 'in_file')
 
-        bet_rsfmri = pipeline.create_node(BET(), name="bet_rsfmri")
+        bet_rsfmri = pipeline.create_node(BET(), name="bet_rsfmri",
+                                          wall_time=5, requirements=[fsl5_req])
         bet_rsfmri.inputs.robust = True
         bet_rsfmri.inputs.frac = 0.4
         bet_rsfmri.inputs.mask = True
         pipeline.connect_input('rs_fmri', bet_rsfmri, 'in_file')
 
-        create_fmap = pipeline.create_node(PrepareFieldmap(), name="prepfmap")
+        create_fmap = pipeline.create_node(PrepareFieldmap(), name="prepfmap",
+                                           wall_time=5,
+                                           requirements=[fsl5_req])
         create_fmap.inputs.delta_TE = 2.46
         pipeline.connect(bet, "out_file", create_fmap, "in_magnitude")
         pipeline.connect_input('field_map_phase', create_fmap, 'in_phase')
 
-        fugue = pipeline.create_node(FUGUE(), name='fugue')
+        fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
+                                     requirements=[fsl5_req])
         fugue.inputs.unwarp_direction = 'x'
-        fugue.inputs.dwell_time = 0.000275
+        fugue.inputs.dwell_time = 0.00039
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
         pipeline.connect_input('rs_fmri', fugue, 'in_file')
 
-        flirt_t1 = pipeline.create_node(FLIRT(), name='FLIRT_T1')
+        flirt_t1 = pipeline.create_node(FLIRT(), name='FLIRT_T1', wall_time=5,
+                                        requirements=[fsl5_req])
         flirt_t1.inputs.dof = 6
         flirt_t1.inputs.out_matrix_file = 'example2hires.mat'
         pipeline.connect_input('betted_file', flirt_t1, 'reference')
         pipeline.connect(bet_rsfmri, 'out_file', flirt_t1, 'in_file')
 
-        convxfm = pipeline.create_node(ConvertXFM(), name='convertxfm')
+        convxfm = pipeline.create_node(ConvertXFM(), name='convertxfm',
+                                       wall_time=1, requirements=[fsl5_req])
         convxfm.inputs.invert_xfm = True
         convxfm.inputs.out_file = 'hires2example.mat'
         pipeline.connect(flirt_t1, 'out_matrix_file', convxfm, 'in_file')
 
-        afni_mc = pipeline.create_node(Volreg(), name='AFNI_MC')
+        afni_mc = pipeline.create_node(Volreg(), name='AFNI_MC', wall_time=5,
+                                       requirements=[afni_req])
         afni_mc.inputs.zpad = 1
         afni_mc.inputs.out_file = 'rsfmri_mc.nii.gz'
         afni_mc.inputs.oned_file = 'prefiltered_func_data_mcf.par'
 #         afni_mc.inputs.oned_matrix_save = 'motion_matrices.mat'
         pipeline.connect(fugue, 'unwarped_file', afni_mc, 'in_file')
 
-        filt = pipeline.create_node(Tproject(), name='Tproject')
+        filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
+                                    requirements=[afni_req])
         filt.inputs.stopband = (0, 0.01)
         filt.inputs.delta_t = 2.45
         filt.inputs.polort = 3
@@ -332,11 +345,13 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(bet_rsfmri, 'mask_file', filt, 'mask')
 
         meanfunc = pipeline.create_node(
-            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc')
+            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
+            wall_time=5, requirements=[fsl5_req])
         pipeline.connect(afni_mc, 'out_file', meanfunc, 'in_file')
 
         add_mean = pipeline.create_node(
-            ImageMaths(op_string='-add'), name='add_mean')
+            ImageMaths(op_string='-add'), name='add_mean', wall_time=5,
+            requirements=[fsl5_req])
         pipeline.connect(filt, 'out_file', add_mean, 'in_file')
         pipeline.connect(meanfunc, 'out_file', add_mean, 'in_file2')
 
