@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, unicode_literals
-import os.path
-import pyparsing as pp
-from pprint import pprint
-
+from __future__ import division, unicode_literals  # @IgnorePep8
 example = """MRtrix 3.0_RC1-187-gb98b6898-dirty mrregister                        Jul 19 2017
 
      mrregister: part of the MRtrix package
@@ -369,25 +365,35 @@ REFERENCES
      spread functions. Magnetic Resonance in Medicine, 2012, 67, 844-855
 """
 
+import pyparsing as pp  # @IgnorePep8
+from pprint import pprint  # @IgnorePep8
+
 
 def parse(parser, start, stop):
     lines = example.split('\n')
-    string = '\n'.join(lines[(start - 1):stop]) + '\n'
+    string = '\n'.join(lines[(start - 3):(stop - 2)]) + '\n'
     print "Parsing:\n---\n{}---".format(string)
     try:
         p = parser.parseString(string)
         pprint(p)
     except pp.ParseException as e:
-        print "Did not parse ({})\n\n:{}".format(string, e)
+        n = e.args[1]
+        print(string[:n] + u'\u2021' + string[(n + 1):])
+        print(e)
         p = None
     return p
 
+
+def indent(num):
+    return pp.White(' ', exact=num).suppress()
 
 pp.ParserElement().setWhitespaceChars('')
 word = pp.Word(pp.printables)
 space = pp.White(' ')
 
 st = word + space + word
+
+nl = pp.LineEnd().suppress()
 
 line_parts = (pp.OneOrMore(word + pp.Optional(space)) + pp.LineEnd())
 
@@ -410,7 +416,7 @@ metavar = pp.Combine(
 option = pp.Group(
     option_name +
     metavar +
-    pp.LineEnd().suppress() +
+    nl +
     desc)
 
 block_name = pp.Or((pp.Literal('SYNOPSIS'),
@@ -424,19 +430,27 @@ block_name = pp.Or((pp.Literal('SYNOPSIS'),
 option_comment = (pp.NotAny(block_name) +
                   pp.OneOrMore(word + pp.Optional(space)).setResultsName(
                       'option_comment') +
-                  pp.LineEnd() + empty_line)
+                  nl + empty_line)
 
 parser = pp.ZeroOrMore(option)
 
-title = (pp.Literal('MRtrix') + line + pp.LineEnd() +
-         pp.White(' ', exact=5).suppress() +
+title = (pp.Literal('MRtrix') + line + nl +
+         indent(5) +
          pp.Word(pp.alphas).setResultsName('cmd') +
-         pp.Literal(':') + line + pp.LineEnd())
-synopsis = (pp.Literal('SYNOPSIS') + pp.LineEnd() +
+         pp.Literal(':') + line + nl)
+synopsis = (pp.Literal('SYNOPSIS').suppress() + nl +
             pp.Combine(pp.OneOrMore(desc_line)).setResultsName('synopsis'))
-description = pp.Literal('DESCRIPTION') + pp.OneOrMore(desc_line) + empty_line
+usage = (pp.Literal('USAGE').suppress() + nl + nl +
+         indent(5) + word + space +
+         pp.Literal('[ options ]').suppress() +
+         pp.OneOrMore(space.suppress() + word) + nl + nl +
+         pp.OneOrMore(indent(8) + word + indent(6) +
+                      pp.OneOrMore(space + word) + nl + nl))
+description = (pp.Literal('DESCRIPTION').suppress() +
+               pp.OneOrMore(desc_line) + empty_line)
 
 parser = title + synopsis
+parser = usage + description
 
-p = parse(parser, 1, 8)
+p = parse(parser, 11, 44)
 print('done')
