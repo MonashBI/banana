@@ -4,7 +4,7 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.study.mri.structural.ute import UTEStudy
 from nianalysis.data_formats import (  # @IgnorePep8
-    dicom_format)
+    dicom_format, nifti_gz_format)
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
@@ -19,14 +19,26 @@ class TestUTE(TestCase):
         study.registration_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('ute1_registered.nii.gz', study.name)
         self.assertDatasetCreated('ute2_registered.nii.gz', study.name)
-    '''
-
+     
+       
     def test_ute(self):
         study = self.create_study(
             UTEStudy, 'segmentation', {
                 'ute_echo1': Dataset('ute_echo1', dicom_format),
                 'ute_echo2': Dataset('ute_echo2', dicom_format),
                 'umap_ute': Dataset('umap_ute', dicom_format)})
-        study.segmentation_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('bones_mask.nii.gz', study.name)
-        self.assertDatasetCreated('air_mask.nii.gz', study.name)
+        study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('sute_cont.nii.gz', study.name)
+        self.assertDatasetCreated('sute_fix.nii.gz', study.name)
+    '''
+    
+    def test_ute(self):
+        study = self.create_study(
+            UTEStudy, 'umap_creation', {
+                'ute1_registered': Dataset('ute1_registered', nifti_gz_format),
+                'ute2_registered': Dataset('ute2_registered', nifti_gz_format),
+                'air_mask': Dataset('air_mask', nifti_gz_format),
+                'bones_mask': Dataset('bones_mask', nifti_gz_format)})
+        study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('sute_cont_template.nii.gz', study.name)
+        self.assertDatasetCreated('sute_fix_template.nii.gz', study.name)
