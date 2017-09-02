@@ -1,4 +1,4 @@
-function QSM_DualEcho( inDir, maskFile, outDir, echoTimes )
+function QSM_DualEcho( inDir, maskFile, outDir, echoTimes, nCoils )
 
 % Add libraries for nifti and STI suite
 addpath(genpath('/data/project/Phil/ASPREE_QSM/scripts/'))
@@ -11,7 +11,7 @@ newMaskFile = [outDir '/QSM/PhaseMask.nii.gz'];
 unwrapFile = [outDir '/QSM/Unwrapped.nii.gz'];
 tissueFile = [outDir '/QSM/TissuePhase.nii.gz'];
 qsmFile = [outDir '/QSM/QSM.nii.gz'];
-nCoils = 32;
+%nCoils = 32;
 
 % Combine channels
 HIP_ChannelCombination(inDir, [outDir '/QSM'], nCoils);

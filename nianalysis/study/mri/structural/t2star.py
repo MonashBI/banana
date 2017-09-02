@@ -43,7 +43,7 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='qsmrecon',
             inputs=[DatasetSpec('raw_coils', directory_format),
-                    DatasetSpec('betted_T2s_mask', nifti_gz_format)],
+                    DatasetSpec('opti_betted_T2s_mask', nifti_gz_format)],
             outputs=[DatasetSpec('qsm', nifti_gz_format),
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format)],
@@ -69,13 +69,14 @@ class T2StarStudy(MRIStudy):
                                        wall_time=15, memory=12000)
         erosion.inputs.kernel_shape = 'sphere'
         erosion.inputs.kernel_size = 6;
-        pipeline.connect_input('betted_T2s_mask', erosion, 'in_file')
+        pipeline.connect_input('opti_betted_T2s_mask', erosion, 'in_file')
         
         # Phase and QSM for dual echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
                                         requirements=[matlab2015_req],
                                         wall_time=300, memory=24000)
         qsmrecon.inputs.echo_times = pipeline.option('qsm_echo_times')
+        qsmrecon.inputs.num_channels = pipeline.option('qsm_num_channels')
         pipeline.connect(erosion, 'out_file', qsmrecon, 'mask_file')
         pipeline.connect(prepare,'out_dir', qsmrecon, 'in_dir')
         
@@ -412,9 +413,9 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input('t1', apply_trans_inv, 'reference_image')
         
         pipeline.connect(maths2, 'out_file', t1reg, 'input_file')
-        pipeline.connect_output(self._lookup_l_tfm_to_name('MNI'), t1reg, 'regmat')
-        pipeline.connect_output(self._lookup_nl_tfm_to_name('MNI'), t1reg, 'warp_file')
-        pipeline.connect_output(self._lookup_nl_tfm_inv_name('MNI'), t1reg, 'inv_warp')
+        pipeline.connect_output(self._lookup_l_tfm_to_name('SUIT'), t1reg, 'regmat')
+        pipeline.connect_output(self._lookup_nl_tfm_to_name('SUIT'), t1reg, 'warp_file')
+        pipeline.connect_output(self._lookup_nl_tfm_inv_name('SUIT'), t1reg, 'inv_warp')
         pipeline.connect_output('T1_in_SUIT', t1reg, 'reg_file')
         pipeline.connect_output('SUIT_in_T1', apply_trans_inv, 'output_image')
         
@@ -1095,7 +1096,7 @@ class T2StarStudy(MRIStudy):
         
         pipeline = self.create_pipeline(
             name='T2s_Atlas',
-            inputs=DatasetSpec('t2s_in_mni', nifti_gz_format),
+            inputs=DatasetSpec('qsm_in_mni', nifti_gz_format),
             outputs=DatasetSpec('t2s_atlas', nifti_gz_format),
             default_options={},
             description=("Cohort average of T2s magnitude images in MNI space."),
@@ -1122,7 +1123,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect(identity_node, 'in_subject_id', average_t2s, 'in_subject_id')
         pipeline.connect(identity_node, 'in_visit_id', average_t2s, 'in_visit_id')
         
-        pipeline.connect_output('t2s_atlas', average_t2s, 'output_average_image')
+        pipeline.connect_output('qsm_atlas', average_t2s, 'output_average_image')
         
         return pipeline
     
@@ -1209,4 +1210,4 @@ class T2StarStudy(MRIStudy):
     
         # Study-specific analysis summary files
         DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'),
-        DatasetSpec('t2s_atlas', nifti_gz_format, t2s_atlas, multiplicity='per_project'))
+        DatasetSpec('qsm_atlas', nifti_gz_format, t2s_atlas, multiplicity='per_project'))
