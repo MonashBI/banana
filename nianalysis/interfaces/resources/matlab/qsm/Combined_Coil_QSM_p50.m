@@ -65,9 +65,9 @@ nii.hdr.dime.dim(5) = nCoils*nEchos;
 
 % Save outputs
 nii.img = tissueVol;
-save_nii(nii,[tissueDir '/TissuePhase.nii.gz']);
+save_nii(nii,[qsmDir '/TissuePhase.nii.gz']);
 
 nii.img = maskVol;
-save_nii(nii,[tissueDir '/CoilMasks.nii.gz']);
+save_nii(nii,[qsmDir '/PhaseMasks.nii.gz']);
 
 end

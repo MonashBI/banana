@@ -187,6 +187,7 @@ class STIInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     mask_file = File(exists=True, mandatory=True)
     echo_times = traits.List(traits.Float(), value=[20.0], desc='Echo times in ms')
+    num_channels = traits.Int(value=32, mandatory=True, desc='Number of channels')
 
 class STIOutputSpec(TraitedSpec):
     qsm = File(exists=True)
@@ -202,12 +203,13 @@ class STI(BaseInterface):
         script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
-            "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times});\n"
+            "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times}, {num_channels});\n"
             "exit;").format(
                 in_dir=self.inputs.in_dir,
                 mask_file=self.inputs.mask_file,
                 out_dir=self.working_dir,
                 echo_times=self.inputs.echo_times,
+                num_channels=self.inputs.num_channels,
                 matlab_dir=os.path.abspath(os.path.join(
                     os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
