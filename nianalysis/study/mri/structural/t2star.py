@@ -1231,6 +1231,7 @@ class T2StarStudy(MRIStudy):
         average_images = pipeline.create_node(
             interface=ants.AverageImages(), 
             name='average_input_name'.format(input_name=input_name),
+            requirements=[ants19_req],
             wall_time=300, 
             memory=8000)
         average_images.inputs.normalize = False
