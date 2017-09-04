@@ -18,10 +18,11 @@ from nianalysis.pipeline import Pipeline
 import nianalysis
 from nipype.interfaces.base import traits
 import nianalysis.utils
-from nipype.interfaces.utility.base import IdentityInterface
+from nipype.interfaces.utility.base import IdentityInterface, Merge
 #from StdSuites.AppleScript_Suite import space
 from scipy.interpolate.interpolate_wrapper import linear
 from cProfile import label
+import IN
 
 #from nipype.interfaces.fsl.preprocess import (
 #    BET, FUGUE, FLIRT, FNIRT, ApplyWarp)
@@ -463,7 +464,7 @@ class T2StarStudy(MRIStudy):
         
         pipeline = self.create_pipeline(
             name='ANTsApplyTransform',
-            inputs=[DatasetSpec('betted_T2s', nifti_gz_format),
+            inputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format),
                     DatasetSpec('T1_to_MNI_warp', nifti_gz_format),
                     DatasetSpec('T1_to_MNI_mat', text_matrix_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
@@ -491,7 +492,7 @@ class T2StarStudy(MRIStudy):
         
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
         #pipeline.connect(cp_geom, 'out_file', apply_trans, 'input_image')
-        pipeline.connect_input('t2s', apply_trans, 'input_image')
+        pipeline.connect_input('opti_betted_T2s', apply_trans, 'input_image')
         pipeline.connect_output('t2s_in_mni', apply_trans, 'output_image')
 
         pipeline.assert_connected()
@@ -531,6 +532,44 @@ class T2StarStudy(MRIStudy):
         #pipeline.connect(cp_geom, 'out_file', apply_trans, 'input_image')
         pipeline.connect_input('qsm', apply_trans, 'input_image')
         pipeline.connect_output('qsm_in_suit', apply_trans, 'output_image')
+
+        pipeline.assert_connected()
+        return pipeline  
+
+    def t2sInSUIT(self, **options):
+        
+        pipeline = self.create_pipeline(
+            name='ANTsApplyTransform_SUIT',
+            inputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format),
+                    DatasetSpec('T1_to_SUIT_warp', nifti_gz_format),
+                    DatasetSpec('T1_to_SUIT_mat', text_matrix_format),
+                    DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
+            outputs=[DatasetSpec('t2s_in_suit', nifti_gz_format)],
+            description=("Transform T2s magnitude data from T2s to SUIT space"),
+            default_options={'SUIT_template': self._lookup_template_path('SUIT')},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        #cp_geom = pipeline.create_node(fsl.CopyGeom(), name='copy_geomery', requirements=[fsl5_req], memory=8000, wall_time=5)
+        #pipeline.connect_input('qsm', cp_geom, 'dest_file')
+        #pipeline.connect_input('t2s', cp_geom, 'in_file')
+        
+        merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
+        pipeline.connect_input('T1_to_SUIT_warp', merge_trans, 'in1')
+        pipeline.connect_input('T1_to_SUIT_mat', merge_trans, 'in2')
+        pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in3')
+
+        apply_trans = pipeline.create_node(
+            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
+        apply_trans.inputs.reference_image = pipeline.option('SUIT_template')
+        apply_trans.inputs.interpolation = 'Linear'
+        apply_trans.inputs.input_image_type = 3
+        
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        #pipeline.connect(cp_geom, 'out_file', apply_trans, 'input_image')
+        pipeline.connect_input('opti_betted_T2s', apply_trans, 'input_image')
+        pipeline.connect_output('t2s_in_suit', apply_trans, 'output_image')
 
         pipeline.assert_connected()
         return pipeline  
@@ -1092,38 +1131,62 @@ class T2StarStudy(MRIStudy):
         
         return pipeline
     
-    def t2s_atlas(self, **options):
+    def qsm_mni_atlas(self, **options):
+        return self._t2s_atlas('qsm','mni')
+    
+    def t2s_mni_atlas(self, **options):
+        return self._t2s_atlas('t2s','mni')
+    
+    def qsm_suit_atlas(self, **options):
+        return self._t2s_atlas('qsm','suit')
+    
+    def t2s_suit_atlas(self, **options):
+        return self._t2s_atlas('t2s','suit')
+        
+    def _t2s_atlas(self, contrast_name, space_name, **options):
+        
+        input_contrast = '{contrast_name}_in_{space_name}'.format(contrast_name=contrast_name,space_name=space_name)
+        output_contrast = '{contrast_name}_{space_name}_atlas'.format(contrast_name=contrast_name,space_name=space_name)
         
         pipeline = self.create_pipeline(
-            name='T2s_Atlas',
-            inputs=DatasetSpec('qsm_in_mni', nifti_gz_format),
-            outputs=DatasetSpec('t2s_atlas', nifti_gz_format),
+            name='{contrast_name}_{space_name}_Atlas'.format(contrast_name=contrast_name,space_name=space_name),
+            inputs=[DatasetSpec(input_contrast, nifti_gz_format)],
+            outputs=[DatasetSpec(output_contrast, nifti_gz_format)],
             default_options={},
-            description=("Cohort average of T2s magnitude images in MNI space."),
+            description=('Cohort average of {contrast_name} images in {space_name} space.'.format(contrast_name=contrast_name,space_name=space_name)),
             version=1,
             citations=[ants19_req, fsl5_req],
             options=options)
                   
-        identity_node = pipeline.create_join_subjects_node(interface=IdentityInterface(['in_subject_id','in_visit_id','t2s']),
+        identity_node = pipeline.create_join_subjects_node(interface=IdentityInterface([input_contrast]),
                                                          name='Join_Subjects_Identity',
-                                                         joinfield=['in_subject_id','in_visit_id','t2s_in_mni'],
+                                                         joinfield=[input_contrast],
                                                          wall_time=60, memory=4000)
+         
+        pipeline.connect_input(input_contrast, identity_node, input_contrast)
+                  
+        merge_node = pipeline.create_join_visits_node(interface=Merge(),
+                                                         name='Join_Visits_Merge',
+                                                         joinfield=['in_lists'],
+                                                         wall_time=60, memory=4000)
+        pipeline.connect(identity_node, input_contrast, merge_node, 'in_lists')
         
-        pipeline.connect_input('t2s_in_mni', identity_node, 't2s_in_mni')
-        pipeline.connect_subject_id(identity_node, 'in_subject_id')
-        pipeline.connect_visit_id(identity_node,'in_visit_id')
-        
-        average_t2s = pipeline.create_join_visits_node(
+        average_images = pipeline.create_node(
             interface=ants.AverageImages(), 
-            name='average_t2s',
-            joinfield=['in_subject_id','in_visit_id','t2s_in_mni'],
+            name='average_{contrast_name}_in_{space_name}_space'.format(contrast_name=contrast_name,space_name=space_name),
             wall_time=300, 
             memory=8000)
-        pipeline.connect(identity_node, 't2s_in_mni', average_t2s, 'images')
-        pipeline.connect(identity_node, 'in_subject_id', average_t2s, 'in_subject_id')
-        pipeline.connect(identity_node, 'in_visit_id', average_t2s, 'in_visit_id')
+        average_images.inputs.normalize = False
+        average_images.inputs.dimension = 3
+        average_images.inputs.output_average_image = 'output_average_image.nii.gz'
+        pipeline.connect(merge_node, 'out', average_images, 'images')
+        #pipeline.connect_input('qsm_in_mni', average_t2s, 'images')
+        #pipeline.connect_visit_id(average_qsm,'visit_id')
+        #pipeline.connect_visit_id(average_qsm,'subject_id')
+        #pipeline.connect(identity_node, 'in_subject_id', average_t2s, 'in_subject_id')
+        #pipeline.connect(identity_node, 'in_visit_id', average_t2s, 'in_visit_id')
         
-        pipeline.connect_output('qsm_atlas', average_t2s, 'output_average_image')
+        pipeline.connect_output(output_contrast, average_images, 'output_average_image')
         
         return pipeline
     
@@ -1187,7 +1250,8 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('mni_in_qsm', nifti_gz_format, mniInT2s),
         
         # Data for analysis in SUIT space (and quality control)                                   
-        DatasetSpec('qsm_in_suit', nifti_gz_format, qsmInSUIT),
+        DatasetSpec('qsm_in_suit', nifti_gz_format, qsmInSUIT),                                 
+        DatasetSpec('t2s_in_suit', nifti_gz_format, t2sInSUIT),
         
         # Masks for analysis in subject space
         DatasetSpec('first_segmentation_in_qsm', nifti_gz_format, calc_first_masks),
@@ -1207,7 +1271,12 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('right_caudate_in_qsm', nifti_gz_format, caudate_masks),
         DatasetSpec('left_frontal_wm_in_qsm', nifti_gz_format, frontal_wm_masks),
         DatasetSpec('right_frontal_wm_in_qsm', nifti_gz_format, frontal_wm_masks),
+        
+        # Atlases
+        DatasetSpec('qsm_mni_atlas', nifti_gz_format, qsm_mni_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_suit_atlas', nifti_gz_format, qsm_suit_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_mni_atlas', nifti_gz_format, t2s_mni_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_suit_atlas', nifti_gz_format, t2s_suit_atlas, multiplicity='per_project'),
     
         # Study-specific analysis summary files
-        DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'),
-        DatasetSpec('qsm_atlas', nifti_gz_format, t2s_atlas, multiplicity='per_project'))
+        DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'))
