@@ -207,8 +207,8 @@ class CheckLabelFile(BaseInterface):
 
 
 class FSLSlicesInputSpec(FSLCommandInputSpec):
-    im1 = File(mandatory=True, position=0, desc="First image")
-    im2 = File(mandatory=True, position=1, desc="Second image")
+    im1 = File(mandatory=True, position=0, argstr="%s", desc="First image")
+    im2 = File(mandatory=True, position=1, argstr="%s", desc="Second image")
     outname = traits.Str(mandatory=True, argstr="-o %s", position=-1,
                          desc="output name")
 
@@ -219,7 +219,7 @@ class FSLSlicesOutputSpec(TraitedSpec):
 
 class FSLSlices(FSLCommand):
 
-    _cmd = 'slices'
+    _cmd = 'slices '
     input_spec = FSLSlicesInputSpec
     output_spec = FSLSlicesOutputSpec
     ext = '.gif'
