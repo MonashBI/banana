@@ -176,7 +176,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=5,
                                       requirements=[fsl5_req])
-        slices.inputs.outname = 'optiBET_report.gif'
+        slices.inputs.outname = 'optiBET_report'
         pipeline.connect_input('t1', slices, 'im1')
         pipeline.connect(maths2, 'out_file', slices, 'im2')
 
@@ -238,7 +238,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
                                       requirements=[fsl5_req])
-        slices.inputs.outname = 'T12MNI_reg_report.gif'
+        slices.inputs.outname = 'T12MNI_reg_report'
         slices.inputs.im1 = pipeline.option('MNI_template')
         pipeline.connect(t1reg, 'reg_file', slices, 'im2')
 
