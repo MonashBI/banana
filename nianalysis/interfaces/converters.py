@@ -119,10 +119,9 @@ class Nii2Dicom(BaseInterface):
         nifti = nib.load(self.inputs.in_file)
         nifti = nifti.get_data()
         nifti = nifti.astype('uint16')
-        for n in range(len(dcm.pixel_array.flat)):
-            dcm.pixel_array.flat[n] = nifti.flat[n]
+        dcm.pixel_array[:] = nifti
         dcm.PixelData = dcm.pixel_array.T.tostring()
-        dcm.save_as(self.inputs.out_file)
+        dcm.save_as(self._gen_outfilename())
         return runtime
 
     def _list_outputs(self):
