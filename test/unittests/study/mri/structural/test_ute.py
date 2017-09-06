@@ -42,7 +42,7 @@ class TestUTE(TestCase):
         study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('sute_cont_template.nii.gz', study.name)
         self.assertDatasetCreated('sute_fix_template.nii.gz', study.name)  
-    '''    
+        
     def test_ute(self):
         study = self.create_study(
             UTEStudy, 'umap_creation_ute', {
@@ -57,3 +57,17 @@ class TestUTE(TestCase):
         self.assertDatasetCreated('sute_fix_ute.nii.gz', study.name)
         self.assertDatasetCreated('sute_cont_ute_background.nii.gz', study.name)
         self.assertDatasetCreated('sute_fix_ute_background.nii.gz', study.name)
+    '''    
+        
+        
+    def test_ute(self):
+        study = self.create_study(
+            UTEStudy, 'conversion', {
+                'sute_cont_ute':Dataset('sute_cont_ute', nifti_gz_format),
+                'sute_fix_ute':Dataset('sute_fix_ute', nifti_gz_format),
+                'umap_ute':Dataset('umap_ute', dicom_format)})
+        study.conversion_to_dicom_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('sute_cont_dicoms', study.name)
+        self.assertDatasetCreated('sute_fix_dicoms', study.name)
+        
+        
