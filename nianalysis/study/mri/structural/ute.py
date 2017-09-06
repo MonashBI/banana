@@ -7,8 +7,9 @@ from nipype.interfaces.fsl.maths import (
     UnaryMaths, BinaryMaths, MultiImageMaths, Threshold)
 from nipype.interfaces.spm.preprocess import NewSegment
 from nipype.interfaces.utility.base import Select
-from nianalysis.interfaces.UmapCalc import CoreUmapCalc
-from nianalysis.interfaces.nii2dicom import Nii2Dicom, CopyToDicomDir, ListDir
+from nianalysis.interfaces.umap_calc import CoreUmapCalc
+from nianalysis.interfaces.converters import Nii2Dicom
+from nianalysis.interfaces.utils.os import CopyToDir, ListDir
 
 from nianalysis.citations import (
     fsl_cite, spm_cite, matlab_cite)
@@ -424,9 +425,9 @@ class UTEStudy(MRIStudy):
                                                           'reference_dicom'],
             wall_time=20)
         list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
-        cont_copy2dir = pipeline.create_node(CopyToDicomDir(),
+        cont_copy2dir = pipeline.create_node(CopyToDir(),
                                              name='cont_copy2dir')
-        fix_copy2dir = pipeline.create_node(CopyToDicomDir(),
+        fix_copy2dir = pipeline.create_node(CopyToDir(),
                                             name='fix_copy2dir')
         # Connect nodes
         pipeline.connect(cont_split, 'out_files', cont_nii2dicom, 'in_file')
