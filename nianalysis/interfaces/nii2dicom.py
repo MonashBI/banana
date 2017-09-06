@@ -5,15 +5,14 @@ Created on 1 Sep. 2017
 '''
 
 from __future__ import absolute_import
-from nipype.interfaces import fsl
+import shutil
 import os.path
 from nipype.interfaces.base import (
-    TraitedSpec, BaseInterface, File, Directory, traits)
-import glob
-import numpy as np
+    TraitedSpec, BaseInterface, File, Directory, traits, isdefined)
 import dicom
 import nibabel as nib
-from multiprocessing import Pool
+from nianalysis.utils import split_extension
+
 
 def umap_conv_unwarped(arg, **kwarg):
 
@@ -21,79 +20,142 @@ def umap_conv_unwarped(arg, **kwarg):
 
 
 class Nii2DicomInputSpec(TraitedSpec):
-    sute_cont_nii = File(mandatory=True, desc='sute continuous map nifti')
-    sute_fix_nii = File(mandatory=True, desc='sute fixed map nifti')
-    umap_ute_dir = Directory(mandatory=True, desc='original umaps')
-    cpu_number = traits.Int(desc="cpu numbers", mandatory=True)
+    in_file = File(mandatory=True, desc='input nifti file')
+    reference_dicom = File(mandatory=True, desc='original umap')
+    out_file = File(genfile=True, desc='the output dicom file')
 
 
 class Nii2DicomOutputSpec(TraitedSpec):
-    sute_cont_dicom = Directory(exists=True, desc='sute continuous map in template space')
-    sute_fix_dicom = Directory(exists=True, desc='sute fixed map in template space')
-
+    out_file = File(exists=True, desc='the output dicom file')
 
 
 class Nii2Dicom(BaseInterface):
     """
     Creates two umaps in dicom format
-    
+
     fully compatible with the UTE study:
-    
+
     Attenuation Correction pipeline
-    
+
     """
 
     input_spec = Nii2DicomInputSpec
     output_spec = Nii2DicomOutputSpec
 
     def _run_interface(self, runtime):
-        list_umap = [self.inputs.sute_cont_nii, self.inputs.sute_fix_nii]
-        umap_dcm = self.inputs.umap_ute_dir
-        
-        for j, umap in enumerate(list_umap):
-            
-            pt_name = os.path.join(os.getcwd(), umap.split('.')[0] + '_dicom')
-            spl = fsl.Split()
-            spl.inputs.dimension = 'z'
-            spl.inputs.in_file = umap
-            spl.run()
-            
-            list_nifti = sorted(glob.glob(os.getcwd()+'vol0*.ni*'))
-            list_dcm = sorted(glob.glob(umap_dcm + '/*.dcm'))
-            if os.path.isdir(pt_name) is False:
-                os.mkdir(pt_name)
-            
-            ii = np.arange(len(list_dcm))
-            ii = ii.tolist()
-            p=Pool(self.inputs.cpu_number)
-            p.map(umap_conv_unwarped, 
-                  zip([self]*len(ii), [j]*len(ii), ii, list_dcm, list_nifti, [pt_name]*len(ii)))
-            
-            for f in list_nifti:
-                os.remove(f)
-        
-        return runtime
-    
-    def umap_conv(self, j, i, f, list_nifti, pt_name):
-        
-        dcm = dicom.read_file(f)
-        nifti = nib.load(list_nifti)
+        dcm = dicom.read_file(self.inputs.reference_dicom)
+        nifti = nib.load(self.inputs.in_file)
         nifti = nifti.get_data()
         nifti = nifti.astype('uint16')
-        for n, val in enumerate(dcm.pixel_array.flat):
-
+        for n in range(len(dcm.pixel_array.flat)):
             dcm.pixel_array.flat[n] = nifti.flat[n]
-
         dcm.PixelData = dcm.pixel_array.T.tostring()
-        
-        dcm.save_as('{0}/{1}.dcm'
-            .format(pt_name, str(i + 1).zfill(4)))
-    
+        dcm.save_as(self.inputs.out_file)
+        return runtime
+
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['sute_cont_dicom'] = os.path.join(os.getcwd(), 'sute_cont_dicom')
-        outputs['sute_fix_dicom'] = os.path.join(os.getcwd(), 'sute_fix_dicom')
+        outputs['out_file'] = self._gen_outfilename()
         return outputs
-    
-    
-    
+
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = self._gen_outfilename()
+        else:
+            assert False
+        return fname
+
+    def _gen_outfilename(self):
+        if isdefined(self.inputs.out_file):
+            fpath = self.inputs.out_file
+        else:
+            fname = (
+                split_extension(os.path.basename(self.inputs.in_file))[0] +
+                '_dicom')
+            fpath = os.path.join(os.getcwd(), fname)
+        return fpath
+
+
+class CopyToDicomDirInputSpec(TraitedSpec):
+    in_files = File(mandatory=True, desc='input dicom files')
+    out_dir = File(genfile=True, desc='the output dicom file')
+
+
+class CopyToDicomDirOutputSpec(TraitedSpec):
+    out_dir = Directory(exists=True, desc='the output dicom directory')
+
+
+class CopyToDicomDir(BaseInterface):
+    """
+    Creates two umaps in dicom format
+
+    fully compatible with the UTE study:
+
+    Attenuation Correction pipeline
+
+    """
+
+    input_spec = CopyToDicomDirInputSpec
+    output_spec = CopyToDicomDirOutputSpec
+
+    def _run_interface(self, runtime):
+        dirname = self._gen_outdirname()
+        os.makedirs(dirname)
+        for i, f in enumerate(self.inputs.in_files):
+            fname = os.path.join(dirname, str(i).zfill(4)) + '.dcm'
+            shutil.copy(f, fname)
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_dir'] = self._gen_outfilename()
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_dir':
+            fname = self._gen_outdirname()
+        else:
+            assert False
+        return fname
+
+    def _gen_outdirname(self):
+        if isdefined(self.inputs.out_file):
+            dpath = self.inputs.out_file
+        else:
+            dpath = os.path.join(os.getcwd(), 'dicom_dir')
+        return dpath
+
+
+class ListDirInputSpec(TraitedSpec):
+    directory = File(mandatory=True, desc='directory to read')
+
+
+class ListDirOutputSpec(TraitedSpec):
+    files = traits.List(File(exists=True),
+                        desc='The files present in the directory')
+
+
+class ListDir(BaseInterface):
+    """
+    Creates two umaps in dicom format
+
+    fully compatible with the UTE study:
+
+    Attenuation Correction pipeline
+
+    """
+
+    input_spec = ListDirInputSpec
+    output_spec = ListDirOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        dname = self.inputs.directory
+        outputs = self._outputs().get()
+        outputs['files'] = sorted(
+            os.path.join(dname, f)
+            for f in os.listdir(dname)
+            if os.path.isfile(os.path.join(dname, f)))
+        return outputs
