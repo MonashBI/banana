@@ -602,17 +602,17 @@ class T2StarStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline        
     
-    def nonLinearT2sToMNITemplate(self, **options):
+    def nonLinearT2sToMNI(self, **options):
         
         pipeline = self.create_pipeline(
             name='ANTS_Reg_T2s_to_MNI_Template_Warp',
             inputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format), 
-                    DatasetSpec('t2s_mni_atlas', nifti_gz_format)],
-            outputs=[DatasetSpec('T2s_to_MNI_Template_mat', text_matrix_format),
-                     DatasetSpec('T2s_to_MNI_Template_warp', nifti_gz_format),
-                     DatasetSpec('MNI_Template_to_T2s_warp', nifti_gz_format),
-                     DatasetSpec('T2s_in_MNI_Template', nifti_gz_format)],
-            description=("python implementation of Deformable Syn ANTS Reg for T2s to MNI Template"),           
+                    DatasetSpec('t2s_in_mni_initial_atlas', nifti_gz_format, multiplicity='per_project')],
+            outputs=[DatasetSpec('T2s_to_MNI_mat_refined', text_matrix_format),
+                     DatasetSpec('T2s_to_MNI_warp_refined', nifti_gz_format),
+                     DatasetSpec('MNI_to_T2s_warp_refined', nifti_gz_format),
+                     DatasetSpec('t2s_in_mni_refined', nifti_gz_format)],
+            description=("python implementation of Deformable Syn ANTS Reg for T2s to constructed MNI atlas"),           
             default_options={},
             version=1,
             citations=[ants19_req],
@@ -622,45 +622,16 @@ class T2StarStudy(MRIStudy):
             AntsRegSyn(num_dimensions=3, transformation='s',
                        out_prefix='T2_to_MNI_Template'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)        
         pipeline.connect_input('opti_betted_T2s', t2sreg, 'input_file')
-        pipeline.connect_input('t2s_mni_atlas', t2sreg, 'ref_file')
+        pipeline.connect_input('t2s_in_mni_initial_atlas', t2sreg, 'ref_file')
         
-        pipeline.connect_output('T2s_to_MNI_Template_mat', t2sreg, 'regmat')
-        pipeline.connect_output('T2s_to_MNI_Template_warp', t2sreg, 'warp_file')
-        pipeline.connect_output('MNI_Template_to_T2s_warp', t2sreg, 'inv_warp')
-        pipeline.connect_output('T2s_in_MNI_Template', t2sreg, 'reg_file')
+        pipeline.connect_output('T2s_to_MNI_mat_refined', t2sreg, 'regmat')
+        pipeline.connect_output('T2s_to_MNI_warp_refined', t2sreg, 'warp_file')
+        pipeline.connect_output('MNI_to_T2s_warp_refined', t2sreg, 'inv_warp')
+        pipeline.connect_output('t2s_in_mni_refined', t2sreg, 'reg_file')
         
         pipeline.assert_connected()
         
         return pipeline 
-    
-    def nonLinearT2sToSUITTemplate(self, **options):
-        
-        pipeline = self.create_pipeline(
-            name='ANTS_Reg_T2s_to_SUIT_Template_Warp',
-            inputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format), 
-                    DatasetSpec('t2s_suit_atlas', nifti_gz_format)],
-            outputs=[DatasetSpec('T2s_to_SUIT_Template_mat', text_matrix_format),
-                     DatasetSpec('T2s_to_SUIT_Template_warp', nifti_gz_format),
-                     DatasetSpec('SUIT_Template_to_T2s_warp', nifti_gz_format),
-                     DatasetSpec('T2s_in_SUIT_Template', nifti_gz_format)],
-            description=("python implementation of Deformable Syn ANTS Reg for T2s to SUIT Template"),           
-            default_options={},
-            version=1,
-            citations=[ants19_req],
-            options=options)
-                
-        t2sreg = pipeline.create_node(
-            AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T2_to_SUIT_Template'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)        
-        pipeline.connect_input('opti_betted_T2s', t2sreg, 'input_file')
-        pipeline.connect_input('t2s_suit_atlas', t2sreg, 'ref_file')
-        
-        pipeline.connect_output('T2s_to_SUIT_Template_mat', t2sreg, 'regmat')
-        pipeline.connect_output('T2s_to_SUIT_Template_warp', t2sreg, 'warp_file')
-        pipeline.connect_output('SUIT_Template_to_T2s_warp', t2sreg, 'inv_warp')
-        pipeline.connect_output('T2s_in_SUIT_Template', t2sreg, 'reg_file')
-        
-        return pipeline
     
     def _lookup_structure_output(self, structure_name):
         outputNames = self._lookup_structure_output_names(structure_name)
@@ -1186,22 +1157,16 @@ class T2StarStudy(MRIStudy):
         return pipeline
     
     def qsm_mni_atlas(self, **options):
-        return self._calc_average('qsm_in_mni','qsm_mni_atlas')
+        return self._calc_average('qsm_in_mni','qsm_in_mni_initial_atlas')
     
     def qsm_suit_atlas(self, **options):
-        return self._calc_average('qsm_in_suit','qsm_suit_atlas')
+        return self._calc_average('qsm_in_suit','qsm_in_suit_initial_atlas')
     
     def t2s_mni_atlas(self, **options):
-        return self._calc_average('t2s_in_mni','t2s_mni_atlas')
+        return self._calc_average('t2s_in_mni','t2s_in_mni_initial_atlas')
     
     def t2s_suit_atlas(self, **options):
-        return self._calc_average('t2s_in_suit','t2s_suit_atlas')
-    
-    def t2s_mni_template(self, **options):
-        return self._calc_average('T2s_in_MNI_Template','T2s_MNI_Template')
-    
-    def t2s_suit_template(self, **options):
-        return self._calc_average('T2s_in_SUIT_Template','T2s_SUIT_Template')
+        return self._calc_average('t2s_in_suit','t2s_in_suit_initial_atlas')
         
     def _calc_average(self, input_name, atlas_name, **options):
         
@@ -1293,17 +1258,10 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('SUIT_in_T1', nifti_gz_format, nonLinearT1ToSUIT),
         
         # Transformation into template space
-        DatasetSpec('T2s_to_MNI_Template_mat', text_matrix_format, nonLinearT2sToMNITemplate),
-        DatasetSpec('T2s_to_MNI_Template_warp', nifti_gz_format, nonLinearT2sToMNITemplate),
-        DatasetSpec('MNI_Template_to_T2s_warp', nifti_gz_format, nonLinearT2sToMNITemplate),
-        DatasetSpec('T2s_in_MNI_Template', nifti_gz_format, nonLinearT2sToMNITemplate),
-        DatasetSpec('T2s_MNI_Template', nifti_gz_format, t2s_mni_template, multiplicity='per_project'),
-                     
-        DatasetSpec('T2s_to_SUIT_Template_mat', text_matrix_format, nonLinearT2sToSUITTemplate),
-        DatasetSpec('T2s_to_SUIT_Template_warp', nifti_gz_format, nonLinearT2sToSUITTemplate),
-        DatasetSpec('SUIT_Template_to_T2s_warp', nifti_gz_format, nonLinearT2sToSUITTemplate),
-        DatasetSpec('T2s_in_SUIT_Template', nifti_gz_format, nonLinearT2sToSUITTemplate),
-        DatasetSpec('T2s_SUIT_Template', nifti_gz_format, t2s_suit_template, multiplicity='per_project'),
+        DatasetSpec('T2s_to_MNI_mat_refined', text_matrix_format, nonLinearT2sToMNI),
+        DatasetSpec('T2s_to_MNI_warp_refined', nifti_gz_format, nonLinearT2sToMNI),
+        DatasetSpec('MNI_to_T2s_warp_refined', nifti_gz_format, nonLinearT2sToMNI),
+        DatasetSpec('t2s_in_mni_refined', nifti_gz_format, nonLinearT2sToMNI),
                                 
         # QSM and phase processing                        
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
@@ -1345,10 +1303,10 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('right_frontal_wm_in_qsm', nifti_gz_format, frontal_wm_masks),
         
         # Atlases
-        DatasetSpec('qsm_mni_atlas', nifti_gz_format, qsm_mni_atlas, multiplicity='per_project'),
-        DatasetSpec('qsm_suit_atlas', nifti_gz_format, qsm_suit_atlas, multiplicity='per_project'),
-        DatasetSpec('t2s_mni_atlas', nifti_gz_format, t2s_mni_atlas, multiplicity='per_project'),
-        DatasetSpec('t2s_suit_atlas', nifti_gz_format, t2s_suit_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_in_mni_initial_atlas', nifti_gz_format, qsm_mni_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_in_suit_initial_atlas', nifti_gz_format, qsm_suit_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_in_mni_initial_atlas', nifti_gz_format, t2s_mni_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_in_suit_initial_atlas', nifti_gz_format, t2s_suit_atlas, multiplicity='per_project'),
     
         # Study-specific analysis summary files
         DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'))
