@@ -1,4 +1,6 @@
 from ..base import MRIStudy
+import os.path
+import re
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
@@ -17,6 +19,21 @@ from nianalysis.data_formats import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format)
 from nianalysis.requirements import (
     fsl5_req, spm12_req, matlab2015_req)
+
+
+special_char_re = re.compile(r'[^\w]')
+
+
+def dicom_fname_sort_key(fname):
+    in_parts = special_char_re.split(os.path.basename(fname))
+    out_parts = []
+    for part in in_parts:
+        try:
+            part = int(part)
+        except ValueError:
+            pass
+        out_parts.append(part)
+    return tuple(out_parts)
 
 
 class UTEStudy(MRIStudy):
@@ -425,6 +442,7 @@ class UTEStudy(MRIStudy):
                                                           'reference_dicom'],
             wall_time=20)
         list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
+        list_dicoms.inputs.sort_key = dicom_fname_sort_key
         cont_copy2dir = pipeline.create_node(CopyToDir(),
                                              name='cont_copy2dir')
         fix_copy2dir = pipeline.create_node(CopyToDir(),
