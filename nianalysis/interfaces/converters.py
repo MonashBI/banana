@@ -1,12 +1,14 @@
+from __future__ import absolute_import
 import os.path
-import re
 from nipype.interfaces.base import (
-    TraitedSpec, File, Directory, CommandLineInputSpec, CommandLine, isdefined,
-    traits)
+    TraitedSpec, BaseInterface, File, Directory, traits, isdefined,
+    CommandLineInputSpec, CommandLine)
+import dicom
+import nibabel as nib
 from nianalysis.utils import split_extension
+import re
 from nianalysis.exceptions import NiAnalysisError
 import numpy as np
-import nibabel as nib
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -42,7 +44,7 @@ class Dcm2niix(CommandLine):
         out_dir = self._gen_filename('out_dir')
         fname = self._gen_filename('filename') + im_ext
         base, ext = split_extension(fname)
-        match_re = re.compile(r'(_[ec]\d+)?{}(_e\d)?{}'
+        match_re = re.compile(r'(_e\d)?{}(_e\d)?{}'
                               .format(base, ext if ext is not None else ''))
         products = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
                     if match_re.match(f) is not None]
@@ -87,3 +89,60 @@ class Dcm2niix(CommandLine):
         else:
             out_name = os.path.basename(self.inputs.input_dir)
         return out_name
+
+
+class Nii2DicomInputSpec(TraitedSpec):
+    in_file = File(mandatory=True, desc='input nifti file')
+    reference_dicom = File(mandatory=True, desc='original umap')
+    out_file = File(genfile=True, desc='the output dicom file')
+
+
+class Nii2DicomOutputSpec(TraitedSpec):
+    out_file = File(exists=True, desc='the output dicom file')
+
+
+class Nii2Dicom(BaseInterface):
+    """
+    Creates two umaps in dicom format
+
+    fully compatible with the UTE study:
+
+    Attenuation Correction pipeline
+
+    """
+
+    input_spec = Nii2DicomInputSpec
+    output_spec = Nii2DicomOutputSpec
+
+    def _run_interface(self, runtime):
+        dcm = dicom.read_file(self.inputs.reference_dicom)
+        nifti = nib.load(self.inputs.in_file)
+        nifti = nifti.get_data()
+        nifti = nifti.astype('uint16')
+        for n in range(len(dcm.pixel_array.flat)):
+            dcm.pixel_array.flat[n] = nifti.flat[n]
+        dcm.PixelData = dcm.pixel_array.T.tostring()
+        dcm.save_as(self.inputs.out_file)
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_file'] = self._gen_outfilename()
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'out_file':
+            fname = self._gen_outfilename()
+        else:
+            assert False
+        return fname
+
+    def _gen_outfilename(self):
+        if isdefined(self.inputs.out_file):
+            fpath = self.inputs.out_file
+        else:
+            fname = (
+                split_extension(os.path.basename(self.inputs.in_file))[0] +
+                '_dicom')
+            fpath = os.path.join(os.getcwd(), fname)
+        return fpath
