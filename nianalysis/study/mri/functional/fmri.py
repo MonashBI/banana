@@ -137,7 +137,7 @@ class FunctionalMRIStudy(MRIStudy):
             options=options)
 
         bet1 = pipeline.create_node(
-            BET(frac=0.1, reduce_bias=True), name='bet', wall_time=10,
+            BET(frac=0.1, reduce_bias=True), name='bet', wall_time=15,
             requirements=[fsl5_req])
         pipeline.connect_input('t1', bet1, 'in_file')
         flirt = pipeline.create_node(
@@ -154,7 +154,7 @@ class FunctionalMRIStudy(MRIStudy):
         fnirt.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
         pipeline.connect_input('t1', fnirt, 'in_file')
-        invwarp = pipeline.create_node(InvWarp(), name='invwarp', wall_time=5,
+        invwarp = pipeline.create_node(InvWarp(), name='invwarp', wall_time=10,
                                        requirements=[fsl5_req])
         pipeline.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
         pipeline.connect_input('t1', invwarp, 'reference')
