@@ -4,14 +4,9 @@ from string import Template
 from nibabel import load
 from nipype.interfaces.base import (
     File, traits, TraitedSpec, BaseInterface, BaseInterfaceInputSpec,
-    Directory, InputMultiPath)
+    Directory)
 from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
-from nipype.interfaces.base import (CommandLineInputSpec, CommandLine)
-import nipype.pipeline.engine as pe
-import nipype.interfaces.utility as util
-import nipype.interfaces.fsl as fsl
-from nipype.utils.filemanip import list_to_filename
 import logging
 
 
@@ -24,6 +19,7 @@ optiBET_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             'resources', 'bash', 'optiBET.sh'))
 
 logger = logging.getLogger('NiAnalysis')
+
 
 class MelodicL1FSFInputSpec(BaseInterfaceInputSpec):
 
@@ -208,3 +204,37 @@ class CheckLabelFile(BaseInterface):
 
         outputs["out_list"] = out
         return outputs
+
+
+class FSLSlicesInputSpec(FSLCommandInputSpec):
+    im1 = File(mandatory=True, position=0, argstr="%s", desc="First image")
+    im2 = File(mandatory=True, position=1, argstr="%s", desc="Second image")
+    outname = traits.Str(mandatory=True, argstr="-o %s.gif", position=-1,
+                         desc="output name")
+
+
+class FSLSlicesOutputSpec(TraitedSpec):
+    report = File(exists=True, desc=".gif file with im2 overlaid to im1")
+
+
+class FSLSlices(FSLCommand):
+
+    _cmd = 'slices '
+    input_spec = FSLSlicesInputSpec
+    output_spec = FSLSlicesOutputSpec
+    ext = '.gif'
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        # print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
+        outputs['report'] = os.path.join(
+            os.getcwd(), self._gen_filename('report'))
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'report':
+            fid = os.path.basename(self.inputs.outname)
+            fname = fid + self.ext
+        else:
+            assert False
+        return fname
