@@ -19,19 +19,16 @@ class TestUTE(TestCase):
         study.registration_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('ute1_registered.nii.gz', study.name)
         self.assertDatasetCreated('ute2_registered.nii.gz', study.name)
-
-
+    
+    
     def test_ute(self):
         study = self.create_study(
             UTEStudy, 'segmentation', {
-                'ute_echo1': Dataset('ute_echo1', dicom_format),
-                'ute_echo2': Dataset('ute_echo2', dicom_format),
-                'umap_ute': Dataset('umap_ute', dicom_format)})
-        study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('sute_cont.nii.gz', study.name)
-        self.assertDatasetCreated('sute_fix.nii.gz', study.name)
-
-
+                'ute1_registered': Dataset('ute1_registered', nifti_gz_format),})
+        study.segmentation_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('air_mask.nii.gz', study.name)
+        self.assertDatasetCreated('bones_mask.nii.gz', study.name)
+    
     def test_ute(self):
         study = self.create_study(
             UTEStudy, 'umap_creation', {
@@ -42,10 +39,10 @@ class TestUTE(TestCase):
         study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('sute_cont_template.nii.gz', study.name)
         self.assertDatasetCreated('sute_fix_template.nii.gz', study.name)
-
+    
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'umap_creation_ute', {
+            UTEStudy, 'backwrap', {
                 'ute1_registered':Dataset('ute1_registered', nifti_gz_format),
                 'ute_echo1':Dataset('ute_echo1', dicom_format),
                 'umap_ute':Dataset('umap_ute', dicom_format),
@@ -55,16 +52,33 @@ class TestUTE(TestCase):
         study.backwrap_to_ute_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('sute_cont_ute.nii.gz', study.name)
         self.assertDatasetCreated('sute_fix_ute.nii.gz', study.name)
-        self.assertDatasetCreated('sute_cont_ute_background.nii.gz', study.name)
-        self.assertDatasetCreated('sute_fix_ute_background.nii.gz', study.name)
-    '''
-
+    
+    
     def test_ute(self):
         study = self.create_study(
             UTEStudy, 'conversion', {
-                'sute_cont_ute': Dataset('ute_echo1', dicom_format),
-                'sute_fix_ute': Dataset('ute_echo2', dicom_format),
+                'sute_cont_ute':Dataset('sute_cont_ute', nifti_gz_format),
+                'sute_fix_ute':Dataset('sute_fix_ute', nifti_gz_format),
                 'umap_ute': Dataset('umap_ute', dicom_format)})
         study.conversion_to_dicom_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('sute_cont_dicoms', study.name)
         self.assertDatasetCreated('sute_fix_dicoms', study.name)
+    '''
+
+
+
+    def test_ute(self):
+        study = self.create_study(
+            UTEStudy, 'pipeline', {
+                'ute_echo1': Dataset('ute_echo1', dicom_format),
+                'ute_echo2': Dataset('ute_echo2', dicom_format),
+                'umap_ute': Dataset('umap_ute', dicom_format)})
+        study.conversion_to_dicom_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('sute_cont_dicoms', study.name)
+        self.assertDatasetCreated('sute_fix_dicoms', study.name)
+    
+        
+        
+        
+        
+        
