@@ -126,7 +126,15 @@ class T2StarStudy(MRIStudy):
         prepare.inputs.num_channels = pipeline.option('qsm_num_channels')
         prepare.inputs.base_filename = pipeline.option('swi_coils_filename')
         pipeline.connect_input('raw_coils', prepare, 'in_dir')
-        pipeline.connect_output('t2s', prepare, 'out_file')
+        
+        
+        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
+                                    name='n4_bias_correction', requirements=[ants19_req],
+                                    wall_time=60, memory=12000)
+        bias.inputs.n_iterations = [90,90,30,90]
+        bias.inputs.convergence_threshold = 5e-7
+        pipeline.connect(prepare, 'out_file', bias, 'input_image')
+        pipeline.connect_output('t2s', bias, 'output_image')
         
         return pipeline
 
@@ -280,16 +288,9 @@ class T2StarStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
         
-        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
-                                    name='n4_bias_correction', requirements=[ants19_req],
-                                    wall_time=60, memory=12000)
-        bias.inputs.n_iterations = [90,90,30,90]
-        bias.inputs.convergence_threshold = 5e-7
-        pipeline.connect_input('t2s', bias, 'input_image')
-        
         bet = pipeline.create_node(
             fsl.BET(frac=0.3, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
-        pipeline.connect(bias,'output_image', bet, 'in_file')
+        pipeline.connect_input('t2s', bet, 'in_file')
         pipeline.connect_output('betted_T2s', bet, 'out_file')
         pipeline.connect_output('betted_T2s_mask', bet, 'mask_file')
         
@@ -421,6 +422,18 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_output('SUIT_in_T1', apply_trans_inv, 'output_image')
         
         return pipeline    
+    
+    def qsmInSUITRefined(self, **options):
+        return
+    
+    def t2sInSUITRefined(self, **options):
+        return
+        
+    def qsmInMNIRefined(self, **options):
+        return
+        
+    def t2sInMNIRefined(self, **options):
+        return        
        
     def qsmInMNI(self, **options):
         
@@ -620,7 +633,8 @@ class T2StarStudy(MRIStudy):
                 
         t2sreg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T2_to_MNI_Template'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)        
+                       out_prefix='T2_to_MNI_Template'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=600)        
+        t2sreg.inputs.use_histo_match = 1;
         pipeline.connect_input('opti_betted_T2s', t2sreg, 'input_file')
         pipeline.connect_input('t2s_in_mni_initial_atlas', t2sreg, 'ref_file')
         
@@ -628,6 +642,38 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_output('T2s_to_MNI_warp_refined', t2sreg, 'warp_file')
         pipeline.connect_output('MNI_to_T2s_warp_refined', t2sreg, 'inv_warp')
         pipeline.connect_output('t2s_in_mni_refined', t2sreg, 'reg_file')
+        
+        pipeline.assert_connected()
+        
+        return pipeline 
+    
+    def nonLinearT2sToSUIT(self, **options):
+        
+        pipeline = self.create_pipeline(
+            name='ANTS_Reg_T2s_to_SUIT_Template_Warp',
+            inputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format), 
+                    DatasetSpec('t2s_in_suit_initial_atlas', nifti_gz_format, multiplicity='per_project')],
+            outputs=[DatasetSpec('T2s_to_SUIT_mat_refined', text_matrix_format),
+                     DatasetSpec('T2s_to_SUIT_warp_refined', nifti_gz_format),
+                     DatasetSpec('SUIT_to_T2s_warp_refined', nifti_gz_format),
+                     DatasetSpec('t2s_in_suit_refined', nifti_gz_format)],
+            description=("python implementation of Deformable Syn ANTS Reg for T2s to constructed SUIT atlas"),           
+            default_options={},
+            version=1,
+            citations=[ants19_req],
+            options=options)
+                
+        t2sreg = pipeline.create_node(
+            AntsRegSyn(num_dimensions=3, transformation='s',
+                       out_prefix='T2_to_SUIT_Template'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=600)        
+        t2sreg.inputs.use_histo_match = 1;
+        pipeline.connect_input('opti_betted_T2s', t2sreg, 'input_file')
+        pipeline.connect_input('t2s_in_suit_initial_atlas', t2sreg, 'ref_file')
+        
+        pipeline.connect_output('T2s_to_SUIT_mat_refined', t2sreg, 'regmat')
+        pipeline.connect_output('T2s_to_SUIT_warp_refined', t2sreg, 'warp_file')
+        pipeline.connect_output('SUIT_to_T2s_warp_refined', t2sreg, 'inv_warp')
+        pipeline.connect_output('t2s_in_suit_refined', t2sreg, 'reg_file')
         
         pipeline.assert_connected()
         
@@ -1156,17 +1202,29 @@ class T2StarStudy(MRIStudy):
         
         return pipeline
     
-    def qsm_mni_atlas(self, **options):
+    def qsm_mni_initial_atlas(self, **options):
         return self._calc_average('qsm_in_mni','qsm_in_mni_initial_atlas')
     
-    def qsm_suit_atlas(self, **options):
+    def qsm_suit_initial_atlas(self, **options):
         return self._calc_average('qsm_in_suit','qsm_in_suit_initial_atlas')
     
-    def t2s_mni_atlas(self, **options):
+    def t2s_mni_initial_atlas(self, **options):
         return self._calc_average('t2s_in_mni','t2s_in_mni_initial_atlas')
     
-    def t2s_suit_atlas(self, **options):
+    def t2s_suit_initial_atlas(self, **options):
         return self._calc_average('t2s_in_suit','t2s_in_suit_initial_atlas')
+    
+    def qsm_mni_refined_atlas(self, **options):
+        return self._calc_average('qsm_in_mni_refined','qsm_in_mni_refined_atlas')
+    
+    def qsm_suit_refined_atlas(self, **options):
+        return self._calc_average('qsm_in_suit_refined','qsm_in_suit_refined_atlas')
+    
+    def t2s_mni_refined_atlas(self, **options):
+        return self._calc_average('t2s_in_mni_refined','t2s_in_mni_refined_atlas')
+    
+    def t2s_suit_refined_atlas(self, **options):
+        return self._calc_average('t2s_in_suit_refined','t2s_in_suit_refined_atlas')
         
     def _calc_average(self, input_name, atlas_name, **options):
         
@@ -1261,7 +1319,10 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('T2s_to_MNI_mat_refined', text_matrix_format, nonLinearT2sToMNI),
         DatasetSpec('T2s_to_MNI_warp_refined', nifti_gz_format, nonLinearT2sToMNI),
         DatasetSpec('MNI_to_T2s_warp_refined', nifti_gz_format, nonLinearT2sToMNI),
-        DatasetSpec('t2s_in_mni_refined', nifti_gz_format, nonLinearT2sToMNI),
+        
+        DatasetSpec('T2s_to_SUIT_mat_refined', text_matrix_format, nonLinearT2sToSUIT),
+        DatasetSpec('T2s_to_SUIT_warp_refined', nifti_gz_format, nonLinearT2sToSUIT),
+        DatasetSpec('SUIT_to_T2s_warp_refined', nifti_gz_format, nonLinearT2sToSUIT),
                                 
         # QSM and phase processing                        
         DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
@@ -1278,10 +1339,15 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('qsm_in_mni', nifti_gz_format, qsmInMNI),                              
         DatasetSpec('t2s_in_mni', nifti_gz_format, t2sInMNI),
         DatasetSpec('mni_in_qsm', nifti_gz_format, mniInT2s),
+    
+        DatasetSpec('t2s_in_mni_refined', nifti_gz_format, nonLinearT2sToMNI),    
+        DatasetSpec('qsm_in_mni_refined', nifti_gz_format, qsmInMNIRefined),
         
         # Data for analysis in SUIT space (and quality control)                                   
         DatasetSpec('qsm_in_suit', nifti_gz_format, qsmInSUIT),                                 
         DatasetSpec('t2s_in_suit', nifti_gz_format, t2sInSUIT),
+        DatasetSpec('t2s_in_suit_refined', nifti_gz_format, nonLinearT2sToSUIT),
+        DatasetSpec('qsm_in_suit_refined', nifti_gz_format, qsmInSUITRefined),
         
         # Masks for analysis in subject space
         DatasetSpec('first_segmentation_in_qsm', nifti_gz_format, calc_first_masks),
@@ -1303,10 +1369,14 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('right_frontal_wm_in_qsm', nifti_gz_format, frontal_wm_masks),
         
         # Atlases
-        DatasetSpec('qsm_in_mni_initial_atlas', nifti_gz_format, qsm_mni_atlas, multiplicity='per_project'),
-        DatasetSpec('qsm_in_suit_initial_atlas', nifti_gz_format, qsm_suit_atlas, multiplicity='per_project'),
-        DatasetSpec('t2s_in_mni_initial_atlas', nifti_gz_format, t2s_mni_atlas, multiplicity='per_project'),
-        DatasetSpec('t2s_in_suit_initial_atlas', nifti_gz_format, t2s_suit_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_in_mni_initial_atlas', nifti_gz_format, qsm_mni_initial_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_in_suit_initial_atlas', nifti_gz_format, qsm_suit_initial_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_in_mni_initial_atlas', nifti_gz_format, t2s_mni_initial_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_in_suit_initial_atlas', nifti_gz_format, t2s_suit_initial_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_in_mni_refined_atlas', nifti_gz_format, qsm_mni_refined_atlas, multiplicity='per_project'),
+        DatasetSpec('qsm_in_suit_refined_atlas', nifti_gz_format, qsm_suit_refined_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_in_mni_refined_atlas', nifti_gz_format, t2s_mni_refined_atlas, multiplicity='per_project'),
+        DatasetSpec('t2s_in_suit_refined_atlas', nifti_gz_format, t2s_suit_refined_atlas, multiplicity='per_project'),
     
         # Study-specific analysis summary files
         DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'))
