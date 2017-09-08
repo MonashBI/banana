@@ -289,7 +289,7 @@ class T2StarStudy(MRIStudy):
             options=options)
         
         bet = pipeline.create_node(
-            fsl.BET(frac=0.3, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
+            fsl.BET(frac=0.1, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
         pipeline.connect_input('t2s', bet, 'in_file')
         pipeline.connect_output('betted_T2s', bet, 'out_file')
         pipeline.connect_output('betted_T2s_mask', bet, 'mask_file')
