@@ -131,8 +131,6 @@ class T2StarStudy(MRIStudy):
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
-        bias.inputs.n_iterations = [90,90,30,90]
-        bias.inputs.convergence_threshold = 5e-7
         pipeline.connect(prepare, 'out_file', bias, 'input_image')
         pipeline.connect_output('t2s', bias, 'output_image')
         
@@ -262,8 +260,6 @@ class T2StarStudy(MRIStudy):
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
-        bias.inputs.n_iterations = [90,90,30,90]
-        bias.inputs.convergence_threshold = 5e-7
         pipeline.connect_input('t1', bias, 'input_image')
         
         bet = pipeline.create_node(
@@ -289,7 +285,7 @@ class T2StarStudy(MRIStudy):
             options=options)
         
         bet = pipeline.create_node(
-            fsl.BET(frac=0.1, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
+            fsl.BET(frac=0.1), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
         pipeline.connect_input('t2s', bet, 'in_file')
         pipeline.connect_output('betted_T2s', bet, 'out_file')
         pipeline.connect_output('betted_T2s_mask', bet, 'mask_file')
