@@ -194,7 +194,7 @@ class FunctionalMRIStudy(MRIStudy):
             antspath = sp.check_output(cmd, shell=True)
             antspath = '/'.join(antspath.split('/')[0:-1])
             os.environ['ANTSPATH'] = antspath
-            print antspath
+#             print antspath
         except ImportError:
             print "NO ANTs module found. Please ensure to have it in you PATH."
 
@@ -231,7 +231,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         t1reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI'), name='T1_reg', wall_time=20,
+                       out_prefix='T12MNI'), name='T1_reg', wall_time=25,
             requirements=[ants2_req])
         t1reg.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect_input('betted_file', t1reg, 'input_file')
