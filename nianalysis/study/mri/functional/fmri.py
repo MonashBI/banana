@@ -224,7 +224,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_input('unwarped_file', bet_rsfmri, 'in_file')
         epireg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='epi2T1'), name='ANTsReg', wall_time=7,
+                       out_prefix='epi2T1'), name='ANTsReg', wall_time=10,
             requirements=[ants2_req])
         pipeline.connect_input('betted_file', epireg, 'ref_file')
         pipeline.connect(bet_rsfmri, 'out_file', epireg, 'input_file')
@@ -466,89 +466,91 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg')
+        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg', wall_time=5)
         t12MNI.inputs.reference = pipeline.option('MNI_template')
         t12MNI.inputs.out_matrix_file = 'T12MNI.mat'
         pipeline.connect_input('betted_file', t12MNI, 'in_file')
 
-        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1')
+        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5)
         MNI2t1.inputs.invert_xfm = True
         MNI2t1.inputs.out_file = 'MNI2T1.mat'
         pipeline.connect(t12MNI, 'out_matrix_file', MNI2t1, 'in_file')
 
-        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1')
+        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1', wall_time=5)
         epi2t1.inputs.invert_xfm = True
         epi2t1.inputs.out_file = 'epi2T1.mat'
         pipeline.connect_input('hires2example', epi2t1, 'in_file')
 
-        mkdir1 = pipeline.create_node(MakeDir(), name='makedir1')
+        mkdir1 = pipeline.create_node(MakeDir(), name='makedir1', wall_time=5)
         mkdir1.inputs.name_dir = 'reg'
         pipeline.connect_input('melodic_ica', mkdir1, 'base_dir')
 
-        cp0 = pipeline.create_node(CopyFile(), name='copyfile0')
+        cp0 = pipeline.create_node(CopyFile(), name='copyfile0', wall_time=5)
         cp0.inputs.dst = 'reg/highres2std.mat'
         pipeline.connect(t12MNI, 'out_matrix_file', cp0, 'src')
         pipeline.connect(mkdir1, 'new_dir', cp0, 'base_dir')
 
-        cp00 = pipeline.create_node(CopyFile(), name='copyfile00')
+        cp00 = pipeline.create_node(CopyFile(), name='copyfile00', wall_time=5)
         cp00.inputs.dst = 'reg/std2highres.mat'
         pipeline.connect(MNI2t1, 'out_file', cp00, 'src')
         pipeline.connect(cp0, 'basedir', cp00, 'base_dir')
 
-        cp000 = pipeline.create_node(CopyFile(), name='copyfile000')
+        cp000 = pipeline.create_node(CopyFile(), name='copyfile000',
+                                     wall_time=5)
         cp000.inputs.dst = 'reg/example_func2highres.mat'
         pipeline.connect(epi2t1, 'out_file', cp000, 'src')
         pipeline.connect(cp00, 'basedir', cp000, 'base_dir')
 
-        cp1 = pipeline.create_node(CopyFile(), name='copyfile1')
+        cp1 = pipeline.create_node(CopyFile(), name='copyfile1', wall_time=5)
         cp1.inputs.dst = 'reg/highres.nii.gz'
         pipeline.connect_input('betted_file', cp1, 'src')
         pipeline.connect(cp000, 'basedir', cp1, 'base_dir')
 
-        cp2 = pipeline.create_node(CopyFile(), name='copyfile2')
+        cp2 = pipeline.create_node(CopyFile(), name='copyfile2', wall_time=5)
         cp2.inputs.dst = 'reg/example_func.nii.gz'
         pipeline.connect_input('unwarped_file', cp2, 'src')
         pipeline.connect(cp1, 'basedir', cp2, 'base_dir')
 
-        cp3 = pipeline.create_node(CopyFile(), name='copyfile3')
+        cp3 = pipeline.create_node(CopyFile(), name='copyfile3', wall_time=5)
         cp3.inputs.dst = 'reg/highres2example_func.mat'
         pipeline.connect_input('hires2example', cp3, 'src')
         pipeline.connect(cp2, 'basedir', cp3, 'base_dir')
 
-        mkdir2 = pipeline.create_node(MakeDir(), name='makedir2')
+        mkdir2 = pipeline.create_node(MakeDir(), name='makedir2', wall_time=5)
         mkdir2.inputs.name_dir = 'mc'
         pipeline.connect(cp3, 'basedir', mkdir2, 'base_dir')
 
-        cp4 = pipeline.create_node(CopyFile(), name='copyfile4')
+        cp4 = pipeline.create_node(CopyFile(), name='copyfile4', wall_time=5)
         cp4.inputs.dst = 'mc/prefiltered_func_data_mcf.par'
         pipeline.connect_input('mc_par', cp4, 'src')
         pipeline.connect(mkdir2, 'new_dir', cp4, 'base_dir')
 
-        cp5 = pipeline.create_node(CopyFile(), name='copyfile5')
+        cp5 = pipeline.create_node(CopyFile(), name='copyfile5', wall_time=5)
         cp5.inputs.dst = 'mask.nii.gz'
         pipeline.connect_input('rsfmri_mask', cp5, 'src')
         pipeline.connect(cp4, 'basedir', cp5, 'base_dir')
 
         meanfunc = pipeline.create_node(
-            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc')
+            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
+            wall_time=5)
         pipeline.connect_input('rs_fmri', meanfunc, 'in_file')
 
-        cp6 = pipeline.create_node(CopyFile(), name='copyfile6')
+        cp6 = pipeline.create_node(CopyFile(), name='copyfile6', wall_time=5)
         cp6.inputs.dst = 'mean_func.nii.gz'
         pipeline.connect(meanfunc, 'out_file', cp6, 'src')
         pipeline.connect(cp5, 'basedir', cp6, 'base_dir')
 
-        mkdir3 = pipeline.create_node(MakeDir(), name='makedir3')
+        mkdir3 = pipeline.create_node(MakeDir(), name='makedir3', wall_time=5)
         mkdir3.inputs.name_dir = 'filtered_func_data.ica'
         pipeline.connect(cp6, 'basedir', mkdir3, 'base_dir')
 
-        cp7 = pipeline.create_node(CopyDir(), name='copyfile7')
+        cp7 = pipeline.create_node(CopyDir(), name='copyfile7', wall_time=5)
         cp7.inputs.dst = 'filtered_func_data.ica'
         cp7.inputs.method = 1
         pipeline.connect_input('melodic_ica', cp7, 'src')
         pipeline.connect(mkdir3, 'new_dir', cp7, 'base_dir')
 
-        cp8 = pipeline.create_node(CopyFile(), name='copyfile8')
+        cp8 = pipeline.create_node(CopyFile(), name='copyfile8', wall_time=5)
         cp8.inputs.dst = 'filtered_func_data.nii.gz'
         pipeline.connect_input('filtered_data', cp8, 'src')
         pipeline.connect(cp7, 'basedir', cp8, 'base_dir')
