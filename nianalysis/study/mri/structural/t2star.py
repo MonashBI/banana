@@ -4,8 +4,7 @@ from nianalysis.citations import (
 from nianalysis.data_formats import directory_format, nifti_gz_format, text_matrix_format, csv_format, zip_format
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.qsm import STI, Prepare, FillHoles, FitMask, QSMSummary
-from nianalysis.interfaces import utils
+from nianalysis.interfaces import utils, qsm
 from nianalysis.exceptions import (
     NiAnalysisDatasetNameError, NiAnalysisError, NiAnalysisMissingDatasetError)
 from ..base import MRIStudy
@@ -56,7 +55,7 @@ class T2StarStudy(MRIStudy):
             options=options)
         
         # Prepare and reformat SWI_COILS
-        prepare = pipeline.create_node(interface=Prepare(), name='prepare',
+        prepare = pipeline.create_node(interface=qsm.Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
                                        wall_time=30, memory=16000)
         prepare.inputs.echo_times = pipeline.option('qsm_echo_times')
@@ -72,7 +71,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input('opti_betted_T2s_mask', erosion, 'in_file')
         
         # Phase and QSM for dual echo
-        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
+        qsmrecon = pipeline.create_node(interface=qsm.STI(), name='qsmrecon',
                                         requirements=[matlab2015_req],
                                         wall_time=300, memory=24000)
         qsmrecon.inputs.echo_times = pipeline.option('qsm_echo_times')
@@ -117,7 +116,7 @@ class T2StarStudy(MRIStudy):
         # Prepare and reformat SWI_COILS for T2s only
         # Prepared output not saved to avoid being uploaded into xnat
         # Only required prior to QSM, so node incorporated into QSM pipeline
-        prepare = pipeline.create_node(interface=Prepare(), name='prepare',
+        prepare = pipeline.create_node(interface=qsm.Prepare(), name='prepare',
                                        requirements=[matlab2015_req],
                                        wall_time=30, memory=16000)
         prepare.inputs.echo_times = pipeline.option('qsm_echo_times')
@@ -149,12 +148,7 @@ class T2StarStudy(MRIStudy):
             version=1,
             citations=[fsl_cite, ants19_req],
             options=options)
-        
-        fill_holes = pipeline.create_node(interface=FillHoles(), name='fill_holes',
-                                       requirements=[matlab2015_req],
-                                       wall_time=5, memory=16000)
-        fill_holes.inputs.in_file = pipeline.option('MNI_template_mask')
-        
+              
         merge_trans = pipeline.create_node(utils.Merge(2), name='merge_transforms')
         pipeline.connect_input('MNI_to_T1_warp', merge_trans, 'in2')
         pipeline.connect_input('T1_to_MNI_mat', merge_trans, 'in1')
@@ -164,8 +158,8 @@ class T2StarStudy(MRIStudy):
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         apply_trans.inputs.invert_transform_flags = [True, False]
+        apply_trans.inputs.input_image = pipeline.option('MNI_template_mask')
         
-        pipeline.connect(fill_holes,'out_file', apply_trans, 'input_image')
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
         pipeline.connect_input('betted_T1', apply_trans, 'reference_image')
         
@@ -197,17 +191,11 @@ class T2StarStudy(MRIStudy):
             outputs=[DatasetSpec('opti_betted_T2s', nifti_gz_format),
                      DatasetSpec('opti_betted_T2s_mask', nifti_gz_format)],
             description=("python implementation of optiBET.sh"),
-            default_options={'MNI_template_T1': self._lookup_template_path('MNI'),
-                             'MNI_template_mask_T2s': self._lookup_template_mask_path('MNI')},
+            default_options={'MNI_template_mask_T2s': self._lookup_template_mask_path('MNI')},
             version=1,
             citations=[fsl_cite, ants19_req, matlab2015_req],
             options=options)
-        
-        fill_holes = pipeline.create_node(interface=FillHoles(), name='fill_holes',
-                                       requirements=[matlab2015_req],
-                                       wall_time=5, memory=16000)
-        fill_holes.inputs.in_file = pipeline.option('MNI_template_mask_T2s')
-                
+                    
         merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
         pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in1')
         pipeline.connect_input('T1_to_MNI_mat', merge_trans, 'in2')
@@ -218,8 +206,8 @@ class T2StarStudy(MRIStudy):
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         apply_trans.inputs.invert_transform_flags = [True, True, False]
+        apply_trans.inputs.input_image = pipeline.option('MNI_template_mask_T2s')
         
-        pipeline.connect(fill_holes,'out_file', apply_trans, 'input_image')
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
         pipeline.connect_input('betted_T2s', apply_trans, 'reference_image')
         
@@ -334,8 +322,8 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='CET_T2s',
             inputs=[DatasetSpec('betted_T2s', nifti_gz_format),
-                    DatasetSpec('T1_to_MNI_warp', nifti_gz_format),
-                    DatasetSpec('T1_to_MNI_mat', text_matrix_format),
+                    DatasetSpec(self._lookup_nl_tfm_inv_name('SUIT'), nifti_gz_format),
+                    DatasetSpec(self._lookup_l_tfm_to_name('SUIT'), text_matrix_format),
                     DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
             outputs=[DatasetSpec('cetted_T2s_mask', nifti_gz_format),
                      DatasetSpec('cetted_T2s', nifti_gz_format)],
@@ -347,15 +335,15 @@ class T2StarStudy(MRIStudy):
         
         # Initially use MNI space to warp SUIT mask into T2s space
         merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
-        pipeline.connect_input('T1_to_MNI_warp', merge_trans, 'in1')
-        pipeline.connect_input('T1_to_MNI_mat', merge_trans, 'in2')
-        pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in3')
+        pipeline.connect_input(self._lookup_nl_tfm_inv_name('SUIT'), merge_trans, 'in3')
+        pipeline.connect_input(self._lookup_l_tfm_to_name('SUIT'), merge_trans, 'in2')
+        pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in1')
 
         apply_trans = pipeline.create_node(
             ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=120)
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
-        apply_trans.inputs.invert_transform_flags = [True, True, True]
+        apply_trans.inputs.invert_transform_flags = [True, True, False]
         apply_trans.inputs.input_image = pipeline.option('SUIT_mask')
         
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
@@ -428,7 +416,7 @@ class T2StarStudy(MRIStudy):
     
     def _nonlinearReg(self, name, moving_image, moving_mask, out_mat, out_warp, out_warp_inv, warped_image, **options):
         ##
-        ##    fixed_image, fixed_mask, fixed_atlas, 
+        ##    fixed_image, fixed_mask, fixed_atlas, fixed_atlas_mask
         ##
         
         inputs = [DatasetSpec(moving_image, nifti_gz_format), DatasetSpec(moving_mask, nifti_gz_format)]
@@ -459,7 +447,9 @@ class T2StarStudy(MRIStudy):
                 metric_weight=[1,1,1],
                 transforms=['Rigid', 'Affine', 'SyN'],
                 transform_parameters=[(0.1,),(0.1,),(0.1,3,0)],
-                radius_or_number_of_bins=[32,32,32],
+                radius_or_number_of_bins=[32,32,4],
+                sampling_strategy=['Regular','Regular','None'],
+                sampling_percentage=[0.25,0.25,1],
                 smoothing_sigmas=[[3,2,1,0],[3,2,1,0],[3,2,1,0]],
                 sigma_units=[u'vox',u'vox',u'vox'],
                 shrink_factors =[[8,4,2,1],[8,4,2,1],[8,4,2,1]],
@@ -467,6 +457,8 @@ class T2StarStudy(MRIStudy):
                 winsorize_upper_quantile=0.995,
                 winsorize_lower_quantile=0.005,
                 float=True,
+                initial_moving_transform_com=1,
+                collapse_output_transforms=True,
                 output_warped_image=warped_image+'.nii.gz'),
             name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)
         pipeline.connect_input(moving_image, nonlinear_reg, 'moving_image')
@@ -476,45 +468,90 @@ class T2StarStudy(MRIStudy):
         # Specified the fixed image as either an input image or an atlas based on options provided
         if 'fixed_image' in options:
             pipeline.connect_input(options['fixed_image'], nonlinear_reg, 'fixed_image')
-            if 'fixed_mask' in options:
-                pipeline.connect_input(options['fixed_mask'], nonlinear_reg, 'fixed_image_mask')
         else:
             nonlinear_reg.inputs.fixed_image = options['fixed_atlas']
-            if 'fixed_atlas_mask' in options:
-                nonlinear_reg.inputs.fixed_image_mask = options['fixed_atlas_mask']
+        
+        # Specified the fixed mask as either an input mask or an atlas mask based on options provided
+        if 'fixed_mask' in options:
+            pipeline.connect_input(options['fixed_mask'], nonlinear_reg, 'fixed_image_mask')
+        else:
+            nonlinear_reg.inputs.fixed_image_mask = options['fixed_atlas_mask']
         
         # Split the forward matricies and extract the last one (the warp)    
-        splitTFMs = pipeline.create_node(Split(splits=[1,1,1], squeeze=True),
+        splitTFMs = pipeline.create_node(Split(splits=[1,1], squeeze=True),
                                          name='Split_AntsOut', memory=4000, wall_time=10)
         pipeline.connect(nonlinear_reg, 'forward_transforms', splitTFMs, 'inlist')
-        pipeline.connect_output(out_warp, splitTFMs, 'out3')
+        pipeline.connect_output(out_warp, splitTFMs, 'out2')
+        pipeline.connect_output(out_mat, splitTFMs, 'out1')
         
         # Concatenate the forward matrices to provide a single non-deformable matrix
-        concatMat = pipeline.create_node(fsl.utils.ConvertXFM(), concat_xfm=True,
-                                         name='Concat_RigidAffine', requirements=[fsl5_req], memory=4000, wall_time=15)
-        pipeline.connect(splitTFMs, 'out1', concatMat, 'in_file')
-        pipeline.connect(splitTFMs, 'out2', concatMat, 'in_file2')
-        pipeline.connect_output(out_mat, concatMat, 'out_file')
+        #concatMat = pipeline.create_node(fsl.utils.ConvertXFM(), concat_xfm=True,
+        #                                 name='Concat_RigidAffine', requirements=[fsl5_req], memory=4000, wall_time=15)
+        #pipeline.connect(splitTFMs, 'out1', concatMat, 'in_file')
+        #pipeline.connect(splitTFMs, 'out2', concatMat, 'in_file2')
+        #pipeline.connect_output(out_mat, concatMat, 'out_file')
         
         # Split the reverse transforms and extract the first one (the warp)
-        splitTFMs_inv = pipeline.create_node(Split(splits=[1,1,1], squeeze=True),
+        splitTFMs_inv = pipeline.create_node(Split(splits=[1,1], squeeze=True),
                                          name='Split_AntsOut_inv', memory=4000, wall_time=10)
         pipeline.connect(nonlinear_reg, 'reverse_transforms', splitTFMs_inv, 'inlist')
-        pipeline.connect_output(out_warp_inv, splitTFMs_inv, 'out1')
+        pipeline.connect_output(out_warp_inv, splitTFMs_inv, 'out2')
+        if 'out_mat_inv' in options:
+            pipeline.connect_output(options('out_mat_inv'), splitTFMs_inv, 'out1')
         
         # Concatenate inverted matrices if 'out_mat_inv' has been specified
-        if 'out_mat_inv' in options:
-            concatMat_inv = pipeline.create_node(fsl.utils.ConvertXFM(), concat_xfm=True,
-                                                 name='Concat_RigidAffine_inv', requirements=[fsl5_req], memory=4000, wall_time=15)
-            pipeline.connect(splitTFMs_inv, 'out2', concatMat_inv, 'in_file')
-            pipeline.connect(splitTFMs_inv, 'out1', concatMat_inv, 'in_file2')
-            pipeline.connect_output(options('out_mat_inv'), concatMat_inv, 'out_file')
+        #if 'out_mat_inv' in options:
+        #    concatMat_inv = pipeline.create_node(fsl.utils.ConvertXFM(), concat_xfm=True,
+        #                                         name='Concat_RigidAffine_inv', requirements=[fsl5_req], memory=4000, wall_time=15)
+        #    pipeline.connect(splitTFMs_inv, 'out2', concatMat_inv, 'in_file')
+        #    pipeline.connect(splitTFMs_inv, 'out1', concatMat_inv, 'in_file2')
+        #    pipeline.connect_output(options('out_mat_inv'), concatMat_inv, 'out_file')
                 
         pipeline.assert_connected()
                 
         return pipeline
 
-    def _applyTFM(self, name, ref_image, input_image, transforms, out_image, **options):
+    def _applyTFM_subpipeline(self, pipeline, name, transforms, out_image, **options):
+        
+        merge_trans = pipeline.create_node(utils.Merge(len(transforms)), name='{name}_merge_transforms'.format(name=name))
+        
+        for (i,tfm) in enumerate(transforms):
+            pipeline.connect_input(tfm[0], merge_trans, 'in'+str(i+1))
+
+        apply_trans = pipeline.create_node(
+            ants.resampling.ApplyTransforms(), name='{name}_ApplyTransform'.format(name=name), requirements=[ants19_req], memory=16000, wall_time=30)
+        apply_trans.inputs.input_image_type = 3
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        
+        # If not using an atlas for reference, connect inputs to node
+        if 'ref_atlas' not in options:
+            pipeline.connect_input(options['ref_image'], apply_trans, 'reference_image')
+        else:
+            apply_trans.inputs.reference_image = self._lookup_template_path(options['ref_atlas'])
+            
+        # If not using an atlas as input, connect inputs to node
+        if 'input_atlas' not in options:
+            pipeline.connect_input(options['input_image'], apply_trans, 'input_image')
+        else:
+            apply_trans.inputs.input_image = self._lookup_template_path(options['input_atlas'])
+        
+        # Allow specified interpolation method
+        if 'interpolation' in options:
+            apply_trans.inputs.interpolation = options['interpolation']
+        else:
+            apply_trans.inputs.interpolation = 'Linear'
+        
+        # Invert matrices where required    
+        inv_flags = []
+        for tfm in transforms:
+            inv_flags.append(tfm[2])
+        apply_trans.inputs.invert_transform_flags = inv_flags
+        
+        pipeline.connect_output(out_image, apply_trans, 'output_image')
+        
+        return pipeline
+        
+    def _applyTFM(self, name, transforms, out_image, **options):
         '''
            transforms = [['x_to_y_mat','text_matrix_format',True]]
            
@@ -526,62 +563,30 @@ class T2StarStudy(MRIStudy):
         '''
         
         # Add all transforms as inputs
-        inputs = [];
+        pipeline_inputs = [];
         for tfm in transforms:
-            inputs.append(DatasetSpec(tfm[0], tfm[1]))
+            pipeline_inputs.append(DatasetSpec(tfm[0], tfm[1]))
                     
         # If not using an atlas for reference, add the ref_image as input
         if 'ref_atlas' not in options:
-            inputs.append(DatasetSpec(ref_image, nifti_gz_format))
+            pipeline_inputs.append(DatasetSpec(options['ref_image'], nifti_gz_format))
             
         # If not using an atlas as input, add the input_image as input
         if 'input_atlas' not in options:
-            inputs.append(DatasetSpec(input_image, nifti_gz_format))
+            pipeline_inputs.append(DatasetSpec(options['input_image'], nifti_gz_format))
         
         # mni to t2s
         pipeline = self.create_pipeline(
             name=name,
-            inputs=inputs,
+            inputs=pipeline_inputs,
             outputs=[DatasetSpec(out_image, nifti_gz_format)],
             description=("Transform data"),
-            default_options={}, # 'MNI_template': self._lookup_template_path('MNI')
+            default_options={},
             version=1,
             citations=[ants19_req],
             options=options)
 
-        merge_trans = pipeline.create_node(utils.Merge(len(transforms)), name='merge_transforms')
-        for (i,tfm) in enumerate(transforms):
-            pipeline.connect_input(tfm[0], merge_trans, 'in'+str(i+1))
-
-        apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
-        apply_trans.inputs.input_image_type = 3
-        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        
-        # If not using an atlas for reference, connect inputs to node
-        if 'ref_atlas' not in options:
-            pipeline.connect_input(ref_image, apply_trans, 'reference_image')
-        else:
-            apply_trans.inputs.reference_image = self._lookup_template_path(options['ref_atlas'])
-            
-        # If not using an atlas as input, connect inputs to node
-        if 'input_atlas' not in options:
-            pipeline.connect_input(input_image, apply_trans, 'input_image')
-        else:
-            apply_trans.inputs.input_image = self._lookup_template_path(options['input_atlas'])
-        
-        # Allow specified interpolation method
-        if 'interpolation' in options:
-            apply_trans.inputs.interpolation = options['interpolation']
-        else:
-            apply_trans.inputs.interpolation = 'Linear'
-        
-        # Invert matrices where required    
-        apply_trans.inputs.invert_transform_flags = []
-        for tfm in enumerate(transforms):
-            apply_trans.inputs.invert_transform_flags.append(tfm[2])
-        
-        pipeline.connect_output(out_image, apply_trans, 'output_image')
+        pipeline = self._applyTFM_subpipeline(pipeline, "{name}_subpipeline".format(name=name), transforms, out_image, **options)
         pipeline.assert_connected()
         
         return pipeline
@@ -598,28 +603,30 @@ class T2StarStudy(MRIStudy):
     def nonLinearT1ToMNI(self, **options):
         
         return self._nonlinearReg(name='ANTS_Reg_T1_to_MNI_Warp',
+                                  fixed_atlas=self._lookup_template_path('MNI'),
+                                  fixed_atlas_mask=self._lookup_template_mask_path('MNI'),
                                   moving_image='betted_T1', 
                                   moving_mask='betted_T1_mask', 
                                   out_mat=self._lookup_l_tfm_to_name('MNI'), 
                                   out_warp=self._lookup_nl_tfm_to_name('MNI'), 
                                   out_warp_inv=self._lookup_nl_tfm_inv_name('MNI'), 
-                                  warped_image='T1_in_MNI',
-                                  fixed_atlas=self._lookup_template_path('MNI'),
-                                  fixed_atlas_mask=self._lookup_template_mask_path('MNI'))
+                                  warped_image='T1_in_MNI')
     
     def nonLinearT1ToSUIT(self, **options):
         return self._nonlinearReg(name='ANTS_Reg_T1_to_SUIT_Warp',
+                                  fixed_atlas=self._lookup_template_path('SUIT'),
+                                  fixed_atlas_mask=self._lookup_template_mask_path('SUIT'),
                                   moving_image='cetted_T1', 
                                   moving_mask='cetted_T1_mask', 
                                   out_mat=self._lookup_l_tfm_to_name('SUIT'), 
                                   out_warp=self._lookup_nl_tfm_to_name('SUIT'), 
                                   out_warp_inv=self._lookup_nl_tfm_inv_name('SUIT'), 
-                                  warped_image='T1_in_SUIT',
-                                  fixed_atlas=self._lookup_template_path('SUIT'))   
+                                  warped_image='T1_in_SUIT')   
     
     def nonLinearT2sToMNI(self, **options):
         return self._nonlinearReg(name='ANTS_Reg_T2s_to_MNI_Template_Warp',
-                                  fixed_image='t2s_in_mni_initial_atlas', 
+                                  fixed_image='t2s_in_mni_initial_atlas',
+                                  fixed_atlas_mask=self._lookup_template_mask_path('MNI'), 
                                   moving_image='opti_betted_T2s', 
                                   moving_mask='opti_betted_T2s_mask', 
                                   out_mat='T2s_to_MNI_mat_refined', 
@@ -629,7 +636,8 @@ class T2StarStudy(MRIStudy):
     
     def nonLinearT2sToSUIT(self, **options):
         return self._nonlinearReg(name='ANTS_Reg_T2s_to_SUIT_Template_Warp',
-                                  fixed_image='t2s_in_suit_initial_atlas', 
+                                  fixed_image='t2s_in_suit_initial_atlas',
+                                  fixed_atlas_mask=self._lookup_template_mask_path('SUIT'), 
                                   moving_image='cetted_T2s', 
                                   moving_mask='cetted_T2s_mask', 
                                   out_mat='T2s_to_SUIT_mat_refined', 
@@ -641,133 +649,108 @@ class T2StarStudy(MRIStudy):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_SUIT_Refined',
                                   ref_image='t2s_in_suit_initial_atlas', 
                                   input_image='qsm',
-                                  transforms=[['T2s_to_SUIT_mat_refined','text_matrix_format', False],
-                                              ['T2s_to_SUIT_warp_refined', 'nifti_gz_format', False]],
+                                  transforms=[['T2s_to_SUIT_mat_refined', text_matrix_format, False],
+                                              ['T2s_to_SUIT_warp_refined', nifti_gz_format, False]],
                                   out_image='qsm_in_suit_refined')  
     
     def t2sInSUITRefined(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_SUIT_Refined',
                                   ref_image='t2s_in_suit_initial_atlas', 
                                   input_image='opti_betted_T2s',
-                                  transforms=[['T2s_to_SUIT_mat_refined','text_matrix_format', False],
-                                              ['T2s_to_SUIT_warp_refined', 'nifti_gz_format', False]],
+                                  transforms=[['T2s_to_SUIT_mat_refined', text_matrix_format, False],
+                                              ['T2s_to_SUIT_warp_refined', nifti_gz_format, False]],
                                   out_image='t2s_in_suit_refined')  
         
     def qsmInMNIRefined(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_MNI_Refined',
                                   ref_image='t2s_in_mni_initial_atlas', 
                                   input_image='qsm',
-                                  transforms=[['T2s_to_MNI_mat_refined','text_matrix_format', False],
-                                              ['T2s_to_MNI_warp_refined', 'nifti_gz_format', False]],
+                                  transforms=[['T2s_to_MNI_mat_refined', text_matrix_format, False],
+                                              ['T2s_to_MNI_warp_refined', nifti_gz_format, False]],
                                   out_image='qsm_in_mni_refined')  
         
     def t2sInMNIRefined(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_MNI_Refined',
                                   ref_image='t2s_in_mni_initial_atlas', 
                                   input_image='opti_betted_T2s',
-                                  transforms=[['T2s_to_MNI_mat_refined','text_matrix_format', False],
-                                              ['T2s_to_MNI_warp_refined', 'nifti_gz_format', False]],
+                                  transforms=[['T2s_to_MNI_mat_refined', text_matrix_format, False],
+                                              ['T2s_to_MNI_warp_refined', nifti_gz_format, False]],
                                   out_image='t2s_in_mni_refined')  
        
     def qsmInMNI(self, **options):
-        
-        pipeline = self.create_pipeline(
-            name='ANTsApplyTransform_MNI',
-            inputs=[DatasetSpec('qsm', nifti_gz_format),
-                    DatasetSpec('T1_to_MNI_warp', nifti_gz_format),
-                    DatasetSpec('T1_to_MNI_mat', text_matrix_format),
-                    DatasetSpec('T2s_to_T1_mat', text_matrix_format)],
-            outputs=[DatasetSpec('qsm_in_mni', nifti_gz_format)],
-            description=("Transform QSM data from T2s to MNI space"),
-            default_options={'MNI_template': self._lookup_template_path('MNI')},
-            version=1,
-            citations=[fsl_cite],
-            options=options)
-        
-        merge_trans = pipeline.create_node(utils.Merge(3), name='merge_transforms')
-        pipeline.connect_input('T1_to_MNI_warp', merge_trans, 'in1')
-        pipeline.connect_input('T1_to_MNI_mat', merge_trans, 'in2')
-        pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in3')
-
-        apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform', requirements=[ants19_req], memory=16000, wall_time=30)
-        apply_trans.inputs.reference_image = pipeline.option('MNI_template')
-        apply_trans.inputs.interpolation = 'Linear'
-        apply_trans.inputs.input_image_type = 3
-        
-        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        
-        pipeline.connect_input('qsm', apply_trans, 'input_image')
-        
-        pipeline.connect_output('qsm_in_mni', apply_trans, 'output_image')
-
-        pipeline.assert_connected()
-        return pipeline    
+        return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_MNI',
+                                  ref_atlas='MNI', 
+                                  input_image='qsm',
+                                  transforms=[['T1_to_MNI_warp',nifti_gz_format, False],
+                                              ['T1_to_MNI_mat', text_matrix_format, False],
+                                              ['T2s_to_T1_mat', text_matrix_format, False]],
+                                  out_image='qsm_in_mni')     
         
     def t2sInMNI(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_MNI',
                                   ref_atlas='MNI', 
                                   input_image='opti_betted_T2s',
-                                  transforms=[['T1_to_MNI_warp','nifti_gz_format', False],
-                                              ['T1_to_MNI_mat', 'text_matrix_format', False],
-                                              ['T2s_to_T1_mat', 'text_matrix_format', False]],
+                                  transforms=[['T1_to_MNI_warp', nifti_gz_format, False],
+                                              ['T1_to_MNI_mat', text_matrix_format, False],
+                                              ['T2s_to_T1_mat', text_matrix_format, False]],
                                   out_image='t2s_in_mni')     
 
     def qsmInSUIT(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_SUIT',
-                                  ref_atlas='SUIT', 
+                                  ref_atlas='SUIT',
                                   input_image='qsm',
-                                  transforms=[['T1_to_SUIT_warp','nifti_gz_format', False],
-                                              ['T1_to_SUIT_mat', 'text_matrix_format', False],
-                                              ['T2s_to_T1_mat', 'text_matrix_format', False]],
+                                  transforms=[['T1_to_SUIT_warp', nifti_gz_format, False],
+                                              ['T1_to_SUIT_mat', text_matrix_format, False],
+                                              ['T2s_to_T1_mat', text_matrix_format, False]],
                                   out_image='qsm_in_suit')           
 
     def t2sInSUIT(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_SUIT',
                                   ref_atlas='SUIT', 
                                   input_image='opti_betted_T2s',
-                                  transforms=[['T1_to_SUIT_warp','nifti_gz_format', False],
-                                              ['T1_to_SUIT_mat', 'text_matrix_format', False],
-                                              ['T2s_to_T1_mat', 'text_matrix_format', False]],
+                                  transforms=[['T1_to_SUIT_warp', nifti_gz_format, False],
+                                              ['T1_to_SUIT_mat', text_matrix_format, False],
+                                              ['T2s_to_T1_mat', text_matrix_format, False]],
                                   out_image='t2s_in_suit')    
             
     def mniInT2s(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_MNI_to_t2s',
                                   ref_image='opti_betted_T2s', 
                                   input_atlas='MNI',
-                                  transforms=[['T2s_to_T1_mat', 'text_matrix_format', True],
-                                              ['T1_to_MNI_mat', 'text_matrix_format', True],
-                                              ['MNI_to_T1_warp','nifti_gz_format', False]],
+                                  transforms=[['T2s_to_T1_mat', text_matrix_format, True],
+                                              ['T1_to_MNI_mat', text_matrix_format, True],
+                                              ['MNI_to_T1_warp', nifti_gz_format, False]],
                                   out_image='mni_in_t2s')   
+    
+    def _lookup_structure_refined(self, structure_name):
+        outputNames = self._lookup_structure_refined_names(structure_name)
+        return [DatasetSpec(outputNames[0], nifti_gz_format, multiplicity='per_project'),
+                DatasetSpec(outputNames[1], nifti_gz_format, multiplicity='per_project')]
+        
+    def _lookup_structure_refined_names(self, structure_name):
+        if structure_name in ['dentate','caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra','frontal_wm']:
+            output_names = ['left_{structure_name}_in_mni_refined'.format(structure_name=structure_name),
+                        'right_{structure_name}_in_mni_refined'.format(structure_name=structure_name)]
+        else:
+            raise NiAnalysisError(
+                    "Invalid structure_name in _lookup_structure_refined_names: {structure_name}".format(structure_name=structure_name))
+        return output_names
     
     def _lookup_structure_output(self, structure_name):
         outputNames = self._lookup_structure_output_names(structure_name)
         return [DatasetSpec(outputNames[0], nifti_gz_format),DatasetSpec(outputNames[1], nifti_gz_format)]
-    
+        
     def _lookup_structure_output_names(self, structure_name):
-        if structure_name == 'dentate_nuclei':
-            outputNames = ['left_dentate_in_qsm', 'right_dentate_in_qsm']
-        elif structure_name == 'caudate':
-            outputNames = ['left_caudate_in_qsm', 'right_caudate_in_qsm']
-        elif structure_name == 'putamen':
-            outputNames = ['left_putamen_in_qsm', 'right_putamen_in_qsm']
-        elif structure_name == 'pallidum':
-            outputNames = ['left_pallidum_in_qsm', 'right_pallidum_in_qsm']
-        elif structure_name == 'thalamus':
-            outputNames = ['left_thalamus_in_qsm', 'right_thalamus_in_qsm']
-        elif structure_name == 'red_nuclei':
-            outputNames = ['left_red_nuclei_in_qsm', 'right_red_nuclei_in_qsm']
-        elif structure_name == 'substantia_nigra':
-            outputNames = ['left_substantia_nigra_in_qsm', 'right_substantia_nigra_in_qsm']
-        elif structure_name == 'frontal_wm':
-            outputNames = ['left_frontal_wm_in_qsm', 'right_frontal_wm_in_qsm']
+        if structure_name in ['dentate','caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra','frontal_wm']:
+            output_names = ['left_{structure_name}_in_qsm'.format(structure_name=structure_name),
+                        'right_{structure_name}_in_qsm'.format(structure_name=structure_name)]
         else:
             raise NiAnalysisError(
                     "Invalid structure_name in _lookup_structure_output_names: {structure_name}".format(structure_name=structure_name))
-        return outputNames
+        return output_names
     
     def _lookup_structure_thr(self, structure_name):
-        if structure_name in ['dentate_nuclei', 'caudate', 'putamen', 'pallidum', 
+        if structure_name in ['dentate', 'caudate', 'putamen', 'pallidum', 
                               'thalamus', 'red_nuclei', 'substantia_nigra']:
             thr = '75'
         elif structure_name in ['frontal_wm']:
@@ -778,7 +761,7 @@ class T2StarStudy(MRIStudy):
         return thr
 
     def _lookup_structure_number(self, structure_name): # [LEFT, RIGHT]
-        if structure_name == 'dentate_nuclei':
+        if structure_name == 'dentate':
             number = [28, 29]
         elif structure_name == 'caudate':
             number = [4, 15]
@@ -800,7 +783,7 @@ class T2StarStudy(MRIStudy):
         return number
 
     def _lookup_structure_fitting(self, structure_name):
-        if structure_name == 'dentate_nuclei':
+        if structure_name == 'dentate':
             fit = False
         elif structure_name == 'caudate':
             fit = False
@@ -822,7 +805,7 @@ class T2StarStudy(MRIStudy):
         return fit
     
     def _lookup_structure_atlas_path(self, structure_name):
-        if structure_name in ['dentate_nuclei']:
+        if structure_name in ['dentate']:
             atlas = os.path.abspath(os.path.join(
                 os.path.dirname(nianalysis.__file__),
                 'atlases','Cerebellum-SUIT-prob.nii'))
@@ -844,9 +827,11 @@ class T2StarStudy(MRIStudy):
         return atlas
     
     def _lookup_structure_approach(self, structure_name):
-        if structure_name in ['dentate_nuclei', 'frontal_wm', 'red_nuclei', 'substantia_nigra']:
+        if structure_name in ['dentate', 'red_nuclei', 'substantia_nigra','caudate', 'putamen', 'pallidum', 'thalamus']:
+            space = 'REFINED'
+        elif structure_name in ['frontal_wm']:
             space = 'ATLAS'
-        elif structure_name in ['caudate', 'putamen', 'pallidum', 'thalamus']:
+        elif structure_name in ['null_placeholder']:
             space = 'FIRST'
         else:
             raise NiAnalysisError(
@@ -854,7 +839,7 @@ class T2StarStudy(MRIStudy):
         return space
         
     def _lookup_structure_space(self, structure_name):
-        if structure_name == 'dentate_nuclei':
+        if structure_name == 'dentate':
             space = 'SUIT'
         elif structure_name in ['caudate', 'putamen', 'pallidum', 'thalamus', 'frontal_wm']:
             space = 'MNI'
@@ -935,7 +920,9 @@ class T2StarStudy(MRIStudy):
         return input_name
     
     def _mask_pipeline(self, structure_name, **options):
-        if self._lookup_structure_approach(structure_name) == 'ATLAS':
+        if self._lookup_structure_approach(structure_name) == 'REFINED':
+            return self._mask_refined_pipeline(structure_name)
+        elif self._lookup_structure_approach(structure_name) == 'ATLAS':
             return self._mask_atlas_pipeline(structure_name)
         elif self._lookup_structure_approach(structure_name) == 'FIRST':
             return self._mask_first_pipeline(structure_name)
@@ -943,6 +930,52 @@ class T2StarStudy(MRIStudy):
             raise NiAnalysisError(
                     "Invalid structure_name in _mask_pipeline: {structure_name}".format(structure_name=structure_name))
         return 
+    
+    def _mask_refined_pipeline(self, structure_name, **options):
+        
+        ref_image ='t2s'
+        transforms = [['MNI_to_T2s_warp_refined', nifti_gz_format, False],
+                      ['T2s_to_MNI_mat_refined', text_matrix_format, True]]
+                      
+        pipeline_inputs = self._lookup_structure_refined(structure_name)
+        pipeline_inputs.append(DatasetSpec(ref_image,nifti_gz_format))        
+        pipeline_inputs.append(DatasetSpec(transforms[0][0],transforms[0][1]))
+        pipeline_inputs.append(DatasetSpec(transforms[1][0],transforms[1][1]))
+        
+        pipeline_outputs = self._lookup_structure_output(structure_name)
+            
+        pipeline = self.create_pipeline(
+            name='Mask_refined_pipeline_{structure_name}'.format(structure_name=structure_name),
+            inputs=pipeline_inputs,
+            outputs=pipeline_outputs,
+            description=("Transform {structure_name} refined mni to T2s space".format(structure_name=structure_name)),
+            default_options={},
+            version=1,
+            citations=[ants19_req],
+            options=options)
+        
+        pipeline_input_names = self._lookup_structure_refined_names(structure_name)
+        pipeline_output_names = self._lookup_structure_output_names(structure_name)
+        
+        pipeline = self._applyTFM_subpipeline(pipeline=pipeline, 
+                                                    name='applytfm_left_{structure_name}'.format(structure_name=structure_name), 
+                                                    transforms=transforms, 
+                                                    ref_image=ref_image, 
+                                                    input_image=pipeline_input_names[0],
+                                                    out_image=pipeline_output_names[0],
+                                                    interpolation='NearestNeighbor')
+        
+        pipeline = self._applyTFM_subpipeline(pipeline=pipeline, 
+                                                    name='applytfm_right_{structure_name}'.format(structure_name=structure_name), 
+                                                    transforms=transforms, 
+                                                    ref_image=ref_image, 
+                                                    input_image=pipeline_input_names[1],
+                                                    out_image=pipeline_output_names[1],
+                                                    interpolation='NearestNeighbor')
+        
+        pipeline.assert_connected()
+        
+        return pipeline
     
     def _mask_atlas_pipeline(self, structure_name, **options):
         pipeline_inputs = [DatasetSpec('t2s', nifti_gz_format),
@@ -1025,14 +1058,14 @@ class T2StarStudy(MRIStudy):
         output_names = self._lookup_structure_output_names(structure_name)
         
         if self._lookup_structure_fitting(structure_name):
-            fit_left_mask = pipeline.create_node(interface=FitMask(), 
+            fit_left_mask = pipeline.create_node(interface=qsm.FitMask(), 
                                                  name='fit_left_mask_{structure_name}'.format(structure_name=structure_name),
                                                  requirements=[matlab2015_req],
                                                  wall_time=20, memory=16000)
             pipeline.connect_input('qsm', fit_left_mask, 'in_file')
             pipeline.connect(left_mask,'out_file', fit_left_mask, 'initial_mask_file')
             
-            fit_right_mask = pipeline.create_node(interface=FitMask(), 
+            fit_right_mask = pipeline.create_node(interface=qsm.FitMask(), 
                                                  name='fit_right_mask_{structure_name}'.format(structure_name=structure_name),
                                                  requirements=[matlab2015_req],
                                                  wall_time=20, memory=16000)
@@ -1132,7 +1165,7 @@ class T2StarStudy(MRIStudy):
         return pipeline
             
     def dentate_masks(self, **options):
-        return self._mask_pipeline('dentate_nuclei')
+        return self._mask_pipeline('dentate')
     
     def caudate_masks(self, **options):
         return self._mask_pipeline('caudate')
@@ -1157,7 +1190,7 @@ class T2StarStudy(MRIStudy):
        
     def _lookup_study_structures(self, study_name):
         if study_name in ['ASPREE', 'FRDA']:
-            structure_list = ['dentate_nuclei', 'caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra', 'frontal_wm']
+            structure_list = ['dentate', 'caudate','putamen','pallidum','thalamus','red_nuclei','substantia_nigra', 'frontal_wm']
         else:
             raise NiAnalysisError(
                     "Invalid study_name in _lookup_study_structures: {study_name}".format(study_name=study_name))
@@ -1252,7 +1285,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_visit_id(identity_node,'in_visit_id')
         
         summarise_results = pipeline.create_join_visits_node(
-            interface=QSMSummary(), 
+            interface=qsm.QSMSummary(), 
             name='summarise_qsm',
             joinfield=['in_subject_id','in_visit_id','in_field_values'],
             wall_time=60, 
@@ -1355,6 +1388,9 @@ class T2StarStudy(MRIStudy):
              
         DatasetSpec('betted_T2s', nifti_gz_format, bet_T2s),     
         DatasetSpec('betted_T2s_mask', nifti_gz_format, bet_T2s),
+                         
+        DatasetSpec('cetted_T2s', nifti_gz_format, cet_T2s), 
+        DatasetSpec('cetted_T2s_mask', nifti_gz_format, cet_T2s),   
         
         DatasetSpec('opti_betted_T1', nifti_gz_format, optiBET_T1),
         DatasetSpec('opti_betted_T1_mask', nifti_gz_format, optiBET_T1),
@@ -1444,6 +1480,22 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('qsm_in_suit_refined_atlas', nifti_gz_format, qsm_suit_refined_atlas, multiplicity='per_project'),
         DatasetSpec('t2s_in_mni_refined_atlas', nifti_gz_format, t2s_mni_refined_atlas, multiplicity='per_project'),
         DatasetSpec('t2s_in_suit_refined_atlas', nifti_gz_format, t2s_suit_refined_atlas, multiplicity='per_project'),
+        
+        # Template based tracings
+        DatasetSpec('left_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('left_red_nuclei_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_red_nuclei_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('left_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('left_pallidum_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_pallidum_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('left_thalamus_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_thalamus_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('left_putamen_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_putamen_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('left_caudate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+        DatasetSpec('right_caudate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
     
         # Study-specific analysis summary files
         DatasetSpec('qsm_summary', csv_format, analysis_pipeline, multiplicity='per_project'))
