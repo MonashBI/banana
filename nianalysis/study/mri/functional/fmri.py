@@ -19,8 +19,10 @@ from nianalysis.data_formats import (
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir, Merge
+from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
+from nipype.interfaces.utility.base import IdentityInterface
 
 
 class FunctionalMRIStudy(MRIStudy):
@@ -574,16 +576,19 @@ class FunctionalMRIStudy(MRIStudy):
             version=1,
             citations=[fsl_cite],
             options=options)
-        labeled_sub = pipeline.create_join_subjects_node(
-            CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
-        pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
-
-        fix_training = pipeline.create_node(
-            FSLFixTraining(), name='fix_training', wall_time=40,
-            requirements=[fix_req])
+#         labeled_sub = pipeline.create_join_subjects_node(
+#             CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
+#         pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
+        merge_visits = pipeline.create_join_visits_node(
+            NiPypeMerge(1), joinfield=['in1'], name='merge_visits')
+        merge_visits.inputs.ravel_inputs = True
+        fix_training = pipeline.create_join_subjects_node(
+            FSLFixTraining(), joinfield=['list_dir'], name='fix_training',
+            wall_time=40, requirements=[fix_req])
         fix_training.inputs.outname = 'FIX_training_set'
         fix_training.inputs.training = True
-        pipeline.connect(labeled_sub, 'out_list', fix_training, 'list_dir')
+        pipeline.connect_input('fix_dir', merge_visits, 'in1')
+        pipeline.connect(merge_visits, 'out', fix_training, 'list_dir')
 
         pipeline.connect_output('train_data', fix_training, 'training_set')
 
@@ -596,7 +601,8 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('t1', nifti_gz_format),
         DatasetSpec('rs_fmri', nifti_gz_format),
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
-        DatasetSpec('train_data', rdata_format, TrainingFix),
+        DatasetSpec('train_data', rdata_format, TrainingFix,
+                    multiplicity='per_project'),
         DatasetSpec('cleaned_file', nifti_gz_format, fix_pipeline),
         DatasetSpec('betted_file', nifti_gz_format, optiBET),
         DatasetSpec('betted_mask', nifti_gz_format, optiBET),
