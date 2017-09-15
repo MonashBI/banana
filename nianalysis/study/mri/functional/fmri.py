@@ -579,7 +579,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
 
         fix_training = pipeline.create_node(
-            FSLFixTraining(), name='fix_training', wall_time=20,
+            FSLFixTraining(), name='fix_training', wall_time=40,
             requirements=[fix_req])
         fix_training.inputs.outname = 'FIX_training_set'
         fix_training.inputs.training = True
