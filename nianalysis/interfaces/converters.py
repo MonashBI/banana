@@ -17,6 +17,8 @@ class Dcm2niixInputSpec(CommandLineInputSpec):
     compression = traits.Str(argstr='-z %s', desc='type of compression')
     filename = File(genfile=True, argstr='-f %s', desc='output file name')
     out_dir = Directory(genfile=True, argstr='-o %s', desc="output directory")
+    multifile_concat = traits.Bool(default=False, desc="concatenate multiple "
+                                   "echoes into one file")
 
 
 class Dcm2niixOutputSpec(TraitedSpec):
@@ -50,7 +52,7 @@ class Dcm2niix(CommandLine):
                     if match_re.match(f) is not None]
         if len(products) == 1:
             converted = products[0]
-        elif len(products) > 1:
+        elif len(products) > 1 and self.inputs.multifile_concat:
             ex_file = nib.load(products[0])
             data = ex_file.get_data()
             merged_file = np.zeros((data.shape[0], data.shape[1],
@@ -61,6 +63,8 @@ class Dcm2niix(CommandLine):
             im2save = nib.Nifti1Image(merged_file, ex_file.affine)
             nib.save(im2save, out_dir + fname)
             converted = out_dir + fname
+        elif len(products) > 1 and not self.inputs.multifile_concat:
+            converted = products[-1]
         else:
             raise NiAnalysisError("No products produced by dcm2niix ({})"
                                   .format(', '.join(os.listdir(out_dir))))

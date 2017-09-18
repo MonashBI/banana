@@ -15,7 +15,7 @@ from nianalysis.requirements import fsl5_req, ants2_req, afni_req, fix_req
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
-    zip_format, text_matrix_format, par_format, gif_format)
+    zip_format, text_matrix_format, par_format, gif_format, targz_format)
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir, Merge
@@ -623,7 +623,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('mc_par', par_format, rsfMRI_filtering),
         DatasetSpec('rsfmri_mask', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
-        DatasetSpec('melodic_ica', zip_format, MelodicL1),
+        DatasetSpec('melodic_ica', targz_format, MelodicL1),
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
-        DatasetSpec('fix_dir', zip_format, PrepareFix),
+        DatasetSpec('fix_dir', targz_format, PrepareFix),
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth))
