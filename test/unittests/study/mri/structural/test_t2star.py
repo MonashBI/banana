@@ -44,7 +44,7 @@ class TestQSM(TestCase):
                 'betted_T1': Dataset('betted_T1', nifti_gz_format),
                 'betted_T2s_mask': Dataset('betted_T2s_mask', nifti_gz_format),
                 'betted_T2s': Dataset('betted_T2s', nifti_gz_format),
-                't2s': Dataset('t2s', nifti_gz_format),
+                #'t2s': Dataset('t2s', nifti_gz_format),
                 'T2s_to_T1_mat': Dataset('T2s_to_T1_mat', text_matrix_format),
                 'SUIT_to_T1_warp': Dataset('SUIT_to_T1_warp', nifti_gz_format),
                 'T1_to_SUIT_warp': Dataset('T1_to_SUIT_warp', nifti_gz_format),
@@ -57,6 +57,8 @@ class TestQSM(TestCase):
                 'T2s_to_MNI_mat_refined': Dataset('T2s_to_MNI_mat_refined', text_matrix_format),
                 'left_dentate_in_mni_refined': Dataset('left_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
                 'right_dentate_in_mni_refined': Dataset('right_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+                'left_substantia_nigra_in_mni_refined': Dataset('left_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+                'right_substantia_nigra_in_mni_refined': Dataset('right_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
                 'qsm': Dataset('qsm', nifti_gz_format)
                 #'t2s_in_mni': Dataset('test_t2s_in_mni', nifti_gz_format),
                 #'t2s_in_mni_initial_atlas': Dataset('test_t2s_mni_atlas', nifti_gz_format),
@@ -68,7 +70,7 @@ class TestQSM(TestCase):
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
                 })
         #study.t2s_atlas(qsm_num_channels=8, qsm_echo_times=[20], swi_coils_filename='T2swi3d_axial_p2_1.8mm_Coil').run(work_dir=self.work_dir, plugin='MultiProc')
-        study.analysis_pipeline(study_name='TEST').run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['proc'], plugin='MultiProc')
+        study.prepare_swi_coils(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['proc'], plugin='MultiProc')
         self.assertDatasetCreated(dataset_name='opti_betted_T1.nii.gz', study_name=study.name)
         #self.assertDatasetCreated(multiplicity='per_project',dataset_name='t2s_mni_atlas.nii.gz', study_name=study.name)
         

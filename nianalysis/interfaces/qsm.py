@@ -12,7 +12,8 @@ class PrepareInputSpec(BaseInterfaceInputSpec):
 
 class PrepareOutputSpec(TraitedSpec):
     out_dir = Directory(exists=True)
-    out_file = File(exists=True)
+    out_file_fe = File(exists=True)
+    out_file_le = File(exists=True)
 
 class Prepare(BaseInterface):
     input_spec = PrepareInputSpec
@@ -23,12 +24,13 @@ class Prepare(BaseInterface):
         script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
             "addpath(genpath('{matlab_dir}'));\n"
-            "Prepare_Raw_Channels('{in_dir}', '{filename}', {echo_times}, {num_channels}, '{out_dir}', '{out_file}');\n"
+            "Prepare_Raw_Channels('{in_dir}', '{filename}', {echo_times}, {num_channels}, '{out_dir}', '{out_file_fe}', '{out_file_le}');\n"
             "exit;\n").format(
                 in_dir=self.inputs.in_dir,
                 filename=self.inputs.base_filename,
                 out_dir=self._gen_filename('out_dir'),
-                out_file=self._gen_filename('out_file'),
+                out_file_fe=self._gen_filename('out_file_fe'),
+                out_file_le=self._gen_filename('out_file_le'),
                 echo_times=self.inputs.echo_times,
                 num_channels=self.inputs.num_channels,
                 matlab_dir=os.path.abspath(os.path.join(
@@ -41,15 +43,20 @@ class Prepare(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_dir'] = self._gen_filename('out_dir')
-        outputs['out_file'] = self._gen_filename('out_file')
+        outputs['out_file_fe'] = self._gen_filename('out_file_fe')
+        outputs['out_file_le'] = self._gen_filename('out_file_le')
 
         return outputs
     
     def _gen_filename(self, name):
-        if name == 'out_file':
+        if name == 'out_file_fe':
             fname = os.path.join(self.working_dir,
                                  'Raw',
-                                 'Raw_MAGNITUDE.nii.gz')
+                                 'Raw_MAGNITUDE_FirstEcho.nii.gz')
+        elif name == 'out_file_le':
+            fname = os.path.join(self.working_dir,
+                                 'Raw',
+                                 'Raw_MAGNITUDE_LastEcho.nii.gz')
         elif name == 'out_dir':
             fname = os.path.join(self.working_dir,
                                  'Raw')
