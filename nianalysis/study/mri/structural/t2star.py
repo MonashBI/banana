@@ -67,7 +67,7 @@ class T2StarStudy(MRIStudy):
                                        requirements=[fsl5_req],
                                        wall_time=15, memory=12000)
         erosion.inputs.kernel_shape = 'sphere'
-        erosion.inputs.kernel_size = 6;
+        erosion.inputs.kernel_size = 2;
         pipeline.connect_input('opti_betted_T2s_mask', erosion, 'in_file')
         
         # Phase and QSM for dual echo
