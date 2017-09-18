@@ -82,15 +82,15 @@ class T2StarStudy(MRIStudy):
         # Use geometry from scanner image
         qsm_geom = pipeline.create_node(fsl.CopyGeom(), name='qsm_copy_geomery', requirements=[fsl5_req], memory=4000, wall_time=5)
         pipeline.connect(qsmrecon, 'qsm', qsm_geom, 'dest_file')
-        pipeline.connect(prepare,'out_file', qsm_geom, 'in_file')
+        pipeline.connect(prepare,'out_file_fe', qsm_geom, 'in_file')
         
         phase_geom = pipeline.create_node(fsl.CopyGeom(), name='qsm_phase_copy_geomery', requirements=[fsl5_req], memory=4000, wall_time=5)
         pipeline.connect(qsmrecon, 'tissue_phase', phase_geom, 'dest_file')
-        pipeline.connect(prepare,'out_file', phase_geom, 'in_file')
+        pipeline.connect(prepare,'out_file_fe', phase_geom, 'in_file')
         
         mask_geom = pipeline.create_node(fsl.CopyGeom(), name='qsm_mask_copy_geomery', requirements=[fsl5_req], memory=4000, wall_time=5)
         pipeline.connect(qsmrecon, 'tissue_mask', mask_geom, 'dest_file')
-        pipeline.connect(prepare,'out_file', mask_geom, 'in_file')
+        pipeline.connect(prepare,'out_file_fe', mask_geom, 'in_file')
         
         # Connect inputs/outputs
         pipeline.connect_output('qsm', qsm_geom, 'out_file')
