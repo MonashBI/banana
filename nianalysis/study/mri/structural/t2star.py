@@ -104,7 +104,8 @@ class T2StarStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='swi_coils_preparation',
             inputs=[DatasetSpec('raw_coils', directory_format)],
-            outputs=[DatasetSpec('t2s', nifti_gz_format)],
+            outputs=[DatasetSpec('t2s', nifti_gz_format),
+                     DatasetSpec('t2s_last_echo', nifti_gz_format)],
             description="Perform preprocessing on raw coils",
             default_options={'qsm_echo_times': [7.38, 22.14],
                              'qsm_num_channels': 32,
@@ -128,8 +129,14 @@ class T2StarStudy(MRIStudy):
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
-        pipeline.connect(prepare, 'out_file', bias, 'input_image')
+        pipeline.connect(prepare, 'out_file_fe', bias, 'input_image')
         pipeline.connect_output('t2s', bias, 'output_image')
+        
+        bias_2 = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
+                                    name='n4_bias_correction_2', requirements=[ants19_req],
+                                    wall_time=60, memory=12000)
+        pipeline.connect(prepare, 'out_file_le', bias_2, 'input_image')
+        pipeline.connect_output('t2s_last_echo', bias, 'output_image')
         
         return pipeline
 
@@ -547,7 +554,17 @@ class T2StarStudy(MRIStudy):
             inv_flags.append(tfm[2])
         apply_trans.inputs.invert_transform_flags = inv_flags
         
-        pipeline.connect_output(out_image, apply_trans, 'output_image')
+        # If ref mask is specified, mask image after interpolation
+        if 'ref_mask' in options:
+            apply_mask = pipeline.create_node(
+                fsl.utils.ImageMaths(suffix='_masked', op_string='-mas'),
+                name='{name}_ApplyMask'.format(name=name), requirements=[fsl5_req], memory=16000, wall_time=5)
+            
+            pipeline.connect(apply_trans, 'output_image', apply_mask, 'in_file')
+            pipeline.connect_input(options['ref_mask'], apply_mask, 'in_file2')
+            pipeline.connect_output(out_image, apply_mask, 'out_file')
+        else:
+            pipeline.connect_output(out_image, apply_trans, 'output_image')
         
         return pipeline
         
@@ -934,11 +951,19 @@ class T2StarStudy(MRIStudy):
     def _mask_refined_pipeline(self, structure_name, **options):
         
         ref_image ='t2s'
+        ref_mask = 'opti_betted_T2s_mask'
+        
         transforms = [['MNI_to_T2s_warp_refined', nifti_gz_format, False],
                       ['T2s_to_MNI_mat_refined', text_matrix_format, True]]
                       
+        # Template inputs
         pipeline_inputs = self._lookup_structure_refined(structure_name)
-        pipeline_inputs.append(DatasetSpec(ref_image,nifti_gz_format))        
+        
+        # Ref inputs
+        pipeline_inputs.append(DatasetSpec(ref_image,nifti_gz_format))  
+        pipeline_inputs.append(DatasetSpec(ref_mask,nifti_gz_format))    
+        
+        # Transforms    
         pipeline_inputs.append(DatasetSpec(transforms[0][0],transforms[0][1]))
         pipeline_inputs.append(DatasetSpec(transforms[1][0],transforms[1][1]))
         
@@ -961,6 +986,7 @@ class T2StarStudy(MRIStudy):
                                                     name='applytfm_left_{structure_name}'.format(structure_name=structure_name), 
                                                     transforms=transforms, 
                                                     ref_image=ref_image, 
+                                                    ref_mask=ref_mask,
                                                     input_image=pipeline_input_names[0],
                                                     out_image=pipeline_output_names[0],
                                                     interpolation='NearestNeighbor')
@@ -968,7 +994,8 @@ class T2StarStudy(MRIStudy):
         pipeline = self._applyTFM_subpipeline(pipeline=pipeline, 
                                                     name='applytfm_right_{structure_name}'.format(structure_name=structure_name), 
                                                     transforms=transforms, 
-                                                    ref_image=ref_image, 
+                                                    ref_image=ref_image,
+                                                    ref_mask=ref_mask, 
                                                     input_image=pipeline_input_names[1],
                                                     out_image=pipeline_output_names[1],
                                                     interpolation='NearestNeighbor')
@@ -1219,10 +1246,12 @@ class T2StarStudy(MRIStudy):
         # Build list of fields for summary
         field_list = [] #['in_subject_id','in_visit_id']
         for structure_name in self._lookup_study_structures(pipeline.option('study_name')):
-            field_list.extend(['in_left_{structure_name}_mean'.format(structure_name=structure_name), 
+            field_list.extend(['in_left_{structure_name}_median'.format(structure_name=structure_name), 
+                               'in_left_{structure_name}_mean'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_std'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_voxels'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_volume'.format(structure_name=structure_name),
+                               'in_right_{structure_name}_median'.format(structure_name=structure_name),
                                'in_right_{structure_name}_mean'.format(structure_name=structure_name), 
                                'in_right_{structure_name}_std'.format(structure_name=structure_name), 
                                'in_right_{structure_name}_voxels'.format(structure_name=structure_name), 
@@ -1246,7 +1275,7 @@ class T2StarStudy(MRIStudy):
             right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
                                                          name='Stats_Right_Mean_{structure_name}'.format(structure_name=structure_name),
                                                          requirements=[fsl5_req], memory=4000, wall_time=15)
-            right_apply_mask_mean.inputs.op_string = '-k %s -m -s -v'        
+            right_apply_mask_mean.inputs.op_string = '-k %s -p 50 -m -s -v'        
             pipeline.connect_input('qsm', right_apply_mask_mean, 'in_file')
             pipeline.connect(right_erode_mask, 'out_file', right_apply_mask_mean, 'mask_file')
             pipeline.connect(right_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(2*i+1))
@@ -1419,6 +1448,7 @@ class T2StarStudy(MRIStudy):
                                  "coil without standardisation.")),
                                        
         DatasetSpec('t2s', nifti_gz_format, prepare_swi_coils),
+        DatasetSpec('t2s_last_echo', nifti_gz_format, prepare_swi_coils),
                           
         # Brain extraction and bias correction                                   
         DatasetSpec('betted_T1', nifti_gz_format, bet_T1), 
