@@ -136,7 +136,7 @@ class T2StarStudy(MRIStudy):
                                     name='n4_bias_correction_2', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
         pipeline.connect(prepare, 'out_file_le', bias_2, 'input_image')
-        pipeline.connect_output('t2s_last_echo', bias, 'output_image')
+        pipeline.connect_output('t2s_last_echo', bias_2, 'output_image')
         
         return pipeline
 
