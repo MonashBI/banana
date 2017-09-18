@@ -580,15 +580,19 @@ class FunctionalMRIStudy(MRIStudy):
 #             CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
 #         pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
         merge_visits = pipeline.create_join_visits_node(
-            NiPypeMerge(1), joinfield=['in1'], name='merge_visits')
-        merge_visits.inputs.ravel_inputs = True
-        fix_training = pipeline.create_join_subjects_node(
-            FSLFixTraining(), joinfield=['list_dir'], name='fix_training',
+            IdentityInterface(['list_dir']), joinfield=['list_dir'],
+            name='merge_visits')
+        merge_subjects = pipeline.create_join_subjects_node(
+            NiPypeMerge(1), joinfield=['in1'], name='merge_subjects')
+        merge_subjects.inputs.ravel_inputs = True
+        fix_training = pipeline.create_node(
+            FSLFixTraining(), name='fix_training',
             wall_time=40, requirements=[fix_req])
         fix_training.inputs.outname = 'FIX_training_set'
         fix_training.inputs.training = True
-        pipeline.connect_input('fix_dir', merge_visits, 'in1')
-        pipeline.connect(merge_visits, 'out', fix_training, 'list_dir')
+        pipeline.connect_input('fix_dir', merge_visits, 'list_dir')
+        pipeline.connect(merge_visits, 'out', merge_subjects, 'in1')
+        pipeline.connect(merge_subjects, 'out', fix_training, 'list_dir')
 
         pipeline.connect_output('train_data', fix_training, 'training_set')
 
