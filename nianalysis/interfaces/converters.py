@@ -42,7 +42,7 @@ class Dcm2niix(CommandLine):
         out_dir = self._gen_filename('out_dir')
         fname = self._gen_filename('filename') + im_ext
         base, ext = split_extension(fname)
-        match_re = re.compile(r'(_e\d)?{}(_e\d)?{}'
+        match_re = re.compile(r'(_[ec]\d+)?{}(_e\d)?{}'
                               .format(base, ext if ext is not None else ''))
         products = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
                     if match_re.match(f) is not None]
@@ -57,9 +57,8 @@ class Dcm2niix(CommandLine):
                 f = nib.load(el)
                 merged_file[:, :, :, i] = f.get_data()
             im2save = nib.Nifti1Image(merged_file, ex_file.affine)
-            nib.save(im2save, out_dir+fname)
-            print out_dir+fname
-            converted = out_dir+fname
+            nib.save(im2save, out_dir + fname)
+            converted = out_dir + fname
         else:
             raise NiAnalysisError("No products produced by dcm2niix ({})"
                                   .format(', '.join(os.listdir(out_dir))))
