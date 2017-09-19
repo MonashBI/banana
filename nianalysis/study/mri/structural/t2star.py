@@ -710,7 +710,16 @@ class T2StarStudy(MRIStudy):
                                   transforms=[['T1_to_MNI_warp', nifti_gz_format, False],
                                               ['T1_to_MNI_mat', text_matrix_format, False],
                                               ['T2s_to_T1_mat', text_matrix_format, False]],
-                                  out_image='t2s_in_mni')     
+                                  out_image='t2s_in_mni')    
+        
+    def t2sLastEchoInMNI(self, **options):
+        return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_MNI',
+                                  ref_atlas='MNI', 
+                                  input_image='t2s_last_echo',
+                                  transforms=[['T1_to_MNI_warp', nifti_gz_format, False],
+                                              ['T1_to_MNI_mat', text_matrix_format, False],
+                                              ['T2s_to_T1_mat', text_matrix_format, False]],
+                                  out_image='t2s_last_echo_in_mni')     
 
     def qsmInSUIT(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_SUIT',
@@ -1511,7 +1520,8 @@ class T2StarStudy(MRIStudy):
         
         # Data for analysis in MNI space (and quality control)                                   
         DatasetSpec('qsm_in_mni', nifti_gz_format, qsmInMNI),                              
-        DatasetSpec('t2s_in_mni', nifti_gz_format, t2sInMNI),
+        DatasetSpec('t2s_in_mni', nifti_gz_format, t2sInMNI),                             
+        DatasetSpec('t2s_last_echo_in_mni', nifti_gz_format, t2sLastEchoInMNI),
         DatasetSpec('mni_in_qsm', nifti_gz_format, mniInT2s),
     
         DatasetSpec('t2s_in_mni_refined', nifti_gz_format, nonLinearT2sToMNI),    
