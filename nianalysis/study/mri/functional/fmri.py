@@ -18,7 +18,8 @@ from nianalysis.data_formats import (
     zip_format, text_matrix_format, par_format, gif_format, targz_format)
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.afni import Tproject
-from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir, Merge
+from nianalysis.interfaces.utils.os import MakeDir, CopyFile, CopyDir
+from nianalysis.interfaces.utils.iter import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
@@ -587,11 +588,11 @@ class FunctionalMRIStudy(MRIStudy):
         merge_subjects.inputs.ravel_inputs = True
         fix_training = pipeline.create_node(
             FSLFixTraining(), name='fix_training',
-            wall_time=40, requirements=[fix_req])
+            wall_time=240, requirements=[fix_req])
         fix_training.inputs.outname = 'FIX_training_set'
         fix_training.inputs.training = True
         pipeline.connect_input('fix_dir', merge_visits, 'list_dir')
-        pipeline.connect(merge_visits, 'out', merge_subjects, 'in1')
+        pipeline.connect(merge_visits, 'list_dir', merge_subjects, 'in1')
         pipeline.connect(merge_subjects, 'out', fix_training, 'list_dir')
 
         pipeline.connect_output('train_data', fix_training, 'training_set')
