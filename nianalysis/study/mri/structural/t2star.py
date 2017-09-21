@@ -561,7 +561,12 @@ class T2StarStudy(MRIStudy):
                 name='{name}_ApplyMask'.format(name=name), requirements=[fsl5_req], memory=16000, wall_time=5)
             
             pipeline.connect(apply_trans, 'output_image', apply_mask, 'in_file')
-            pipeline.connect_input(options['ref_mask'], apply_mask, 'in_file2')
+            
+            if 'ref_atlas' not in options:
+                pipeline.connect_input(options['ref_mask'], apply_mask, 'in_file2')
+            else:
+                apply_mask.inputs.in_file2 = self._lookup_template_mask_path(options['ref_mask'])
+                
             pipeline.connect_output(out_image, apply_mask, 'out_file')
         else:
             pipeline.connect_output(out_image, apply_trans, 'output_image')
@@ -697,6 +702,7 @@ class T2StarStudy(MRIStudy):
     def qsmInMNI(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_MNI',
                                   ref_atlas='MNI', 
+                                  ref_mask='MNI', 
                                   input_image='qsm',
                                   transforms=[['T1_to_MNI_warp',nifti_gz_format, False],
                                               ['T1_to_MNI_mat', text_matrix_format, False],
@@ -706,6 +712,7 @@ class T2StarStudy(MRIStudy):
     def t2sInMNI(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_MNI',
                                   ref_atlas='MNI', 
+                                  ref_mask='MNI',
                                   input_image='opti_betted_T2s',
                                   transforms=[['T1_to_MNI_warp', nifti_gz_format, False],
                                               ['T1_to_MNI_mat', text_matrix_format, False],
@@ -715,6 +722,7 @@ class T2StarStudy(MRIStudy):
     def t2sLastEchoInMNI(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_MNI',
                                   ref_atlas='MNI', 
+                                  ref_mask='MNI',
                                   input_image='t2s_last_echo',
                                   transforms=[['T1_to_MNI_warp', nifti_gz_format, False],
                                               ['T1_to_MNI_mat', text_matrix_format, False],
@@ -724,6 +732,7 @@ class T2StarStudy(MRIStudy):
     def qsmInSUIT(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_QSM_to_SUIT',
                                   ref_atlas='SUIT',
+                                  ref_mask='SUIT',
                                   input_image='qsm',
                                   transforms=[['T1_to_SUIT_warp', nifti_gz_format, False],
                                               ['T1_to_SUIT_mat', text_matrix_format, False],
@@ -733,6 +742,7 @@ class T2StarStudy(MRIStudy):
     def t2sInSUIT(self, **options):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_SUIT',
                                   ref_atlas='SUIT', 
+                                  ref_mask='SUIT', 
                                   input_image='opti_betted_T2s',
                                   transforms=[['T1_to_SUIT_warp', nifti_gz_format, False],
                                               ['T1_to_SUIT_mat', text_matrix_format, False],
