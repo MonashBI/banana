@@ -70,7 +70,7 @@ class TestQSM(TestCase):
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
                 })
         #study.t2s_atlas(qsm_num_channels=8, qsm_echo_times=[20], swi_coils_filename='T2swi3d_axial_p2_1.8mm_Coil').run(work_dir=self.work_dir, plugin='MultiProc')
-        study.prepare_swi_coils(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['proc'], plugin='MultiProc')
+        study.t2sLastEchoInMNI(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['proc'], plugin='MultiProc')
         self.assertDatasetCreated(dataset_name='opti_betted_T1.nii.gz', study_name=study.name)
         #self.assertDatasetCreated(multiplicity='per_project',dataset_name='t2s_mni_atlas.nii.gz', study_name=study.name)
         
