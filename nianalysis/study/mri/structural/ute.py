@@ -1,6 +1,4 @@
 from ..base import MRIStudy
-import os.path
-import re
 from nianalysis.study.base import set_dataset_specs
 from nianalysis.dataset import DatasetSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
@@ -12,7 +10,8 @@ from nipype.interfaces.utility.base import Select
 from nianalysis.interfaces.umap_calc import CoreUmapCalc
 from nianalysis.interfaces.converters import Nii2Dicom
 from nianalysis.interfaces.mrtrix.utils import MRConvert
-from nianalysis.interfaces.utils.os import CopyToDir, ListDir
+from nianalysis.interfaces.utils.os import (
+    CopyToDir, ListDir, dicom_fname_sort_key)
 
 from nianalysis.citations import (
     fsl_cite, spm_cite, matlab_cite)
@@ -20,21 +19,6 @@ from nianalysis.data_formats import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format)
 from nianalysis.requirements import (
     fsl5_req, spm12_req, matlab2015_req)
-
-
-special_char_re = re.compile(r'[^\w]')
-
-
-def dicom_fname_sort_key(fname):
-    in_parts = special_char_re.split(os.path.basename(fname))
-    out_parts = []
-    for part in in_parts:
-        try:
-            part = int(part)
-        except ValueError:
-            pass
-        out_parts.append(part)
-    return tuple(out_parts)
 
 
 class UTEStudy(MRIStudy):
@@ -65,28 +49,28 @@ class UTEStudy(MRIStudy):
             version=1,
             citations=(fsl_cite),
             options=options)
-        
+
         echo1_conv = pipeline.create_node(MRConvert(), name='echo1_conv')
         echo1_conv.inputs.out_ext = '.nii.gz'
-        
-        pipeline.connect_input('ute_echo1', echo1_conv, 'in_file')        
-        
+
+        pipeline.connect_input('ute_echo1', echo1_conv, 'in_file')
+
         echo2_conv = pipeline.create_node(MRConvert(), name='echo2_conv')
         echo2_conv.inputs.out_ext = '.nii.gz'
-        
-        pipeline.connect_input('ute_echo2', echo2_conv, 'in_file')    
-        
+
+        pipeline.connect_input('ute_echo2', echo2_conv, 'in_file')
+
         # Create registration node
         registration = pipeline.create_node(
             FLIRT(), name='ute1_registration',
             requirements=[fsl5_req], wall_time=180)
-        
+
         pipeline.connect(
-            echo1_conv, 
-            'out_file', 
-            registration, 
+            echo1_conv,
+            'out_file',
+            registration,
             'in_file')
-        
+
         registration.inputs.reference = self.template_path
         registration.inputs.output_type = 'NIFTI_GZ'
         registration.inputs.searchr_x = [-180, 180]
@@ -116,16 +100,16 @@ class UTEStudy(MRIStudy):
             transform_ute2,
             'in_matrix_file')
         pipeline.connect(
-            echo2_conv, 
-            'out_file', 
-            transform_ute2, 
+            echo2_conv,
+            'out_file',
+            transform_ute2,
             'in_file')
-        
+
         transform_ute2.inputs.output_type = 'NIFTI_GZ'
         transform_ute2.inputs.reference = self.template_path
         transform_ute2.inputs.apply_xfm = True
 
-        #Connect outputs         
+        # Connect outputs
         pipeline.connect_output('ute1_registered', registration, 'out_file')
         pipeline.connect_output(
             'ute_to_template_mat',
@@ -293,24 +277,21 @@ class UTEStudy(MRIStudy):
             citations=(matlab_cite),
             options=options)
 
-
-
         echo1_conv = pipeline.create_node(MRConvert(), name='echo1_conv')
         echo1_conv.inputs.out_ext = '.nii.gz'
-        pipeline.connect_input('ute_echo1', echo1_conv, 'in_file')        
-        
+        pipeline.connect_input('ute_echo1', echo1_conv, 'in_file')
+
         umap_conv = pipeline.create_node(MRConvert(), name='umap_conv')
         umap_conv.inputs.out_ext = '.nii.gz'
-        pipeline.connect_input('umap_ute', umap_conv, 'in_file')    
-
-
-
-
+        pipeline.connect_input('umap_ute', umap_conv, 'in_file')
 
         zero_template_mask = pipeline.create_node(
             BinaryMaths(), name='zero_template_mask',
             requirements=[fsl5_req], wall_time=3)
-        pipeline.connect_input('ute1_registered', zero_template_mask, 'in_file')
+        pipeline.connect_input(
+            'ute1_registered',
+            zero_template_mask,
+            'in_file')
         zero_template_mask.inputs.operation = "mul"
         zero_template_mask.inputs.operand_value = 0
         zero_template_mask.inputs.output_type = 'NIFTI_GZ'
@@ -328,13 +309,13 @@ class UTEStudy(MRIStudy):
             region_template_mask,
             'in_file')
         pipeline.connect(
-            echo1_conv, 
-            'out_file', 
-            region_template_mask, 
+            echo1_conv,
+            'out_file',
+            region_template_mask,
             'reference')
         pipeline.connect_input('template_to_ute_mat', region_template_mask,
                                'in_matrix_file')
-        
+
         fill_in_umap = pipeline.create_node(MultiImageMaths(),
                                             name='fill_in_umap',
                                             requirements=[fsl5_req],
@@ -353,13 +334,13 @@ class UTEStudy(MRIStudy):
             FLIRT(), name='sute_fix_ute_space',
             requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
-            echo1_conv, 
-            'out_file', 
-            sute_fix_ute_space, 
+            echo1_conv,
+            'out_file',
+            sute_fix_ute_space,
             'reference')
         pipeline.connect_input('template_to_ute_mat', sute_fix_ute_space,
                                'in_matrix_file')
-        pipeline.connect_input('sute_fix_template',sute_fix_ute_space,
+        pipeline.connect_input('sute_fix_template', sute_fix_ute_space,
                                'in_file')
         sute_fix_ute_space.inputs.apply_xfm = True
         sute_fix_ute_space.inputs.bgvalue = 0
@@ -369,9 +350,9 @@ class UTEStudy(MRIStudy):
             FLIRT(), name='sute_cont_ute_space',
             requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
-            echo1_conv, 
-            'out_file', 
-            sute_cont_ute_space, 
+            echo1_conv,
+            'out_file',
+            sute_cont_ute_space,
             'reference')
         pipeline.connect_input('template_to_ute_mat', sute_cont_ute_space,
                                'in_matrix_file')
@@ -529,7 +510,10 @@ class UTEStudy(MRIStudy):
             nifti_gz_format,
             umaps_calculation_pipeline),
         DatasetSpec('sute_fix_ute', nifti_gz_format, backwrap_to_ute_pipeline),
-        DatasetSpec('sute_cont_ute', nifti_gz_format, backwrap_to_ute_pipeline),
+        DatasetSpec(
+            'sute_cont_ute',
+            nifti_gz_format,
+            backwrap_to_ute_pipeline),
         DatasetSpec(
             'sute_fix_dicoms',
             dicom_format,

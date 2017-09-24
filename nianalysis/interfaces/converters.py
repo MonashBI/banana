@@ -120,8 +120,6 @@ class Nii2Dicom(BaseInterface):
         nifti = nifti.get_data()
         nifti = nifti.astype('uint16')
         dcm.pixel_array.flat[:] = nifti.flat[:]
-        #for n, val in enumerate(dcm.pixel_array.flat):
-        #    dcm.pixel_array.flat[n] = nifti.flat[n]
         dcm.PixelData = dcm.pixel_array.T.tostring()
         dcm.save_as(self._gen_outfilename())
         return runtime
