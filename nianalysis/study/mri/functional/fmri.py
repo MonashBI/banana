@@ -109,7 +109,7 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=5,
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
                                    requirements=[fsl5_req, fix_req])
         pipeline.connect_input("fix_dir", fix, "feat_dir")
         pipeline.connect_input("train_data", fix, "train_data")
@@ -625,7 +625,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('mc_par', par_format, rsfMRI_filtering),
         DatasetSpec('rsfmri_mask', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
-        DatasetSpec('melodic_ica', targz_format, MelodicL1),
+        DatasetSpec('melodic_ica', zip_format, MelodicL1),
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
         DatasetSpec('fix_dir', targz_format, PrepareFix),
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth))
