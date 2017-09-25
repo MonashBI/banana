@@ -765,7 +765,7 @@ class T2StarStudy(MRIStudy):
         return self._applyTFM(name='ANTS_ApplyTransform_T2s_to_MNI',
                                   ref_atlas='MNI', 
                                   ref_mask='MNI',
-                                  input_image='t2s_last_echo',
+                                  input_image='opti_betted_T2s_last_echo',
                                   transforms=[['T1_to_MNI_warp', nifti_gz_format, False],
                                               ['T1_to_MNI_mat', text_matrix_format, False],
                                               ['T2s_to_T1_mat', text_matrix_format, False]],
