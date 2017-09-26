@@ -16,3 +16,5 @@ class TestQC(BaseTestCase):
                                               '32ch_mprage.nii')
         out = metrics.run()
         self.assertEqual(out.outputs.snr, 23.838683913521724)
+        self.assertEqual(out.outputs.uniformity, 23.838683913521724)
+        self.assertEqual(out.outputs.ghost_intensity, 23.838683913521724)
