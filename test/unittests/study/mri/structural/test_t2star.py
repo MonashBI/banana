@@ -38,40 +38,44 @@ class TestQSM(TestCase):
             T2StarStudy, 'test_refined_mni', input_datasets={
                 't1': Dataset('t1', nifti_gz_format),
                 'raw_coils': Dataset('raw_coils', zip_format),
-                #'opti_betted_T2s': Dataset('opti_betted_t2s', nifti_gz_format),
-                #'opti_betted_T2s_mask': Dataset('opti_betted_T2s_mask', nifti_gz_format),
-                'betted_T1_mask': Dataset('betted_T1_mask', nifti_gz_format),
-                'betted_T1': Dataset('betted_T1', nifti_gz_format),
-                #'betted_T2s_mask': Dataset('betted_T2s_mask', nifti_gz_format),
-                #'betted_T2s': Dataset('betted_T2s', nifti_gz_format),
+                #'betted_T1_mask': Dataset('betted_T1_mask', nifti_gz_format),
+                #'betted_T1': Dataset('betted_T1', nifti_gz_format),
                 #'t2s': Dataset('t2s', nifti_gz_format),
+                #'t2s_last_echo': Dataset('t2s_last_echo', nifti_gz_format),
+                #'betted_T2s': Dataset('betted_T2s', nifti_gz_format),
+                #'betted_T2s_last_echo': Dataset('betted_T2s_last_echo', nifti_gz_format),
+                #'betted_T2s_mask': Dataset('betted_T2s_mask', nifti_gz_format),
+                #'opti_betted_T2s': Dataset('opti_betted_t2s', nifti_gz_format),
+                #'opti_betted_T2s_last_echo': Dataset('opti_betted_T2s_last_echo', nifti_gz_format),
+                #'opti_betted_T2s_mask': Dataset('opti_betted_T2s_mask', nifti_gz_format),
                 #'T2s_to_T1_mat': Dataset('T2s_to_T1_mat', text_matrix_format),
-                'SUIT_to_T1_warp': Dataset('SUIT_to_T1_warp', nifti_gz_format),
-                'T1_to_SUIT_warp': Dataset('T1_to_SUIT_warp', nifti_gz_format),
-                'T1_to_SUIT_mat': Dataset('T1_to_SUIT_mat', text_matrix_format),
-                'MNI_to_T1_warp': Dataset('MNI_to_T1_warp', nifti_gz_format),
-                'T1_to_MNI_warp': Dataset('T1_to_MNI_warp', nifti_gz_format),
-                'T1_to_MNI_mat': Dataset('T1_to_MNI_mat', text_matrix_format),
-                'T2s_to_MNI_warp_refined': Dataset('T2s_to_MNI_warp_refined', nifti_gz_format),
-                'MNI_to_T2s_warp_refined': Dataset('MNI_to_T2s_warp_refined', nifti_gz_format),
-                'T2s_to_MNI_mat_refined': Dataset('T2s_to_MNI_mat_refined', text_matrix_format),
-                'left_dentate_in_mni_refined': Dataset('left_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
-                'right_dentate_in_mni_refined': Dataset('right_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
-                'left_substantia_nigra_in_mni_refined': Dataset('left_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
-                'right_substantia_nigra_in_mni_refined': Dataset('right_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
-                'qsm': Dataset('qsm', nifti_gz_format)
-                #'t2s_in_mni': Dataset('test_t2s_in_mni', nifti_gz_format),
-                #'t2s_in_mni_initial_atlas': Dataset('test_t2s_mni_atlas', nifti_gz_format),
+                #'SUIT_to_T1_warp': Dataset('SUIT_to_T1_warp', nifti_gz_format),
+                #'T1_to_SUIT_warp': Dataset('T1_to_SUIT_warp', nifti_gz_format),
+                #'T1_to_SUIT_mat': Dataset('T1_to_SUIT_mat', text_matrix_format),
+                #'MNI_to_T1_warp': Dataset('MNI_to_T1_warp', nifti_gz_format),
+                #'T1_to_MNI_warp': Dataset('T1_to_MNI_warp', nifti_gz_format),
+                #'T1_to_MNI_mat': Dataset('T1_to_MNI_mat', text_matrix_format),
+                #'T2s_to_MNI_warp_refined': Dataset('T2s_to_MNI_warp_refined', nifti_gz_format),
+                #'MNI_to_T2s_warp_refined': Dataset('MNI_to_T2s_warp_refined', nifti_gz_format),
+                #'T2s_to_MNI_mat_refined': Dataset('T2s_to_MNI_mat_refined', text_matrix_format),
+                #'qsm': Dataset('qsm', nifti_gz_format),
+                #'t2s_in_mni': Dataset('t2s_in_mni', nifti_gz_format),
+                #'t2s_last_echo_in_mni': Dataset('t2s_last_echo_in_mni', nifti_gz_format),
                 #'T2s_to_MNI_Template_warp': Dataset('test_T2s_to_MNI_Template_warp', nifti_gz_format),
                 #'T2s_to_MNI_Template_mat': Dataset('test_T2s_to_MNI_Template_mat', text_matrix_format),
                 #'T2s_in_MNI_Template': Dataset('test_T2s_in_MNI_Template', nifti_gz_format),
                 #'first_segm    entation_in_qsm': Dataset('test_first_segmentation_in_qsm', nifti_gz_format),
                 #'right_dentate_in_qsm': Dataset('test_analysis_right_dentate_in_qsm', nifti_gz_format),
                 #'left_dentate_in_qsm': Dataset('test_analysis_left_dentate_in_qsm', nifti_gz_format)
+                't2s_in_mni_initial_atlas': Dataset('t2s_in_mni_initial_atlas', nifti_gz_format, multiplicity='per_project'),
+                'left_dentate_in_mni_refined': Dataset('left_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+                'right_dentate_in_mni_refined': Dataset('right_dentate_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+                'left_substantia_nigra_in_mni_refined': Dataset('left_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project'),
+                'right_substantia_nigra_in_mni_refined': Dataset('right_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project')
                 })
         #study.t2s_atlas(qsm_num_channels=8, qsm_echo_times=[20], swi_coils_filename='T2swi3d_axial_p2_1.8mm_Coil').run(work_dir=self.work_dir, plugin='MultiProc')
-        study.t2sInMNI(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['proc'], plugin='MultiProc')
-        self.assertDatasetCreated(dataset_name='opti_betted_T1.nii.gz', study_name=study.name)
+        study.nonLinearT2sToMNI(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['F17p1'])#, plugin='MultiProc')
+        self.assertDatasetCreated(dataset_name='t2s_in_mni_refined.nii.gz', study_name=study.name)
         #self.assertDatasetCreated(multiplicity='per_project',dataset_name='t2s_mni_atlas.nii.gz', study_name=study.name)
         
 #    def test_ants(self):    
