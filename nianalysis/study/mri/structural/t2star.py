@@ -468,7 +468,13 @@ class T2StarStudy(MRIStudy):
         ##    fixed_image, fixed_mask, fixed_atlas, fixed_atlas_mask
         ##
         
-        inputs = [DatasetSpec(moving_image, nifti_gz_format), DatasetSpec(moving_mask, nifti_gz_format)]
+        inputs = [DatasetSpec(moving_mask, nifti_gz_format)]
+        if isinstance(moving_image, (list,tuple)):
+            for mi in moving_image:
+                inputs.append(DatasetSpec(mi, nifti_gz_format)) 
+        else:
+            inputs.append(DatasetSpec(moving_image, nifti_gz_format)) 
+        
         if 'fixed_image' in options:
             inputs.append(DatasetSpec(options['fixed_image'], nifti_gz_format))
         if 'fixed_mask' in options:
@@ -477,8 +483,13 @@ class T2StarStudy(MRIStudy):
         outputs = [DatasetSpec(out_mat, text_matrix_format), DatasetSpec(out_warp, nifti_gz_format),
                    DatasetSpec(out_warp_inv, nifti_gz_format), DatasetSpec(warped_image, nifti_gz_format)]
         if 'out_mat_inv' in options:
-            options.append(DatasetSpec(options('out_mat_inv'), text_matrix_format))
+            outputs.append(DatasetSpec(options('out_mat_inv'), text_matrix_format))
             
+        print('Debugging')
+        print(inputs)
+        print('\n')
+        print(outputs)
+        
         pipeline = self.create_pipeline(
             name=name,
             inputs=inputs,
@@ -510,9 +521,20 @@ class T2StarStudy(MRIStudy):
                 collapse_output_transforms=True,
                 output_warped_image=warped_image+'.nii.gz'),
             name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)
-        pipeline.connect_input(moving_image, nonlinear_reg, 'moving_image')
         pipeline.connect_input(moving_mask, nonlinear_reg, 'moving_image_mask')
         pipeline.connect_output(warped_image, nonlinear_reg, 'warped_image')
+        
+        if isinstance(moving_image, (list,tuple)): # maximum of two images combined... need to generalise code to list
+            combine_node = pipeline.create_node(fsl.utils.ImageMaths(suffix='_combined', op_string='-add'),
+                name='{name}_CombineImages'.format(name=name), requirements=[fsl5_req], memory=16000, wall_time=5)
+            
+            pipeline.connect_input(moving_image[0], combine_node, 'in_file')
+            pipeline.connect_input(moving_image[1], combine_node, 'in_file2')
+            
+            pipeline.connect(combine_node, 'out_file', nonlinear_reg, 'moving_image')
+        else:
+            pipeline.connect_input(moving_image, nonlinear_reg, 'moving_image')
+            
         
         # Specified the fixed image as either an input image or an atlas based on options provided
         if 'fixed_image' in options:
@@ -691,7 +713,7 @@ class T2StarStudy(MRIStudy):
         return self._nonlinearReg(name='ANTS_Reg_T2s_to_MNI_Template_Warp',
                                   fixed_image='t2s_in_mni_initial_atlas',
                                   fixed_atlas_mask=self._lookup_template_mask_path('MNI'), 
-                                  moving_image='opti_betted_T2s', 
+                                  moving_image=['opti_betted_T2s', 'opti_betted_T2s_last_echo'],
                                   moving_mask='opti_betted_T2s_mask', 
                                   out_mat='T2s_to_MNI_mat_refined', 
                                   out_warp='T2s_to_MNI_warp_refined',
@@ -1292,7 +1314,7 @@ class T2StarStudy(MRIStudy):
         # Cannot use pipeline options and pipeline default for 'study_name'
         input_list = [DatasetSpec('qsm', nifti_gz_format)]
         for structure_name in self._lookup_study_structures(options.get('study_name','FRDA')):
-            input_list.extend(self._lookup_structure_output(structure_name))
+            input_list.append(self._lookup_structure_output(structure_name))
         
         pipeline = self.create_pipeline(
             name='QSM_Analysis',
@@ -1307,7 +1329,7 @@ class T2StarStudy(MRIStudy):
         # Build list of fields for summary
         field_list = [] #['in_subject_id','in_visit_id']
         for structure_name in self._lookup_study_structures(pipeline.option('study_name')):
-            field_list.extend(['in_left_{structure_name}_median'.format(structure_name=structure_name), 
+            field_list.append(['in_left_{structure_name}_median'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_mean'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_std'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_voxels'.format(structure_name=structure_name), 
