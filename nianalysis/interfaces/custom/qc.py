@@ -121,15 +121,6 @@ class QCMetrics(BaseInterface):
         signal = qc[signal_mask]
         ghost = qc[ghost_mask]
         background = qc[background_mask]
-        plt_signal = np.array(qc)
-        plt_ghost = np.array(qc)
-        plt_background = np.array(qc)
-        plt_signal[np.logical_not(signal_mask)] = 0.0
-        plt_ghost[np.logical_not(ghost_mask)] = 0.0
-        plt_background[np.logical_not(background_mask)] = 0.0
-        plt.imshow(plt_signal[:, :, 100])
-        plt.imshow(plt_ghost[:, :, 100])
-        plt.imshow(plt_background[:, :, 100])
         snr = np.sqrt(2) * np.mean(signal) / np.std(background)
         uniformity = (
             100.0 * (signal.max() - signal.min()) /
