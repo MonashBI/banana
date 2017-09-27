@@ -5,6 +5,8 @@ from nipype.interfaces.base import (
     TraitedSpec, BaseInterface, File, traits)
 import nibabel as nib
 import matplotlib.pyplot as plt  # @UnusedImport
+from nianalysis.exceptions import NiAnalysisError
+from operator import lt, ge
 
 
 class QCMetricsInputSpec(TraitedSpec):
@@ -21,16 +23,20 @@ class QCMetricsInputSpec(TraitedSpec):
               "fraction of the estimated radius of the phantom"))
 
     ghost_radius = traits.Tuple(
-        traits.Float(), (1.2, 1.6), mandatory=False, usedefault=True,
+        (1.2, 1.8), traits.Float(), mandatory=False, usedefault=True,
         desc=("The internal and external radii of the region within which to "
               " calculate the ghost signal as a fraction of the estimated "
               "radius of the phantom"))
 
     background_radius = traits.Float(
-        1.6, mandatory=False, usedefault=True,
+        2.25, mandatory=False, usedefault=True,
         desc=("The internal radius of the region within which to "
               " calculate the backgrouind signal as a fraction of the "
               "estimated radius of the phantom"))
+
+    z_extent = traits.Float(
+        0.8, mandatory=False, usedefault=True,
+        desc=("The fraction of the z extent to include in the mask"))
 
 
 class QCMetricsOutputSpec(TraitedSpec):
@@ -54,6 +60,16 @@ class QCMetrics(BaseInterface):
         return runtime
 
     def _list_outputs(self):
+        if (self.inputs.signal_radius > self.inputs.ghost_radius[0] or
+            self.inputs.ghost_radius[0] > self.inputs.ghost_radius[1] or
+                self.inputs.ghost_radius[1] > self.inputs.background_radius):
+            raise NiAnalysisError(
+                "signal, ghost (internal), ghost (external) and background "
+                "radii need to be monotonically increasing ({}, {}, {} and {} "
+                "respectively".format(self.inputs.signal_radius,
+                                      self.inputs.ghost_radius[0],
+                                      self.inputs.ghost_radius[1],
+                                      self.inputs.background_radius))
         # Load the qc data
         qc = nib.load(self.inputs.in_file).get_data()
         # Calculate the absolute threshold value
@@ -76,15 +92,32 @@ class QCMetrics(BaseInterface):
             np.arange(qc.shape[1]),
             np.arange(qc.shape[2]))
         signal_mask = self._in_volume(
-            x, y, z, rad * self.inputs.signal_radius, extent[2], centre)
+            x, y, z,
+            rad * self.inputs.signal_radius,
+            extent[2] * self.inputs.z_extent,
+            centre)
         internal_ghost_mask = self._in_volume(
-            x, y, z, rad * self.inputs.ghost_radius[0], extent[2], centre,
+            x, y, z,
+            rad * self.inputs.ghost_radius[0],
+            extent[2] * self.inputs.z_extent,
+            centre,
             invert=True)
         external_ghost_mask = self._in_volume(
-            x, y, z, rad * self.inputs.ghost_radius[1], extent[2], centre)
+            x, y, z,
+            rad * self.inputs.ghost_radius[1],
+            extent[2] * self.inputs.z_extent,
+            centre)
         ghost_mask = np.logical_and(internal_ghost_mask, external_ghost_mask)
         background_mask = self._in_volume(
-            x, y, z, rad * self.inputs.background_radius, extent[2], centre)
+            x, y, z,
+            rad * self.inputs.background_radius,
+            extent[2] * self.inputs.z_extent,
+            centre,
+            invert=True)
+        if not background_mask.any():
+            raise NiAnalysisError(
+                "No voxels in background mask. Background radius {} set too "
+                "high".format(self.inputs.background_radius))
         signal = qc[signal_mask]
         ghost = qc[ghost_mask]
         background = qc[background_mask]
@@ -93,7 +126,7 @@ class QCMetrics(BaseInterface):
         plt_background = np.array(qc)
         plt_signal[np.logical_not(signal_mask)] = 0.0
         plt_ghost[np.logical_not(ghost_mask)] = 0.0
-        plt_ghost[np.logical_not(background_mask)] = 0.0
+        plt_background[np.logical_not(background_mask)] = 0.0
         plt.imshow(plt_signal[:, :, 100])
         plt.imshow(plt_ghost[:, :, 100])
         plt.imshow(plt_background[:, :, 100])
@@ -110,10 +143,8 @@ class QCMetrics(BaseInterface):
 
     @classmethod
     def _in_volume(cls, x, y, z, rad, z_extent, centre, invert=False):
+        op = lt if not invert else ge
         in_vol = np.logical_and(
-            np.sqrt((x - centre[0]) ** 2 +
-                    (y - centre[1]) ** 2) < rad,
-            np.abs(z - centre[2]) < z_extent)
-        if invert:
-            in_vol = np.logical_not(in_vol)
+            op(np.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2), rad),
+            np.abs(z - centre[2]) <= z_extent)
         return in_vol
