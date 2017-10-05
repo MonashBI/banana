@@ -484,12 +484,7 @@ class T2StarStudy(MRIStudy):
                    DatasetSpec(out_warp_inv, nifti_gz_format), DatasetSpec(warped_image, nifti_gz_format)]
         if 'out_mat_inv' in options:
             outputs.append(DatasetSpec(options('out_mat_inv'), text_matrix_format))
-            
-        print('Debugging')
-        print(inputs)
-        print('\n')
-        print(outputs)
-        
+                  
         pipeline = self.create_pipeline(
             name=name,
             inputs=inputs,
@@ -524,7 +519,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input(moving_mask, nonlinear_reg, 'moving_image_mask')
         pipeline.connect_output(warped_image, nonlinear_reg, 'warped_image')
         
-        if isinstance(moving_image, (list,tuple)): # maximum of two images combined... need to generalise code to list
+        if isinstance(moving_image, (list,tuple)): # first two images combined... need to generalise code to unlimited list
             combine_node = pipeline.create_node(fsl.utils.ImageMaths(suffix='_combined', op_string='-add'),
                 name='{name}_CombineImages'.format(name=name), requirements=[fsl5_req], memory=16000, wall_time=5)
             
@@ -1315,6 +1310,8 @@ class T2StarStudy(MRIStudy):
         input_list = [DatasetSpec('qsm', nifti_gz_format)]
         for structure_name in self._lookup_study_structures(options.get('study_name','FRDA')):
             input_list.append(self._lookup_structure_output(structure_name))
+            
+        op_string = '-k %s -m -s -v'     
         
         pipeline = self.create_pipeline(
             name='QSM_Analysis',
@@ -1353,15 +1350,16 @@ class T2StarStudy(MRIStudy):
             right_erode_mask = pipeline.create_node(fsl.ErodeImage(),
                                                     name='Right_Erosion_{structure_name}'.format(structure_name=structure_name),
                                                          requirements=[fsl5_req], memory=4000, wall_time=15)
+            right_erode_mask.inputs.kernel_shape = '2D'
             pipeline.connect_input(mask_names[1], right_erode_mask, 'in_file')  
             
             right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
                                                          name='Stats_Right_Mean_{structure_name}'.format(structure_name=structure_name),
                                                          requirements=[fsl5_req], memory=4000, wall_time=15)
-            right_apply_mask_mean.inputs.op_string = '-k %s -p 50 -m -s -v'        
+            right_apply_mask_mean.inputs.op_string = op_string      
             pipeline.connect_input('qsm', right_apply_mask_mean, 'in_file')
             pipeline.connect(right_erode_mask, 'out_file', right_apply_mask_mean, 'mask_file')
-            pipeline.connect(right_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(2*i+1))
+            pipeline.connect(right_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(2*i+2))
             
             '''
             right_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
@@ -1392,15 +1390,16 @@ class T2StarStudy(MRIStudy):
             left_erode_mask = pipeline.create_node(fsl.ErodeImage(),
                                                     name='Left_Erosion_{structure_name}'.format(structure_name=structure_name),
                                                          requirements=[fsl5_req], memory=4000, wall_time=15)
+            left_erode_mask.inputs.kernel_shape = '2D'
             pipeline.connect_input(mask_names[0], left_erode_mask, 'in_file') 
             
             left_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
                                                          name='Stats_Left_Mean_{structure_name}'.format(structure_name=structure_name),
                                                          requirements=[fsl5_req], memory=4000, wall_time=15)
-            left_apply_mask_mean.inputs.op_string = '-k %s -m -s -v'        
+            left_apply_mask_mean.inputs.op_string = op_string       
             pipeline.connect_input('qsm', left_apply_mask_mean, 'in_file')
             pipeline.connect(left_erode_mask, 'out_file', left_apply_mask_mean, 'mask_file')
-            pipeline.connect(left_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(2*i+2))
+            pipeline.connect(left_apply_mask_mean, 'out_stat', merge_stats, 'in'+str(2*i+1))
             
             '''
             left_apply_mask_mean = pipeline.create_node(fsl.ImageStats(),
