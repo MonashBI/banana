@@ -1309,7 +1309,7 @@ class T2StarStudy(MRIStudy):
         # Cannot use pipeline options and pipeline default for 'study_name'
         input_list = [DatasetSpec('qsm', nifti_gz_format)]
         for structure_name in self._lookup_study_structures(options.get('study_name','FRDA')):
-            input_list.append(self._lookup_structure_output(structure_name))
+            input_list.extend(self._lookup_structure_output(structure_name))
             
         op_string = '-k %s -m -s -v'     
         
