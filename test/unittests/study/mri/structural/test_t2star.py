@@ -74,7 +74,7 @@ class TestQSM(TestCase):
                 'right_substantia_nigra_in_mni_refined': Dataset('right_substantia_nigra_in_mni_refined', nifti_gz_format, multiplicity='per_project')
                 })
         #study.t2s_atlas(qsm_num_channels=8, qsm_echo_times=[20], swi_coils_filename='T2swi3d_axial_p2_1.8mm_Coil').run(work_dir=self.work_dir, plugin='MultiProc')
-        study.nonLinearT2sToMNI(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['F17p1'])#, plugin='MultiProc')
+        study.bet_T1(study_name='TEST',qsm_num_channels=4, qsm_echo_times=[7.38, 22.14]).run(work_dir=self.work_dir, subject_ids=['frda'], visit_ids=['F17p1'])#, plugin='MultiProc')
         self.assertDatasetCreated(dataset_name='t2s_in_mni_refined.nii.gz', study_name=study.name)
         #self.assertDatasetCreated(multiplicity='per_project',dataset_name='t2s_mni_atlas.nii.gz', study_name=study.name)
         
