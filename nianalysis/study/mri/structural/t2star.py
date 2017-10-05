@@ -1326,7 +1326,7 @@ class T2StarStudy(MRIStudy):
         # Build list of fields for summary
         field_list = [] #['in_subject_id','in_visit_id']
         for structure_name in self._lookup_study_structures(pipeline.option('study_name')):
-            field_list.append(['in_left_{structure_name}_median'.format(structure_name=structure_name), 
+            field_list.extend(['in_left_{structure_name}_median'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_mean'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_std'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_voxels'.format(structure_name=structure_name), 
