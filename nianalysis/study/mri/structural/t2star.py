@@ -991,7 +991,7 @@ class T2StarStudy(MRIStudy):
                                                           'atlases','SUIT.nii'))
         elif space_name == 'MNI':
             template_path = os.path.abspath(os.path.join(os.path.dirname(nianalysis.__file__),
-                                                          'atlases','MNI152_T1_1mm.nii.gz'))
+                                                          'atlases','MNI152_T1_1mm_brain.nii.gz'))
         else:
             raise NiAnalysisError(
                     "Invalid space_name in _lookup_template_path: {space_name}".format(space_name=space_name))
