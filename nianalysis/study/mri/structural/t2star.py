@@ -9,6 +9,7 @@ from nianalysis.exceptions import (
     NiAnalysisDatasetNameError, NiAnalysisError, NiAnalysisMissingDatasetError)
 from ..base import MRIStudy
 from nipype.interfaces import fsl, ants, mrtrix
+from nianalysis.interfaces.ants import AntsRegSyn
 import os
 import subprocess as sp
 from nianalysis import pipeline
@@ -683,6 +684,32 @@ class T2StarStudy(MRIStudy):
         
     def nonLinearT1ToMNI(self, **options):
         
+        pipeline = self.create_pipeline(
+            name='ANTS_Reg_T1_to_MNI_Warp',
+            inputs=[DatasetSpec('betted_T1', nifti_gz_format)],
+            outputs=[DatasetSpec(self._lookup_l_tfm_to_name('MNI'), text_matrix_format),
+                     DatasetSpec(self._lookup_nl_tfm_to_name('MNI'), nifti_gz_format),
+                     DatasetSpec(self._lookup_nl_tfm_inv_name('MNI'), nifti_gz_format),
+                     DatasetSpec('T1_in_MNI', nifti_gz_format)],
+            description=("python implementation of Deformable Syn ANTS Reg for T1 to MNI"),           
+            default_options={},
+            version=1,
+            citations=[ants19_req],
+            options=options)
+                
+        t1reg = pipeline.create_node(
+            AntsRegSyn(num_dimensions=3, transformation='s',
+                       out_prefix='T1_to_MNI'), name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)
+        t1reg.inputs.ref_file = self._lookup_template_path('MNI')
+        
+        pipeline.connect_input('betted_T1', t1reg, 'input_file')
+        pipeline.connect_output(self._lookup_l_tfm_to_name('MNI'), t1reg, 'regmat')
+        pipeline.connect_output(self._lookup_nl_tfm_to_name('MNI'), t1reg, 'warp_file')
+        pipeline.connect_output(self._lookup_nl_tfm_inv_name('MNI'), t1reg, 'inv_warp')
+        pipeline.connect_output('T1_in_MNI', t1reg, 'reg_file')
+        
+        return pipeline
+        '''
         return self._nonlinearReg(name='ANTS_Reg_T1_to_MNI_Warp',
                                   fixed_atlas=self._lookup_template_path('MNI'),
                                   fixed_atlas_mask=self._lookup_template_mask_path('MNI'),
@@ -692,6 +719,7 @@ class T2StarStudy(MRIStudy):
                                   out_warp=self._lookup_nl_tfm_to_name('MNI'), 
                                   out_warp_inv=self._lookup_nl_tfm_inv_name('MNI'), 
                                   warped_image='T1_in_MNI')
+        '''
     
     def nonLinearT1ToSUIT(self, **options):
         return self._nonlinearReg(name='ANTS_Reg_T1_to_SUIT_Warp',
@@ -1326,12 +1354,12 @@ class T2StarStudy(MRIStudy):
         # Build list of fields for summary
         field_list = [] #['in_subject_id','in_visit_id']
         for structure_name in self._lookup_study_structures(pipeline.option('study_name')):
-            field_list.extend(['in_left_{structure_name}_median'.format(structure_name=structure_name), 
+            field_list.extend([#'in_left_{structure_name}_median'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_mean'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_std'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_voxels'.format(structure_name=structure_name), 
                                'in_left_{structure_name}_volume'.format(structure_name=structure_name),
-                               'in_right_{structure_name}_median'.format(structure_name=structure_name),
+                               #'in_right_{structure_name}_median'.format(structure_name=structure_name),
                                'in_right_{structure_name}_mean'.format(structure_name=structure_name), 
                                'in_right_{structure_name}_std'.format(structure_name=structure_name), 
                                'in_right_{structure_name}_voxels'.format(structure_name=structure_name), 
