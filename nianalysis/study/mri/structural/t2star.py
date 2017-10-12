@@ -733,6 +733,42 @@ class T2StarStudy(MRIStudy):
                                   warped_image='T1_in_SUIT')   
     
     def nonLinearT2sToMNI(self, **options):
+        pipeline = self.create_pipeline(
+            name='ANTS_Reg_T1_to_MNI_Warp',
+            inputs=[DatasetSpec('t2s_in_mni_initial_atlas', nifti_gz_format),
+                    DatasetSpec('opti_betted_T2s', nifti_gz_format),
+                    DatasetSpec('opti_betted_T2s_last_echo', nifti_gz_format)],
+            outputs=[DatasetSpec('T2s_to_MNI_mat_refined', text_matrix_format),
+                     DatasetSpec('T2s_to_MNI_warp_refined', nifti_gz_format),
+                     DatasetSpec('MNI_to_T2s_warp_refined', nifti_gz_format),
+                     DatasetSpec('t2s_in_mni_refined', nifti_gz_format)],
+            description=("python implementation of Deformable Syn ANTS Reg for T1 to MNI"),           
+            default_options={},
+            version=1,
+            citations=[ants19_req],
+            options=options)
+        
+        combine_node = pipeline.create_node(
+            fsl.utils.ImageMaths(suffix='_combined', op_string='-add'),
+            name='T2s_CombineImages', 
+            requirements=[fsl5_req], memory=16000, wall_time=5)
+        pipeline.connect_input('opti_betted_T2s', combine_node, 'in_file')
+        pipeline.connect_input('opti_betted_T2s_last_echo', combine_node, 'in_file2')
+            
+        t2reg = pipeline.create_node(
+            AntsRegSyn(num_dimensions=3, transformation='s', out_prefix='T2s_to_MNI'),
+            name='ANTsReg', requirements=[ants19_req], memory=16000, wall_time=300)
+        
+        pipeline.connect(combine_node, 'out_file', t2reg, 'input_file')
+        pipeline.connect_input('t2s_in_mni_initial_atlas', t2reg, 'ref_file')
+        pipeline.connect_output('T2s_to_MNI_mat_refined', t2reg, 'regmat')
+        pipeline.connect_output('T2s_to_MNI_warp_refined', t2reg, 'warp_file')
+        pipeline.connect_output('MNI_to_T2s_warp_refined', t2reg, 'inv_warp')
+        pipeline.connect_output('t2s_in_mni_refined', t2reg, 'reg_file')
+        
+        return pipeline
+    
+    '''
         return self._nonlinearReg(name='ANTS_Reg_T2s_to_MNI_Template_Warp',
                                   fixed_image='t2s_in_mni_initial_atlas',
                                   fixed_atlas_mask=self._lookup_template_mask_path('MNI'), 
@@ -742,6 +778,7 @@ class T2StarStudy(MRIStudy):
                                   out_warp='T2s_to_MNI_warp_refined',
                                   out_warp_inv='MNI_to_T2s_warp_refined',
                                   warped_image='t2s_in_mni_refined')  
+    '''
     
     def nonLinearT2sToSUIT(self, **options):
         return self._nonlinearReg(name='ANTS_Reg_T2s_to_SUIT_Template_Warp',
