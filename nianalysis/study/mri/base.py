@@ -1,7 +1,7 @@
 from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import Study, set_dataset_specs
+from nianalysis.study.base import Study, set_data_specs
 from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import nifti_gz_format
@@ -145,7 +145,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('primary', nifti_gz_format),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),

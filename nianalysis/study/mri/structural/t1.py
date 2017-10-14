@@ -8,7 +8,7 @@ from nianalysis.citations import (
     freesurfer_cites, optimal_t1_bet_params_cite)
 from nianalysis.data_formats import (freesurfer_recon_all_format,
                                      nifti_gz_format)
-from nianalysis.study.base import set_dataset_specs
+from nianalysis.study.base import set_data_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
 from ..base import MRIStudy
@@ -59,7 +59,7 @@ class T1Study(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline),
-        inherit_from=chain(MRIStudy.dataset_specs()))
+        inherit_from=chain(MRIStudy.data_specs()))

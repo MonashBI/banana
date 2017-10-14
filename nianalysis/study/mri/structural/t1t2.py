@@ -2,7 +2,7 @@ from nipype.pipeline import engine as pe
 from nipype.interfaces.fsl import ApplyMask
 from nianalysis.data_formats import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
-from nianalysis.study.base import set_dataset_specs
+from nianalysis.study.base import set_data_specs
 from nianalysis.dataset import DatasetSpec
 from ...combined import CombinedStudy
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
@@ -93,7 +93,7 @@ class T1T2Study(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('t1', nifti_gz_format,
                     description="Raw T1-weighted image (e.g. MPRAGE)"),
         DatasetSpec('t2', nifti_gz_format,
