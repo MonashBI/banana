@@ -9,7 +9,7 @@ from nianalysis.interfaces.fsl import (MelodicL1FSF, FSLFIX, CheckLabelFile,
                                        FSLFixTraining, FSLSlices)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import set_dataset_specs
+from nianalysis.study.base import set_data_specs
 from ..base import MRIStudy
 from nianalysis.requirements import fsl5_req, ants2_req, afni_req, fix_req
 from nianalysis.citations import fsl_cite
@@ -588,7 +588,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('field_map_mag', nifti_gz_format),
         DatasetSpec('field_map_phase', nifti_gz_format),
         DatasetSpec('t1', nifti_gz_format),

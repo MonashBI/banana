@@ -7,7 +7,7 @@ from nianalysis.requirements import spm12_req
 from nianalysis.citations import spm_cite
 from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, text_matrix_format)
-from ..base import set_dataset_specs, Study
+from ..base import set_data_specs, Study
 from nianalysis.dataset import DatasetSpec
 
 
@@ -137,7 +137,7 @@ class CoregisteredStudy(Study):
     def _connect_matrix(self, pipeline, flirt):
         pipeline.connect_output('matrix', flirt, 'out_matrix_file')
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('to_register', nifti_gz_format),
         DatasetSpec('registered', nifti_gz_format, registration_pipeline),
@@ -191,7 +191,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
     def _connect_matrix(self, pipeline, flirt):
         pipeline.connect_input('matrix', flirt, 'in_matrix_file')
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('to_register', nifti_gz_format),
         DatasetSpec('matrix', text_matrix_format),
