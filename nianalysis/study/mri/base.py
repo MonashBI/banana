@@ -1,8 +1,6 @@
-from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import Study, set_data_specs
-from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import nifti_gz_format
 from nianalysis.requirements import fsl5_req
