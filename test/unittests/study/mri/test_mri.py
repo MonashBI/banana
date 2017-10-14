@@ -11,7 +11,7 @@ class TestMRI(TestCase):
 
     def test_brain_mask(self):
         study = self.create_study(
-            MRIStudy, 'mask_study', input_datasets={
+            MRIStudy, 'mask_study', inputs={
                 'primary': Dataset('flair', nifti_gz_format)})
         study.brain_mask_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('brain_mask.nii.gz', study.name)

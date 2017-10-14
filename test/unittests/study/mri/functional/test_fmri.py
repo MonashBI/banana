@@ -13,7 +13,7 @@ class TestFMRI(BaseTestCase):
 
 #     def test_feat(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'feat', input_datasets={
+#             FunctionalMRIStudy, 'feat', inputs={
 #                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
 #                 'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
 #                 't1': Dataset('mprage', nifti_gz_format),
@@ -24,7 +24,7 @@ class TestFMRI(BaseTestCase):
 # 
 #     def test_fix(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'fix', input_datasets={
+#             FunctionalMRIStudy, 'fix', inputs={
 #                 'feat_dir': Dataset('feat_dir', zip_format),
 #                 'train_data': Dataset('train_data', rdata_format)})
 #         study.fix_pipeline().run(work_dir=self.work_dir)
@@ -32,7 +32,7 @@ class TestFMRI(BaseTestCase):
 
 #     def test_optibet(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'optibet', input_datasets={
+#             FunctionalMRIStudy, 'optibet', inputs={
 #                 't1': Dataset('mprage', nifti_gz_format)})
 #         study.optiBET().run(work_dir=self.work_dir, plugin='MultiProc')
 #         self.assertDatasetCreated('betted_file.nii.gz', study.name)
@@ -40,7 +40,7 @@ class TestFMRI(BaseTestCase):
 
 #     def test_ants(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'optibet', input_datasets={
+#             FunctionalMRIStudy, 'optibet', inputs={
 #                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
 #                 'betted_file': Dataset('betted_file', nifti_gz_format)})
 #         study.ANTsRegistration().run(work_dir=self.work_dir,
@@ -54,7 +54,7 @@ class TestFMRI(BaseTestCase):
 
 #     def test_filtering(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'filtering', input_datasets={
+#             FunctionalMRIStudy, 'filtering', inputs={
 #                 'rs_fmri': Dataset('rs_fmri', nifti_gz_format),
 #                 'betted_file': Dataset('betted_file', nifti_gz_format),
 #                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
@@ -65,7 +65,7 @@ class TestFMRI(BaseTestCase):
 
 #     def test_melodic(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'melodic', input_datasets={
+#             FunctionalMRIStudy, 'melodic', inputs={
 #                 'filtered_data': Dataset('filtered_func_data', nifti_gz_format)})
 #         study.MelodicL1().run(work_dir=self.work_dir,
 #                               plugin='MultiProc')
@@ -73,7 +73,7 @@ class TestFMRI(BaseTestCase):
  
     def test_fix(self):
         study = self.create_study(
-            FunctionalMRIStudy, 'fix', input_datasets={
+            FunctionalMRIStudy, 'fix', inputs={
 #                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
 #                 'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
                 'rsfmri_mask': Dataset('rsfmri_mask', nifti_gz_format),
@@ -89,7 +89,7 @@ class TestFMRI(BaseTestCase):
         self.assertDatasetCreated('cleaned_file.nii.gz', study.name)
 #     def test_feat(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'preprocessing', input_datasets={
+#             FunctionalMRIStudy, 'preprocessing', inputs={
 #                 'field_map_mag': Dataset('field_map_mag', nifti_gz_format),
 #                 'field_map_phase': Dataset('field_map_phase', nifti_gz_format),
 #                 't1': Dataset('mprage', nifti_gz_format),
@@ -98,7 +98,7 @@ class TestFMRI(BaseTestCase):
 #         self.assertDatasetCreated('melodic_dir.zip', study.name)
 #     def test_apply_trans(self):
 #         study = self.create_study(
-#             FunctionalMRIStudy, 'apply_smooth', input_datasets={
+#             FunctionalMRIStudy, 'apply_smooth', inputs={
 #                 'cleaned_file': Dataset('filtered_func_data', nifti_gz_format),
 #                 'T12MNI_warp': Dataset('T12MNI_1Warp', nifti_gz_format),
 #                 'T12MNI_mat': Dataset('T12MNI_0GenericAffine', text_matrix_format),

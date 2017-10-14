@@ -13,7 +13,7 @@ class TestCoregistered(TestCase):
     def test_registration(self):
         study = self.create_study(
             CoregisteredStudy, 'registration',
-            input_datasets={
+            inputs={
                 'to_register': Dataset('flair', nifti_gz_format),
                 'reference': Dataset('mprage', nifti_gz_format)})
         pipeline = study.registration_pipeline()
