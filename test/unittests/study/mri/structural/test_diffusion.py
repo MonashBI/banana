@@ -115,7 +115,7 @@ class TestNODDI(BaseTestCase):
 
     def test_concatenate(self):
         study = self.create_study(
-            NODDIStudy, 'concatenate', input_datasets={
+            NODDIStudy, 'concatenate', inputs={
                 'low_b_dw_scan': Dataset('r_l_dwi_b700_30', mrtrix_format),
                 'high_b_dw_scan': Dataset('r_l_dwi_b2000_60', mrtrix_format)})
         study.concatenate_pipeline().run(work_dir=self.work_dir)
@@ -124,7 +124,7 @@ class TestNODDI(BaseTestCase):
 
 #     def test_noddi_fitting(self, nthreads=6):
 #         study = self.create_study(
-#             NODDIStudy, 'noddi', input_datasets={
+#             NODDIStudy, 'noddi', inputs={
 #                 'dwi_preproc': Dataset('noddi_dwi', mrtrix_format),
 #                 'brain_mask': Dataset('roi_mask', analyze_format),
 #                 'grad_dirs': Dataset('noddi_gradient_directions',

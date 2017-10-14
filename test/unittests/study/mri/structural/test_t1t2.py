@@ -11,7 +11,7 @@ class TestT1T2Study(BaseTestCase):
 
     def test_t2_registration_pipeline(self):
         study = self.create_study(
-            T1T2Study, 't2_registration', input_datasets={
+            T1T2Study, 't2_registration', inputs={
                 't1': Dataset('mprage', nifti_gz_format),
                 't2': Dataset('flair', nifti_gz_format)})
         study.t2_registration_pipeline().run(work_dir=self.work_dir)
@@ -19,7 +19,7 @@ class TestT1T2Study(BaseTestCase):
 
 #     def test_freesurfer_pipeline(self):
 #         study = self.create_study(
-#             T1T2Study, 'freesurfer', input_datasets={
+#             T1T2Study, 'freesurfer', inputs={
 #                 't1': Dataset('mprage', nifti_gz_format),
 #                 't2': Dataset('flair', nifti_gz_format)})
 #         study.freesurfer_pipeline().run(work_dir=self.work_dir)
@@ -27,7 +27,7 @@ class TestT1T2Study(BaseTestCase):
 
     def test_brain_mask_pipelines(self):
         study = self.create_study(
-            T1T2Study, 'brain_mask', input_datasets={
+            T1T2Study, 'brain_mask', inputs={
                 't1': Dataset('mprage', nifti_gz_format),
                 't2': Dataset('flair', nifti_gz_format),
                 'manual_wmh_mask': Dataset('manual_wmh_mask',
