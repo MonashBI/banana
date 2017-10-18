@@ -52,8 +52,8 @@ for i=1:numel(echo_times)
         end
         
         % Remove extreme values
-        inRe.img(inRe.img==2048) = rand(nnz(inRe.img==2048),1);
-        inIm.img(inIm.img==2048) = rand(nnz(inRe.img==2048),1);
+        inRe.img(inRe.img==2048) = 0.02*rand(nnz(inRe.img==2048),1);
+        inIm.img(inIm.img==2048) = 0.02*rand(nnz(inRe.img==2048),1);
     
         % Construct polar images
         complexVol = complex(inRe.img,inIm.img);
