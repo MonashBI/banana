@@ -130,6 +130,7 @@ class T2StarStudy(MRIStudy):
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
+        #bias.inputs.n_iterations = [200,100,100]
         pipeline.connect(prepare, 'out_file_fe', bias, 'input_image')
         pipeline.connect_output('t2s', bias, 'output_image')
         
@@ -987,11 +988,11 @@ class T2StarStudy(MRIStudy):
         return atlas
     
     def _lookup_structure_approach(self, structure_name):
-        if structure_name in ['dentate', 'red_nuclei', 'substantia_nigra','caudate', 'putamen', 'pallidum', 'thalamus']:
+        if structure_name in ['dentate', 'red_nuclei', 'substantia_nigra']:
             space = 'REFINED'
         elif structure_name in ['frontal_wm']:
             space = 'ATLAS'
-        elif structure_name in ['null_placeholder']:
+        elif structure_name in ['caudate', 'putamen', 'pallidum', 'thalamus']:
             space = 'FIRST'
         else:
             raise NiAnalysisError(
