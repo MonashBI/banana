@@ -130,13 +130,16 @@ class T2StarStudy(MRIStudy):
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
-        #bias.inputs.n_iterations = [200,100,100]
+        bias.inputs.n_iterations = [200,200,200,200]
+        bias.inputs.convergence_threshold = 0.0000001
         pipeline.connect(prepare, 'out_file_fe', bias, 'input_image')
         pipeline.connect_output('t2s', bias, 'output_image')
         
         bias_2 = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction_2', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
+        bias_2.inputs.n_iterations = [200,200,200,200]
+        bias_2.inputs.convergence_threshold = 0.0000001
         pipeline.connect(prepare, 'out_file_le', bias_2, 'input_image')
         pipeline.connect_output('t2s_last_echo', bias_2, 'output_image')
         
