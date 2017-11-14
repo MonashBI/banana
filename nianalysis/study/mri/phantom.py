@@ -1,40 +1,41 @@
-from nianalysis.data_formats import dicom_format, nifti_gz_format
-from ..base import set_dataset_specs, Study
-from nianalysis.dataset import DatasetSpec
+from nianalysis.data_formats import dicom_format, nifti_format
+from ..base import set_data_specs, Study
+from nianalysis.dataset import DatasetSpec, FieldSpec
+from nianalysis.interfaces.custom.qc import QCMetrics
 
 
 class QCStudy(Study):
 
-    def qc_analysis_pipeline(self, **options):
+    def qc_metrics_pipeline(self, **options):
         pipeline = self.create_pipeline(
-            name='qc_',
-            inputs=self._registration_inputs,
-            outputs=self._registration_outputs,
+            name='qc_merics',
+            inputs=[DatasetSpec('phantom', nifti_format)],
+            outputs=[FieldSpec('snr', dtype=float),
+                     FieldSpec('uniformity', dtype=float),
+                     FieldSpec('ghost_intensity', dtype=float)],
             description="Registers a MR scan against a reference image",
             default_options={
-                'degrees_of_freedom': 6, 'cost_func': 'mutualinfo',
-                'qsform': False},
+                'threshold': 0.25,
+                'signal_radius': 0.8,
+                'ghost_radius': (1.2, 1.8),
+                'background_radius': 2.25,
+                'z_extent': 0.8},
             version=1,
             citations=[],
             options=options)
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req], wall_time=5)
-        # Set registration options
-        flirt.inputs.dof = pipeline.option('degrees_of_freedom')
-        flirt.inputs.cost = pipeline.option('cost_func')
-        flirt.inputs.cost_func = pipeline.option('cost_func')
-        flirt.inputs.uses_qform = pipeline.option('qsform')
-        flirt.inputs.output_type = 'NIFTI_GZ'
+        metrics = pipeline.create_node(interface=QCMetrics(), name='metrics',
+                                       wall_time=5)
         # Connect inputs
-        pipeline.connect_input('to_register', flirt, 'in_file')
-        pipeline.connect_input('reference', flirt, 'reference')
+        pipeline.connect_input('phantom', metrics, 'in_file')
         # Connect outputs
-        pipeline.connect_output('registered', flirt, 'out_file')
-        # Connect matrix
-        self._connect_matrix(pipeline, flirt)
+        pipeline.connect_output('snr', metrics, 'snr')
+        pipeline.connect_output('uniformity', metrics, 'uniformity')
+        pipeline.connect_output('ghost_intensity', metrics, 'ghost_intensity')
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
-        DatasetSpec('qc', dicom_format),
-        DatasetSpec('to_register', nifti_gz_format))
+    _dataset_specs = set_data_specs(
+        DatasetSpec('phantom', dicom_format),
+        FieldSpec('snr', dtype=float),
+        FieldSpec('uniformity', dtype=float),
+        FieldSpec('ghost_intensity', dtype=float))
