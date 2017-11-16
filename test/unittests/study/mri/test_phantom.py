@@ -11,9 +11,12 @@ class TestMRI(TestCase):
 
     def test_phantom_qc(self):
         study = self.create_study(
-            QCStudy, 'ac_study', inputs={
-                'phantom': Dataset('phantom', dicom_format)})
-        study.brain_mask_pipeline().run(work_dir=self.work_dir)
+            QCStudy, 'qc_study', inputs={
+                'phantom': Dataset('phantom_t1_09', dicom_format)})
+        study.qc_metrics_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('signal', study.name)
+        self.assertDatasetCreated('ghost', study.name)
+        self.assertDatasetCreated('background', study.name)
         self.assertField('snr', 1.0, study.name)
         self.assertField('uniformity', 1.0, study.name)
         self.assertField('ghost_intensity', 1.0, study.name)

@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 from __future__ import division
+import os.path
 import numpy as np
 from nipype.interfaces.base import (
-    TraitedSpec, BaseInterface, File, traits)
+    TraitedSpec, BaseInterface, File, traits, isdefined)
 import nibabel as nib
 import matplotlib.pyplot as plt  # @UnusedImport
 from nianalysis.exceptions import NiAnalysisError
@@ -22,8 +23,9 @@ class QCMetricsInputSpec(TraitedSpec):
         desc=("The radius within which to calculate the signal intensity as a "
               "fraction of the estimated radius of the phantom"))
 
-    ghost_radius = traits.Tuple(
-        (1.2, 1.8), traits.Float(), mandatory=False, usedefault=True,
+    ghost_radii = traits.Tuple(
+        traits.Float(1.2), traits.Float(1.8), mandatory=False,
+        usedefault=True,
         desc=("The internal and external radii of the region within which to "
               " calculate the ghost signal as a fraction of the estimated "
               "radius of the phantom"))
@@ -38,6 +40,19 @@ class QCMetricsInputSpec(TraitedSpec):
         0.8, mandatory=False, usedefault=True,
         desc=("The fraction of the z extent to include in the mask"))
 
+    signal = File(
+        genfile=True,
+        desc=("The masked \"signal\" image used to calculate the SNR"))
+
+    ghost = File(
+        genfile=True,
+        desc=("The masked \"ghost\" image used to calculate the ghost"
+              " intensity"))
+
+    background = File(
+        genfile=True,
+        desc=("The masked \"background\" image used to calculate the SNR"))
+
 
 class QCMetricsOutputSpec(TraitedSpec):
 
@@ -48,6 +63,14 @@ class QCMetricsOutputSpec(TraitedSpec):
 
     ghost_intensity = traits.Float(
         desc="The intensity of the ghost region of the image")
+
+    signal = File(desc="The masked \"signal\" image used to calculate the SNR")
+
+    ghost = File(desc=("The masked \"ghost\" image used to calculate the ghost"
+                       " intensity"))
+
+    background = File(desc=("The masked \"background\" image used to calculate"
+                            " the SNR"))
 
 
 class QCMetrics(BaseInterface):
@@ -60,18 +83,19 @@ class QCMetrics(BaseInterface):
         return runtime
 
     def _list_outputs(self):
-        if (self.inputs.signal_radius > self.inputs.ghost_radius[0] or
-            self.inputs.ghost_radius[0] > self.inputs.ghost_radius[1] or
-                self.inputs.ghost_radius[1] > self.inputs.background_radius):
+        if (self.inputs.signal_radius > self.inputs.ghost_radii[0] or
+            self.inputs.ghost_radii[0] > self.inputs.ghost_radii[1] or
+                self.inputs.ghost_radii[1] > self.inputs.background_radius):
             raise NiAnalysisError(
                 "signal, ghost (internal), ghost (external) and background "
                 "radii need to be monotonically increasing ({}, {}, {} and {} "
                 "respectively".format(self.inputs.signal_radius,
-                                      self.inputs.ghost_radius[0],
-                                      self.inputs.ghost_radius[1],
+                                      self.inputs.ghost_radii[0],
+                                      self.inputs.ghost_radii[1],
                                       self.inputs.background_radius))
         # Load the qc data
-        qc = nib.load(self.inputs.in_file).get_data()
+        qc_nifti = nib.load(self.inputs.in_file)
+        qc = qc_nifti.get_data()
         # Calculate the absolute threshold value
         thresh_val = qc.min() + (qc.max() - qc.min()) * self.inputs.threshold
         # Threshold the image
@@ -86,11 +110,11 @@ class QCMetrics(BaseInterface):
         # Get the sphere that fits between the limits
         extent = (limits[:, 1] - limits[:, 0]) // 2
         centre = limits[:, 0] + extent
-        rad = np.sum(extent[:2]) / 2.0
+        rad = np.sum(extent[:2]) // 2.0
         x, y, z = np.meshgrid(
             np.arange(qc.shape[0]),
             np.arange(qc.shape[1]),
-            np.arange(qc.shape[2]))
+            np.arange(qc.shape[2]), indexing='ij')
         signal_mask = self._in_volume(
             x, y, z,
             rad * self.inputs.signal_radius,
@@ -98,13 +122,13 @@ class QCMetrics(BaseInterface):
             centre)
         internal_ghost_mask = self._in_volume(
             x, y, z,
-            rad * self.inputs.ghost_radius[0],
+            rad * self.inputs.ghost_radii[0],
             extent[2] * self.inputs.z_extent,
             centre,
             invert=True)
         external_ghost_mask = self._in_volume(
             x, y, z,
-            rad * self.inputs.ghost_radius[1],
+            rad * self.inputs.ghost_radii[1],
             extent[2] * self.inputs.z_extent,
             centre)
         ghost_mask = np.logical_and(internal_ghost_mask, external_ghost_mask)
@@ -126,10 +150,24 @@ class QCMetrics(BaseInterface):
             100.0 * (signal.max() - signal.min()) /
             (signal.max() + signal.min()))
         ghost_intensity = 100.0 * np.mean(signal) / np.mean(ghost)
+        # Save masked images to file
+        signal_fname = self._gen_filename('signal')
+        ghost_fname = self._gen_filename('ghost')
+        background_fname = self._gen_filename('background')
+        nib.save(nib.Nifti1Image((qc * signal_mask).nonzero(),
+                                 affine=qc_nifti.affine), signal_fname)
+        nib.save(nib.Nifti1Image((qc * ghost_mask).nonzero(),
+                                 affine=qc_nifti.affine), ghost_fname)
+        nib.save(nib.Nifti1Image((qc * background_mask).nonzero(),
+                                 affine=qc_nifti.affine),
+                 background_fname)
         outputs = self._outputs().get()
         outputs['snr'] = snr
         outputs['uniformity'] = uniformity
         outputs['ghost_intensity'] = ghost_intensity
+        outputs['signal'] = signal_fname
+        outputs['ghost'] = ghost_fname
+        outputs['background'] = background_fname
         return outputs
 
     @classmethod
@@ -139,3 +177,16 @@ class QCMetrics(BaseInterface):
             op(np.sqrt((x - centre[0]) ** 2 + (y - centre[1]) ** 2), rad),
             np.abs(z - centre[2]) <= z_extent)
         return in_vol
+
+    def plot(self, volume, slice_index=None):
+        if slice_index is None:
+            slice_index = volume.shape[2] // 2
+        im_slice = volume[:, :, slice_index]
+        plt.imshow(im_slice)
+
+    def _gen_filename(self, name):
+        if isdefined(getattr(self.inputs, name)):
+            fname = getattr(self.inputs, name)
+        else:
+            fname = os.path.join(os.getcwd(), name + '.nii')
+        return fname
