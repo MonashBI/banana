@@ -154,11 +154,11 @@ class QCMetrics(BaseInterface):
         signal_fname = self._gen_filename('signal')
         ghost_fname = self._gen_filename('ghost')
         background_fname = self._gen_filename('background')
-        nib.save(nib.Nifti1Image((qc * signal_mask).nonzero(),
+        nib.save(nib.Nifti1Image(qc * signal_mask,
                                  affine=qc_nifti.affine), signal_fname)
-        nib.save(nib.Nifti1Image((qc * ghost_mask).nonzero(),
+        nib.save(nib.Nifti1Image(qc * ghost_mask,
                                  affine=qc_nifti.affine), ghost_fname)
-        nib.save(nib.Nifti1Image((qc * background_mask).nonzero(),
+        nib.save(nib.Nifti1Image(qc * background_mask,
                                  affine=qc_nifti.affine),
                  background_fname)
         outputs = self._outputs().get()

@@ -4,7 +4,7 @@ from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.interfaces.custom.qc import QCMetrics
 
 
-class QCStudy(Study):
+class PhantomStudy(Study):
 
     def qc_metrics_pipeline(self, **options):
         pipeline = self.create_pipeline(
