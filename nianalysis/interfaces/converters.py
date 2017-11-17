@@ -12,11 +12,12 @@ import numpy as np
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
-    input_dir = Directory(mandatory=True, desc='directory name', argstr='%s',
+    input_dir = Directory(mandatory=True, desc='directory name', argstr='"%s"',
                           position=-1)
     compression = traits.Str(argstr='-z %s', desc='type of compression')
-    filename = File(genfile=True, argstr='-f %s', desc='output file name')
-    out_dir = Directory(genfile=True, argstr='-o %s', desc="output directory")
+    filename = File(genfile=True, argstr='-f "%s"', desc='output file name')
+    out_dir = Directory(genfile=True, argstr='-o "%s"',
+                        desc="output directory")
 
 
 class Dcm2niixOutputSpec(TraitedSpec):
