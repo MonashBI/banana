@@ -68,6 +68,6 @@ nii.img = tissueVol;
 save_nii(nii,[qsmDir '/TissuePhase.nii.gz']);
 
 nii.img = maskVol;
-save_nii(nii,[qsmDir '/PhaseMasks.nii.gz']);
+save_nii(nii,[qsmDir '/PhaseMask.nii.gz']);
 
 end
