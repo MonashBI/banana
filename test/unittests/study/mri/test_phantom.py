@@ -3,17 +3,17 @@ from nipype import config
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import dicom_format  # @IgnorePep8
-from nianalysis.study.mri.phantom import QCStudy  # @IgnorePep8
+from nianalysis.study.mri.phantom import QAStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestMRI(TestCase):
 
-    def test_phantom_qc(self):
+    def test_phantom_qa(self):
         study = self.create_study(
-            QCStudy, 'qc_study', inputs={
+            QAStudy, 'qa_study', inputs={
                 'phantom': Dataset('phantom_t1_09', dicom_format)})
-        study.qc_metrics_pipeline().run(work_dir=self.work_dir)
+        study.qa_metrics_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('signal.nii.gz', study.name)
         self.assertDatasetCreated('ghost.nii.gz', study.name)
         self.assertDatasetCreated('background.nii.gz', study.name)
