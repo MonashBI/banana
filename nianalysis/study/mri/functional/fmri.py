@@ -11,7 +11,8 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
-from nianalysis.requirements import fsl5_req, ants2_req, afni_req, fix_req
+from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
+                                     fsl509_req)
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
@@ -110,7 +111,7 @@ class FunctionalMRIStudy(MRIStudy):
             options=options)
 
         fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
-                                   requirements=[fsl5_req, fix_req])
+                                   requirements=[fsl509_req, fix_req])
         pipeline.connect_input("fix_dir", fix, "feat_dir")
         pipeline.connect_input("train_data", fix, "train_data")
         fix.inputs.component_threshold = pipeline.option(
@@ -409,7 +410,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
-            requirements=[ants2_req])
+            memory=12000, requirements=[ants2_req])
         apply_trans.inputs.reference_image = pipeline.option('MNI_template')
 #         apply_trans.inputs.dimension = 3
         apply_trans.inputs.interpolation = 'Linear'
