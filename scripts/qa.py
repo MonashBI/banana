@@ -6,7 +6,8 @@ from nianalysis.data_formats import dicom_format
 
 qa_study = PhantomStudy(
     name='qa',
-    project_id='INSTRUMENT', archive=XNATArchive(),
+    project_id='INSTRUMENT',
+    archive=XNATArchive(server='https://mbi-xnat.erc.monash.edu.au'),
     inputs={'t1_32ch_saline': Dataset('t1_mprage_trans_p2_iso_0.9_32CH',
                                       dicom_format),
             't2_32ch_saline': Dataset('t2_spc_tra_iso_32CH',

@@ -4,8 +4,11 @@ import os.path
 import numpy as np
 from nipype.interfaces.base import (
     TraitedSpec, BaseInterface, File, traits, isdefined)
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    plt = None
 import nibabel as nib
-import matplotlib.pyplot as plt  # @UnusedImport
 from nianalysis.exceptions import NiAnalysisError
 from operator import lt, ge
 
@@ -135,7 +138,7 @@ class QAMetrics(BaseInterface):
         background_mask = self._in_volume(
             x, y, z,
             rad * self.inputs.background_radius,
-            extent[2] * self.inputs.z_extent,
+            extent[2],
             centre,
             invert=True)
         if not background_mask.any():
