@@ -12,8 +12,8 @@ if nargin<6
 end
 
 for i=0:(nCoils-1)
-    nii = load_nii([inDir '/TissuePhase_Coil_' num2str(i) '_' num2str(echoId) '_PHASE.nii.gz']);
-    mask = load_nii([maskDir '/Coil_' num2str(i) '_MASK.nii.gz']);
+    nii = load_untouch_nii([inDir '/TissuePhase_Coil_' num2str(i) '_' num2str(echoId) '_PHASE.nii.gz']);
+    mask = load_untouch_nii([maskDir '/Coil_' num2str(i) '_MASK.nii.gz']);
     
      % Calc params
     params.H = [0 0 1];
@@ -31,7 +31,7 @@ for i=0:(nCoils-1)
     [Susceptibility]= QSM_iLSQR(nii.img,mask.img>0,'params',params);
     nii.img = Susceptibility;
     
-    save_nii(nii,[outDir '/QSM_Coil_' num2str(i) '_' num2str(echoId) '.nii.gz']);
+    save_untouch_nii(nii,[outDir '/QSM_Coil_' num2str(i) '_' num2str(echoId) '.nii.gz']);
 end
 
 end

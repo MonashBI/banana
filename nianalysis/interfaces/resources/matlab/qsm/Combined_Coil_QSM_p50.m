@@ -8,7 +8,7 @@ if nargin<6
     end
 end
 
-brainMask = load_nii(maskFile);
+brainMask = load_untouch_nii(maskFile);
 brainMask = brainMask.img>0;
 
 qsmVol = [];
@@ -17,8 +17,8 @@ dims = [];
 
 for i=0:(nCoils-1)
     for j=1:nEchos
-        nii = load_nii([qsmDir '/QSM_Coil_' num2str(i) '_' num2str(j) '.nii.gz']);
-        mask = load_nii([maskDir '/Coil_' num2str(i) '_MASK.nii.gz']);
+        nii = load_untouch_nii([qsmDir '/QSM_Coil_' num2str(i) '_' num2str(j) '.nii.gz']);
+        mask = load_untouch_nii([maskDir '/Coil_' num2str(i) '_MASK.nii.gz']);
 
         qsmVol(:,i+1+(j-1)*nCoils) = nii.img(:).*(mask.img(:)>0)-99*(mask.img(:)==0);
         missingValues(:,i+1+(j-1)*nCoils) = mask.img(:)==0;
@@ -44,7 +44,7 @@ medVol(brainMask==0) = 0;
 
 % Save output
 nii.img = medVol;
-save_nii(nii,[qsmDir '/QSM.nii.gz']);
+save_untouch_nii(nii,[qsmDir '/QSM.nii.gz']);
 
 % Store all coil phase and coil masks in single volumes
 tissueVol = zeros([size(nii.img) nCoils*nEchos]);
@@ -52,8 +52,8 @@ maskVol = zeros([size(nii.img) nCoils*nEchos]);
 
 for j=1:nEchos
     for i=0:(nCoils-1)
-        tissue = load_nii([tissueDir '/TissuePhase_Coil_' num2str(i) '_' num2str(j) '_PHASE.nii.gz']);
-        mask = load_nii([tissueDir '/TissueMask_Coil_' num2str(i) '_' num2str(j) '_MASK.nii.gz']);
+        tissue = load_untouch_nii([tissueDir '/TissuePhase_Coil_' num2str(i) '_' num2str(j) '_PHASE.nii.gz']);
+        mask = load_untouch_nii([tissueDir '/TissueMask_Coil_' num2str(i) '_' num2str(j) '_MASK.nii.gz']);
 
         tissueVol(:,:,:,i+1+(j-1)*nCoils) = tissue.img;
         maskVol(:,:,:,i+1+(j-1)*nCoils) = mask.img;
@@ -65,9 +65,9 @@ nii.hdr.dime.dim(5) = nCoils*nEchos;
 
 % Save outputs
 nii.img = tissueVol;
-save_nii(nii,[qsmDir '/TissuePhase.nii.gz']);
+save_untouch_nii(nii,[qsmDir '/TissuePhase.nii.gz']);
 
 nii.img = maskVol;
-save_nii(nii,[qsmDir '/PhaseMask.nii.gz']);
+save_untouch_nii(nii,[qsmDir '/PhaseMask.nii.gz']);
 
 end
