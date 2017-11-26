@@ -10,7 +10,7 @@ if nargin<4
 end
 
 for i=0:(nCoils-1)
-    pha = load_nii([inDir '/Raw_Coil_' num2str(i) '_' num2str(echoId) '_PHASE.nii.gz']);
+    pha = load_untouch_nii([inDir '/Raw_Coil_' num2str(i) '_' num2str(echoId) '_PHASE.nii.gz']);
     
     
     % Calc voxel dimensions
@@ -21,7 +21,7 @@ for i=0:(nCoils-1)
     [Unwrapped_Phase, ~]=MRPhaseUnwrap(pha.img,'voxelsize',voxelsize,'padsize',padsize);
     pha.img = Unwrapped_Phase;
     
-    save_nii(pha,[outDir '/Unwrapped_Coil_' num2str(i) '_' num2str(echoId) '_PHASE.nii.gz']);
+    save_untouch_nii(pha,[outDir '/Unwrapped_Coil_' num2str(i) '_' num2str(echoId) '_PHASE.nii.gz']);
 end
 
 end
