@@ -10,13 +10,13 @@ end
 SE = fspecial3('ellipsoid',[11 11 11]);
 
 % Load whole brain mask
-mask = load_nii(maskFile);
+mask = load_untouch_nii(maskFile);
 mask = mask.img>0;
 mask = imdilate(mask,SE>0);
 
 %Generate coil specific masks by thresholding magnitude image
 for i=0:(nCoils-1)
-    inMag = load_nii([inDir '/Raw_Coil_' num2str(i) '_' num2str(echoId) '_MAGNITUDE.nii.gz']);
+    inMag = load_untouch_nii([inDir '/Raw_Coil_' num2str(i) '_' num2str(echoId) '_MAGNITUDE.nii.gz']);
     
     % Blur to remove tissue based contrast
     outVol = convn(inMag.img,SE,'same');
@@ -30,7 +30,7 @@ for i=0:(nCoils-1)
     outMask = inMag;
     outMask.img = (outVol.*mask)>0;
     
-    save_nii(outMask,[outDir '/Coil_' num2str(i) '_MASK.nii.gz']);
+    save_untouch_nii(outMask,[outDir '/Coil_' num2str(i) '_MASK.nii.gz']);
  
 end
 
