@@ -9,11 +9,11 @@ from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 class TestMRI(TestCase):
 
-    def test_phantom_qa(self):
+    def test_phantom_qc(self):
         study = self.create_study(
-            QAStudy, 'qa_study', inputs={
+            QAStudy, 'qc_study', inputs={
                 'phantom': Dataset('phantom_t1_09', dicom_format)})
-        study.qa_metrics_pipeline().run(work_dir=self.work_dir)
+        study.qc_metrics_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('signal.nii.gz', study.name)
         self.assertDatasetCreated('ghost.nii.gz', study.name)
         self.assertDatasetCreated('background.nii.gz', study.name)

@@ -2,7 +2,7 @@ from nianalysis.data_formats import dicom_format, nifti_format, nifti_gz_format
 from ..base import set_data_specs, Study
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.interfaces.custom.qa import QAMetrics
+from nianalysis.interfaces.custom.qc import QAMetrics
 
 
 class PhantomStudy(Study):
@@ -28,20 +28,20 @@ class PhantomStudy(Study):
         'epi_32ch_background_radius': 1.8,
         'epi_32ch_z_extent': 0.8}
 
-    def t1_32ch_qa_metrics_pipeline(self, **options):
-        return self.qa_metrics_pipeline_factory('t1_32ch', **options)
+    def t1_32ch_qc_metrics_pipeline(self, **options):
+        return self.qc_metrics_pipeline_factory('t1_32ch', **options)
 
-    def t2_32ch_qa_metrics_pipeline(self, **options):
-        return self.qa_metrics_pipeline_factory('t2_32ch', **options)
+    def t2_32ch_qc_metrics_pipeline(self, **options):
+        return self.qc_metrics_pipeline_factory('t2_32ch', **options)
 
-    def epi_32ch_qa_metrics_pipeline(self, **options):
-        return self.qa_metrics_pipeline_factory('epi_32ch', **options)
+    def epi_32ch_qc_metrics_pipeline(self, **options):
+        return self.qc_metrics_pipeline_factory('epi_32ch', **options)
 
-    def qa_metrics_pipeline_factory(self, contrast, **options):
+    def qc_metrics_pipeline_factory(self, contrast, **options):
         def prefix(name):
             return contrast + '_' + name
         pipeline = self.create_pipeline(
-            name=prefix('qa_metrics'),
+            name=prefix('qc_metrics'),
             inputs=[DatasetSpec(prefix('saline'), nifti_format)],
             outputs=[FieldSpec(prefix('snr'), dtype=float),
                      FieldSpec(prefix('uniformity'), dtype=float),
@@ -104,41 +104,41 @@ class PhantomStudy(Study):
         DatasetSpec('epi_32ch_saline', format=nifti_gz_format,
                     pipeline=epi_32ch_extraction_pipeline),
         DatasetSpec('t1_32ch_signal', format=nifti_gz_format,
-                    pipeline=t1_32ch_qa_metrics_pipeline),
+                    pipeline=t1_32ch_qc_metrics_pipeline),
         DatasetSpec('t1_32ch_ghost', format=nifti_gz_format,
-                    pipeline=t1_32ch_qa_metrics_pipeline),
+                    pipeline=t1_32ch_qc_metrics_pipeline),
         DatasetSpec('t1_32ch_background', format=nifti_gz_format,
-                    pipeline=t1_32ch_qa_metrics_pipeline),
+                    pipeline=t1_32ch_qc_metrics_pipeline),
         FieldSpec('t1_32ch_snr', dtype=float,
-                  pipeline=t1_32ch_qa_metrics_pipeline),
+                  pipeline=t1_32ch_qc_metrics_pipeline),
         FieldSpec('t1_32ch_uniformity', dtype=float,
-                  pipeline=t1_32ch_qa_metrics_pipeline),
+                  pipeline=t1_32ch_qc_metrics_pipeline),
         FieldSpec('t1_32ch_ghost_intensity', dtype=float,
-                  pipeline=t1_32ch_qa_metrics_pipeline),
+                  pipeline=t1_32ch_qc_metrics_pipeline),
         DatasetSpec('t2_ch_signal', format=nifti_gz_format,
-                    pipeline=t2_32ch_qa_metrics_pipeline),
+                    pipeline=t2_32ch_qc_metrics_pipeline),
         DatasetSpec('t2_ch_ghost', format=nifti_gz_format,
-                    pipeline=t2_32ch_qa_metrics_pipeline),
+                    pipeline=t2_32ch_qc_metrics_pipeline),
         DatasetSpec('t2_ch_background', format=nifti_gz_format,
-                    pipeline=t2_32ch_qa_metrics_pipeline),
+                    pipeline=t2_32ch_qc_metrics_pipeline),
         FieldSpec('t2_ch_snr', dtype=float,
-                  pipeline=t2_32ch_qa_metrics_pipeline),
+                  pipeline=t2_32ch_qc_metrics_pipeline),
         FieldSpec('t2_ch_uniformity', dtype=float,
-                  pipeline=t2_32ch_qa_metrics_pipeline),
+                  pipeline=t2_32ch_qc_metrics_pipeline),
         FieldSpec('t2_ch_ghost_intensity', dtype=float,
-                  pipeline=t2_32ch_qa_metrics_pipeline),
+                  pipeline=t2_32ch_qc_metrics_pipeline),
         DatasetSpec('epi_32ch_signal', format=nifti_gz_format,
-                    pipeline=epi_32ch_qa_metrics_pipeline),
+                    pipeline=epi_32ch_qc_metrics_pipeline),
         DatasetSpec('epi_32ch_ghost', format=nifti_gz_format,
-                    pipeline=epi_32ch_qa_metrics_pipeline),
+                    pipeline=epi_32ch_qc_metrics_pipeline),
         DatasetSpec('epi_32ch_background', format=nifti_gz_format,
-                    pipeline=epi_32ch_qa_metrics_pipeline),
+                    pipeline=epi_32ch_qc_metrics_pipeline),
         FieldSpec('epi_32ch_snr', dtype=float,
-                  pipeline=epi_32ch_qa_metrics_pipeline),
+                  pipeline=epi_32ch_qc_metrics_pipeline),
         FieldSpec('epi_32ch_uniformity', dtype=float,
-                  pipeline=epi_32ch_qa_metrics_pipeline),
+                  pipeline=epi_32ch_qc_metrics_pipeline),
         FieldSpec('epi_32ch_ghost_intensity', dtype=float,
-                  pipeline=epi_32ch_qa_metrics_pipeline))
+                  pipeline=epi_32ch_qc_metrics_pipeline))
 
 
 # mrconvert RL.mif -coord 3 0
