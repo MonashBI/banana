@@ -2,7 +2,7 @@ from nianalysis.testing import BaseTestCase
 import os.path
 import logging
 from nianalysis.nodes import Node
-from nianalysis.interfaces.custom.qa import QAMetrics
+from nianalysis.interfaces.custom.qc import QAMetrics
 
 logger = logging.getLogger('NiAnalysis')
 

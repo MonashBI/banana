@@ -4,8 +4,8 @@ from nianalysis.study.mri.phantom import PhantomStudy
 from nianalysis.archive.xnat import XNATArchive
 from nianalysis.data_formats import dicom_format
 
-qa_study = PhantomStudy(
-    name='qa',
+qc_study = PhantomStudy(
+    name='qc',
     project_id='INSTRUMENT',
     archive=XNATArchive(server='https://mbi-xnat.erc.monash.edu.au'),
     inputs={'t1_32ch_saline': Dataset('t1_mprage_trans_p2_iso_0.9_32CH',
@@ -16,5 +16,5 @@ qa_study = PhantomStudy(
                                              dicom_format)})
 
 
-qa_study.epi_32ch_qa_metrics_pipeline().run(visit_ids=['20170724', '20170807'],
+qc_study.epi_32ch_qc_metrics_pipeline().run(visit_ids=['20170724', '20170807'],
                                             reprocess='all')

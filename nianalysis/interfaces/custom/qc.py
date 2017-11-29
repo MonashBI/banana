@@ -15,7 +15,7 @@ from operator import lt, ge
 
 class QAMetricsInputSpec(TraitedSpec):
 
-    in_file = File(mandatory=True, desc='input qa file')
+    in_file = File(mandatory=True, desc='input qc file')
 
     threshold = traits.Float(
         0.25, mandatory=False, usedefault=True,
@@ -96,13 +96,13 @@ class QAMetrics(BaseInterface):
                                       self.inputs.ghost_radii[0],
                                       self.inputs.ghost_radii[1],
                                       self.inputs.background_radius))
-        # Load the qa data
-        qa_nifti = nib.load(self.inputs.in_file)
-        qa = qa_nifti.get_data()
+        # Load the qc data
+        qc_nifti = nib.load(self.inputs.in_file)
+        qc = qc_nifti.get_data()
         # Calculate the absolute threshold value
-        thresh_val = qa.min() + (qa.max() - qa.min()) * self.inputs.threshold
+        thresh_val = qc.min() + (qc.max() - qc.min()) * self.inputs.threshold
         # Threshold the image
-        thresholded = qa > thresh_val
+        thresholded = qc > thresh_val
         # Get the indices of the thresholded voxels
         x, y, z = np.nonzero(thresholded)
         # Get the limits of the thresholded image
@@ -115,9 +115,9 @@ class QAMetrics(BaseInterface):
         centre = limits[:, 0] + extent
         rad = np.sum(extent[:2]) // 2.0
         x, y, z = np.meshgrid(
-            np.arange(qa.shape[0]),
-            np.arange(qa.shape[1]),
-            np.arange(qa.shape[2]), indexing='ij')
+            np.arange(qc.shape[0]),
+            np.arange(qc.shape[1]),
+            np.arange(qc.shape[2]), indexing='ij')
         signal_mask = self._in_volume(
             x, y, z,
             rad * self.inputs.signal_radius,
@@ -145,9 +145,9 @@ class QAMetrics(BaseInterface):
             raise NiAnalysisError(
                 "No voxels in background mask. Background radius {} set too "
                 "high".format(self.inputs.background_radius))
-        signal = qa[signal_mask]
-        ghost = qa[ghost_mask]
-        background = qa[background_mask]
+        signal = qc[signal_mask]
+        ghost = qc[ghost_mask]
+        background = qc[background_mask]
         snr = np.sqrt(2) * np.mean(signal) / np.std(background)
         uniformity = (
             100.0 * (signal.max() - signal.min()) /
@@ -157,12 +157,12 @@ class QAMetrics(BaseInterface):
         signal_fname = self._gen_filename('signal')
         ghost_fname = self._gen_filename('ghost')
         background_fname = self._gen_filename('background')
-        nib.save(nib.Nifti1Image(qa * signal_mask,
-                                 affine=qa_nifti.affine), signal_fname)
-        nib.save(nib.Nifti1Image(qa * ghost_mask,
-                                 affine=qa_nifti.affine), ghost_fname)
-        nib.save(nib.Nifti1Image(qa * background_mask,
-                                 affine=qa_nifti.affine),
+        nib.save(nib.Nifti1Image(qc * signal_mask,
+                                 affine=qc_nifti.affine), signal_fname)
+        nib.save(nib.Nifti1Image(qc * ghost_mask,
+                                 affine=qc_nifti.affine), ghost_fname)
+        nib.save(nib.Nifti1Image(qc * background_mask,
+                                 affine=qc_nifti.affine),
                  background_fname)
         outputs = self._outputs().get()
         outputs['snr'] = snr
