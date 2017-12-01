@@ -12,7 +12,7 @@ from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
 from ..base import MRIStudy
 from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
-                                     fsl509_req)
+                                     fsl509_req, fsl510_req)
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
@@ -274,7 +274,7 @@ class FunctionalMRIStudy(MRIStudy):
                                    requirements=[fsl5_req])
         mel.inputs.no_bet = True
         mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
-        mel.inputs.tr_sec = 2.45
+        mel.inputs.tr_sec = 0.754
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
@@ -329,7 +329,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
                                      requirements=[fsl5_req])
-        fugue.inputs.unwarp_direction = 'x'
+        fugue.inputs.unwarp_direction = 'x-'
         fugue.inputs.dwell_time = 0.00039
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
@@ -359,7 +359,7 @@ class FunctionalMRIStudy(MRIStudy):
         filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
                                     requirements=[afni_req])
         filt.inputs.stopband = (0, 0.01)
-        filt.inputs.delta_t = 2.45
+        filt.inputs.delta_t = 0.754
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
@@ -605,6 +605,44 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def groupMelodic(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='group_melodic',
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('smoothed_file', nifti_gz_format)],
+            outputs=[DatasetSpec('group_melodic', directory_format)],
+            description=("Group ICA"),
+            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain.nii.gz',
+                             'brain_thresh_percent': 5,
+                             'MNI_template_mask': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+        gica = pipeline.create_join_subjects_node(
+            MELODIC(), joinfield=['in_files'], name='gica',
+            requirements=[fsl510_req], wall_time=7200)
+        gica.inputs.no_bet = True
+        gica.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
+        gica.inputs.bg_image = pipeline.option('MNI_template')
+        gica.inputs.tr_sec = 0.754
+        gica.inputs.dim = 15
+        gica.inputs.report = True
+        gica.inputs.out_stats = True
+        gica.inputs.mm_thresh = 0.5
+        gica.inputs.sep_vn = True
+        gica.inputs.mask = pipeline.option('MNI_template_mask')
+        gica.inputs.out_dir = 'melodic.gica'
+#         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
+        pipeline.connect_input('smoothed_file', gica, 'in_files')
+
+        pipeline.connect_output('group_melodic', gica, 'out_dir')
+
+        pipeline.assert_connected()
+        return pipeline
+
     _dataset_specs = set_dataset_specs(
         DatasetSpec('field_map_mag', nifti_gz_format),
         DatasetSpec('field_map_phase', nifti_gz_format),
@@ -632,4 +670,6 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('melodic_ica', zip_format, MelodicL1),
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
         DatasetSpec('fix_dir', targz_format, PrepareFix),
-        DatasetSpec('smoothed_file', nifti_gz_format, applySmooth))
+        DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
+        DatasetSpec('group_melodic', targz_format, groupMelodic,
+                    multiplicity='per_visit'))
