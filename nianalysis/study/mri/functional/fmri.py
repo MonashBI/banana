@@ -471,17 +471,20 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg', wall_time=5)
+        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg', wall_time=5,
+                                      requirements=[fsl509_req])
         t12MNI.inputs.reference = pipeline.option('MNI_template')
         t12MNI.inputs.out_matrix_file = 'T12MNI.mat'
         pipeline.connect_input('betted_file', t12MNI, 'in_file')
 
-        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5)
+        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5,
+                                      requirements=[fsl509_req])
         MNI2t1.inputs.invert_xfm = True
         MNI2t1.inputs.out_file = 'MNI2T1.mat'
         pipeline.connect(t12MNI, 'out_matrix_file', MNI2t1, 'in_file')
 
-        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1', wall_time=5)
+        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1', wall_time=5,
+                                      requirements=[fsl509_req])
         epi2t1.inputs.invert_xfm = True
         epi2t1.inputs.out_file = 'epi2T1.mat'
         pipeline.connect_input('hires2example', epi2t1, 'in_file')
@@ -537,7 +540,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         meanfunc = pipeline.create_node(
             ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
-            wall_time=5)
+            wall_time=5, requirements=[fsl509_req])
         pipeline.connect_input('rs_fmri', meanfunc, 'in_file')
 
         cp6 = pipeline.create_node(CopyFile(), name='copyfile6', wall_time=5)
