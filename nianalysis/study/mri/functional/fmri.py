@@ -117,7 +117,7 @@ class FunctionalMRIStudy(MRIStudy):
         fix.inputs.component_threshold = pipeline.option(
             'component_threshold')
         fix.inputs.motion_reg = pipeline.option('motion_reg')
-        fix.inputs.highpass = 200
+        fix.inputs.highpass = 100
 
         pipeline.connect_output('cleaned_file', fix, 'output')
 
@@ -329,7 +329,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
                                      requirements=[fsl5_req])
-        fugue.inputs.unwarp_direction = 'x-'
+        fugue.inputs.unwarp_direction = 'x'
         fugue.inputs.dwell_time = 0.00039
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
