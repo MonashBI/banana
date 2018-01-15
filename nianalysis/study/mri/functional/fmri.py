@@ -413,7 +413,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
-            memory=12000, requirements=[ants2_req])
+            memory=24000, requirements=[ants2_req])
         apply_trans.inputs.reference_image = pipeline.option('MNI_template')
 #         apply_trans.inputs.dimension = 3
         apply_trans.inputs.interpolation = 'Linear'
