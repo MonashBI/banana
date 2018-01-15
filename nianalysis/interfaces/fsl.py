@@ -114,6 +114,7 @@ class FSLFIXInputSpec(FSLCommandInputSpec):
 
 class FSLFIXOutputSpec(TraitedSpec):
     output = File(exists=True, desc="cleaned output")
+    label_file = File(exists=True, desc="labelled components")
 
 
 class FSLFIX(FSLCommand):
@@ -127,6 +128,9 @@ class FSLFIX(FSLCommand):
         print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
         outputs['output'] = os.path.abspath(
             glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
+        outputs['label_file'] = os.path.abspath(
+            glob(self.inputs.feat_dir+'/fix4melview_fmri_train_data_thr*.txt')
+            [0])
         return outputs
 
 
