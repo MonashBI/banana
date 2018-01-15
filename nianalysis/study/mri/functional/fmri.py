@@ -16,7 +16,8 @@ from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
-    zip_format, text_matrix_format, par_format, gif_format, targz_format)
+    zip_format, text_matrix_format, par_format, gif_format, targz_format,
+    text_format)
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils.os import MakeDir, CopyFile, CopyDir
@@ -102,7 +103,8 @@ class FunctionalMRIStudy(MRIStudy):
             inputs=[DatasetSpec('train_data', rdata_format,
                                 multiplicity='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
-            outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
+            outputs=[DatasetSpec('cleaned_file', nifti_gz_format),
+                     DatasetSpec('labelled_components', text_format)],
             description=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             default_options={'component_threshold': 20, 'motion_reg': True},
@@ -120,6 +122,7 @@ class FunctionalMRIStudy(MRIStudy):
         fix.inputs.highpass = 100
 
         pipeline.connect_output('cleaned_file', fix, 'output')
+        pipeline.connect_output('labelled_components', fix, 'label_file')
 
         pipeline.assert_connected()
         return pipeline
