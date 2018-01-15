@@ -654,6 +654,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format, TrainingFix,
                     multiplicity='per_project'),
+        DatasetSpec('labelled_components', text_format, fix_pipeline),
         DatasetSpec('cleaned_file', nifti_gz_format, fix_pipeline),
         DatasetSpec('betted_file', nifti_gz_format, optiBET),
         DatasetSpec('betted_mask', nifti_gz_format, optiBET),
