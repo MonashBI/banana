@@ -95,7 +95,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def fix_pipeline(self, **options):
+    def fix_all(self, **options):
 
         pipeline = self.create_pipeline(
             name='fix',
@@ -119,13 +119,75 @@ class FunctionalMRIStudy(MRIStudy):
         fix.inputs.component_threshold = pipeline.option(
             'component_threshold')
         fix.inputs.motion_reg = pipeline.option('motion_reg')
-        fix.inputs.highpass = 100
+        fix.inputs.all = True
 
         pipeline.connect_output('cleaned_file', fix, 'output')
         pipeline.connect_output('labelled_components', fix, 'label_file')
 
         pipeline.assert_connected()
         return pipeline
+
+    def fix_classification(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='fix_classification',
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('train_data', rdata_format,
+                                multiplicity='per_project'),
+                    DatasetSpec('fix_dir', directory_format)],
+            outputs=[DatasetSpec('labelled_components', text_format)],
+            description=("Automatic classification of noisy"
+                         "components from the rsfMRI data"),
+            default_options={'component_threshold': 20, 'motion_reg': True},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
+                                   requirements=[fsl509_req, fix_req])
+        pipeline.connect_input("fix_dir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        fix.inputs.component_threshold = pipeline.option(
+            'component_threshold')
+        fix.inputs.motion_reg = pipeline.option('motion_reg')
+        fix.inputs.classification = True
+
+        pipeline.connect_output('labelled_components', fix, 'label_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def fix_regression(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='fix_regression',
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('train_data', rdata_format,
+                                multiplicity='per_project'),
+                    DatasetSpec('fix_dir', directory_format),
+                    DatasetSpec('labelled_components', text_format)],
+            outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
+            description=("Regression of the noisy"
+                         "components from the rsfMRI data"),
+            default_options={'component_threshold': 20, 'motion_reg': True},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
+                                   requirements=[fsl509_req, fix_req])
+        pipeline.connect_input("fix_dir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        fix.inputs.component_threshold = pipeline.option(
+            'component_threshold')
+        fix.inputs.motion_reg = pipeline.option('motion_reg')
+        fix.inputs.classification = True
+
+        pipeline.connect_output('labelled_components', fix, 'label_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
 
     def optiBET(self, **options):
 
@@ -654,8 +716,8 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format, TrainingFix,
                     multiplicity='per_project'),
-        DatasetSpec('labelled_components', text_format, fix_pipeline),
-        DatasetSpec('cleaned_file', nifti_gz_format, fix_pipeline),
+        DatasetSpec('labelled_components', text_format, fix_all),
+        DatasetSpec('cleaned_file', nifti_gz_format, fix_all),
         DatasetSpec('betted_file', nifti_gz_format, optiBET),
         DatasetSpec('betted_mask', nifti_gz_format, optiBET),
         DatasetSpec('optiBET_report', gif_format, optiBET),

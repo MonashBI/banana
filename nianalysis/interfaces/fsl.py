@@ -8,6 +8,7 @@ from nipype.interfaces.base import (
 from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
 import logging
+from nipype.interfaces.traits_extension import isdefined
 
 
 warn = warnings.warn
@@ -97,18 +98,31 @@ class MelodicL1FSF(BaseInterface):
 
 
 class FSLFIXInputSpec(FSLCommandInputSpec):
+    _xor_options = ('classification', 'regression', 'all')
+    _xor_input_files = ('feat_dir', 'labelled_component')
     feat_dir = Directory(
-        exists=True, mandatory=True, argstr="%s", position=0,
-        desc="Input feat preprocessed directory")
-    train_data = File(exists=True, mandatory=True, argstr="%s", position=1,
+        exists=True, argstr="%s", position=1, xor=_xor_input_files,
+        desc="Input melodic preprocessed directory")
+    train_data = File(exists=True, argstr="%s", position=2,
                       desc="Training file")
+    regression = traits.Bool(desc='Regress previously classified components.',
+                             position=0, argstr="-a", xor=_xor_options)
+    classification = traits.Bool(
+        desc='Components classification without regression.', position=0,
+        argstr="-c", xor=_xor_options)
+    all = traits.Bool(
+        desc='Components classification and regression.', position=0,
+        argstr="-f", xor=_xor_options)
     component_threshold = traits.Int(
-        argstr="%d", mandatory=True, position=2,
+        argstr="%d", mandatory=True, position=3,
         desc="threshold for the number of components")
-    motion_reg = traits.Bool(position=3, argstr='-m',
-                             desc="motion parameters regression")
+    labelled_component = File(
+        exists=True, argstr="%s", position=1, xor=_xor_input_files,
+        desc=("Text file with classified components. This file is mandatory if"
+              "you choose regression only."))
+    motion_reg = traits.Bool(argstr='-m', desc="motion parameters regression")
     highpass = traits.Float(
-        position=4, argstr='-h %f', desc='apply highpass of the motion '
+        argstr='-h %f', desc='apply highpass of the motion '
         'confound with <highpass> being full-width (2*sigma) in seconds.')
 
 
@@ -122,16 +136,38 @@ class FSLFIX(FSLCommand):
     _cmd = 'fix'
     input_spec = FSLFIXInputSpec
     output_spec = FSLFIXOutputSpec
+    text_ext = '.txt'
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
         print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
-        outputs['output'] = os.path.abspath(
-            glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
-        outputs['label_file'] = os.path.abspath(
-            glob(self.inputs.feat_dir+'/fix4melview_fmri_train_data_thr*.txt')
-            [0])
+        if self.inputs.all:
+            outputs['output'] = self._gen_filename('out_file')
+            outputs['label_file'] = self._gen_filename('label_file')
+        elif self.inputs.classification:
+            outputs['label_file'] = self._gen_filename('label_file')
+        elif self.inputs.regression:
+            outputs['output'] = self._gen_filename('out_file')
+        else:
+            outputs['output'] = self._gen_filename('out_file')
+            outputs['label_file'] = self._gen_filename('label_file')
         return outputs
+
+    def _gen_filename(self, name):
+        if isdefined(self.inputs.feat_dir):
+            cwd = self.inputs.feat_dir
+        elif isdefined(self.inputs.labelled_component):
+            cwd = '/'.join(self.inputs.labelled_component.split('/')[:-1])
+
+        if name == 'out_file':
+            fname = cwd+glob('/filtered_func_data_clean.nii*')[0]
+        elif name == 'label_file':
+            fid = os.path.basename(self.inputs.train_data).split('.RData')[0]
+            thr = str(self.inputs.component_threshold)
+            fname = cwd+'/fix4melview_'+fid+'_thr'+thr+self.text_ext
+        else:
+            assert False
+        return fname
 
 
 class FSLFixTrainingInputSpec(FSLCommandInputSpec):
