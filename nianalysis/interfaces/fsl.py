@@ -9,6 +9,11 @@ from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
 import logging
 from nipype.interfaces.traits_extension import isdefined
+import nibabel as nib
+import numpy as np
+import ast
+import scipy.signal as ss
+import subprocess as sp
 
 
 warn = warnings.warn
@@ -94,6 +99,104 @@ class MelodicL1FSF(BaseInterface):
 
         outputs = self.output_spec().get()
         outputs['fsf_file'] = os.path.abspath('./melodic.fsf')
+        return outputs
+
+
+class SignalRegressionInputSpec(BaseInterfaceInputSpec):
+    
+    fix_dir = Directory(exists=True, desc="Prepared FIX directory", mandatory=True)
+    labelled_components = File(exists=True, mandatory=True,
+                               desc=("Text file with FIX classified components."))
+    motion_regression = traits.Bool(desc='Regress 24 motion paremeters.', default=False)
+    highpass = traits.Int(desc='Whether or not to high pass the motion parameters', default=None)
+    customRegressors = File(exists=True, default=None, desc='File containing custom regressors.')
+
+
+class SignalRegressionOutputSpec(TraitedSpec):
+
+    output = File(exists=True, desc="cleaned output")
+
+
+class SignalRegression(BaseInterface):
+    
+    input_spec = SignalRegressionInputSpec
+    output_spec = SignalRegressionOutputSpec
+
+    def _run_interface(self, runtime):
+        
+        im2filt = self.inputs.fix_dir+'/filtered_func_data.nii.gz'
+        ref = nib.load(im2filt)
+        components = []
+        with open(self.inputs.labelled_components, 'r') as f:
+            for line in f:
+                components.append(line)
+        bad_components = ast.literal_eval(components[-1].strip())
+        bad_components = [x-1 for x in bad_components]
+        im2filt = nib.load(im2filt)
+        if self.inputs.highpass:
+            hdr = im2filt.header
+            sa = hdr.structarr
+            TR = sa['pixdim'][4]
+            print 'Repetition time from the header: {} sec'.format(str(TR))
+        else:
+            TR = None
+        im2filt = im2filt.get_data()
+        [x, y, z, t] = im2filt.shape
+        im2filt = np.reshape(im2filt, (x*y*z, t), order='F').T
+        ICA = self.normalise(np.loadtxt(self.inputs.fix_dir+'/melodic_mix'))
+        if self.inputs.motion_regression:
+            mp = self.inputs.fix_dir+'/mc/prefiltered_func_data_mcf.par'
+            motion_confounds = self.create_motion_confounds(mp, self.inputs.highpass, TR=TR)
+            ICA = ICA - (np.dot(motion_confounds, np.dot(np.linalg.pinv(motion_confounds), ICA)))
+            im2filt = im2filt - np.dot(motion_confounds, np.dot(np.linalg.pinv(motion_confounds), im2filt))
+        if self.inputs.customRegressors:
+            cr = np.loadtxt(self.inputs.customRegressors)
+            if cr.shape[0] != t:
+                print ('custom regressors and input image have a different time lenght.'
+                       ' They will not be used for the regression.')
+            else:
+                cr = self.normalise(cr)
+                im2filt = im2filt - np.dot(cr, np.dot(np.linalg.pinv(cr), im2filt))
+            
+        betaICA = np.dot(np.linalg.pinv(ICA), im2filt)
+        im2filt = im2filt - np.dot(ICA[:, bad_components], betaICA[bad_components, :])
+        im_filt = np.reshape(im2filt.T, (x, y, z, t), order='F')
+        im2save = nib.Nifti1Image(im_filt, affine=ref.get_affine())
+        nib.save(im2save, self.inputs.fix_dir+'/filtered_func_data_clean.nii.gz')
+        
+        return runtime
+        
+    
+    def create_motion_confounds(self, mp, hp, TR=None):
+        
+        confounds = np.loadtxt(mp)
+        confounds = self.normalise(np.hstack((confounds, np.vstack((np.zeros(6), np.diff(confounds, axis=0))))))
+        confounds = self.normalise(np.hstack((confounds, np.square(confounds))))
+        if hp == 0:
+            confounds = ss.detrend(confounds, axis=0, type='linear')
+        elif hp > 0:
+            im2save = nib.Nifti1Image(
+                np.reshape(confounds.T, (confounds.shape[1], 1, 1, confounds.shape[0]), order='F'),
+                affine=np.eye(4))
+            nib.save(im2save, self.inputs.fix_dir+'/mc/mc_par_conf.nii.gz')
+            cmd = ('fslmaths {0}/mc_par_conf.nii.gz -bptf {1} -1 {0}/mc_par_conf_hp'
+                   .format(self.inputs.fix_dir+'/mc', str(0.5*float(hp)/TR)))
+            sp.check_output(cmd, shell=True)
+            confounds_hp = (nib.load(self.inputs.fix_dir+'/mc/mc_par_conf_hp.nii.gz')).get_data()
+            confounds = self.normalise(np.reshape(confounds_hp, (confounds.shape[1], confounds.shape[0]), order='F').T)
+    
+        return confounds
+    
+    def normalise(self, params):
+
+        params = (params - np.mean(params, axis=0))/np.std(params, axis=0, ddof=1)
+        return params
+    
+    def _list_outputs(self):
+
+        outputs = self._outputs().get()
+        outputs['output'] = (
+            self.inputs.fix_dir+'/filtered_func_data_clean.nii.gz')
         return outputs
 
 
