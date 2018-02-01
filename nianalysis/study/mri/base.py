@@ -4,7 +4,7 @@ from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import Study, set_dataset_specs
 from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
-from nianalysis.data_formats import nifti_gz_format
+from nianalysis.data_formats import nifti_gz_format, text_matrix_format
 from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
@@ -19,7 +19,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='brain_mask',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            inputs=[DatasetSpec('swapped_image', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
@@ -145,11 +145,135 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
+    def registration_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('reference', nifti_gz_format)]
+        output_datasets = [DatasetSpec('reg_file', nifti_gz_format),
+                           DatasetSpec('reg_mat', text_matrix_format)]
+        reg_type = 'registration'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
+
+    def applyxfm_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('reference', nifti_gz_format),
+                          DatasetSpec('affine_mat', text_matrix_format)]
+        output_datasets = [DatasetSpec('applyxfm_reg_file', nifti_gz_format)]
+        reg_type = 'applyxfm'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
+
+    def useqform_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('reference', nifti_gz_format)]
+        output_datasets = [DatasetSpec('qform_reg_file', nifti_gz_format),
+                           DatasetSpec('qform_mat', text_matrix_format)]
+        reg_type = 'useqform'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
+
+    def _registration_factory(self, input_datasets, output_datasets, reg_type,
+                              **options):
+
+        pipeline = self.create_pipeline(
+            name='FLIRT_registration',
+            inputs=input_datasets,
+            outputs=output_datasets,
+            description="Registration of the primary image to the reference",
+            default_options={'dof': 6, 'cost': 'normmi', 'interp': 'trilinear',
+                             'search_cost': 'normmi'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        flirt = pipeline.create_node(
+            interface=FLIRT(), name="flirt_{}"+reg_type,
+            requirements=[fsl5_req])
+        flirt.inputs.output_type = 'NIFTI_GZ'
+        if pipeline.option('dof'):
+            flirt.inputs.dof = pipeline.option('dof')
+        if pipeline.option('cost'):
+            flirt.inputs.cost = pipeline.option('cost')
+        if pipeline.option('interp'):
+            flirt.inputs.interp = pipeline.option('interp')
+        if pipeline.option('search_cost'):
+            flirt.inputs.cost_func = pipeline.option('search_cost')
+
+        pipeline.connect_input('primary', flirt, 'in_file')
+        pipeline.connect_input('reference', flirt, 'reference')
+
+        if reg_type == 'useqform':
+            flirt.inputs.apply_xfm = True
+            flirt.inputs.uses_qform = True
+            pipeline.connect_output('qform_reg_file', flirt, 'out_file')
+            pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
+        elif reg_type == 'applyxfm':
+            flirt.inputs.apply_xfm = True
+            pipeline.connect_input('affine_mat', flirt, 'in_matrix_file')
+            pipeline.connect_output('applyxfm_reg_file', flirt, 'out_file')
+        else:
+            pipeline.connect_output('reg_file', flirt, 'out_file')
+            pipeline.connect_output('affine_mat', flirt, 'out_matrix_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def segmentation_pipeline(self, **options):
+        pipeline = self.create_pipeline(
+            name='FAST_segmentation',
+            inputs=[DatasetSpec('ref_brain', nifti_gz_format)],
+            outputs=[DatasetSpec('ref_seg', nifti_gz_format)],
+            description="White matter segmentation of the reference image",
+            default_options={'img_type': 2},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        fast = pipeline.create_node(fsl.FAST(), name='fast')
+        fast.inputs.img_type = pipeline.option('img_type')
+        fast.inputs.segments = True
+        fast.inputs.out_basename = 'Reference_segmentation'
+        pipeline.connect_input('ref_brain', fast, 'in_files')
+        pipeline.connect_output('ref_seg', fast, 'tissue_class_files')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def swap_dimensions_pipeline(self, **options):
+        pipeline = self.create_pipeline(
+            name='fslswapdim_pipeline',
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            outputs=[DatasetSpec('swapped_image', nifti_gz_format)],
+            description=("Dimensions swapping to ensure that all the images "
+                         "have the same orientations."),
+            default_options={'new_dims': ('RL', 'AP', 'IS')},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+        swap = pipeline.create_node(fsl.utils.SwapDimensions(),
+                                    name='fslswapdim')
+        swap.inputs.new_dims = pipeline.option('new_dims')
+        pipeline.connect_input('primary', swap, 'in_file')
+        pipeline.connect_output('swapped_image', swap, 'out_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
     _dataset_specs = set_dataset_specs(
         DatasetSpec('primary', nifti_gz_format),
+        DatasetSpec('reference', nifti_gz_format),
+        DatasetSpec('affine_mat', text_matrix_format),
+        DatasetSpec('reg_file', nifti_gz_format, registration_pipeline),
+        DatasetSpec('reg_mat', text_matrix_format, registration_pipeline),
+        DatasetSpec('qform_reg_file', nifti_gz_format, useqform_pipeline),
+        DatasetSpec('qform_mat', text_matrix_format, useqform_pipeline),
+        DatasetSpec('applyxfm_reg_file', nifti_gz_format, applyxfm_pipeline),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
-                    coregister_to_atlas_pipeline))
+                    coregister_to_atlas_pipeline),
+        DatasetSpec('ref_seg', nifti_gz_format, segmentation_pipeline),
+        DatasetSpec('swapped_image', nifti_gz_format,
+                    swap_dimensions_pipeline))
