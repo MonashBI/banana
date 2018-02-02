@@ -14,12 +14,12 @@ class CoregisteredStudy(Study):
 
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format)]
-    _registration_outputs = [DatasetSpec('registered', nifti_gz_format),
-                             DatasetSpec('matrix', text_matrix_format)]
 
     def linear_registration_pipeline(self, coreg_tool='flirt',
                                      **options):
         if coreg_tool == 'flirt':
+            _registration_outputs = [DatasetSpec('registered', nifti_gz_format),
+                                     DatasetSpec('matrix', text_matrix_format)]
             pipeline = self._fsl_flirt_pipeline(**options)
         elif coreg_tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**options)
@@ -31,12 +31,12 @@ class CoregisteredStudy(Study):
 
     def qform_transform_pipeline(self, **options):
 
-        _registration_outputs = [DatasetSpec('qformed', nifti_gz_format),
-                                 DatasetSpec('qform_mat', text_matrix_format)]
+        outputs = [DatasetSpec('qformed', nifti_gz_format),
+                    DatasetSpec('qform_mat', text_matrix_format)]
         reg_type = 'useqform'
-        return self._fsl_flirt_pipeline(reg_type=reg_type, **options)
+        return self._fsl_flirt_pipeline(outputs, reg_type=reg_type, **options)
 
-    def _fsl_flirt_pipeline(self, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self,  outputs, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -57,7 +57,7 @@ class CoregisteredStudy(Study):
         pipeline = self.create_pipeline(
             name='registration_fsl',
             inputs=self._registration_inputs,
-            outputs=self._registration_outputs,
+            outputs=outputs,
             description="Registers a MR scan against a reference image",
             default_options={
                 'degrees_of_freedom': 6, 'cost_func': 'mutualinfo',
