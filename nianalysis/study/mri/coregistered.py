@@ -30,15 +30,13 @@ class CoregisteredStudy(Study):
         return pipeline
 
     def qform_transform_pipeline(self, **options):
-        input_datasets = [DatasetSpec('masked', nifti_gz_format),
-                          DatasetSpec('ref_brain', nifti_gz_format)]
-        output_datasets = [DatasetSpec('qform_reg_file', nifti_gz_format),
-                           DatasetSpec('qform_mat', text_matrix_format)]
-        reg_type = 'useqform'
-        return self._registration_factory(input_datasets, output_datasets,
-                                          reg_type, **options)
 
-    def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+        _registration_outputs = [DatasetSpec('qformed', nifti_gz_format),
+                                 DatasetSpec('qform_mat', text_matrix_format)]
+        reg_type = 'useqform'
+        return self._fsl_flirt_pipeline(reg_type=reg_type, **options)
+
+    def _fsl_flirt_pipeline(self, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -69,19 +67,24 @@ class CoregisteredStudy(Study):
             options=options)
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
                                      requirements=[fsl5_req], wall_time=5)
-        # Set registration options
-        flirt.inputs.dof = pipeline.option('degrees_of_freedom')
-        flirt.inputs.cost = pipeline.option('cost_func')
-        flirt.inputs.cost_func = pipeline.option('cost_func')
-        flirt.inputs.uses_qform = pipeline.option('qsform')
-        flirt.inputs.output_type = 'NIFTI_GZ'
+        if reg_type == 'useqform':
+            flirt.inputs.uses_qform = True
+            pipeline.connect_output('qformed', flirt, 'out_file')
+            pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
+        elif reg_type == 'registration':
+            # Set registration options
+            flirt.inputs.dof = pipeline.option('degrees_of_freedom')
+            flirt.inputs.cost = pipeline.option('cost_func')
+            flirt.inputs.cost_func = pipeline.option('cost_func')
+            flirt.inputs.output_type = 'NIFTI_GZ'
+            # Connect outputs
+            pipeline.connect_output('registered', flirt, 'out_file')
+            # Connect matrix
+            self._connect_matrix(pipeline, flirt)
         # Connect inputs
         pipeline.connect_input('to_register', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')
-        # Connect outputs
-        pipeline.connect_output('registered', flirt, 'out_file')
-        # Connect matrix
-        self._connect_matrix(pipeline, flirt)
+
         pipeline.assert_connected()
         return pipeline
 
@@ -151,8 +154,8 @@ class CoregisteredStudy(Study):
                     linear_registration_pipeline),
         DatasetSpec('matrix', text_matrix_format,
                     linear_registration_pipeline),
-        DatasetSpec('qformed', nifti_gz_format,
-                    qform_transform_pipeline))
+        DatasetSpec('qformed', nifti_gz_format, qform_transform_pipeline),
+        DatasetSpec('qform_mat', text_matrix_format, qform_transform_pipeline))
 
 
 class CoregisteredToMatrixStudy(CoregisteredStudy):
@@ -207,4 +210,4 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         DatasetSpec('to_register', nifti_gz_format),
         DatasetSpec('matrix', text_matrix_format),
         DatasetSpec('registered', nifti_gz_format,
-                    CoregisteredStudy.registration_pipeline))
+                    CoregisteredStudy.linear_registration_pipeline))
