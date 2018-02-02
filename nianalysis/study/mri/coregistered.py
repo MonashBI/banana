@@ -1,5 +1,4 @@
-from nipype.pipeline import engine as pe
-from nipype.interfaces.fsl import FLIRT, FNIRT
+from nipype.interfaces.fsl import FLIRT
 from nipype.interfaces.spm.preprocess import Coregister
 from nianalysis.requirements import fsl5_req
 from nianalysis.citations import fsl_cite
@@ -18,11 +17,10 @@ class CoregisteredStudy(Study):
     _registration_outputs = [DatasetSpec('registered', nifti_gz_format),
                              DatasetSpec('matrix', text_matrix_format)]
 
-    def registration_pipeline(self, coreg_tool='flirt', **options):
+    def linear_registration_pipeline(self, coreg_tool='flirt',
+                                     **options):
         if coreg_tool == 'flirt':
             pipeline = self._fsl_flirt_pipeline(**options)
-        elif coreg_tool == 'fnirt':
-            pipeline = self._fsl_fnirt_pipeline(**options)
         elif coreg_tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**options)
         else:
@@ -30,6 +28,15 @@ class CoregisteredStudy(Study):
                 "Unrecognised coregistration tool '{}'. Can be one of 'flirt',"
                 " 'spm'.".format(coreg_tool))
         return pipeline
+
+    def qform_transform_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('ref_brain', nifti_gz_format)]
+        output_datasets = [DatasetSpec('qform_reg_file', nifti_gz_format),
+                           DatasetSpec('qform_mat', text_matrix_format)]
+        reg_type = 'useqform'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
 
     def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
@@ -140,8 +147,12 @@ class CoregisteredStudy(Study):
     _dataset_specs = set_dataset_specs(
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('to_register', nifti_gz_format),
-        DatasetSpec('registered', nifti_gz_format, registration_pipeline),
-        DatasetSpec('matrix', text_matrix_format, registration_pipeline))
+        DatasetSpec('registered', nifti_gz_format,
+                    linear_registration_pipeline),
+        DatasetSpec('matrix', text_matrix_format,
+                    linear_registration_pipeline),
+        DatasetSpec('qformed', nifti_gz_format,
+                    qform_transform_pipeline))
 
 
 class CoregisteredToMatrixStudy(CoregisteredStudy):
