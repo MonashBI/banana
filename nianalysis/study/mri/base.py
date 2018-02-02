@@ -9,6 +9,7 @@ from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
+from nianalysis.interfaces.mrtrix.transform import MRResize
 
 
 class MRIStudy(Study):
@@ -249,7 +250,7 @@ class MRIStudy(Study):
         new_dims : tuple(str)[3]
             A 3-tuple with the new orientation of the image (see FSL
             swap dim)
-        resolution : tuple(float)[3] | None
+        resolution : list(float)[3] | None
             New resolution of the image. If None no resampling is
             performed
         """
@@ -269,8 +270,8 @@ class MRIStudy(Study):
         swap.inputs.new_dims = pipeline.option('new_dims')
         pipeline.connect_input('primary', swap, 'in_file')
         if pipeline.option('resolution') is not None:
-            resample = pipeline.create_node(Resize(), name="resample")
-            resample.inputs.resolution = pipeline.option('resolution')
+            resample = pipeline.create_node(MRResize(), name="resample")
+            resample.inputs.size = pipeline.option('resolution')
             pipeline.connect(swap, 'out_file', resample, 'in_file')
             pipeline.connect_output('preproc', resample, 'out_file')
         else:

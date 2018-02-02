@@ -8,7 +8,6 @@ from nianalysis.requirements import fsl5_req
 from nianalysis.study.base import set_dataset_specs
 from .coregistered import CoregisteredStudy
 from ..combined import CombinedStudy
-from itertools import chain
 
 
 class EPIStudy(MRIStudy):
@@ -44,7 +43,6 @@ class EPIStudy(MRIStudy):
 
         pipeline.assert_connected()
         return pipeline
-
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('epireg_mat', text_matrix_format, epireg_pipeline),
