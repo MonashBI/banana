@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
-                                    traits, File, TraitedSpec)
+                                    traits, File, TraitedSpec, Directory)
 import nibabel as nib
 import numpy as np
 from nipype.utils.filemanip import split_filename
 import os
 import matplotlib.pyplot as plot
 from sklearn.decomposition import PCA
+import glob
+import shutil
 
 
 class PETdrInputSpec(BaseInterfaceInputSpec):
@@ -198,5 +200,66 @@ class SUVRCalculation(BaseInterface):
 
         outputs["SUVR_file"] = os.path.abspath(
             '{}_SUVR.nii.gz'.format(base))
+
+        return outputs
+
+
+class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
+
+    reg_mat = File(exists=True, desc='Registration matrix', mandatory=True)
+    qform_mat = File(exists=True, desc='Qform matrix', mandatory=True)
+    align_mats = Directory(exists=True, desc='Directory with intra-scan '
+                           'alignment matrices', default=None)
+
+
+class MotionMatCalculationOutputSpec(TraitedSpec):
+
+    motion_mats = Directory(exists=True, desc='Directory with resultin motion'
+                            ' matrices')
+
+
+class MotionMatCalculation(BaseInterface):
+
+    input_spec = MotionMatCalculationInputSpec
+    output_spec = MotionMatCalculationOutputSpec
+
+    def _run_interface(self, runtime):
+
+        reg_mat = np.loadtxt(self.inputs.reg_mat)
+        qform_mat = np.loadtxt(self.inputs.qform_mat)
+        _, out_name, _ = split_filename(self.inputs.reg_mat)
+        if self.inputs.align_mats:
+            list_mats = sorted(glob.glob(self.inputs.align_mats+'/MAT*'))
+            if not list_mats:
+                raise Exception(
+                    'Folder {} is empty!'.format(self.inputs.align_mats))
+            for mat in list_mats:
+                m = np.loadtxt(mat)
+                concat = np.dot(reg_mat, m)
+                self.gen_motion_mat(concat, qform_mat, mat)
+
+        concat = reg_mat[:]
+        self.gen_motion_mat(concat, qform_mat, out_name)
+        os.mkdir(out_name)
+        mm = glob.glob('*motion_mat*.mat')
+        for f in mm:
+            shutil.move(f, out_name)
+
+    def gen_motion_mat(self, concat, qform, out_name):
+
+        concat_inv = np.linalg.inv(concat)
+        concat_inv_qform = np.dot(qform, concat_inv)
+        concat_inv_qform_inv = np.linalg.inv(concat_inv_qform)
+        np.savetxt('{0}_motion_mat_inv.mat'.format(out_name),
+                   concat_inv_qform_inv)
+        np.savetxt('{0}_motion_mat.mat'.format(out_name),
+                   concat_inv_qform)
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        _, out_name, _ = split_filename(self.inputs.reg_mat)
+
+        outputs["motion_mats"] = os.path.abspath(out_name)
 
         return outputs
