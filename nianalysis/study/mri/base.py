@@ -40,7 +40,7 @@ class MRIStudy(Study):
             bet.inputs.reduce_bias = True
         bet.inputs.frac = pipeline.option('threshold')
         # Connect inputs/outputs
-        pipeline.connect_input('primary', bet, 'in_file')
+        pipeline.connect_input('preproc', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
@@ -67,7 +67,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='coregister_to_atlas_fnirt',
-            inputs=[DatasetSpec('primary', nifti_gz_format),
+            inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('masked', nifti_gz_format)],
             outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
@@ -136,7 +136,7 @@ class MRIStudy(Study):
         # Set registration options
         # TODO: Need to work out which options to use
         # Connect inputs
-        pipeline.connect_input('primary', reorient, 'in_file')
+        pipeline.connect_input('preproc', reorient, 'in_file')
         pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
         pipeline.connect_input('masked', reorient_masked, 'in_file')
         # Connect outputs
@@ -180,7 +180,7 @@ class MRIStudy(Study):
             name='FLIRT_registration',
             inputs=input_datasets,
             outputs=output_datasets,
-            description="Registration of the primary image to the reference",
+            description="Registration of the 'to_register' image to the reference",
             default_options={'dof': 6, 'cost': 'normmi', 'interp': 'trilinear',
                              'search_cost': 'normmi'},
             version=1,
@@ -200,7 +200,7 @@ class MRIStudy(Study):
         if pipeline.option('search_cost'):
             flirt.inputs.cost_func = pipeline.option('search_cost')
 
-        pipeline.connect_input('primary', flirt, 'in_file')
+        pipeline.connect_input('preproc', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')
 
         if reg_type == 'useqform':
