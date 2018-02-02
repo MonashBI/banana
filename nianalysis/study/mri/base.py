@@ -19,7 +19,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='brain_mask',
-            inputs=[DatasetSpec('swapped_image', nifti_gz_format)],
+            inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
@@ -239,14 +239,28 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def swap_dimensions_pipeline(self, **options):
+    def basic_preproc_pipeline(self, **options):
+        """
+        Performs basic preprocessing, such as swapping dimensions into
+        standard orientation and resampling (if required)
+
+        Options
+        -------
+        new_dims : tuple(str)[3]
+            A 3-tuple with the new orientation of the image (see FSL
+            swap dim)
+        resolution : tuple(float)[3] | None
+            New resolution of the image. If None no resampling is
+            performed
+        """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
             inputs=[DatasetSpec('primary', nifti_gz_format)],
-            outputs=[DatasetSpec('swapped_image', nifti_gz_format)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
-            default_options={'new_dims': ('RL', 'AP', 'IS')},
+            default_options={'new_dims': ('RL', 'AP', 'IS'),
+                             'resolution': None},
             version=1,
             citations=[fsl_cite],
             options=options)
@@ -254,26 +268,35 @@ class MRIStudy(Study):
                                     name='fslswapdim')
         swap.inputs.new_dims = pipeline.option('new_dims')
         pipeline.connect_input('primary', swap, 'in_file')
-        pipeline.connect_output('swapped_image', swap, 'out_file')
+        if pipeline.option('resolution') is not None:
+            resample = pipeline.create_node(Resize(), name="resample")
+            resample.inputs.resolution = pipeline.option('resolution')
+            pipeline.connect(swap, 'out_file', resample, 'in_file')
+            pipeline.connect_output('preproc', resample, 'out_file')
+        else:
+            pipeline.connect_output('preproc', swap, 'out_file')
 
         pipeline.assert_connected()
         return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('primary', nifti_gz_format),
-        DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('affine_mat', text_matrix_format),
-        DatasetSpec('reg_file', nifti_gz_format, registration_pipeline),
-        DatasetSpec('reg_mat', text_matrix_format, registration_pipeline),
-        DatasetSpec('qform_reg_file', nifti_gz_format, useqform_pipeline),
-        DatasetSpec('qform_mat', text_matrix_format, useqform_pipeline),
-        DatasetSpec('applyxfm_reg_file', nifti_gz_format, applyxfm_pipeline),
+        DatasetSpec('preproc', nifti_gz_format,
+                    basic_preproc_pipeline),
+#         DatasetSpec('reference', nifti_gz_format),
+#         DatasetSpec('affine_mat', text_matrix_format),
+#         DatasetSpec('reg_file', nifti_gz_format, registration_pipeline),
+#         DatasetSpec('reg_mat', text_matrix_format, registration_pipeline),
+#         DatasetSpec('qform_reg_file', nifti_gz_format, useqform_pipeline),
+#         DatasetSpec('qform_mat', text_matrix_format, useqform_pipeline),
+#         DatasetSpec('applyxfm_reg_file', nifti_gz_format, applyxfm_pipeline),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     coregister_to_atlas_pipeline),
-        DatasetSpec('ref_seg', nifti_gz_format, segmentation_pipeline),
-        DatasetSpec('swapped_image', nifti_gz_format,
-                    swap_dimensions_pipeline))
+        DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
+        DatasetSpec('gm_seg', nifti_gz_format, segmentation_pipeline),
+        DatasetSpec('csf_seg', nifti_gz_format, segmentation_pipeline),
+        )
