@@ -85,9 +85,10 @@ class CoregisteredEPIStudy(CombinedStudy):
         'reference', MRIStudy.brain_mask_pipeline)
 
     def ref_basic_preproc_pipeline(self, **options):
-        pipeline = self.TranslatedPipeline(
-            'reference', self.reference.basic_preproc_pipeline(**options),
-            self, default_options={'resolution': [1.0, 1.0, 1.0]})
+        pipeline = CombinedStudy.TranslatedPipeline(
+            self, self.reference.basic_preproc_pipeline(
+                __name_prefix__='reference', **options),
+            default_options={'resolution': [1.0, 1.0, 1.0]})
         return pipeline
 
     epi_qform_transform_pipeline = CombinedStudy.translate(
