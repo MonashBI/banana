@@ -12,6 +12,7 @@ from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom import DicomHeaderInfoExtraction
+from nipype.interfaces.utility import Split
 
 
 class MRIStudy(Study):
@@ -225,7 +226,7 @@ class MRIStudy(Study):
         pipeline = self.create_pipeline(
             name='FAST_segmentation',
             inputs=[DatasetSpec('ref_brain', nifti_gz_format)],
-            outputs=[DatasetSpec('ref_seg', nifti_gz_format)],
+            outputs=[DatasetSpec('wm_seg', nifti_gz_format)],
             description="White matter segmentation of the reference image",
             default_options={'img_type': 2},
             version=1,
@@ -237,7 +238,10 @@ class MRIStudy(Study):
         fast.inputs.segments = True
         fast.inputs.out_basename = 'Reference_segmentation'
         pipeline.connect_input('ref_brain', fast, 'in_files')
-        pipeline.connect_output('ref_seg', fast, 'tissue_class_files')
+        split_wm = pipeline.create_node(Split(), name='split_gm')
+        split_wm.inputs.splits = [2]
+        pipeline.connect(fast, 'tissue_class_files', split_wm, 'inlist')
+        pipeline.connect_output('wm_seg', split_wm, 'out1')
 
         pipeline.assert_connected()
         return pipeline
@@ -315,6 +319,7 @@ class MRIStudy(Study):
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('primary', nifti_gz_format),
+        DatasetSpec('ref_brain', nifti_gz_format),
         DatasetSpec('preproc', nifti_gz_format,
                     basic_preproc_pipeline),
 #         DatasetSpec('reference', nifti_gz_format),
