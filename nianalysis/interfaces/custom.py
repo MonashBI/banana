@@ -238,11 +238,14 @@ class MotionMatCalculation(BaseInterface):
                 m = np.loadtxt(mat)
                 concat = np.dot(reg_mat, m)
                 self.gen_motion_mat(concat, qform_mat, mat)
-
-        concat = reg_mat[:]
-        self.gen_motion_mat(concat, qform_mat, out_name)
+            mat_path, _, _ = split_filename(mat)
+            mm = glob.glob(mat_path+'/*motion_mat*.mat')
+        else:
+            concat = reg_mat[:]
+            self.gen_motion_mat(concat, qform_mat, out_name)
+            mm = glob.glob('*motion_mat*.mat')
         os.mkdir(out_name)
-        mm = glob.glob('*motion_mat*.mat')
+
         for f in mm:
             shutil.move(f, out_name)
 
@@ -345,5 +348,41 @@ class DicomHeaderInfoExtraction(BaseInterface):
         outputs["real_duration"] = self.dict_output['real_duration']
         outputs["ped"] = self.dict_output['ped']
         outputs["phase_offset"] = self.dict_output['phase_offset']
+
+        return outputs
+
+
+class MergeListMotionMatInputSpec(BaseInterfaceInputSpec):
+
+    file_list = traits.List(mandatory=True, desc='List of files to merge')
+
+
+class MergeListMotionMatOutputSpec(TraitedSpec):
+
+    out_dir = Directory(desc='Output directory.')
+
+
+class MergeListMotionMat(BaseInterface):
+
+    input_spec = MergeListMotionMatInputSpec
+    output_spec = MergeListMotionMatOutputSpec
+
+    def _run_interface(self, runtime):
+
+        file_list = self.inputs.file_list
+        pth, _, _ = split_filename(file_list[0])
+        if os.path.isdir(pth+'/motion_mats') is False:
+            os.mkdir(pth+'/motion_mats')
+        for f in file_list:
+            shutil.copy(f, pth+'/motion_mats')
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        file_list = self.inputs.file_list
+        pth, _, _ = split_filename(file_list[0])
+        outputs["out_dir"] = pth+'/motion_mats'
 
         return outputs
