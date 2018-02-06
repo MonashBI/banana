@@ -1,14 +1,15 @@
 from base import MRIStudy
 from nianalysis.dataset import DatasetSpec
 from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
-                                     text_format, directory_format)
+                                     text_format, directory_format, par_format)
 from nianalysis.citations import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirements import fsl5_req
 from nianalysis.study.base import set_dataset_specs
 from .coregistered import CoregisteredStudy
 from ..combined import CombinedStudy
-from nianalysis.interfaces.custom import MotionMatCalculation
+from nianalysis.interfaces.custom import (
+    MotionMatCalculation, MergeListMotionMat)
 
 
 class EPIStudy(MRIStudy):
@@ -24,7 +25,7 @@ class EPIStudy(MRIStudy):
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('moco', nifti_gz_format),
                      DatasetSpec('moco_mat', text_matrix_format),
-                     DatasetSpec('moco_par', text_format)],
+                     DatasetSpec('moco_par', par_format)],
             description=("Intra-epi volumes alignment."),
             default_options={},
             version=1,
@@ -39,8 +40,12 @@ class EPIStudy(MRIStudy):
         mcflirt.inputs.out_file = 'moco.nii.gz'
         pipeline.connect_input('preproc', mcflirt, 'in_file')
         pipeline.connect_output('moco', mcflirt, 'out_file')
-        pipeline.connect_output('moco_mat', mcflirt, 'mat_file')
+#         pipeline.connect_output('moco_mat', mcflirt, 'mat_file')
         pipeline.connect_output('moco_par', mcflirt, 'par_file')
+
+        merge = pipeline.create_node(MergeListMotionMat(), name='merge')
+        pipeline.connect(mcflirt, 'mat_file', merge, 'file_list')
+        pipeline.connect_output('moco_mat', merge, 'out_dir')
 
         pipeline.assert_connected()
         return pipeline
@@ -70,7 +75,7 @@ class CoregisteredEPIStudy(CombinedStudy):
             'ref_brain_mask': 'brain_mask',
             'ref_wmseg': 'wm_seg'}),
         'coreg': (CoregisteredStudy, {
-            'epi_preproc': 'to_register',
+            'epi_brain': 'to_register',
             'ref_preproc': 'reference',
             'epi_qformed': 'qformed',
             'epi_qform_mat': 'qform_mat'})}
@@ -183,5 +188,5 @@ class CoregisteredEPIStudy(CombinedStudy):
                     epi_motion_alignment_pipeline),
         DatasetSpec('epi_moco_mat', directory_format,
                     epi_motion_alignment_pipeline),
-        DatasetSpec('epi_moco_par', text_format,
+        DatasetSpec('epi_moco_par', par_format,
                     epi_motion_alignment_pipeline))

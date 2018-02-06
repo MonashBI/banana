@@ -1,6 +1,6 @@
 from nipype.pipeline import engine as pe
 from nipype.interfaces import fsl
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from nianalysis.dataset import DatasetSpec#, FieldSpec
 from nianalysis.study.base import Study, set_dataset_specs
 from nianalysis.requirements import Requirement
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
@@ -282,36 +282,36 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def header_info_extraction_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='header_info_extraction',
-            inputs=[DatasetSpec('dicom_file', dicom_format)],
-            outputs=[FieldSpec('tr', dtype=float),
-                     FieldSpec('start_time', dtype=str),
-                     FieldSpec('tot_duration', dtype=str),
-                     FieldSpec('real_duration', dtype=str),
-                     FieldSpec('ped', dtype=str),
-                     FieldSpec('phase_offset', dtype=str)],
-            description=("Dimensions swapping to ensure that all the images "
-                         "have the same orientations."),
-            default_options={},
-            version=1,
-            citations=[],
-            options=options)
-        hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
-                                             name='hd_info_extraction')
-        pipeline.connect_input('dicom_file', hd_extraction, 'dicom_folder')
-        pipeline.connect_output('tr', hd_extraction, 'tr')
-        pipeline.connect_output('start_time', hd_extraction, 'start_time')
-        pipeline.connect_output(
-            'tot_duration', hd_extraction, 'total_duration')
-        pipeline.connect_output(
-            'real_duration', hd_extraction, 'real_duration')
-        pipeline.connect_output('ped', hd_extraction, 'ped')
-        pipeline.connect_output('phase_offset', hd_extraction, 'phase_offset')
-        pipeline.assert_connected()
-        return pipeline
+#     def header_info_extraction_pipeline(self, **options):
+# 
+#         pipeline = self.create_pipeline(
+#             name='header_info_extraction',
+#             inputs=[DatasetSpec('dicom_file', dicom_format)],
+#             outputs=[FieldSpec('tr', dtype=float),
+#                      FieldSpec('start_time', dtype=str),
+#                      FieldSpec('tot_duration', dtype=str),
+#                      FieldSpec('real_duration', dtype=str),
+#                      FieldSpec('ped', dtype=str),
+#                      FieldSpec('phase_offset', dtype=str)],
+#             description=("Dimensions swapping to ensure that all the images "
+#                          "have the same orientations."),
+#             default_options={},
+#             version=1,
+#             citations=[],
+#             options=options)
+#         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
+#                                              name='hd_info_extraction')
+#         pipeline.connect_input('dicom_file', hd_extraction, 'dicom_folder')
+#         pipeline.connect_output('tr', hd_extraction, 'tr')
+#         pipeline.connect_output('start_time', hd_extraction, 'start_time')
+#         pipeline.connect_output(
+#             'tot_duration', hd_extraction, 'total_duration')
+#         pipeline.connect_output(
+#             'real_duration', hd_extraction, 'real_duration')
+#         pipeline.connect_output('ped', hd_extraction, 'ped')
+#         pipeline.connect_output('phase_offset', hd_extraction, 'phase_offset')
+#         pipeline.assert_connected()
+#         return pipeline
 
     _dataset_specs = set_dataset_specs(
         DatasetSpec('primary', nifti_gz_format),
@@ -332,16 +332,16 @@ class MRIStudy(Study):
                     coregister_to_atlas_pipeline),
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
         DatasetSpec('gm_seg', nifti_gz_format, segmentation_pipeline),
-        DatasetSpec('csf_seg', nifti_gz_format, segmentation_pipeline),
-        DatasetSpec('dicom_file', dicom_format),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', dtype=str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', dtype=str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', dtype=str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', dtype=str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('phase_offset', dtype=str,
-                  pipeline=header_info_extraction_pipeline)
+        DatasetSpec('csf_seg', nifti_gz_format, segmentation_pipeline)
+#         DatasetSpec('dicom_file', dicom_format),
+#         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+#         FieldSpec('start_time', dtype=str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('real_duration', dtype=str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('tot_duration', dtype=str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('ped', dtype=str, pipeline=header_info_extraction_pipeline),
+#         FieldSpec('phase_offset', dtype=str,
+#                   pipeline=header_info_extraction_pipeline)
         )

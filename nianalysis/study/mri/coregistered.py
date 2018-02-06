@@ -18,9 +18,10 @@ class CoregisteredStudy(Study):
     def linear_registration_pipeline(self, coreg_tool='flirt',
                                      **options):
         if coreg_tool == 'flirt':
-            _registration_outputs = [DatasetSpec('registered', nifti_gz_format),
-                                     DatasetSpec('matrix', text_matrix_format)]
-            pipeline = self._fsl_flirt_pipeline(**options)
+            registration_outputs = [DatasetSpec('registered', nifti_gz_format),
+                                    DatasetSpec('matrix', text_matrix_format)]
+            pipeline = self._fsl_flirt_pipeline(registration_outputs,
+                                                **options)
         elif coreg_tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**options)
         else:
@@ -32,7 +33,7 @@ class CoregisteredStudy(Study):
     def qform_transform_pipeline(self, **options):
 
         outputs = [DatasetSpec('qformed', nifti_gz_format),
-                    DatasetSpec('qform_mat', text_matrix_format)]
+                   DatasetSpec('qform_mat', text_matrix_format)]
         reg_type = 'useqform'
         return self._fsl_flirt_pipeline(outputs, reg_type=reg_type, **options)
 
@@ -69,6 +70,7 @@ class CoregisteredStudy(Study):
                                      requirements=[fsl5_req], wall_time=5)
         if reg_type == 'useqform':
             flirt.inputs.uses_qform = True
+            flirt.inputs.apply_xfm = True
             pipeline.connect_output('qformed', flirt, 'out_file')
             pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
         elif reg_type == 'registration':
