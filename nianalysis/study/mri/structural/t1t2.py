@@ -43,11 +43,10 @@ class T1T2Study(CombinedStudy):
 
     def freesurfer_pipeline(self, **options):
         pipeline = self.TranslatedPipeline(
-            self, self.t1.freesurfer_pipeline(
-                __name__prefix__='freesurfer', **options),
+            self, self.t1, T1Study.freesurfer_pipeline, options,
+            default_options={'use_T2': True},
             add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
         recon_all = pipeline.node('recon_all')
-        recon_all.inputs.use_T2 = True
         # Connect T2-weighted input
         pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
         pipeline.assert_connected()
