@@ -11,16 +11,21 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_data_specs
 from ..base import MRIStudy
-from nianalysis.requirements import fsl5_req, ants2_req, afni_req, fix_req
+from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
+                                     fsl509_req, fsl510_req)
 from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
-    zip_format, text_matrix_format, par_format, gif_format)
+    zip_format, text_matrix_format, par_format, gif_format, targz_format,
+    text_format)
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.afni import Tproject
-from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir, Merge
+from nianalysis.interfaces.utils.os import MakeDir, CopyFile, CopyDir
+from nianalysis.interfaces.utils.iter import Merge
+from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
+from nipype.interfaces.utility.base import IdentityInterface
 
 
 class FunctionalMRIStudy(MRIStudy):
@@ -90,14 +95,16 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def fix_pipeline(self, **options):
+    def fix_all(self, **options):
 
         pipeline = self.create_pipeline(
             name='fix',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('train_data', rdata_format),
+            inputs=[DatasetSpec('train_data', rdata_format,
+                                multiplicity='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
-            outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
+            outputs=[DatasetSpec('cleaned_file', nifti_gz_format),
+                     DatasetSpec('labelled_components', text_format)],
             description=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             default_options={'component_threshold': 20, 'motion_reg': True},
@@ -105,19 +112,82 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=5,
-                                   requirements=[fsl5_req, fix_req])
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
+                                   requirements=[fsl509_req, fix_req])
         pipeline.connect_input("fix_dir", fix, "feat_dir")
         pipeline.connect_input("train_data", fix, "train_data")
         fix.inputs.component_threshold = pipeline.option(
             'component_threshold')
         fix.inputs.motion_reg = pipeline.option('motion_reg')
-        fix.inputs.highpass = 200
+        fix.inputs.all = True
 
         pipeline.connect_output('cleaned_file', fix, 'output')
+        pipeline.connect_output('labelled_components', fix, 'label_file')
 
         pipeline.assert_connected()
         return pipeline
+
+    def fix_classification(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='fix_classification',
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('train_data', rdata_format,
+                                multiplicity='per_project'),
+                    DatasetSpec('fix_dir', directory_format)],
+            outputs=[DatasetSpec('labelled_components', text_format)],
+            description=("Automatic classification of noisy"
+                         "components from the rsfMRI data"),
+            default_options={'component_threshold': 20, 'motion_reg': True},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
+                                   requirements=[fsl509_req, fix_req])
+        pipeline.connect_input("fix_dir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        fix.inputs.component_threshold = pipeline.option(
+            'component_threshold')
+        fix.inputs.motion_reg = pipeline.option('motion_reg')
+        fix.inputs.classification = True
+
+        pipeline.connect_output('labelled_components', fix, 'label_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def fix_regression(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='fix_regression',
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('train_data', rdata_format,
+                                multiplicity='per_project'),
+                    DatasetSpec('fix_dir', directory_format),
+                    DatasetSpec('labelled_components', text_format)],
+            outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
+            description=("Regression of the noisy"
+                         "components from the rsfMRI data"),
+            default_options={'component_threshold': 20, 'motion_reg': True},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
+                                   requirements=[fsl509_req, fix_req])
+        pipeline.connect_input("fix_dir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        fix.inputs.component_threshold = pipeline.option(
+            'component_threshold')
+        fix.inputs.motion_reg = pipeline.option('motion_reg')
+        fix.inputs.classification = True
+
+        pipeline.connect_output('labelled_components', fix, 'label_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
 
     def optiBET(self, **options):
 
@@ -194,7 +264,7 @@ class FunctionalMRIStudy(MRIStudy):
             antspath = sp.check_output(cmd, shell=True)
             antspath = '/'.join(antspath.split('/')[0:-1])
             os.environ['ANTSPATH'] = antspath
-            print antspath
+#             print antspath
         except ImportError:
             print "NO ANTs module found. Please ensure to have it in you PATH."
 
@@ -208,7 +278,7 @@ class FunctionalMRIStudy(MRIStudy):
                      DatasetSpec('T12MNI_mat', text_matrix_format),
                      DatasetSpec('T12MNI_warp', nifti_gz_format),
                      DatasetSpec('T12MNI_invwarp', nifti_gz_format),
-                     DatasetSpec('T12MNI_reg_report.gif', gif_format)],
+                     DatasetSpec('T12MNI_reg_report', gif_format)],
             description=("python implementation of antsRegistrationSyN.sh"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
                              'standard/MNI152_T1_2mm_brain.nii.gz'},
@@ -224,15 +294,15 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_input('unwarped_file', bet_rsfmri, 'in_file')
         epireg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='epi2T1'), name='ANTsReg', wall_time=7,
+                       out_prefix='epi2T1'), name='ANTsReg', wall_time=10,
             requirements=[ants2_req])
         pipeline.connect_input('betted_file', epireg, 'ref_file')
         pipeline.connect(bet_rsfmri, 'out_file', epireg, 'input_file')
 
         t1reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI'), name='T1_reg', wall_time=20,
-            requirements=[ants2_req])
+                       out_prefix='T12MNI', num_threads=4), name='T1_reg',
+            wall_time=25, requirements=[ants2_req])
         t1reg.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect_input('betted_file', t1reg, 'input_file')
 
@@ -265,11 +335,11 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC', wall_time=10,
+        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC', wall_time=15,
                                    requirements=[fsl5_req])
         mel.inputs.no_bet = True
         mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
-        mel.inputs.tr_sec = 2.45
+        mel.inputs.tr_sec = 0.754
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
@@ -354,7 +424,7 @@ class FunctionalMRIStudy(MRIStudy):
         filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
                                     requirements=[afni_req])
         filt.inputs.stopband = (0, 0.01)
-        filt.inputs.delta_t = 2.45
+        filt.inputs.delta_t = 0.754
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
@@ -405,7 +475,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
-            requirements=[ants2_req])
+            memory=24000, requirements=[ants2_req])
         apply_trans.inputs.reference_image = pipeline.option('MNI_template')
 #         apply_trans.inputs.dimension = 3
         apply_trans.inputs.interpolation = 'Linear'
@@ -466,89 +536,94 @@ class FunctionalMRIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
 
-        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg')
+        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg', wall_time=5,
+                                      requirements=[fsl509_req])
         t12MNI.inputs.reference = pipeline.option('MNI_template')
         t12MNI.inputs.out_matrix_file = 'T12MNI.mat'
         pipeline.connect_input('betted_file', t12MNI, 'in_file')
 
-        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1')
+        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5,
+                                      requirements=[fsl509_req])
         MNI2t1.inputs.invert_xfm = True
         MNI2t1.inputs.out_file = 'MNI2T1.mat'
         pipeline.connect(t12MNI, 'out_matrix_file', MNI2t1, 'in_file')
 
-        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1')
+        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1', wall_time=5,
+                                      requirements=[fsl509_req])
         epi2t1.inputs.invert_xfm = True
         epi2t1.inputs.out_file = 'epi2T1.mat'
         pipeline.connect_input('hires2example', epi2t1, 'in_file')
 
-        mkdir1 = pipeline.create_node(MakeDir(), name='makedir1')
+        mkdir1 = pipeline.create_node(MakeDir(), name='makedir1', wall_time=5)
         mkdir1.inputs.name_dir = 'reg'
         pipeline.connect_input('melodic_ica', mkdir1, 'base_dir')
 
-        cp0 = pipeline.create_node(CopyFile(), name='copyfile0')
+        cp0 = pipeline.create_node(CopyFile(), name='copyfile0', wall_time=5)
         cp0.inputs.dst = 'reg/highres2std.mat'
         pipeline.connect(t12MNI, 'out_matrix_file', cp0, 'src')
         pipeline.connect(mkdir1, 'new_dir', cp0, 'base_dir')
 
-        cp00 = pipeline.create_node(CopyFile(), name='copyfile00')
+        cp00 = pipeline.create_node(CopyFile(), name='copyfile00', wall_time=5)
         cp00.inputs.dst = 'reg/std2highres.mat'
         pipeline.connect(MNI2t1, 'out_file', cp00, 'src')
         pipeline.connect(cp0, 'basedir', cp00, 'base_dir')
 
-        cp000 = pipeline.create_node(CopyFile(), name='copyfile000')
+        cp000 = pipeline.create_node(CopyFile(), name='copyfile000',
+                                     wall_time=5)
         cp000.inputs.dst = 'reg/example_func2highres.mat'
         pipeline.connect(epi2t1, 'out_file', cp000, 'src')
         pipeline.connect(cp00, 'basedir', cp000, 'base_dir')
 
-        cp1 = pipeline.create_node(CopyFile(), name='copyfile1')
+        cp1 = pipeline.create_node(CopyFile(), name='copyfile1', wall_time=5)
         cp1.inputs.dst = 'reg/highres.nii.gz'
         pipeline.connect_input('betted_file', cp1, 'src')
         pipeline.connect(cp000, 'basedir', cp1, 'base_dir')
 
-        cp2 = pipeline.create_node(CopyFile(), name='copyfile2')
+        cp2 = pipeline.create_node(CopyFile(), name='copyfile2', wall_time=5)
         cp2.inputs.dst = 'reg/example_func.nii.gz'
         pipeline.connect_input('unwarped_file', cp2, 'src')
         pipeline.connect(cp1, 'basedir', cp2, 'base_dir')
 
-        cp3 = pipeline.create_node(CopyFile(), name='copyfile3')
+        cp3 = pipeline.create_node(CopyFile(), name='copyfile3', wall_time=5)
         cp3.inputs.dst = 'reg/highres2example_func.mat'
         pipeline.connect_input('hires2example', cp3, 'src')
         pipeline.connect(cp2, 'basedir', cp3, 'base_dir')
 
-        mkdir2 = pipeline.create_node(MakeDir(), name='makedir2')
+        mkdir2 = pipeline.create_node(MakeDir(), name='makedir2', wall_time=5)
         mkdir2.inputs.name_dir = 'mc'
         pipeline.connect(cp3, 'basedir', mkdir2, 'base_dir')
 
-        cp4 = pipeline.create_node(CopyFile(), name='copyfile4')
+        cp4 = pipeline.create_node(CopyFile(), name='copyfile4', wall_time=5)
         cp4.inputs.dst = 'mc/prefiltered_func_data_mcf.par'
         pipeline.connect_input('mc_par', cp4, 'src')
         pipeline.connect(mkdir2, 'new_dir', cp4, 'base_dir')
 
-        cp5 = pipeline.create_node(CopyFile(), name='copyfile5')
+        cp5 = pipeline.create_node(CopyFile(), name='copyfile5', wall_time=5)
         cp5.inputs.dst = 'mask.nii.gz'
         pipeline.connect_input('rsfmri_mask', cp5, 'src')
         pipeline.connect(cp4, 'basedir', cp5, 'base_dir')
 
         meanfunc = pipeline.create_node(
-            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc')
+            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
+            wall_time=5, requirements=[fsl509_req])
         pipeline.connect_input('rs_fmri', meanfunc, 'in_file')
 
-        cp6 = pipeline.create_node(CopyFile(), name='copyfile6')
+        cp6 = pipeline.create_node(CopyFile(), name='copyfile6', wall_time=5)
         cp6.inputs.dst = 'mean_func.nii.gz'
         pipeline.connect(meanfunc, 'out_file', cp6, 'src')
         pipeline.connect(cp5, 'basedir', cp6, 'base_dir')
 
-        mkdir3 = pipeline.create_node(MakeDir(), name='makedir3')
+        mkdir3 = pipeline.create_node(MakeDir(), name='makedir3', wall_time=5)
         mkdir3.inputs.name_dir = 'filtered_func_data.ica'
         pipeline.connect(cp6, 'basedir', mkdir3, 'base_dir')
 
-        cp7 = pipeline.create_node(CopyDir(), name='copyfile7')
+        cp7 = pipeline.create_node(CopyDir(), name='copyfile7', wall_time=5)
         cp7.inputs.dst = 'filtered_func_data.ica'
         cp7.inputs.method = 1
         pipeline.connect_input('melodic_ica', cp7, 'src')
         pipeline.connect(mkdir3, 'new_dir', cp7, 'base_dir')
 
-        cp8 = pipeline.create_node(CopyFile(), name='copyfile8')
+        cp8 = pipeline.create_node(CopyFile(), name='copyfile8', wall_time=5)
         cp8.inputs.dst = 'filtered_func_data.nii.gz'
         pipeline.connect_input('filtered_data', cp8, 'src')
         pipeline.connect(cp7, 'basedir', cp8, 'base_dir')
@@ -572,18 +647,63 @@ class FunctionalMRIStudy(MRIStudy):
             version=1,
             citations=[fsl_cite],
             options=options)
-        labeled_sub = pipeline.create_join_subjects_node(
-            CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
-        pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
-
+#         labeled_sub = pipeline.create_join_subjects_node(
+#             CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
+#         pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
+        merge_visits = pipeline.create_join_visits_node(
+            IdentityInterface(['list_dir']), joinfield=['list_dir'],
+            name='merge_visits')
+        merge_subjects = pipeline.create_join_subjects_node(
+            NiPypeMerge(1), joinfield=['in1'], name='merge_subjects')
+        merge_subjects.inputs.ravel_inputs = True
         fix_training = pipeline.create_node(
-            FSLFixTraining(), name='fix_training', wall_time=20,
-            requirements=[fix_req])
+            FSLFixTraining(), name='fix_training',
+            wall_time=240, requirements=[fix_req])
         fix_training.inputs.outname = 'FIX_training_set'
         fix_training.inputs.training = True
-        pipeline.connect(labeled_sub, 'out_list', fix_training, 'list_dir')
+        pipeline.connect_input('fix_dir', merge_visits, 'list_dir')
+        pipeline.connect(merge_visits, 'list_dir', merge_subjects, 'in1')
+        pipeline.connect(merge_subjects, 'out', fix_training, 'list_dir')
 
         pipeline.connect_output('train_data', fix_training, 'training_set')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def groupMelodic(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='group_melodic',
+            # inputs=['fear_dir', 'train_data'],
+            inputs=[DatasetSpec('smoothed_file', nifti_gz_format)],
+            outputs=[DatasetSpec('group_melodic', directory_format)],
+            description=("Group ICA"),
+            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain.nii.gz',
+                             'brain_thresh_percent': 5,
+                             'MNI_template_mask': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+        gica = pipeline.create_join_subjects_node(
+            MELODIC(), joinfield=['in_files'], name='gica',
+            requirements=[fsl510_req], wall_time=7200)
+        gica.inputs.no_bet = True
+        gica.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
+        gica.inputs.bg_image = pipeline.option('MNI_template')
+        gica.inputs.tr_sec = 0.754
+        gica.inputs.dim = 15
+        gica.inputs.report = True
+        gica.inputs.out_stats = True
+        gica.inputs.mm_thresh = 0.5
+        gica.inputs.sep_vn = True
+        gica.inputs.mask = pipeline.option('MNI_template_mask')
+        gica.inputs.out_dir = 'melodic.gica'
+#         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
+        pipeline.connect_input('smoothed_file', gica, 'in_files')
+
+        pipeline.connect_output('group_melodic', gica, 'out_dir')
 
         pipeline.assert_connected()
         return pipeline
@@ -594,8 +714,10 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('t1', nifti_gz_format),
         DatasetSpec('rs_fmri', nifti_gz_format),
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
-        DatasetSpec('train_data', rdata_format, TrainingFix),
-        DatasetSpec('cleaned_file', nifti_gz_format, fix_pipeline),
+        DatasetSpec('train_data', rdata_format, TrainingFix,
+                    multiplicity='per_project'),
+        DatasetSpec('labelled_components', text_format, fix_all),
+        DatasetSpec('cleaned_file', nifti_gz_format, fix_all),
         DatasetSpec('betted_file', nifti_gz_format, optiBET),
         DatasetSpec('betted_mask', nifti_gz_format, optiBET),
         DatasetSpec('optiBET_report', gif_format, optiBET),
@@ -613,5 +735,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('melodic_ica', zip_format, MelodicL1),
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
-        DatasetSpec('fix_dir', zip_format, PrepareFix),
-        DatasetSpec('smoothed_file', nifti_gz_format, applySmooth))
+        DatasetSpec('fix_dir', targz_format, PrepareFix),
+        DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
+        DatasetSpec('group_melodic', targz_format, groupMelodic,
+                    multiplicity='per_visit'))

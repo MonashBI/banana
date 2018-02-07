@@ -1,5 +1,4 @@
-from nipype.pipeline import engine as pe
-from nipype.interfaces.fsl import FLIRT, FNIRT
+from nipype.interfaces.fsl import FLIRT
 from nipype.interfaces.spm.preprocess import Coregister
 from nianalysis.requirements import fsl5_req
 from nianalysis.citations import fsl_cite
@@ -15,14 +14,14 @@ class CoregisteredStudy(Study):
 
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format)]
-    _registration_outputs = [DatasetSpec('registered', nifti_gz_format),
-                             DatasetSpec('matrix', text_matrix_format)]
 
-    def registration_pipeline(self, coreg_tool='flirt', **options):
+    def linear_registration_pipeline(self, coreg_tool='flirt',
+                                     **options):
         if coreg_tool == 'flirt':
-            pipeline = self._fsl_flirt_pipeline(**options)
-        elif coreg_tool == 'fnirt':
-            pipeline = self._fsl_fnirt_pipeline(**options)
+            registration_outputs = [DatasetSpec('registered', nifti_gz_format),
+                                    DatasetSpec('matrix', text_matrix_format)]
+            pipeline = self._fsl_flirt_pipeline(registration_outputs,
+                                                **options)
         elif coreg_tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**options)
         else:
@@ -31,7 +30,14 @@ class CoregisteredStudy(Study):
                 " 'spm'.".format(coreg_tool))
         return pipeline
 
-    def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def qform_transform_pipeline(self, **options):
+
+        outputs = [DatasetSpec('qformed', nifti_gz_format),
+                   DatasetSpec('qform_mat', text_matrix_format)]
+        reg_type = 'useqform'
+        return self._fsl_flirt_pipeline(outputs, reg_type=reg_type, **options)
+
+    def _fsl_flirt_pipeline(self,  outputs, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -52,7 +58,7 @@ class CoregisteredStudy(Study):
         pipeline = self.create_pipeline(
             name='registration_fsl',
             inputs=self._registration_inputs,
-            outputs=self._registration_outputs,
+            outputs=outputs,
             description="Registers a MR scan against a reference image",
             default_options={
                 'degrees_of_freedom': 6, 'cost_func': 'mutualinfo',
@@ -62,19 +68,25 @@ class CoregisteredStudy(Study):
             options=options)
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
                                      requirements=[fsl5_req], wall_time=5)
-        # Set registration options
-        flirt.inputs.dof = pipeline.option('degrees_of_freedom')
-        flirt.inputs.cost = pipeline.option('cost_func')
-        flirt.inputs.cost_func = pipeline.option('cost_func')
-        flirt.inputs.uses_qform = pipeline.option('qsform')
-        flirt.inputs.output_type = 'NIFTI_GZ'
+        if reg_type == 'useqform':
+            flirt.inputs.uses_qform = True
+            flirt.inputs.apply_xfm = True
+            pipeline.connect_output('qformed', flirt, 'out_file')
+            pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
+        elif reg_type == 'registration':
+            # Set registration options
+            flirt.inputs.dof = pipeline.option('degrees_of_freedom')
+            flirt.inputs.cost = pipeline.option('cost_func')
+            flirt.inputs.cost_func = pipeline.option('cost_func')
+            flirt.inputs.output_type = 'NIFTI_GZ'
+            # Connect outputs
+            pipeline.connect_output('registered', flirt, 'out_file')
+            # Connect matrix
+            self._connect_matrix(pipeline, flirt)
         # Connect inputs
         pipeline.connect_input('to_register', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')
-        # Connect outputs
-        pipeline.connect_output('registered', flirt, 'out_file')
-        # Connect matrix
-        self._connect_matrix(pipeline, flirt)
+
         pipeline.assert_connected()
         return pipeline
 
@@ -140,8 +152,12 @@ class CoregisteredStudy(Study):
     _data_specs = set_data_specs(
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('to_register', nifti_gz_format),
-        DatasetSpec('registered', nifti_gz_format, registration_pipeline),
-        DatasetSpec('matrix', text_matrix_format, registration_pipeline))
+        DatasetSpec('registered', nifti_gz_format,
+                    linear_registration_pipeline),
+        DatasetSpec('matrix', text_matrix_format,
+                    linear_registration_pipeline),
+        DatasetSpec('qformed', nifti_gz_format, qform_transform_pipeline),
+        DatasetSpec('qform_mat', text_matrix_format, qform_transform_pipeline))
 
 
 class CoregisteredToMatrixStudy(CoregisteredStudy):
@@ -196,4 +212,4 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         DatasetSpec('to_register', nifti_gz_format),
         DatasetSpec('matrix', text_matrix_format),
         DatasetSpec('registered', nifti_gz_format,
-                    CoregisteredStudy.registration_pipeline))
+                    CoregisteredStudy.linear_registration_pipeline))

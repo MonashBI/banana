@@ -2,11 +2,15 @@ from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
-from nianalysis.data_formats import nifti_gz_format
+from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
+    dicom_format)
 from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
+from nianalysis.interfaces.mrtrix.transform import MRResize
+from nianalysis.interfaces.custom import DicomHeaderInfoExtraction
+from nipype.interfaces.utility import Split
 
 
 class MRIStudy(Study):
@@ -17,7 +21,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='brain_mask',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
@@ -37,7 +41,7 @@ class MRIStudy(Study):
             bet.inputs.reduce_bias = True
         bet.inputs.frac = pipeline.option('threshold')
         # Connect inputs/outputs
-        pipeline.connect_input('primary', bet, 'in_file')
+        pipeline.connect_input('preproc', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
@@ -64,7 +68,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='coregister_to_atlas_fnirt',
-            inputs=[DatasetSpec('primary', nifti_gz_format),
+            inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('masked', nifti_gz_format)],
             outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
@@ -133,7 +137,7 @@ class MRIStudy(Study):
         # Set registration options
         # TODO: Need to work out which options to use
         # Connect inputs
-        pipeline.connect_input('primary', reorient, 'in_file')
+        pipeline.connect_input('preproc', reorient, 'in_file')
         pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
         pipeline.connect_input('masked', reorient_masked, 'in_file')
         # Connect outputs
@@ -143,11 +147,204 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
+    def registration_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('reference', nifti_gz_format)]
+        output_datasets = [DatasetSpec('reg_file', nifti_gz_format),
+                           DatasetSpec('reg_mat', text_matrix_format)]
+        reg_type = 'registration'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
+
+    def applyxfm_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('reference', nifti_gz_format),
+                          DatasetSpec('affine_mat', text_matrix_format)]
+        output_datasets = [DatasetSpec('applyxfm_reg_file', nifti_gz_format)]
+        reg_type = 'applyxfm'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
+
+    def useqform_pipeline(self, **options):
+        input_datasets = [DatasetSpec('masked', nifti_gz_format),
+                          DatasetSpec('reference', nifti_gz_format)]
+        output_datasets = [DatasetSpec('qform_reg_file', nifti_gz_format),
+                           DatasetSpec('qform_mat', text_matrix_format)]
+        reg_type = 'useqform'
+        return self._registration_factory(input_datasets, output_datasets,
+                                          reg_type, **options)
+
+    def _registration_factory(self, input_datasets, output_datasets, reg_type,
+                              **options):
+
+        pipeline = self.create_pipeline(
+            name='FLIRT_registration',
+            inputs=input_datasets,
+            outputs=output_datasets,
+            description="Registration of the input image to the reference",
+            default_options={'dof': 6, 'cost': 'normmi', 'interp': 'trilinear',
+                             'search_cost': 'normmi'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        flirt = pipeline.create_node(
+            interface=FLIRT(), name="flirt_{}"+reg_type,
+            requirements=[fsl5_req])
+        flirt.inputs.output_type = 'NIFTI_GZ'
+        if pipeline.option('dof'):
+            flirt.inputs.dof = pipeline.option('dof')
+        if pipeline.option('cost'):
+            flirt.inputs.cost = pipeline.option('cost')
+        if pipeline.option('interp'):
+            flirt.inputs.interp = pipeline.option('interp')
+        if pipeline.option('search_cost'):
+            flirt.inputs.cost_func = pipeline.option('search_cost')
+
+        pipeline.connect_input('preproc', flirt, 'in_file')
+        pipeline.connect_input('reference', flirt, 'reference')
+
+        if reg_type == 'useqform':
+            flirt.inputs.apply_xfm = True
+            flirt.inputs.uses_qform = True
+            pipeline.connect_output('qform_reg_file', flirt, 'out_file')
+            pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
+        elif reg_type == 'applyxfm':
+            flirt.inputs.apply_xfm = True
+            pipeline.connect_input('affine_mat', flirt, 'in_matrix_file')
+            pipeline.connect_output('applyxfm_reg_file', flirt, 'out_file')
+        else:
+            pipeline.connect_output('reg_file', flirt, 'out_file')
+            pipeline.connect_output('affine_mat', flirt, 'out_matrix_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def segmentation_pipeline(self, **options):
+        pipeline = self.create_pipeline(
+            name='FAST_segmentation',
+            inputs=[DatasetSpec('ref_brain', nifti_gz_format)],
+            outputs=[DatasetSpec('wm_seg', nifti_gz_format)],
+            description="White matter segmentation of the reference image",
+            default_options={'img_type': 2},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        fast = pipeline.create_node(fsl.FAST(), name='fast')
+        fast.inputs.img_type = pipeline.option('img_type')
+        fast.inputs.segments = True
+        fast.inputs.out_basename = 'Reference_segmentation'
+        pipeline.connect_input('ref_brain', fast, 'in_files')
+        split_wm = pipeline.create_node(Split(), name='split_gm')
+        split_wm.inputs.splits = [2]
+        pipeline.connect(fast, 'tissue_class_files', split_wm, 'inlist')
+        pipeline.connect_output('wm_seg', split_wm, 'out1')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    def basic_preproc_pipeline(self, **options):
+        """
+        Performs basic preprocessing, such as swapping dimensions into
+        standard orientation and resampling (if required)
+
+        Options
+        -------
+        new_dims : tuple(str)[3]
+            A 3-tuple with the new orientation of the image (see FSL
+            swap dim)
+        resolution : list(float)[3] | None
+            New resolution of the image. If None no resampling is
+            performed
+        """
+        pipeline = self.create_pipeline(
+            name='fslswapdim_pipeline',
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format)],
+            description=("Dimensions swapping to ensure that all the images "
+                         "have the same orientations."),
+            default_options={'new_dims': ('RL', 'AP', 'IS'),
+                             'resolution': None},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+        swap = pipeline.create_node(fsl.utils.SwapDimensions(),
+                                    name='fslswapdim')
+        swap.inputs.new_dims = pipeline.option('new_dims')
+        pipeline.connect_input('primary', swap, 'in_file')
+        if pipeline.option('resolution') is not None:
+            resample = pipeline.create_node(MRResize(), name="resample")
+            resample.inputs.size = pipeline.option('resolution')
+            pipeline.connect(swap, 'out_file', resample, 'in_file')
+            pipeline.connect_output('preproc', resample, 'out_file')
+        else:
+            pipeline.connect_output('preproc', swap, 'out_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
+#     def header_info_extraction_pipeline(self, **options):
+# 
+#         pipeline = self.create_pipeline(
+#             name='header_info_extraction',
+#             inputs=[DatasetSpec('dicom_file', dicom_format)],
+#             outputs=[FieldSpec('tr', dtype=float),
+#                      FieldSpec('start_time', dtype=str),
+#                      FieldSpec('tot_duration', dtype=str),
+#                      FieldSpec('real_duration', dtype=str),
+#                      FieldSpec('ped', dtype=str),
+#                      FieldSpec('phase_offset', dtype=str)],
+#             description=("Dimensions swapping to ensure that all the images "
+#                          "have the same orientations."),
+#             default_options={},
+#             version=1,
+#             citations=[],
+#             options=options)
+#         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
+#                                              name='hd_info_extraction')
+#         pipeline.connect_input('dicom_file', hd_extraction, 'dicom_folder')
+#         pipeline.connect_output('tr', hd_extraction, 'tr')
+#         pipeline.connect_output('start_time', hd_extraction, 'start_time')
+#         pipeline.connect_output(
+#             'tot_duration', hd_extraction, 'total_duration')
+#         pipeline.connect_output(
+#             'real_duration', hd_extraction, 'real_duration')
+#         pipeline.connect_output('ped', hd_extraction, 'ped')
+#         pipeline.connect_output('phase_offset', hd_extraction, 'phase_offset')
+#         pipeline.assert_connected()
+#         return pipeline
+
     _data_specs = set_data_specs(
         DatasetSpec('primary', nifti_gz_format),
+        DatasetSpec('ref_brain', nifti_gz_format),
+        DatasetSpec('preproc', nifti_gz_format,
+                    basic_preproc_pipeline),
+#         DatasetSpec('reference', nifti_gz_format),
+#         DatasetSpec('affine_mat', text_matrix_format),
+#         DatasetSpec('reg_file', nifti_gz_format, registration_pipeline),
+#         DatasetSpec('reg_mat', text_matrix_format, registration_pipeline),
+#         DatasetSpec('qform_reg_file', nifti_gz_format, useqform_pipeline),
+#         DatasetSpec('qform_mat', text_matrix_format, useqform_pipeline),
+#         DatasetSpec('applyxfm_reg_file', nifti_gz_format, applyxfm_pipeline),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
-                    coregister_to_atlas_pipeline))
+                    coregister_to_atlas_pipeline),
+        DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
+        DatasetSpec('gm_seg', nifti_gz_format, segmentation_pipeline),
+        DatasetSpec('csf_seg', nifti_gz_format, segmentation_pipeline)
+#         DatasetSpec('dicom_file', dicom_format),
+#         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+#         FieldSpec('start_time', dtype=str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('real_duration', dtype=str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('tot_duration', dtype=str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('ped', dtype=str, pipeline=header_info_extraction_pipeline),
+#         FieldSpec('phase_offset', dtype=str,
+#                   pipeline=header_info_extraction_pipeline)
+        )
