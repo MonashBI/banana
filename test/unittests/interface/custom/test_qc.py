@@ -2,7 +2,7 @@ from nianalysis.testing import BaseTestCase
 import os.path
 import logging
 from nianalysis.nodes import Node
-from nianalysis.interfaces.custom.qc import QAMetrics
+from nianalysis.interfaces.custom.qc import QCMetrics
 
 logger = logging.getLogger('NiAnalysis')
 
@@ -11,7 +11,7 @@ class TestQC(BaseTestCase):
 
     def test_subtract(self):
         # Create Zip node
-        metrics = Node(QAMetrics(), name='metrics')
+        metrics = Node(QCMetrics(), name='metrics')
         metrics.inputs.in_file = os.path.join(self.session_dir,
                                               '32ch_mprage.nii')
         out = metrics.run()
