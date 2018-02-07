@@ -1,7 +1,7 @@
 from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import set_dataset_specs
-from nianalysis.interfaces.custom import SUVRCalculation
+from nianalysis.interfaces.francesco.custom import SUVRCalculation
 from nianalysis.data_formats import (nifti_gz_format)
 import os
 
