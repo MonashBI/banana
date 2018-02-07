@@ -91,7 +91,7 @@ class CoregisteredEPIStudy(CombinedStudy):
 
     ref_basic_preproc_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
-        default_options={'resolution': [1.0, 1.0, 1.0]})
+        override_default_options={'resolution': [1.0, 1.0, 1.0]})
 
     epi_qform_transform_pipeline = CombinedStudy.translate(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
