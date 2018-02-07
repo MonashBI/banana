@@ -43,7 +43,8 @@ class T1T2Study(CombinedStudy):
 
     def freesurfer_pipeline(self, **options):
         pipeline = self.TranslatedPipeline(
-            'freesurfer', self.t1.freesurfer_pipeline(**options), self,
+            self, self.t1.freesurfer_pipeline(
+                __name__prefix__='freesurfer', **options),
             add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
         recon_all = pipeline.node('recon_all')
         recon_all.inputs.use_T2 = True
@@ -56,11 +57,11 @@ class T1T2Study(CombinedStudy):
         't1', T1Study.coregister_to_atlas_pipeline)
 
     t2_registration_pipeline = CombinedStudy.translate(
-        't2coregt1', CoregisteredStudy.registration_pipeline)
+        't2coregt1', CoregisteredStudy.linear_registration_pipeline)
 
     manual_wmh_mask_registration_pipeline = CombinedStudy.translate(
         'wmhcoregt1',
-        CoregisteredToMatrixStudy.registration_pipeline)
+        CoregisteredToMatrixStudy.linear_registration_pipeline)
 
     t2_brain_mask_pipeline = CombinedStudy.translate(
         't2', T2Study.brain_mask_pipeline)

@@ -8,6 +8,12 @@ from nipype.interfaces.base import (
 from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
 import logging
+from nipype.interfaces.traits_extension import isdefined
+import nibabel as nib
+import numpy as np
+import ast
+import subprocess as sp
+import scipy
 
 
 warn = warnings.warn
@@ -96,24 +102,158 @@ class MelodicL1FSF(BaseInterface):
         return outputs
 
 
+class SignalRegressionInputSpec(BaseInterfaceInputSpec):
+
+    fix_dir = Directory(exists=True, desc="Prepared FIX directory",
+                        mandatory=True)
+    labelled_components = File(
+        exists=True, mandatory=True,
+        desc=("Text file with FIX classified components."))
+    motion_regression = traits.Bool(desc='Regress 24 motion paremeters.',
+                                    default=False)
+    highpass = traits.Int(
+        desc='Whether or not to high pass the motion parameters', default=None)
+    customRegressors = File(exists=True, default=None,
+                            desc='File containing custom regressors.')
+
+
+class SignalRegressionOutputSpec(TraitedSpec):
+
+    output = File(exists=True, desc="cleaned output")
+
+
+class SignalRegression(BaseInterface):
+
+    input_spec = SignalRegressionInputSpec
+    output_spec = SignalRegressionOutputSpec
+
+    def _run_interface(self, runtime):
+
+        im2filt = self.inputs.fix_dir+'/filtered_func_data.nii.gz'
+        ref = nib.load(im2filt)
+        components = []
+        with open(self.inputs.labelled_components, 'r') as f:
+            for line in f:
+                components.append(line)
+        bad_components = ast.literal_eval(components[-1].strip())
+        bad_components = [x-1 for x in bad_components]
+        im2filt = nib.load(im2filt)
+        if self.inputs.highpass:
+            hdr = im2filt.header
+            sa = hdr.structarr
+            TR = sa['pixdim'][4]
+            print 'Repetition time from the header: {} sec'.format(str(TR))
+        else:
+            TR = None
+        im2filt = im2filt.get_data()
+        [x, y, z, t] = im2filt.shape
+        im2filt = np.reshape(im2filt, (x*y*z, t), order='F').T
+        ICA = self.normalise(np.loadtxt(self.inputs.fix_dir+'/melodic_mix'))
+        if self.inputs.motion_regression:
+            mp = self.inputs.fix_dir+'/mc/prefiltered_func_data_mcf.par'
+            motion_confounds = self.create_motion_confounds(
+                mp, self.inputs.highpass, TR=TR)
+            ICA = ICA - (np.dot(motion_confounds,
+                                np.dot(np.linalg.pinv(motion_confounds), ICA)))
+            im2filt = (im2filt-np.dot(
+                motion_confounds, np.dot(np.linalg.pinv(motion_confounds),
+                                         im2filt)))
+        if self.inputs.customRegressors:
+            cr = np.loadtxt(self.inputs.customRegressors)
+            if cr.shape[0] != t:
+                print (
+                    'custom regressors and input image have a different '
+                    'time lenght. They will not be used for the regression.')
+            else:
+                cr = self.normalise(cr)
+                im2filt = im2filt - np.dot(cr, np.dot(np.linalg.pinv(cr),
+                                                      im2filt))
+
+        betaICA = np.dot(np.linalg.pinv(ICA), im2filt)
+        im2filt = im2filt - np.dot(ICA[:, bad_components],
+                                   betaICA[bad_components, :])
+        im_filt = np.reshape(im2filt.T, (x, y, z, t), order='F')
+        im2save = nib.Nifti1Image(im_filt, affine=ref.get_affine())
+        nib.save(
+            im2save, self.inputs.fix_dir+'/filtered_func_data_clean.nii.gz')
+
+        return runtime
+
+    def create_motion_confounds(self, mp, hp, TR=None):
+
+        confounds = np.loadtxt(mp)
+        confounds = self.normalise(
+            np.hstack((confounds, np.vstack((np.zeros(6),
+                                             np.diff(confounds, axis=0))))))
+        confounds = self.normalise(
+            np.hstack((confounds, np.square(confounds))))
+        if hp == 0:
+            confounds = scipy.signal.detrend(confounds, axis=0, type='linear')
+        elif hp > 0:
+            im2save = nib.Nifti1Image(
+                np.reshape(confounds.T, (confounds.shape[1], 1, 1,
+                                         confounds.shape[0]), order='F'),
+                affine=np.eye(4))
+            nib.save(im2save, self.inputs.fix_dir+'/mc/mc_par_conf.nii.gz')
+            cmd = (
+                'fslmaths {0}/mc_par_conf.nii.gz -bptf {1} -1 '
+                '{0}/mc_par_conf_hp'.format(self.inputs.fix_dir+'/mc',
+                                            str(0.5*float(hp)/TR)))
+            sp.check_output(cmd, shell=True)
+            confounds_hp = (nib.load(
+                self.inputs.fix_dir+'/mc/mc_par_conf_hp.nii.gz')).get_data()
+            confounds = self.normalise(
+                np.reshape(confounds_hp, (confounds.shape[1],
+                                          confounds.shape[0]), order='F').T)
+
+        return confounds
+
+    def normalise(self, params):
+
+        params = (params - np.mean(params, axis=0))/np.std(params, axis=0,
+                                                           ddof=1)
+        return params
+
+    def _list_outputs(self):
+
+        outputs = self._outputs().get()
+        outputs['output'] = (
+            self.inputs.fix_dir+'/filtered_func_data_clean.nii.gz')
+        return outputs
+
+
 class FSLFIXInputSpec(FSLCommandInputSpec):
+    _xor_options = ('classification', 'regression', 'all')
+    _xor_input_files = ('feat_dir', 'labelled_component')
     feat_dir = Directory(
-        exists=True, mandatory=True, argstr="%s", position=0,
-        desc="Input feat preprocessed directory")
-    train_data = File(exists=True, mandatory=True, argstr="%s", position=1,
+        exists=True, argstr="%s", position=1, xor=_xor_input_files,
+        desc="Input melodic preprocessed directory")
+    train_data = File(exists=True, argstr="%s", position=2,
                       desc="Training file")
+    regression = traits.Bool(desc='Regress previously classified components.',
+                             position=0, argstr="-a", xor=_xor_options)
+    classification = traits.Bool(
+        desc='Components classification without regression.', position=0,
+        argstr="-c", xor=_xor_options)
+    all = traits.Bool(
+        desc='Components classification and regression.', position=0,
+        argstr="-f", xor=_xor_options)
     component_threshold = traits.Int(
-        argstr="%d", mandatory=True, position=2,
+        argstr="%d", mandatory=True, position=3,
         desc="threshold for the number of components")
-    motion_reg = traits.Bool(position=3, argstr='-m',
-                             desc="motion parameters regression")
+    labelled_component = File(
+        exists=True, argstr="%s", position=1, xor=_xor_input_files,
+        desc=("Text file with classified components. This file is mandatory if"
+              "you choose regression only."))
+    motion_reg = traits.Bool(argstr='-m', desc="motion parameters regression")
     highpass = traits.Float(
-        position=4, argstr='-h %f', desc='apply highpass of the motion '
+        argstr='-h %f', desc='apply highpass of the motion '
         'confound with <highpass> being full-width (2*sigma) in seconds.')
 
 
 class FSLFIXOutputSpec(TraitedSpec):
     output = File(exists=True, desc="cleaned output")
+    label_file = File(exists=True, desc="labelled components")
 
 
 class FSLFIX(FSLCommand):
@@ -121,13 +261,38 @@ class FSLFIX(FSLCommand):
     _cmd = 'fix'
     input_spec = FSLFIXInputSpec
     output_spec = FSLFIXOutputSpec
+    text_ext = '.txt'
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
         print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
-        outputs['output'] = os.path.abspath(
-            glob(self.inputs.feat_dir+'/filtered_func_data_clean.nii*')[0])
+        if self.inputs.all:
+            outputs['output'] = self._gen_filename('out_file')
+            outputs['label_file'] = self._gen_filename('label_file')
+        elif self.inputs.classification:
+            outputs['label_file'] = self._gen_filename('label_file')
+        elif self.inputs.regression:
+            outputs['output'] = self._gen_filename('out_file')
+        else:
+            outputs['output'] = self._gen_filename('out_file')
+            outputs['label_file'] = self._gen_filename('label_file')
         return outputs
+
+    def _gen_filename(self, name):
+        if isdefined(self.inputs.feat_dir):
+            cwd = self.inputs.feat_dir
+        elif isdefined(self.inputs.labelled_component):
+            cwd = '/'.join(self.inputs.labelled_component.split('/')[:-1])
+
+        if name == 'out_file':
+            fname = cwd+glob('/filtered_func_data_clean.nii*')[0]
+        elif name == 'label_file':
+            fid = os.path.basename(self.inputs.train_data).split('.RData')[0]
+            thr = str(self.inputs.component_threshold)
+            fname = cwd+'/fix4melview_'+fid+'_thr'+thr+self.text_ext
+        else:
+            assert False
+        return fname
 
 
 class FSLFixTrainingInputSpec(FSLCommandInputSpec):
