@@ -11,7 +11,9 @@ class TestMC(TestCase):
 
     def test_brain_mask(self):
         study = self.create_study(
-            MRIStudy, 'segmentation_study', input_datasets={
-                'ref_brain': Dataset('ref_brain', nifti_gz_format)})
-        study.segmentation_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('wm_seg.nii.gz', study.name)
+            CoregisteredEPIStudy, 'epi_reg_study', inputs={
+                'epi': Dataset('epi', nifti_gz_format),
+                'reference': Dataset('reference', nifti_gz_format),
+                'ref_wmseg': Dataset('wm', nifti_gz_format)})
+        study.epi_motion_mat_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('epi_motion_mats', study.name)
