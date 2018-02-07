@@ -9,7 +9,7 @@ from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.interfaces.mrtrix.transform import MRResize
-from nianalysis.interfaces.custom import DicomHeaderInfoExtraction
+from nianalysis.interfaces.custom.dicom import DicomHeaderInfoExtraction
 from nipype.interfaces.utility import Split
 
 

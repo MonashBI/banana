@@ -5,10 +5,10 @@ from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
 from nianalysis.citations import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirements import fsl5_req
-from nianalysis.study.base import set_dataset_specs
+from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
 from ..combined import CombinedStudy
-from nianalysis.interfaces.custom import (
+from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
 
@@ -50,11 +50,11 @@ class EPIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('moco', nifti_gz_format, motion_alignment_pipeline),
         DatasetSpec('moco_mat', directory_format, motion_alignment_pipeline),
         DatasetSpec('moco_par', text_format, motion_alignment_pipeline),
-        inherit_from=MRIStudy.dataset_specs())
+        inherit_from=MRIStudy.data_specs())
 
 
 class CoregisteredEPIStudy(CombinedStudy):
@@ -89,12 +89,9 @@ class CoregisteredEPIStudy(CombinedStudy):
     ref_bet_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    def ref_basic_preproc_pipeline(self, **options):
-        pipeline = CombinedStudy.TranslatedPipeline(
-            self, self.reference.basic_preproc_pipeline(
-                __name_prefix__='reference', **options),
-            default_options={'resolution': [1.0, 1.0, 1.0]})
-        return pipeline
+    ref_basic_preproc_pipeline = CombinedStudy.translate(
+        'reference', MRIStudy.basic_preproc_pipeline,
+        override_default_options={'resolution': [1.0, 1.0, 1.0]})
 
     epi_qform_transform_pipeline = CombinedStudy.translate(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
@@ -157,7 +154,7 @@ class CoregisteredEPIStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('epi', nifti_gz_format),
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('epi_preproc', nifti_gz_format,

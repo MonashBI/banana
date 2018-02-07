@@ -4,7 +4,7 @@ from nianalysis.study.base import set_dataset_specs
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.utils import Merge
-from nianalysis.interfaces.custom import PETdr, GlobalTrendRemoval
+from nianalysis.interfaces.francesco.custom import PETdr, GlobalTrendRemoval
 from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
                                      png_format)
 import os
