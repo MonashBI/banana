@@ -61,7 +61,7 @@ class CoregisteredStudy(Study):
             outputs=outputs,
             description="Registers a MR scan against a reference image",
             default_options={
-                'degrees_of_freedom': 6, 'cost_func': 'mutualinfo',
+                'degrees_of_freedom': 6, 'cost_func': 'normmi',
                 'qsform': False},
             version=1,
             citations=[fsl_cite],
