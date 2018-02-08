@@ -14,9 +14,9 @@ from nianalysis.interfaces.custom.motion_correction import (
 
 class EPIStudy(MRIStudy):
 
-    def brain_mask_pipeline(self, robust=True, threshold=0.2, **kwargs):
+    def brain_mask_pipeline(self, robust=True, f_threshold=0.2, **kwargs):
         return super(EPIStudy, self).brain_mask_pipeline(
-            robust=robust, threshold=threshold, **kwargs)
+            robust=robust, f_threshold=f_threshold, **kwargs)
 
     def motion_alignment_pipeline(self, **options):
 
@@ -89,9 +89,12 @@ class CoregisteredEPIStudy(CombinedStudy):
     ref_bet_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
+    ref_segmentation_pipeline = CombinedStudy.translate(
+        'reference', MRIStudy.segmentation_pipeline)
+
     ref_basic_preproc_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
-        override_default_options={'resolution': [1.0, 1.0, 1.0]})
+        override_default_options={'resolution': [1]})
 
     epi_qform_transform_pipeline = CombinedStudy.translate(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
@@ -135,18 +138,19 @@ class CoregisteredEPIStudy(CombinedStudy):
     def epi_motion_mat_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
-            name='motion_mat_calculation',
+            name='epi_motion_mat_calculation',
             inputs=[DatasetSpec('epi_epireg_mat', text_matrix_format),
                     DatasetSpec('epi_qform_mat', text_matrix_format),
                     DatasetSpec('epi_moco_mat', directory_format)],
             outputs=[DatasetSpec('epi_motion_mats', directory_format)],
-            description=("Motion matrices calculation"),
+            description=("EPI Motion matrices calculation"),
             default_options={},
             version=1,
             citations=[fsl_cite],
             options=options)
 
-        mm = pipeline.create_node(MotionMatCalculation(), name='motion_mats')
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='epi_motion_mats')
         pipeline.connect_input('epi_epireg_mat', mm, 'reg_mat')
         pipeline.connect_input('epi_qform_mat', mm, 'qform_mat')
         pipeline.connect_input('epi_moco_mat', mm, 'align_mats')
@@ -171,11 +175,10 @@ class CoregisteredEPIStudy(CombinedStudy):
                     epi_bet_pipeline),
         DatasetSpec('epi_qform_mat', text_matrix_format,
                     epi_qform_transform_pipeline),
-        DatasetSpec('ref_head', nifti_gz_format),
         DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
         DatasetSpec('ref_brain_mask', nifti_gz_format,
                     ref_bet_pipeline),
-        DatasetSpec('ref_wmseg', nifti_gz_format),
+        DatasetSpec('ref_wmseg', nifti_gz_format, ref_segmentation_pipeline),
         DatasetSpec('epi_epireg', nifti_gz_format, epireg_pipeline),
         DatasetSpec('epi_epireg_mat', text_matrix_format,
                     epireg_pipeline),
