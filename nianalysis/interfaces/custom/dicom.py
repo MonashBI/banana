@@ -38,6 +38,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
         ped = ''
         phase_offset = ''
         self.dict_output = {}
+        dwi_directions = None
 
         with open(list_dicom[0], 'r') as f:
             for line in f:
@@ -54,8 +55,13 @@ class DicomHeaderInfoExtraction(BaseInterface):
                             ped = 'ROW'
                         elif np.abs(phase_offset) < 1 or np.abs(phase_offset) > 3:
                             ped = 'COL'
+                elif 'lDiffDirections' in line:
+                    dwi_directions = float(line.split('=')[-1].strip())
         if multivol:
-            n_vols = len(list_dicom)
+            if dwi_directions:
+                n_vols = dwi_directions
+            else:
+                n_vols = len(list_dicom)
             real_duration = n_vols*tr
 
         hd = dicom.read_file(list_dicom[0])
