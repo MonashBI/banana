@@ -47,12 +47,13 @@ class DicomHeaderInfoExtraction(BaseInterface):
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
                     tr = float(line.split('=')[-1].strip())/1000000
-                elif 'SliceArray.asSlice[0].dInPlaneRot' and multivol:
-                    phase_offset = float(line.split('=')[-1].strip())
-                    if np.abs(phase_offset) > 1 and np.abs(phase_offset) < 3:
-                        ped = 'ROW'
-                    elif np.abs(phase_offset) < 1 or np.abs(phase_offset) > 3:
-                        ped = 'COL'
+                elif 'SliceArray.asSlice[0].dInPlaneRot' in line and multivol:
+                    if len(line.split('=')) > 1:
+                        phase_offset = float(line.split('=')[-1].strip())
+                        if np.abs(phase_offset) > 1 and np.abs(phase_offset) < 3:
+                            ped = 'ROW'
+                        elif np.abs(phase_offset) < 1 or np.abs(phase_offset) > 3:
+                            ped = 'COL'
         if multivol:
             n_vols = len(list_dicom)
             real_duration = n_vols*tr
@@ -65,10 +66,10 @@ class DicomHeaderInfoExtraction(BaseInterface):
                 start_time = str(hd.AcquisitionDateTime)[8:]
             except AttributeError:
                 raise Exception('No acquisition time found for this scan.')
-        self.dict_output['start_time'] = start_time
+        self.dict_output['start_time'] = str(start_time)
         self.dict_output['tr'] = tr
-        self.dict_output['total_duration'] = total_duration
-        self.dict_output['real_duration'] = real_duration
+        self.dict_output['total_duration'] = str(total_duration)
+        self.dict_output['real_duration'] = str(real_duration)
         self.dict_output['ped'] = ped
         self.dict_output['phase_offset'] = str(phase_offset)
 
@@ -79,7 +80,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
 
         outputs["start_time"] = self.dict_output['start_time']
         outputs["tr"] = self.dict_output['tr']
-        outputs["total_duration"] = self.dict_output['total_duration']
+        outputs["tot_duration"] = self.dict_output['total_duration']
         outputs["real_duration"] = self.dict_output['real_duration']
         outputs["ped"] = self.dict_output['ped']
         outputs["phase_offset"] = self.dict_output['phase_offset']
