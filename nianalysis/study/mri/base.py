@@ -20,7 +20,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='brain_mask',
-            inputs=[DatasetSpec('preproc', nifti_gz_format)],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
@@ -41,7 +41,7 @@ class MRIStudy(Study):
         bet.inputs.frac = pipeline.option('f_threshold')
         bet.inputs.vertical_gradient = pipeline.option('g_threshold')
         # Connect inputs/outputs
-        pipeline.connect_input('preproc', bet, 'in_file')
+        pipeline.connect_input('primary', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
@@ -188,7 +188,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            inputs=[DatasetSpec('masked', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
@@ -200,7 +200,7 @@ class MRIStudy(Study):
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
                                     name='fslswapdim')
         swap.inputs.new_dims = pipeline.option('new_dims')
-        pipeline.connect_input('primary', swap, 'in_file')
+        pipeline.connect_input('masked', swap, 'in_file')
         if pipeline.option('resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample")
             resample.inputs.voxel = pipeline.option('resolution')

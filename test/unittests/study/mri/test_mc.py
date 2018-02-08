@@ -1,5 +1,6 @@
 from nipype import config
 from nianalysis.study.mri.structural.t1 import CoregisteredT1Study
+from nianalysis.study.mri.structural.t2 import CoregisteredT2Study
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format  # @IgnorePep8
@@ -24,10 +25,18 @@ class TestMC(TestCase):
 #         self.assertField('ped', '', study.name)
 #         self.assertField('phase_offset', '', study.name)
 
-    def test_t1_mc(self):
+#     def test_t1_mc(self):
+#         study = self.create_study(
+#             CoregisteredT1Study, 't1_reg_study', inputs={
+#                 't1': Dataset('t1', nifti_gz_format),
+#                 'reference': Dataset('reference', nifti_gz_format)})
+#         study.t1_motion_mat_pipeline().run(work_dir=self.work_dir)
+#         self.assertDatasetCreated('t1_motion_mats', study.name)
+
+    def test_t2_mc(self):
         study = self.create_study(
-            CoregisteredT1Study, 't1_reg_study', inputs={
-                't1': Dataset('t1', nifti_gz_format),
-                'reference': Dataset('reference', nifti_gz_format)})
-        study.t1_motion_mat_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('t1_motion_mats', study.name)
+            CoregisteredT2Study, 't2_reg_study', inputs={
+                't2': Dataset('pd', nifti_gz_format),
+                'reference': Dataset('ref_2', nifti_gz_format)})
+        study.t2_motion_mat_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('t2_motion_mats', study.name)
