@@ -1,5 +1,5 @@
 from nipype import config
-from nianalysis.study.mri.T1w import CoregisteredT1WStudy
+from nianalysis.study.mri.structural.t1 import CoregisteredT1Study
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format  # @IgnorePep8
@@ -26,7 +26,7 @@ class TestMC(TestCase):
 
     def test_t1_mc(self):
         study = self.create_study(
-            CoregisteredT1WStudy, 't1_reg_study', inputs={
+            CoregisteredT1Study, 't1_reg_study', inputs={
                 't1': Dataset('t1', nifti_gz_format),
                 'reference': Dataset('reference', nifti_gz_format)})
         study.t1_motion_mat_pipeline().run(work_dir=self.work_dir)

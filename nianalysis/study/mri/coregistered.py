@@ -56,7 +56,7 @@ class CoregisteredStudy(Study):
         """
 
         pipeline = self.create_pipeline(
-            name='registration_fsl',
+            name='{}_fsl'.format(reg_type),
             inputs=self._registration_inputs,
             outputs=outputs,
             description="Registers a MR scan against a reference image",
