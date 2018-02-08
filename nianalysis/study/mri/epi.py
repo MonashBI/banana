@@ -75,8 +75,8 @@ class CoregisteredEPIStudy(CombinedStudy):
             'ref_brain_mask': 'brain_mask',
             'ref_wmseg': 'wm_seg'}),
         'coreg': (CoregisteredStudy, {
-            'epi_brain': 'to_register',
-            'ref_brain': 'reference',
+            'epi_preproc': 'to_register',
+            'ref_preproc': 'reference',
             'epi_qformed': 'qformed',
             'epi_qform_mat': 'qform_mat'})}
 
