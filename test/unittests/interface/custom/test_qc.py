@@ -7,7 +7,7 @@ from nianalysis.interfaces.custom.qc import QAMetrics
 logger = logging.getLogger('NiAnalysis')
 
 
-class TestQA(BaseTestCase):
+class TestQC(BaseTestCase):
 
     def test_subtract(self):
         # Create Zip node
@@ -15,6 +15,6 @@ class TestQA(BaseTestCase):
         metrics.inputs.in_file = os.path.join(self.session_dir,
                                               '32ch_mprage.nii')
         out = metrics.run()
-        self.assertEqual(out.outputs.snr, 1512.2964134062911)
-        self.assertEqual(out.outputs.uniformity, 39.737991266375545)
-        self.assertEqual(out.outputs.ghost_intensity, 29075.079125151788)
+        self.assertEqual(out.outputs.snr, 1244.1515362901298)
+        self.assertEqual(out.outputs.uniformity, 36.206896551724135)
+        self.assertEqual(out.outputs.ghost_intensity, 29126.8961658001)
