@@ -6,7 +6,7 @@ from nianalysis.study.mri.diffusion import DiffusionStudy
 from nianalysis.archive.local import LocalArchive
 from nianalysis.data_formats import mrtrix_format
 
-ARCHIVE_PATH = os.path.abspath(os.path.join(
+archive_path = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'tbi', ))
 BASE_WORK_PATH = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'work'))
@@ -19,7 +19,7 @@ os.makedirs(WORK_PATH)
 study = DiffusionStudy(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
-    archive=LocalArchive(ARCHIVE_PATH),
+    archive=LocalArchive(archive_path),
     input_scans={
         'dwi_scan': Dataset('R-L_60dir_b2000', mrtrix_format),
         'forward_rpe': Dataset('R-L_6dir_b0', mrtrix_format),
