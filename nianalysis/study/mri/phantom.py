@@ -2,7 +2,7 @@ from nianalysis.data_formats import dicom_format, nifti_format, nifti_gz_format
 from ..base import set_data_specs, Study
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.interfaces.francesco.custom.qc import QAMetrics
+from nianalysis.interfaces.custom.qc import QCMetrics
 
 
 class PhantomStudy(Study):
@@ -12,21 +12,21 @@ class PhantomStudy(Study):
         't1_32ch_signal_radius': 0.8,
         't1_32ch_ghost_radii': (1.1, 1.5),
         't1_32ch_background_radius': 1.8,
-        't1_32ch_z_extent': 0.8}
+        't1_32ch_z_extent': 0.5}
 
     t2_32ch_default_options = {
         't2_32ch_threshold': 0.25,
         't2_32ch_signal_radius': 0.8,
         't2_32ch_ghost_radii': (1.1, 1.5),
         't2_32ch_background_radius': 1.8,
-        't2_32ch_z_extent': 0.8}
+        't2_32ch_z_extent': 0.5}
 
     epi_32ch_default_options = {
         'epi_32ch_threshold': 0.25,
         'epi_32ch_signal_radius': 0.8,
         'epi_32ch_ghost_radii': (1.1, 1.5),
         'epi_32ch_background_radius': 1.8,
-        'epi_32ch_z_extent': 0.8}
+        'epi_32ch_z_extent': 0.5}
 
     def t1_32ch_qc_metrics_pipeline(self, **options):
         return self.qc_metrics_pipeline_factory('t1_32ch', **options)
@@ -54,7 +54,7 @@ class PhantomStudy(Study):
             version=1,
             citations=[],
             options=options)
-        metrics = pipeline.create_node(interface=QAMetrics(),
+        metrics = pipeline.create_node(interface=QCMetrics(),
                                        name=prefix('metrics'), wall_time=5)
         metrics.inputs.threshold = pipeline.option(prefix('threshold'))
         metrics.inputs.signal_radius = pipeline.option(prefix('signal_radius'))
