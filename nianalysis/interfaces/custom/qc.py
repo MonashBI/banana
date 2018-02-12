@@ -13,7 +13,7 @@ from nianalysis.exceptions import NiAnalysisError
 from operator import lt, ge
 
 
-class QAMetricsInputSpec(TraitedSpec):
+class QCMetricsInputSpec(TraitedSpec):
 
     in_file = File(mandatory=True, desc='input qc file')
 
@@ -57,7 +57,7 @@ class QAMetricsInputSpec(TraitedSpec):
         desc=("The masked \"background\" image used to calculate the SNR"))
 
 
-class QAMetricsOutputSpec(TraitedSpec):
+class QCMetricsOutputSpec(TraitedSpec):
 
     snr = traits.Float(desc='The SNR calculated from the QA phantom')
 
@@ -76,11 +76,11 @@ class QAMetricsOutputSpec(TraitedSpec):
                             " the SNR"))
 
 
-class QAMetrics(BaseInterface):
+class QCMetrics(BaseInterface):
     """Calculates the required metrics from the QA data"""
 
-    input_spec = QAMetricsInputSpec
-    output_spec = QAMetricsOutputSpec
+    input_spec = QCMetricsInputSpec
+    output_spec = QCMetricsOutputSpec
 
     def _run_interface(self, runtime):
         return runtime
@@ -145,6 +145,22 @@ class QAMetrics(BaseInterface):
             raise NiAnalysisError(
                 "No voxels in background mask. Background radius {} set too "
                 "high".format(self.inputs.background_radius))
+#         masked_signal = qc * signal_mask
+#         import matplotlib.pyplot as plt
+#         for z in range(58, 196):
+#             slce = qc[:, :, z]
+#             slice_mask = signal_mask[:, :, z]
+#             masked_slice = masked_signal[:, :, z]
+#             inverted = np.logical_xor(slice_mask, slce)
+#             plt.imshow(slce)
+#             plt.show()
+#             plt.imshow(slice_mask)
+#             plt.show()
+#             plt.imshow(masked_slice)
+#             plt.show()
+#             plt.imshow(inverted)
+#             plt.show()
+#             pass
         signal = qc[signal_mask]
         ghost = qc[ghost_mask]
         background = qc[background_mask]
