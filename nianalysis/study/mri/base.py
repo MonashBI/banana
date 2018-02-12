@@ -8,7 +8,8 @@ from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.interfaces.mrtrix.transform import MRResize
-from nianalysis.interfaces.custom.dicom import DicomHeaderInfoExtraction
+from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
+from nianalysis.interfaces.custom.motion_correction import PrepareDWI
 from nipype.interfaces.utility import Split
 
 
@@ -223,8 +224,8 @@ class MRIStudy(Study):
                      FieldSpec('real_duration', dtype=str),
                      FieldSpec('ped', dtype=str),
                      FieldSpec('phase_offset', dtype=str)],
-            description=("Dimensions swapping to ensure that all the images "
-                         "have the same orientations."),
+            description=("Pipeline to extract the most important scan "
+                         "information from the image header"),
             default_options={},
             version=1,
             citations=[],
@@ -243,6 +244,29 @@ class MRIStudy(Study):
         pipeline.connect_output('phase_offset', hd_extraction, 'phase_offset')
         pipeline.assert_connected()
         return pipeline
+
+    def distortion_correction_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='pe_distortion_correction',
+            inputs=[DatasetSpec('dicom_dwi', dicom_format),
+                    DatasetSpec('dicom_dwi_1', dicom_format),
+                    FieldSpec('ped', dtype=str),
+                    FieldSpec('phase_offset', dtype=str)],
+            outputs=[FieldSpec('tr', dtype=float),
+                     FieldSpec('start_time', dtype=str),
+                     FieldSpec('tot_duration', dtype=str),
+                     FieldSpec('real_duration', dtype=str),
+                     FieldSpec('ped', dtype=str),
+                     FieldSpec('phase_offset', dtype=str)],
+            description=("Dimensions swapping to ensure that all the images "
+                         "have the same orientations."),
+            default_options={},
+            version=1,
+            citations=[],
+            options=options)
+
+        prep_dwi1 = pipeline.create_node(PrepareDWI(), name='prepare_dwi_1')
 
     _data_specs = set_data_specs(
         DatasetSpec('primary', nifti_gz_format),

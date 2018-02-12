@@ -6,6 +6,7 @@ from nipype.utils.filemanip import split_filename
 import os
 import glob
 import shutil
+import nibabel as nib
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -106,5 +107,60 @@ class MergeListMotionMat(BaseInterface):
         file_list = self.inputs.file_list
         pth, _, _ = split_filename(file_list[0])
         outputs["out_dir"] = pth+'/motion_mats'
+
+        return outputs
+
+
+class PrepareDWIInputSpec(BaseInterfaceInputSpec):
+
+    pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction')
+    phase_offset = traits.Str(mandatory=True, desc='phase offset')
+    dwi = File(mandatory=True, exists=True)
+
+
+class PrepareDWIOutputSpec(TraitedSpec):
+
+    pe = traits.Str(desc='Phase encoding direction.')
+    main = traits.Bool(desc='True if input image is a main dwi acquisition.')
+
+
+class PrepareDWI(BaseInterface):
+
+    input_spec = PrepareDWIInputSpec
+    output_spec = PrepareDWIOutputSpec
+
+    def _run_interface(self, runtime):
+
+        self.dict_output = {}
+        pe_dir = self.inputs.pe_dir
+        phase_offset = self.inputs.phase_offset
+        dwi = nib.load(self.inputs.dwi)
+        dwi = dwi.get_data()
+        if pe_dir == 'ROW':
+            if np.sign(phase_offset) == -1:
+                self.dict_output['pe'] = 'RL'
+            else:
+                self.dict_output['pe'] = 'LR'
+        elif pe_dir == 'COL':
+            if phase_offset < 1:
+                self.dict_output['pe'] = 'AP'
+            else:
+                self.dict_output['pe'] = 'PA'
+        else:
+            raise Exception('Phase encoding direction cannot be establish by '
+                            'looking at the header. DWI pre-processing will '
+                            'not be performed.')
+        if len(dwi.shape) == 4:
+            self.dict_output['main'] = True
+        elif len(dwi.shape) == 3:
+            self.dict_output['main'] = False
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["pe"] = self.dict_output['pe']
+        outputs["main"] = self.dict_output['main']
 
         return outputs
