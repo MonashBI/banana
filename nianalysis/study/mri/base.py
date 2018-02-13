@@ -331,6 +331,7 @@ class MRIStudy(Study):
             pipeline.connect(check_name, 'main', dwipreproc, 'in_file')
 
             pipeline.connect_output('dwipreproc', dwipreproc, 'out_file')
+            pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
         pipeline.assert_connected()
         return pipeline
 
