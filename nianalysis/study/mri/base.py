@@ -3,7 +3,8 @@ from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
-from nianalysis.data_formats import (nifti_gz_format, dicom_format)
+from nianalysis.data_formats import (nifti_gz_format, dicom_format,
+                                     eddy_par_format)
 from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std, ExtractROI
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
@@ -251,15 +252,37 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def distortion_correction_pipeline(self, eddy=True, **options):
+    def eddy_pipeline(self, preproc_type='eddy', **options):
+
+        dwi_preproc_inputs = [DatasetSpec('dicom_dwi', dicom_format),
+                              DatasetSpec('dicom_dwi_1', dicom_format)]
+        dwi_preproc_outputs = [DatasetSpec('dwipreproc', nifti_gz_format),
+                               DatasetSpec('eddy_par', eddy_par_format)]
+        pipeline = self._dwi_preprocessing_pipeline(
+            dwi_preproc_inputs, dwi_preproc_outputs,
+            preproc_type=preproc_type, **options)
+        return pipeline
+
+    def topup_pipeline(self, preproc_type='topup', **options):
+
+        dwi_preproc_inputs = [DatasetSpec('dwi', nifti_gz_format),
+                              DatasetSpec('dwi_1', nifti_gz_format)]
+        dwi_preproc_outputs = [DatasetSpec('dwi_distorted1', nifti_gz_format),
+                               DatasetSpec('dwi_distorted2', nifti_gz_format)]
+        pipeline = self._dwi_preprocessing_pipeline(
+            dwi_preproc_inputs, dwi_preproc_outputs,
+            preproc_type=preproc_type, **options)
+        return pipeline
+
+    def _dwi_preprocessing_pipeline(self, inputs, outputs, preproc_type='eddy',
+                                    **options):
 
         pipeline = self.create_pipeline(
-            name='pe_distortion_correction',
-            inputs=[DatasetSpec('dicom_dwi', dicom_format),
-                    DatasetSpec('dicom_dwi_1', dicom_format)],
+            name='dwi_preprocessing',
+            inputs=inputs,
 #                     FieldSpec('ped', dtype=str),
 #                     FieldSpec('phase_offset', dtype=str)],
-            outputs=[DatasetSpec('dwipreproc', nifti_gz_format)],
+            outputs=outputs,
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
             default_options={},
@@ -267,7 +290,7 @@ class MRIStudy(Study):
             citations=[],
             options=options)
 
-        if eddy:
+        if preproc_type == 'eddy':
             converter1 = pipeline.create_node(Dcm2niix(), name='converter1')
             converter1.inputs.compression = 'y'
             pipeline.connect_input('dicom_dwi', converter1, 'input_dir')
@@ -301,8 +324,8 @@ class MRIStudy(Study):
             pipeline.connect(merge_outputs, 'out', merge, 'in_files')
             dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
             dwipreproc.inputs.eddy_options = '--data_is_shelled '
-            dwipreproc.inputs.out_file = 'dwi_preproc.nii.gz'
             dwipreproc.inputs.rpe_pair = True
+            dwipreproc.inputs.out_file_ext = '.nii.gz'
             pipeline.connect(merge, 'merged_file', dwipreproc, 'se_epi')
             pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
             pipeline.connect(check_name, 'main', dwipreproc, 'in_file')
@@ -321,8 +344,8 @@ class MRIStudy(Study):
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
-        DatasetSpec('dwipreproc', nifti_gz_format,
-                    distortion_correction_pipeline),
+        DatasetSpec('dwipreproc', nifti_gz_format, eddy_pipeline),
+        DatasetSpec('eddy_par', eddy_par_format, eddy_pipeline),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),

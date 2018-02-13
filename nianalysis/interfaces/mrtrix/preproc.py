@@ -21,6 +21,8 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
     out_file = File(
         genfile=True, argstr='%s', position=2, hash_files=False,
         desc="Output preprocessed filename")
+    out_file_ext = traits.Str(
+        desc='Specify the extention for the final output')
     rpe_pair = traits.Bool(
         mandatory=False, argstr="-rpe_pair",
         desc=("forward reverse Provide a pair of images to use for "
@@ -47,6 +49,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
 
 class DWIPreprocOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Pre-processed DWI dataset')
+    eddy_parameters = File(exists=True, desc='File with eddy parameters')
 
 
 class DWIPreproc(MRTrix3Base):
@@ -56,8 +59,11 @@ class DWIPreproc(MRTrix3Base):
     output_spec = DWIPreprocOutputSpec
 
     def _list_outputs(self):
+
         outputs = self.output_spec().get()
         outputs['out_file'] = self._gen_outfilename()
+        outputs['eddy_parameters'] = os.path.join(
+            os.getcwd(), 'dwi_post_eddy.eddy_parameters')
         return outputs
 
     def _gen_filename(self, name):
@@ -73,8 +79,12 @@ class DWIPreproc(MRTrix3Base):
         else:
             base, ext = split_extension(
                 os.path.basename(self.inputs.in_file))
+            if isdefined(self.inputs.out_file_ext):
+                extension = self.inputs.out_file_ext
+            else:
+                extension = ext
             out_name = os.path.join(
-                os.getcwd(), "{}_preproc{}".format(base, ext))
+                os.getcwd(), "{}_preproc{}".format(base, extension))
         return out_name
 
 
