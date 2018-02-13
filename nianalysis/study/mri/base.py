@@ -5,7 +5,8 @@ from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format)
 from nianalysis.requirements import fsl5_req
-from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std, ExtractROI, Merge
+from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std, ExtractROI
+from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.interfaces.mrtrix.transform import MRResize
@@ -13,7 +14,7 @@ from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nianalysis.interfaces.custom.motion_correction import (PrepareDWI,
                                                             CheckDwiNames)
 from nipype.interfaces.utility import Split
-from nianalysis.interfaces.utils import Merge as merge_list
+import nianalysis.interfaces.utils as nau
 from nianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nianalysis.interfaces.converters import Dcm2niix
 
@@ -255,9 +256,9 @@ class MRIStudy(Study):
         pipeline = self.create_pipeline(
             name='pe_distortion_correction',
             inputs=[DatasetSpec('dicom_dwi', dicom_format),
-                    DatasetSpec('dicom_dwi_1', dicom_format),
-                    FieldSpec('ped', dtype=str),
-                    FieldSpec('phase_offset', dtype=str)],
+                    DatasetSpec('dicom_dwi_1', dicom_format)],
+#                     FieldSpec('ped', dtype=str),
+#                     FieldSpec('phase_offset', dtype=str)],
             outputs=[DatasetSpec('dwipreproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
@@ -268,14 +269,18 @@ class MRIStudy(Study):
 
         if eddy:
             converter1 = pipeline.create_node(Dcm2niix(), name='converter1')
+            converter1.inputs.compression = 'y'
             pipeline.connect_input('dicom_dwi', converter1, 'input_dir')
             converter2 = pipeline.create_node(Dcm2niix(), name='converter2')
+            converter2.inputs.compression = 'y'
             pipeline.connect_input('dicom_dwi_1', converter2, 'input_dir')
             prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
+            prep_dwi.inputs.pe_dir = 'ROW'
+            prep_dwi.inputs.phase_offset = '1.5'
             pipeline.connect(converter1, 'converted', prep_dwi, 'dwi')
             pipeline.connect(converter2, 'converted', prep_dwi, 'dwi1')
-            pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-            pipeline.connect_input('phase_offset', prep_dwi, 'phase_offset')
+#             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
+#             pipeline.connect_input('phase_offset', prep_dwi, 'phase_offset')
 
             check_name = pipeline.create_node(CheckDwiNames(),
                                               name='check_names')
@@ -287,11 +292,11 @@ class MRIStudy(Study):
             roi.inputs.t_size = 1
             pipeline.connect(prep_dwi, 'main', roi, 'in_file')
 
-            merge_outputs = pipeline.create_node(merge_list(),
+            merge_outputs = pipeline.create_node(nau.iter.Merge(),
                                                  name='merge_files')
             pipeline.connect(roi, 'roi_file', merge_outputs, 'in1')
             pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
-            merge = pipeline.create_node(Merge(), name='fsl_merge')
+            merge = pipeline.create_node(fsl_merge(), name='fsl_merge')
             merge.inputs.dimension = 't'
             pipeline.connect(merge_outputs, 'out', merge, 'in_files')
             dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
