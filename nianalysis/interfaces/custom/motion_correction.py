@@ -168,6 +168,7 @@ class PrepareDWI(BaseInterface):
 
         outputs["pe"] = self.dict_output['pe']
         outputs["main"] = self.dict_output['main']
+        outputs["secondary"] = self.dict_output['secondary']
 
         return outputs
 
