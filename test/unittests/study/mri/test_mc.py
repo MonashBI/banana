@@ -50,8 +50,9 @@ class TestMC(TestCase):
             MRIStudy, 'dwi_study', inputs={
                 'dicom_dwi': Dataset('dwi_main', dicom_format),
                 'dicom_dwi_1': Dataset('dwi_1', dicom_format)})
-        study.distortion_correction_pipeline().run(work_dir=self.work_dir)
+        study.eddy_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('dwipreproc.nii.gz', study.name)
+        self.assertDatasetCreated('eddy_par.eddy_parameters', study.name)
 
 #     def test_t2_mc(self):
 #         study = self.create_study(
