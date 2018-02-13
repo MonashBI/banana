@@ -14,7 +14,7 @@ from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nianalysis.interfaces.custom.motion_correction import (PrepareDWI,
                                                             CheckDwiNames)
 from nipype.interfaces.utility import Split
-import nianalysis.interfaces.utils as nau
+from nipype.interfaces.utility import Merge as merge_lists
 from nianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nianalysis.interfaces.converters import Dcm2niix
 
@@ -276,7 +276,7 @@ class MRIStudy(Study):
             pipeline.connect_input('dicom_dwi_1', converter2, 'input_dir')
             prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
             prep_dwi.inputs.pe_dir = 'ROW'
-            prep_dwi.inputs.phase_offset = '1.5'
+            prep_dwi.inputs.phase_offset = '-1.5'
             pipeline.connect(converter1, 'converted', prep_dwi, 'dwi')
             pipeline.connect(converter2, 'converted', prep_dwi, 'dwi1')
 #             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
@@ -292,7 +292,7 @@ class MRIStudy(Study):
             roi.inputs.t_size = 1
             pipeline.connect(prep_dwi, 'main', roi, 'in_file')
 
-            merge_outputs = pipeline.create_node(nau.iter.Merge(),
+            merge_outputs = pipeline.create_node(merge_lists(2),
                                                  name='merge_files')
             pipeline.connect(roi, 'roi_file', merge_outputs, 'in1')
             pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
@@ -302,6 +302,7 @@ class MRIStudy(Study):
             dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
             dwipreproc.inputs.eddy_options = '--data_is_shelled '
             dwipreproc.inputs.out_file = 'dwi_preproc.nii.gz'
+            dwipreproc.inputs.rpe_pair = True
             pipeline.connect(merge, 'merged_file', dwipreproc, 'se_epi')
             pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
             pipeline.connect(check_name, 'main', dwipreproc, 'in_file')
