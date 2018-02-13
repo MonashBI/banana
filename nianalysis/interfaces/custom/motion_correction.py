@@ -1,4 +1,3 @@
-
 from __future__ import absolute_import
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, File, TraitedSpec, Directory)
@@ -136,7 +135,7 @@ class PrepareDWI(BaseInterface):
 
         self.dict_output = {}
         pe_dir = self.inputs.pe_dir
-        phase_offset = self.inputs.phase_offset
+        phase_offset = float(self.inputs.phase_offset)
         dwi = nib.load(self.inputs.dwi)
         dwi = dwi.get_data()
         dwi1 = nib.load(self.inputs.dwi1)
@@ -168,6 +167,45 @@ class PrepareDWI(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["pe"] = self.dict_output['pe']
+        outputs["main"] = self.dict_output['main']
+
+        return outputs
+
+
+class CheckDwiNamesInputSpec(BaseInterfaceInputSpec):
+
+    dicom_dwi = Directory()
+    dicom_dwi1 = Directory()
+    nifti_dwi = File()
+
+
+class CheckDwiNamesOutputSpec(TraitedSpec):
+
+    main = Directory()
+
+
+class CheckDwiNames(BaseInterface):
+
+    input_spec = CheckDwiNamesInputSpec
+    output_spec = CheckDwiNamesOutputSpec
+
+    def _run_interface(self, runtime):
+
+        dwi = self.inputs.dicom_dwi
+        dwi1 = self.inputs.dicom_dwi1
+        nifti = self.inputs.nifti_dwi
+        self.dict_output = {}
+
+        if nifti.split('/')[-1].split('.')[0] in dwi:
+            self.dict_output['main'] = self.inputs.dicom_dwi
+        elif nifti.split('/')[-1].split('.')[0] in dwi1:
+            self.dict_output['main'] = self.inputs.dicom_dwi1
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
         outputs["main"] = self.dict_output['main']
 
         return outputs
