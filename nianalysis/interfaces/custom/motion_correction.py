@@ -7,6 +7,7 @@ import os
 import glob
 import shutil
 import nibabel as nib
+from nipype.interfaces.traits_extension import isdefined
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -124,6 +125,8 @@ class PrepareDWIOutputSpec(TraitedSpec):
     pe = traits.Str(desc='Phase encoding direction.')
     main = File(desc='4D dwi scan for eddy.')
     secondary = File(desc='3D dwi scan for distortion correction.')
+    pe_1 = traits.Str(
+        desc='Phase encoding direction second dwi.', default=None)
 
 
 class PrepareDWI(BaseInterface):
@@ -160,6 +163,10 @@ class PrepareDWI(BaseInterface):
         elif len(dwi.shape) == 3 and len(dwi1.shape) == 4:
             self.dict_output['main'] = self.inputs.dwi1
             self.dict_output['secondary'] = self.inputs.dwi
+        elif len(dwi.shape) == 3 and len(dwi1.shape) == 3:
+            self.dict_output['main'] = self.inputs.dwi1
+            self.dict_output['secondary'] = self.inputs.dwi
+            self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
 
         return runtime
 
@@ -169,6 +176,8 @@ class PrepareDWI(BaseInterface):
         outputs["pe"] = self.dict_output['pe']
         outputs["main"] = self.dict_output['main']
         outputs["secondary"] = self.dict_output['secondary']
+        if isdefined(self.dict_output['pe_1']):
+            outputs["pe_1"] = self.dict_output['pe_1']
 
         return outputs
 
@@ -208,5 +217,68 @@ class CheckDwiNames(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["main"] = self.dict_output['main']
+
+        return outputs
+
+
+class GenTopupConfigFilesInputSpec(BaseInterfaceInputSpec):
+
+    ped = traits.Str(desc='phase encoding direction for the main image')
+
+
+class GenTopupConfigFilesOutputSpec(TraitedSpec):
+
+    config_file = File(exists=True, desc='configuration file for topup')
+    apply_topup_config = File(
+        exists=True, desc='configuration file for apply_topup')
+
+
+class GenTopupConfigFiles(BaseInterface):
+
+    input_spec = GenTopupConfigFilesInputSpec
+    output_spec = GenTopupConfigFilesOutputSpec
+
+    def _run_interface(self, runtime):
+
+        ped = self.inputs.ped
+
+        if ped == 'RL':
+            with open('config_file.txt', 'w') as f:
+                f.write('-1 0 0 1 \n1 0 0 1')
+            f.close()
+            with open('apply_topup_config_file.txt', 'w') as f:
+                f.write('-1 0 0 1')
+            f.close()
+        elif ped == 'LR':
+            with open('config_file.txt', 'w') as f:
+                f.write('1 0 0 1 \n-1 0 0 1')
+            f.close()
+            with open('apply_topup_config_file.txt', 'w') as f:
+                f.write('1 0 0 1')
+            f.close()
+        elif ped == 'AP':
+            with open('config_file.txt', 'w') as f:
+                f.write('0 -1 0 1 \n0 1 0 1')
+            f.close()
+            with open('apply_topup_config_file.txt', 'w') as f:
+                f.write('0 -1 0 1')
+            f.close()
+        elif ped == 'AP':
+            with open('config_file.txt', 'w') as f:
+                f.write('0 1 0 1 \n0 -1 0 1')
+            f.close()
+            with open('apply_topup_config_file.txt', 'w') as f:
+                f.write('0 1 0 1')
+            f.close()
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["config_file"] = os.path.join(
+            os.getcwd(), 'config_file.txt')
+        outputs["apply_topup_config"] = os.path.join(
+            os.getcwd(), 'apply_topup_config_file.txt')
 
         return outputs

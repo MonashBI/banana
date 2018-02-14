@@ -45,6 +45,10 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
         position=3)
     eddy_options = traits.Str(
         argstr='-eddy_options "%s"', desc='options to be passed to eddy')
+    no_clean_up = traits.Bool(argstr='-nocleanup', default=True,
+                              desc='Do not delete the temporary folder')
+    temp_dir = Directory(genfile=True, argstr='-tempdir %s',
+                         desc="Specify the temporay directory")
 
 
 class DWIPreprocOutputSpec(TraitedSpec):
@@ -60,15 +64,19 @@ class DWIPreproc(MRTrix3Base):
 
     def _list_outputs(self):
 
+        dirname = self.inputs.temp_dir
         outputs = self.output_spec().get()
         outputs['out_file'] = self._gen_outfilename()
         outputs['eddy_parameters'] = os.path.join(
-            os.getcwd(), 'dwi_post_eddy.eddy_parameters')
+            os.getcwd(), dirname, 'dwi_post_eddy.eddy_parameters')
         return outputs
 
     def _gen_filename(self, name):
         if name == 'out_file':
             gen_name = self._gen_outfilename()
+        elif name == 'temp_dir':
+            dirname = self.inputs.temp_dir
+            gen_name = os.path.join(os.getcwd(), dirname)
         else:
             assert False
         return gen_name
