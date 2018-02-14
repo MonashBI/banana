@@ -8,7 +8,6 @@ from nianalysis.data_formats import (nifti_gz_format, dicom_format,
 from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import (
     FLIRT, FNIRT, Reorient2Std, ExtractROI, TOPUP, ApplyTOPUP)
-from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.interfaces.mrtrix.transform import MRResize
@@ -16,9 +15,6 @@ from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nipype.interfaces.utility import Split
-from nipype.interfaces.utility import Merge as merge_lists
-from nianalysis.interfaces.mrtrix.preproc import DWIPreproc
-from nianalysis.interfaces.converters import Dcm2niix
 
 
 class MRIStudy(Study):
@@ -221,11 +217,11 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def header_info_extraction_pipeline(self, **options):
+    def header_info_extraction_pipeline(self, dcm_in, **options):
 
         pipeline = self.create_pipeline(
             name='header_info_extraction',
-            inputs=[DatasetSpec('dicom_file', dicom_format)],
+            inputs=dcm_in,
             outputs=[FieldSpec('tr', dtype=float),
                      FieldSpec('start_time', dtype=str),
                      FieldSpec('tot_duration', dtype=str),
@@ -253,115 +249,6 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def eddy_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='dwi_eddy',
-            inputs=[DatasetSpec('dicom_dwi', dicom_format),
-                    DatasetSpec('dicom_dwi_1', dicom_format)],
-#                     FieldSpec('ped', dtype=str),
-#                     FieldSpec('phase_offset', dtype=str)],
-            outputs=[DatasetSpec('dwipreproc', nifti_gz_format),
-                     DatasetSpec('eddy_par', eddy_par_format)],
-            description=("Dimensions swapping to ensure that all the images "
-                         "have the same orientations."),
-            default_options={},
-            version=1,
-            citations=[],
-            options=options)
-
-        converter1 = pipeline.create_node(Dcm2niix(), name='converter1')
-        converter1.inputs.compression = 'y'
-        pipeline.connect_input('dicom_dwi', converter1, 'input_dir')
-        converter2 = pipeline.create_node(Dcm2niix(), name='converter2')
-        converter2.inputs.compression = 'y'
-        pipeline.connect_input('dicom_dwi_1', converter2, 'input_dir')
-        prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
-        prep_dwi.inputs.pe_dir = 'ROW'
-        prep_dwi.inputs.phase_offset = '-1.5'
-        pipeline.connect(converter1, 'converted', prep_dwi, 'dwi')
-        pipeline.connect(converter2, 'converted', prep_dwi, 'dwi1')
-#             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-#             pipeline.connect_input('phase_offset', prep_dwi, 'phase_offset')
-
-        check_name = pipeline.create_node(CheckDwiNames(),
-                                          name='check_names')
-        pipeline.connect(prep_dwi, 'main', check_name, 'nifti_dwi')
-        pipeline.connect_input('dicom_dwi', check_name, 'dicom_dwi')
-        pipeline.connect_input('dicom_dwi_1', check_name, 'dicom_dwi1')
-        roi = pipeline.create_node(ExtractROI(), name='extract_roi')
-        roi.inputs.t_min = 0
-        roi.inputs.t_size = 1
-        pipeline.connect(prep_dwi, 'main', roi, 'in_file')
-
-        merge_outputs = pipeline.create_node(merge_lists(2),
-                                             name='merge_files')
-        pipeline.connect(roi, 'roi_file', merge_outputs, 'in1')
-        pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
-        merge = pipeline.create_node(fsl_merge(), name='fsl_merge')
-        merge.inputs.dimension = 't'
-        pipeline.connect(merge_outputs, 'out', merge, 'in_files')
-        dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
-        dwipreproc.inputs.eddy_options = '--data_is_shelled '
-        dwipreproc.inputs.rpe_pair = True
-        dwipreproc.inputs.out_file_ext = '.nii.gz'
-        dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
-        pipeline.connect(merge, 'merged_file', dwipreproc, 'se_epi')
-        pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
-        pipeline.connect(check_name, 'main', dwipreproc, 'in_file')
-
-        pipeline.connect_output('dwipreproc', dwipreproc, 'out_file')
-        pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-
-        pipeline.assert_connected()
-        return pipeline
-
-    def topup_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='dwi_topup',
-            inputs=[DatasetSpec('dwi', nifti_gz_format),
-                    DatasetSpec('dwi_1', nifti_gz_format)],
-            outputs=[DatasetSpec('dwi_distorted1', nifti_gz_format),
-                     DatasetSpec('dwi_distorted2', nifti_gz_format)],
-            description=("Dimensions swapping to ensure that all the images "
-                         "have the same orientations."),
-            default_options={},
-            version=1,
-            citations=[],
-            options=options)
-
-        prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
-        prep_dwi.inputs.pe_dir = 'ROW'
-        prep_dwi.inputs.phase_offset = '-1.5'
-        pipeline.connect_input('dwi', prep_dwi, 'dwi')
-        pipeline.connect_input('dwi_1', prep_dwi, 'dwi1')
-        ped1 = pipeline.create_node(GenTopupConfigFiles(), name='gen_config1')
-        pipeline.connect(prep_dwi, 'pe', ped1, 'ped')
-        merge_outputs1 = pipeline.create_node(merge_lists(2),
-                                              name='merge_files1')
-        pipeline.connect(prep_dwi, 'main', merge_outputs1, 'in1')
-        pipeline.connect(prep_dwi, 'secondary', merge_outputs1, 'in2')
-        merge1 = pipeline.create_node(fsl_merge(), name='fsl_merge1')
-        merge1.inputs.dimension = 't'
-        pipeline.connect(merge_outputs1, 'out', merge1, 'in_files')
-        topup1 = pipeline.create_node(TOPUP(), name='topup1')
-        pipeline.connect(merge1, 'merged_file', topup1, 'in_file')
-        pipeline.connect(ped1, 'config_file', topup1, 'encoding_file')
-        in_apply_tp1 = pipeline.create_node(merge_lists(1),
-                                            name='in_apply_tp1')
-        pipeline.connect(prep_dwi, 'main', in_apply_tp1, 'in1')
-        apply_topup1 = pipeline.create_node(ApplyTOPUP(), name='applytopup1')
-        apply_topup1.inputs.method = 'jac'
-        apply_topup1.inputs.in_index = [1]
-        pipeline.connect(in_apply_tp1, 'out', apply_topup1, 'in_files')
-        pipeline.connect(
-            ped1, 'apply_topup_config', apply_topup1, 'encoding_file')
-        pipeline.connect(topup1, 'out_movpar', apply_topup1, 'in_topup_movpar')
-        pipeline.connect(
-            topup1, 'out_fieldcoef', apply_topup1, 'in_topup_fieldcoef')
-        return pipeline
-
     _data_specs = set_data_specs(
         DatasetSpec('primary', nifti_gz_format),
         DatasetSpec('dicom_dwi', dicom_format),
@@ -372,8 +259,6 @@ class MRIStudy(Study):
         DatasetSpec('brain_mask', nifti_gz_format, brain_mask_pipeline),
         DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     coregister_to_atlas_pipeline),
-        DatasetSpec('dwipreproc', nifti_gz_format, eddy_pipeline),
-        DatasetSpec('eddy_par', eddy_par_format, eddy_pipeline),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),

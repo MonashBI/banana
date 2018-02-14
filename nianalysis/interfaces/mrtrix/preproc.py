@@ -45,7 +45,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
         position=3)
     eddy_options = traits.Str(
         argstr='-eddy_options "%s"', desc='options to be passed to eddy')
-    no_clean_up = traits.Bool(argstr='-nocleanup', default=True,
+    no_clean_up = traits.Bool(argstr='-nocleanup',
                               desc='Do not delete the temporary folder')
     temp_dir = Directory(genfile=True, argstr='-tempdir %s',
                          desc="Specify the temporay directory")

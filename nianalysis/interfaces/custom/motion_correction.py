@@ -7,7 +7,7 @@ import os
 import glob
 import shutil
 import nibabel as nib
-from nipype.interfaces.traits_extension import isdefined
+from nipype.interfaces.base import isdefined
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
