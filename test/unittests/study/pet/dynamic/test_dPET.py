@@ -3,7 +3,7 @@ from nipype import config
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import (nifti_gz_format) # @IgnorePep8
-from nianalysis.study.pet.dynamic.dPET import DynamicPETStudy  # @IgnorePep8
+from mbianalysis.study.pet.dynamic.dPET import DynamicPETStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 
 

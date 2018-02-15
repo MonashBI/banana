@@ -1,14 +1,14 @@
 from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor
-from nianalysis.interfaces.mrtrix import (
+from mbianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, EstimateFOD, ResponseSD, DWIIntensityNorm, AverageResponse)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
-from nianalysis.interfaces.noddi import (
+from mbianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from .t2 import T2Study
-from nianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
+from mbianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from nianalysis.interfaces.utils import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
 from nianalysis.citations import (
@@ -22,7 +22,7 @@ from nianalysis.requirements import (
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_data_specs
 from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.iterators import SelectSession
+from mbianalysis.interfaces.iterators import SelectSession
 
 
 class DiffusionStudy(T2Study):

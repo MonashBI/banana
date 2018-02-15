@@ -5,7 +5,7 @@ from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 from nianalysis.data_formats import zip_format  # @IgnorePep8
-from nianalysis.study.mri.structural.t2star import T2StarStudy  # @IgnorePep8
+from mbianalysis.study.mri.structural.t2star import T2StarStudy  # @IgnorePep8
 
 logger = logging.getLogger('NiAnalysis')
 

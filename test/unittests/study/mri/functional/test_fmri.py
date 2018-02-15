@@ -5,7 +5,7 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import (nifti_gz_format, rdata_format, zip_format, # @IgnorePep8
                                      directory_format, targz_format, par_format) # @IgnorePep8
-from nianalysis.study.mri.functional.fmri import FunctionalMRIStudy  # @IgnorePep8
+from mbianalysis.study.mri.functional.fmri import FunctionalMRIStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 
 

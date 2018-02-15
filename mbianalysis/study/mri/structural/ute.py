@@ -7,10 +7,10 @@ from nipype.interfaces.fsl.maths import (
     UnaryMaths, BinaryMaths, MultiImageMaths, Threshold)
 from nipype.interfaces.spm.preprocess import NewSegment
 from nipype.interfaces.utility.base import Select
-from nianalysis.interfaces.umap_calc import CoreUmapCalc
-from nianalysis.interfaces.converters import Nii2Dicom
-from nianalysis.interfaces.mrtrix.utils import MRConvert
-from nianalysis.interfaces.utils.os import (
+from mbianalysis.interfaces.umap_calc import CoreUmapCalc
+from mbianalysis.interfaces.converters import Nii2Dicom
+from mbianalysis.interfaces.mrtrix.utils import MRConvert
+from nianalysis.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)
 
 from nianalysis.citations import (

@@ -4,7 +4,7 @@ from nianalysis.citations import (
 from nianalysis.data_formats import directory_format, nifti_gz_format
 from nianalysis.study.base import set_data_specs
 from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.qsm import STI, STI_DE, Prepare
+from mbianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
 from nipype.interfaces import fsl
 

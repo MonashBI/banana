@@ -8,7 +8,7 @@ from nianalysis.requirements import fsl5_req
 from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
 from ..combined import CombinedStudy
-from nianalysis.interfaces.custom.motion_correction import (
+from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
 

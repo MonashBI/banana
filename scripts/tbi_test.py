@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from nianalysis.dataset import Dataset
-from nianalysis.study.mri.diffusion import DiffusionStudy
+from mbianalysis.study.mri.diffusion import DiffusionStudy
 from nianalysis.archive.local import LocalArchive
 from nianalysis.data_formats import mrtrix_format
 
