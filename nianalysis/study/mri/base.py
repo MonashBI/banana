@@ -267,13 +267,13 @@ class MRIStudy(Study):
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
         DatasetSpec('dicom_file', dicom_format),
         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', dtype=str,
+        FieldSpec('start_time', str,
                   pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', dtype=str,
+        FieldSpec('real_duration', str,
                   pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', dtype=str,
+        FieldSpec('tot_duration', str,
                   pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', dtype=str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('pe_angle', dtype=str,
+        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline)
         )
