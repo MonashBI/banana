@@ -8,6 +8,7 @@ import glob
 import shutil
 import nibabel as nib
 from nipype.interfaces.base import isdefined
+import scipy.ndimage.measurements as snm
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -291,5 +292,107 @@ class GenTopupConfigFiles(BaseInterface):
             os.getcwd(), 'config_file.txt')
         outputs["apply_topup_config"] = os.path.join(
             os.getcwd(), 'apply_topup_config_file.txt')
+
+        return outputs
+
+
+class AffineMatrixGenerationInputSpec(BaseInterfaceInputSpec):
+
+    motion_parameters = File(exists=True)
+    reference_image = File(exists=True)
+
+
+class AffineMatrixGenerationOutputSpec(TraitedSpec):
+
+    affine_matrices = Directory(exists=True)
+
+
+class AffineMatrixGeneration(BaseInterface):
+
+    input_spec = AffineMatrixGenerationInputSpec
+    output_spec = AffineMatrixGenerationOutputSpec
+
+    def _run_interface(self, runtime):
+
+        _, out_name, _ = split_filename(self.inputs.motion_parameters)
+        motion_par = np.loadtxt(self.inputs.motion_parameters)
+        motion_par = motion_par[:, :6]
+        ref = nib.load(self.inputs.reference_image)
+        ref_data = ref.get_data()
+        # centre of mass
+        if ref_data.shape == 4:
+            com = list(snm.center_of_mass(ref_data[:, :, :, 0]))
+        else:
+            com = list(snm.center_of_mass(ref_data))
+
+        hdr = ref.header
+        resolution = list(hdr.get_zooms()[:3])
+
+        for i in range(len(motion_par)):
+            mat = self.create_affine_mat(motion_par[i, :], resolution*com)
+            np.savetxt(
+                'affine_mat_{}.mat'.format(str(i).zfill(4)), mat, fmt='%f')
+
+        affines = glob.glob('affine_mat*.mat')
+        os.mkdir(out_name)
+        for f in affines:
+            shutil.move(f, out_name)
+
+        return runtime
+
+    def create_affine_mat(self, mp, cog):
+
+        T = np.eye(4)
+
+        T[0, -1] = cog[0]
+        T[1, -1] = cog[1]
+        T[2, -1] = cog[2]
+
+        T_1 = np.linalg.inv(T)
+
+        tx = mp[0]
+        ty = mp[1]
+        tz = mp[2]
+        rx = mp[3]
+        ry = mp[4]
+        rz = mp[5]
+
+        Rx = np.eye(3)
+        Rx[1, 1] = np.cos(rx)
+        Rx[1, 2] = np.sin(rx)
+        Rx[2, 1] = -np.sin(rx)
+        Rx[2, 2] = np.cos(rx)
+        Ry = np.eye(3)
+        Ry[0, 0] = np.cos(ry)
+        Ry[0, 2] = -np.sin(ry)
+        Ry[2, 0] = np.sin(ry)
+        Ry[2, 2] = np.cos(ry)
+        Rz = np.eye(3)
+        Rz[0, 0] = np.cos(rz)
+        Rz[0, 1] = np.sin(rz)
+        Rz[1, 0] = -np.sin(rz)
+        Rz[1, 1] = np.cos(rz)
+        R_3x3 = np.dot(np.dot(Rx, Ry), Rz)
+
+        m = np.eye(4)
+        m[:3, :3] = R_3x3
+        m[0, 3] = tx
+        m[1, 3] = ty
+        m[2, 3] = tz
+
+        new_orig = np.dot(T, np.dot(m, T_1))[:, -1]
+
+        m[0, 3] = new_orig[0]
+        m[1, 3] = new_orig[1]
+        m[2, 3] = new_orig[2]
+
+        return m
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        _, out_name, _ = split_filename(self.inputs.motion_parameters)
+
+        outputs["affine_matrices"] = os.path.abspath(out_name)
 
         return outputs
