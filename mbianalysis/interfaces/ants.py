@@ -1,7 +1,7 @@
 from nipype.interfaces.base import (
     TraitedSpec, traits, File, CommandLineInputSpec, CommandLine)
 import os
-from nipype.interfaces.traits_extension import isdefined
+from nipype.interfaces.base import isdefined
 
 ants_reg_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), 'resources', 'bash',

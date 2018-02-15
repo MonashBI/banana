@@ -5,7 +5,7 @@ from nipype.interfaces.fsl.preprocess import (
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
                                          ConvertXFM)
-from nianalysis.interfaces.fsl import (MelodicL1FSF, FSLFIX, CheckLabelFile,
+from mbianalysis.interfaces.fsl import (MelodicL1FSF, FSLFIX, CheckLabelFile,
                                        FSLFixTraining, FSLSlices)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec
@@ -18,8 +18,8 @@ from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
     text_format)
-from nianalysis.interfaces.ants import AntsRegSyn
-from nianalysis.interfaces.afni import Tproject
+from mbianalysis.interfaces.ants import AntsRegSyn
+from mbianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils.os import MakeDir, CopyFile, CopyDir
 from nianalysis.interfaces.utils.iter import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge

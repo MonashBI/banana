@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 from nianalysis.dataset import Dataset
-from nianalysis.study.mri.phantom import PhantomStudy
+from mbianalysis.study.mri.phantom import PhantomStudy
 from nianalysis.archive.xnat import XNATArchive
 from nianalysis.data_formats import dicom_format
 

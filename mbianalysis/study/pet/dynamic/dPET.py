@@ -1,10 +1,10 @@
 from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import set_dataset_specs
+from nianalysis.study.base import set_data_specs
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.utils import Merge
-from nianalysis.interfaces.francesco.custom import PETdr, GlobalTrendRemoval
+from mbianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
 from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
                                      png_format)
 import os
@@ -120,7 +120,7 @@ class DynamicPETStudy(PETStudy):
         return self._ICA_pipeline_factory(
             input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('pet_volumes', nifti_gz_format),
         DatasetSpec('regression_map', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format, Extract_vol_pipeline),
@@ -130,4 +130,4 @@ class DynamicPETStudy(PETStudy):
                     Baseline_Removal_pipeline),
         DatasetSpec('spatial_map', nifti_gz_format, Dual_Regression_pipeline),
         DatasetSpec('ts', png_format, Dual_Regression_pipeline),
-        inherit_from=PETStudy.generated_dataset_specs())
+        inherit_from=PETStudy.generated_data_specs())

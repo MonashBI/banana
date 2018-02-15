@@ -7,9 +7,9 @@ from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
-from nianalysis.interfaces.mrtrix.transform import MRResize
-from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
-from nianalysis.interfaces.custom.motion_correction import PrepareDWI
+from mbianalysis.interfaces.mrtrix.transform import MRResize
+from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
+from mbianalysis.interfaces.custom.motion_correction import PrepareDWI
 from nipype.interfaces.utility import Split
 
 

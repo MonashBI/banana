@@ -1,9 +1,9 @@
-from nianalysis.study.base import Study, set_dataset_specs
+from nianalysis.study.base import Study, set_data_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.data_formats import (nifti_gz_format, text_format,
                                      text_matrix_format)
-from nianalysis.interfaces.sklearn import FastICA
-from nianalysis.interfaces.ants import AntsRegSyn
+from mbianalysis.interfaces.sklearn import FastICA
+from mbianalysis.interfaces.ants import AntsRegSyn
 import os
 from abc import abstractmethod
 
@@ -82,7 +82,7 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _dataset_specs = set_dataset_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('registered_volumes', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('decomposed_file', nifti_gz_format, ICA_pipeline),

@@ -8,7 +8,7 @@ from nipype.interfaces.base import (
 from glob import glob
 from nipype.interfaces.fsl.base import (FSLCommand, FSLCommandInputSpec)
 import logging
-from nipype.interfaces.traits_extension import isdefined
+from nipype.interfaces.base import isdefined
 import nibabel as nib
 import numpy as np
 import ast

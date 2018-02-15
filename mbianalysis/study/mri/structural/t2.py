@@ -7,7 +7,7 @@ from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from ..coregistered import CoregisteredStudy
 from ...combined import CombinedStudy
-from nianalysis.interfaces.custom.motion_correction import (
+from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
 
