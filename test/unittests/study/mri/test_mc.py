@@ -8,6 +8,7 @@ from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDWIStudy  # @IgnorePep8
+from mbianalysis.study.mri.motion_detection import MotionDetectionStudy
 
 class TestMC(TestCase):
 
@@ -47,13 +48,12 @@ class TestMC(TestCase):
 
     def test_dwi_mc(self):
         study = self.create_study(
-            CoregisteredDWIStudy, 'dwi_study', inputs={
-                'dwi_main': Dataset('dwi_main', dicom_format),
-                'dwi_main_ref': Dataset('dwi2ref_ref', dicom_format),
+            MotionDetectionStudy, 'mc_detection_study', inputs={
+                'epi1': Dataset('epi', nifti_gz_format),
+                'epi2': Dataset('epi', nifti_gz_format),
                 'reference': Dataset('reference', nifti_gz_format)})
-        study.dwi_main_motion_mat_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('dwi_main_motion_mats', study.name)
-
+        study.epi1_motion_mat_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('epi1_motion_mats', study.name)
 #     def test_t2_mc(self):
 #         study = self.create_study(
 #             CoregisteredT2Study, 't2_reg_study', inputs={

@@ -438,7 +438,7 @@ class CoregisteredDWIStudy(CombinedStudy):
 
         pipeline = self.create_pipeline(
             name='dwi_main_affine_mat_generation',
-            inputs=[DatasetSpec('dwi_main', nifti_gz_format),
+            inputs=[DatasetSpec('dwi_main_preproc', nifti_gz_format),
                     DatasetSpec('dwi_main_eddy_par', eddy_par_format)],
             outputs=[
                 DatasetSpec('dwi_main_affine_mats', directory_format)],
@@ -451,7 +451,7 @@ class CoregisteredDWIStudy(CombinedStudy):
 
         aff_mat = pipeline.create_node(AffineMatrixGeneration(),
                                        name='gen_aff_mats')
-        pipeline.connect_input('dwi_main', aff_mat, 'reference_image')
+        pipeline.connect_input('dwi_main_preproc', aff_mat, 'reference_image')
         pipeline.connect_input(
             'dwi_main_eddy_par', aff_mat, 'motion_parameters')
         pipeline.connect_output(
