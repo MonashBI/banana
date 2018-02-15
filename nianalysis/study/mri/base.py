@@ -217,13 +217,14 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    dcm_in = [DatasetSpec('dicom_file', nifti_gz_format)]
+    def header_info_extraction_pipeline(self, **options):
+        return self.header_info_extraction_pipeline_factory('dicom_file', **options)
 
-    def header_info_extraction_pipeline(self, dcm_in, **options):
+    def header_info_extraction_pipeline_factory(self, dcm_in_name, **options):
 
         pipeline = self.create_pipeline(
             name='header_info_extraction',
-            inputs=dcm_in,
+            inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=[FieldSpec('tr', dtype=float),
                      FieldSpec('start_time', dtype=str),
                      FieldSpec('tot_duration', dtype=str),
@@ -239,7 +240,7 @@ class MRIStudy(Study):
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
         hd_extraction.inputs.multivol = True
-        pipeline.connect_input('dicom_file', hd_extraction, 'dicom_folder')
+        pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
         pipeline.connect_output('tr', hd_extraction, 'tr')
         pipeline.connect_output('start_time', hd_extraction, 'start_time')
         pipeline.connect_output(
