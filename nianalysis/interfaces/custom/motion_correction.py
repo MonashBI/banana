@@ -126,7 +126,9 @@ class PrepareDWIOutputSpec(TraitedSpec):
     main = File(desc='4D dwi scan for eddy.')
     secondary = File(desc='3D dwi scan for distortion correction.')
     pe_1 = traits.Str(
-        desc='Phase encoding direction second dwi.', default=None)
+        desc='Phase encoding direction second dwi.')
+    topup = traits.Bool(desc='Specify whether the PrepareDWI output will be'
+                        'used for TOPUP distortion correction')
 
 
 class PrepareDWI(BaseInterface):
@@ -139,6 +141,7 @@ class PrepareDWI(BaseInterface):
         self.dict_output = {}
         pe_dir = self.inputs.pe_dir
         phase_offset = float(self.inputs.phase_offset)
+        topup = self.inputs.topup
         dwi = nib.load(self.inputs.dwi)
         dwi = dwi.get_data()
         dwi1 = nib.load(self.inputs.dwi1)
@@ -157,6 +160,8 @@ class PrepareDWI(BaseInterface):
             raise Exception('Phase encoding direction cannot be establish by '
                             'looking at the header. DWI pre-processing will '
                             'not be performed.')
+        self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
+
         if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
             self.dict_output['main'] = self.inputs.dwi
             self.dict_output['secondary'] = self.inputs.dwi1
@@ -164,9 +169,15 @@ class PrepareDWI(BaseInterface):
             self.dict_output['main'] = self.inputs.dwi1
             self.dict_output['secondary'] = self.inputs.dwi
         elif len(dwi.shape) == 3 and len(dwi1.shape) == 3:
-            self.dict_output['main'] = self.inputs.dwi1
-            self.dict_output['secondary'] = self.inputs.dwi
-            self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
+            self.dict_output['main'] = self.inputs.dwi
+            self.dict_output['secondary'] = self.inputs.dwi1
+        elif topup and len(dwi1.shape) == 4:
+            ref = nib.load(self.inputs.dwi1)
+            dwi1_b0 = dwi1[:, :, :, 0]
+            im2save = nib.Nifti1Image(dwi1_b0, affine=ref.affine)
+            nib.save('b0.nii.gz', im2save)
+            self.dict_output['main'] = self.inputs.dwi
+            self.dict_output['secondary'] = 'b0.nii.gz'
 
         return runtime
 
