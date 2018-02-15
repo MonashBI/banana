@@ -7,7 +7,7 @@ from nianalysis.data_formats import nifti_gz_format, dicom_format  # @IgnorePep8
 from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
-
+from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDWIStudy  # @IgnorePep8
 
 class TestMC(TestCase):
 
@@ -47,12 +47,12 @@ class TestMC(TestCase):
 
     def test_dwi_mc(self):
         study = self.create_study(
-            MRIStudy, 'dwi_study', inputs={
-                'dicom_dwi': Dataset('dwi_main', dicom_format),
-                'dicom_dwi_1': Dataset('dwi_1', dicom_format)})
-        study.eddy_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('dwipreproc.nii.gz', study.name)
-        self.assertDatasetCreated('eddy_par.eddy_parameters', study.name)
+            CoregisteredDWIStudy, 'dwi_study', inputs={
+                'dwi2ref_to_correct': Dataset('dwi_main', dicom_format),
+                'dwi2ref_ref': Dataset('dwi_ref', dicom_format),
+                'reference': Dataset('reference', nifti_gz_format)})
+        study.dwi2ref_motion_mat_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('dwi2ref_motion_mats', study.name)
 
 #     def test_t2_mc(self):
 #         study = self.create_study(

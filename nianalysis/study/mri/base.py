@@ -25,7 +25,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='brain_mask',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
@@ -46,7 +46,7 @@ class MRIStudy(Study):
         bet.inputs.frac = pipeline.option('f_threshold')
         bet.inputs.vertical_gradient = pipeline.option('g_threshold')
         # Connect inputs/outputs
-        pipeline.connect_input('primary', bet, 'in_file')
+        pipeline.connect_input('preproc', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
@@ -193,7 +193,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('masked', nifti_gz_format)],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
@@ -205,7 +205,7 @@ class MRIStudy(Study):
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
                                     name='fslswapdim')
         swap.inputs.new_dims = pipeline.option('new_dims')
-        pipeline.connect_input('masked', swap, 'in_file')
+        pipeline.connect_input('primary', swap, 'in_file')
         if pipeline.option('resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample")
             resample.inputs.voxel = pipeline.option('resolution')
@@ -217,6 +217,8 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
+    dcm_in = [DatasetSpec('dicom_file', nifti_gz_format)]
+
     def header_info_extraction_pipeline(self, dcm_in, **options):
 
         pipeline = self.create_pipeline(
@@ -227,7 +229,7 @@ class MRIStudy(Study):
                      FieldSpec('tot_duration', dtype=str),
                      FieldSpec('real_duration', dtype=str),
                      FieldSpec('ped', dtype=str),
-                     FieldSpec('phase_offset', dtype=str)],
+                     FieldSpec('pe_angle', dtype=str)],
             description=("Pipeline to extract the most important scan "
                          "information from the image header"),
             default_options={},
@@ -245,7 +247,7 @@ class MRIStudy(Study):
         pipeline.connect_output(
             'real_duration', hd_extraction, 'real_duration')
         pipeline.connect_output('ped', hd_extraction, 'ped')
-        pipeline.connect_output('phase_offset', hd_extraction, 'phase_offset')
+        pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
         pipeline.assert_connected()
         return pipeline
 
@@ -271,6 +273,6 @@ class MRIStudy(Study):
         FieldSpec('tot_duration', dtype=str,
                   pipeline=header_info_extraction_pipeline),
         FieldSpec('ped', dtype=str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('phase_offset', dtype=str,
+        FieldSpec('pe_angle', dtype=str,
                   pipeline=header_info_extraction_pipeline)
         )
