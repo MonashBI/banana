@@ -48,8 +48,8 @@ class TestMC(TestCase):
     def test_dwi_mc(self):
         study = self.create_study(
             CoregisteredDWIStudy, 'dwi_study', inputs={
-                'dwi2ref_to_correct': Dataset('dwi_main', dicom_format),
-                'dwi2ref_ref': Dataset('dwi_ref', dicom_format),
+                'dwi2ref_to_correct': Dataset('dwi2ref_to_correct', dicom_format),
+                'dwi2ref_ref': Dataset('dwi2ref_ref', dicom_format),
                 'reference': Dataset('reference', nifti_gz_format)})
         study.dwi2ref_motion_mat_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('dwi2ref_motion_mats', study.name)
