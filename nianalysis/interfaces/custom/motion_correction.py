@@ -38,8 +38,10 @@ class MotionMatCalculation(BaseInterface):
         if self.inputs.align_mats:
             list_mats = sorted(glob.glob(self.inputs.align_mats+'/MAT*'))
             if not list_mats:
-                raise Exception(
-                    'Folder {} is empty!'.format(self.inputs.align_mats))
+                list_mats = sorted(glob.glob(self.inputs.align_mats+'/*.mat'))
+                if not list_mats:
+                    raise Exception(
+                        'Folder {} is empty!'.format(self.inputs.align_mats))
             for mat in list_mats:
                 m = np.loadtxt(mat)
                 concat = np.dot(reg_mat, m)
@@ -320,10 +322,10 @@ class AffineMatrixGeneration(BaseInterface):
         ref = nib.load(self.inputs.reference_image)
         ref_data = ref.get_data()
         # centre of mass
-        if ref_data.shape == 4:
-            com = list(snm.center_of_mass(ref_data[:, :, :, 0]))
+        if len(ref_data.shape) == 4:
+            com = np.asarray(snm.center_of_mass(ref_data[:, :, :, 0]))
         else:
-            com = list(snm.center_of_mass(ref_data))
+            com = np.asarray(snm.center_of_mass(ref_data))
 
         hdr = ref.header
         resolution = list(hdr.get_zooms()[:3])
