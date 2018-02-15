@@ -46,13 +46,13 @@ class DiffusionStudy(MRIStudy):
 
         converter1 = pipeline.create_node(Dcm2niix(), name='converter1')
         converter1.inputs.compression = 'y'
-        pipeline.connect_input('dicom_dwi', converter1, 'input_dir')
+        pipeline.connect_input('dwi_main', converter1, 'input_dir')
         converter2 = pipeline.create_node(Dcm2niix(), name='converter2')
         converter2.inputs.compression = 'y'
-        pipeline.connect_input('dicom_dwi_1', converter2, 'input_dir')
+        pipeline.connect_input('dwi_ref', converter2, 'input_dir')
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
         pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-        pipeline.connect_input('phase_offset', prep_dwi, 'phase_offset')
+        pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
 #         prep_dwi.inputs.pe_dir = 'ROW'
 #         prep_dwi.inputs.phase_offset = '-1.5'
         pipeline.connect(converter1, 'converted', prep_dwi, 'dwi')
@@ -61,8 +61,8 @@ class DiffusionStudy(MRIStudy):
         check_name = pipeline.create_node(CheckDwiNames(),
                                           name='check_names')
         pipeline.connect(prep_dwi, 'main', check_name, 'nifti_dwi')
-        pipeline.connect_input('dicom_dwi', check_name, 'dicom_dwi')
-        pipeline.connect_input('dicom_dwi_1', check_name, 'dicom_dwi1')
+        pipeline.connect_input('dwi_main', check_name, 'dicom_dwi')
+        pipeline.connect_input('dwi_ref', check_name, 'dicom_dwi1')
         roi = pipeline.create_node(ExtractROI(), name='extract_roi')
         roi.inputs.t_min = 0
         roi.inputs.t_size = 1
@@ -274,7 +274,13 @@ class CoregisteredDWIStudy(CombinedStudy):
             'dwi_main_brain_mask': 'brain_mask',
             'dwi_main_brain': 'masked',
             'dwi_main_preproc': 'preproc',
-            'dwi_main_eddy_par': 'eddy_par'}),
+            'dwi_main_eddy_par': 'eddy_par',
+            'dwi_main_ped': 'ped',
+            'dwi_main_pe_angle': 'pe_angle',
+            'dwi_main_tr': 'tr',
+            'dwi_main_real_duration': 'real_duration',
+            'dwi_main_tot_duration': 'tot_duration',
+            'dwi_main_start_time': 'start_time'}),
         'dwi2ref': (DiffusionReferenceStudy, {
             'dwi2ref_to_correct': 'to_be_corrected',
             'dwi2ref_ref': 'topup_ref',
@@ -354,6 +360,9 @@ class CoregisteredDWIStudy(CombinedStudy):
     dwi_main_bet_pipeline = CombinedStudy.translate(
         'dwi_main', DiffusionStudy.brain_mask_pipeline)
 
+    dwi_main_dcm_info_pipeline = CombinedStudy.translate(
+        'dwi_main', DiffusionStudy.header_info_extraction_pipeline)
+
     dwi_opposite_topup_pipeline = CombinedStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.topup_pipeline)
 
@@ -401,10 +410,10 @@ class CoregisteredDWIStudy(CombinedStudy):
         override_default_options={'resolution': [1]})
 
     dwi_main_qform_transform_pipeline = CombinedStudy.translate(
-        'coreg_main', CoregisteredStudy.qform_transform_pipeline)
+        'coreg_dwi_main', CoregisteredStudy.qform_transform_pipeline)
 
     dwi_main_rigid_registration_pipeline = CombinedStudy.translate(
-        'coreg_main', CoregisteredStudy.linear_registration_pipeline)
+        'coreg_dwi_main', CoregisteredStudy.linear_registration_pipeline)
 
     dwi_opposite_qform_transform_pipeline = CombinedStudy.translate(
         'coreg_opposite', CoregisteredStudy.qform_transform_pipeline)
@@ -630,6 +639,12 @@ class CoregisteredDWIStudy(CombinedStudy):
         DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
         DatasetSpec('ref_brain_mask', nifti_gz_format,
                     ref_bet_pipeline),
+        FieldSpec('dwi_main_ped', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('dwi_main_pe_angle', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('dwi_main_tr', float, dwi_main_dcm_info_pipeline),
+        FieldSpec('dwi_main_start_time', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('dwi_main_real_duration', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('dwi_main_tot_duration', str, dwi_main_dcm_info_pipeline),
         FieldSpec('dwi2ref_ped', str, dwi2ref_dcm_info_pipeline),
         FieldSpec('dwi2ref_pe_angle', str, dwi2ref_dcm_info_pipeline),
         FieldSpec('dwi2ref_tr', float, dwi2ref_dcm_info_pipeline),
