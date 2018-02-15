@@ -118,6 +118,8 @@ class PrepareDWIInputSpec(BaseInterfaceInputSpec):
     phase_offset = traits.Str(mandatory=True, desc='phase offset')
     dwi = File(mandatory=True, exists=True)
     dwi1 = File(mandatory=True, exists=True)
+    topup = traits.Bool(desc='Specify whether the PrepareDWI output will be'
+                        'used for TOPUP distortion correction')
 
 
 class PrepareDWIOutputSpec(TraitedSpec):
@@ -127,8 +129,6 @@ class PrepareDWIOutputSpec(TraitedSpec):
     secondary = File(desc='3D dwi scan for distortion correction.')
     pe_1 = traits.Str(
         desc='Phase encoding direction second dwi.')
-    topup = traits.Bool(desc='Specify whether the PrepareDWI output will be'
-                        'used for TOPUP distortion correction')
 
 
 class PrepareDWI(BaseInterface):

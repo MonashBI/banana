@@ -150,7 +150,7 @@ class DiffusionStudy(MRIStudy):
 
     def topup_pipeline(self, **options):
         return self.topup_factory('dwi_topup', 'topup_in', 'topup_ref',
-                                  'dwi_distorted', 'ped', 'pe_angle')
+                                  'dwi_distorted', 'ped', 'pe_angle', **options)
 
     _data_specs = set_data_specs(
         DatasetSpec('dwi_main', dicom_format),
@@ -160,8 +160,8 @@ class DiffusionStudy(MRIStudy):
         DatasetSpec('preproc', nifti_gz_format, dwipreproc_pipeline),
         DatasetSpec('eddy_par', eddy_par_format, dwipreproc_pipeline),
         DatasetSpec('dwi_distorted', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', dtype=str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', dtype=str, header_info_extraction_pipeline),
+        FieldSpec('ped', str, header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())
 
 
@@ -193,13 +193,10 @@ class DiffusionReferenceStudy(DiffusionStudy):
         pipeline.assert_connected()
         return pipeline
 
-    inputs = ['dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
-              'preproc', 'ped', 'pe_angle']
-
-    def topup_pipeline(self, inputs, **kwargs):
-        return super(DiffusionReferenceStudy, self).topup_pipeline(
-            inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5],
-            **kwargs)
+    def topup_pipeline(self, **kwargs):
+        return super(DiffusionReferenceStudy, self).topup_factory(
+            'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
+            'preproc', 'ped', 'pe_angle', **kwargs)
 
     _data_specs = set_data_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -207,8 +204,8 @@ class DiffusionReferenceStudy(DiffusionStudy):
         DatasetSpec('to_be_corrected_nifti', nifti_gz_format,
                     dcm2nii_conversion_pipeline),
         DatasetSpec('preproc', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', dtype=str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', dtype=str, header_info_extraction_pipeline),
+        FieldSpec('ped', str, header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=DiffusionStudy.data_specs())
 
 
@@ -224,13 +221,10 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
         return (super(DiffusionOppositeStudy, self).
                 dcm2nii_conversion_pipeline(dcm_in, **kwargs))
 
-    inputs = ['dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
-              'preproc', 'ped', 'pe_angle']
-
-    def topup_pipeline(self, inputs, **kwargs):
-        return super(DiffusionOppositeStudy, self).topup_pipeline(
-            inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5],
-            **kwargs)
+    def topup_pipeline(self, **kwargs):
+        return super(DiffusionOppositeStudy, self).topup_factory(
+            'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
+            'preproc', 'ped', 'pe_angle', **kwargs)
 
     _data_specs = set_data_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -238,8 +232,8 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
         DatasetSpec('to_be_corrected_nifti', nifti_gz_format,
                     dcm2nii_conversion_pipeline),
         DatasetSpec('preproc', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', dtype=str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', dtype=str, header_info_extraction_pipeline),
+        FieldSpec('ped', str, header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=DiffusionStudy.data_specs())
 
 
@@ -255,13 +249,10 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
         return (super(DiffusionReferenceOppositeStudy, self).
                 dcm2nii_conversion_pipeline(dcm_in, **kwargs))
 
-    inputs = ['dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
-              'preproc', 'ped', 'pe_angle']
-
-    def topup_pipeline(self, inputs, **kwargs):
-        return super(DiffusionReferenceOppositeStudy, self).topup_pipeline(
-            inputs[0], inputs[1], inputs[2], inputs[3], inputs[4], inputs[5],
-            **kwargs)
+    def topup_pipeline(self, **kwargs):
+        return super(DiffusionReferenceOppositeStudy, self).topup_factory(
+            'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
+            'preproc', 'ped', 'pe_angle', **kwargs)
 
     _data_specs = set_data_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -269,8 +260,8 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
         DatasetSpec('to_be_corrected_nifti', nifti_gz_format,
                     dcm2nii_conversion_pipeline),
         DatasetSpec('preproc', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', dtype=str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', dtype=str, header_info_extraction_pipeline),
+        FieldSpec('ped', str, header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=DiffusionStudy.data_specs())
 
 
@@ -287,6 +278,7 @@ class CoregisteredDWIStudy(CombinedStudy):
         'dwi2ref': (DiffusionReferenceStudy, {
             'dwi2ref_to_correct': 'to_be_corrected',
             'dwi2ref_ref': 'topup_ref',
+            'dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
             'dwi2ref_brain_mask': 'brain_mask',
             'dwi2ref_brain': 'masked',
             'dwi2ref_preproc': 'preproc'}),
@@ -351,6 +343,9 @@ class CoregisteredDWIStudy(CombinedStudy):
 
     dwi2ref_topup_pipeline = CombinedStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.topup_pipeline)
+    
+    dwi2ref_dcm2nii_pipeline = CombinedStudy.translate(
+        'dwi2ref', DiffusionReferenceStudy.dcm2nii_conversion_pipeline)
 
     dwi2ref_bet_pipeline = CombinedStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
@@ -454,9 +449,9 @@ class CoregisteredDWIStudy(CombinedStudy):
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='dwi2ref_motion_mats')
-        pipeline.connect_input('dwidwi2ref_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('dwidwi2ref_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output('dwidwi2ref_motion_mats', mm, 'motion_mats')
+        pipeline.connect_input('dwi2ref_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('dwi2ref_qform_mat', mm, 'qform_mat')
+        pipeline.connect_output('dwi2ref_motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -517,6 +512,8 @@ class CoregisteredDWIStudy(CombinedStudy):
                     dwi2ref_bet_pipeline),
         DatasetSpec('dwi2ref_preproc', nifti_gz_format,
                     dwi2ref_topup_pipeline),
+        DatasetSpec('dwi2ref_to_correct_nii', nifti_gz_format,
+                    dwi2ref_dcm2nii_pipeline),
         DatasetSpec('dwi2ref_reg', nifti_gz_format,
                     dwi2ref_rigid_registration_pipeline),
         DatasetSpec('dwi2ref_qformed', nifti_gz_format,
