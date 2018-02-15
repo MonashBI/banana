@@ -1,19 +1,17 @@
 from ..base import MRIStudy
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (
-    nifti_gz_format, text_matrix_format, text_format, directory_format,
-    par_format, dicom_format, eddy_par_format)
+    nifti_gz_format, text_matrix_format, directory_format, dicom_format,
+    eddy_par_format)
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nianalysis.citations import fsl_cite
-from nipype.interfaces import fsl
-from nianalysis.requirements import fsl5_req
 from nianalysis.study.base import set_data_specs
 from ..coregistered import CoregisteredStudy
 from ...combined import CombinedStudy
 from nianalysis.interfaces.custom.motion_correction import (
-    MotionMatCalculation, MergeListMotionMat)
+    MotionMatCalculation, AffineMatrixGeneration)
 from nianalysis.interfaces.converters import Dcm2niix
 from nipype.interfaces.utility import Merge as merge_lists
 from nianalysis.interfaces.mrtrix.preproc import DWIPreproc
@@ -27,8 +25,8 @@ class DiffusionStudy(MRIStudy):
             robust=robust, f_threshold=f_threshold, **kwargs)
 
     def header_info_extraction_pipeline(self, **kwargs):
-        return super(DiffusionStudy, self).header_info_extraction_pipeline_factory(
-            'dwi_main', **kwargs)
+        return (super(DiffusionStudy, self).
+                header_info_extraction_pipeline_factory('dwi_main', **kwargs))
 
     def dwipreproc_pipeline(self, **options):
 
@@ -174,7 +172,7 @@ class DiffusionReferenceStudy(DiffusionStudy):
     def dcm2nii_conversion_pipeline(self, **kwargs):
         return self.dcm2nii_conversion_pipeline_factory(
                     'to_be_corrected', **kwargs)
-    
+
     def dcm2nii_conversion_pipeline_factory(self, dcm_in_name, **options):
         pipeline = self.create_pipeline(
             name='dicom2nifti_coversion',
@@ -427,21 +425,52 @@ class CoregisteredDWIStudy(CombinedStudy):
         'coreg_dwi2ref_opposite',
         CoregisteredStudy.linear_registration_pipeline)
 
-    def dwi_main_motion_mat_pipeline(self, **options):
+    def dwi_main_affine_mats_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
-            name='dwi2ref_motion_mat_calculation',
-            inputs=[DatasetSpec('dwi2ref_reg_mat', text_matrix_format),
-                    DatasetSpec('dwi2ref_qform_mat', text_matrix_format)],
+            name='dwi_main_affine_mat_generation',
+            inputs=[DatasetSpec('dwi_main', nifti_gz_format),
+                    DatasetSpec('dwi_main_eddy_par', eddy_par_format)],
             outputs=[
-                DatasetSpec('dwi2ref_motion_mats', directory_format)],
-            description=("DWI to reference Motion matrices calculation"),
+                DatasetSpec('dwi_main_affine_mats', directory_format)],
+            description=("Generation of the affine matrices for the main dwi "
+                         "sequence starting from eddy motion parameters"),
             default_options={},
             version=1,
             citations=[fsl_cite],
             options=options)
 
-        
+        aff_mat = pipeline.create_node(AffineMatrixGeneration(),
+                                       name='gen_aff_mats')
+        pipeline.connect_input('dwi_main', aff_mat, 'reference_image')
+        pipeline.connect_input(
+            'dwi_main_eddy_par', aff_mat, 'motion_parameters')
+        pipeline.connect_output(
+            'dwi_main_affine_mats', aff_mat, 'affine_matrices')
+        pipeline.assert_connected()
+        return pipeline
+
+    def dwi_main_motion_mat_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='dwi_main_motion_mat_calculation',
+            inputs=[DatasetSpec('dwi_main_reg_mat', text_matrix_format),
+                    DatasetSpec('dwi_main_qform_mat', text_matrix_format),
+                    DatasetSpec('dwi_main_affine_mats', directory_format)],
+            outputs=[
+                DatasetSpec('dwi_main_motion_mats', directory_format)],
+            description=("Main dwi motion matrices calculation"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='dwi_main_motion_mats')
+        pipeline.connect_input('dwi_main_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('dwi_main_qform_mat', mm, 'qform_mat')
+        pipeline.connect_input('dwi_main_affine_mats', mm, 'align_mats')
+        pipeline.connect_output('dwi_main_motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -541,6 +570,8 @@ class CoregisteredDWIStudy(CombinedStudy):
                     dwi_main_dwipreproc_pipeline),
         DatasetSpec('dwi_main_motion_mats', directory_format,
                     dwi_main_motion_mat_pipeline),
+        DatasetSpec('dwi_main_affine_mats', directory_format,
+                    dwi_main_affine_mats_pipeline),
         DatasetSpec('dwi2ref_brain', nifti_gz_format, dwi2ref_bet_pipeline),
         DatasetSpec('dwi2ref_brain_mask', nifti_gz_format,
                     dwi2ref_bet_pipeline),
