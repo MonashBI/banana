@@ -26,11 +26,9 @@ class DiffusionStudy(MRIStudy):
         return super(DiffusionStudy, self).brain_mask_pipeline(
             robust=robust, f_threshold=f_threshold, **kwargs)
 
-    dcm_in = [DatasetSpec('dwi_main', dicom_format)]
-
-    def header_info_extraction_pipeline(self, dcm_in, **kwargs):
-        return super(DiffusionStudy, self).header_info_extraction_pipeline(
-            dcm_in, **kwargs)
+    def header_info_extraction_pipeline(self, **kwargs):
+        return super(DiffusionStudy, self).header_info_extraction_pipeline_factory(
+            'dwi_main', **kwargs)
 
     def dwipreproc_pipeline(self, **options):
 
@@ -168,16 +166,19 @@ class DiffusionStudy(MRIStudy):
 
 class DiffusionReferenceStudy(DiffusionStudy):
 
-    dcm_in = [DatasetSpec('to_be_corrected', dicom_format)]
-
-    def header_info_extraction_pipeline(self, dcm_in, **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
-                header_info_extraction_pipeline(dcm_in, **kwargs))
+                header_info_extraction_pipeline_factory(
+                    'to_be_corrected', **kwargs))
 
-    def dcm2nii_conversion_pipeline(self, dcm_in, **options):
+    def dcm2nii_conversion_pipeline(self, **kwargs):
+        return self.dcm2nii_conversion_pipeline_factory(
+                    'to_be_corrected', **kwargs)
+    
+    def dcm2nii_conversion_pipeline_factory(self, dcm_in_name, **options):
         pipeline = self.create_pipeline(
             name='dicom2nifti_coversion',
-            inputs=dcm_in,
+            inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=[DatasetSpec('to_be_corrected_nifti', nifti_gz_format)],
             description=("DICOM to NIFTI conversion for topup input"),
             default_options={},
@@ -197,7 +198,7 @@ class DiffusionReferenceStudy(DiffusionStudy):
     def topup_pipeline(self, **kwargs):
         return super(DiffusionReferenceStudy, self).topup_factory(
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
-            'preproc', 'ped', 'pe_angle', **kwargs)
+            'ped', 'pe_angle', 'preproc', **kwargs)
 
     _data_specs = set_data_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -212,20 +213,20 @@ class DiffusionReferenceStudy(DiffusionStudy):
 
 class DiffusionOppositeStudy(DiffusionReferenceStudy):
 
-    dcm_in = [DatasetSpec('to_be_corrected', dicom_format)]
-
-    def header_info_extraction_pipeline(self, dcm_in, **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(DiffusionOppositeStudy, self).
-                header_info_extraction_pipeline(dcm_in, **kwargs))
+                header_info_extraction_pipeline_factory(
+                    'to_be_corrected', **kwargs))
 
-    def dcm2nii_conversion_pipeline(self, dcm_in, **kwargs):
+    def dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionOppositeStudy, self).
-                dcm2nii_conversion_pipeline(dcm_in, **kwargs))
+                dcm2nii_conversion_pipeline(
+                    'to_be_corrected', **kwargs))
 
     def topup_pipeline(self, **kwargs):
         return super(DiffusionOppositeStudy, self).topup_factory(
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
-            'preproc', 'ped', 'pe_angle', **kwargs)
+            'ped', 'pe_angle', 'preproc', **kwargs)
 
     _data_specs = set_data_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -240,20 +241,20 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
 
 class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
 
-    dcm_in = [DatasetSpec('to_be_corrected', dicom_format)]
-
-    def header_info_extraction_pipeline(self, dcm_in, **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(DiffusionReferenceOppositeStudy, self).
-                header_info_extraction_pipeline(dcm_in, **kwargs))
+                header_info_extraction_pipeline_factory(
+                    'to_be_corrected', **kwargs))
 
-    def dcm2nii_conversion_pipeline(self, dcm_in, **kwargs):
+    def dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceOppositeStudy, self).
-                dcm2nii_conversion_pipeline(dcm_in, **kwargs))
+                dcm2nii_conversion_pipeline(
+                    'to_be_corrected', **kwargs))
 
     def topup_pipeline(self, **kwargs):
         return super(DiffusionReferenceOppositeStudy, self).topup_factory(
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
-            'preproc', 'ped', 'pe_angle', **kwargs)
+            'ped', 'pe_angle', 'preproc', **kwargs)
 
     _data_specs = set_data_specs(
         DatasetSpec('to_be_corrected', dicom_format),
