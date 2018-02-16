@@ -20,8 +20,8 @@ from nianalysis.data_formats import (
     text_format)
 from mbianalysis.interfaces.ants import AntsRegSyn
 from mbianalysis.interfaces.afni import Tproject
-from nianalysis.interfaces.utils.os import MakeDir, CopyFile, CopyDir
-from nianalysis.interfaces.utils.iter import Merge
+from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
+from nianalysis.interfaces.utils import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp

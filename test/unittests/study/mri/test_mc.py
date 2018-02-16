@@ -6,7 +6,7 @@ from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format, dicom_format  # @IgnorePep8
 from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestMC(TestCase):
