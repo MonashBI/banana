@@ -4,7 +4,7 @@ from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, TraitedSpec, Directory)
 import numpy as np
 import glob
-import dicom
+import pydicom
 
 
 class DicomHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
@@ -65,7 +65,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
                 n_vols = len(list_dicom)
             real_duration = n_vols*tr
 
-        hd = dicom.read_file(list_dicom[0])
+        hd = pydicom.read_file(list_dicom[0])
         try:
             start_time = str(hd.AcquisitionTime)
         except AttributeError:

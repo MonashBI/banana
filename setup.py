@@ -26,7 +26,7 @@ setup(
     install_requires=['nianalysis>=0.1',
                       'xnat>=0.3.4',
                       'nipype>=1.0',
-                      'pydicom>=0.9.9'],
+                      'pydicom>=1.0'],
     dependency_links=[
         'git+https://github.com/mbi-image/nianalysis.git'],
     classifiers=[
