@@ -3,9 +3,9 @@ from nipype import config
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format, text_matrix_format  # @IgnorePep8
-from nianalysis.study.mri.coregistered import (  # @IgnorePep8
+from mbianalysis.study.mri.coregistered import (  # @IgnorePep8
     CoregisteredStudy, CoregisteredToMatrixStudy)
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestCoregistered(TestCase):
@@ -16,7 +16,7 @@ class TestCoregistered(TestCase):
             inputs={
                 'to_register': Dataset('flair', nifti_gz_format),
                 'reference': Dataset('mprage', nifti_gz_format)})
-        pipeline = study.registration_pipeline()
+        pipeline = study.linear_registration_pipeline()
         pipeline.run(work_dir=self.work_dir)
         self.assertDatasetCreated('registered.nii.gz', study.name)
         self.assertDatasetCreated('matrix.mat', study.name)
@@ -28,5 +28,5 @@ class TestCoregistered(TestCase):
                 'to_register': Dataset('flair', nifti_gz_format),
                 'reference': Dataset('mprage', nifti_gz_format),
                 'matrix': Dataset('matrix', text_matrix_format)})
-        study.registration_pipeline().run(work_dir=self.work_dir)
+        study.linear_registration_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('registered.nii.gz', study.name)
