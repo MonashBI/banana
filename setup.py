@@ -23,9 +23,12 @@ setup(
         'A data-centric NeuroImaging analysis package based on '
         'NiPype with archive backends for XNAT and local storage'),
     long_description=open('README.rst').read(),
-    install_requires=['xnat>=0.3.4',
+    install_requires=['nianalysis>=0.1',
+                      'xnat>=0.3.4',
                       'nipype>=1.0',
                       'pydicom>=0.9.9'],
+    dependency_links=[
+        'git+https://github.com/mbi-image/nianalysis.git'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
