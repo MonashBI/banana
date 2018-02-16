@@ -6,7 +6,7 @@ from nianalysis.requirements import spm12_req
 from nianalysis.citations import spm_cite
 from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, text_matrix_format)
-from ..base import set_data_specs, Study
+from nianalysis.study.base import set_data_specs, Study
 from nianalysis.dataset import DatasetSpec
 
 
@@ -37,7 +37,7 @@ class CoregisteredStudy(Study):
         reg_type = 'useqform'
         return self._fsl_flirt_pipeline(outputs, reg_type=reg_type, **options)
 
-    def _fsl_flirt_pipeline(self,  outputs, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self, outputs, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -171,7 +171,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
                             DatasetSpec('matrix', text_matrix_format)]
     _registration_outputs = [DatasetSpec('registered', nifti_gz_format)]
 
-    def _fsl_flirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self, outputs, **options):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a reference MR scan with FSL's FLIRT command
         using an existing registration matrix
@@ -187,7 +187,8 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         """
         default_interp = 'trilinear'
         pipeline = super(
-            CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(**options)
+            CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(
+                outputs, **options)
         # Edit the coregister pipeline from CoregisteredStudy
         pipeline.default_options['interpolate'] = default_interp
         pipeline._options['interpolate'] = options.get('interpolate',
