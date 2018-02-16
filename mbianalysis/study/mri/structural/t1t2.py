@@ -4,7 +4,7 @@ from nianalysis.data_formats import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from nianalysis.study.base import set_data_specs
 from nianalysis.dataset import DatasetSpec
-from ...combined import CombinedStudy
+from nianalysis.study.combined import CombinedStudy
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study

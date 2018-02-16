@@ -8,7 +8,7 @@ from nipype.interfaces import fsl
 from nianalysis.requirements import fsl5_req
 from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
-from ..combined import CombinedStudy
+from nianalysis.study.combined import CombinedStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
