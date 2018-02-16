@@ -81,8 +81,8 @@ class T1T2Study(CombinedStudy):
             citations=[fsl_cite],
             options=options)
         # Create apply mask node
-        apply_mask = pipeline.create_node(ApplyMask(), 'appy_mask',
-                                          [fsl5_req])
+        apply_mask = pipeline.create_node(
+            ApplyMask(), name='appy_mask', requirements=[fsl5_req])
         apply_mask.inputs.output_type = 'NIFTI_GZ'
         # Connect inputs
         pipeline.connect_input('t1', apply_mask, 'in_file')

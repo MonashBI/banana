@@ -4,14 +4,14 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from nianalysis.data_formats import (nifti_gz_format) # @IgnorePep8
 from mbianalysis.study.pet.dynamic.dPET import DynamicPETStudy  # @IgnorePep8
-from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
+from mbianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 
 
 class TestdPET(BaseTestCase):
 
     def test_reg(self):
         study = self.create_study(
-            DynamicPETStudy, 'reg', input_datasets={
+            DynamicPETStudy, 'reg', inputs={
                 'pet_volumes': Dataset('pet_image', nifti_gz_format)})
         study.ICA_pipeline().run(work_dir=self.work_dir,
                                              plugin='Linear')
