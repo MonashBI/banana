@@ -2,14 +2,17 @@ from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
-from nianalysis.data_formats import (nifti_gz_format, dicom_format)
+from nianalysis.data_formats import (nifti_gz_format, dicom_format,
+                                     eddy_par_format)
 from nianalysis.requirements import fsl5_req
-from nipype.interfaces.fsl import FLIRT, FNIRT, Reorient2Std
+from nipype.interfaces.fsl import (
+    FLIRT, FNIRT, Reorient2Std, ExtractROI, TOPUP, ApplyTOPUP)
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from mbianalysis.interfaces.mrtrix.transform import MRResize
 from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
-from mbianalysis.interfaces.custom.motion_correction import PrepareDWI
+from mbianalysis.interfaces.custom.motion_correction import (
+    PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nipype.interfaces.utility import Split
 
 
@@ -21,7 +24,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='brain_mask',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
@@ -42,7 +45,7 @@ class MRIStudy(Study):
         bet.inputs.frac = pipeline.option('f_threshold')
         bet.inputs.vertical_gradient = pipeline.option('g_threshold')
         # Connect inputs/outputs
-        pipeline.connect_input('primary', bet, 'in_file')
+        pipeline.connect_input('preproc', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         # Check inputs/outputs are connected
@@ -189,7 +192,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('masked', nifti_gz_format)],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
@@ -201,7 +204,7 @@ class MRIStudy(Study):
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
                                     name='fslswapdim')
         swap.inputs.new_dims = pipeline.option('new_dims')
-        pipeline.connect_input('masked', swap, 'in_file')
+        pipeline.connect_input('primary', swap, 'in_file')
         if pipeline.option('resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample")
             resample.inputs.voxel = pipeline.option('resolution')
@@ -214,16 +217,19 @@ class MRIStudy(Study):
         return pipeline
 
     def header_info_extraction_pipeline(self, **options):
+        return self.header_info_extraction_pipeline_factory('dicom_file', **options)
+
+    def header_info_extraction_pipeline_factory(self, dcm_in_name, **options):
 
         pipeline = self.create_pipeline(
             name='header_info_extraction',
-            inputs=[DatasetSpec('dicom_file', dicom_format)],
+            inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=[FieldSpec('tr', dtype=float),
                      FieldSpec('start_time', dtype=str),
                      FieldSpec('tot_duration', dtype=str),
                      FieldSpec('real_duration', dtype=str),
                      FieldSpec('ped', dtype=str),
-                     FieldSpec('phase_offset', dtype=str)],
+                     FieldSpec('pe_angle', dtype=str)],
             description=("Pipeline to extract the most important scan "
                          "information from the image header"),
             default_options={},
@@ -233,7 +239,7 @@ class MRIStudy(Study):
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
         hd_extraction.inputs.multivol = True
-        pipeline.connect_input('dicom_file', hd_extraction, 'dicom_folder')
+        pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
         pipeline.connect_output('tr', hd_extraction, 'tr')
         pipeline.connect_output('start_time', hd_extraction, 'start_time')
         pipeline.connect_output(
@@ -241,35 +247,14 @@ class MRIStudy(Study):
         pipeline.connect_output(
             'real_duration', hd_extraction, 'real_duration')
         pipeline.connect_output('ped', hd_extraction, 'ped')
-        pipeline.connect_output('phase_offset', hd_extraction, 'phase_offset')
+        pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
         pipeline.assert_connected()
         return pipeline
 
-    def distortion_correction_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='pe_distortion_correction',
-            inputs=[DatasetSpec('dicom_dwi', dicom_format),
-                    DatasetSpec('dicom_dwi_1', dicom_format),
-                    FieldSpec('ped', dtype=str),
-                    FieldSpec('phase_offset', dtype=str)],
-            outputs=[FieldSpec('tr', dtype=float),
-                     FieldSpec('start_time', dtype=str),
-                     FieldSpec('tot_duration', dtype=str),
-                     FieldSpec('real_duration', dtype=str),
-                     FieldSpec('ped', dtype=str),
-                     FieldSpec('phase_offset', dtype=str)],
-            description=("Dimensions swapping to ensure that all the images "
-                         "have the same orientations."),
-            default_options={},
-            version=1,
-            citations=[],
-            options=options)
-
-        prep_dwi1 = pipeline.create_node(PrepareDWI(), name='prepare_dwi_1')
-
     _data_specs = set_data_specs(
         DatasetSpec('primary', nifti_gz_format),
+        DatasetSpec('dicom_dwi', dicom_format),
+        DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
                     basic_preproc_pipeline),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
@@ -281,13 +266,13 @@ class MRIStudy(Study):
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
         DatasetSpec('dicom_file', dicom_format),
         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', dtype=str,
+        FieldSpec('start_time', str,
                   pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', dtype=str,
+        FieldSpec('real_duration', str,
                   pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', dtype=str,
+        FieldSpec('tot_duration', str,
                   pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', dtype=str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('phase_offset', dtype=str,
+        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline)
         )

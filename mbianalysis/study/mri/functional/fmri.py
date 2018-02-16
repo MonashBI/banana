@@ -339,7 +339,7 @@ class FunctionalMRIStudy(MRIStudy):
                                    requirements=[fsl5_req])
         mel.inputs.no_bet = True
         mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
-        mel.inputs.tr_sec = 0.754
+        mel.inputs.tr_sec = 2.45
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
@@ -395,7 +395,7 @@ class FunctionalMRIStudy(MRIStudy):
         fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
                                      requirements=[fsl5_req])
         fugue.inputs.unwarp_direction = 'x'
-        fugue.inputs.dwell_time = 0.00039
+        fugue.inputs.dwell_time = 0.000275
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
         pipeline.connect_input('rs_fmri', fugue, 'in_file')
@@ -424,7 +424,7 @@ class FunctionalMRIStudy(MRIStudy):
         filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
                                     requirements=[afni_req])
         filt.inputs.stopband = (0, 0.01)
-        filt.inputs.delta_t = 0.754
+        filt.inputs.delta_t = 2.45
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
@@ -692,7 +692,7 @@ class FunctionalMRIStudy(MRIStudy):
         gica.inputs.no_bet = True
         gica.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
         gica.inputs.bg_image = pipeline.option('MNI_template')
-        gica.inputs.tr_sec = 0.754
+        gica.inputs.tr_sec = 2.45
         gica.inputs.dim = 15
         gica.inputs.report = True
         gica.inputs.out_stats = True

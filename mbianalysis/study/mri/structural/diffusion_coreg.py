@@ -4,17 +4,17 @@ from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     eddy_par_format)
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
-from nianalysis.interfaces.custom.motion_correction import (
+from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from ..coregistered import CoregisteredStudy
-from ...combined import CombinedStudy
-from nianalysis.interfaces.custom.motion_correction import (
+from nianalysis.study.combined import CombinedStudy
+from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, AffineMatrixGeneration)
 from nianalysis.interfaces.converters import Dcm2niix
 from nipype.interfaces.utility import Merge as merge_lists
-from nianalysis.interfaces.mrtrix.preproc import DWIPreproc
+from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 
 
