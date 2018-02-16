@@ -2,7 +2,7 @@
 import os.path
 import errno
 from nianalysis.dataset import Dataset
-from nianalysis.study.mri.structural.t2star import T2StarStudy
+from mbianalysis.study.mri.structural.t2star import T2StarStudy
 from nianalysis.archive.xnat import XNATArchive
 from nianalysis.data_formats import zip_format
 import argparse
