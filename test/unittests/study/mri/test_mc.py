@@ -51,7 +51,8 @@ class TestMC(TestCase):
             MotionDetectionStudy, 'mc_detection_study', inputs={
                 'epi1': Dataset('epi', nifti_gz_format),
                 'epi2': Dataset('epi', nifti_gz_format),
-                'reference': Dataset('reference', nifti_gz_format)})
+                'epi1_reference': Dataset('reference', nifti_gz_format),
+                'epi2_reference': Dataset('reference', nifti_gz_format)})
         study.epi1_motion_mat_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('epi1_motion_mats', study.name)
 #     def test_t2_mc(self):
