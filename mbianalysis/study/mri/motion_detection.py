@@ -20,7 +20,7 @@ from .epi import CoregisteredEPIStudy
 
 
 class MotionDetectionStudy(CombinedStudy):
-    
+
     sub_study_specs = {
         'epi1': (CoregisteredEPIStudy, {
             'epi1': 'epi',
@@ -58,40 +58,40 @@ class MotionDetectionStudy(CombinedStudy):
             'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask',
             'ref_wmseg': 'ref_wmseg'})}
-    
+
     epi1_motion_alignment_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
-    
+
     epi1_epireg_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epireg_pipeline)
-    
+
     epi1_motion_mat_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_mat_pipeline)
-    
+
     epi1_basic_preproc_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
-    
+
     epi1_qform_transform_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_qform_transform_pipeline)
-    
+
     epi1_bet_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_bet_pipeline)
-    
+
     epi2_motion_alignment_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
-    
+
     epi2_epireg_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epireg_pipeline)
-    
+
     epi2_motion_mat_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_motion_mat_pipeline)
-    
+
     epi2_basic_preproc_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
-    
+
     epi2_qform_transform_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_qform_transform_pipeline)
-    
+
     epi1_ref_bet_pipeline = CombinedStudy.translate(
         'reference', CoregisteredEPIStudy.ref_bet_pipeline)
 
@@ -100,7 +100,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     epi1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'reference', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
-    
+
     epi2_ref_bet_pipeline = CombinedStudy.translate(
         'reference', CoregisteredEPIStudy.ref_bet_pipeline)
 
@@ -109,10 +109,10 @@ class MotionDetectionStudy(CombinedStudy):
 
     epi2_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'reference', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
-    
+
     epi2_bet_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_bet_pipeline)
-    
+
     _data_specs = set_data_specs(
         DatasetSpec('epi1', nifti_gz_format),
         DatasetSpec('epi2', nifti_gz_format),
@@ -165,7 +165,10 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('epi1_ref_brain', nifti_gz_format, epi1_ref_bet_pipeline),
         DatasetSpec('epi1_ref_brain_mask', nifti_gz_format,
                     epi1_ref_bet_pipeline),
-        DatasetSpec('epi1_ref_wmseg', nifti_gz_format, epi1_ref_segmentation_pipeline),
+        DatasetSpec(
+            'epi1_ref_wmseg',
+            nifti_gz_format,
+            epi1_ref_segmentation_pipeline),
         DatasetSpec('epi2_ref_preproc', nifti_gz_format,
                     epi2_ref_basic_preproc_pipeline),
         DatasetSpec('epi2_ref_brain', nifti_gz_format, epi2_ref_bet_pipeline),
