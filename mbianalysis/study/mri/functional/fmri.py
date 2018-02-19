@@ -188,7 +188,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-
     def optiBET(self, **options):
 
         pipeline = self.create_pipeline(

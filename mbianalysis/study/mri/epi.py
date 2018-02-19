@@ -1,14 +1,15 @@
 
 from base import MRIStudy
-from nianalysis.dataset import DatasetSpec
+from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
-                                     text_format, directory_format, par_format)
+                                     text_format, directory_format, par_format,
+                                     dicom_format)
 from nianalysis.citations import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirements import fsl5_req
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
-from nianalysis.study.multi import MultiStudy
+from nianalysis.study.combined import CombinedStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
@@ -18,6 +19,11 @@ class EPIStudy(MRIStudy):
     def brain_mask_pipeline(self, robust=True, f_threshold=0.2, **kwargs):
         return super(EPIStudy, self).brain_mask_pipeline(
             robust=robust, f_threshold=f_threshold, **kwargs)
+
+    def header_info_extraction_pipeline(self, **kwargs):
+        return (super(EPIStudy, self).
+                header_info_extraction_pipeline_factory(
+                    'primary', **kwargs))
 
     def motion_alignment_pipeline(self, **options):
 
@@ -51,14 +57,14 @@ class EPIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    _data_specs = set_data_specs(
         DatasetSpec('moco', nifti_gz_format, motion_alignment_pipeline),
         DatasetSpec('moco_mat', directory_format, motion_alignment_pipeline),
         DatasetSpec('moco_par', text_format, motion_alignment_pipeline),
         inherit_from=MRIStudy.data_specs())
 
 
-class CoregisteredEPIStudy(MultiStudy):
+class CoregisteredEPIStudy(CombinedStudy):
 
     sub_study_specs = {
         'epi': (EPIStudy, {
@@ -68,7 +74,13 @@ class CoregisteredEPIStudy(MultiStudy):
             'epi_brain_mask': 'brain_mask',
             'epi_moco': 'moco',
             'epi_moco_mat': 'moco_mat',
-            'epi_moco_par': 'moco_par'}),
+            'epi_moco_par': 'moco_par',
+            'epi_ped': 'ped',
+            'epi_pe_angle': 'pe_angle',
+            'epi_tr': 'tr',
+            'epi_real_duration': 'real_duration',
+            'epi_tot_duration': 'tot_duration',
+            'epi_start_time': 'start_time'}),
         'reference': (MRIStudy, {
             'reference': 'primary',
             'ref_preproc': 'preproc',
@@ -81,29 +93,33 @@ class CoregisteredEPIStudy(MultiStudy):
             'epi_qformed': 'qformed',
             'epi_qform_mat': 'qform_mat'})}
 
-    epi_basic_preproc_pipeline = MultiStudy.translate(
+    epi_basic_preproc_pipeline = CombinedStudy.translate(
         'epi', EPIStudy.basic_preproc_pipeline)
 
-    epi_bet_pipeline = MultiStudy.translate(
+    epi_bet_pipeline = CombinedStudy.translate(
         'epi', EPIStudy.brain_mask_pipeline)
 
-    ref_bet_pipeline = MultiStudy.translate(
+    epi_dcm_info_pipeline = CombinedStudy.translate(
+        'epi', EPIStudy.header_info_extraction_pipeline,
+        override_default_options={'multivol': True})
+
+    ref_bet_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_segmentation_pipeline = MultiStudy.translate(
+    ref_segmentation_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.segmentation_pipeline)
 
-    ref_basic_preproc_pipeline = MultiStudy.translate(
+    ref_basic_preproc_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    epi_qform_transform_pipeline = MultiStudy.translate(
+    epi_qform_transform_pipeline = CombinedStudy.translate(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
 
-    epi_motion_alignment_pipeline = MultiStudy.translate(
+    epi_motion_alignment_pipeline = CombinedStudy.translate(
         'epi', EPIStudy.motion_alignment_pipeline)
 
-    epi_brain_mask_pipeline = MultiStudy.translate(
+    epi_brain_mask_pipeline = CombinedStudy.translate(
         'epi', EPIStudy.brain_mask_pipeline)
 
     def epireg_pipeline(self, **options):
@@ -159,8 +175,8 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
-        DatasetSpec('epi', nifti_gz_format),
+    _data_specs = set_data_specs(
+        DatasetSpec('epi', dicom_format),
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('epi_preproc', nifti_gz_format,
                     epi_basic_preproc_pipeline),
@@ -190,4 +206,10 @@ class CoregisteredEPIStudy(MultiStudy):
         DatasetSpec('epi_moco_mat', directory_format,
                     epi_motion_alignment_pipeline),
         DatasetSpec('epi_moco_par', par_format,
-                    epi_motion_alignment_pipeline))
+                    epi_motion_alignment_pipeline),
+        FieldSpec('epi_ped', str, epi_dcm_info_pipeline),
+        FieldSpec('epi_pe_angle', str, epi_dcm_info_pipeline),
+        FieldSpec('epi_tr', float, epi_dcm_info_pipeline),
+        FieldSpec('epi_start_time', str, epi_dcm_info_pipeline),
+        FieldSpec('epi_real_duration', str, epi_dcm_info_pipeline),
+        FieldSpec('epi_tot_duration', str, epi_dcm_info_pipeline))
