@@ -25,9 +25,12 @@ class MotionDetectionStudy(CombinedStudy):
         'epi1': (CoregisteredEPIStudy, {
             'epi1': 'epi',
             'epi1_epireg_mat': 'epi_epireg_mat',
+            'epi1_epireg': 'epi_epireg',
             'epi1_qform_mat': 'epi_qform_mat',
             'epi1_qformed': 'epi_qformed',
             'epi1_moco_mat': 'epi_moco_mat',
+            'epi1_moco': 'epi_moco',
+            'epi1_moco_par': 'epi_moco_par',
             'epi1_motion_mats': 'epi_motion_mats',
             'epi1_preproc': 'epi_preproc',
             'epi1_ref_brain': 'ref_brain',
@@ -36,13 +39,22 @@ class MotionDetectionStudy(CombinedStudy):
             'epi1_ref_wmseg': 'ref_wmseg',
             'epi1_reference': 'reference',
             'epi1_brain': 'epi_brain',
-            'epi1_brain_mask': 'epi_brain_mask'}),
+            'epi1_brain_mask': 'epi_brain_mask',
+            'epi1_ped': 'epi_ped',
+            'epi1_pe_angle': 'epi_pe_angle',
+            'epi1_tr': 'epi_tr',
+            'epi1_real_duration': 'epi_real_duration',
+            'epi1_tot_duration': 'epi_tot_duration',
+            'epi1_start_time': 'epi_start_time'}),
         'epi2': (CoregisteredEPIStudy, {
             'epi2': 'epi',
             'epi2_epireg_mat': 'epi_epireg_mat',
+            'epi2_epireg': 'epi_epireg',
             'epi2_qform_mat': 'epi_qform_mat',
             'epi2_qformed': 'epi_qformed',
             'epi2_moco_mat': 'epi_moco_mat',
+            'epi2_moco': 'epi_moco',
+            'epi2_moco_par': 'epi_moco_par',
             'epi2_motion_mats': 'epi_motion_mats',
             'epi2_preproc': 'epi_preproc',
             'epi2_ref_brain': 'ref_brain',
@@ -51,19 +63,22 @@ class MotionDetectionStudy(CombinedStudy):
             'epi2_ref_wmseg': 'ref_wmseg',
             'epi2_reference': 'reference',
             'epi2_brain': 'epi_brain',
-            'epi2_brain_mask': 'epi_brain_mask'}),
-        'reference': (CoregisteredEPIStudy, {
-            'reference': 'reference',
-            'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask',
-            'ref_wmseg': 'ref_wmseg'})}
+            'epi2_brain_mask': 'epi_brain_mask',
+            'epi2_ped': 'epi_ped',
+            'epi2_pe_angle': 'epi_pe_angle',
+            'epi2_tr': 'epi_tr',
+            'epi2_real_duration': 'epi_real_duration',
+            'epi2_tot_duration': 'epi_tot_duration',
+            'epi2_start_time': 'epi_start_time'})}
 
     epi1_motion_alignment_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
     epi1_epireg_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epireg_pipeline)
+
+    epi1_dcm_info_pipeline = CombinedStudy.translate(
+        'epi1', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
     epi1_motion_mat_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_mat_pipeline)
@@ -80,6 +95,9 @@ class MotionDetectionStudy(CombinedStudy):
     epi2_motion_alignment_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
+    epi2_dcm_info_pipeline = CombinedStudy.translate(
+        'epi2', CoregisteredEPIStudy.epi_dcm_info_pipeline)
+
     epi2_epireg_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epireg_pipeline)
 
@@ -93,22 +111,22 @@ class MotionDetectionStudy(CombinedStudy):
         'epi2', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
     epi1_ref_bet_pipeline = CombinedStudy.translate(
-        'reference', CoregisteredEPIStudy.ref_bet_pipeline)
+        'epi1', CoregisteredEPIStudy.ref_bet_pipeline)
 
     epi1_ref_segmentation_pipeline = CombinedStudy.translate(
-        'reference', CoregisteredEPIStudy.ref_segmentation_pipeline)
+        'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
     epi1_ref_basic_preproc_pipeline = CombinedStudy.translate(
-        'reference', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
+        'epi1', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
     epi2_ref_bet_pipeline = CombinedStudy.translate(
-        'reference', CoregisteredEPIStudy.ref_bet_pipeline)
+        'epi2', CoregisteredEPIStudy.ref_bet_pipeline)
 
     epi2_ref_segmentation_pipeline = CombinedStudy.translate(
-        'reference', CoregisteredEPIStudy.ref_segmentation_pipeline)
+        'epi2', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
     epi2_ref_basic_preproc_pipeline = CombinedStudy.translate(
-        'reference', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
+        'epi2', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
     epi2_bet_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_bet_pipeline)
@@ -174,4 +192,17 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('epi2_ref_brain', nifti_gz_format, epi2_ref_bet_pipeline),
         DatasetSpec('epi2_ref_brain_mask', nifti_gz_format,
                     epi2_ref_bet_pipeline),
-        DatasetSpec('epi2_ref_wmseg', nifti_gz_format, epi2_ref_segmentation_pipeline))
+        DatasetSpec('epi2_ref_wmseg', nifti_gz_format,
+                    epi2_ref_segmentation_pipeline),
+        FieldSpec('epi1_ped', str, epi1_dcm_info_pipeline),
+        FieldSpec('epi1_pe_angle', str, epi1_dcm_info_pipeline),
+        FieldSpec('epi1_tr', float, epi1_dcm_info_pipeline),
+        FieldSpec('epi1_start_time', str, epi1_dcm_info_pipeline),
+        FieldSpec('epi1_real_duration', str, epi1_dcm_info_pipeline),
+        FieldSpec('epi1_tot_duration', str, epi1_dcm_info_pipeline),
+        FieldSpec('epi2_ped', str, epi2_dcm_info_pipeline),
+        FieldSpec('epi2_pe_angle', str, epi2_dcm_info_pipeline),
+        FieldSpec('epi2_tr', float, epi2_dcm_info_pipeline),
+        FieldSpec('epi2_start_time', str, epi2_dcm_info_pipeline),
+        FieldSpec('epi2_real_duration', str, epi2_dcm_info_pipeline),
+        FieldSpec('epi2_tot_duration', str, epi2_dcm_info_pipeline))

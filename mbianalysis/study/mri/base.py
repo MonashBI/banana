@@ -1,6 +1,6 @@
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import Study, set_specs
+from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      eddy_par_format)
@@ -217,7 +217,8 @@ class MRIStudy(Study):
         return pipeline
 
     def header_info_extraction_pipeline(self, **options):
-        return self.header_info_extraction_pipeline_factory('dicom_file', **options)
+        return self.header_info_extraction_pipeline_factory('dicom_file',
+                                                            **options)
 
     def header_info_extraction_pipeline_factory(self, dcm_in_name, **options):
 
@@ -232,13 +233,13 @@ class MRIStudy(Study):
                      FieldSpec('pe_angle', dtype=str)],
             description=("Pipeline to extract the most important scan "
                          "information from the image header"),
-            default_options={},
+            default_options={'multivol': True},
             version=1,
             citations=[],
             options=options)
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
-        hd_extraction.inputs.multivol = True
+        hd_extraction.inputs.multivol = pipeline.option('multivol')
         pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
         pipeline.connect_output('tr', hd_extraction, 'tr')
         pipeline.connect_output('start_time', hd_extraction, 'start_time')
@@ -251,8 +252,8 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
-        DatasetSpec('primary', nifti_gz_format),
+    _data_specs = set_data_specs(
+        DatasetSpec('primary', dicom_format),
         DatasetSpec('dicom_dwi', dicom_format),
         DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
