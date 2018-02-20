@@ -12,6 +12,7 @@ from .coregistered import CoregisteredStudy
 from nianalysis.study.combined import CombinedStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
+from cgitb import text
 
 
 class EPIStudy(MRIStudy):
@@ -80,7 +81,8 @@ class CoregisteredEPIStudy(CombinedStudy):
             'epi_tr': 'tr',
             'epi_real_duration': 'real_duration',
             'epi_tot_duration': 'tot_duration',
-            'epi_start_time': 'start_time'}),
+            'epi_start_time': 'start_time',
+            'epi_dcm_info': 'dcm_info'}),
         'reference': (MRIStudy, {
             'reference': 'primary',
             'ref_preproc': 'preproc',
@@ -207,6 +209,7 @@ class CoregisteredEPIStudy(CombinedStudy):
                     epi_motion_alignment_pipeline),
         DatasetSpec('epi_moco_par', par_format,
                     epi_motion_alignment_pipeline),
+        DatasetSpec('epi_dcm_info', text_format, epi_dcm_info_pipeline),
         FieldSpec('epi_ped', str, epi_dcm_info_pipeline),
         FieldSpec('epi_pe_angle', str, epi_dcm_info_pipeline),
         FieldSpec('epi_tr', float, epi_dcm_info_pipeline),
