@@ -3,7 +3,7 @@ from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
-                                     eddy_par_format)
+                                     eddy_par_format, text_format)
 from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import (
     FLIRT, FNIRT, Reorient2Std, ExtractROI, TOPUP, ApplyTOPUP)
@@ -230,7 +230,8 @@ class MRIStudy(Study):
                      FieldSpec('tot_duration', dtype=str),
                      FieldSpec('real_duration', dtype=str),
                      FieldSpec('ped', dtype=str),
-                     FieldSpec('pe_angle', dtype=str)],
+                     FieldSpec('pe_angle', dtype=str),
+                     DatasetSpec('dcm_info', text_format)],
             description=("Pipeline to extract the most important scan "
                          "information from the image header"),
             default_options={'multivol': True},
@@ -249,6 +250,7 @@ class MRIStudy(Study):
             'real_duration', hd_extraction, 'real_duration')
         pipeline.connect_output('ped', hd_extraction, 'ped')
         pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
+        pipeline.connect_output('dcm_info', hd_extraction, 'dcm_info')
         pipeline.assert_connected()
         return pipeline
 
@@ -275,5 +277,6 @@ class MRIStudy(Study):
                   pipeline=header_info_extraction_pipeline),
         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
         FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline)
+                  pipeline=header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline)
         )

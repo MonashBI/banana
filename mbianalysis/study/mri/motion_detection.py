@@ -2,7 +2,7 @@ from .base import MRIStudy
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
-    par_format)
+    par_format, text_format)
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
@@ -10,13 +10,9 @@ from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
 from nianalysis.study.combined import CombinedStudy
-from mbianalysis.interfaces.custom.motion_correction import (
-    MotionMatCalculation, AffineMatrixGeneration)
-from nianalysis.interfaces.converters import Dcm2niix
-from nipype.interfaces.utility import Merge as merge_lists
-from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
-from nipype.interfaces.fsl.utils import Merge as fsl_merge
+from mbianalysis.interfaces.custom.dicom import ScanTimesInfo
 from .epi import CoregisteredEPIStudy
+from nipype.interfaces.utility import Merge as merge_lists
 
 
 class MotionDetectionStudy(CombinedStudy):
@@ -45,7 +41,8 @@ class MotionDetectionStudy(CombinedStudy):
             'epi1_tr': 'epi_tr',
             'epi1_real_duration': 'epi_real_duration',
             'epi1_tot_duration': 'epi_tot_duration',
-            'epi1_start_time': 'epi_start_time'}),
+            'epi1_start_time': 'epi_start_time',
+            'epi1_dcm_info': 'epi_dcm_info'}),
         'epi2': (CoregisteredEPIStudy, {
             'epi2': 'epi',
             'epi2_epireg_mat': 'epi_epireg_mat',
@@ -69,7 +66,8 @@ class MotionDetectionStudy(CombinedStudy):
             'epi2_tr': 'epi_tr',
             'epi2_real_duration': 'epi_real_duration',
             'epi2_tot_duration': 'epi_tot_duration',
-            'epi2_start_time': 'epi_start_time'})}
+            'epi2_start_time': 'epi_start_time',
+            'epi2_dcm_info': 'epi_dcm_info'})}
 
     epi1_motion_alignment_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
@@ -131,9 +129,33 @@ class MotionDetectionStudy(CombinedStudy):
     epi2_bet_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_bet_pipeline)
 
+    def scans_time_info_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='scan_time_information',
+            inputs=[DatasetSpec('epi1_dcm_info', text_format),
+                    DatasetSpec('epi2_dcm_info', text_format)],
+            outputs=[DatasetSpec('time_infos', text_format)],
+            description=("Extract time information from all the scans."),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        merge = pipeline.create_node(merge_lists(2), name='merge_inputs')
+        pipeline.connect_input('epi1_dcm_info', merge, 'in1')
+        pipeline.connect_input('epi2_dcm_info', merge, 'in2')
+
+        time_info = pipeline.create_node(ScanTimesInfo(),
+                                         name='scan_time_info')
+        pipeline.connect(merge, 'out', time_info, 'dicom_infos')
+        pipeline.connect_output('time_infos', time_info, 'scan_time_infos')
+        pipeline.assert_connected()
+        return pipeline
+
     _data_specs = set_data_specs(
-        DatasetSpec('epi1', nifti_gz_format),
-        DatasetSpec('epi2', nifti_gz_format),
+        DatasetSpec('epi1', dicom_format),
+        DatasetSpec('epi2', dicom_format),
         DatasetSpec('epi1_reference', nifti_gz_format),
         DatasetSpec('epi2_reference', nifti_gz_format),
         DatasetSpec('epi1_preproc', nifti_gz_format,
@@ -194,6 +216,10 @@ class MotionDetectionStudy(CombinedStudy):
                     epi2_ref_bet_pipeline),
         DatasetSpec('epi2_ref_wmseg', nifti_gz_format,
                     epi2_ref_segmentation_pipeline),
+        DatasetSpec('epi1_dcm_info', text_format,
+                    epi1_dcm_info_pipeline),
+        DatasetSpec('epi2_dcm_info', text_format,
+                    epi2_dcm_info_pipeline),
         FieldSpec('epi1_ped', str, epi1_dcm_info_pipeline),
         FieldSpec('epi1_pe_angle', str, epi1_dcm_info_pipeline),
         FieldSpec('epi1_tr', float, epi1_dcm_info_pipeline),
@@ -205,4 +231,5 @@ class MotionDetectionStudy(CombinedStudy):
         FieldSpec('epi2_tr', float, epi2_dcm_info_pipeline),
         FieldSpec('epi2_start_time', str, epi2_dcm_info_pipeline),
         FieldSpec('epi2_real_duration', str, epi2_dcm_info_pipeline),
-        FieldSpec('epi2_tot_duration', str, epi2_dcm_info_pipeline))
+        FieldSpec('epi2_tot_duration', str, epi2_dcm_info_pipeline),
+        DatasetSpec('time_infos', text_format, scans_time_info_pipeline))
