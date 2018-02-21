@@ -433,9 +433,6 @@ class MeanDisplacementCalculation(BaseInterface):
             (x[0], (dt.datetime.strptime(x[1], '%H%M%S.%f') -
                     dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
              .total_seconds(), x[2], x[3]) for x in list_inputs]
-#         study_start = dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f')
-#         study_end = (dt.datetime.strptime(list_inputs[-1][1], '%H%M%S.%f') +
-#                      dt.timedelta(seconds=float(list_inputs[-1][2])))
         study_len = int((list_inputs[-1][1]+float(list_inputs[-1][2]))*1000)
         mean_displacement_rc = np.zeros(study_len)
         motion_par_rc = np.zeros((6, study_len))
@@ -498,7 +495,12 @@ class MeanDisplacementCalculation(BaseInterface):
         for i in range(len(to_save)):
             with open('{}.txt'.format(to_save_name[i]), 'w') as f:
                 for line in to_save[i]:
-                    f.write(str(line)+'\n')
+                    if 'motion_par' in to_save_name[i]:
+                        for mp in line:
+                            f.write(str(mp)+' ')
+                        f.write('\n')
+                    else:
+                        f.write(str(line)+'\n')
                 f.close()
 
         return runtime
