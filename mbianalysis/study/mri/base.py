@@ -14,6 +14,7 @@ from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nipype.interfaces.utility import Split
+from nianalysis.interfaces.mrtrix import MRConvert
 
 
 class MRIStudy(Study):
@@ -192,7 +193,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            inputs=[DatasetSpec('primary_nifti', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
@@ -204,7 +205,7 @@ class MRIStudy(Study):
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
                                     name='fslswapdim')
         swap.inputs.new_dims = pipeline.option('new_dims')
-        pipeline.connect_input('primary', swap, 'in_file')
+        pipeline.connect_input('primary_nifti', swap, 'in_file')
         if pipeline.option('resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample")
             resample.inputs.voxel = pipeline.option('resolution')
@@ -254,8 +255,34 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
+    def dcm2nii_conversion_pipeline(self, **kwargs):
+        return self.dcm2nii_conversion_pipeline_factory(
+                    'primary', **kwargs)
+
+    def dcm2nii_conversion_pipeline_factory(self, dcm_in_name, **options):
+        pipeline = self.create_pipeline(
+            name='dicom2nifti_coversion',
+            inputs=[DatasetSpec(dcm_in_name, dicom_format)],
+            outputs=[DatasetSpec(dcm_in_name+'_nifti', nifti_gz_format)],
+            description=("DICOM to NIFTI conversion for topup input"),
+            default_options={},
+            version=1,
+            citations=[],
+            options=options)
+
+        converter = pipeline.create_node(MRConvert(), name='converter1')
+#         converter.inputs.compression = 'y'
+        converter.inputs.out_ext = '.nii.gz'
+        pipeline.connect_input(dcm_in_name, converter, 'in_file')
+        pipeline.connect_output(
+            dcm_in_name+'_nifti', converter, 'out_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
     _data_specs = set_data_specs(
         DatasetSpec('primary', dicom_format),
+        DatasetSpec('primary_nifti', nifti_gz_format),
         DatasetSpec('dicom_dwi', dicom_format),
         DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,

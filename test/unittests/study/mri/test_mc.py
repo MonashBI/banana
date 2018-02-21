@@ -1,6 +1,7 @@
 from nipype import config
 from mbianalysis.study.mri.structural.t1 import CoregisteredT1Study
 from mbianalysis.study.mri.structural.t2 import CoregisteredT2Study
+from nianalysis.data_formats import directory_format
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset, Field  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format, dicom_format  # @IgnorePep8
@@ -51,6 +52,8 @@ class TestMC(TestCase):
             MotionDetectionStudy, 'mc_detection_study', inputs={
                 'epi1': Dataset('epi_dicom', dicom_format),
                 'epi2': Dataset('epi2_dicom', dicom_format),
+                'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
+                'epi2_motion_mats': Dataset('epi2_motion_mats', directory_format),
                 'epi1_reference': Dataset('reference', nifti_gz_format),
                 'epi2_reference': Dataset('reference', nifti_gz_format)})
         study.mean_displacement_pipeline().run(work_dir=self.work_dir)
