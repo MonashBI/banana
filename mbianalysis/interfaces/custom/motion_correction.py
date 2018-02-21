@@ -9,6 +9,7 @@ import shutil
 import nibabel as nib
 from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
+import datetime as dt
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -396,5 +397,157 @@ class AffineMatrixGeneration(BaseInterface):
         _, out_name, _ = split_filename(self.inputs.motion_parameters)
 
         outputs["affine_matrices"] = os.path.abspath(out_name)
+
+        return outputs
+
+
+class MeanDisplacementCalculationInputSpec(BaseInterfaceInputSpec):
+
+    list_inputs = traits.List(desc='List of inputs.')
+    reference = File(desc='Reference image.')
+
+
+class MeanDisplacementCalculationOutputSpec(TraitedSpec):
+
+    mean_displacement = File(exists=True)
+    mean_displacement_rc = File(exists=True)
+    mean_displacement_consecutive = File(exists=True)
+    start_times = File(exists=True)
+    motion_parameters = File(exists=True)
+
+
+class MeanDisplacementCalculation(BaseInterface):
+
+    input_spec = MeanDisplacementCalculationInputSpec
+    output_spec = MeanDisplacementCalculationOutputSpec
+
+    def _run_interface(self, runtime):
+
+        list_inputs = self.inputs.list_inputs
+        ref = nib.load(self.inputs.reference)
+        ref_data = ref.get_data()
+        # centre of gravity
+        ref_cog = np.asarray(snm.center_of_mass(ref_data))
+        list_inputs = sorted(list_inputs, key=lambda k: k[1])
+        list_inputs = [
+            (x[0], (dt.datetime.strptime(x[1], '%H%M%S.%f') -
+                    dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
+             .total_seconds(), x[2]) for x in list_inputs]
+#         study_start = dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f')
+#         study_end = (dt.datetime.strptime(list_inputs[-1][1], '%H%M%S.%f') +
+#                      dt.timedelta(seconds=float(list_inputs[-1][2])))
+        study_len = int((list_inputs[-1][1]+list_inputs[-1][2])*1000)
+        mean_displacement_rc = np.zeros(study_len)
+        motion_par_rc = np.zeros((6, study_len))
+        mean_displacement = []
+        idt_mat = np.eye(4)
+        all_mats = []
+        start_times = []
+        for f in list_inputs:
+            mats = sorted(glob.glob(f[0]+'/*qform_inv.mat'))
+            all_mats = all_mats+mats
+            start_scan = f[1]
+            start_times.append((
+                dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f') +
+                dt.timedelta(seconds=start_scan)).strftime('%H%M%S.%f'))
+            tr = f[3]
+            if len(mats) > 1:
+                for i, mat in enumerate(mats):
+                    start_scan = start_scan+tr*i
+                    start_times.append((
+                        dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f') +
+                        dt.timedelta(seconds=start_scan))
+                                       .strftime('%H%M%S.%f'))
+                    end_scan = start_scan+tr*(i+1)
+                    m = np.loadtxt(mat)
+                    md = self.rmsdiff(ref_cog, m, idt_mat)
+                    mean_displacement_rc[start_scan:end_scan] = md
+                    mean_displacement.append(md)
+                    mp = self.avscale(m, ref_cog)
+                    motion_par_rc[:, start_scan:end_scan] = mp
+            elif len(mats) == 1:
+                end_scan = start_scan+f[2]
+                m = np.loadtxt(mats[0])
+                md = self.rmsdiff(ref_cog, m, idt_mat)
+                mean_displacement_rc[start_scan:end_scan] = md
+                mean_displacement.append(md)
+                mp = self.avscale(m, ref_cog)
+                motion_par_rc[:, start_scan:end_scan] = mp
+
+        mean_displacement_consecutive = []
+        for i in range(len(all_mats)-1):
+            m1 = np.loadtxt(all_mats[i])
+            m2 = np.loadtxt(all_mats[i+1])
+            md_consecutive = self.rmsdiff(ref_cog, m1, m2)
+            mean_displacement_consecutive.append(md_consecutive)
+
+        to_save = [mean_displacement, mean_displacement_consecutive,
+                   mean_displacement_rc, motion_par_rc, start_times]
+        to_save_name = ['mean_displacement', 'mean_displacement_consecutive',
+                        'mean_displacement_rc', 'motion_par_rc', 'start_times']
+        for i in range(len(to_save)):
+            with open('{}.txt'.format(to_save_name[i]), 'w') as f:
+                for line in to_save[i]:
+                    f.write(line+'\n')
+                f.close()
+
+        return runtime
+
+    def rmsdiff(self, cog, T1, T2):
+
+        R = 80
+        M = np.dot(T2, np.linalg.inv(T1))-np.identity(4)
+        A = M[:3, :3]
+        t = M[:3, 3]
+        Tr = np.trace(np.dot(A.T, A))
+        II = (t+np.dot(A, cog)).T
+        III = t+np.dot(A, cog)
+        cost = Tr*R**2/5
+        rms = np.sqrt(cost + np.dot(II, III))
+
+        return rms
+
+    def avscale(self, mat, com, res=[1, 1, 1]):
+
+        c = np.asarray(com)
+
+        rot_y = np.arcsin(-mat[0, 2])
+        cos_y = np.cos(rot_y)
+        cos_x = mat[2, 2]/cos_y
+        if np.abs(cos_x) > 1:
+            cos_x = 1*np.sign(cos_x)
+        rot_x = np.arccos(cos_x)
+        sin_z = mat[0, 1]/cos_y
+        if np.abs(sin_z) > 1:
+            sin_z = 1*np.sign(sin_z)
+        rot_z = np.arcsin(sin_z)
+
+        R0 = np.eye(4)
+        T = np.eye(4)
+        R0[:3, :3] = mat[:3, :3]
+        R0[:3, 3] = mat[:3, 3]
+        T[:3, 3] = c*res
+
+        T_1 = np.linalg.inv(T)
+
+        new_orig = np.dot(T_1, np.dot(R0, T))[:, -1]
+
+        trans_tot = new_orig
+        trans_x = trans_tot[0]
+        trans_y = trans_tot[1]
+        trans_z = trans_tot[2]
+
+        return [rot_x, rot_y, rot_z, trans_x, trans_y, trans_z]
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["mean_displacement"] = os.getcwd()+'/mean_displacement.txt'
+        outputs["mean_displacement_rc"] = (
+            os.getcwd()+'/mean_displacement_rc.txt')
+        outputs["mean_displacement_consecutive"] = (
+            os.getcwd()+'/mean_displacement_consecutive.txt')
+        outputs["start_times"] = os.getcwd()+'/start_times.txt'
+        outputs["motion_parameters"] = os.getcwd()+'/motion_par_rc.txt'
 
         return outputs
