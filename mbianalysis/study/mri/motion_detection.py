@@ -212,7 +212,7 @@ class MotionDetectionStudy(CombinedStudy):
             name='mean_displacement_calculation',
             inputs=[DatasetSpec('epi1_motion_mats', directory_format),
                     DatasetSpec('epi2_motion_mats', directory_format),
-                    DatasetSpec('epi1_reference', nifti_gz_format),
+                    DatasetSpec('epi1_ref_brain', nifti_gz_format),
                     FieldSpec('epi1_tr', float),
                     FieldSpec('epi1_start_time', str),
                     FieldSpec('epi1_real_duration', str),
@@ -254,7 +254,7 @@ class MotionDetectionStudy(CombinedStudy):
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
         pipeline.connect(merge_scans, 'out', md, 'list_inputs')
-        pipeline.connect_input('epi1_reference', md, 'reference')
+        pipeline.connect_input('epi1_ref_brain', md, 'reference')
         pipeline.connect_output('mean_displacement', md, 'mean_displacement')
         pipeline.connect_output(
             'mean_displacement_rc', md, 'mean_displacement_rc')
