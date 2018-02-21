@@ -53,8 +53,8 @@ class TestMC(TestCase):
                 'epi2': Dataset('epi2_dicom', dicom_format),
                 'epi1_reference': Dataset('reference', nifti_gz_format),
                 'epi2_reference': Dataset('reference', nifti_gz_format)})
-        study.scans_time_info_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('time_infos.txt', study.name)
+        study.mean_displacement_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('mean_displacement.txt', study.name)
 #     def test_t2_mc(self):
 #         study = self.create_study(
 #             CoregisteredT2Study, 't2_reg_study', inputs={

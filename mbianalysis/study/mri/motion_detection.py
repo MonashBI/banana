@@ -5,7 +5,7 @@ from nianalysis.data_formats import (
     par_format, text_format)
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
-    PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
+    MeanDisplacementCalculation)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
@@ -153,6 +153,62 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def mean_displacement_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='mean_displacement_calculation',
+            inputs=[DatasetSpec('epi1_moco_mat', directory_format),
+                    DatasetSpec('epi2_moco_mat', directory_format),
+                    DatasetSpec('epi1_ref_brain', nifti_gz_format),
+                    FieldSpec('epi1_tr', float),
+                    FieldSpec('epi1_start_time', str),
+                    FieldSpec('epi1_real_duration', str),
+                    FieldSpec('epi2_tr', float),
+                    FieldSpec('epi2_start_time', str),
+                    FieldSpec('epi2_real_duration', str)],
+            outputs=[DatasetSpec('mean_displacement', text_format),
+                     DatasetSpec('mean_displacement_rc', text_format),
+                     DatasetSpec('mean_displacement_consecutive', text_format),
+                     DatasetSpec('start_times', text_format),
+                     DatasetSpec('motion_par_rc', text_format)],
+            description=("Calculate the mean displacement between each motion"
+                         " matrix and a reference."),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        merge_epi1 = pipeline.create_node(merge_lists(4), name='merge_epi1')
+        pipeline.connect_input('epi1_moco_mat', merge_epi1, 'in1')
+        pipeline.connect_input('epi1_start_time', merge_epi1, 'in2')
+        pipeline.connect_input('epi1_real_duration', merge_epi1, 'in3')
+        pipeline.connect_input('epi1_tr', merge_epi1, 'in4')
+
+        merge_epi2 = pipeline.create_node(merge_lists(4), name='merge_epi2')
+        pipeline.connect_input('epi2_moco_mat', merge_epi2, 'in1')
+        pipeline.connect_input('epi2_start_time', merge_epi2, 'in2')
+        pipeline.connect_input('epi2_real_duration', merge_epi2, 'in3')
+        pipeline.connect_input('epi2_tr', merge_epi2, 'in4')
+
+        merge_scans = pipeline.create_node(merge_lists(2), name='merge_scans')
+        pipeline.connect(merge_epi1, 'out', merge_scans, 'in1')
+        pipeline.connect(merge_epi2, 'out', merge_scans, 'in2')
+
+        md = pipeline.create_node(MeanDisplacementCalculation(),
+                                  name='scan_time_info')
+        pipeline.connect(merge_scans, 'out', md, 'list_inputs')
+        pipeline.connect_input('epi1_ref_brain', md, 'reference')
+        pipeline.connect_output('mean_displacement', md, 'mean_displacement')
+        pipeline.connect_output(
+            'mean_displacement_rc', md, 'mean_displacement_rc')
+        pipeline.connect_output(
+            'mean_displacement_consecutive', md,
+            'mean_displacement_consecutive')
+        pipeline.connect_output('start_times', md, 'start_times')
+        pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
+        pipeline.assert_connected()
+        return pipeline
+
     _data_specs = set_data_specs(
         DatasetSpec('epi1', dicom_format),
         DatasetSpec('epi2', dicom_format),
@@ -232,4 +288,12 @@ class MotionDetectionStudy(CombinedStudy):
         FieldSpec('epi2_start_time', str, epi2_dcm_info_pipeline),
         FieldSpec('epi2_real_duration', str, epi2_dcm_info_pipeline),
         FieldSpec('epi2_tot_duration', str, epi2_dcm_info_pipeline),
-        DatasetSpec('time_infos', text_format, scans_time_info_pipeline))
+        DatasetSpec('time_infos', text_format, scans_time_info_pipeline),
+        DatasetSpec('mean_displacement', text_format,
+                    mean_displacement_pipeline),
+        DatasetSpec('mean_displacement_rc', text_format,
+                    mean_displacement_pipeline),
+        DatasetSpec('mean_displacement_consecutive', text_format,
+                    mean_displacement_pipeline),
+        DatasetSpec('start_times', text_format, mean_displacement_pipeline),
+        DatasetSpec('motion_par_rc', text_format, mean_displacement_pipeline))

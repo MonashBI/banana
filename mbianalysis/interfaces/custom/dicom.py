@@ -6,8 +6,8 @@ import numpy as np
 import glob
 import pydicom
 from nipype.utils.filemanip import split_filename
-import datetime
 import os
+import datetime as dt
 
 
 class DicomHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
@@ -144,9 +144,8 @@ class ScanTimesInfo(BaseInterface):
         time_info = {}
         for i in range(1, len(start_times)):
             time_info[start_times[i-1][0]] = {}
-            start = datetime.datetime.strptime(start_times[i-1][1],
-                                               '%H%M%S.%f')
-            end = datetime.datetime.strptime(start_times[i][1], '%H%M%S.%f')
+            start = dt.datetime.strptime(start_times[i-1][1], '%H%M%S.%f')
+            end = dt.datetime.strptime(start_times[i][1], '%H%M%S.%f')
             duration = float((end-start).total_seconds())
             time_info[start_times[i-1][0]]['scan_duration'] = duration
             time_offset = duration - float(start_times[i-1][2])
