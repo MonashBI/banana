@@ -13,6 +13,7 @@ from nianalysis.study.combined import CombinedStudy
 from mbianalysis.interfaces.custom.dicom import ScanTimesInfo
 from .epi import CoregisteredEPIStudy
 from nipype.interfaces.utility import Merge as merge_lists
+from nianalysis.interfaces.converters import Dcm2niix
 
 
 class MotionDetectionStudy(CombinedStudy):
@@ -20,6 +21,7 @@ class MotionDetectionStudy(CombinedStudy):
     sub_study_specs = {
         'epi1': (CoregisteredEPIStudy, {
             'epi1': 'epi',
+            'epi1_nifti': 'epi_nifti',
             'epi1_epireg_mat': 'epi_epireg_mat',
             'epi1_epireg': 'epi_epireg',
             'epi1_qform_mat': 'epi_qform_mat',
@@ -45,6 +47,7 @@ class MotionDetectionStudy(CombinedStudy):
             'epi1_dcm_info': 'epi_dcm_info'}),
         'epi2': (CoregisteredEPIStudy, {
             'epi2': 'epi',
+            'epi2_nifti': 'epi_nifti',
             'epi2_epireg_mat': 'epi_epireg_mat',
             'epi2_epireg': 'epi_epireg',
             'epi2_qform_mat': 'epi_qform_mat',
@@ -71,6 +74,9 @@ class MotionDetectionStudy(CombinedStudy):
 
     epi1_motion_alignment_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
+
+    epi1_dcm2nii_pipeline = CombinedStudy.translate(
+        'epi1', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
     epi1_epireg_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.epireg_pipeline)
@@ -117,8 +123,14 @@ class MotionDetectionStudy(CombinedStudy):
     epi1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
+    epi1_ref_nifti_pipeline = CombinedStudy.translate(
+        'epi1', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
+
     epi2_ref_bet_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.ref_bet_pipeline)
+
+    epi2_ref_nifti_pipeline = CombinedStudy.translate(
+        'epi2', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
     epi2_ref_segmentation_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.ref_segmentation_pipeline)
@@ -128,6 +140,9 @@ class MotionDetectionStudy(CombinedStudy):
 
     epi2_bet_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_bet_pipeline)
+
+    epi2_dcm2nii_pipeline = CombinedStudy.translate(
+        'epi2', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
     def scans_time_info_pipeline(self, **options):
 
@@ -157,9 +172,9 @@ class MotionDetectionStudy(CombinedStudy):
 
         pipeline = self.create_pipeline(
             name='mean_displacement_calculation',
-            inputs=[DatasetSpec('epi1_moco_mat', directory_format),
-                    DatasetSpec('epi2_moco_mat', directory_format),
-                    DatasetSpec('epi1_ref_brain', nifti_gz_format),
+            inputs=[DatasetSpec('epi1_motion_mats', directory_format),
+                    DatasetSpec('epi2_motion_mats', directory_format),
+                    DatasetSpec('epi1_reference', nifti_gz_format),
                     FieldSpec('epi1_tr', float),
                     FieldSpec('epi1_start_time', str),
                     FieldSpec('epi1_real_duration', str),
@@ -179,25 +194,26 @@ class MotionDetectionStudy(CombinedStudy):
             options=options)
 
         merge_epi1 = pipeline.create_node(merge_lists(4), name='merge_epi1')
-        pipeline.connect_input('epi1_moco_mat', merge_epi1, 'in1')
+        pipeline.connect_input('epi1_motion_mats', merge_epi1, 'in1')
         pipeline.connect_input('epi1_start_time', merge_epi1, 'in2')
         pipeline.connect_input('epi1_real_duration', merge_epi1, 'in3')
         pipeline.connect_input('epi1_tr', merge_epi1, 'in4')
 
         merge_epi2 = pipeline.create_node(merge_lists(4), name='merge_epi2')
-        pipeline.connect_input('epi2_moco_mat', merge_epi2, 'in1')
+        pipeline.connect_input('epi2_motion_mats', merge_epi2, 'in1')
         pipeline.connect_input('epi2_start_time', merge_epi2, 'in2')
         pipeline.connect_input('epi2_real_duration', merge_epi2, 'in3')
         pipeline.connect_input('epi2_tr', merge_epi2, 'in4')
 
         merge_scans = pipeline.create_node(merge_lists(2), name='merge_scans')
+        merge_scans.inputs.no_flatten = True
         pipeline.connect(merge_epi1, 'out', merge_scans, 'in1')
         pipeline.connect(merge_epi2, 'out', merge_scans, 'in2')
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
         pipeline.connect(merge_scans, 'out', md, 'list_inputs')
-        pipeline.connect_input('epi1_ref_brain', md, 'reference')
+        pipeline.connect_input('epi1_reference', md, 'reference')
         pipeline.connect_output('mean_displacement', md, 'mean_displacement')
         pipeline.connect_output(
             'mean_displacement_rc', md, 'mean_displacement_rc')
@@ -213,6 +229,8 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('epi1', dicom_format),
         DatasetSpec('epi2', dicom_format),
         DatasetSpec('epi1_reference', nifti_gz_format),
+        DatasetSpec('epi1_nifti', nifti_gz_format, epi1_dcm2nii_pipeline),
+        DatasetSpec('epi2_nifti', nifti_gz_format, epi2_dcm2nii_pipeline),
         DatasetSpec('epi2_reference', nifti_gz_format),
         DatasetSpec('epi1_preproc', nifti_gz_format,
                     epi1_basic_preproc_pipeline),

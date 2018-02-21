@@ -432,11 +432,11 @@ class MeanDisplacementCalculation(BaseInterface):
         list_inputs = [
             (x[0], (dt.datetime.strptime(x[1], '%H%M%S.%f') -
                     dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
-             .total_seconds(), x[2]) for x in list_inputs]
+             .total_seconds(), x[2], x[3]) for x in list_inputs]
 #         study_start = dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f')
 #         study_end = (dt.datetime.strptime(list_inputs[-1][1], '%H%M%S.%f') +
 #                      dt.timedelta(seconds=float(list_inputs[-1][2])))
-        study_len = int((list_inputs[-1][1]+list_inputs[-1][2])*1000)
+        study_len = int((list_inputs[-1][1]+float(list_inputs[-1][2]))*1000)
         mean_displacement_rc = np.zeros(study_len)
         motion_par_rc = np.zeros((6, study_len))
         mean_displacement = []
@@ -444,35 +444,45 @@ class MeanDisplacementCalculation(BaseInterface):
         all_mats = []
         start_times = []
         for f in list_inputs:
-            mats = sorted(glob.glob(f[0]+'/*qform_inv.mat'))
+            mats = sorted(glob.glob(f[0]+'/*inv.mat'))
             all_mats = all_mats+mats
             start_scan = f[1]
-            start_times.append((
-                dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f') +
-                dt.timedelta(seconds=start_scan)).strftime('%H%M%S.%f'))
             tr = f[3]
             if len(mats) > 1:
                 for i, mat in enumerate(mats):
-                    start_scan = start_scan+tr*i
                     start_times.append((
-                        dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f') +
+                        dt.datetime.strptime(
+                            self.inputs.list_inputs[0][1], '%H%M%S.%f') +
                         dt.timedelta(seconds=start_scan))
                                        .strftime('%H%M%S.%f'))
-                    end_scan = start_scan+tr*(i+1)
+                    end_scan = start_scan+tr
                     m = np.loadtxt(mat)
                     md = self.rmsdiff(ref_cog, m, idt_mat)
-                    mean_displacement_rc[start_scan:end_scan] = md
+                    mean_displacement_rc[
+                        int(start_scan*1000):int(end_scan*1000)] = md
                     mean_displacement.append(md)
                     mp = self.avscale(m, ref_cog)
-                    motion_par_rc[:, start_scan:end_scan] = mp
+                    duration = int(end_scan*1000)-int(start_scan*1000)
+                    motion_par_rc[:, int(start_scan*1000):
+                                  int(end_scan*1000)] = np.array(
+                                      [mp, ]*duration).T
+                    start_scan = end_scan
             elif len(mats) == 1:
+                start_times.append((
+                    dt.datetime.strptime(self.inputs.list_inputs[0][1],
+                                         '%H%M%S.%f') +
+                    dt.timedelta(seconds=start_scan)).strftime('%H%M%S.%f'))
                 end_scan = start_scan+f[2]
                 m = np.loadtxt(mats[0])
                 md = self.rmsdiff(ref_cog, m, idt_mat)
-                mean_displacement_rc[start_scan:end_scan] = md
+                mean_displacement_rc[
+                    int(start_scan*1000):int(end_scan*1000)] = md
                 mean_displacement.append(md)
                 mp = self.avscale(m, ref_cog)
-                motion_par_rc[:, start_scan:end_scan] = mp
+                duration = int(end_scan*1000)-int(start_scan*1000)
+                motion_par_rc[:, int(start_scan*1000):
+                              int(end_scan*1000)] = np.array(
+                                  [mp, ]*duration).T
 
         mean_displacement_consecutive = []
         for i in range(len(all_mats)-1):
@@ -488,7 +498,7 @@ class MeanDisplacementCalculation(BaseInterface):
         for i in range(len(to_save)):
             with open('{}.txt'.format(to_save_name[i]), 'w') as f:
                 for line in to_save[i]:
-                    f.write(line+'\n')
+                    f.write(str(line)+'\n')
                 f.close()
 
         return runtime

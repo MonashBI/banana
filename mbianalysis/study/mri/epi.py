@@ -70,6 +70,7 @@ class CoregisteredEPIStudy(CombinedStudy):
     sub_study_specs = {
         'epi': (EPIStudy, {
             'epi': 'primary',
+            'epi_nifti': 'primary_nifti',
             'epi_preproc': 'preproc',
             'epi_brain': 'masked',
             'epi_brain_mask': 'brain_mask',
@@ -84,7 +85,7 @@ class CoregisteredEPIStudy(CombinedStudy):
             'epi_start_time': 'start_time',
             'epi_dcm_info': 'dcm_info'}),
         'reference': (MRIStudy, {
-            'reference': 'primary',
+            'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
             'ref_brain': 'masked',
             'ref_brain_mask': 'brain_mask',
@@ -98,6 +99,9 @@ class CoregisteredEPIStudy(CombinedStudy):
     epi_basic_preproc_pipeline = CombinedStudy.translate(
         'epi', EPIStudy.basic_preproc_pipeline)
 
+    epi_dcm2nii_pipeline = CombinedStudy.translate(
+        'epi', MRIStudy.dcm2nii_conversion_pipeline)
+
     epi_bet_pipeline = CombinedStudy.translate(
         'epi', EPIStudy.brain_mask_pipeline)
 
@@ -107,6 +111,9 @@ class CoregisteredEPIStudy(CombinedStudy):
 
     ref_bet_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
+
+    ref_dcm2nii_pipeline = CombinedStudy.translate(
+        'reference', MRIStudy.dcm2nii_conversion_pipeline)
 
     ref_segmentation_pipeline = CombinedStudy.translate(
         'reference', MRIStudy.segmentation_pipeline)
@@ -182,6 +189,8 @@ class CoregisteredEPIStudy(CombinedStudy):
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('epi_preproc', nifti_gz_format,
                     epi_basic_preproc_pipeline),
+        DatasetSpec('epi_nifti', nifti_gz_format,
+                    epi_dcm2nii_pipeline),
         DatasetSpec('epi_brain', nifti_gz_format,
                     epi_brain_mask_pipeline),
         DatasetSpec('epi_brain_mask', nifti_gz_format,
