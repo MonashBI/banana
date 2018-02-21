@@ -307,3 +307,19 @@ class MRIStudy(Study):
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline)
         )
+
+
+class MotionReference(MRIStudy):
+    
+    def brain_mask_pipeline(self, robust=True, f_threshold=0.5,
+                            reduce_bias=False, **kwargs):
+        return super(MotionReference, self).brain_mask_pipeline(
+            robust=robust, f_threshold=f_threshold, reduce_bias=reduce_bias,
+            **kwargs)
+    
+    def basic_preproc_pipeline(self, resolution=[1, 1, 1], **kwargs):
+        return super(MotionReference, self).basic_preproc_pipeline(
+            resolution=resolution, **kwargs)
+ 
+    _data_specs = set_data_specs(
+        inherit_from=MRIStudy.data_specs())
