@@ -430,6 +430,7 @@ class MeanDisplacementCalculation(BaseInterface):
         # centre of gravity
         ref_cog = np.asarray(snm.center_of_mass(ref_data))
         list_inputs = sorted(list_inputs, key=lambda k: k[1])
+        study_start_time = list_inputs[0][1]
         list_inputs = [
             (x[0], (dt.datetime.strptime(x[1], '%H%M%S.%f') -
                     dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
@@ -450,7 +451,7 @@ class MeanDisplacementCalculation(BaseInterface):
                 for i, mat in enumerate(mats):
                     start_times.append((
                         dt.datetime.strptime(
-                            self.inputs.list_inputs[0][1], '%H%M%S.%f') +
+                            study_start_time, '%H%M%S.%f') +
                         dt.timedelta(seconds=start_scan))
                                        .strftime('%H%M%S.%f'))
                     end_scan = start_scan+tr
@@ -467,7 +468,7 @@ class MeanDisplacementCalculation(BaseInterface):
                     start_scan = end_scan
             elif len(mats) == 1:
                 start_times.append((
-                    dt.datetime.strptime(self.inputs.list_inputs[0][1],
+                    dt.datetime.strptime(study_start_time,
                                          '%H%M%S.%f') +
                     dt.timedelta(seconds=start_scan)).strftime('%H%M%S.%f'))
                 end_scan = start_scan+float(f[2])
@@ -482,7 +483,7 @@ class MeanDisplacementCalculation(BaseInterface):
                               int(end_scan*1000)] = np.array(
                                   [mp, ]*duration).T
         start_times.append((
-            dt.datetime.strptime(self.inputs.list_inputs[0][1], '%H%M%S.%f') +
+            dt.datetime.strptime(study_start_time, '%H%M%S.%f') +
             dt.timedelta(seconds=end_scan)).strftime('%H%M%S.%f'))
         mean_displacement_consecutive = []
         for i in range(len(all_mats)-1):
