@@ -52,12 +52,40 @@ class TestMC(TestCase):
             MotionDetectionStudy, 'mc_detection_study', inputs={
                 'epi1': Dataset('epi_dicom', dicom_format),
                 'epi2': Dataset('epi2_dicom', dicom_format),
+                'epi3': Dataset('epi3_dicom', dicom_format),
+                'epi4': Dataset('epi4_dicom', dicom_format),
+                'epi5': Dataset('epi5_dicom', dicom_format),
+                'epi6': Dataset('epi6_dicom', dicom_format),
+                'epi7': Dataset('epi7_dicom', dicom_format),
+                'epi8': Dataset('epi8_dicom', dicom_format),
+                'asl': Dataset('asl_dicom', dicom_format),
+                't1_1': Dataset('t1_dicom', dicom_format),
+                'ute': Dataset('ute_dicom', dicom_format),
+                'fm': Dataset('fm_dicom', dicom_format),
                 'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
                 'epi2_motion_mats': Dataset('epi2_motion_mats', directory_format),
+                'epi3_motion_mats': Dataset('epi3_motion_mats', directory_format),
+                'epi4_motion_mats': Dataset('epi4_motion_mats', directory_format),
+                'epi5_motion_mats': Dataset('epi5_motion_mats', directory_format),
+                'epi6_motion_mats': Dataset('epi6_motion_mats', directory_format),
+                'epi7_motion_mats': Dataset('epi7_motion_mats', directory_format),
+                'epi8_motion_mats': Dataset('epi8_motion_mats', directory_format),
+                'asl_motion_mats': Dataset('asl_motion_mats', directory_format),
+                't1_1_motion_mats': Dataset('t1_motion_mats', directory_format),
                 'epi1_reference': Dataset('reference', nifti_gz_format),
-                'epi2_reference': Dataset('reference', nifti_gz_format)})
-        study.mean_displacement_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('mean_displacement.txt', study.name)
+                'epi2_reference': Dataset('reference', nifti_gz_format),
+                'epi3_reference': Dataset('reference', nifti_gz_format),
+                'epi4_reference': Dataset('reference', nifti_gz_format),
+                'epi5_reference': Dataset('reference', nifti_gz_format),
+                'epi6_reference': Dataset('reference', nifti_gz_format),
+                'epi7_reference': Dataset('reference', nifti_gz_format),
+                'epi8_reference': Dataset('reference', nifti_gz_format),
+                'asl_reference': Dataset('reference', nifti_gz_format),
+                't1_1_reference': Dataset('reference', nifti_gz_format),
+                'ute_reference': Dataset('reference', nifti_gz_format),
+                'fm_reference': Dataset('reference', nifti_gz_format)})
+        study.motion_framing_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('frame_start_times.txt', study.name)
 #     def test_t2_mc(self):
 #         study = self.create_study(
 #             CoregisteredT2Study, 't2_reg_study', inputs={

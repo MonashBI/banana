@@ -12,7 +12,6 @@ from .coregistered import CoregisteredStudy
 from nianalysis.study.combined import CombinedStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
-from cgitb import text
 
 
 class EPIStudy(MRIStudy):
@@ -32,7 +31,7 @@ class EPIStudy(MRIStudy):
             name='MCFLIRT_pipeline',
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('moco', nifti_gz_format),
-                     DatasetSpec('moco_mat', text_matrix_format),
+                     DatasetSpec('moco_mat', directory_format),
                      DatasetSpec('moco_par', par_format)],
             description=("Intra-epi volumes alignment."),
             default_options={},
