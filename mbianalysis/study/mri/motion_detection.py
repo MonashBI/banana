@@ -11,11 +11,22 @@ from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge as merge_lists
+from .base import MotionReferenceStudy
 
 
 class MotionDetectionStudy(CombinedStudy):
 
     sub_study_specs = {
+        'ref': (MotionReferenceStudy, {
+            'reference': 'primary',
+            'ref_ped': 'ped',
+            'ref_pe_angle': 'pe_angle',
+            'ref_tr': 'tr',
+            'ref_real_duration': 'real_duration',
+            'ref_tot_duration': 'tot_duration',
+            'ref_start_time': 'start_time',
+            'ref_dcm_info': 'dcm_info',
+            'ref_motion_mats': 'ref_motion_mats'}),
         'fm': (CoregisteredT2Study, {
             'fm': 't2',
             'fm_nifti': 't2_nifti',
@@ -316,6 +327,9 @@ class MotionDetectionStudy(CombinedStudy):
             'asl_tot_duration': 'epi_tot_duration',
             'asl_start_time': 'epi_start_time',
             'asl_dcm_info': 'epi_dcm_info'})}
+
+    ref_dcm_info_pipeline = CombinedStudy.translate(
+        'ref', MotionReferenceStudy.header_info_extraction_pipeline)
 
     t1_motion_alignment_pipeline = CombinedStudy.translate(
         't1_1', CoregisteredT1Study.t1_motion_mat_pipeline)
@@ -736,6 +750,7 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline = self.create_pipeline(
             name='mean_displacement_calculation',
             inputs=[DatasetSpec('t1_1_motion_mats', directory_format),
+                    DatasetSpec('ref_motion_mats', directory_format),
                     DatasetSpec('ute_motion_mats', directory_format),
                     DatasetSpec('fm_motion_mats', directory_format),
                     DatasetSpec('epi1_motion_mats', directory_format),
@@ -748,6 +763,9 @@ class MotionDetectionStudy(CombinedStudy):
                     DatasetSpec('epi8_motion_mats', directory_format),
                     DatasetSpec('asl_motion_mats', directory_format),
                     DatasetSpec('epi1_ref_brain', nifti_gz_format),
+                    FieldSpec('ref_tr', float),
+                    FieldSpec('ref_start_time', str),
+                    FieldSpec('ref_real_duration', str),
                     FieldSpec('t1_1_tr', float),
                     FieldSpec('t1_1_start_time', str),
                     FieldSpec('t1_1_real_duration', str),
@@ -796,6 +814,12 @@ class MotionDetectionStudy(CombinedStudy):
             version=1,
             citations=[fsl_cite],
             options=options)
+
+        merge_ref = pipeline.create_node(merge_lists(4), name='merge_ref')
+        pipeline.connect_input('ref_motion_mats', merge_ref, 'in1')
+        pipeline.connect_input('ref_start_time', merge_ref, 'in2')
+        pipeline.connect_input('ref_real_duration', merge_ref, 'in3')
+        pipeline.connect_input('ref_tr', merge_ref, 'in4')
 
         merge_t1 = pipeline.create_node(merge_lists(4), name='merge_t1')
         pipeline.connect_input('t1_1_motion_mats', merge_t1, 'in1')
@@ -869,7 +893,7 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.connect_input('asl_real_duration', merge_asl, 'in3')
         pipeline.connect_input('asl_tr', merge_asl, 'in4')
 
-        merge_scans = pipeline.create_node(merge_lists(12), name='merge_scans')
+        merge_scans = pipeline.create_node(merge_lists(13), name='merge_scans')
         merge_scans.inputs.no_flatten = True
         pipeline.connect(merge_epi1, 'out', merge_scans, 'in1')
         pipeline.connect(merge_epi2, 'out', merge_scans, 'in2')
@@ -883,6 +907,7 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.connect(merge_t1, 'out', merge_scans, 'in10')
         pipeline.connect(merge_ute, 'out', merge_scans, 'in11')
         pipeline.connect(merge_fm, 'out', merge_scans, 'in12')
+        pipeline.connect(merge_ref, 'out', merge_scans, 'in13')
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
@@ -929,6 +954,17 @@ class MotionDetectionStudy(CombinedStudy):
         return pipeline
 
     _data_specs = set_data_specs([
+        DatasetSpec('reference', dicom_format),
+        DatasetSpec('ref_motion_mats', directory_format,
+                    ref_dcm_info_pipeline),
+        DatasetSpec('ref_dcm_info', text_format,
+                    ref_dcm_info_pipeline),
+        FieldSpec('ref_ped', str, ref_dcm_info_pipeline),
+        FieldSpec('ref_pe_angle', str, ref_dcm_info_pipeline),
+        FieldSpec('ref_tr', float, ref_dcm_info_pipeline),
+        FieldSpec('ref_start_time', str, ref_dcm_info_pipeline),
+        FieldSpec('ref_real_duration', str, ref_dcm_info_pipeline),
+        FieldSpec('ref_tot_duration', str, ref_dcm_info_pipeline),
         DatasetSpec('fm', dicom_format),
         DatasetSpec('fm_reference', nifti_gz_format),
         DatasetSpec('fm_nifti', nifti_gz_format, fm_dcm2nii_pipeline),

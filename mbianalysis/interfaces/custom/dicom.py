@@ -16,6 +16,8 @@ class DicomHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
                              mandatory=True)
     multivol = traits.Bool(desc='Specify whether a scan is 3D or 4D',
                            default=False)
+    reference = traits.Bool(desc='Specify whether the input scan is the motion'
+                            ' correction reference.')
 
 
 class DicomHeaderInfoExtractionOutputSpec(TraitedSpec):
@@ -29,6 +31,7 @@ class DicomHeaderInfoExtractionOutputSpec(TraitedSpec):
     ped = traits.Str(desc='Phase encoding direction.')
     pe_angle = traits.Str(desc='Phase angle.')
     dcm_info = File(exists=True, desc='File with all the previous outputs.')
+    ref_motion_mats = Directory(desc='folder with the reference motion mats')
 
 
 class DicomHeaderInfoExtraction(BaseInterface):
@@ -93,6 +96,12 @@ class DicomHeaderInfoExtraction(BaseInterface):
                 for k in keys:
                     f.write(k+' '+str(self.dict_output[k])+'\n')
                 f.close()
+        if self.inputs.reference:
+            os.mkdir('reference_motion_mats')
+            np.savetxt('reference_motion_mats/reference_motion_mat.mat',
+                       np.eye(4))
+            np.savetxt('reference_motion_mats/reference_motion_mat_inv.mat',
+                       np.eye(4))
 
         return runtime
 
@@ -106,6 +115,8 @@ class DicomHeaderInfoExtraction(BaseInterface):
         outputs["ped"] = self.dict_output['ped']
         outputs["pe_angle"] = self.dict_output['pe_angle']
         outputs["dcm_info"] = os.getcwd()+'/scan_header_info.txt'
+        if self.inputs.reference:
+            outputs["ref_motion_mats"] = os.getcwd()+'/reference_motion_mats'
 
         return outputs
 

@@ -3,7 +3,8 @@ from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
-                                     eddy_par_format, text_format)
+                                     eddy_par_format, text_format,
+    directory_format)
 from nianalysis.requirements import fsl5_req
 from nipype.interfaces.fsl import (
     FLIRT, FNIRT, Reorient2Std, ExtractROI, TOPUP, ApplyTOPUP)
@@ -221,18 +222,23 @@ class MRIStudy(Study):
         return self.header_info_extraction_pipeline_factory('dicom_file',
                                                             **options)
 
-    def header_info_extraction_pipeline_factory(self, dcm_in_name, **options):
+    def header_info_extraction_pipeline_factory(self, dcm_in_name, ref=False,
+                                                **options):
+        output_files = [FieldSpec('tr', dtype=float),
+                        FieldSpec('start_time', dtype=str),
+                        FieldSpec('tot_duration', dtype=str),
+                        FieldSpec('real_duration', dtype=str),
+                        FieldSpec('ped', dtype=str),
+                        FieldSpec('pe_angle', dtype=str),
+                        DatasetSpec('dcm_info', text_format)]
+        if ref:
+            output_files.append(DatasetSpec('ref_motion_mats',
+                                            directory_format))
 
         pipeline = self.create_pipeline(
             name='header_info_extraction',
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
-            outputs=[FieldSpec('tr', dtype=float),
-                     FieldSpec('start_time', dtype=str),
-                     FieldSpec('tot_duration', dtype=str),
-                     FieldSpec('real_duration', dtype=str),
-                     FieldSpec('ped', dtype=str),
-                     FieldSpec('pe_angle', dtype=str),
-                     DatasetSpec('dcm_info', text_format)],
+            outputs=output_files,
             description=("Pipeline to extract the most important scan "
                          "information from the image header"),
             default_options={'multivol': True},
@@ -242,6 +248,7 @@ class MRIStudy(Study):
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
         hd_extraction.inputs.multivol = pipeline.option('multivol')
+        hd_extraction.inputs.reference = ref
         pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
         pipeline.connect_output('tr', hd_extraction, 'tr')
         pipeline.connect_output('start_time', hd_extraction, 'start_time')
@@ -252,6 +259,9 @@ class MRIStudy(Study):
         pipeline.connect_output('ped', hd_extraction, 'ped')
         pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
         pipeline.connect_output('dcm_info', hd_extraction, 'dcm_info')
+        if ref:
+            pipeline.connect_output('ref_motion_mats', hd_extraction,
+                                    'ref_motion_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -311,10 +321,14 @@ class MRIStudy(Study):
 
 class MotionReferenceStudy(MRIStudy):
 
-    def header_info_extraction_pipeline(self, **kwargs):
+    def header_info_extraction_pipeline(self, reference=True, multivol=False,
+                                        **kwargs):
         return (super(MotionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', **kwargs))
+                    'primary', ref=reference, multivol=multivol,
+                    **kwargs))
 
     _data_specs = set_data_specs(
+        DatasetSpec('ref_motion_mats', directory_format,
+                    header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())
