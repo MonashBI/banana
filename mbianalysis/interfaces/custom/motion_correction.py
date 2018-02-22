@@ -414,6 +414,7 @@ class MeanDisplacementCalculationOutputSpec(TraitedSpec):
     mean_displacement_consecutive = File(exists=True)
     start_times = File(exists=True)
     motion_parameters = File(exists=True)
+    offset_indexes = File(exists=True)
 
 
 class MeanDisplacementCalculation(BaseInterface):
@@ -469,7 +470,7 @@ class MeanDisplacementCalculation(BaseInterface):
                     dt.datetime.strptime(self.inputs.list_inputs[0][1],
                                          '%H%M%S.%f') +
                     dt.timedelta(seconds=start_scan)).strftime('%H%M%S.%f'))
-                end_scan = start_scan+f[2]
+                end_scan = start_scan+float(f[2])
                 m = np.loadtxt(mats[0])
                 md = self.rmsdiff(ref_cog, m, idt_mat)
                 mean_displacement_rc[
@@ -480,7 +481,9 @@ class MeanDisplacementCalculation(BaseInterface):
                 motion_par_rc[:, int(start_scan*1000):
                               int(end_scan*1000)] = np.array(
                                   [mp, ]*duration).T
-
+        start_times.append((
+            dt.datetime.strptime(self.inputs.list_inputs[0][1], '%H%M%S.%f') +
+            dt.timedelta(seconds=end_scan)).strftime('%H%M%S.%f'))
         mean_displacement_consecutive = []
         for i in range(len(all_mats)-1):
             m1 = np.loadtxt(all_mats[i])
@@ -488,20 +491,20 @@ class MeanDisplacementCalculation(BaseInterface):
             md_consecutive = self.rmsdiff(ref_cog, m1, m2)
             mean_displacement_consecutive.append(md_consecutive)
 
+        offset_indexes = np.where(mean_displacement_rc == 0)
+        for i in range(len(mean_displacement_rc)):
+            if mean_displacement_rc[i] == 0 and mean_displacement_rc[i-1] != 0:
+                mean_displacement_rc[i] = mean_displacement_rc[i-1]
+
         to_save = [mean_displacement, mean_displacement_consecutive,
-                   mean_displacement_rc, motion_par_rc, start_times]
+                   mean_displacement_rc, motion_par_rc, start_times,
+                   offset_indexes]
         to_save_name = ['mean_displacement', 'mean_displacement_consecutive',
-                        'mean_displacement_rc', 'motion_par_rc', 'start_times']
+                        'mean_displacement_rc', 'motion_par_rc', 'start_times',
+                        'offset_indexes']
         for i in range(len(to_save)):
-            with open('{}.txt'.format(to_save_name[i]), 'w') as f:
-                for line in to_save[i]:
-                    if 'motion_par' in to_save_name[i]:
-                        for mp in line:
-                            f.write(str(mp)+' ')
-                        f.write('\n')
-                    else:
-                        f.write(str(line)+'\n')
-                f.close()
+            np.savetxt(to_save_name[i]+'.txt', np.asarray(to_save[i]),
+                       fmt='%s')
 
         return runtime
 
@@ -561,5 +564,104 @@ class MeanDisplacementCalculation(BaseInterface):
             os.getcwd()+'/mean_displacement_consecutive.txt')
         outputs["start_times"] = os.getcwd()+'/start_times.txt'
         outputs["motion_parameters"] = os.getcwd()+'/motion_par_rc.txt'
+        outputs["offset_indexes"] = os.getcwd()+'/offset_indexes.txt'
+
+        return outputs
+
+
+class MotionFramingInputSpec(BaseInterfaceInputSpec):
+
+    mean_displacement = File(exists=True)
+    mean_displacement_consec = File(exists=True)
+    start_times = File(exists=True)
+    motion_threshold = traits.Float(desc='Everytime the mean displacement is '
+                                    'greater than this value (in mm), a new '
+                                    'frame will be initialised. Default 2mm',
+                                    default=2)
+    temporal_threshold = traits.Float(desc='If one frame temporal duration is '
+                                      'shorter than this value (in sec) then '
+                                      'the frame will be discarded. Default '
+                                      '30sec', default=30)
+
+
+class MotionFramingOutputSpec(TraitedSpec):
+
+    frame_start_times = File(exists=True)
+
+
+class MotionFraming(BaseInterface):
+
+    input_spec = MotionFramingInputSpec
+    output_spec = MotionFramingOutputSpec
+
+    def _run_interface(self, runtime):
+
+        mean_displacement = np.loadtxt(self.inputs.mean_displacement,
+                                       dtype=float)
+        mean_displacement_consecutive = np.loadtxt(
+            self.inputs.mean_displacement_consec, dtype=float)
+        th = self.inputs.motion_threshold
+        start_times = np.loadtxt(self.inputs.start_times, dtype=str)
+        temporal_th = self.inputs.temporal_threshold
+
+        md_0 = mean_displacement[0]
+        max_md = mean_displacement[0]
+        frame_vol = [0]
+
+        scan_duration = [
+            (dt.datetime.strptime(start_times[i], '%H%M%S.%f') -
+             dt.datetime.strptime(start_times[i-1], '%H%M%S.%f')
+             ).total_seconds() for i in range(1, len(start_times))]
+
+        for i, md in enumerate(mean_displacement[1:]):
+
+            current_md = md
+            if (np.abs(md_0 - current_md) > th or
+                    np.abs(max_md - current_md) > th):
+                duration = np.sum(scan_duration[frame_vol[-1]:i+1])
+                if duration > temporal_th:
+                    if i+1 not in frame_vol:
+                        frame_vol.append(i+1)
+
+                    md_0 = current_md
+                    max_md = current_md
+                else:
+                    prev_md = mean_displacement[frame_vol[-1]]
+                    if (prev_md - current_md) > th*2:
+                        frame_vol.remove(frame_vol[-1])
+                    elif (current_md - prev_md) > th:
+                        frame_vol.remove(frame_vol[-1])
+                        frame_vol.append(i)
+            elif mean_displacement_consecutive[i] > th:
+                duration = np.sum(scan_duration[frame_vol[-1]:i+1])
+                if duration > temporal_th:
+                    if i+1 not in frame_vol:
+                        frame_vol.append(i+1)
+                    md_0 = current_md
+                    max_md = current_md
+            elif current_md > max_md:
+                max_md = current_md
+            elif current_md < md_0:
+                md_0 = current_md
+
+        duration = np.sum(scan_duration[frame_vol[-1]:i+2])
+        if duration > temporal_th:
+            if (i + 2) not in frame_vol:
+                frame_vol.append(i + 2)
+        else:
+            frame_vol.remove(frame_vol[-1])
+            frame_vol.append(i + 2)
+
+        frame_vol = sorted(frame_vol)
+        frame_start_times = [start_times[x] for x in frame_vol]
+        np.savetxt('frame_start_times.txt', np.asarray(frame_start_times),
+                   fmt='%s')
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["frame_start_times"] = os.getcwd()+'/frame_start_times.txt'
 
         return outputs
