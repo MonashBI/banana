@@ -50,8 +50,8 @@ class CoregisteredT2Study(CombinedStudy):
             'ref_brain': 'masked',
             'ref_brain_mask': 'brain_mask'}),
         'coreg': (CoregisteredStudy, {
-            't2_preproc': 'to_register',
-            'ref_preproc': 'reference',
+            't2_brain': 'to_register',
+            'ref_brain': 'reference',
             't2_qformed': 'qformed',
             't2_qform_mat': 'qform_mat',
             't2_reg': 'registered',

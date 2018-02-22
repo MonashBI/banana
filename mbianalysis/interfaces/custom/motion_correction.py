@@ -435,7 +435,7 @@ class MeanDisplacementCalculation(BaseInterface):
                     dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
              .total_seconds(), x[2], x[3]) for x in list_inputs]
         study_len = int((list_inputs[-1][1]+float(list_inputs[-1][2]))*1000)
-        mean_displacement_rc = np.zeros(study_len)
+        mean_displacement_rc = np.zeros(study_len)-1
         motion_par_rc = np.zeros((6, study_len))
         mean_displacement = []
         idt_mat = np.eye(4)
@@ -491,9 +491,10 @@ class MeanDisplacementCalculation(BaseInterface):
             md_consecutive = self.rmsdiff(ref_cog, m1, m2)
             mean_displacement_consecutive.append(md_consecutive)
 
-        offset_indexes = np.where(mean_displacement_rc == 0)
+        offset_indexes = np.where(mean_displacement_rc == -1)
         for i in range(len(mean_displacement_rc)):
-            if mean_displacement_rc[i] == 0 and mean_displacement_rc[i-1] != 0:
+            if (mean_displacement_rc[i] == -1 and
+                    mean_displacement_rc[i-1] != -1):
                 mean_displacement_rc[i] = mean_displacement_rc[i-1]
 
         to_save = [mean_displacement, mean_displacement_consecutive,

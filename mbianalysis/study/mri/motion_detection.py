@@ -1,21 +1,16 @@
-from .base import MRIStudy
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     par_format, text_format)
-from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
-from .coregistered import CoregisteredStudy
 from nianalysis.study.combined import CombinedStudy
-from mbianalysis.interfaces.custom.dicom import ScanTimesInfo
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge as merge_lists
-from nipype.interfaces.afni.tests.test_auto_Unifize import test_Unifize_inputs
 
 
 class MotionDetectionStudy(CombinedStudy):
