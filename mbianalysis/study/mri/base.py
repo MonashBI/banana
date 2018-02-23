@@ -5,7 +5,7 @@ from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      eddy_par_format, text_format,
     directory_format)
-from nianalysis.requirements import fsl5_req
+from nianalysis.requirements import fsl5_req, mrtrix3_req, fsl509_req
 from nipype.interfaces.fsl import (
     FLIRT, FNIRT, Reorient2Std, ExtractROI, TOPUP, ApplyTOPUP)
 from nianalysis.utils import get_atlas_path
@@ -37,7 +37,7 @@ class MRIStudy(Study):
             options=options)
         # Create mask node
         bet = pipeline.create_node(interface=fsl.BET(), name="bet",
-                                   requirements=[fsl5_req])
+                                   requirements=[fsl509_req])
         bet.inputs.mask = True
         bet.inputs.output_type = 'NIFTI_GZ'
         if pipeline.option('robust'):
@@ -164,7 +164,8 @@ class MRIStudy(Study):
             citations=[fsl_cite],
             options=options)
 
-        fast = pipeline.create_node(fsl.FAST(), name='fast')
+        fast = pipeline.create_node(fsl.FAST(), name='fast',
+                                    requirements=[fsl509_req])
         fast.inputs.img_type = pipeline.option('img_type')
         fast.inputs.segments = True
         fast.inputs.out_basename = 'Reference_segmentation'
@@ -204,11 +205,13 @@ class MRIStudy(Study):
             citations=[fsl_cite],
             options=options)
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
-                                    name='fslswapdim')
+                                    name='fslswapdim',
+                                    requirements=[fsl509_req])
         swap.inputs.new_dims = pipeline.option('new_dims')
         pipeline.connect_input('primary_nifti', swap, 'in_file')
         if pipeline.option('resolution') is not None:
-            resample = pipeline.create_node(MRResize(), name="resample")
+            resample = pipeline.create_node(MRResize(), name="resample",
+                                            requirements=[mrtrix3_req])
             resample.inputs.voxel = pipeline.option('resolution')
             pipeline.connect(swap, 'out_file', resample, 'in_file')
             pipeline.connect_output('preproc', resample, 'out_file')
@@ -280,7 +283,8 @@ class MRIStudy(Study):
             citations=[],
             options=options)
 
-        converter = pipeline.create_node(MRConvert(), name='converter1')
+        converter = pipeline.create_node(MRConvert(), name='converter1',
+                                         requirements=[mrtrix3_req])
 #         converter.inputs.compression = 'y'
         converter.inputs.out_ext = '.nii.gz'
         pipeline.connect_input(dcm_in_name, converter, 'in_file')
