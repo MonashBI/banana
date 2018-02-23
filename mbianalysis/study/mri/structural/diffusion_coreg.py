@@ -16,6 +16,7 @@ from nianalysis.interfaces.converters import Dcm2niix
 from nipype.interfaces.utility import Merge as merge_lists
 from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
+from nianalysis.requirements import fsl509_req
 
 
 class DiffusionStudy(MRIStudy):
@@ -63,7 +64,8 @@ class DiffusionStudy(MRIStudy):
         pipeline.connect(prep_dwi, 'main', check_name, 'nifti_dwi')
         pipeline.connect_input('dwi_main', check_name, 'dicom_dwi')
         pipeline.connect_input('dwi_ref', check_name, 'dicom_dwi1')
-        roi = pipeline.create_node(ExtractROI(), name='extract_roi')
+        roi = pipeline.create_node(ExtractROI(), name='extract_roi',
+                                   requirements=[fsl509_req])
         roi.inputs.t_min = 0
         roi.inputs.t_size = 1
         pipeline.connect(prep_dwi, 'main', roi, 'in_file')
@@ -72,7 +74,8 @@ class DiffusionStudy(MRIStudy):
                                              name='merge_files')
         pipeline.connect(roi, 'roi_file', merge_outputs, 'in1')
         pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
-        merge = pipeline.create_node(fsl_merge(), name='fsl_merge')
+        merge = pipeline.create_node(fsl_merge(), name='fsl_merge',
+                                     requirements=[fsl509_req])
         merge.inputs.dimension = 't'
         pipeline.connect(merge_outputs, 'out', merge, 'in_files')
         dwipreproc = pipeline.create_node(DWIPreproc(), name='dwipreproc')
@@ -121,16 +124,19 @@ class DiffusionStudy(MRIStudy):
                                               name='merge_files1')
         pipeline.connect(prep_dwi, 'main', merge_outputs1, 'in1')
         pipeline.connect(prep_dwi, 'secondary', merge_outputs1, 'in2')
-        merge1 = pipeline.create_node(fsl_merge(), name='fsl_merge1')
+        merge1 = pipeline.create_node(fsl_merge(), name='fsl_merge1',
+                                      requirements=[fsl509_req])
         merge1.inputs.dimension = 't'
         pipeline.connect(merge_outputs1, 'out', merge1, 'in_files')
-        topup1 = pipeline.create_node(TOPUP(), name='topup1')
+        topup1 = pipeline.create_node(TOPUP(), name='topup1',
+                                      requirements=[fsl509_req])
         pipeline.connect(merge1, 'merged_file', topup1, 'in_file')
         pipeline.connect(ped1, 'config_file', topup1, 'encoding_file')
         in_apply_tp1 = pipeline.create_node(merge_lists(1),
                                             name='in_apply_tp1')
         pipeline.connect_input(to_be_corrected_name, in_apply_tp1, 'in1')
-        apply_topup1 = pipeline.create_node(ApplyTOPUP(), name='applytopup1')
+        apply_topup1 = pipeline.create_node(ApplyTOPUP(), name='applytopup1',
+                                            requirements=[fsl509_req])
         apply_topup1.inputs.method = 'jac'
         apply_topup1.inputs.in_index = [1]
         pipeline.connect(in_apply_tp1, 'out', apply_topup1, 'in_files')

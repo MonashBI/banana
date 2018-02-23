@@ -6,7 +6,7 @@ from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
                                      dicom_format)
 from nianalysis.citations import fsl_cite
 from nipype.interfaces import fsl
-from nianalysis.requirements import fsl5_req
+from nianalysis.requirements import fsl509_req
 from nianalysis.study.base import set_data_specs
 from .coregistered import CoregisteredStudy
 from nianalysis.study.combined import CombinedStudy
@@ -39,7 +39,7 @@ class EPIStudy(MRIStudy):
             citations=[fsl_cite],
             options=options)
         mcflirt = pipeline.create_node(fsl.MCFLIRT(), name='mcflirt',
-                                       requirements=[fsl5_req])
+                                       requirements=[fsl509_req])
         mcflirt.inputs.ref_vol = 0
         mcflirt.inputs.save_mats = True
         mcflirt.inputs.save_plots = True
@@ -147,7 +147,7 @@ class CoregisteredEPIStudy(CombinedStudy):
             citations=[fsl_cite],
             options=options)
         epireg = pipeline.create_node(fsl.epi.EpiReg(), name='epireg',
-                                      requirements=[fsl5_req])
+                                      requirements=[fsl509_req])
 
         epireg.inputs.out_base = 'epireg2ref'
         pipeline.connect_input('epi_brain', epireg, 'epi')
