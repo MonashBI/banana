@@ -10,6 +10,8 @@ import nibabel as nib
 from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
+import matplotlib as mpl
+import matplotlib.pyplot as plot
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -667,3 +669,43 @@ class MotionFraming(BaseInterface):
         outputs["frame_start_times"] = os.getcwd()+'/frame_start_times.txt'
 
         return outputs
+
+
+class PlotMeanDisplacementRCInputSpec(BaseInterfaceInputSpec):
+
+    mean_disp_rc = File(exists=True, desc='Text file containing the mean '
+                        'displacement real clock.')
+    frame_start_times = File(exists=True, desc='Frame start times as detected'
+                             'by the motion framing pipeline')
+    true_indexes = File(exists=True, desc='Time indexes were the scans have '
+                        'been acquired.')
+    false_indexes = File(exists=True, desc='Time indexes were the scanner was '
+                         'idling')
+
+
+class PlotMeanDisplacementRCOutputSpec(TraitedSpec):
+
+    mean_disp_plot = File(exists=True, desc='Mean displacement plot.')
+
+
+class PlotMeanDisplacementRC(BaseInterface):
+
+    input_spec = PlotMeanDisplacementRCInputSpec
+    output_spec = PlotMeanDisplacementRCOutputSpec
+
+    def _run_interface(self, runtime):
+
+        mean_disp_rc = np.loadtxt(self.inputs.mean_disp_rc)
+        frame_start_times = np.loadtxt(self.inputs.frame_start_times)
+        true_indexes = np.loadtxt(self.inputs.true_indexes)
+        false_indexes = np.loadtxt(self.inputs.false_indexes)
+
+        dates = np.arange(0, len(mean_disp_rc), 1)
+        fig, ax = plot.subplots()
+        fig.set_size_inches(21, 9)
+        font = {'weight': 'bold', 'size': 30}
+        mpl.rc('font', **font)
+        ax.set_xlim(0, dates[-1])
+        ax.set_ylim(-0.3, np.max(mean_disp_rc) + 1)
+        
+        return runtime
