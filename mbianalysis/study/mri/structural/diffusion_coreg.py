@@ -65,11 +65,11 @@ class DiffusionStudy(MRIStudy):
         pipeline.connect(converter1, 'out_file', prep_dwi, 'dwi')
         pipeline.connect(converter2, 'out_file', prep_dwi, 'dwi1')
 
-        check_name = pipeline.create_node(CheckDwiNames(),
-                                          name='check_names')
-        pipeline.connect(prep_dwi, 'main', check_name, 'nifti_dwi')
-        pipeline.connect_input('dwi_main', check_name, 'dicom_dwi')
-        pipeline.connect_input('dwi_ref', check_name, 'dicom_dwi1')
+#         check_name = pipeline.create_node(CheckDwiNames(),
+#                                           name='check_names')
+#         pipeline.connect(prep_dwi, 'main', check_name, 'nifti_dwi')
+#         pipeline.connect_input('dwi_main', check_name, 'dicom_dwi')
+#         pipeline.connect_input('dwi_ref', check_name, 'dicom_dwi1')
         roi = pipeline.create_node(ExtractROI(), name='extract_roi',
                                    requirements=[fsl509_req])
         roi.inputs.t_min = 0
@@ -94,7 +94,7 @@ class DiffusionStudy(MRIStudy):
         dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
         pipeline.connect(merge, 'merged_file', dwipreproc, 'se_epi')
         pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
-        pipeline.connect(check_name, 'main', dwipreproc, 'in_file')
+        pipeline.connect(prep_dwi, 'main', dwipreproc, 'in_file')
 
         pipeline.connect_output('preproc', dwipreproc, 'out_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
