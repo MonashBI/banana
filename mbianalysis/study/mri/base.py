@@ -270,7 +270,7 @@ class MRIStudy(Study):
 
     def dcm2nii_conversion_pipeline(self, **kwargs):
         return self.dcm2nii_conversion_pipeline_factory(
-                    'primary', **kwargs)
+                    'dcm2nii_conversion', 'primary', **kwargs)
 
     def dcm2nii_conversion_pipeline_factory(self, name, dcm_in_name,
                                             **options):
