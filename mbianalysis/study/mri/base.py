@@ -272,9 +272,10 @@ class MRIStudy(Study):
         return self.dcm2nii_conversion_pipeline_factory(
                     'primary', **kwargs)
 
-    def dcm2nii_conversion_pipeline_factory(self, dcm_in_name, **options):
+    def dcm2nii_conversion_pipeline_factory(self, name, dcm_in_name,
+                                            **options):
         pipeline = self.create_pipeline(
-            name='dicom2nifti_coversion',
+            name=name,
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=[DatasetSpec(dcm_in_name+'_nifti', nifti_gz_format)],
             description=("DICOM to NIFTI conversion for topup input"),
