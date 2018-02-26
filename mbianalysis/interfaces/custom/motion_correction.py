@@ -677,10 +677,10 @@ class PlotMeanDisplacementRCInputSpec(BaseInterfaceInputSpec):
                         'displacement real clock.')
     frame_start_times = File(exists=True, desc='Frame start times as detected'
                              'by the motion framing pipeline')
-    true_indexes = File(exists=True, desc='Time indexes were the scans have '
-                        'been acquired.')
     false_indexes = File(exists=True, desc='Time indexes were the scanner was '
-                         'idling')
+                         'idling, i.e. there is no motion information.')
+    framing = traits.Bool(desc='If true, the frame start times will be plotted'
+                          'in the final image.')
 
 
 class PlotMeanDisplacementRCOutputSpec(TraitedSpec):
@@ -697,15 +697,63 @@ class PlotMeanDisplacementRC(BaseInterface):
 
         mean_disp_rc = np.loadtxt(self.inputs.mean_disp_rc)
         frame_start_times = np.loadtxt(self.inputs.frame_start_times)
-        true_indexes = np.loadtxt(self.inputs.true_indexes)
         false_indexes = np.loadtxt(self.inputs.false_indexes)
-
+        framing = self.inputs.framing
         dates = np.arange(0, len(mean_disp_rc), 1)
+        true_indexes = [x for x in dates if x not in false_indexes]
+
         fig, ax = plot.subplots()
         fig.set_size_inches(21, 9)
         font = {'weight': 'bold', 'size': 30}
         mpl.rc('font', **font)
         ax.set_xlim(0, dates[-1])
         ax.set_ylim(-0.3, np.max(mean_disp_rc) + 1)
-        
+        ax.plot(dates[true_indexes],
+                mean_disp_rc[true_indexes], c='b',
+                linewidth=2)
+        ax.plot(dates[false_indexes],
+                mean_disp_rc[false_indexes], c='b',
+                linewidth=2, ls='--', dashes=(2, 3))
+
+        if framing:
+            cl = 'yellow'
+            for i in range(len(frame_start_times[:-1])):
+
+                tt = (
+                    (dt.datetime.strptime(frame_start_times[i], '%H%M%S.%f') -
+                     dt.datetime.strptime(frame_start_times[0], '%H%M%S.%f'))
+                    .total_seconds()*1000)
+                if tt >= len(dates):
+                    tt = len(dates)-1
+                plot.axvline(dates[int(tt)], c='b', alpha=0.3, ls='--')
+
+                tt1 = ((dt.datetime.strptime(frame_start_times[i+1],
+                                             '%H%M%S.%f') -
+                       dt.datetime.strptime(frame_start_times[0], '%H%M%S.%f'))
+                       .total_seconds()*1000)
+                if tt1 >= len(dates):
+                    tt1 = len(dates)-1
+                plot.axvspan(dates[int(tt)], dates[int(tt1)], facecolor=cl,
+                             alpha=0.4, linewidth=0)
+
+                if i % 2 == 0:
+                    cl = 'w'
+                else:
+                    cl = 'yellow'
+
+        indx = np.arange(0, len(dates), 300000)
+        my_thick = [str(i) for i in np.arange(0, len(dates)/60000, 5)]
+        plot.xticks(dates[indx], my_thick)
+
+        plot.savefig('mean_displacement_real_clock.png')
+        plot.close()
+
         return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["mean_disp_plot"] = (
+            os.getcwd()+'/mean_displacement_real_clock.png')
+
+        return outputs

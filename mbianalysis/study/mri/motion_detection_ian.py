@@ -1,7 +1,7 @@
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
-    par_format, text_format, eddy_par_format)
+    par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming)
 from nianalysis.citations import fsl_cite
@@ -1058,6 +1058,33 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def plot_mean_displacement_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='plot_mean_displacement',
+            inputs=[DatasetSpec('mean_displacement_rc', text_format),
+                    DatasetSpec('false_indexes', text_format),
+                    DatasetSpec('start_times', text_format)],
+            outputs=[DatasetSpec('mean_displacement_plot', png_format)],
+            description=("Plot the mean displacement real clock"),
+            default_options={'framing': True},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        plot_md = pipeline.create_node(MotionFraming(), name='plot_md')
+        plot_md.inputs.framing = pipeline.option('framing')
+        pipeline.connect_input('mean_displacement_rc', plot_md,
+                               'mean_disp_rc')
+        pipeline.connect_input('false_indexes', plot_md,
+                               'false_indexes')
+        pipeline.connect_input('frame_start_times', plot_md,
+                               'frame_start_times')
+        pipeline.connect_output('fmean_displacement_plot', plot_md,
+                                'mean_disp_plot')
+        pipeline.assert_connected()
+        return pipeline
+
     _data_specs = set_data_specs([
         DatasetSpec('dwi_1_main', dicom_format),
         DatasetSpec('dwi_1_main_ref', nifti_gz_format),
@@ -1550,4 +1577,6 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('motion_par_rc', text_format, mean_displacement_pipeline),
         DatasetSpec('offset_indexes', text_format, mean_displacement_pipeline),
         DatasetSpec('frame_start_times', text_format,
-                    motion_framing_pipeline)])
+                    motion_framing_pipeline),
+        DatasetSpec('mean_displacement_plot', png_format,
+                    plot_mean_displacement_pipeline)])
