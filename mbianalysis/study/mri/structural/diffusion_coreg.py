@@ -15,7 +15,7 @@ from mbianalysis.interfaces.custom.motion_correction import (
 from nipype.interfaces.utility import Merge as merge_lists
 from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
-from nianalysis.requirements import fsl509_req, mrtrix3_req
+from nianalysis.requirements import fsl509_req, mrtrix3_req, fsl510_req
 from nianalysis.interfaces.mrtrix import MRConvert
 
 
@@ -86,7 +86,7 @@ class DiffusionStudy(MRIStudy):
         pipeline.connect(merge_outputs, 'out', merge, 'in_files')
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
-            requirements=[fsl509_req, mrtrix3_req])
+            requirements=[fsl510_req, mrtrix3_req])
         dwipreproc.inputs.eddy_options = '--data_is_shelled '
         dwipreproc.inputs.rpe_pair = True
         dwipreproc.inputs.no_clean_up = True
