@@ -695,7 +695,8 @@ class MotionDetectionStudy(CombinedStudy):
         override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     epi1_ref_segmentation_pipeline = CombinedStudy.translate(
-        'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline)
+        'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline,
+        override_default_options={'img_type': 1})
 
     epi1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
@@ -729,7 +730,8 @@ class MotionDetectionStudy(CombinedStudy):
         'epi2', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
     epi2_ref_segmentation_pipeline = CombinedStudy.translate(
-        'epi2', CoregisteredEPIStudy.ref_segmentation_pipeline)
+        'epi2', CoregisteredEPIStudy.ref_segmentation_pipeline,
+        override_default_options={'img_type': 1})
 
     epi2_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
@@ -769,7 +771,8 @@ class MotionDetectionStudy(CombinedStudy):
         override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     epi3_ref_segmentation_pipeline = CombinedStudy.translate(
-        'epi3', CoregisteredEPIStudy.ref_segmentation_pipeline)
+        'epi3', CoregisteredEPIStudy.ref_segmentation_pipeline,
+        override_default_options={'img_type': 1})
 
     epi3_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'epi3', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
@@ -806,7 +809,8 @@ class MotionDetectionStudy(CombinedStudy):
         override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     asl_ref_segmentation_pipeline = CombinedStudy.translate(
-        'asl', CoregisteredEPIStudy.ref_segmentation_pipeline)
+        'asl', CoregisteredEPIStudy.ref_segmentation_pipeline,
+        override_default_options={'img_type': 1})
 
     asl_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'asl', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
