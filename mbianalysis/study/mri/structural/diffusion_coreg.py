@@ -12,11 +12,11 @@ from ..coregistered import CoregisteredStudy
 from nianalysis.study.combined import CombinedStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, AffineMatrixGeneration)
-from nianalysis.interfaces.converters import Dcm2niix
 from nipype.interfaces.utility import Merge as merge_lists
 from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nianalysis.requirements import fsl509_req, mrtrix3_req
+from nianalysis.interfaces.mrtrix import MRConvert
 
 
 class DiffusionStudy(MRIStudy):
@@ -49,19 +49,21 @@ class DiffusionStudy(MRIStudy):
             citations=[],
             options=options)
 
-        converter1 = pipeline.create_node(Dcm2niix(), name='converter1')
-        converter1.inputs.compression = 'y'
+        converter1 = pipeline.create_node(MRConvert(), name='converter1',
+                                          requirements=[mrtrix3_req])
+        converter1.inputs.out_ext = '.nii.gz'
         pipeline.connect_input('dwi_main', converter1, 'input_dir')
-        converter2 = pipeline.create_node(Dcm2niix(), name='converter2')
-        converter2.inputs.compression = 'y'
+        converter2 = pipeline.create_node(MRConvert(), name='converter2',
+                                          requirements=[mrtrix3_req])
+        converter2.inputs.out_ext = '.nii.gz'
         pipeline.connect_input('dwi_ref', converter2, 'input_dir')
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
         pipeline.connect_input('ped', prep_dwi, 'pe_dir')
         pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
 #         prep_dwi.inputs.pe_dir = 'ROW'
 #         prep_dwi.inputs.phase_offset = '-1.5'
-        pipeline.connect(converter1, 'converted', prep_dwi, 'dwi')
-        pipeline.connect(converter2, 'converted', prep_dwi, 'dwi1')
+        pipeline.connect(converter1, 'out_file', prep_dwi, 'dwi')
+        pipeline.connect(converter2, 'out_file', prep_dwi, 'dwi1')
 
         check_name = pipeline.create_node(CheckDwiNames(),
                                           name='check_names')
