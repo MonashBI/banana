@@ -52,11 +52,11 @@ class DiffusionStudy(MRIStudy):
         converter1 = pipeline.create_node(MRConvert(), name='converter1',
                                           requirements=[mrtrix3_req])
         converter1.inputs.out_ext = '.nii.gz'
-        pipeline.connect_input('dwi_main', converter1, 'input_dir')
+        pipeline.connect_input('dwi_main', converter1, 'in_file')
         converter2 = pipeline.create_node(MRConvert(), name='converter2',
                                           requirements=[mrtrix3_req])
         converter2.inputs.out_ext = '.nii.gz'
-        pipeline.connect_input('dwi_ref', converter2, 'input_dir')
+        pipeline.connect_input('dwi_ref', converter2, 'in_file')
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
         pipeline.connect_input('ped', prep_dwi, 'pe_dir')
         pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
