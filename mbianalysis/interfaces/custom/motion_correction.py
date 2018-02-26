@@ -221,9 +221,9 @@ class CheckDwiNames(BaseInterface):
         nifti = self.inputs.nifti_dwi
         self.dict_output = {}
 
-        if nifti.split('/')[-1].split('.')[0] in dwi:
+        if dwi.split('/')[-1] in nifti:
             self.dict_output['main'] = self.inputs.dicom_dwi
-        elif nifti.split('/')[-1].split('.')[0] in dwi1:
+        elif dwi1.split('/')[-1] in nifti:
             self.dict_output['main'] = self.inputs.dicom_dwi1
 
         return runtime
