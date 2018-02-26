@@ -330,6 +330,7 @@ class MotionDetectionStudy(CombinedStudy):
             'dwi_1_main_qformed': 'dwi_main_qformed',
             'dwi_1_opposite_to_correct': 'dwi_opposite_to_correct',
             'dwi_1_opposite_ref': 'dwi_opposite_ref',
+            'dwi_1_opposite_ref_nii': 'dwi_opposite_ref_nii',
             'dwi_1_opposite_to_correct_nii': 'dwi_opposite_to_correct_nii',
             'dwi_1_opposite_brain_mask': 'dwi_opposite_brain_mask',
             'dwi_1_opposite_brain': 'dwi_opposite_brain',
@@ -375,7 +376,8 @@ class MotionDetectionStudy(CombinedStudy):
         CoregisteredDiffusionStudy.dwi_main_rigid_registration_pipeline)
 
     dwi_1_main_ref_bet_pipeline = CombinedStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline)
+        'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     dwi_1_main_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
@@ -401,13 +403,17 @@ class MotionDetectionStudy(CombinedStudy):
         CoregisteredDiffusionStudy.dwi_opposite_rigid_registration_pipeline)
 
     dwi_1_opposite_ref_bet_pipeline = CombinedStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline)
+        'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     dwi_1_opposite_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
 
-    dwi_1_opposite_dcm2nii_pipeline = CombinedStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.dwi_opposite_dcm2nii_pipeline)
+    dwi_1_opposite_main_dcm2nii_pipeline = CombinedStudy.translate(
+        'dwi_1', CoregisteredDiffusionStudy.dwi_opposite_main_dcm2nii_pipeline)
+
+    dwi_1_opposite_ref_dcm2nii_pipeline = CombinedStudy.translate(
+        'dwi_1', CoregisteredDiffusionStudy.dwi_opposite_ref_dcm2nii_pipeline)
 
     ref_dcm_info_pipeline = CombinedStudy.translate(
         'ref', MotionReferenceStudy.header_info_extraction_pipeline)
@@ -434,7 +440,8 @@ class MotionDetectionStudy(CombinedStudy):
         't1_1', CoregisteredT1Study.t1_bet_pipeline)
 
     t1_ref_bet_pipeline = CombinedStudy.translate(
-        't1_1', CoregisteredT1Study.ref_bet_pipeline)
+        't1_1', CoregisteredT1Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     t1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't1_1', CoregisteredT1Study.ref_basic_preproc_pipeline)
@@ -464,7 +471,8 @@ class MotionDetectionStudy(CombinedStudy):
         'ute', CoregisteredT1Study.t1_bet_pipeline)
 
     ute_ref_bet_pipeline = CombinedStudy.translate(
-        'ute', CoregisteredT1Study.ref_bet_pipeline)
+        'ute', CoregisteredT1Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     ute_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'ute', CoregisteredT1Study.ref_basic_preproc_pipeline)
@@ -494,7 +502,8 @@ class MotionDetectionStudy(CombinedStudy):
         'fm', CoregisteredT2Study.t2_bet_pipeline)
 
     fm_ref_bet_pipeline = CombinedStudy.translate(
-        'fm', CoregisteredT2Study.ref_bet_pipeline)
+        'fm', CoregisteredT2Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     fm_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'fm', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -524,7 +533,8 @@ class MotionDetectionStudy(CombinedStudy):
         't2_1', CoregisteredT2Study.t2_bet_pipeline)
 
     t2_1_ref_bet_pipeline = CombinedStudy.translate(
-        't2_1', CoregisteredT2Study.ref_bet_pipeline)
+        't2_1', CoregisteredT2Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     t2_1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_1', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -554,7 +564,8 @@ class MotionDetectionStudy(CombinedStudy):
         't2_2', CoregisteredT2Study.t2_bet_pipeline)
 
     t2_2_ref_bet_pipeline = CombinedStudy.translate(
-        't2_2', CoregisteredT2Study.ref_bet_pipeline)
+        't2_2', CoregisteredT2Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     t2_2_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_2', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -584,7 +595,8 @@ class MotionDetectionStudy(CombinedStudy):
         't2_3', CoregisteredT2Study.t2_bet_pipeline)
 
     t2_3_ref_bet_pipeline = CombinedStudy.translate(
-        't2_3', CoregisteredT2Study.ref_bet_pipeline)
+        't2_3', CoregisteredT2Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     t2_3_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_3', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -614,7 +626,8 @@ class MotionDetectionStudy(CombinedStudy):
         't2_4', CoregisteredT2Study.t2_bet_pipeline)
 
     t2_4_ref_bet_pipeline = CombinedStudy.translate(
-        't2_4', CoregisteredT2Study.ref_bet_pipeline)
+        't2_4', CoregisteredT2Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     t2_4_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_4', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -644,7 +657,8 @@ class MotionDetectionStudy(CombinedStudy):
         't2_5', CoregisteredT2Study.t2_bet_pipeline)
 
     t2_5_ref_bet_pipeline = CombinedStudy.translate(
-        't2_5', CoregisteredT2Study.ref_bet_pipeline)
+        't2_5', CoregisteredT2Study.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     t2_5_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_5', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -677,7 +691,8 @@ class MotionDetectionStudy(CombinedStudy):
         'epi1', CoregisteredEPIStudy.epi_bet_pipeline)
 
     epi1_ref_bet_pipeline = CombinedStudy.translate(
-        'epi1', CoregisteredEPIStudy.ref_bet_pipeline)
+        'epi1', CoregisteredEPIStudy.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     epi1_ref_segmentation_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline)
@@ -707,7 +722,8 @@ class MotionDetectionStudy(CombinedStudy):
         'epi2', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
     epi2_ref_bet_pipeline = CombinedStudy.translate(
-        'epi2', CoregisteredEPIStudy.ref_bet_pipeline)
+        'epi2', CoregisteredEPIStudy.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     epi2_ref_nifti_pipeline = CombinedStudy.translate(
         'epi2', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
@@ -749,7 +765,8 @@ class MotionDetectionStudy(CombinedStudy):
         'epi3', CoregisteredEPIStudy.epi_bet_pipeline)
 
     epi3_ref_bet_pipeline = CombinedStudy.translate(
-        'epi3', CoregisteredEPIStudy.ref_bet_pipeline)
+        'epi3', CoregisteredEPIStudy.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     epi3_ref_segmentation_pipeline = CombinedStudy.translate(
         'epi3', CoregisteredEPIStudy.ref_segmentation_pipeline)
@@ -785,7 +802,8 @@ class MotionDetectionStudy(CombinedStudy):
         'asl', CoregisteredEPIStudy.epi_bet_pipeline)
 
     asl_ref_bet_pipeline = CombinedStudy.translate(
-        'asl', CoregisteredEPIStudy.ref_bet_pipeline)
+        'asl', CoregisteredEPIStudy.ref_bet_pipeline,
+        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
 
     asl_ref_segmentation_pipeline = CombinedStudy.translate(
         'asl', CoregisteredEPIStudy.ref_segmentation_pipeline)
@@ -1077,9 +1095,11 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('dwi_ref_brain_mask', nifti_gz_format,
                     dwi_1_main_ref_bet_pipeline),
         DatasetSpec('dwi_1_opposite_to_correct', dicom_format),
-        DatasetSpec('dwi_1_opposite_ref', nifti_gz_format),
+        DatasetSpec('dwi_1_opposite_ref', dicom_format),
         DatasetSpec('dwi_1_opposite_to_correct_nii', nifti_gz_format,
-                    dwi_1_opposite_dcm2nii_pipeline),
+                    dwi_1_opposite_main_dcm2nii_pipeline),
+        DatasetSpec('dwi_1_opposite_ref_nii', nifti_gz_format,
+                    dwi_1_opposite_ref_dcm2nii_pipeline),
         DatasetSpec('dwi_1_opposite_brain_mask', nifti_gz_format,
                     dwi_1_opposite_bet_pipeline),
         DatasetSpec('dwi_1_opposite_brain', nifti_gz_format,

@@ -126,7 +126,7 @@ class TestMC(TestCase):
                 'dwi_reference': Dataset('reference', nifti_gz_format),
                 'ute_reference': Dataset('reference', nifti_gz_format),
                 'fm_reference': Dataset('reference', nifti_gz_format)})
-        study.motion_framing_pipeline().run(work_dir=self.work_dir)
+        study.dwi_1_opposite_motion_alignment_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('frame_start_times.txt', study.name)
 #     def test_t2_mc(self):
 #         study = self.create_study(

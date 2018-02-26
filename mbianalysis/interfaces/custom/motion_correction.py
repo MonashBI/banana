@@ -169,7 +169,7 @@ class PrepareDWI(BaseInterface):
         if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
             self.dict_output['main'] = self.inputs.dwi
             self.dict_output['secondary'] = self.inputs.dwi1
-        elif len(dwi.shape) == 3 and len(dwi1.shape) == 4:
+        elif len(dwi.shape) == 3 and len(dwi1.shape) == 4 and not topup:
             self.dict_output['main'] = self.inputs.dwi1
             self.dict_output['secondary'] = self.inputs.dwi
         elif len(dwi.shape) == 3 and len(dwi1.shape) == 3:
@@ -179,9 +179,9 @@ class PrepareDWI(BaseInterface):
             ref = nib.load(self.inputs.dwi1)
             dwi1_b0 = dwi1[:, :, :, 0]
             im2save = nib.Nifti1Image(dwi1_b0, affine=ref.affine)
-            nib.save('b0.nii.gz', im2save)
+            nib.save(im2save, 'b0.nii.gz')
             self.dict_output['main'] = self.inputs.dwi
-            self.dict_output['secondary'] = 'b0.nii.gz'
+            self.dict_output['secondary'] = os.getcwd()+'/b0.nii.gz'
 
         return runtime
 
