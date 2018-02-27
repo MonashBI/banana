@@ -734,8 +734,10 @@ class PlotMeanDisplacementRC(BaseInterface):
             for i in range(len(frame_start_times[:-1])):
 
                 tt = (
-                    (dt.datetime.strptime(str(frame_start_times[i]), '%H%M%S.%f') -
-                     dt.datetime.strptime(str(frame_start_times[0]), '%H%M%S.%f'))
+                    (dt.datetime.strptime(str(frame_start_times[i]),
+                                          '%H%M%S.%f') -
+                     dt.datetime.strptime(str(frame_start_times[0]),
+                                          '%H%M%S.%f'))
                     .total_seconds()*1000)
                 if tt >= len(dates):
                     tt = len(dates)-1
