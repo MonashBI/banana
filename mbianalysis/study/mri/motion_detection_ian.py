@@ -3,7 +3,7 @@ from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
-    MeanDisplacementCalculation, MotionFraming)
+    MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from nianalysis.study.combined import CombinedStudy
@@ -1063,8 +1063,8 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline = self.create_pipeline(
             name='plot_mean_displacement',
             inputs=[DatasetSpec('mean_displacement_rc', text_format),
-                    DatasetSpec('false_indexes', text_format),
-                    DatasetSpec('start_times', text_format)],
+                    DatasetSpec('offset_indexes', text_format),
+                    DatasetSpec('frame_start_times', text_format)],
             outputs=[DatasetSpec('mean_displacement_plot', png_format)],
             description=("Plot the mean displacement real clock"),
             default_options={'framing': True},
@@ -1072,15 +1072,16 @@ class MotionDetectionStudy(CombinedStudy):
             citations=[fsl_cite],
             options=options)
 
-        plot_md = pipeline.create_node(MotionFraming(), name='plot_md')
+        plot_md = pipeline.create_node(PlotMeanDisplacementRC(),
+                                       name='plot_md')
         plot_md.inputs.framing = pipeline.option('framing')
         pipeline.connect_input('mean_displacement_rc', plot_md,
                                'mean_disp_rc')
-        pipeline.connect_input('false_indexes', plot_md,
+        pipeline.connect_input('offset_indexes', plot_md,
                                'false_indexes')
         pipeline.connect_input('frame_start_times', plot_md,
                                'frame_start_times')
-        pipeline.connect_output('fmean_displacement_plot', plot_md,
+        pipeline.connect_output('mean_displacement_plot', plot_md,
                                 'mean_disp_plot')
         pipeline.assert_connected()
         return pipeline
