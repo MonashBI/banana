@@ -774,3 +774,19 @@ class PlotMeanDisplacementRC(BaseInterface):
             os.getcwd()+'/mean_displacement_real_clock.png')
 
         return outputs
+
+
+class AffineMatAveragingInputSpec(BaseInterfaceInputSpec):
+
+
+class AffineMatAveragingOutputSpec(TraitedSpec):
+
+
+class AffineMatAveraging(BaseInterface):
+    
+    input_spec = AffineMatAveragingInputSpec
+    output_spec = AffineMatAveragingOutputSpec
+    
+    def _run_interface(self, runtime):
+        
+        return runtime
