@@ -697,10 +697,21 @@ class PlotMeanDisplacementRC(BaseInterface):
 
         mean_disp_rc = np.loadtxt(self.inputs.mean_disp_rc)
         frame_start_times = np.loadtxt(self.inputs.frame_start_times)
-        false_indexes = np.loadtxt(self.inputs.false_indexes)
+        false_indexes = np.loadtxt(self.inputs.false_indexes, dtype=int)
         framing = self.inputs.framing
         dates = np.arange(0, len(mean_disp_rc), 1)
-        true_indexes = [x for x in dates if x not in false_indexes]
+        indxs = np.zeros(len(mean_disp_rc), int)+1
+        indxs[false_indexes] = 0
+        start_true_period = [x for x in range(len(indxs)) if indxs[x] == 1 and
+                             indxs[x-1] == 0]
+        end_true_period = [x for x in range(len(indxs)) if indxs[x] == 0 and
+                           indxs[x-1] == 1]
+        start_true_period.append(1)
+        end_true_period.append(len(dates))
+        start_true_period = sorted(start_true_period)
+        end_true_period = sorted(end_true_period)
+#         true_indexes = dates[indxs == 1]
+#         true_indexes = [x for x in dates if x not in false_indexes]
 
         fig, ax = plot.subplots()
         fig.set_size_inches(21, 9)
@@ -708,28 +719,32 @@ class PlotMeanDisplacementRC(BaseInterface):
         mpl.rc('font', **font)
         ax.set_xlim(0, dates[-1])
         ax.set_ylim(-0.3, np.max(mean_disp_rc) + 1)
-        ax.plot(dates[true_indexes],
-                mean_disp_rc[true_indexes], c='b',
-                linewidth=2)
-        ax.plot(dates[false_indexes],
-                mean_disp_rc[false_indexes], c='b',
-                linewidth=2, ls='--', dashes=(2, 3))
+        for i in range(0, len(start_true_period)):
+            ax.plot(dates[start_true_period[i]-1:end_true_period[i]+1],
+                    mean_disp_rc[start_true_period[i]-1:end_true_period[i]+1],
+                    c='b', linewidth=2)
+        for i in range(0, len(end_true_period)-1):
+            ax.plot(
+                dates[end_true_period[i]-1:start_true_period[i+1]+1],
+                mean_disp_rc[end_true_period[i]-1:start_true_period[i+1]+1],
+                c='b', linewidth=2, ls='--', dashes=(2, 3))
 
         if framing:
             cl = 'yellow'
             for i in range(len(frame_start_times[:-1])):
 
                 tt = (
-                    (dt.datetime.strptime(frame_start_times[i], '%H%M%S.%f') -
-                     dt.datetime.strptime(frame_start_times[0], '%H%M%S.%f'))
+                    (dt.datetime.strptime(str(frame_start_times[i]), '%H%M%S.%f') -
+                     dt.datetime.strptime(str(frame_start_times[0]), '%H%M%S.%f'))
                     .total_seconds()*1000)
                 if tt >= len(dates):
                     tt = len(dates)-1
                 plot.axvline(dates[int(tt)], c='b', alpha=0.3, ls='--')
 
-                tt1 = ((dt.datetime.strptime(frame_start_times[i+1],
+                tt1 = ((dt.datetime.strptime(str(frame_start_times[i+1]),
                                              '%H%M%S.%f') -
-                       dt.datetime.strptime(frame_start_times[0], '%H%M%S.%f'))
+                       dt.datetime.strptime(str(frame_start_times[0]),
+                                            '%H%M%S.%f'))
                        .total_seconds()*1000)
                 if tt1 >= len(dates):
                     tt1 = len(dates)-1
