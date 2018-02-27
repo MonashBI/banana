@@ -3,7 +3,8 @@ from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
-    MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC)
+    MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
+    AffineMatAveraging)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from nianalysis.study.combined import CombinedStudy
@@ -820,7 +821,8 @@ class MotionDetectionStudy(CombinedStudy):
                      DatasetSpec('mean_displacement_consecutive', text_format),
                      DatasetSpec('start_times', text_format),
                      DatasetSpec('motion_par_rc', text_format),
-                     DatasetSpec('offset_indexes', text_format)],
+                     DatasetSpec('offset_indexes', text_format),
+                     DatasetSpec('mats4average', text_format)],
             description=("Calculate the mean displacement between each motion"
                          " matrix and a reference."),
             default_options={},
@@ -949,6 +951,7 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.connect_output('start_times', md, 'start_times')
         pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
+        pipeline.connect_output('mats4average', md, 'mats4average')
         pipeline.assert_connected()
         return pipeline
 
@@ -959,7 +962,8 @@ class MotionDetectionStudy(CombinedStudy):
             inputs=[DatasetSpec('mean_displacement', text_format),
                     DatasetSpec('mean_displacement_consecutive', text_format),
                     DatasetSpec('start_times', text_format)],
-            outputs=[DatasetSpec('frame_start_times', text_format)],
+            outputs=[DatasetSpec('frame_start_times', text_format),
+                     DatasetSpec('frame_vol_numbers', text_format)],
             description=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
             default_options={'th': 2.0, 'temporal_th': 30.0},
@@ -977,6 +981,8 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.connect_input('start_times', framing, 'start_times')
         pipeline.connect_output('frame_start_times', framing,
                                 'frame_start_times')
+        pipeline.connect_output('frame_vol_numbers', framing,
+                                'frame_vol_numbers')
         pipeline.assert_connected()
         return pipeline
 
@@ -1005,6 +1011,31 @@ class MotionDetectionStudy(CombinedStudy):
                                'frame_start_times')
         pipeline.connect_output('mean_displacement_plot', plot_md,
                                 'mean_disp_plot')
+        pipeline.assert_connected()
+        return pipeline
+
+    def frame_mean_transformation_mats_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='frame_mean_transformation_mats',
+            inputs=[DatasetSpec('mats4average', text_format),
+                    DatasetSpec('frame_vol_numbers', text_format)],
+            outputs=[DatasetSpec('average_mats', png_format)],
+            description=("Average all the transformation mats within each detected "
+                         "frame."),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        average = pipeline.create_node(AffineMatAveraging(),
+                                       name='mats_averaging')
+        pipeline.connect_input('frame_vol_numbers', average,
+                               'frame_vol_numbers')
+        pipeline.connect_input('mats4average', average,
+                               'all_mats4average')
+        pipeline.connect_output('average_mats', average,
+                                'average_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -1414,10 +1445,13 @@ class MotionDetectionStudy(CombinedStudy):
                     mean_displacement_pipeline),
         DatasetSpec('mean_displacement_consecutive', text_format,
                     mean_displacement_pipeline),
+        DatasetSpec('mats4average', text_format, mean_displacement_pipeline),
         DatasetSpec('start_times', text_format, mean_displacement_pipeline),
         DatasetSpec('motion_par_rc', text_format, mean_displacement_pipeline),
         DatasetSpec('offset_indexes', text_format, mean_displacement_pipeline),
         DatasetSpec('frame_start_times', text_format,
+                    motion_framing_pipeline),
+        DatasetSpec('frame_vol_numbers', text_format,
                     motion_framing_pipeline),
         DatasetSpec('mean_displacement_plot', png_format,
                     plot_mean_displacement_pipeline)])
