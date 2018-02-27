@@ -48,7 +48,7 @@ class MotionMatCalculation(BaseInterface):
             for mat in list_mats:
                 m = np.loadtxt(mat)
                 concat = np.dot(reg_mat, m)
-                self.gen_motion_mat(concat, qform_mat, mat)
+                self.gen_motion_mat(concat, qform_mat, mat.split('.')[0])
             mat_path, _, _ = split_filename(mat)
             mm = glob.glob(mat_path+'/*motion_mat*.mat')
         else:
@@ -417,6 +417,7 @@ class MeanDisplacementCalculationOutputSpec(TraitedSpec):
     start_times = File(exists=True)
     motion_parameters = File(exists=True)
     offset_indexes = File(exists=True)
+    mats4average = File(exists=True)
 
 
 class MeanDisplacementCalculation(BaseInterface):
@@ -443,10 +444,13 @@ class MeanDisplacementCalculation(BaseInterface):
         mean_displacement = []
         idt_mat = np.eye(4)
         all_mats = []
+        all_mats4average = []
         start_times = []
         for f in list_inputs:
             mats = sorted(glob.glob(f[0]+'/*inv.mat'))
+            mats4averge = sorted(glob.glob(f[0]+'/*mat.mat'))
             all_mats = all_mats+mats
+            all_mats4average = all_mats4average+mats4averge
             start_scan = f[1]
             tr = f[3]
             if len(mats) > 1:
@@ -502,10 +506,10 @@ class MeanDisplacementCalculation(BaseInterface):
 
         to_save = [mean_displacement, mean_displacement_consecutive,
                    mean_displacement_rc, motion_par_rc, start_times,
-                   offset_indexes]
+                   offset_indexes, all_mats4average]
         to_save_name = ['mean_displacement', 'mean_displacement_consecutive',
                         'mean_displacement_rc', 'motion_par_rc', 'start_times',
-                        'offset_indexes']
+                        'offset_indexes', 'mats4average']
         for i in range(len(to_save)):
             np.savetxt(to_save_name[i]+'.txt', np.asarray(to_save[i]),
                        fmt='%s')
@@ -569,6 +573,7 @@ class MeanDisplacementCalculation(BaseInterface):
         outputs["start_times"] = os.getcwd()+'/start_times.txt'
         outputs["motion_parameters"] = os.getcwd()+'/motion_par_rc.txt'
         outputs["offset_indexes"] = os.getcwd()+'/offset_indexes.txt'
+        outputs["mats4average"] = os.getcwd()+'/mats4average.txt'
 
         return outputs
 
@@ -591,6 +596,8 @@ class MotionFramingInputSpec(BaseInterfaceInputSpec):
 class MotionFramingOutputSpec(TraitedSpec):
 
     frame_start_times = File(exists=True)
+    frame_vol_numbers = File(exists=True, desc='Text file with the number of volume where'
+                             'the motion occurred.')
 
 
 class MotionFraming(BaseInterface):
@@ -660,6 +667,7 @@ class MotionFraming(BaseInterface):
         frame_start_times = [start_times[x] for x in frame_vol]
         np.savetxt('frame_start_times.txt', np.asarray(frame_start_times),
                    fmt='%s')
+        np.savetxt('frame_vol_numbers.txt', np.asarray(frame_vol), fmt='%s')
 
         return runtime
 
@@ -667,6 +675,7 @@ class MotionFraming(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["frame_start_times"] = os.getcwd()+'/frame_start_times.txt'
+        outputs["frame_vol_numbers"] = os.getcwd()+'/frame_vol_numbers.txt'
 
         return outputs
 
@@ -702,9 +711,9 @@ class PlotMeanDisplacementRC(BaseInterface):
         dates = np.arange(0, len(mean_disp_rc), 1)
         indxs = np.zeros(len(mean_disp_rc), int)+1
         indxs[false_indexes] = 0
-        start_true_period = [x for x in range(len(indxs)) if indxs[x] == 1 and
+        start_true_period = [x for x in range(1, len(indxs)) if indxs[x] == 1 and
                              indxs[x-1] == 0]
-        end_true_period = [x for x in range(len(indxs)) if indxs[x] == 0 and
+        end_true_period = [x for x in range(len(indxs)-1) if indxs[x] == 0 and
                            indxs[x-1] == 1]
         start_true_period.append(1)
         end_true_period.append(len(dates))
@@ -777,16 +786,62 @@ class PlotMeanDisplacementRC(BaseInterface):
 
 
 class AffineMatAveragingInputSpec(BaseInterfaceInputSpec):
-
-
+ 
+    frame_vol_numbers = File(exists=True)
+    all_mats4average = File(exists=True)
+ 
 class AffineMatAveragingOutputSpec(TraitedSpec):
+ 
+    average_mats = Directory(exists=True)
 
 
 class AffineMatAveraging(BaseInterface):
-    
+     
     input_spec = AffineMatAveragingInputSpec
     output_spec = AffineMatAveragingOutputSpec
-    
+     
     def _run_interface(self, runtime):
+         
+        frame_vol = self.inputs.frame_vol_numbers
+        all_mats = self.inputs.all_mats4average
+        idt = np.eye(4)
+
+        for v in range(len(frame_vol)-1):
+
+            v1 = frame_vol[v]
+            v2 = frame_vol[v + 1]
+            mat_tot = np.zeros((4, 4, (v2 - v1)))
+            n_vol = 0
+
+            for j, m in enumerate(all_mats[v1:v2]):
+                mat = np.loadtxt(m)
+                if (mat == idt).all():
+                    mat_tot[:, :, j] = np.zeros((4, 4))
+                else:
+                    mat_tot[:, :, j] = mat
+                    n_vol += 1
+            if n_vol > 0:
+                average_mat = np.sum(mat_tot, axis=2) / n_vol
+            else:
+                average_mat = idt
+
+            np.savetxt(
+                'average_matrix_vol_{0}-{1}.txt'
+                .format(str(v1).zfill(4), str(v2).zfill(4)), average_mat)
+
+        if os.path.isdir('frame_mean_transformation_mats') is False:
+            os.mkdir('frame_mean_transformation_mats')
+
+        mats = glob.glob('average_matrix_vol*')
+        for m in mats:
+            shutil.move(m, 'frame_mean_transformation_mats')
         
         return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["average_mats"] = (
+            os.getcwd()+'/frame_mean_transformation_mats')
+
+        return outputs
