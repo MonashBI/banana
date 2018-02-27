@@ -1020,7 +1020,7 @@ class MotionDetectionStudy(CombinedStudy):
             name='frame_mean_transformation_mats',
             inputs=[DatasetSpec('mats4average', text_format),
                     DatasetSpec('frame_vol_numbers', text_format)],
-            outputs=[DatasetSpec('average_mats', png_format)],
+            outputs=[DatasetSpec('average_mats', directory_format)],
             description=("Average all the transformation mats within each detected "
                          "frame."),
             default_options={},
@@ -1454,4 +1454,6 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('frame_vol_numbers', text_format,
                     motion_framing_pipeline),
         DatasetSpec('mean_displacement_plot', png_format,
-                    plot_mean_displacement_pipeline)])
+                    plot_mean_displacement_pipeline),
+        DatasetSpec('average_mats', directory_format,
+                    frame_mean_transformation_mats_pipeline)])
