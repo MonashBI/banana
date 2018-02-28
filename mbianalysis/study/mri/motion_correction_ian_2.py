@@ -14,6 +14,7 @@ from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge as merge_lists
 from .base import MotionReferenceStudy
 from .structural.diffusion_coreg import CoregisteredDiffusionStudy
+from nianalysis.requirements import fsl509_req
 
 
 class MotionDetectionStudy(CombinedStudy):
@@ -1084,8 +1085,8 @@ class MotionDetectionStudy(CombinedStudy):
             citations=[fsl_cite],
             options=options)
 
-        frame_align = pipeline.create_node(FrameAlign2Reference(),
-                                           name='frame2ref_alignment')
+        frame_align = pipeline.create_node(FrameAlign2Reference(), name='frame2ref_alignment',
+                                           requirements=[fsl509_req])
         frame_align.inputs.pct = pipeline.option('pct')
         frame_align.inputs.fixed_binning = pipeline.option('fixed_binning')
         pipeline.connect_input(average_mats, frame_align,
