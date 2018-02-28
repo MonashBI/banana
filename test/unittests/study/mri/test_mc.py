@@ -146,11 +146,9 @@ class TestMC(TestCase):
     def test_plot_md(self):
         study = self.create_study(
             MotionDetectionStudy, 'plot_md', inputs={
-                'mean_displacement_rc': Dataset('mean_displacement_rc', text_format),
-                'offset_indexes': Dataset('offset_indexes', text_format),
                 'frame_start_times': Dataset('frame_start_times', text_format)})
-        study.plot_mean_displacement_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('mean_displacement_plot.png', study.name)
+        study.pet_correction_factors_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('correction_factors.txt', study.name)
 #     def test_t2_mc(self):
 #         study = self.create_study(
 #             CoregisteredT2Study, 't2_reg_study', inputs={
@@ -181,6 +179,18 @@ class TestMC(TestCase):
 #                                               dicom_format),
 #                 'ute': Dataset('ute_dicom', dicom_format),
 #                 'fm': Dataset('fm_dicom', dicom_format),
+#                 'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
+#                 't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
+#                 't2_1_motion_mats': Dataset('t2_1_motion_mats', directory_format),
+#                 't2_2_motion_mats': Dataset('t2_2_motion_mats', directory_format),
+#                 't2_3_motion_mats': Dataset('t2_3_motion_mats', directory_format),
+#                 't2_4_motion_mats': Dataset('t2_4_motion_mats', directory_format),
+#                 't2_5_motion_mats': Dataset('t2_5_motion_mats', directory_format),
+#                 'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
+#                 'dwi2ref_1_opposite_motion_mats': Dataset('dwi2ref_1_opposite_motion_mats', directory_format),
+#                 'dwi2ref_1_motion_mats': Dataset('dwi2ref_1_motion_mats', directory_format),
+#                 'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
+#                 'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
 #                 'reference': Dataset('reference_dicom', dicom_format),
 #                 'epi1_reference': Dataset('reference', nifti_gz_format),
 #                 't1_1_reference': Dataset('reference', nifti_gz_format),
@@ -192,5 +202,5 @@ class TestMC(TestCase):
 #                 'dwi_reference': Dataset('reference', nifti_gz_format),
 #                 'ute_reference': Dataset('reference', nifti_gz_format),
 #                 'fm_reference': Dataset('reference', nifti_gz_format)})
-#         study.motion_framing_pipeline().run(work_dir=self.work_dir)
-#         self.assertDatasetCreated('frame_start_times.txt', study.name)
+#         study.frame_mean_transformation_mats_pipeline().run(work_dir=self.work_dir)
+#         self.assertDatasetCreated('average_mats', study.name)

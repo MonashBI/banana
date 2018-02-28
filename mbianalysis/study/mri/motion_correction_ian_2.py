@@ -4,7 +4,7 @@ from nianalysis.data_formats import (
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
-    AffineMatAveraging)
+    AffineMatAveraging, PetCorrectionFactor)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from nianalysis.study.combined import CombinedStudy
@@ -1039,6 +1039,29 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def pet_correction_factors_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='pet_correction_factors',
+            inputs=[DatasetSpec('frame_start_times', text_format)],
+            outputs=[DatasetSpec('correction_factors', text_format)],
+            description=("Pipeline to calculate the correction factors to account for "
+                         "frame duration when averaging the PET frames to create "
+                         "the static PET image"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        corr_factors = pipeline.create_node(PetCorrectionFactor(),
+                                       name='pet_corr_factors')
+        pipeline.connect_input('frame_start_times', corr_factors,
+                               'frame_start_times')
+        pipeline.connect_output('correction_factors', corr_factors,
+                                'corr_factors')
+        pipeline.assert_connected()
+        return pipeline
+
     _data_specs = set_data_specs([
         DatasetSpec('dwi_1_main', dicom_format),
         DatasetSpec('dwi_1_main_ref', nifti_gz_format),
@@ -1456,4 +1479,6 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('mean_displacement_plot', png_format,
                     plot_mean_displacement_pipeline),
         DatasetSpec('average_mats', directory_format,
-                    frame_mean_transformation_mats_pipeline)])
+                    frame_mean_transformation_mats_pipeline),
+        DatasetSpec('correction_factors', text_format,
+                    pet_correction_factors_pipeline)])

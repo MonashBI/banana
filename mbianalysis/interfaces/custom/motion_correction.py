@@ -802,8 +802,8 @@ class AffineMatAveraging(BaseInterface):
      
     def _run_interface(self, runtime):
          
-        frame_vol = self.inputs.frame_vol_numbers
-        all_mats = self.inputs.all_mats4average
+        frame_vol = np.loadtxt(self.inputs.frame_vol_numbers, dtype=int)
+        all_mats = np.loadtxt(self.inputs.all_mats4average, dtype=str)
         idt = np.eye(4)
 
         for v in range(len(frame_vol)-1):
@@ -843,5 +843,50 @@ class AffineMatAveraging(BaseInterface):
 
         outputs["average_mats"] = (
             os.getcwd()+'/frame_mean_transformation_mats')
+
+        return outputs
+
+
+class PetCorrectionFactorInputSpec(BaseInterfaceInputSpec):
+    
+    frame_start_times = File(exists=True, desc='Frame start times as detected'
+                             'by the motion framing pipeline')
+
+
+class PetCorrectionFactorOutputSpec(TraitedSpec):
+    
+    corr_factors = File(exists=True, desc='Pet correction factors.')
+
+
+class PetCorrectionFactor(BaseInterface):
+    
+    input_spec = PetCorrectionFactorInputSpec
+    output_spec = PetCorrectionFactorOutputSpec
+    
+    def _run_interface(self, runtime):
+
+        frame_st = np.loadtxt(self.inputs.frame_start_times, dtype=str)
+        start = dt.datetime.strptime(frame_st[0], '%H%M%S.%f')
+        end = dt.datetime.strptime(frame_st[-1], '%H%M%S.%f')
+        tot_duration = (end - start).total_seconds()
+        corr_factors = []
+        for t in range(len(frame_st) - 1):
+            start = dt.datetime.strptime(frame_st[t], '%H%M%S.%f')
+            end = dt.datetime.strptime(frame_st[t + 1], '%H%M%S.%f')
+            d = (end - start).total_seconds()
+            corr_factors.append(d / tot_duration)
+
+        with open('correction_factors_PET_data.txt', 'w') as f:
+            for el in corr_factors:
+                f.write(str(el) + '\n')
+            f.close()
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["corr_factors"] = (
+            os.getcwd()+'/correction_factors_PET_data.txt')
 
         return outputs
