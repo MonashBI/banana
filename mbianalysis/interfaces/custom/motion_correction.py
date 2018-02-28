@@ -12,6 +12,7 @@ import scipy.ndimage.measurements as snm
 import datetime as dt
 import matplotlib as mpl
 import matplotlib.pyplot as plot
+from nipype.interfaces import fsl
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -792,7 +793,8 @@ class AffineMatAveragingInputSpec(BaseInterfaceInputSpec):
  
 class AffineMatAveragingOutputSpec(TraitedSpec):
  
-    average_mats = Directory(exists=True)
+    average_mats = Directory(exists=True, desc='directory with all the average transformation '
+                             'matrices for each detected frame.')
 
 
 class AffineMatAveraging(BaseInterface):
@@ -888,5 +890,112 @@ class PetCorrectionFactor(BaseInterface):
 
         outputs["corr_factors"] = (
             os.getcwd()+'/correction_factors_PET_data.txt')
+
+        return outputs
+
+
+class FrameAlign2ReferenceInputSpec(BaseInterfaceInputSpec):
+
+    average_mats = Directory(exists=True, desc='directory with all the average transformation '
+                             'matrices for each detected frame.')
+    ute_regmat = File(exists=True, desc='registration mat between ute image and reference.')
+    ute_qform_mat = File(exists=True, desc='qform mat between ute and reference.')
+    fixed_binning = traits.Bool(desc='if true, the function will assume that the average '
+                                'matrices have been generated for dynamic motion correction.'
+                                'Default is False.')
+    umap = File(exists=True, desc='If a umap is provided, the function will align it to '
+                   'the head position in each frame. Default is None', default=None)
+    pct = traits.Bool(desc='if True, the function will assume that the provided umap is '
+                      'continuos values, as the pseudo CT umap. Otherwise, it will assume'
+                      ' that the values are discrete. Default is False.')
+
+
+class FrameAlign2ReferenceOutputSpec(TraitedSpec):
+    
+    frame2reference_mats = Directory(exists=True, desc='directory with all the matrices '
+                                     'which align each frame to the reference.')
+    umaps_align2ref = Directory(desc='directory with all the realigned umaps (if a umaps is '
+                         'provided as input).')
+
+
+class FrameAlign2Reference(BaseInterface):
+    
+    input_spec = FrameAlign2ReferenceInputSpec
+    output_spec = FrameAlign2ReferenceOutputSpec
+
+    def _run_interface(self, runtime):
+        
+        fixed_binning = self.inputs.fixed_binning
+        average_mats = self.inputs.average_mats
+        umap = self.inputs.umaps
+        pct = self.inputs.pcs
+        ute_regmat = self.inputs.ute_regmat
+        ute_qform_mat = self.inputs.ute_qform_mat
+
+        for i, mat in enumerate(average_mats):
+            self.FrameAlign2Reference_calc(mat, i, ute_regmat, ute_qform_mat,
+                                         fixed_binning=fixed_binning, umap=umap, pct=pct)
+        
+        if os.path.isdir('frame_align2ref_mats') is False:
+            os.mkdir('frame_align2ref_mats')
+
+        mats = glob.glob('*ref_to_ute*.mat')
+        for m in mats:
+            shutil.move(m, 'frame_align2ref_mats')
+        if umap:
+            umaps = glob.glob('Frame_*_umap.nii.gz')
+            if os.path.isdir('umaps_align2ref') is False:
+                os.mkdir('umaps_align2ref')
+            for u in umaps:
+                shutil.move(u, 'umaps_align2ref')
+
+        return runtime
+    
+    def FrameAlign2Reference_calc(self, mat, i, ute_regmat, ute_qform_mat,
+                                fixed_binning=False, umap=None, pct=False):
+
+        if not fixed_binning:
+            outname = 'Frame'
+        else:
+            outname = 'Bin'
+
+        mat = np.loadtxt(mat)
+        utemat = np.loadtxt(ute_regmat)
+        utemat_qform = np.loadtxt(ute_qform_mat)
+        utemat_qform_inv = np.linalg.inv(utemat_qform)
+        ute2frame = np.dot(mat, utemat)
+        ute2frame_qform = np.dot(utemat_qform_inv, ute2frame)
+        ute2frame_qform_inv = np.linalg.inv(ute2frame_qform)
+
+        np.savetxt('{0}_{1}_ref_to_ute.mat'.format(outname, str(i).zfill(3)),
+                   ute2frame_qform)
+        np.savetxt(
+            '{0}_{1}_ref_to_ute_inv.mat'.format(outname, str(i).zfill(3)),
+            ute2frame_qform_inv)
+
+        if umap and not fixed_binning:
+            if pct:
+                interp = 'trilinear'
+            else:
+                interp = 'nearestneighbour'
+            flt = fsl.FLIRT(bins=256, cost_func='corratio')
+            flt.inputs.reference = umap
+            flt.inputs.in_file = umap
+            flt.inputs.interp = interp
+            flt.inputs.in_matrix_file = ('Frame_{0}_ref_to_ute.mat'
+                                         .format(str(i).zfill(3)))
+            flt.inputs.out_file = 'Frame_{0}_umap.nii.gz'.format(
+                str(i).zfill(3))
+            flt.inputs.apply_xfm = True
+            flt.run()
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["frame2reference_mats"] = (
+            os.getcwd()+'/frame_align2ref_mats')
+        if self.inputs.umap:
+            outputs["umaps_align2ref"] = (
+            os.getcwd()+'/umaps_align2ref')
 
         return outputs

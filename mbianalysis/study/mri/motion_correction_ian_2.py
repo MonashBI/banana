@@ -4,7 +4,7 @@ from nianalysis.data_formats import (
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
-    AffineMatAveraging, PetCorrectionFactor)
+    AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_data_specs
 from nianalysis.study.combined import CombinedStudy
@@ -1062,6 +1062,50 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def frame2ref_alignment_pipeline_factory(self, name, average_mats, ute_regmat, ute_qform_mat,
+                                             umap=None, pct=False, fixed_binning=False, **options):
+        inputs = [DatasetSpec(average_mats, directory_format),
+                  DatasetSpec(ute_regmat, text_matrix_format),
+                  DatasetSpec(ute_qform_mat, text_matrix_format)]
+        outputs = [DatasetSpec('frame2reference_mats', directory_format)]
+        if umap:
+            inputs.append(DatasetSpec(umap, nifti_gz_format))
+            outputs.append('umaps_align2ref', directory_format)
+        
+        pipeline = self.create_pipeline(
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            description=("Pipeline to create an affine mat to align each detected frame to the"
+                         " reference. If umap is provided, it will be also aligned to match the"
+                         " head position in each frame and improve the static PET image quality."),
+            default_options={'pct': pct, 'fixed_binning': fixed_binning},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        frame_align = pipeline.create_node(FrameAlign2Reference(),
+                                           name='frame2ref_alignment')
+        frame_align.inputs.pct = pipeline.option('pct')
+        frame_align.inputs.fixed_binning = pipeline.option('fixed_binning')
+        pipeline.connect_input(average_mats, frame_align,
+                               'average_mats')
+        pipeline.connect_input(ute_regmat, frame_align,
+                                'ute_regmat')
+        pipeline.connect_input(ute_qform_mat, frame_align,
+                                'ute_qform_mat')
+        if umap:
+            pipeline.connect_input(umap, frame_align, 'umap')
+            pipeline.connect_output('umaps_align2ref', frame_align, 'umaps_align2ref')
+        pipeline.connect_output('frame2reference_mats', frame_align, 'frame2reference_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    def frame2ref_alignment_pipeline(self, **options):
+        return self.frame2ref_alignment_pipeline_factory(
+            'frame2ref_alignment', 'average_mats', 'ute_reg_mat', 'ute_qform_mat', umap=None,
+            pct=False, fixed_binning=False, **options)
+
     _data_specs = set_data_specs([
         DatasetSpec('dwi_1_main', dicom_format),
         DatasetSpec('dwi_1_main_ref', nifti_gz_format),
@@ -1481,4 +1525,8 @@ class MotionDetectionStudy(CombinedStudy):
         DatasetSpec('average_mats', directory_format,
                     frame_mean_transformation_mats_pipeline),
         DatasetSpec('correction_factors', text_format,
-                    pet_correction_factors_pipeline)])
+                    pet_correction_factors_pipeline),
+        DatasetSpec('umaps_align2ref', directory_format,
+                    frame2ref_alignment_pipeline),
+        DatasetSpec('frame2reference_mats', directory_format,
+                    frame2ref_alignment_pipeline)])
