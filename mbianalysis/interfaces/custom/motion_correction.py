@@ -926,9 +926,9 @@ class FrameAlign2Reference(BaseInterface):
     def _run_interface(self, runtime):
         
         fixed_binning = self.inputs.fixed_binning
-        average_mats = self.inputs.average_mats
-        umap = self.inputs.umaps
-        pct = self.inputs.pcs
+        average_mats = sorted(glob.glob(self.inputs.average_mats+'/*.txt'))
+        umap = self.inputs.umap
+        pct = self.inputs.pct
         ute_regmat = self.inputs.ute_regmat
         ute_qform_mat = self.inputs.ute_qform_mat
 

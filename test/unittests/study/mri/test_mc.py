@@ -143,12 +143,12 @@ class TestMC(TestCase):
 #         study.motion_framing_pipeline().run(work_dir=self.work_dir)
 #         self.assertDatasetCreated('frame_start_times.txt', study.name)
 # 
-    def test_plot_md(self):
-        study = self.create_study(
-            MotionDetectionStudy, 'plot_md', inputs={
-                'frame_start_times': Dataset('frame_start_times', text_format)})
-        study.pet_correction_factors_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('correction_factors.txt', study.name)
+#     def test_plot_md(self):
+#         study = self.create_study(
+#             MotionDetectionStudy, 'plot_md', inputs={
+#                 'frame_start_times': Dataset('frame_start_times', text_format)})
+#         study.frame2ref_alignment_pipeline().run(work_dir=self.work_dir)
+#         self.assertDatasetCreated('frame2reference_mats', study.name)
 #     def test_t2_mc(self):
 #         study = self.create_study(
 #             CoregisteredT2Study, 't2_reg_study', inputs={
@@ -156,51 +156,53 @@ class TestMC(TestCase):
 #                 'reference': Dataset('ref_2', nifti_gz_format)})
 #         study.t2_motion_mat_pipeline().run(work_dir=self.work_dir)
 #         self.assertDatasetCreated('t2_motion_mats', study.name)
-#     def test_mc_ian(self):
-#         study = self.create_study(
-#             MotionDetectionStudy, 'mc_detection_study', inputs={
-#                 'epi1': Dataset('epi_1_dicom', dicom_format),
-#                 't1_1': Dataset('t1_1_dicom', dicom_format),
-#                 't2_1': Dataset('t2_1_dicom', dicom_format),
-#                 't2_2': Dataset('t2_2_dicom', dicom_format),
-#                 't2_3': Dataset('t2_3_dicom', dicom_format),
-#                 't2_4': Dataset('t2_4_dicom', dicom_format),
-#                 't2_5': Dataset('t2_5_dicom', dicom_format),
-#                 'dwi_1_main': Dataset('dwi_1_main_dicom', dicom_format),
-#                 'dwi2ref_1_to_correct': Dataset('dwi2ref_1_dicom',
-#                                                      dicom_format),
-#                 'dwi2ref_1_opposite_to_correct': Dataset('dwi2ref_1_opposite_dicom',
-#                                                      dicom_format),
-#                 'dwi_1_main_ref': Dataset('dwi2ref_1_opposite_dicom',
-#                                           dicom_format),
-#                 'dwi2ref_1_ref': Dataset('dwi2ref_1_opposite_dicom',
-#                                               dicom_format),
-#                 'dwi2ref_1_opposite_ref': Dataset('dwi2ref_1_dicom',
-#                                               dicom_format),
-#                 'ute': Dataset('ute_dicom', dicom_format),
-#                 'fm': Dataset('fm_dicom', dicom_format),
-#                 'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
-#                 't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
-#                 't2_1_motion_mats': Dataset('t2_1_motion_mats', directory_format),
-#                 't2_2_motion_mats': Dataset('t2_2_motion_mats', directory_format),
-#                 't2_3_motion_mats': Dataset('t2_3_motion_mats', directory_format),
-#                 't2_4_motion_mats': Dataset('t2_4_motion_mats', directory_format),
-#                 't2_5_motion_mats': Dataset('t2_5_motion_mats', directory_format),
-#                 'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
-#                 'dwi2ref_1_opposite_motion_mats': Dataset('dwi2ref_1_opposite_motion_mats', directory_format),
-#                 'dwi2ref_1_motion_mats': Dataset('dwi2ref_1_motion_mats', directory_format),
-#                 'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
-#                 'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
-#                 'reference': Dataset('reference_dicom', dicom_format),
-#                 'epi1_reference': Dataset('reference', nifti_gz_format),
-#                 't1_1_reference': Dataset('reference', nifti_gz_format),
-#                 't2_1_reference': Dataset('reference', nifti_gz_format),
-#                 't2_2_reference': Dataset('reference', nifti_gz_format),
-#                 't2_3_reference': Dataset('reference', nifti_gz_format),
-#                 't2_4_reference': Dataset('reference', nifti_gz_format),
-#                 't2_5_reference': Dataset('reference', nifti_gz_format),
-#                 'dwi_reference': Dataset('reference', nifti_gz_format),
-#                 'ute_reference': Dataset('reference', nifti_gz_format),
-#                 'fm_reference': Dataset('reference', nifti_gz_format)})
-#         study.frame_mean_transformation_mats_pipeline().run(work_dir=self.work_dir)
-#         self.assertDatasetCreated('average_mats', study.name)
+    def test_mc_ian(self):
+        study = self.create_study(
+            MotionDetectionStudy, 'mc_detection_study', inputs={
+                'epi1': Dataset('epi_1_dicom', dicom_format),
+                't1_1': Dataset('t1_1_dicom', dicom_format),
+                't2_1': Dataset('t2_1_dicom', dicom_format),
+                't2_2': Dataset('t2_2_dicom', dicom_format),
+                't2_3': Dataset('t2_3_dicom', dicom_format),
+                't2_4': Dataset('t2_4_dicom', dicom_format),
+                't2_5': Dataset('t2_5_dicom', dicom_format),
+                'dwi_1_main': Dataset('dwi_1_main_dicom', dicom_format),
+                'dwi2ref_1_to_correct': Dataset('dwi2ref_1_dicom',
+                                                     dicom_format),
+                'dwi2ref_1_opposite_to_correct': Dataset('dwi2ref_1_opposite_dicom',
+                                                     dicom_format),
+                'dwi_1_main_ref': Dataset('dwi2ref_1_opposite_dicom',
+                                          dicom_format),
+                'dwi2ref_1_ref': Dataset('dwi2ref_1_opposite_dicom',
+                                              dicom_format),
+                'dwi2ref_1_opposite_ref': Dataset('dwi2ref_1_dicom',
+                                              dicom_format),
+                'ute': Dataset('ute_dicom', dicom_format),
+                'fm': Dataset('fm_dicom', dicom_format),
+                'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
+                't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
+                't2_1_motion_mats': Dataset('t2_1_motion_mats', directory_format),
+                't2_2_motion_mats': Dataset('t2_2_motion_mats', directory_format),
+                't2_3_motion_mats': Dataset('t2_3_motion_mats', directory_format),
+                't2_4_motion_mats': Dataset('t2_4_motion_mats', directory_format),
+                't2_5_motion_mats': Dataset('t2_5_motion_mats', directory_format),
+                'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
+                'dwi2ref_1_opposite_motion_mats': Dataset('dwi2ref_1_opposite_motion_mats', directory_format),
+                'dwi2ref_1_motion_mats': Dataset('dwi2ref_1_motion_mats', directory_format),
+                'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
+                'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
+                'reference': Dataset('reference_dicom', dicom_format),
+                'umap': Dataset('umap', nifti_gz_format),
+                'epi1_reference': Dataset('reference', nifti_gz_format),
+                't1_1_reference': Dataset('reference', nifti_gz_format),
+                't2_1_reference': Dataset('reference', nifti_gz_format),
+                't2_2_reference': Dataset('reference', nifti_gz_format),
+                't2_3_reference': Dataset('reference', nifti_gz_format),
+                't2_4_reference': Dataset('reference', nifti_gz_format),
+                't2_5_reference': Dataset('reference', nifti_gz_format),
+                'dwi_reference': Dataset('reference', nifti_gz_format),
+                'ute_reference': Dataset('reference', nifti_gz_format),
+                'fm_reference': Dataset('reference', nifti_gz_format)})
+        study.frame2ref_alignment_pipeline().run(work_dir=self.work_dir)
+        self.assertDatasetCreated('frame2reference_mats', study.name)
+        self.assertDatasetCreated('umaps_align2ref', study.name)

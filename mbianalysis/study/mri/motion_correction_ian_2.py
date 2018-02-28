@@ -1070,7 +1070,7 @@ class MotionDetectionStudy(CombinedStudy):
         outputs = [DatasetSpec('frame2reference_mats', directory_format)]
         if umap:
             inputs.append(DatasetSpec(umap, nifti_gz_format))
-            outputs.append('umaps_align2ref', directory_format)
+            outputs.append(DatasetSpec('umaps_align2ref', directory_format))
         
         pipeline = self.create_pipeline(
             name=name,
@@ -1103,12 +1103,13 @@ class MotionDetectionStudy(CombinedStudy):
 
     def frame2ref_alignment_pipeline(self, **options):
         return self.frame2ref_alignment_pipeline_factory(
-            'frame2ref_alignment', 'average_mats', 'ute_reg_mat', 'ute_qform_mat', umap=None,
+            'frame2ref_alignment', 'average_mats', 'ute_reg_mat', 'ute_qform_mat', umap='umap',
             pct=False, fixed_binning=False, **options)
 
     _data_specs = set_data_specs([
         DatasetSpec('dwi_1_main', dicom_format),
         DatasetSpec('dwi_1_main_ref', nifti_gz_format),
+        DatasetSpec('umap', nifti_gz_format),
         DatasetSpec('dwi_reference', nifti_gz_format),
         DatasetSpec('dwi_1_main_brain_mask', nifti_gz_format,
                     dwi_1_main_bet_pipeline),
