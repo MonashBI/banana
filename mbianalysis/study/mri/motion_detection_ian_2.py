@@ -430,7 +430,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     dwi2ref_1_opposite_ref_bet_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     dwi2ref_1_opposite_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
@@ -465,7 +465,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     dwi2ref_1_ref_bet_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     dwi2ref_1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
@@ -503,7 +503,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     t1_ref_bet_pipeline = CombinedStudy.translate(
         't1_1', CoregisteredT1Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     t1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't1_1', CoregisteredT1Study.ref_basic_preproc_pipeline)
@@ -535,7 +535,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     ute_ref_bet_pipeline = CombinedStudy.translate(
         'ute', CoregisteredT1Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     ute_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'ute', CoregisteredT1Study.ref_basic_preproc_pipeline)
@@ -566,7 +566,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     fm_ref_bet_pipeline = CombinedStudy.translate(
         'fm', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     fm_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'fm', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -597,7 +597,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     t2_1_ref_bet_pipeline = CombinedStudy.translate(
         't2_1', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     t2_1_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_1', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -628,7 +628,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     t2_2_ref_bet_pipeline = CombinedStudy.translate(
         't2_2', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     t2_2_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_2', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -659,7 +659,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     t2_3_ref_bet_pipeline = CombinedStudy.translate(
         't2_3', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     t2_3_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_3', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -690,7 +690,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     t2_4_ref_bet_pipeline = CombinedStudy.translate(
         't2_4', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     t2_4_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_4', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -721,7 +721,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     t2_5_ref_bet_pipeline = CombinedStudy.translate(
         't2_5', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     t2_5_ref_basic_preproc_pipeline = CombinedStudy.translate(
         't2_5', CoregisteredT2Study.ref_basic_preproc_pipeline)
@@ -755,7 +755,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     epi1_ref_bet_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     epi1_ref_segmentation_pipeline = CombinedStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline,
