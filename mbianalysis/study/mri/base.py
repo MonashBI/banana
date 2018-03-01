@@ -80,7 +80,9 @@ class MRIStudy(Study):
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
                              'standard/MNI152_T1_2mm_brain.nii.gz',
                              'MNI_template_mask': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
+                             'standard/MNI152_T1_2mm_brain_mask.nii.gz',
+                             'gen_report': gen_report_default,
+                             'bet_method': 'optibet'},
             version=1,
             citations=[fsl_cite],
             options=options)
