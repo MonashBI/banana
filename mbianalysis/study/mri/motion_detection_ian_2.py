@@ -333,7 +333,8 @@ class MotionDetectionStudy(CombinedStudy):
             'dwi2ref_1_opposite_to_correct': 'dwi2ref_opposite_to_correct',
             'dwi2ref_1_opposite_ref': 'dwi2ref_opposite_ref',
             'dwi2ref_1_opposite_ref_nii': 'dwi2ref_opposite_ref_nii',
-            'dwi2ref_1_opposite_to_correct_nii': 'dwi2ref_opposite_to_correct_nii',
+            'dwi2ref_1_opposite_to_correct_nii': ('dwi2ref_opposite_to_correct'
+                                                  '_nii'),
             'dwi2ref_1_opposite_brain_mask': 'dwi2ref_opposite_brain_mask',
             'dwi2ref_1_opposite_brain': 'dwi2ref_opposite_brain',
             'dwi2ref_1_opposite_preproc': 'dwi2ref_opposite_preproc',
@@ -342,7 +343,8 @@ class MotionDetectionStudy(CombinedStudy):
             'dwi2ref_1_opposite_pe_angle': 'dwi2ref_opposite_pe_angle',
             'dwi2ref_1_opposite_tr': 'dwi2ref_opposite_tr',
             'dwi2ref_1_opposite_dcm_info': 'dwi2ref_opposite_dcm_info',
-            'dwi2ref_1_opposite_real_duration': 'dwi2ref_opposite_real_duration',
+            'dwi2ref_1_opposite_real_duration': ('dwi2ref_opposite_real_'
+                                                 'duration'),
             'dwi2ref_1_opposite_tot_duration': 'dwi2ref_opposite_tot_duration',
             'dwi2ref_1_opposite_start_time': 'dwi2ref_opposite_start_time',
             'dwi2ref_1_opposite_motion_mats': 'dwi2ref_opposite_motion_mats',
@@ -399,7 +401,7 @@ class MotionDetectionStudy(CombinedStudy):
 
     dwi_1_main_ref_bet_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
-        override_default_options={'f_threshold': 0.65, 'g_threshold': -0.1})
+        override_default_options={'bet_method': 'optibet'})
 
     dwi_1_main_ref_basic_preproc_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
@@ -414,7 +416,8 @@ class MotionDetectionStudy(CombinedStudy):
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_bet_pipeline)
 
     dwi2ref_1_opposite_motion_alignment_pipeline = CombinedStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_motion_mat_pipeline)
+        'dwi_1', CoregisteredDiffusionStudy.
+        dwi2ref_opposite_motion_mat_pipeline)
 
     dwi2ref_1_opposite_qform_transform_pipeline = CombinedStudy.translate(
         'dwi_1',
@@ -422,7 +425,8 @@ class MotionDetectionStudy(CombinedStudy):
 
     dwi2ref_1_opposite_rigid_registration_pipeline = CombinedStudy.translate(
         'dwi_1',
-        CoregisteredDiffusionStudy.dwi2ref_opposite_rigid_registration_pipeline)
+        CoregisteredDiffusionStudy.
+        dwi2ref_opposite_rigid_registration_pipeline)
 
     dwi2ref_1_opposite_ref_bet_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
@@ -432,11 +436,13 @@ class MotionDetectionStudy(CombinedStudy):
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
 
     dwi2ref_1_opposite_main_dcm2nii_pipeline = CombinedStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_main_dcm2nii_pipeline)
+        'dwi_1', CoregisteredDiffusionStudy.
+        dwi2ref_opposite_main_dcm2nii_pipeline)
 
     dwi2ref_1_opposite_ref_dcm2nii_pipeline = CombinedStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_ref_dcm2nii_pipeline)
-    
+        'dwi_1', CoregisteredDiffusionStudy.
+        dwi2ref_opposite_ref_dcm2nii_pipeline)
+
     dwi2ref_1_dcm_info_pipeline = CombinedStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_dcm_info_pipeline)
 
@@ -911,7 +917,7 @@ class MotionDetectionStudy(CombinedStudy):
             'dwi2ref_1_real_duration', merge_dwi2ref_1, 'in3')
         pipeline.connect_input(
             'dwi2ref_1_tr', merge_dwi2ref_1, 'in4')
-        
+
         merge_dwi2ref_1_opposite = pipeline.create_node(
             merge_lists(4), name='merge_dwi2ref_1_opposite')
         pipeline.connect_input(
@@ -919,7 +925,8 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.connect_input(
             'dwi2ref_1_opposite_start_time', merge_dwi2ref_1_opposite, 'in2')
         pipeline.connect_input(
-            'dwi2ref_1_opposite_real_duration', merge_dwi2ref_1_opposite, 'in3')
+            'dwi2ref_1_opposite_real_duration', merge_dwi2ref_1_opposite,
+            'in3')
         pipeline.connect_input(
             'dwi2ref_1_opposite_tr', merge_dwi2ref_1_opposite, 'in4')
 
@@ -1022,8 +1029,8 @@ class MotionDetectionStudy(CombinedStudy):
             inputs=[DatasetSpec('mats4average', text_format),
                     DatasetSpec('frame_vol_numbers', text_format)],
             outputs=[DatasetSpec('average_mats', directory_format)],
-            description=("Average all the transformation mats within each detected "
-                         "frame."),
+            description=("Average all the transformation mats within each "
+                         "detected frame."),
             default_options={},
             version=1,
             citations=[fsl_cite],
@@ -1046,16 +1053,16 @@ class MotionDetectionStudy(CombinedStudy):
             name='pet_correction_factors',
             inputs=[DatasetSpec('frame_start_times', text_format)],
             outputs=[DatasetSpec('correction_factors', text_format)],
-            description=("Pipeline to calculate the correction factors to account for "
-                         "frame duration when averaging the PET frames to create "
-                         "the static PET image"),
+            description=("Pipeline to calculate the correction factors to "
+                         "account for frame duration when averaging the PET "
+                         "frames to create the static PET image"),
             default_options={},
             version=1,
             citations=[fsl_cite],
             options=options)
 
         corr_factors = pipeline.create_node(PetCorrectionFactor(),
-                                       name='pet_corr_factors')
+                                            name='pet_corr_factors')
         pipeline.connect_input('frame_start_times', corr_factors,
                                'frame_start_times')
         pipeline.connect_output('correction_factors', corr_factors,
@@ -1063,8 +1070,9 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def frame2ref_alignment_pipeline_factory(self, name, average_mats, ute_regmat, ute_qform_mat,
-                                             umap=None, pct=False, fixed_binning=False, **options):
+    def frame2ref_alignment_pipeline_factory(
+            self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
+            pct=False, fixed_binning=False, **options):
         inputs = [DatasetSpec(average_mats, directory_format),
                   DatasetSpec(ute_regmat, text_matrix_format),
                   DatasetSpec(ute_qform_mat, text_matrix_format)]
@@ -1072,39 +1080,45 @@ class MotionDetectionStudy(CombinedStudy):
         if umap:
             inputs.append(DatasetSpec(umap, nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
-        
+
         pipeline = self.create_pipeline(
             name=name,
             inputs=inputs,
             outputs=outputs,
-            description=("Pipeline to create an affine mat to align each detected frame to the"
-                         " reference. If umap is provided, it will be also aligned to match the"
-                         " head position in each frame and improve the static PET image quality."),
+            description=("Pipeline to create an affine mat to align each "
+                         "detected frame to the reference. If umap is provided"
+                         ", it will be also aligned to match the head position"
+                         " in each frame and improve the static PET image "
+                         "quality."),
             default_options={'pct': pct, 'fixed_binning': fixed_binning},
             version=1,
             citations=[fsl_cite],
             options=options)
 
-        frame_align = pipeline.create_node(FrameAlign2Reference(), name='frame2ref_alignment',
-                                           requirements=[fsl509_req])
+        frame_align = pipeline.create_node(
+            FrameAlign2Reference(), name='frame2ref_alignment',
+            requirements=[fsl509_req])
         frame_align.inputs.pct = pipeline.option('pct')
         frame_align.inputs.fixed_binning = pipeline.option('fixed_binning')
         pipeline.connect_input(average_mats, frame_align,
                                'average_mats')
         pipeline.connect_input(ute_regmat, frame_align,
-                                'ute_regmat')
+                               'ute_regmat')
         pipeline.connect_input(ute_qform_mat, frame_align,
-                                'ute_qform_mat')
+                               'ute_qform_mat')
         if umap:
             pipeline.connect_input(umap, frame_align, 'umap')
-            pipeline.connect_output('umaps_align2ref', frame_align, 'umaps_align2ref')
-        pipeline.connect_output('frame2reference_mats', frame_align, 'frame2reference_mats')
+            pipeline.connect_output('umaps_align2ref', frame_align,
+                                    'umaps_align2ref')
+        pipeline.connect_output('frame2reference_mats', frame_align,
+                                'frame2reference_mats')
         pipeline.assert_connected()
         return pipeline
 
     def frame2ref_alignment_pipeline(self, **options):
         return self.frame2ref_alignment_pipeline_factory(
-            'frame2ref_alignment', 'average_mats', 'ute_reg_mat', 'ute_qform_mat', umap='umap',
+            'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
+            'ute_qform_mat', umap='umap',
             pct=False, fixed_binning=False, **options)
 
     _data_specs = set_data_specs([
@@ -1162,7 +1176,8 @@ class MotionDetectionStudy(CombinedStudy):
                     dwi2ref_1_opposite_basic_preproc_pipeline),
         DatasetSpec('dwi2ref_1_opposite_dcm_info', text_format,
                     dwi2ref_1_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_1_opposite_ped', str, dwi2ref_1_opposite_dcm_info_pipeline),
+        FieldSpec('dwi2ref_1_opposite_ped', str,
+                  dwi2ref_1_opposite_dcm_info_pipeline),
         FieldSpec('dwi2ref_1_opposite_pe_angle', str,
                   dwi2ref_1_opposite_dcm_info_pipeline),
         FieldSpec('dwi2ref_1_opposite_tr', float,

@@ -22,7 +22,7 @@ from nianalysis.requirements import (
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec
-from mbianalysis.interfaces.iterators import SelectSession
+from nianalysis.interfaces.iterators import SelectSession
 
 
 class DiffusionStudy(T2Study):
