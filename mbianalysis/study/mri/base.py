@@ -86,7 +86,7 @@ class MRIStudy(Study):
         bet1 = pipeline.create_node(
             fsl.BET(frac=0.1, reduce_bias=True), name='bet', wall_time=15,
             requirements=[fsl5_req])
-        pipeline.connect_input('t1', bet1, 'in_file')
+        pipeline.connect_input('preproc', bet1, 'in_file')
         flirt = pipeline.create_node(
             FLIRT(out_matrix_file='linear_mat.mat',
                   out_file='linear_reg.nii.gz', searchr_x=[-30, 30],
@@ -100,17 +100,17 @@ class MRIStudy(Study):
             wall_time=15, requirements=[fsl5_req])
         fnirt.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
-        pipeline.connect_input('t1', fnirt, 'in_file')
+        pipeline.connect_input('preproc', fnirt, 'in_file')
         invwarp = pipeline.create_node(
             fsl.InvWarp(), name='invwarp', wall_time=10,
             requirements=[fsl5_req])
         pipeline.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
-        pipeline.connect_input('t1', invwarp, 'reference')
+        pipeline.connect_input('preproc', invwarp, 'reference')
         applywarp = pipeline.create_node(
             fsl.ApplyWarp(interp='nn', out_file='warped_file.nii.gz'),
             name='applywarp', wall_time=5, requirements=[fsl5_req])
         applywarp.inputs.in_file = pipeline.option('MNI_template_mask')
-        pipeline.connect_input('t1', applywarp, 'ref_file')
+        pipeline.connect_input('preproc', applywarp, 'ref_file')
         pipeline.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
         maths1 = pipeline.create_node(
             fsl.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
@@ -119,7 +119,7 @@ class MRIStudy(Study):
         maths2 = pipeline.create_node(
             fsl.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
             name='mask', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect_input('t1', maths2, 'in_file')
+        pipeline.connect_input('preproc', maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
         if pipeline.option('gen_report'):
             slices = pipeline.create_node(
