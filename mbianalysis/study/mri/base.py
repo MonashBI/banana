@@ -13,6 +13,7 @@ from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split
 from nianalysis.interfaces.mrtrix import MRConvert
 from mbianalysis.interfaces.fsl import FSLSlices
+import os
 
 
 class MRIStudy(Study):
@@ -75,13 +76,13 @@ class MRIStudy(Study):
             name='brain_mask',
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=outputs,
-            description="Generate brain mask from mr_scan",
-            default_options={'robust': True, 'f_threshold': 0.5,
-                             'reduce_bias': False, 'g_threshold': 0.0,
-                             'gen_report': gen_report_default,
-                             'bet_method': 'optibet'},
+            description=("python implementation of optiBET.sh"),
+            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain.nii.gz',
+                             'MNI_template_mask': os.environ['FSLDIR']+'/data/'
+                             'standard/MNI152_T1_2mm_brain_mask.nii.gz'},
             version=1,
-            citations=[fsl_cite, bet_cite, bet2_cite],
+            citations=[fsl_cite],
             options=options)
         bet1 = pipeline.create_node(
             fsl.BET(frac=0.1, reduce_bias=True), name='bet', wall_time=15,
