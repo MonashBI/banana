@@ -597,8 +597,8 @@ class MotionFramingInputSpec(BaseInterfaceInputSpec):
 class MotionFramingOutputSpec(TraitedSpec):
 
     frame_start_times = File(exists=True)
-    frame_vol_numbers = File(exists=True, desc='Text file with the number of volume where'
-                             'the motion occurred.')
+    frame_vol_numbers = File(exists=True, desc='Text file with the number of '
+                             'volume where the motion occurred.')
 
 
 class MotionFraming(BaseInterface):
@@ -712,8 +712,8 @@ class PlotMeanDisplacementRC(BaseInterface):
         dates = np.arange(0, len(mean_disp_rc), 1)
         indxs = np.zeros(len(mean_disp_rc), int)+1
         indxs[false_indexes] = 0
-        start_true_period = [x for x in range(1, len(indxs)) if indxs[x] == 1 and
-                             indxs[x-1] == 0]
+        start_true_period = [x for x in range(1, len(indxs)) if indxs[x] == 1
+                             and indxs[x-1] == 0]
         end_true_period = [x for x in range(len(indxs)-1) if indxs[x] == 0 and
                            indxs[x-1] == 1]
         start_true_period.append(1)
@@ -787,23 +787,25 @@ class PlotMeanDisplacementRC(BaseInterface):
 
 
 class AffineMatAveragingInputSpec(BaseInterfaceInputSpec):
- 
+
     frame_vol_numbers = File(exists=True)
     all_mats4average = File(exists=True)
- 
+
+
 class AffineMatAveragingOutputSpec(TraitedSpec):
- 
-    average_mats = Directory(exists=True, desc='directory with all the average transformation '
-                             'matrices for each detected frame.')
+
+    average_mats = Directory(exists=True, desc='directory with all the average'
+                             ' transformation matrices for each detected '
+                             'frame.')
 
 
 class AffineMatAveraging(BaseInterface):
-     
+
     input_spec = AffineMatAveragingInputSpec
     output_spec = AffineMatAveragingOutputSpec
-     
+
     def _run_interface(self, runtime):
-         
+
         frame_vol = np.loadtxt(self.inputs.frame_vol_numbers, dtype=int)
         all_mats = np.loadtxt(self.inputs.all_mats4average, dtype=str)
         idt = np.eye(4)
@@ -837,7 +839,7 @@ class AffineMatAveraging(BaseInterface):
         mats = glob.glob('average_matrix_vol*')
         for m in mats:
             shutil.move(m, 'frame_mean_transformation_mats')
-        
+
         return runtime
 
     def _list_outputs(self):
@@ -850,21 +852,21 @@ class AffineMatAveraging(BaseInterface):
 
 
 class PetCorrectionFactorInputSpec(BaseInterfaceInputSpec):
-    
+
     frame_start_times = File(exists=True, desc='Frame start times as detected'
                              'by the motion framing pipeline')
 
 
 class PetCorrectionFactorOutputSpec(TraitedSpec):
-    
+
     corr_factors = File(exists=True, desc='Pet correction factors.')
 
 
 class PetCorrectionFactor(BaseInterface):
-    
+
     input_spec = PetCorrectionFactorInputSpec
     output_spec = PetCorrectionFactorOutputSpec
-    
+
     def _run_interface(self, runtime):
 
         frame_st = np.loadtxt(self.inputs.frame_start_times, dtype=str)
@@ -896,35 +898,41 @@ class PetCorrectionFactor(BaseInterface):
 
 class FrameAlign2ReferenceInputSpec(BaseInterfaceInputSpec):
 
-    average_mats = Directory(exists=True, desc='directory with all the average transformation '
-                             'matrices for each detected frame.')
-    ute_regmat = File(exists=True, desc='registration mat between ute image and reference.')
-    ute_qform_mat = File(exists=True, desc='qform mat between ute and reference.')
-    fixed_binning = traits.Bool(desc='if true, the function will assume that the average '
-                                'matrices have been generated for dynamic motion correction.'
-                                'Default is False.')
-    umap = File(exists=True, desc='If a umap is provided, the function will align it to '
-                   'the head position in each frame. Default is None', default=None)
-    pct = traits.Bool(desc='if True, the function will assume that the provided umap is '
-                      'continuos values, as the pseudo CT umap. Otherwise, it will assume'
-                      ' that the values are discrete. Default is False.')
+    average_mats = Directory(exists=True, desc='directory with all the average'
+                             ' transformation matrices for each detected '
+                             'frame.')
+    ute_regmat = File(exists=True, desc='registration mat between ute image '
+                      'and reference.')
+    ute_qform_mat = File(exists=True, desc='qform mat between ute and '
+                         'reference.')
+    fixed_binning = traits.Bool(desc='if true, the function will assume that '
+                                'the average matrices have been generated for '
+                                'dynamic motion correction. Default is False.')
+    umap = File(exists=True, desc='If a umap is provided, the function will '
+                'align it to the head position in each frame. Default is None',
+                default=None)
+    pct = traits.Bool(desc='if True, the function will assume that the '
+                      'provided umap is continuos values, as the pseudo CT '
+                      'umap. Otherwise, it will assume that the values are '
+                      'discrete. Default is False.')
 
 
 class FrameAlign2ReferenceOutputSpec(TraitedSpec):
-    
-    frame2reference_mats = Directory(exists=True, desc='directory with all the matrices '
-                                     'which align each frame to the reference.')
-    umaps_align2ref = Directory(desc='directory with all the realigned umaps (if a umaps is '
-                         'provided as input).')
+
+    frame2reference_mats = Directory(exists=True, desc='directory with all the'
+                                     ' matrices which align each frame to the '
+                                     'reference.')
+    umaps_align2ref = Directory(desc='directory with all the realigned umaps '
+                                '(if a umaps is provided as input).')
 
 
 class FrameAlign2Reference(BaseInterface):
-    
+
     input_spec = FrameAlign2ReferenceInputSpec
     output_spec = FrameAlign2ReferenceOutputSpec
 
     def _run_interface(self, runtime):
-        
+
         fixed_binning = self.inputs.fixed_binning
         average_mats = sorted(glob.glob(self.inputs.average_mats+'/*.txt'))
         umap = self.inputs.umap
@@ -934,8 +942,9 @@ class FrameAlign2Reference(BaseInterface):
 
         for i, mat in enumerate(average_mats):
             self.FrameAlign2Reference_calc(mat, i, ute_regmat, ute_qform_mat,
-                                         fixed_binning=fixed_binning, umap=umap, pct=pct)
-        
+                                           fixed_binning=fixed_binning,
+                                           umap=umap, pct=pct)
+
         if os.path.isdir('frame_align2ref_mats') is False:
             os.mkdir('frame_align2ref_mats')
 
@@ -950,9 +959,9 @@ class FrameAlign2Reference(BaseInterface):
                 shutil.move(u, 'umaps_align2ref')
 
         return runtime
-    
+
     def FrameAlign2Reference_calc(self, mat, i, ute_regmat, ute_qform_mat,
-                                fixed_binning=False, umap=None, pct=False):
+                                  fixed_binning=False, umap=None, pct=False):
 
         if not fixed_binning:
             outname = 'Frame'
@@ -996,6 +1005,6 @@ class FrameAlign2Reference(BaseInterface):
             os.getcwd()+'/frame_align2ref_mats')
         if self.inputs.umap:
             outputs["umaps_align2ref"] = (
-            os.getcwd()+'/umaps_align2ref')
+                os.getcwd()+'/umaps_align2ref')
 
         return outputs
