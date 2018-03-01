@@ -498,7 +498,8 @@ class MotionDetectionStudy(CombinedStudy):
         't1_1', CoregisteredT1Study.t1_qform_transform_pipeline)
 
     t1_bet_pipeline = CombinedStudy.translate(
-        't1_1', CoregisteredT1Study.t1_bet_pipeline)
+        't1_1', CoregisteredT1Study.t1_bet_pipeline,
+        override_default_options={'bet_method': 'optibet'})
 
     t1_ref_bet_pipeline = CombinedStudy.translate(
         't1_1', CoregisteredT1Study.ref_bet_pipeline,
@@ -529,7 +530,8 @@ class MotionDetectionStudy(CombinedStudy):
         'ute', CoregisteredT1Study.t1_qform_transform_pipeline)
 
     ute_bet_pipeline = CombinedStudy.translate(
-        'ute', CoregisteredT1Study.t1_bet_pipeline)
+        'ute', CoregisteredT1Study.t1_bet_pipeline,
+        override_default_options={'bet_method': 'optibet'})
 
     ute_ref_bet_pipeline = CombinedStudy.translate(
         'ute', CoregisteredT1Study.ref_bet_pipeline,
