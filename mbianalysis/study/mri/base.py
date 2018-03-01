@@ -87,13 +87,13 @@ class MRIStudy(Study):
             citations=[fsl_cite],
             options=options)
         bet1 = pipeline.create_node(
-            fsl.BET(frac=0.1, reduce_bias=True), name='bet', wall_time=15,
-            requirements=[fsl5_req])
+            fsl.BET(frac=0.6, robust=True, vertical_gradient=-0.1), name='bet',
+            wall_time=15, requirements=[fsl5_req])
         pipeline.connect_input('preproc', bet1, 'in_file')
         flirt = pipeline.create_node(
             FLIRT(out_matrix_file='linear_mat.mat',
-                  out_file='linear_reg.nii.gz', searchr_x=[-30, 30],
-                  searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt',
+                  out_file='linear_reg.nii.gz', searchr_x=[-180, 180],
+                  searchr_y=[-180, 180], searchr_z=[-180, 180]), name='flirt',
             wall_time=5, requirements=[fsl5_req])
         flirt.inputs.reference = pipeline.option('MNI_template')
         pipeline.connect(bet1, 'out_file', flirt, 'in_file')
