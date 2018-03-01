@@ -4,16 +4,19 @@ from nianalysis.study.base import Study, set_data_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
-from nianalysis.requirements import fsl5_req, mrtrix3_req, fsl509_req
+from nianalysis.requirements import (fsl5_req, mrtrix3_req, fsl509_req,
+                                     ants2_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
 from mbianalysis.interfaces.mrtrix.transform import MRResize
 from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
-from nipype.interfaces.utility import Split
+from nipype.interfaces.utility import Split, Merge
 from nianalysis.interfaces.mrtrix import MRConvert
 from mbianalysis.interfaces.fsl import FSLSlices
 import os
+from mbianalysis.interfaces.ants import AntsRegSyn
+from nipype.interfaces.ants.resampling import ApplyTransforms
 
 
 class MRIStudy(Study):
@@ -65,7 +68,7 @@ class MRIStudy(Study):
 
     def _optiBET_brain_mask_pipeline(self, **options):
         """
-        Generates a whole brain mask using optiBET.
+        Generates a whole brain mask using a modified optiBET approach.
         """
         gen_report_default = False
         outputs = [DatasetSpec('masked', nifti_gz_format),
@@ -76,9 +79,9 @@ class MRIStudy(Study):
             name='brain_mask',
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=outputs,
-            description=("python implementation of optiBET.sh"),
+            description=("Modified implementation of optiBET.sh"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain.nii.gz',
+                             'standard/MNI152_T1_2mm.nii.gz',
                              'MNI_template_mask': os.environ['FSLDIR']+'/data/'
                              'standard/MNI152_T1_2mm_brain_mask.nii.gz',
                              'gen_report': gen_report_default,
@@ -86,39 +89,39 @@ class MRIStudy(Study):
             version=1,
             citations=[fsl_cite],
             options=options)
-        bet1 = pipeline.create_node(
-            fsl.BET(frac=0.6, robust=True, vertical_gradient=-0.1), name='bet',
-            wall_time=15, requirements=[fsl5_req])
-        pipeline.connect_input('preproc', bet1, 'in_file')
-        flirt = pipeline.create_node(
-            FLIRT(out_matrix_file='linear_mat.mat',
-                  out_file='linear_reg.nii.gz', searchr_x=[-180, 180],
-                  searchr_y=[-180, 180], searchr_z=[-180, 180]), name='flirt',
-            wall_time=5, requirements=[fsl5_req])
-        flirt.inputs.reference = pipeline.option('MNI_template')
-        pipeline.connect(bet1, 'out_file', flirt, 'in_file')
-        fnirt = pipeline.create_node(
-            FNIRT(config_file='T1_2_MNI152_2mm',
-                  fieldcoeff_file='warp_file.nii.gz'), name='fnirt',
-            wall_time=15, requirements=[fsl5_req])
-        fnirt.inputs.ref_file = pipeline.option('MNI_template')
-        pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
-        pipeline.connect_input('preproc', fnirt, 'in_file')
-        invwarp = pipeline.create_node(
-            fsl.InvWarp(), name='invwarp', wall_time=10,
-            requirements=[fsl5_req])
-        pipeline.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
-        pipeline.connect_input('preproc', invwarp, 'reference')
-        applywarp = pipeline.create_node(
-            fsl.ApplyWarp(interp='nn', out_file='warped_file.nii.gz'),
-            name='applywarp', wall_time=5, requirements=[fsl5_req])
-        applywarp.inputs.in_file = pipeline.option('MNI_template_mask')
-        pipeline.connect_input('preproc', applywarp, 'ref_file')
-        pipeline.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
+
+        mni_reg = pipeline.create_node(
+            AntsRegSyn(num_dimensions=3, transformation='s',
+                       out_prefix='T12MNI', num_threads=6), name='T1_reg',
+            wall_time=25, requirements=[ants2_req])
+        mni_reg.inputs.ref_file = pipeline.option('MNI_template')
+        pipeline.connect_input('preproc', mni_reg, 'input_file')
+
+        merge_trans = pipeline.create_node(Merge(2), name='merge_transforms',
+                                           wall_time=1)
+        pipeline.connect(mni_reg, 'inv_warp', merge_trans, 'in1')
+        pipeline.connect(mni_reg, 'regmat', merge_trans, 'in2')
+
+        trans_flags = pipeline.create_node(Merge(2), name='trans_flags',
+                                           wall_time=1)
+        trans_flags.inputs.in1 = False
+        trans_flags.inputs.in2 = True
+
+        apply_trans = pipeline.create_node(
+            ApplyTransforms(), name='ApplyTransform', wall_time=7,
+            memory=24000, requirements=[ants2_req])
+        apply_trans.inputs.input_image = pipeline.option('MNI_template_mask')
+        apply_trans.inputs.interpolation = 'NearestNeighbor'
+        apply_trans.inputs.input_image_type = 3
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        pipeline.connect(trans_flags, 'out', apply_trans,
+                         'invert_transform_flags')
+        pipeline.connect_input('preproc', apply_trans, 'reference_image')
+
         maths1 = pipeline.create_node(
             fsl.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
             name='binarize', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect(applywarp, 'out_file', maths1, 'in_file')
+        pipeline.connect(apply_trans, 'output_image', maths1, 'in_file')
         maths2 = pipeline.create_node(
             fsl.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
             name='mask', wall_time=5, requirements=[fsl5_req])
