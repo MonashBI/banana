@@ -5,8 +5,8 @@ from nianalysis.data_formats import (
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming)
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_data_specs
-from nianalysis.study.combined import CombinedStudy
+from nianalysis.study.base import set_specs
+from nianalysis.study.multi import MultiStudy, translate_pipeline
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
@@ -14,7 +14,7 @@ from nipype.interfaces.utility import Merge as merge_lists
 from .base import MotionReferenceStudy
 
 
-class MotionDetectionStudy(CombinedStudy):
+class MotionDetectionStudy(MultiStudy):
 
     sub_study_specs = {
         'ref': (MotionReferenceStudy, {
@@ -328,421 +328,421 @@ class MotionDetectionStudy(CombinedStudy):
             'asl_start_time': 'epi_start_time',
             'asl_dcm_info': 'epi_dcm_info'})}
 
-    ref_dcm_info_pipeline = CombinedStudy.translate(
+    ref_dcm_info_pipeline = translate_pipeline(
         'ref', MotionReferenceStudy.header_info_extraction_pipeline)
 
-    t1_motion_alignment_pipeline = CombinedStudy.translate(
+    t1_motion_alignment_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    t1_dcm2nii_pipeline = CombinedStudy.translate(
+    t1_dcm2nii_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_dcm2nii_pipeline)
 
-    t1_dcm_info_pipeline = CombinedStudy.translate(
+    t1_dcm_info_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_dcm_info_pipeline)
 
-    t1_motion_mat_pipeline = CombinedStudy.translate(
+    t1_motion_mat_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    t1_basic_preproc_pipeline = CombinedStudy.translate(
+    t1_basic_preproc_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_basic_preproc_pipeline)
 
-    t1_qform_transform_pipeline = CombinedStudy.translate(
+    t1_qform_transform_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_qform_transform_pipeline)
 
-    t1_bet_pipeline = CombinedStudy.translate(
+    t1_bet_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_bet_pipeline)
 
-    t1_ref_bet_pipeline = CombinedStudy.translate(
+    t1_ref_bet_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.ref_bet_pipeline)
 
-    t1_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    t1_ref_basic_preproc_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.ref_basic_preproc_pipeline)
 
-    t1_rigid_registration_pipeline = CombinedStudy.translate(
+    t1_rigid_registration_pipeline = translate_pipeline(
         't1_1', CoregisteredT1Study.t1_rigid_registration_pipeline)
 
-    ute_motion_alignment_pipeline = CombinedStudy.translate(
+    ute_motion_alignment_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    ute_dcm2nii_pipeline = CombinedStudy.translate(
+    ute_dcm2nii_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_dcm2nii_pipeline)
 
-    ute_dcm_info_pipeline = CombinedStudy.translate(
+    ute_dcm_info_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_dcm_info_pipeline)
 
-    ute_motion_mat_pipeline = CombinedStudy.translate(
+    ute_motion_mat_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    ute_basic_preproc_pipeline = CombinedStudy.translate(
+    ute_basic_preproc_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_basic_preproc_pipeline)
 
-    ute_qform_transform_pipeline = CombinedStudy.translate(
+    ute_qform_transform_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_qform_transform_pipeline)
 
-    ute_bet_pipeline = CombinedStudy.translate(
+    ute_bet_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_bet_pipeline)
 
-    ute_ref_bet_pipeline = CombinedStudy.translate(
+    ute_ref_bet_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.ref_bet_pipeline)
 
-    ute_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    ute_ref_basic_preproc_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.ref_basic_preproc_pipeline)
 
-    ute_rigid_registration_pipeline = CombinedStudy.translate(
+    ute_rigid_registration_pipeline = translate_pipeline(
         'ute', CoregisteredT1Study.t1_rigid_registration_pipeline)
 
-    fm_motion_alignment_pipeline = CombinedStudy.translate(
+    fm_motion_alignment_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    fm_dcm2nii_pipeline = CombinedStudy.translate(
+    fm_dcm2nii_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    fm_dcm_info_pipeline = CombinedStudy.translate(
+    fm_dcm_info_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    fm_motion_mat_pipeline = CombinedStudy.translate(
+    fm_motion_mat_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    fm_basic_preproc_pipeline = CombinedStudy.translate(
+    fm_basic_preproc_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    fm_qform_transform_pipeline = CombinedStudy.translate(
+    fm_qform_transform_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    fm_bet_pipeline = CombinedStudy.translate(
+    fm_bet_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_bet_pipeline)
 
-    fm_ref_bet_pipeline = CombinedStudy.translate(
+    fm_ref_bet_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.ref_bet_pipeline)
 
-    fm_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    fm_ref_basic_preproc_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    fm_rigid_registration_pipeline = CombinedStudy.translate(
+    fm_rigid_registration_pipeline = translate_pipeline(
         'fm', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    epi1_motion_alignment_pipeline = CombinedStudy.translate(
+    epi1_motion_alignment_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi1_dcm2nii_pipeline = CombinedStudy.translate(
+    epi1_dcm2nii_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi1_epireg_pipeline = CombinedStudy.translate(
+    epi1_epireg_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi1_dcm_info_pipeline = CombinedStudy.translate(
+    epi1_dcm_info_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi1_motion_mat_pipeline = CombinedStudy.translate(
+    epi1_motion_mat_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi1_basic_preproc_pipeline = CombinedStudy.translate(
+    epi1_basic_preproc_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi1_qform_transform_pipeline = CombinedStudy.translate(
+    epi1_qform_transform_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi1_bet_pipeline = CombinedStudy.translate(
+    epi1_bet_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi1_ref_bet_pipeline = CombinedStudy.translate(
+    epi1_ref_bet_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi1_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi1_ref_segmentation_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi1_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi1_ref_basic_preproc_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi1_ref_nifti_pipeline = CombinedStudy.translate(
+    epi1_ref_nifti_pipeline = translate_pipeline(
         'epi1', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi2_motion_alignment_pipeline = CombinedStudy.translate(
+    epi2_motion_alignment_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi2_dcm_info_pipeline = CombinedStudy.translate(
+    epi2_dcm_info_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi2_epireg_pipeline = CombinedStudy.translate(
+    epi2_epireg_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi2_motion_mat_pipeline = CombinedStudy.translate(
+    epi2_motion_mat_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi2_basic_preproc_pipeline = CombinedStudy.translate(
+    epi2_basic_preproc_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi2_qform_transform_pipeline = CombinedStudy.translate(
+    epi2_qform_transform_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi2_ref_bet_pipeline = CombinedStudy.translate(
+    epi2_ref_bet_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi2_ref_nifti_pipeline = CombinedStudy.translate(
+    epi2_ref_nifti_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi2_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi2_ref_segmentation_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi2_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi2_ref_basic_preproc_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi2_bet_pipeline = CombinedStudy.translate(
+    epi2_bet_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi2_dcm2nii_pipeline = CombinedStudy.translate(
+    epi2_dcm2nii_pipeline = translate_pipeline(
         'epi2', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi3_motion_alignment_pipeline = CombinedStudy.translate(
+    epi3_motion_alignment_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi3_dcm2nii_pipeline = CombinedStudy.translate(
+    epi3_dcm2nii_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi3_epireg_pipeline = CombinedStudy.translate(
+    epi3_epireg_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi3_dcm_info_pipeline = CombinedStudy.translate(
+    epi3_dcm_info_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi3_motion_mat_pipeline = CombinedStudy.translate(
+    epi3_motion_mat_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi3_basic_preproc_pipeline = CombinedStudy.translate(
+    epi3_basic_preproc_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi3_qform_transform_pipeline = CombinedStudy.translate(
+    epi3_qform_transform_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi3_bet_pipeline = CombinedStudy.translate(
+    epi3_bet_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi3_ref_bet_pipeline = CombinedStudy.translate(
+    epi3_ref_bet_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi3_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi3_ref_segmentation_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi3_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi3_ref_basic_preproc_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi3_ref_nifti_pipeline = CombinedStudy.translate(
+    epi3_ref_nifti_pipeline = translate_pipeline(
         'epi3', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi4_motion_alignment_pipeline = CombinedStudy.translate(
+    epi4_motion_alignment_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi4_dcm2nii_pipeline = CombinedStudy.translate(
+    epi4_dcm2nii_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi4_epireg_pipeline = CombinedStudy.translate(
+    epi4_epireg_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi4_dcm_info_pipeline = CombinedStudy.translate(
+    epi4_dcm_info_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi4_motion_mat_pipeline = CombinedStudy.translate(
+    epi4_motion_mat_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi4_basic_preproc_pipeline = CombinedStudy.translate(
+    epi4_basic_preproc_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi4_qform_transform_pipeline = CombinedStudy.translate(
+    epi4_qform_transform_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi4_bet_pipeline = CombinedStudy.translate(
+    epi4_bet_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi4_ref_bet_pipeline = CombinedStudy.translate(
+    epi4_ref_bet_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi4_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi4_ref_segmentation_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi4_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi4_ref_basic_preproc_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi4_ref_nifti_pipeline = CombinedStudy.translate(
+    epi4_ref_nifti_pipeline = translate_pipeline(
         'epi4', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi5_motion_alignment_pipeline = CombinedStudy.translate(
+    epi5_motion_alignment_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi5_dcm2nii_pipeline = CombinedStudy.translate(
+    epi5_dcm2nii_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi5_epireg_pipeline = CombinedStudy.translate(
+    epi5_epireg_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi5_dcm_info_pipeline = CombinedStudy.translate(
+    epi5_dcm_info_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi5_motion_mat_pipeline = CombinedStudy.translate(
+    epi5_motion_mat_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi5_basic_preproc_pipeline = CombinedStudy.translate(
+    epi5_basic_preproc_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi5_qform_transform_pipeline = CombinedStudy.translate(
+    epi5_qform_transform_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi5_bet_pipeline = CombinedStudy.translate(
+    epi5_bet_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi5_ref_bet_pipeline = CombinedStudy.translate(
+    epi5_ref_bet_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi5_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi5_ref_segmentation_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi5_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi5_ref_basic_preproc_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi5_ref_nifti_pipeline = CombinedStudy.translate(
+    epi5_ref_nifti_pipeline = translate_pipeline(
         'epi5', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi6_motion_alignment_pipeline = CombinedStudy.translate(
+    epi6_motion_alignment_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi6_dcm2nii_pipeline = CombinedStudy.translate(
+    epi6_dcm2nii_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi6_epireg_pipeline = CombinedStudy.translate(
+    epi6_epireg_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi6_dcm_info_pipeline = CombinedStudy.translate(
+    epi6_dcm_info_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi6_motion_mat_pipeline = CombinedStudy.translate(
+    epi6_motion_mat_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi6_basic_preproc_pipeline = CombinedStudy.translate(
+    epi6_basic_preproc_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi6_qform_transform_pipeline = CombinedStudy.translate(
+    epi6_qform_transform_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi6_bet_pipeline = CombinedStudy.translate(
+    epi6_bet_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi6_ref_bet_pipeline = CombinedStudy.translate(
+    epi6_ref_bet_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi6_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi6_ref_segmentation_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi6_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi6_ref_basic_preproc_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi6_ref_nifti_pipeline = CombinedStudy.translate(
+    epi6_ref_nifti_pipeline = translate_pipeline(
         'epi6', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi7_motion_alignment_pipeline = CombinedStudy.translate(
+    epi7_motion_alignment_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi7_dcm2nii_pipeline = CombinedStudy.translate(
+    epi7_dcm2nii_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi7_epireg_pipeline = CombinedStudy.translate(
+    epi7_epireg_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi7_dcm_info_pipeline = CombinedStudy.translate(
+    epi7_dcm_info_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi7_motion_mat_pipeline = CombinedStudy.translate(
+    epi7_motion_mat_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi7_basic_preproc_pipeline = CombinedStudy.translate(
+    epi7_basic_preproc_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi7_qform_transform_pipeline = CombinedStudy.translate(
+    epi7_qform_transform_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi7_bet_pipeline = CombinedStudy.translate(
+    epi7_bet_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi7_ref_bet_pipeline = CombinedStudy.translate(
+    epi7_ref_bet_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi7_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi7_ref_segmentation_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi7_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi7_ref_basic_preproc_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi7_ref_nifti_pipeline = CombinedStudy.translate(
+    epi7_ref_nifti_pipeline = translate_pipeline(
         'epi7', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    epi8_motion_alignment_pipeline = CombinedStudy.translate(
+    epi8_motion_alignment_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi8_dcm2nii_pipeline = CombinedStudy.translate(
+    epi8_dcm2nii_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi8_epireg_pipeline = CombinedStudy.translate(
+    epi8_epireg_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi8_dcm_info_pipeline = CombinedStudy.translate(
+    epi8_dcm_info_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi8_motion_mat_pipeline = CombinedStudy.translate(
+    epi8_motion_mat_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi8_basic_preproc_pipeline = CombinedStudy.translate(
+    epi8_basic_preproc_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi8_qform_transform_pipeline = CombinedStudy.translate(
+    epi8_qform_transform_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi8_bet_pipeline = CombinedStudy.translate(
+    epi8_bet_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi8_ref_bet_pipeline = CombinedStudy.translate(
+    epi8_ref_bet_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    epi8_ref_segmentation_pipeline = CombinedStudy.translate(
+    epi8_ref_segmentation_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    epi8_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    epi8_ref_basic_preproc_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi8_ref_nifti_pipeline = CombinedStudy.translate(
+    epi8_ref_nifti_pipeline = translate_pipeline(
         'epi8', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
-    asl_motion_alignment_pipeline = CombinedStudy.translate(
+    asl_motion_alignment_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    asl_dcm2nii_pipeline = CombinedStudy.translate(
+    asl_dcm2nii_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    asl_epireg_pipeline = CombinedStudy.translate(
+    asl_epireg_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epireg_pipeline)
 
-    asl_dcm_info_pipeline = CombinedStudy.translate(
+    asl_dcm_info_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    asl_motion_mat_pipeline = CombinedStudy.translate(
+    asl_motion_mat_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    asl_basic_preproc_pipeline = CombinedStudy.translate(
+    asl_basic_preproc_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    asl_qform_transform_pipeline = CombinedStudy.translate(
+    asl_qform_transform_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    asl_bet_pipeline = CombinedStudy.translate(
+    asl_bet_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    asl_ref_bet_pipeline = CombinedStudy.translate(
+    asl_ref_bet_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    asl_ref_segmentation_pipeline = CombinedStudy.translate(
+    asl_ref_segmentation_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    asl_ref_basic_preproc_pipeline = CombinedStudy.translate(
+    asl_ref_basic_preproc_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    asl_ref_nifti_pipeline = CombinedStudy.translate(
+    asl_ref_nifti_pipeline = translate_pipeline(
         'asl', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
     def mean_displacement_pipeline(self, **options):
@@ -953,7 +953,7 @@ class MotionDetectionStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs([
+    _data_specs = set_specs([
         DatasetSpec('reference', dicom_format),
         DatasetSpec('ref_motion_mats', directory_format,
                     ref_dcm_info_pipeline),

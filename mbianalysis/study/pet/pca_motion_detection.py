@@ -1,4 +1,4 @@
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (bf_format, directory_format)
 from mbianalysis.study.pet.base import PETStudy
@@ -51,7 +51,7 @@ class PETPCAMotionDetectionStudy(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('list_mode', bf_format),
         FieldSpec('time_offset', int),
         FieldSpec('temporal_length', float),

@@ -12,9 +12,9 @@ from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
 from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
-from nianalysis.study.combined import CombinedStudy
+from nianalysis.study.multi import MultiStudy, translate_pipeline
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -70,13 +70,13 @@ class T1Study(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline),
         inherit_from=MRIStudy.data_specs())
 
 
-class CoregisteredT1Study(CombinedStudy):
+class CoregisteredT1Study(MultiStudy):
 
     sub_study_specs = {
         't1': (T1Study, {
@@ -105,33 +105,33 @@ class CoregisteredT1Study(CombinedStudy):
             't1_reg': 'registered',
             't1_reg_mat': 'matrix'})}
 
-    t1_basic_preproc_pipeline = CombinedStudy.translate(
+    t1_basic_preproc_pipeline = translate_pipeline(
         't1', T1Study.basic_preproc_pipeline)
 
-    t1_dcm2nii_pipeline = CombinedStudy.translate(
+    t1_dcm2nii_pipeline = translate_pipeline(
         't1', MRIStudy.dcm2nii_conversion_pipeline)
 
-    t1_dcm_info_pipeline = CombinedStudy.translate(
+    t1_dcm_info_pipeline = translate_pipeline(
         't1', T1Study.header_info_extraction_pipeline,
         override_default_options={'multivol': False})
 
-    t1_bet_pipeline = CombinedStudy.translate(
+    t1_bet_pipeline = translate_pipeline(
         't1', T1Study.brain_mask_pipeline)
 
-    ref_bet_pipeline = CombinedStudy.translate(
+    ref_bet_pipeline = translate_pipeline(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_basic_preproc_pipeline = CombinedStudy.translate(
+    ref_basic_preproc_pipeline = translate_pipeline(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    t1_qform_transform_pipeline = CombinedStudy.translate(
+    t1_qform_transform_pipeline = translate_pipeline(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
 
-    t1_brain_mask_pipeline = CombinedStudy.translate(
+    t1_brain_mask_pipeline = translate_pipeline(
         't1', T1Study.brain_mask_pipeline)
 
-    t1_rigid_registration_pipeline = CombinedStudy.translate(
+    t1_rigid_registration_pipeline = translate_pipeline(
         'coreg', CoregisteredStudy.linear_registration_pipeline)
 
     def t1_motion_mat_pipeline(self, **options):
@@ -155,7 +155,7 @@ class CoregisteredT1Study(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('t1', dicom_format),
         DatasetSpec('t1_nifti', nifti_gz_format, t1_dcm2nii_pipeline),
         DatasetSpec('reference', nifti_gz_format),

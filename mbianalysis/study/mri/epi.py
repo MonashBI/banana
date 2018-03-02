@@ -7,9 +7,9 @@ from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
 from nianalysis.citations import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirements import fsl509_req
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from .coregistered import CoregisteredStudy
-from nianalysis.study.combined import CombinedStudy
+from nianalysis.study.multi import MultiStudy, translate_pipeline
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
@@ -57,14 +57,14 @@ class EPIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('moco', nifti_gz_format, motion_alignment_pipeline),
         DatasetSpec('moco_mat', directory_format, motion_alignment_pipeline),
         DatasetSpec('moco_par', text_format, motion_alignment_pipeline),
         inherit_from=MRIStudy.data_specs())
 
 
-class CoregisteredEPIStudy(CombinedStudy):
+class CoregisteredEPIStudy(MultiStudy):
 
     sub_study_specs = {
         'epi': (EPIStudy, {
@@ -95,39 +95,39 @@ class CoregisteredEPIStudy(CombinedStudy):
             'epi_qformed': 'qformed',
             'epi_qform_mat': 'qform_mat'})}
 
-    epi_basic_preproc_pipeline = CombinedStudy.translate(
+    epi_basic_preproc_pipeline = translate_pipeline(
         'epi', EPIStudy.basic_preproc_pipeline)
 
-    epi_dcm2nii_pipeline = CombinedStudy.translate(
+    epi_dcm2nii_pipeline = translate_pipeline(
         'epi', MRIStudy.dcm2nii_conversion_pipeline)
 
-    epi_bet_pipeline = CombinedStudy.translate(
+    epi_bet_pipeline = translate_pipeline(
         'epi', EPIStudy.brain_mask_pipeline)
 
-    epi_dcm_info_pipeline = CombinedStudy.translate(
+    epi_dcm_info_pipeline = translate_pipeline(
         'epi', EPIStudy.header_info_extraction_pipeline,
         override_default_options={'multivol': True})
 
-    ref_bet_pipeline = CombinedStudy.translate(
+    ref_bet_pipeline = translate_pipeline(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_dcm2nii_pipeline = CombinedStudy.translate(
+    ref_dcm2nii_pipeline = translate_pipeline(
         'reference', MRIStudy.dcm2nii_conversion_pipeline)
 
-    ref_segmentation_pipeline = CombinedStudy.translate(
+    ref_segmentation_pipeline = translate_pipeline(
         'reference', MRIStudy.segmentation_pipeline)
 
-    ref_basic_preproc_pipeline = CombinedStudy.translate(
+    ref_basic_preproc_pipeline = translate_pipeline(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    epi_qform_transform_pipeline = CombinedStudy.translate(
+    epi_qform_transform_pipeline = translate_pipeline(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
 
-    epi_motion_alignment_pipeline = CombinedStudy.translate(
+    epi_motion_alignment_pipeline = translate_pipeline(
         'epi', EPIStudy.motion_alignment_pipeline)
 
-    epi_brain_mask_pipeline = CombinedStudy.translate(
+    epi_brain_mask_pipeline = translate_pipeline(
         'epi', EPIStudy.brain_mask_pipeline)
 
     def epireg_pipeline(self, **options):
@@ -183,7 +183,7 @@ class CoregisteredEPIStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('epi', dicom_format),
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('epi_preproc', nifti_gz_format,

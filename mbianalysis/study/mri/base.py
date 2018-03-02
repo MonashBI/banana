@@ -1,6 +1,6 @@
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import Study, set_data_specs
+from nianalysis.study.base import Study, set_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
@@ -383,7 +383,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('primary', dicom_format),
         DatasetSpec('primary_nifti', nifti_gz_format),
         DatasetSpec('dicom_dwi', dicom_format),
@@ -419,7 +419,7 @@ class MotionReferenceStudy(MRIStudy):
                 header_info_extraction_pipeline_factory(
                     'primary', ref=reference, multivol=multivol,
                     **kwargs))
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('ref_motion_mats', directory_format,
                     header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())

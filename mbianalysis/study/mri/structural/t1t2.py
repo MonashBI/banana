@@ -1,10 +1,10 @@
+from nipype.pipeline import engine as pe
 from nipype.interfaces.fsl import ApplyMask
 from nianalysis.data_formats import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.multi import (
-    MultiStudy, MultiStudyMetaClass, SubStudySpec, TranslatedPipeline)
+from nianalysis.study.multi import MultiStudy, translate_pipeline
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
@@ -17,12 +17,34 @@ class T1T2Study(MultiStudy):
     T1 and T2 weighted MR dataset, with the T2-weighted coregistered to the T1.
     """
 
-    __metaclass__ = MultiStudyMetaClass
+    sub_study_specs = {
+        't1': (T1Study, {
+            't1': 'primary',
+            't1_coreg_to_atlas': 'coreg_to_atlas',
+            'coreg_to_atlas_coeff': 'coreg_to_atlas_coeff',
+            'brain_mask': 'brain_mask',
+            't1_masked': 'masked',
+            'fs_recon_all': 'fs_recon_all'}),
+        't2': (T2Study, {
+            't2_coreg': 'primary',
+            'manual_wmh_mask_coreg': 'manual_wmh_mask',
+            't2_masked': 'masked',
+            'brain_mask': 'brain_mask'}),
+        't2coregt1': (CoregisteredStudy, {
+            't1': 'reference',
+            't2': 'to_register',
+            't2_coreg': 'registered',
+            't2_coreg_matrix': 'matrix'}),
+        'wmhcoregt1': (CoregisteredToMatrixStudy, {
+            't1': 'reference',
+            'manual_wmh_mask': 'to_register',
+            't2_coreg_matrix': 'matrix',
+            'manual_wmh_mask_coreg': 'registered'})}
 
     def freesurfer_pipeline(self, **options):
-        pipeline = TranslatedPipeline(
+        pipeline = self.TranslatedPipeline(
             self, self.t1, T1Study.freesurfer_pipeline, options,
-            override_default_options={'use_T2': True},
+            default_options={'use_T2': True},
             add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
         recon_all = pipeline.node('recon_all')
         # Connect T2-weighted input
@@ -30,17 +52,17 @@ class T1T2Study(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    coregister_to_atlas_pipeline = MultiStudy.translate(
+    coregister_to_atlas_pipeline = translate_pipeline(
         't1', T1Study.coregister_to_atlas_pipeline)
 
-    t2_registration_pipeline = MultiStudy.translate(
+    t2_registration_pipeline = translate_pipeline(
         't2coregt1', CoregisteredStudy.linear_registration_pipeline)
 
-    manual_wmh_mask_registration_pipeline = MultiStudy.translate(
+    manual_wmh_mask_registration_pipeline = translate_pipeline(
         'wmhcoregt1',
         CoregisteredToMatrixStudy.linear_registration_pipeline)
 
-    t2_brain_mask_pipeline = MultiStudy.translate(
+    t2_brain_mask_pipeline = translate_pipeline(
         't2', T2Study.brain_mask_pipeline)
 
     def t1_brain_mask_pipeline(self, **options):
@@ -71,28 +93,6 @@ class T1T2Study(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
-        SubStudySpec('t1', T1Study, {
-            't1': 'primary',
-            't1_coreg_to_atlas': 'coreg_to_atlas',
-            'coreg_to_atlas_coeff': 'coreg_to_atlas_coeff',
-            'brain_mask': 'brain_mask',
-            'fs_recon_all': 'fs_recon_all'}),
-        SubStudySpec('t2', T2Study, {
-            't2_coreg': 'primary',
-            'manual_wmh_mask_coreg': 'manual_wmh_mask',
-            'brain_mask': 'brain_mask'}),
-        SubStudySpec('t2coregt1', CoregisteredStudy, {
-            't1': 'reference',
-            't2': 'to_register',
-            't2_coreg': 'registered',
-            't2_coreg_matrix': 'matrix'}),
-        SubStudySpec('wmhcoregt1', CoregisteredToMatrixStudy, {
-            't1': 'reference',
-            'manual_wmh_mask': 'to_register',
-            't2_coreg_matrix': 'matrix',
-            'manual_wmh_mask_coreg': 'registered'}))
-
     _data_specs = set_specs(
         DatasetSpec('t1', nifti_gz_format,
                     description="Raw T1-weighted image (e.g. MPRAGE)"),
@@ -102,6 +102,10 @@ class T1T2Study(MultiStudy):
                     description="Manual WMH segmentations"),
         DatasetSpec('t2_coreg', nifti_gz_format, t2_registration_pipeline,
                     description="T2 registered to T1 weighted"),
+        DatasetSpec('t1_masked', nifti_gz_format, t1_brain_mask_pipeline,
+                    description="T1 masked by brain mask"),
+        DatasetSpec('t2_masked', nifti_gz_format, t2_brain_mask_pipeline,
+                    description="Coregistered T2 masked by brain mask"),
         DatasetSpec('brain_mask', nifti_gz_format, t2_brain_mask_pipeline,
                     description="Brain mask generated from coregistered T2"),
         DatasetSpec('manual_wmh_mask_coreg', nifti_gz_format,
