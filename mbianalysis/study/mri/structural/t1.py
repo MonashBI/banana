@@ -14,7 +14,7 @@ from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
-from nianalysis.study.multi import (MultiStudy, translate_pipeline, SubStudySpec)
+from nianalysis.study.multi import (MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -78,32 +78,7 @@ class T1Study(MRIStudy):
 
 class CoregisteredT1Study(MultiStudy):
 
-    _sub_study_specs = set_specs(
-        SubStudySpec('t1', T1Study, {
-            't1': 'primary',
-            't1_nifti': 'primary_nifti',
-            't1_preproc': 'preproc',
-            't1_brain': 'masked',
-            't1_brain_mask': 'brain_mask',
-            't1_ped': 'ped',
-            't1_pe_angle': 'pe_angle',
-            't1_tr': 'tr',
-            't1_real_duration': 'real_duration',
-            't1_tot_duration': 'tot_duration',
-            't1_start_time': 'start_time',
-            't1_dcm_info': 'dcm_info'}),
-        SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask'}),
-        SubStudySpec('coreg', CoregisteredStudy, {
-            't1_brain': 'to_register',
-            'ref_brain': 'reference',
-            't1_qformed': 'qformed',
-            't1_qform_mat': 'qform_mat',
-            't1_reg': 'registered',
-            't1_reg_mat': 'matrix'}))
+    __metaclass__ = MultiStudyMetaClass
 
     t1_basic_preproc_pipeline = translate_pipeline(
         't1', T1Study.basic_preproc_pipeline)
@@ -154,6 +129,33 @@ class CoregisteredT1Study(MultiStudy):
         pipeline.connect_output('t1_motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('t1', T1Study, {
+            't1': 'primary',
+            't1_nifti': 'primary_nifti',
+            't1_preproc': 'preproc',
+            't1_brain': 'masked',
+            't1_brain_mask': 'brain_mask',
+            't1_ped': 'ped',
+            't1_pe_angle': 'pe_angle',
+            't1_tr': 'tr',
+            't1_real_duration': 'real_duration',
+            't1_tot_duration': 'tot_duration',
+            't1_start_time': 'start_time',
+            't1_dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask'}),
+        SubStudySpec('coreg', CoregisteredStudy, {
+            't1_brain': 'to_register',
+            'ref_brain': 'reference',
+            't1_qformed': 'qformed',
+            't1_qform_mat': 'qform_mat',
+            't1_reg': 'registered',
+            't1_reg_mat': 'matrix'}))
 
     _data_specs = set_specs(
         DatasetSpec('t1', dicom_format),

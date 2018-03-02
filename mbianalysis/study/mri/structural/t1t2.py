@@ -4,7 +4,7 @@ from nianalysis.data_formats import (
 from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec)
+    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
@@ -13,33 +13,11 @@ from nianalysis.citations import fsl_cite
 
 
 class T1T2Study(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
     """
     T1 and T2 weighted MR dataset, with the T2-weighted coregistered to the T1.
     """
-
-    _sub_study_specs = set_specs(
-        SubStudySpec('t1', T1Study, {
-            't1': 'primary',
-            't1_coreg_to_atlas': 'coreg_to_atlas',
-            'coreg_to_atlas_coeff': 'coreg_to_atlas_coeff',
-            'brain_mask': 'brain_mask',
-            't1_masked': 'masked',
-            'fs_recon_all': 'fs_recon_all'}),
-        SubStudySpec('t2', T2Study, {
-            't2_coreg': 'primary',
-            'manual_wmh_mask_coreg': 'manual_wmh_mask',
-            't2_masked': 'masked',
-            'brain_mask': 'brain_mask'}),
-        SubStudySpec('t2coregt1', CoregisteredStudy, {
-            't1': 'reference',
-            't2': 'to_register',
-            't2_coreg': 'registered',
-            't2_coreg_matrix': 'matrix'}),
-        SubStudySpec('wmhcoregt1', CoregisteredToMatrixStudy, {
-            't1': 'reference',
-            'manual_wmh_mask': 'to_register',
-            't2_coreg_matrix': 'matrix',
-            'manual_wmh_mask_coreg': 'registered'}))
 
     def freesurfer_pipeline(self, **options):
         pipeline = self.TranslatedPipeline(
@@ -92,6 +70,30 @@ class T1T2Study(MultiStudy):
         # Check and return
         pipeline.assert_connected()
         return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('t1', T1Study, {
+            't1': 'primary',
+            't1_coreg_to_atlas': 'coreg_to_atlas',
+            'coreg_to_atlas_coeff': 'coreg_to_atlas_coeff',
+            'brain_mask': 'brain_mask',
+            't1_masked': 'masked',
+            'fs_recon_all': 'fs_recon_all'}),
+        SubStudySpec('t2', T2Study, {
+            't2_coreg': 'primary',
+            'manual_wmh_mask_coreg': 'manual_wmh_mask',
+            't2_masked': 'masked',
+            'brain_mask': 'brain_mask'}),
+        SubStudySpec('t2coregt1', CoregisteredStudy, {
+            't1': 'reference',
+            't2': 'to_register',
+            't2_coreg': 'registered',
+            't2_coreg_matrix': 'matrix'}),
+        SubStudySpec('wmhcoregt1', CoregisteredToMatrixStudy, {
+            't1': 'reference',
+            'manual_wmh_mask': 'to_register',
+            't2_coreg_matrix': 'matrix',
+            'manual_wmh_mask_coreg': 'registered'}))
 
     _data_specs = set_specs(
         DatasetSpec('t1', nifti_gz_format,

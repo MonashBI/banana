@@ -10,7 +10,7 @@ from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec)
+    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, AffineMatrixGeneration)
 from nipype.interfaces.utility import Merge as merge_lists
@@ -284,99 +284,7 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
 
 class CoregisteredDWIStudy(MultiStudy):
 
-    _sub_study_specs = set_specs(
-        SubStudySpec('dwi_main', DiffusionStudy, {
-            'dwi_main': 'dwi_main',
-            'dwi_main_ref': 'dwi_ref',
-            'dwi_main_brain_mask': 'brain_mask',
-            'dwi_main_brain': 'masked',
-            'dwi_main_preproc': 'preproc',
-            'dwi_main_eddy_par': 'eddy_par',
-            'dwi_main_ped': 'ped',
-            'dwi_main_pe_angle': 'pe_angle',
-            'dwi_main_tr': 'tr',
-            'dwi_main_real_duration': 'real_duration',
-            'dwi_main_tot_duration': 'tot_duration',
-            'dwi_main_start_time': 'start_time',
-            'dwi_main_dcm_info': 'dcm_info'}),
-        SubStudySpec('dwi2ref', DiffusionReferenceStudy, {
-            'dwi2ref_to_correct': 'to_be_corrected',
-            'dwi2ref_ref': 'topup_ref',
-            'dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
-            'dwi2ref_ref_nii': 'topup_ref_nifti',
-            'dwi2ref_brain_mask': 'brain_mask',
-            'dwi2ref_brain': 'masked',
-            'dwi2ref_preproc': 'preproc',
-            'dwi2ref_ped': 'ped',
-            'dwi2ref_pe_angle': 'pe_angle',
-            'dwi2ref_tr': 'tr',
-            'dwi2ref_real_duration': 'real_duration',
-            'dwi2ref_tot_duration': 'tot_duration',
-            'dwi2ref_start_time': 'start_time',
-            'dwi2ref_dcm_info': 'dcm_info'}),
-        SubStudySpec('dwi_opposite', DiffusionOppositeStudy, {
-            'dwi_opposite_to_correct': 'to_be_corrected',
-            'dwi_opposite_ref': 'topup_ref',
-            'dwi_opposite_to_correct_nii': 'to_be_corrected_nifti',
-            'dwi_opposite_ref_nii': 'topup_ref_nifti',
-            'dwi_opposite_brain_mask': 'brain_mask',
-            'dwi_opposite_brain': 'masked',
-            'dwi_opposite_preproc': 'preproc',
-            'dwi_opposite_ped': 'ped',
-            'dwi_opposite_pe_angle': 'pe_angle',
-            'dwi_opposite_tr': 'tr',
-            'dwi_opposite_real_duration': 'real_duration',
-            'dwi_opposite_tot_duration': 'tot_duration',
-            'dwi_opposite_start_time': 'start_time',
-            'dwi_opposite_dcm_info': 'dcm_info'}),
-        SubStudySpec('dwi2ref_opposite', DiffusionReferenceOppositeStudy, {
-            'dwi2ref_opposite_to_correct': 'to_be_corrected',
-            'dwi2ref_opposite_to_correct_nii': 'to_be_corrected_nifti',
-            'dwi2ref_opposite_ref': 'topup_ref',
-            'dwi2ref_opposite_ref_nii': 'topup_ref_nifti',
-            'dwi2ref_opposite_brain_mask': 'brain_mask',
-            'dwi2ref_opposite_brain': 'masked',
-            'dwi2ref_opposite_preproc': 'preproc',
-            'dwi2ref_opposite_ped': 'ped',
-            'dwi2ref_opposite_pe_angle': 'pe_angle',
-            'dwi2ref_opposite_tr': 'tr',
-            'dwi2ref_opposite_real_duration': 'real_duration',
-            'dwi2ref_opposite_tot_duration': 'tot_duration',
-            'dwi2ref_opposite_start_time': 'start_time',
-            'dwi2ref_opposite_dcm_info': 'dcm_info'}),
-        SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask'}),
-        SubStudySpec('coreg_dwi_main', CoregisteredStudy, {
-            'dwi_main_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi_main_qformed': 'qformed',
-            'dwi_main_qform_mat': 'qform_mat',
-            'dwi_main_reg': 'registered',
-            'dwi_main_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_dwi2ref', CoregisteredStudy, {
-            'dwi2ref_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi2ref_qformed': 'qformed',
-            'dwi2ref_qform_mat': 'qform_mat',
-            'dwi2ref_reg': 'registered',
-            'dwi2ref_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_dwi_opposite', CoregisteredStudy, {
-            'dwi_opposite_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi_opposite_qformed': 'qformed',
-            'dwi_opposite_qform_mat': 'qform_mat',
-            'dwi_opposite_reg': 'registered',
-            'dwi_opposite_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_dwi2ref_opposite', CoregisteredStudy, {
-            'dwi2ref_opposite_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi2ref_opposite_qformed': 'qformed',
-            'dwi2ref_opposite_qform_mat': 'qform_mat',
-            'dwi2ref_opposite_reg': 'registered',
-            'dwi2ref_opposite_reg_mat': 'matrix'}))
+    __metaclass__ = MultiStudyMetaClass
 
     dwi_main_dwipreproc_pipeline = translate_pipeline(
         'dwi_main', DiffusionStudy.dwipreproc_pipeline)
@@ -586,6 +494,100 @@ class CoregisteredDWIStudy(MultiStudy):
             'dwi2ref_opposite_motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('dwi_main', DiffusionStudy, {
+            'dwi_main': 'dwi_main',
+            'dwi_main_ref': 'dwi_ref',
+            'dwi_main_brain_mask': 'brain_mask',
+            'dwi_main_brain': 'masked',
+            'dwi_main_preproc': 'preproc',
+            'dwi_main_eddy_par': 'eddy_par',
+            'dwi_main_ped': 'ped',
+            'dwi_main_pe_angle': 'pe_angle',
+            'dwi_main_tr': 'tr',
+            'dwi_main_real_duration': 'real_duration',
+            'dwi_main_tot_duration': 'tot_duration',
+            'dwi_main_start_time': 'start_time',
+            'dwi_main_dcm_info': 'dcm_info'}),
+        SubStudySpec('dwi2ref', DiffusionReferenceStudy, {
+            'dwi2ref_to_correct': 'to_be_corrected',
+            'dwi2ref_ref': 'topup_ref',
+            'dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
+            'dwi2ref_ref_nii': 'topup_ref_nifti',
+            'dwi2ref_brain_mask': 'brain_mask',
+            'dwi2ref_brain': 'masked',
+            'dwi2ref_preproc': 'preproc',
+            'dwi2ref_ped': 'ped',
+            'dwi2ref_pe_angle': 'pe_angle',
+            'dwi2ref_tr': 'tr',
+            'dwi2ref_real_duration': 'real_duration',
+            'dwi2ref_tot_duration': 'tot_duration',
+            'dwi2ref_start_time': 'start_time',
+            'dwi2ref_dcm_info': 'dcm_info'}),
+        SubStudySpec('dwi_opposite', DiffusionOppositeStudy, {
+            'dwi_opposite_to_correct': 'to_be_corrected',
+            'dwi_opposite_ref': 'topup_ref',
+            'dwi_opposite_to_correct_nii': 'to_be_corrected_nifti',
+            'dwi_opposite_ref_nii': 'topup_ref_nifti',
+            'dwi_opposite_brain_mask': 'brain_mask',
+            'dwi_opposite_brain': 'masked',
+            'dwi_opposite_preproc': 'preproc',
+            'dwi_opposite_ped': 'ped',
+            'dwi_opposite_pe_angle': 'pe_angle',
+            'dwi_opposite_tr': 'tr',
+            'dwi_opposite_real_duration': 'real_duration',
+            'dwi_opposite_tot_duration': 'tot_duration',
+            'dwi_opposite_start_time': 'start_time',
+            'dwi_opposite_dcm_info': 'dcm_info'}),
+        SubStudySpec('dwi2ref_opposite', DiffusionReferenceOppositeStudy, {
+            'dwi2ref_opposite_to_correct': 'to_be_corrected',
+            'dwi2ref_opposite_to_correct_nii': 'to_be_corrected_nifti',
+            'dwi2ref_opposite_ref': 'topup_ref',
+            'dwi2ref_opposite_ref_nii': 'topup_ref_nifti',
+            'dwi2ref_opposite_brain_mask': 'brain_mask',
+            'dwi2ref_opposite_brain': 'masked',
+            'dwi2ref_opposite_preproc': 'preproc',
+            'dwi2ref_opposite_ped': 'ped',
+            'dwi2ref_opposite_pe_angle': 'pe_angle',
+            'dwi2ref_opposite_tr': 'tr',
+            'dwi2ref_opposite_real_duration': 'real_duration',
+            'dwi2ref_opposite_tot_duration': 'tot_duration',
+            'dwi2ref_opposite_start_time': 'start_time',
+            'dwi2ref_opposite_dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask'}),
+        SubStudySpec('coreg_dwi_main', CoregisteredStudy, {
+            'dwi_main_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi_main_qformed': 'qformed',
+            'dwi_main_qform_mat': 'qform_mat',
+            'dwi_main_reg': 'registered',
+            'dwi_main_reg_mat': 'matrix'}),
+        SubStudySpec('coreg_dwi2ref', CoregisteredStudy, {
+            'dwi2ref_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi2ref_qformed': 'qformed',
+            'dwi2ref_qform_mat': 'qform_mat',
+            'dwi2ref_reg': 'registered',
+            'dwi2ref_reg_mat': 'matrix'}),
+        SubStudySpec('coreg_dwi_opposite', CoregisteredStudy, {
+            'dwi_opposite_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi_opposite_qformed': 'qformed',
+            'dwi_opposite_qform_mat': 'qform_mat',
+            'dwi_opposite_reg': 'registered',
+            'dwi_opposite_reg_mat': 'matrix'}),
+        SubStudySpec('coreg_dwi2ref_opposite', CoregisteredStudy, {
+            'dwi2ref_opposite_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi2ref_opposite_qformed': 'qformed',
+            'dwi2ref_opposite_qform_mat': 'qform_mat',
+            'dwi2ref_opposite_reg': 'registered',
+            'dwi2ref_opposite_reg_mat': 'matrix'}))
 
     _data_specs = set_specs(
         DatasetSpec('dwi_main', dicom_format),
