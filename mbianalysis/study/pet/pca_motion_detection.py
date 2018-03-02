@@ -1,6 +1,6 @@
 from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_formats import (bf_format, directory_format)
+from nianalysis.data_formats import (list_mode_format, directory_format)
 from mbianalysis.study.pet.base import PETStudy
 from mbianalysis.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
@@ -13,7 +13,7 @@ class PETPCAMotionDetectionStudy(PETStudy):
 
         pipeline = self.create_pipeline(
             name='prepare_sinogram',
-            inputs=[DatasetSpec('list_mode', bf_format),
+            inputs=[DatasetSpec('list_mode', list_mode_format),
                     FieldSpec('time_offset', int),
                     FieldSpec('temporal_length', float),
                     FieldSpec('num_frames', int)],
@@ -52,7 +52,7 @@ class PETPCAMotionDetectionStudy(PETStudy):
         return pipeline
 
     _data_specs = set_specs(
-        DatasetSpec('list_mode', bf_format),
+        DatasetSpec('list_mode', list_mode_format),
         FieldSpec('time_offset', int),
         FieldSpec('temporal_length', float),
         FieldSpec('num_frames', int),
