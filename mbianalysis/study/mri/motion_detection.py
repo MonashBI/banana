@@ -6,7 +6,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
-from nianalysis.study.multi import MultiStudy, translate_pipeline
+from nianalysis.study.multi import (
+    MultiStudy, translate_pipeline, SubStudySpec)
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
@@ -16,8 +17,8 @@ from .base import MotionReferenceStudy
 
 class MotionDetectionStudy(MultiStudy):
 
-    sub_study_specs = {
-        'ref': (MotionReferenceStudy, {
+    _sub_study_specs = set_specs(
+        SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
             'ref_ped': 'ped',
             'ref_pe_angle': 'pe_angle',
@@ -27,7 +28,7 @@ class MotionDetectionStudy(MultiStudy):
             'ref_start_time': 'start_time',
             'ref_dcm_info': 'dcm_info',
             'ref_motion_mats': 'ref_motion_mats'}),
-        'fm': (CoregisteredT2Study, {
+        SubStudySpec('fm', CoregisteredT2Study, {
             'fm': 't2',
             'fm_nifti': 't2_nifti',
             'fm_reg': 't2_reg',
@@ -49,7 +50,7 @@ class MotionDetectionStudy(MultiStudy):
             'fm_start_time': 't2_start_time',
             'fm_dcm_info': 't2_dcm_info',
             'fm_motion_mats': 't2_motion_mats'}),
-        'ute': (CoregisteredT1Study, {
+        SubStudySpec('ute', CoregisteredT1Study, {
             'ute': 't1',
             'ute_nifti': 't1_nifti',
             'ute_reg': 't1_reg',
@@ -71,7 +72,7 @@ class MotionDetectionStudy(MultiStudy):
             'ute_start_time': 't1_start_time',
             'ute_dcm_info': 't1_dcm_info',
             'ute_motion_mats': 't1_motion_mats'}),
-        't1_1': (CoregisteredT1Study, {
+        SubStudySpec('t1_1', CoregisteredT1Study, {
             't1_1': 't1',
             't1_1_nifti': 't1_nifti',
             't1_1_reg': 't1_reg',
@@ -93,7 +94,7 @@ class MotionDetectionStudy(MultiStudy):
             't1_1_start_time': 't1_start_time',
             't1_1_dcm_info': 't1_dcm_info',
             't1_1_motion_mats': 't1_motion_mats'}),
-        'epi1': (CoregisteredEPIStudy, {
+        SubStudySpec('epi1', CoregisteredEPIStudy, {
             'epi1': 'epi',
             'epi1_nifti': 'epi_nifti',
             'epi1_epireg_mat': 'epi_epireg_mat',
@@ -119,7 +120,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi1_tot_duration': 'epi_tot_duration',
             'epi1_start_time': 'epi_start_time',
             'epi1_dcm_info': 'epi_dcm_info'}),
-        'epi2': (CoregisteredEPIStudy, {
+        SubStudySpec('epi2', CoregisteredEPIStudy, {
             'epi2': 'epi',
             'epi2_nifti': 'epi_nifti',
             'epi2_epireg_mat': 'epi_epireg_mat',
@@ -145,7 +146,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi2_tot_duration': 'epi_tot_duration',
             'epi2_start_time': 'epi_start_time',
             'epi2_dcm_info': 'epi_dcm_info'}),
-        'epi3': (CoregisteredEPIStudy, {
+        SubStudySpec('epi3', CoregisteredEPIStudy, {
             'epi3': 'epi',
             'epi3_nifti': 'epi_nifti',
             'epi3_epireg_mat': 'epi_epireg_mat',
@@ -171,7 +172,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi3_tot_duration': 'epi_tot_duration',
             'epi3_start_time': 'epi_start_time',
             'epi3_dcm_info': 'epi_dcm_info'}),
-        'epi4': (CoregisteredEPIStudy, {
+        SubStudySpec('epi4', CoregisteredEPIStudy, {
             'epi4': 'epi',
             'epi4_nifti': 'epi_nifti',
             'epi4_epireg_mat': 'epi_epireg_mat',
@@ -197,7 +198,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi4_tot_duration': 'epi_tot_duration',
             'epi4_start_time': 'epi_start_time',
             'epi4_dcm_info': 'epi_dcm_info'}),
-        'epi5': (CoregisteredEPIStudy, {
+        SubStudySpec('epi5', CoregisteredEPIStudy, {
             'epi5': 'epi',
             'epi5_nifti': 'epi_nifti',
             'epi5_epireg_mat': 'epi_epireg_mat',
@@ -223,7 +224,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi5_tot_duration': 'epi_tot_duration',
             'epi5_start_time': 'epi_start_time',
             'epi5_dcm_info': 'epi_dcm_info'}),
-        'epi6': (CoregisteredEPIStudy, {
+        SubStudySpec('epi6', CoregisteredEPIStudy, {
             'epi6': 'epi',
             'epi6_nifti': 'epi_nifti',
             'epi6_epireg_mat': 'epi_epireg_mat',
@@ -249,7 +250,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi6_tot_duration': 'epi_tot_duration',
             'epi6_start_time': 'epi_start_time',
             'epi6_dcm_info': 'epi_dcm_info'}),
-        'epi7': (CoregisteredEPIStudy, {
+        SubStudySpec('epi7', CoregisteredEPIStudy, {
             'epi7': 'epi',
             'epi7_nifti': 'epi_nifti',
             'epi7_epireg_mat': 'epi_epireg_mat',
@@ -275,7 +276,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi7_tot_duration': 'epi_tot_duration',
             'epi7_start_time': 'epi_start_time',
             'epi7_dcm_info': 'epi_dcm_info'}),
-        'epi8': (CoregisteredEPIStudy, {
+        SubStudySpec('epi8', CoregisteredEPIStudy, {
             'epi8': 'epi',
             'epi8_nifti': 'epi_nifti',
             'epi8_epireg_mat': 'epi_epireg_mat',
@@ -301,7 +302,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi8_tot_duration': 'epi_tot_duration',
             'epi8_start_time': 'epi_start_time',
             'epi8_dcm_info': 'epi_dcm_info'}),
-        'asl': (CoregisteredEPIStudy, {
+        SubStudySpec('asl', CoregisteredEPIStudy, {
             'asl': 'epi',
             'asl_nifti': 'epi_nifti',
             'asl_epireg_mat': 'epi_epireg_mat',
@@ -326,7 +327,7 @@ class MotionDetectionStudy(MultiStudy):
             'asl_real_duration': 'epi_real_duration',
             'asl_tot_duration': 'epi_tot_duration',
             'asl_start_time': 'epi_start_time',
-            'asl_dcm_info': 'epi_dcm_info'})}
+            'asl_dcm_info': 'epi_dcm_info'}))
 
     ref_dcm_info_pipeline = translate_pipeline(
         'ref', MotionReferenceStudy.header_info_extraction_pipeline)

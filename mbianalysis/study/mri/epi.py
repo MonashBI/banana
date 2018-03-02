@@ -9,7 +9,8 @@ from nipype.interfaces import fsl
 from nianalysis.requirements import fsl509_req
 from nianalysis.study.base import set_specs
 from .coregistered import CoregisteredStudy
-from nianalysis.study.multi import MultiStudy, translate_pipeline
+from nianalysis.study.multi import (
+    MultiStudy, translate_pipeline, SubStudySpec)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
@@ -65,35 +66,6 @@ class EPIStudy(MRIStudy):
 
 
 class CoregisteredEPIStudy(MultiStudy):
-
-    sub_study_specs = {
-        'epi': (EPIStudy, {
-            'epi': 'primary',
-            'epi_nifti': 'primary_nifti',
-            'epi_preproc': 'preproc',
-            'epi_brain': 'masked',
-            'epi_brain_mask': 'brain_mask',
-            'epi_moco': 'moco',
-            'epi_moco_mat': 'moco_mat',
-            'epi_moco_par': 'moco_par',
-            'epi_ped': 'ped',
-            'epi_pe_angle': 'pe_angle',
-            'epi_tr': 'tr',
-            'epi_real_duration': 'real_duration',
-            'epi_tot_duration': 'tot_duration',
-            'epi_start_time': 'start_time',
-            'epi_dcm_info': 'dcm_info'}),
-        'reference': (MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask',
-            'ref_wmseg': 'wm_seg'}),
-        'coreg': (CoregisteredStudy, {
-            'epi_brain': 'to_register',
-            'ref_brain': 'reference',
-            'epi_qformed': 'qformed',
-            'epi_qform_mat': 'qform_mat'})}
 
     epi_basic_preproc_pipeline = translate_pipeline(
         'epi', EPIStudy.basic_preproc_pipeline)
@@ -182,6 +154,35 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.connect_output('epi_motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
+
+    sub_study_specs = set_specs(
+        SubStudySpec('epi', EPIStudy, {
+            'epi': 'primary',
+            'epi_nifti': 'primary_nifti',
+            'epi_preproc': 'preproc',
+            'epi_brain': 'masked',
+            'epi_brain_mask': 'brain_mask',
+            'epi_moco': 'moco',
+            'epi_moco_mat': 'moco_mat',
+            'epi_moco_par': 'moco_par',
+            'epi_ped': 'ped',
+            'epi_pe_angle': 'pe_angle',
+            'epi_tr': 'tr',
+            'epi_real_duration': 'real_duration',
+            'epi_tot_duration': 'tot_duration',
+            'epi_start_time': 'start_time',
+            'epi_dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask',
+            'ref_wmseg': 'wm_seg'}),
+        SubStudySpec('coreg', CoregisteredStudy, {
+            'epi_brain': 'to_register',
+            'ref_brain': 'reference',
+            'epi_qformed': 'qformed',
+            'epi_qform_mat': 'qform_mat'}))
 
     _data_specs = set_specs(
         DatasetSpec('epi', dicom_format),

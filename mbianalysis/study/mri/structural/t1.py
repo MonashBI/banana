@@ -14,7 +14,7 @@ from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
-from nianalysis.study.multi import MultiStudy, translate_pipeline
+from nianalysis.study.multi import (MultiStudy, translate_pipeline, SubStudySpec)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -78,8 +78,8 @@ class T1Study(MRIStudy):
 
 class CoregisteredT1Study(MultiStudy):
 
-    sub_study_specs = {
-        't1': (T1Study, {
+    _sub_study_specs = set_specs(
+        SubStudySpec('t1', T1Study, {
             't1': 'primary',
             't1_nifti': 'primary_nifti',
             't1_preproc': 'preproc',
@@ -92,18 +92,18 @@ class CoregisteredT1Study(MultiStudy):
             't1_tot_duration': 'tot_duration',
             't1_start_time': 'start_time',
             't1_dcm_info': 'dcm_info'}),
-        'reference': (MRIStudy, {
+        SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
             'ref_brain': 'masked',
             'ref_brain_mask': 'brain_mask'}),
-        'coreg': (CoregisteredStudy, {
+        SubStudySpec('coreg', CoregisteredStudy, {
             't1_brain': 'to_register',
             'ref_brain': 'reference',
             't1_qformed': 'qformed',
             't1_qform_mat': 'qform_mat',
             't1_reg': 'registered',
-            't1_reg_mat': 'matrix'})}
+            't1_reg_mat': 'matrix'}))
 
     t1_basic_preproc_pipeline = translate_pipeline(
         't1', T1Study.basic_preproc_pipeline)

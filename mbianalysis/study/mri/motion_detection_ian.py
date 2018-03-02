@@ -6,7 +6,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
-from nianalysis.study.multi import MultiStudy, translate_pipeline
+from nianalysis.study.multi import (
+    MultiStudy, translate_pipeline, SubStudySpec)
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
@@ -17,8 +18,8 @@ from .structural.diffusion_coreg import CoregisteredDiffusionStudy
 
 class MotionDetectionStudy(MultiStudy):
 
-    sub_study_specs = {
-        'ref': (MotionReferenceStudy, {
+    _sub_study_specs = set_specs(
+        SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
             'ref_ped': 'ped',
             'ref_pe_angle': 'pe_angle',
@@ -28,7 +29,7 @@ class MotionDetectionStudy(MultiStudy):
             'ref_start_time': 'start_time',
             'ref_dcm_info': 'dcm_info',
             'ref_motion_mats': 'ref_motion_mats'}),
-        'fm': (CoregisteredT2Study, {
+        SubStudySpec('fm', CoregisteredT2Study, {
             'fm': 't2',
             'fm_nifti': 't2_nifti',
             'fm_reg': 't2_reg',
@@ -50,7 +51,7 @@ class MotionDetectionStudy(MultiStudy):
             'fm_start_time': 't2_start_time',
             'fm_dcm_info': 't2_dcm_info',
             'fm_motion_mats': 't2_motion_mats'}),
-        't2_1': (CoregisteredT2Study, {
+        SubStudySpec('t2_1', CoregisteredT2Study, {
             't2_1': 't2',
             't2_1_nifti': 't2_nifti',
             't2_1_reg': 't2_reg',
@@ -72,7 +73,7 @@ class MotionDetectionStudy(MultiStudy):
             't2_1_start_time': 't2_start_time',
             't2_1_dcm_info': 't2_dcm_info',
             't2_1_motion_mats': 't2_motion_mats'}),
-        't2_2': (CoregisteredT2Study, {
+        SubStudySpec('t2_2', CoregisteredT2Study, {
             't2_2': 't2',
             't2_2_nifti': 't2_nifti',
             't2_2_reg': 't2_reg',
@@ -94,7 +95,7 @@ class MotionDetectionStudy(MultiStudy):
             't2_2_start_time': 't2_start_time',
             't2_2_dcm_info': 't2_dcm_info',
             't2_2_motion_mats': 't2_motion_mats'}),
-        't2_3': (CoregisteredT2Study, {
+        SubStudySpec('t2_3', CoregisteredT2Study, {
             't2_3': 't2',
             't2_3_nifti': 't2_nifti',
             't2_3_reg': 't2_reg',
@@ -116,7 +117,7 @@ class MotionDetectionStudy(MultiStudy):
             't2_3_start_time': 't2_start_time',
             't2_3_dcm_info': 't2_dcm_info',
             't2_3_motion_mats': 't2_motion_mats'}),
-        't2_4': (CoregisteredT2Study, {
+        SubStudySpec('t2_4', CoregisteredT2Study, {
             't2_4': 't2',
             't2_4_nifti': 't2_nifti',
             't2_4_reg': 't2_reg',
@@ -138,7 +139,7 @@ class MotionDetectionStudy(MultiStudy):
             't2_4_start_time': 't2_start_time',
             't2_4_dcm_info': 't2_dcm_info',
             't2_4_motion_mats': 't2_motion_mats'}),
-        't2_5': (CoregisteredT2Study, {
+        SubStudySpec('t2_5', CoregisteredT2Study, {
             't2_5': 't2',
             't2_5_nifti': 't2_nifti',
             't2_5_reg': 't2_reg',
@@ -160,7 +161,7 @@ class MotionDetectionStudy(MultiStudy):
             't2_5_start_time': 't2_start_time',
             't2_5_dcm_info': 't2_dcm_info',
             't2_5_motion_mats': 't2_motion_mats'}),
-        'ute': (CoregisteredT1Study, {
+        SubStudySpec('ute', CoregisteredT1Study, {
             'ute': 't1',
             'ute_nifti': 't1_nifti',
             'ute_reg': 't1_reg',
@@ -182,7 +183,7 @@ class MotionDetectionStudy(MultiStudy):
             'ute_start_time': 't1_start_time',
             'ute_dcm_info': 't1_dcm_info',
             'ute_motion_mats': 't1_motion_mats'}),
-        't1_1': (CoregisteredT1Study, {
+        SubStudySpec('t1_1', CoregisteredT1Study, {
             't1_1': 't1',
             't1_1_nifti': 't1_nifti',
             't1_1_reg': 't1_reg',
@@ -204,7 +205,7 @@ class MotionDetectionStudy(MultiStudy):
             't1_1_start_time': 't1_start_time',
             't1_1_dcm_info': 't1_dcm_info',
             't1_1_motion_mats': 't1_motion_mats'}),
-        'epi1': (CoregisteredEPIStudy, {
+        SubStudySpec('epi1', CoregisteredEPIStudy, {
             'epi1': 'epi',
             'epi1_nifti': 'epi_nifti',
             'epi1_epireg_mat': 'epi_epireg_mat',
@@ -230,7 +231,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi1_tot_duration': 'epi_tot_duration',
             'epi1_start_time': 'epi_start_time',
             'epi1_dcm_info': 'epi_dcm_info'}),
-        'epi2': (CoregisteredEPIStudy, {
+        SubStudySpec('epi2', CoregisteredEPIStudy, {
             'epi2': 'epi',
             'epi2_nifti': 'epi_nifti',
             'epi2_epireg_mat': 'epi_epireg_mat',
@@ -256,7 +257,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi2_tot_duration': 'epi_tot_duration',
             'epi2_start_time': 'epi_start_time',
             'epi2_dcm_info': 'epi_dcm_info'}),
-        'epi3': (CoregisteredEPIStudy, {
+        SubStudySpec('epi3', CoregisteredEPIStudy, {
             'epi3': 'epi',
             'epi3_nifti': 'epi_nifti',
             'epi3_epireg_mat': 'epi_epireg_mat',
@@ -282,7 +283,7 @@ class MotionDetectionStudy(MultiStudy):
             'epi3_tot_duration': 'epi_tot_duration',
             'epi3_start_time': 'epi_start_time',
             'epi3_dcm_info': 'epi_dcm_info'}),
-        'asl': (CoregisteredEPIStudy, {
+        SubStudySpec('asl', CoregisteredEPIStudy, {
             'asl': 'epi',
             'asl_nifti': 'epi_nifti',
             'asl_epireg_mat': 'epi_epireg_mat',
@@ -308,7 +309,7 @@ class MotionDetectionStudy(MultiStudy):
             'asl_tot_duration': 'epi_tot_duration',
             'asl_start_time': 'epi_start_time',
             'asl_dcm_info': 'epi_dcm_info'}),
-        'dwi_1': (CoregisteredDiffusionStudy, {
+        SubStudySpec('dwi_1', CoregisteredDiffusionStudy, {
             'dwi_1_main': 'dwi_main',
             'dwi_1_main_ref': 'dwi_main_ref',
             'dwi_1_main_brain_mask': 'dwi_main_brain_mask',
@@ -351,7 +352,7 @@ class MotionDetectionStudy(MultiStudy):
             'dwi_ref_preproc': 'ref_preproc',
             'dwi_ref_brain': 'ref_brain',
             'dwi_ref_brain_mask': 'ref_brain_mask',
-            'dwi_reference': 'reference'})}
+            'dwi_reference': 'reference'}))
 
     dwi_1_main_dcm_info_pipeline = translate_pipeline(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_dcm_info_pipeline)
