@@ -10,7 +10,7 @@ from nianalysis.requirements import fsl509_req
 from nianalysis.study.base import set_specs
 from .coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec)
+    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
@@ -66,6 +66,8 @@ class EPIStudy(MRIStudy):
 
 
 class CoregisteredEPIStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
 
     epi_basic_preproc_pipeline = translate_pipeline(
         'epi', EPIStudy.basic_preproc_pipeline)
