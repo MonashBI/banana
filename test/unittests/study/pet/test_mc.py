@@ -4,7 +4,7 @@ from mbianalysis.study.mri.structural.t2 import CoregisteredT2Study
 from nianalysis.data_formats import directory_format, text_format
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset, Field  # @IgnorePep8
-from nianalysis.data_formats import nifti_gz_format, bf_format  # @IgnorePep8
+from nianalysis.data_formats import nifti_gz_format, list_mode_format  # @IgnorePep8
 from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.pet.pca_motion_detection import PETPCAMotionDetectionStudy
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
@@ -159,7 +159,7 @@ class TestMC(TestCase):
     def test_mc_ian(self):
         study = self.create_study(
             PETPCAMotionDetectionStudy, 'mc_detection_study', inputs={
-                'list_mode': Dataset('list_mode', bf_format),
+                'list_mode': Dataset('list_mode', list_mode_format),
                 'time_offset': 0,
                 'num_frames': 10,
                 'temporal_length': 2})
