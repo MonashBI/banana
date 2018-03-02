@@ -15,9 +15,9 @@ template_path = os.path.abspath(
 
 class PETStudy(Study):
 
-    @abstractmethod
-    def _ica_inputs(self):
-        pass
+#     @abstractmethod
+#     def _ica_inputs(self):
+#         pass
 
     def ICA_pipeline(self, **options):
         return self._ICA_pipeline_factory(
