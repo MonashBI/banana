@@ -4,7 +4,7 @@ from nianalysis.data_formats import (
 from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.multi import (
-    MultiStudy, MultiStudyMetaClass, SubStudySpec)
+    MultiStudy, MultiStudyMetaClass, SubStudySpec, TranslatedPipeline)
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
@@ -20,9 +20,9 @@ class T1T2Study(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     def freesurfer_pipeline(self, **options):
-        pipeline = self.TranslatedPipeline(
+        pipeline = TranslatedPipeline(
             self, self.t1, T1Study.freesurfer_pipeline, options,
-            default_options={'use_T2': True},
+            override_default_options={'use_T2': True},
             add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
         recon_all = pipeline.node('recon_all')
         # Connect T2-weighted input
