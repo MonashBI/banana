@@ -7,7 +7,7 @@ from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
+    MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -33,33 +33,33 @@ class CoregisteredT2Study(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    t2_basic_preproc_pipeline = translate_pipeline(
+    t2_basic_preproc_pipeline = MultiStudy.translate(
         't2', T2Study.basic_preproc_pipeline)
 
-    t2_dcm2nii_pipeline = translate_pipeline(
+    t2_dcm2nii_pipeline = MultiStudy.translate(
         't2', MRIStudy.dcm2nii_conversion_pipeline)
 
-    t2_dcm_info_pipeline = translate_pipeline(
+    t2_dcm_info_pipeline = MultiStudy.translate(
         't2', T2Study.header_info_extraction_pipeline,
         override_default_options={'multivol': False})
 
-    t2_bet_pipeline = translate_pipeline(
+    t2_bet_pipeline = MultiStudy.translate(
         't2', T2Study.brain_mask_pipeline)
 
-    ref_bet_pipeline = translate_pipeline(
+    ref_bet_pipeline = MultiStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_basic_preproc_pipeline = translate_pipeline(
+    ref_basic_preproc_pipeline = MultiStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    t2_qform_transform_pipeline = translate_pipeline(
+    t2_qform_transform_pipeline = MultiStudy.translate(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
 
-    t2_brain_mask_pipeline = translate_pipeline(
+    t2_brain_mask_pipeline = MultiStudy.translate(
         't2', T2Study.brain_mask_pipeline)
 
-    t2_rigid_registration_pipeline = translate_pipeline(
+    t2_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', CoregisteredStudy.linear_registration_pipeline)
 
     def t2_motion_mat_pipeline(self, **options):

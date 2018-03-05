@@ -8,7 +8,7 @@ from mbianalysis.interfaces.custom.motion_correction import (
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
+    MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
@@ -22,394 +22,394 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    dwi_1_main_dcm_info_pipeline = translate_pipeline(
+    dwi_1_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_dcm_info_pipeline)
 
-    dwi_1_main_basic_preproc_pipeline = translate_pipeline(
+    dwi_1_main_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_dwipreproc_pipeline)
 
-    dwi_1_main_bet_pipeline = translate_pipeline(
+    dwi_1_main_bet_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_bet_pipeline)
 
-    dwi_1_main_motion_alignment_pipeline = translate_pipeline(
+    dwi_1_main_motion_alignment_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_motion_mat_pipeline)
 
-    dwi_1_main_aff_mat_pipeline = translate_pipeline(
+    dwi_1_main_aff_mat_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_affine_mats_pipeline)
 
-    dwi_1_main_qform_transform_pipeline = translate_pipeline(
+    dwi_1_main_qform_transform_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi_main_qform_transform_pipeline)
 
-    dwi_1_main_rigid_registration_pipeline = translate_pipeline(
+    dwi_1_main_rigid_registration_pipeline = MultiStudy.translate(
         'dwi_1',
         CoregisteredDiffusionStudy.dwi_main_rigid_registration_pipeline)
 
-    dwi_1_main_ref_bet_pipeline = translate_pipeline(
+    dwi_1_main_ref_bet_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    dwi_1_main_ref_basic_preproc_pipeline = translate_pipeline(
+    dwi_1_main_ref_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
 
-    dwi2ref_1_opposite_dcm_info_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_dcm_info_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_dcm_info_pipeline)
 
-    dwi2ref_1_opposite_basic_preproc_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_topup_pipeline)
 
-    dwi2ref_1_opposite_bet_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_bet_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_opposite_bet_pipeline)
 
-    dwi2ref_1_opposite_motion_alignment_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_motion_alignment_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.
         dwi2ref_opposite_motion_mat_pipeline)
 
-    dwi2ref_1_opposite_qform_transform_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_qform_transform_pipeline = MultiStudy.translate(
         'dwi_1',
         CoregisteredDiffusionStudy.dwi2ref_opposite_qform_transform_pipeline)
 
-    dwi2ref_1_opposite_rigid_registration_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_rigid_registration_pipeline = MultiStudy.translate(
         'dwi_1',
         CoregisteredDiffusionStudy.
         dwi2ref_opposite_rigid_registration_pipeline)
 
-    dwi2ref_1_opposite_ref_bet_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_ref_bet_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    dwi2ref_1_opposite_ref_basic_preproc_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_ref_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
 
-    dwi2ref_1_opposite_main_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.
         dwi2ref_opposite_main_dcm2nii_pipeline)
 
-    dwi2ref_1_opposite_ref_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_1_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.
         dwi2ref_opposite_ref_dcm2nii_pipeline)
 
-    dwi2ref_1_dcm_info_pipeline = translate_pipeline(
+    dwi2ref_1_dcm_info_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_dcm_info_pipeline)
 
-    dwi2ref_1_basic_preproc_pipeline = translate_pipeline(
+    dwi2ref_1_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_topup_pipeline)
 
-    dwi2ref_1_bet_pipeline = translate_pipeline(
+    dwi2ref_1_bet_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_bet_pipeline)
 
-    dwi2ref_1_motion_alignment_pipeline = translate_pipeline(
+    dwi2ref_1_motion_alignment_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_motion_mat_pipeline)
 
-    dwi2ref_1_qform_transform_pipeline = translate_pipeline(
+    dwi2ref_1_qform_transform_pipeline = MultiStudy.translate(
         'dwi_1',
         CoregisteredDiffusionStudy.dwi2ref_qform_transform_pipeline)
 
-    dwi2ref_1_rigid_registration_pipeline = translate_pipeline(
+    dwi2ref_1_rigid_registration_pipeline = MultiStudy.translate(
         'dwi_1',
         CoregisteredDiffusionStudy.dwi2ref_rigid_registration_pipeline)
 
-    dwi2ref_1_ref_bet_pipeline = translate_pipeline(
+    dwi2ref_1_ref_bet_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    dwi2ref_1_ref_basic_preproc_pipeline = translate_pipeline(
+    dwi2ref_1_ref_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.ref_basic_preproc_pipeline)
 
-    dwi2ref_1_main_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_1_main_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_main_dcm2nii_pipeline)
 
-    dwi2ref_1_ref_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_1_ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.dwi2ref_ref_dcm2nii_pipeline)
 
-    ref_dcm_info_pipeline = translate_pipeline(
+    ref_dcm_info_pipeline = MultiStudy.translate(
         'ref', MotionReferenceStudy.header_info_extraction_pipeline)
 
-    t1_motion_alignment_pipeline = translate_pipeline(
+    t1_motion_alignment_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    t1_dcm2nii_pipeline = translate_pipeline(
+    t1_dcm2nii_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_dcm2nii_pipeline)
 
-    t1_dcm_info_pipeline = translate_pipeline(
+    t1_dcm_info_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_dcm_info_pipeline)
 
-    t1_motion_mat_pipeline = translate_pipeline(
+    t1_motion_mat_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    t1_basic_preproc_pipeline = translate_pipeline(
+    t1_basic_preproc_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_basic_preproc_pipeline)
 
-    t1_qform_transform_pipeline = translate_pipeline(
+    t1_qform_transform_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_qform_transform_pipeline)
 
-    t1_bet_pipeline = translate_pipeline(
+    t1_bet_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t1_ref_bet_pipeline = translate_pipeline(
+    t1_ref_bet_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t1_ref_basic_preproc_pipeline = translate_pipeline(
+    t1_ref_basic_preproc_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.ref_basic_preproc_pipeline)
 
-    t1_rigid_registration_pipeline = translate_pipeline(
+    t1_rigid_registration_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_rigid_registration_pipeline)
 
-    ute_motion_alignment_pipeline = translate_pipeline(
+    ute_motion_alignment_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    ute_dcm2nii_pipeline = translate_pipeline(
+    ute_dcm2nii_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_dcm2nii_pipeline)
 
-    ute_dcm_info_pipeline = translate_pipeline(
+    ute_dcm_info_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_dcm_info_pipeline)
 
-    ute_motion_mat_pipeline = translate_pipeline(
+    ute_motion_mat_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_motion_mat_pipeline)
 
-    ute_basic_preproc_pipeline = translate_pipeline(
+    ute_basic_preproc_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_basic_preproc_pipeline)
 
-    ute_qform_transform_pipeline = translate_pipeline(
+    ute_qform_transform_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_qform_transform_pipeline)
 
-    ute_bet_pipeline = translate_pipeline(
+    ute_bet_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    ute_ref_bet_pipeline = translate_pipeline(
+    ute_ref_bet_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    ute_ref_basic_preproc_pipeline = translate_pipeline(
+    ute_ref_basic_preproc_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.ref_basic_preproc_pipeline)
 
-    ute_rigid_registration_pipeline = translate_pipeline(
+    ute_rigid_registration_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_rigid_registration_pipeline)
 
-    fm_motion_alignment_pipeline = translate_pipeline(
+    fm_motion_alignment_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    fm_dcm2nii_pipeline = translate_pipeline(
+    fm_dcm2nii_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    fm_dcm_info_pipeline = translate_pipeline(
+    fm_dcm_info_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    fm_motion_mat_pipeline = translate_pipeline(
+    fm_motion_mat_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    fm_basic_preproc_pipeline = translate_pipeline(
+    fm_basic_preproc_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    fm_qform_transform_pipeline = translate_pipeline(
+    fm_qform_transform_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    fm_bet_pipeline = translate_pipeline(
+    fm_bet_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_bet_pipeline)
 
-    fm_ref_bet_pipeline = translate_pipeline(
+    fm_ref_bet_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    fm_ref_basic_preproc_pipeline = translate_pipeline(
+    fm_ref_basic_preproc_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    fm_rigid_registration_pipeline = translate_pipeline(
+    fm_rigid_registration_pipeline = MultiStudy.translate(
         'fm', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    t2_1_motion_alignment_pipeline = translate_pipeline(
+    t2_1_motion_alignment_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_1_dcm2nii_pipeline = translate_pipeline(
+    t2_1_dcm2nii_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    t2_1_dcm_info_pipeline = translate_pipeline(
+    t2_1_dcm_info_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    t2_1_motion_mat_pipeline = translate_pipeline(
+    t2_1_motion_mat_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_1_basic_preproc_pipeline = translate_pipeline(
+    t2_1_basic_preproc_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    t2_1_qform_transform_pipeline = translate_pipeline(
+    t2_1_qform_transform_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    t2_1_bet_pipeline = translate_pipeline(
+    t2_1_bet_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_bet_pipeline)
 
-    t2_1_ref_bet_pipeline = translate_pipeline(
+    t2_1_ref_bet_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t2_1_ref_basic_preproc_pipeline = translate_pipeline(
+    t2_1_ref_basic_preproc_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    t2_1_rigid_registration_pipeline = translate_pipeline(
+    t2_1_rigid_registration_pipeline = MultiStudy.translate(
         't2_1', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    t2_2_motion_alignment_pipeline = translate_pipeline(
+    t2_2_motion_alignment_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_2_dcm2nii_pipeline = translate_pipeline(
+    t2_2_dcm2nii_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    t2_2_dcm_info_pipeline = translate_pipeline(
+    t2_2_dcm_info_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    t2_2_motion_mat_pipeline = translate_pipeline(
+    t2_2_motion_mat_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_2_basic_preproc_pipeline = translate_pipeline(
+    t2_2_basic_preproc_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    t2_2_qform_transform_pipeline = translate_pipeline(
+    t2_2_qform_transform_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    t2_2_bet_pipeline = translate_pipeline(
+    t2_2_bet_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_bet_pipeline)
 
-    t2_2_ref_bet_pipeline = translate_pipeline(
+    t2_2_ref_bet_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t2_2_ref_basic_preproc_pipeline = translate_pipeline(
+    t2_2_ref_basic_preproc_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    t2_2_rigid_registration_pipeline = translate_pipeline(
+    t2_2_rigid_registration_pipeline = MultiStudy.translate(
         't2_2', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    t2_3_motion_alignment_pipeline = translate_pipeline(
+    t2_3_motion_alignment_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_3_dcm2nii_pipeline = translate_pipeline(
+    t2_3_dcm2nii_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    t2_3_dcm_info_pipeline = translate_pipeline(
+    t2_3_dcm_info_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    t2_3_motion_mat_pipeline = translate_pipeline(
+    t2_3_motion_mat_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_3_basic_preproc_pipeline = translate_pipeline(
+    t2_3_basic_preproc_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    t2_3_qform_transform_pipeline = translate_pipeline(
+    t2_3_qform_transform_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    t2_3_bet_pipeline = translate_pipeline(
+    t2_3_bet_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_bet_pipeline)
 
-    t2_3_ref_bet_pipeline = translate_pipeline(
+    t2_3_ref_bet_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t2_3_ref_basic_preproc_pipeline = translate_pipeline(
+    t2_3_ref_basic_preproc_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    t2_3_rigid_registration_pipeline = translate_pipeline(
+    t2_3_rigid_registration_pipeline = MultiStudy.translate(
         't2_3', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    t2_4_motion_alignment_pipeline = translate_pipeline(
+    t2_4_motion_alignment_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_4_dcm2nii_pipeline = translate_pipeline(
+    t2_4_dcm2nii_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    t2_4_dcm_info_pipeline = translate_pipeline(
+    t2_4_dcm_info_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    t2_4_motion_mat_pipeline = translate_pipeline(
+    t2_4_motion_mat_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_4_basic_preproc_pipeline = translate_pipeline(
+    t2_4_basic_preproc_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    t2_4_qform_transform_pipeline = translate_pipeline(
+    t2_4_qform_transform_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    t2_4_bet_pipeline = translate_pipeline(
+    t2_4_bet_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_bet_pipeline)
 
-    t2_4_ref_bet_pipeline = translate_pipeline(
+    t2_4_ref_bet_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t2_4_ref_basic_preproc_pipeline = translate_pipeline(
+    t2_4_ref_basic_preproc_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    t2_4_rigid_registration_pipeline = translate_pipeline(
+    t2_4_rigid_registration_pipeline = MultiStudy.translate(
         't2_4', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    t2_5_motion_alignment_pipeline = translate_pipeline(
+    t2_5_motion_alignment_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_5_dcm2nii_pipeline = translate_pipeline(
+    t2_5_dcm2nii_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_dcm2nii_pipeline)
 
-    t2_5_dcm_info_pipeline = translate_pipeline(
+    t2_5_dcm_info_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_dcm_info_pipeline)
 
-    t2_5_motion_mat_pipeline = translate_pipeline(
+    t2_5_motion_mat_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_motion_mat_pipeline)
 
-    t2_5_basic_preproc_pipeline = translate_pipeline(
+    t2_5_basic_preproc_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_basic_preproc_pipeline)
 
-    t2_5_qform_transform_pipeline = translate_pipeline(
+    t2_5_qform_transform_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_qform_transform_pipeline)
 
-    t2_5_bet_pipeline = translate_pipeline(
+    t2_5_bet_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_bet_pipeline)
 
-    t2_5_ref_bet_pipeline = translate_pipeline(
+    t2_5_ref_bet_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t2_5_ref_basic_preproc_pipeline = translate_pipeline(
+    t2_5_ref_basic_preproc_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.ref_basic_preproc_pipeline)
 
-    t2_5_rigid_registration_pipeline = translate_pipeline(
+    t2_5_rigid_registration_pipeline = MultiStudy.translate(
         't2_5', CoregisteredT2Study.t2_rigid_registration_pipeline)
 
-    epi1_motion_alignment_pipeline = translate_pipeline(
+    epi1_motion_alignment_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
 
-    epi1_dcm2nii_pipeline = translate_pipeline(
+    epi1_dcm2nii_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_dcm2nii_pipeline)
 
-    epi1_epireg_pipeline = translate_pipeline(
+    epi1_epireg_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epireg_pipeline)
 
-    epi1_dcm_info_pipeline = translate_pipeline(
+    epi1_dcm_info_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_dcm_info_pipeline)
 
-    epi1_motion_mat_pipeline = translate_pipeline(
+    epi1_motion_mat_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_mat_pipeline)
 
-    epi1_basic_preproc_pipeline = translate_pipeline(
+    epi1_basic_preproc_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
 
-    epi1_qform_transform_pipeline = translate_pipeline(
+    epi1_qform_transform_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_qform_transform_pipeline)
 
-    epi1_bet_pipeline = translate_pipeline(
+    epi1_bet_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_bet_pipeline)
 
-    epi1_ref_bet_pipeline = translate_pipeline(
+    epi1_ref_bet_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    epi1_ref_segmentation_pipeline = translate_pipeline(
+    epi1_ref_segmentation_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline,
         override_default_options={'img_type': 1})
 
-    epi1_ref_basic_preproc_pipeline = translate_pipeline(
+    epi1_ref_basic_preproc_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
 
-    epi1_ref_nifti_pipeline = translate_pipeline(
+    epi1_ref_nifti_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_dcm2nii_pipeline)
 
     def mean_displacement_pipeline(self, **options):

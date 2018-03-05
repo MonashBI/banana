@@ -10,7 +10,7 @@ from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
+    MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, AffineMatrixGeneration)
 from nipype.interfaces.utility import Merge as merge_lists
@@ -286,94 +286,94 @@ class CoregisteredDWIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    dwi_main_dwipreproc_pipeline = translate_pipeline(
+    dwi_main_dwipreproc_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.dwipreproc_pipeline)
 
-    dwi_main_bet_pipeline = translate_pipeline(
+    dwi_main_bet_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.brain_mask_pipeline)
 
-    dwi_main_dcm_info_pipeline = translate_pipeline(
+    dwi_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.header_info_extraction_pipeline)
 
-    dwi_opposite_topup_pipeline = translate_pipeline(
+    dwi_opposite_topup_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.topup_pipeline)
 
-    dwi_opposite_main_dcm2nii_pipeline = translate_pipeline(
+    dwi_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_opposite',
         DiffusionOppositeStudy.main_dcm2nii_conversion_pipeline)
 
-    dwi_opposite_ref_dcm2nii_pipeline = translate_pipeline(
+    dwi_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.ref_dcm2nii_conversion_pipeline)
 
-    dwi_opposite_dcm_info_pipeline = translate_pipeline(
+    dwi_opposite_dcm_info_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.header_info_extraction_pipeline)
 
-    dwi_opposite_bet_pipeline = translate_pipeline(
+    dwi_opposite_bet_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.brain_mask_pipeline)
 
-    dwi2ref_topup_pipeline = translate_pipeline(
+    dwi2ref_topup_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.topup_pipeline)
 
-    dwi2ref_main_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.main_dcm2nii_conversion_pipeline)
 
-    dwi2ref_ref_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.ref_dcm2nii_conversion_pipeline)
 
-    dwi2ref_dcm_info_pipeline = translate_pipeline(
+    dwi2ref_dcm_info_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.header_info_extraction_pipeline)
 
-    dwi2ref_bet_pipeline = translate_pipeline(
+    dwi2ref_bet_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
 
-    dwi2ref_opposite_topup_pipeline = translate_pipeline(
+    dwi2ref_opposite_topup_pipeline = MultiStudy.translate(
         'dwi2ref_opposite', DiffusionReferenceOppositeStudy.topup_pipeline)
 
-    dwi2ref_opposite_main_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.main_dcm2nii_conversion_pipeline)
 
-    dwi2ref_opposite_ref_dcm2nii_pipeline = translate_pipeline(
+    dwi2ref_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.ref_dcm2nii_conversion_pipeline)
 
-    dwi2ref_opposite_dcm_info_pipeline = translate_pipeline(
+    dwi2ref_opposite_dcm_info_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.header_info_extraction_pipeline)
 
-    dwi2ref_opposite_bet_pipeline = translate_pipeline(
+    dwi2ref_opposite_bet_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.brain_mask_pipeline)
 
-    ref_bet_pipeline = translate_pipeline(
+    ref_bet_pipeline = MultiStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_basic_preproc_pipeline = translate_pipeline(
+    ref_basic_preproc_pipeline = MultiStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    dwi_main_qform_transform_pipeline = translate_pipeline(
+    dwi_main_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi_main', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi_main_rigid_registration_pipeline = translate_pipeline(
+    dwi_main_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi_main', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi_opposite_qform_transform_pipeline = translate_pipeline(
+    dwi_opposite_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi_opposite', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi_opposite_rigid_registration_pipeline = translate_pipeline(
+    dwi_opposite_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi_opposite', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi2ref_qform_transform_pipeline = translate_pipeline(
+    dwi2ref_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi2ref', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi2ref_rigid_registration_pipeline = translate_pipeline(
+    dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi2ref', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi2ref_opposite_qform_transform_pipeline = translate_pipeline(
+    dwi2ref_opposite_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi2ref_opposite', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi2ref_opposite_rigid_registration_pipeline = translate_pipeline(
+    dwi2ref_opposite_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi2ref_opposite',
         CoregisteredStudy.linear_registration_pipeline)
 
