@@ -1,6 +1,6 @@
 from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.utils import Merge
@@ -120,7 +120,7 @@ class DynamicPETStudy(PETStudy):
         return self._ICA_pipeline_factory(
             input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('pet_volumes', nifti_gz_format),
         DatasetSpec('regression_map', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format, Extract_vol_pipeline),

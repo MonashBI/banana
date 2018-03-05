@@ -1,6 +1,6 @@
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import Study, set_data_specs
+from nianalysis.study.base import Study, set_specs
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      eddy_par_format)
@@ -251,7 +251,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('primary', nifti_gz_format),
         DatasetSpec('dicom_dwi', dicom_format),
         DatasetSpec('dicom_dwi_1', dicom_format),

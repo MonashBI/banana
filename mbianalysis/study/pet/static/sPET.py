@@ -1,6 +1,6 @@
 from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from mbianalysis.interfaces.custom.pet import SUVRCalculation
 from nianalysis.data_formats import (nifti_gz_format)
 import os
@@ -35,7 +35,7 @@ class StaticPETStudy(PETStudy):
     def _ica_inputs(self):
         pass
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('base_mask', nifti_gz_format),
         DatasetSpec('SUVR_image', nifti_gz_format, suvr_pipeline),
