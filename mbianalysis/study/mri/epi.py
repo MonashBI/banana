@@ -10,7 +10,7 @@ from nianalysis.requirements import fsl509_req
 from nianalysis.study.base import set_specs
 from .coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
+    MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
 
@@ -69,39 +69,39 @@ class CoregisteredEPIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    epi_basic_preproc_pipeline = translate_pipeline(
+    epi_basic_preproc_pipeline = MultiStudy.translate(
         'epi', EPIStudy.basic_preproc_pipeline)
 
-    epi_dcm2nii_pipeline = translate_pipeline(
+    epi_dcm2nii_pipeline = MultiStudy.translate(
         'epi', MRIStudy.dcm2nii_conversion_pipeline)
 
-    epi_bet_pipeline = translate_pipeline(
+    epi_bet_pipeline = MultiStudy.translate(
         'epi', EPIStudy.brain_mask_pipeline)
 
-    epi_dcm_info_pipeline = translate_pipeline(
+    epi_dcm_info_pipeline = MultiStudy.translate(
         'epi', EPIStudy.header_info_extraction_pipeline,
         override_default_options={'multivol': True})
 
-    ref_bet_pipeline = translate_pipeline(
+    ref_bet_pipeline = MultiStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_dcm2nii_pipeline = translate_pipeline(
+    ref_dcm2nii_pipeline = MultiStudy.translate(
         'reference', MRIStudy.dcm2nii_conversion_pipeline)
 
-    ref_segmentation_pipeline = translate_pipeline(
+    ref_segmentation_pipeline = MultiStudy.translate(
         'reference', MRIStudy.segmentation_pipeline)
 
-    ref_basic_preproc_pipeline = translate_pipeline(
+    ref_basic_preproc_pipeline = MultiStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    epi_qform_transform_pipeline = translate_pipeline(
+    epi_qform_transform_pipeline = MultiStudy.translate(
         'coreg', CoregisteredStudy.qform_transform_pipeline)
 
-    epi_motion_alignment_pipeline = translate_pipeline(
+    epi_motion_alignment_pipeline = MultiStudy.translate(
         'epi', EPIStudy.motion_alignment_pipeline)
 
-    epi_brain_mask_pipeline = translate_pipeline(
+    epi_brain_mask_pipeline = MultiStudy.translate(
         'epi', EPIStudy.brain_mask_pipeline)
 
     def epireg_pipeline(self, **options):
