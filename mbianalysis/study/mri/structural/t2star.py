@@ -2,7 +2,7 @@ from nianalysis.requirements import fsl5_req, matlab2015_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec
 from mbianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
@@ -164,7 +164,7 @@ class T2StarStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('coils', directory_format,
                     description=("Reconstructed T2* complex image for each "
                                  "coil")),
