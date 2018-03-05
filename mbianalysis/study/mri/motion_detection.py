@@ -7,9 +7,9 @@ from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from .coregistered import CoregisteredStudy
-from nianalysis.study.combined import CombinedStudy
+from nianalysis.study.multi import MultiStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, AffineMatrixGeneration)
 from nianalysis.interfaces.converters import Dcm2niix
@@ -19,7 +19,7 @@ from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from .epi import CoregisteredEPIStudy
 
 
-class MotionDetectionStudy(CombinedStudy):
+class MotionDetectionStudy(MultiStudy):
     
     sub_study_specs = {
         'epi1': (CoregisteredEPIStudy, {
@@ -45,46 +45,46 @@ class MotionDetectionStudy(CombinedStudy):
             'ref_brain_mask': 'ref_brain_mask',
             'ref_wmseg': 'ref_wmseg'})}
     
-    epi1_motion_alignment_pipeline = CombinedStudy.translate(
+    epi1_motion_alignment_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
     
-    epi1_epireg_pipeline = CombinedStudy.translate(
+    epi1_epireg_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epireg_pipeline)
     
-    epi1_motion_mat_pipeline = CombinedStudy.translate(
+    epi1_motion_mat_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_motion_mat_pipeline)
     
-    epi1_basic_preproc_pipeline = CombinedStudy.translate(
+    epi1_basic_preproc_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
     
-    epi1_qform_transform_pipeline = CombinedStudy.translate(
+    epi1_qform_transform_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.epi_qform_transform_pipeline)
     
-    epi2_motion_alignment_pipeline = CombinedStudy.translate(
+    epi2_motion_alignment_pipeline = MultiStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_motion_alignment_pipeline)
     
-    epi2_epireg_pipeline = CombinedStudy.translate(
+    epi2_epireg_pipeline = MultiStudy.translate(
         'epi2', CoregisteredEPIStudy.epireg_pipeline)
     
-    epi2_motion_mat_pipeline = CombinedStudy.translate(
+    epi2_motion_mat_pipeline = MultiStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_motion_mat_pipeline)
     
-    epi2_basic_preproc_pipeline = CombinedStudy.translate(
+    epi2_basic_preproc_pipeline = MultiStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_basic_preproc_pipeline)
     
-    epi2_qform_transform_pipeline = CombinedStudy.translate(
+    epi2_qform_transform_pipeline = MultiStudy.translate(
         'epi2', CoregisteredEPIStudy.epi_qform_transform_pipeline)
     
-    ref_bet_pipeline = CombinedStudy.translate(
+    ref_bet_pipeline = MultiStudy.translate(
         'reference', CoregisteredEPIStudy.ref_bet_pipeline)
 
-    ref_segmentation_pipeline = CombinedStudy.translate(
+    ref_segmentation_pipeline = MultiStudy.translate(
         'reference', CoregisteredEPIStudy.ref_segmentation_pipeline)
 
-    ref_basic_preproc_pipeline = CombinedStudy.translate(
+    ref_basic_preproc_pipeline = MultiStudy.translate(
         'reference', CoregisteredEPIStudy.ref_basic_preproc_pipeline)
     
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('epi1', nifti_gz_format),
         DatasetSpec('epi2', nifti_gz_format),
         DatasetSpec('reference', nifti_gz_format),
