@@ -39,7 +39,8 @@ class T1Study(MRIStudy):
         pipeline = self.create_pipeline(
             name='segmentation',
             inputs=[DatasetSpec('primary', nifti_gz_format)],
-            outputs=[DatasetSpec('fs_recon_all', freesurfer_recon_all_format)],
+            outputs=[DatasetSpec('fs_recon_all',
+                                 freesurfer_recon_all_format)],
             description="Segment white/grey matter and csf",
             default_options={},
             version=1,
@@ -57,7 +58,7 @@ class T1Study(MRIStudy):
         pipeline.connect(recon_all, 'subject_id', join, 'filename')
         # Zip directory before returning
         zip_dir = pipeline.create_node(interface=ZipDir(), name='zip_dir')
-        zip_dir.inputs.extension = '.fs'
+        zip_dir.inputs.ext_prefix = '.fs'
         pipeline.connect(join, 'path', zip_dir, 'dirname')
         # Connect inputs/outputs
         pipeline.connect_input('primary', recon_all, 'T1_files')
