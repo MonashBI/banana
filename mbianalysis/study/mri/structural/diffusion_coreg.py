@@ -7,9 +7,9 @@ from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_data_specs
+from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
-from nianalysis.study.combined import CombinedStudy
+from nianalysis.study.multi import MultiStudy
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, AffineMatrixGeneration)
 from nianalysis.interfaces.converters import Dcm2niix
@@ -149,7 +149,7 @@ class DiffusionStudy(MRIStudy):
             'dwi_topup', 'topup_in', 'topup_ref', 'dwi_distorted', 'ped',
             'pe_angle', **options)
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('dwi_main', dicom_format),
         DatasetSpec('dwi_ref', dicom_format),
         DatasetSpec('topup_in', nifti_gz_format),
@@ -198,7 +198,7 @@ class DiffusionReferenceStudy(DiffusionStudy):
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
             'ped', 'pe_angle', 'preproc', **kwargs)
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('to_be_corrected', dicom_format),
         DatasetSpec('topup_ref', nifti_gz_format),
         DatasetSpec('to_be_corrected_nifti', nifti_gz_format,
@@ -226,7 +226,7 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
             'ped', 'pe_angle', 'preproc', **kwargs)
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('to_be_corrected', dicom_format),
         DatasetSpec('topup_ref', nifti_gz_format),
         DatasetSpec('to_be_corrected_nifti', nifti_gz_format,
@@ -254,7 +254,7 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref',
             'ped', 'pe_angle', 'preproc', **kwargs)
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('to_be_corrected', dicom_format),
         DatasetSpec('topup_ref', nifti_gz_format),
         DatasetSpec('to_be_corrected_nifti', nifti_gz_format,
@@ -265,7 +265,7 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
         inherit_from=DiffusionStudy.data_specs())
 
 
-class CoregisteredDWIStudy(CombinedStudy):
+class CoregisteredDWIStudy(MultiStudy):
 
     sub_study_specs = {
         'dwi_main': (DiffusionStudy, {
@@ -354,83 +354,83 @@ class CoregisteredDWIStudy(CombinedStudy):
             'dwi2ref_opposite_reg': 'registered',
             'dwi2ref_opposite_reg_mat': 'matrix'})}
 
-    dwi_main_dwipreproc_pipeline = CombinedStudy.translate(
+    dwi_main_dwipreproc_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.dwipreproc_pipeline)
 
-    dwi_main_bet_pipeline = CombinedStudy.translate(
+    dwi_main_bet_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.brain_mask_pipeline)
 
-    dwi_main_dcm_info_pipeline = CombinedStudy.translate(
+    dwi_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.header_info_extraction_pipeline)
 
-    dwi_opposite_topup_pipeline = CombinedStudy.translate(
+    dwi_opposite_topup_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.topup_pipeline)
 
-    dwi_opposite_dcm2nii_pipeline = CombinedStudy.translate(
+    dwi_opposite_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.dcm2nii_conversion_pipeline)
 
-    dwi_opposite_dcm_info_pipeline = CombinedStudy.translate(
+    dwi_opposite_dcm_info_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.header_info_extraction_pipeline)
 
-    dwi_opposite_bet_pipeline = CombinedStudy.translate(
+    dwi_opposite_bet_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.brain_mask_pipeline)
 
-    dwi2ref_topup_pipeline = CombinedStudy.translate(
+    dwi2ref_topup_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.topup_pipeline)
 
-    dwi2ref_dcm2nii_pipeline = CombinedStudy.translate(
+    dwi2ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.dcm2nii_conversion_pipeline)
 
-    dwi2ref_dcm_info_pipeline = CombinedStudy.translate(
+    dwi2ref_dcm_info_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.header_info_extraction_pipeline)
 
-    dwi2ref_bet_pipeline = CombinedStudy.translate(
+    dwi2ref_bet_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
 
-    dwi2ref_opposite_topup_pipeline = CombinedStudy.translate(
+    dwi2ref_opposite_topup_pipeline = MultiStudy.translate(
         'dwi2ref_opposite', DiffusionReferenceOppositeStudy.topup_pipeline)
 
-    dwi2ref_opposite_dcm2nii_pipeline = CombinedStudy.translate(
+    dwi2ref_opposite_dcm2nii_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.dcm2nii_conversion_pipeline)
 
-    dwi2ref_opposite_dcm_info_pipeline = CombinedStudy.translate(
+    dwi2ref_opposite_dcm_info_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.header_info_extraction_pipeline)
 
-    dwi2ref_opposite_bet_pipeline = CombinedStudy.translate(
+    dwi2ref_opposite_bet_pipeline = MultiStudy.translate(
         'dwi2ref_opposite',
         DiffusionReferenceOppositeStudy.brain_mask_pipeline)
 
-    ref_bet_pipeline = CombinedStudy.translate(
+    ref_bet_pipeline = MultiStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
-    ref_basic_preproc_pipeline = CombinedStudy.translate(
+    ref_basic_preproc_pipeline = MultiStudy.translate(
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    dwi_main_qform_transform_pipeline = CombinedStudy.translate(
+    dwi_main_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi_main', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi_main_rigid_registration_pipeline = CombinedStudy.translate(
+    dwi_main_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi_main', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi_opposite_qform_transform_pipeline = CombinedStudy.translate(
+    dwi_opposite_qform_transform_pipeline = MultiStudy.translate(
         'coreg_opposite', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi_opposite_rigid_registration_pipeline = CombinedStudy.translate(
+    dwi_opposite_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_opposite', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi2ref_qform_transform_pipeline = CombinedStudy.translate(
+    dwi2ref_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi2ref', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi2ref_rigid_registration_pipeline = CombinedStudy.translate(
+    dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi2ref', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi2ref_opposite_qform_transform_pipeline = CombinedStudy.translate(
+    dwi2ref_opposite_qform_transform_pipeline = MultiStudy.translate(
         'coreg_dwi2ref_opposite', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi2ref_opposite_rigid_registration_pipeline = CombinedStudy.translate(
+    dwi2ref_opposite_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi2ref_opposite',
         CoregisteredStudy.linear_registration_pipeline)
 
@@ -552,7 +552,7 @@ class CoregisteredDWIStudy(CombinedStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_data_specs(
+    _data_specs = set_specs(
         DatasetSpec('dwi_main', dicom_format),
         DatasetSpec('dwi_main_ref', dicom_format),
         DatasetSpec('dwi2ref_to_correct', dicom_format),
