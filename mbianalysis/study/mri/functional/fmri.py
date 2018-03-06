@@ -38,7 +38,8 @@ class FunctionalMRIStudy(MRIStudy):
     def dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(FunctionalMRIStudy, self).
                 dcm2nii_conversion_pipeline_factory(
-                    'rsfmri_dcm2nii', 'rs_fmri', **kwargs))
+                    'rsfmri_dcm2nii', 'rs_fmri', converter='dcm2niix',
+                    **kwargs))
 
     def feat_pipeline(self, **options):
         pipeline = self.create_pipeline(
