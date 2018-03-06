@@ -2,7 +2,7 @@ from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import nifti_gz_format
 from nianalysis.data_formats import (text_matrix_format, directory_format,
-                                     text_format)
+                                     text_format, dicom_format)
 from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from ..coregistered import CoregisteredStudy
@@ -111,7 +111,7 @@ class CoregisteredT2Study(MultiStudy):
             't2_reg_mat': 'matrix'}))
 
     _data_specs = set_specs(
-        DatasetSpec('t2', nifti_gz_format),
+        DatasetSpec('t2', dicom_format),
         DatasetSpec('t2_nifti', nifti_gz_format, t2_dcm2nii_pipeline),
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('t2_preproc', nifti_gz_format, t2_basic_preproc_pipeline),
