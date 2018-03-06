@@ -5,7 +5,7 @@ from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
 from nianalysis.requirements import (fsl5_req, mrtrix3_req, fsl509_req,
-                                     ants2_req)
+                                     ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
 from nianalysis.exceptions import NiAnalysisError
@@ -17,6 +17,7 @@ from mbianalysis.interfaces.fsl import FSLSlices
 import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
+from nianalysis.interfaces.converters import Dcm2niix
 
 
 class MRIStudy(Study):
@@ -374,12 +375,19 @@ class MRIStudy(Study):
             options=options)
 
         if converter == 'mrtrix':
-            conv = pipeline.create_node(MRConvert(), name='converter1',
-                                             requirements=[mrtrix3_req])
-        converter.inputs.out_ext = '.nii.gz'
-        pipeline.connect_input(dcm_in_name, converter, 'in_file')
-        pipeline.connect_output(
-            dcm_in_name+'_nifti', converter, 'out_file')
+            conv = pipeline.create_node(MRConvert(), name='converter',
+                                        requirements=[mrtrix3_req])
+            conv.inputs.out_ext = '.nii.gz'
+            pipeline.connect_input(dcm_in_name, conv, 'in_file')
+            pipeline.connect_output(
+                dcm_in_name+'_nifti', conv, 'out_file')
+        elif converter == 'dcm2niix':
+            conv = pipeline.create_node(Dcm2niix(), name='converter',
+                                        requirements=[dcm2niix1_req])
+            conv.inputs.compression = 'y'
+            pipeline.connect_input(dcm_in_name, conv, 'input_dir')
+            pipeline.connect_output(
+                dcm_in_name+'_nifti', conv, 'converted')
 
         pipeline.assert_connected()
         return pipeline
