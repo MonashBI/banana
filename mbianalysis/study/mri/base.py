@@ -410,16 +410,3 @@ class MRIStudy(Study):
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline)
         )
-
-
-class MotionReferenceStudy(MRIStudy):
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
-        return (super(MotionReferenceStudy, self).
-                header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
-    _data_specs = set_specs(
-        DatasetSpec('ref_motion_mats', directory_format,
-                    header_info_extraction_pipeline),
-        inherit_from=MRIStudy.data_specs())
