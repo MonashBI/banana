@@ -9,7 +9,7 @@ from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionStudy  # @IgnorePep8
-from mbianalysis.study.mri.motion_detection_ian_2 import MotionDetectionStudy
+from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
 
 class TestMC(TestCase):
 
@@ -179,30 +179,7 @@ class TestMC(TestCase):
                                               dicom_format),
                 'ute': Dataset('ute_dicom', dicom_format),
                 'fm': Dataset('fm_dicom', dicom_format),
-                'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
-                't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
-                't2_1_motion_mats': Dataset('t2_1_motion_mats', directory_format),
-                't2_2_motion_mats': Dataset('t2_2_motion_mats', directory_format),
-                't2_3_motion_mats': Dataset('t2_3_motion_mats', directory_format),
-                't2_4_motion_mats': Dataset('t2_4_motion_mats', directory_format),
-                't2_5_motion_mats': Dataset('t2_5_motion_mats', directory_format),
-                'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
-                'dwi2ref_1_opposite_motion_mats': Dataset('dwi2ref_1_opposite_motion_mats', directory_format),
-                'dwi2ref_1_motion_mats': Dataset('dwi2ref_1_motion_mats', directory_format),
-                'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
-                'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
-                'reference': Dataset('reference_dicom', dicom_format),
-                'umap': Dataset('umap', nifti_gz_format),
-                'epi1_reference': Dataset('reference', nifti_gz_format),
-                't1_1_reference': Dataset('reference', nifti_gz_format),
-                't2_1_reference': Dataset('reference', nifti_gz_format),
-                't2_2_reference': Dataset('reference', nifti_gz_format),
-                't2_3_reference': Dataset('reference', nifti_gz_format),
-                't2_4_reference': Dataset('reference', nifti_gz_format),
-                't2_5_reference': Dataset('reference', nifti_gz_format),
-                'dwi_reference': Dataset('reference', nifti_gz_format),
-                'ute_reference': Dataset('reference', nifti_gz_format),
-                'fm_reference': Dataset('reference', nifti_gz_format)})
-        study.frame2ref_alignment_pipeline().run(work_dir=self.work_dir)
+                'ref': Dataset('reference_dicom', dicom_format)})
+        study.plot_mean_displacement_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('frame2reference_mats', study.name)
         self.assertDatasetCreated('umaps_align2ref', study.name)

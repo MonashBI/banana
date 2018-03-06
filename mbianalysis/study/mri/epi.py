@@ -157,7 +157,7 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    sub_study_specs = set_specs(
+    _sub_study_specs = set_specs(
         SubStudySpec('epi', EPIStudy, {
             'epi': 'primary',
             'epi_nifti': 'primary_nifti',

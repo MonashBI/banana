@@ -406,7 +406,10 @@ class AffineMatrixGeneration(BaseInterface):
 
 class MeanDisplacementCalculationInputSpec(BaseInterfaceInputSpec):
 
-    list_inputs = traits.List(desc='List of inputs.')
+    motion_mats = traits.List(desc='List of motion mats.')
+    trs = traits.List(desc='List of repetition times.')
+    start_times = traits.List(desc='List of start times.')
+    real_durations = traits.List(desc='List of real durations.')
     reference = File(desc='Reference image.')
 
 
@@ -428,7 +431,8 @@ class MeanDisplacementCalculation(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        list_inputs = self.inputs.list_inputs
+        list_inputs = zip(self.inputs.motion_mats, self.inputs.start_times,
+                          self.inputs.real_durations, self.inputs.trs)
         ref = nib.load(self.inputs.reference)
         ref_data = ref.get_data()
         # centre of gravity
