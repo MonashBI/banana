@@ -159,27 +159,27 @@ class TestMC(TestCase):
     def test_mc_ian(self):
         study = self.create_study(
             MotionDetectionStudy, 'mc_detection_study', inputs={
-                'epi1': Dataset('epi_1_dicom', dicom_format),
-                't1_1': Dataset('t1_1_dicom', dicom_format),
-                't2_1': Dataset('t2_1_dicom', dicom_format),
-                't2_2': Dataset('t2_2_dicom', dicom_format),
-                't2_3': Dataset('t2_3_dicom', dicom_format),
-                't2_4': Dataset('t2_4_dicom', dicom_format),
-                't2_5': Dataset('t2_5_dicom', dicom_format),
-                'dwi_1_main': Dataset('dwi_1_main_dicom', dicom_format),
-                'dwi2ref_1_to_correct': Dataset('dwi2ref_1_dicom',
+                'epi1_epi': Dataset('epi_1_dicom', dicom_format),
+                't1_1_t1': Dataset('t1_1_dicom', dicom_format),
+                't2_1_t2': Dataset('t2_1_dicom', dicom_format),
+                't2_2_t2': Dataset('t2_2_dicom', dicom_format),
+                't2_3_t2': Dataset('t2_3_dicom', dicom_format),
+                't2_4_t2': Dataset('t2_4_dicom', dicom_format),
+                't2_5_t2': Dataset('t2_5_dicom', dicom_format),
+                'dwi_1_dwi_main': Dataset('dwi_1_main_dicom', dicom_format),
+                'dwi_1_dwi2ref_to_correct': Dataset('dwi2ref_1_dicom',
                                                      dicom_format),
-                'dwi2ref_1_opposite_to_correct': Dataset('dwi2ref_1_opposite_dicom',
+                'dwi_1_dwi2ref_opposite_to_correct': Dataset('dwi2ref_1_opposite_dicom',
                                                      dicom_format),
-                'dwi_1_main_ref': Dataset('dwi2ref_1_opposite_dicom',
+                'dwi_1_dwi_main_ref': Dataset('dwi2ref_1_opposite_dicom',
                                           dicom_format),
-                'dwi2ref_1_ref': Dataset('dwi2ref_1_opposite_dicom',
+                'dwi_1_dwi2ref_ref': Dataset('dwi2ref_1_opposite_dicom',
                                               dicom_format),
-                'dwi2ref_1_opposite_ref': Dataset('dwi2ref_1_dicom',
+                'dwi_1_dwi2ref_opposite_ref': Dataset('dwi2ref_1_dicom',
                                               dicom_format),
-                'ute': Dataset('ute_dicom', dicom_format),
-                'fm': Dataset('fm_dicom', dicom_format),
-                'ref': Dataset('reference_dicom', dicom_format)})
+                'ute_t1': Dataset('ute_dicom', dicom_format),
+                'fm_t2': Dataset('fm_dicom', dicom_format),
+                'ref_primary': Dataset('reference_dicom', dicom_format)})
         study.plot_mean_displacement_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('frame2reference_mats', study.name)
         self.assertDatasetCreated('umaps_align2ref', study.name)

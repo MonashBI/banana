@@ -362,7 +362,7 @@ class MRIStudy(Study):
                     'dcm2nii_conversion', 'primary', **kwargs)
 
     def dcm2nii_conversion_pipeline_factory(self, name, dcm_in_name,
-                                            **options):
+                                            converter='mrtrix', **options):
         pipeline = self.create_pipeline(
             name=name,
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
@@ -373,8 +373,9 @@ class MRIStudy(Study):
             citations=[],
             options=options)
 
-        converter = pipeline.create_node(MRConvert(), name='converter1',
-                                         requirements=[mrtrix3_req])
+        if converter == 'mrtrix':
+            conv = pipeline.create_node(MRConvert(), name='converter1',
+                                             requirements=[mrtrix3_req])
         converter.inputs.out_ext = '.nii.gz'
         pipeline.connect_input(dcm_in_name, converter, 'in_file')
         pipeline.connect_output(
