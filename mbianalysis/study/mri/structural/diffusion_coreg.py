@@ -326,23 +326,23 @@ class CoregisteredDWIStudy(MultiStudy):
     dwi2ref_bet_pipeline = MultiStudy.translate(
         'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
 
-    dwi2ref_opposite_topup_pipeline = MultiStudy.translate(
-        'dwi2ref_opposite', DiffusionReferenceOppositeStudy.topup_pipeline)
+    opposite_dwi2ref_topup_pipeline = MultiStudy.translate(
+        'opposite_dwi2ref', DiffusionReferenceOppositeStudy.topup_pipeline)
 
-    dwi2ref_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi2ref_opposite',
+    opposite_dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
+        'opposite_dwi2ref',
         DiffusionReferenceOppositeStudy.main_dcm2nii_conversion_pipeline)
 
-    dwi2ref_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi2ref_opposite',
+    opposite_dwi2ref_ref_dcm2nii_pipeline = MultiStudy.translate(
+        'opposite_dwi2ref',
         DiffusionReferenceOppositeStudy.ref_dcm2nii_conversion_pipeline)
 
-    dwi2ref_opposite_dcm_info_pipeline = MultiStudy.translate(
-        'dwi2ref_opposite',
+    opposite_dwi2ref_dcm_info_pipeline = MultiStudy.translate(
+        'opposite_dwi2ref',
         DiffusionReferenceOppositeStudy.header_info_extraction_pipeline)
 
-    dwi2ref_opposite_bet_pipeline = MultiStudy.translate(
-        'dwi2ref_opposite',
+    opposite_dwi2ref_bet_pipeline = MultiStudy.translate(
+        'opposite_dwi2ref',
         DiffusionReferenceOppositeStudy.brain_mask_pipeline)
 
     ref_bet_pipeline = MultiStudy.translate(
@@ -370,11 +370,11 @@ class CoregisteredDWIStudy(MultiStudy):
     dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
         'coreg_dwi2ref', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi2ref_opposite_qform_transform_pipeline = MultiStudy.translate(
-        'coreg_dwi2ref_opposite', CoregisteredStudy.qform_transform_pipeline)
+    opposite_dwi2ref_qform_transform_pipeline = MultiStudy.translate(
+        'coreg_opposite_dwi2ref', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi2ref_opposite_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg_dwi2ref_opposite',
+    opposite_dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
+        'coreg_opposite_dwi2ref',
         CoregisteredStudy.linear_registration_pipeline)
 
     def dwi_main_affine_mats_pipeline(self, **options):
@@ -470,16 +470,16 @@ class CoregisteredDWIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def dwi2ref_opposite_motion_mat_pipeline(self, **options):
+    def opposite_dwi2ref_motion_mat_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
-            name='dwi2ref_opposite_motion_mat_calculation',
-            inputs=[DatasetSpec('dwi2ref_opposite_reg_mat',
+            name='opposite_dwi2ref_motion_mat_calculation',
+            inputs=[DatasetSpec('opposite_dwi2ref_reg_mat',
                                 text_matrix_format),
-                    DatasetSpec('dwi2ref_opposite_qform_mat',
+                    DatasetSpec('opposite_dwi2ref_qform_mat',
                                 text_matrix_format)],
             outputs=[
-                DatasetSpec('dwi2ref_opposite_motion_mats', directory_format)],
+                DatasetSpec('opposite_dwi2ref_motion_mats', directory_format)],
             description=("DWI to ref opposite Motion matrices calculation"),
             default_options={},
             version=1,
@@ -487,11 +487,11 @@ class CoregisteredDWIStudy(MultiStudy):
             options=options)
 
         mm = pipeline.create_node(
-            MotionMatCalculation(), name='dwi2ref_opposite_motion_mats')
-        pipeline.connect_input('dwi2ref_opposite_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('dwi2ref_opposite_qform_mat', mm, 'qform_mat')
+            MotionMatCalculation(), name='opposite_dwi2ref_motion_mats')
+        pipeline.connect_input('opposite_dwi2ref_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('opposite_dwi2ref_qform_mat', mm, 'qform_mat')
         pipeline.connect_output(
-            'dwi2ref_opposite_motion_mats', mm, 'motion_mats')
+            'opposite_dwi2ref_motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -540,21 +540,21 @@ class CoregisteredDWIStudy(MultiStudy):
             'dwi_opposite_tot_duration': 'tot_duration',
             'dwi_opposite_start_time': 'start_time',
             'dwi_opposite_dcm_info': 'dcm_info'}),
-        SubStudySpec('dwi2ref_opposite', DiffusionReferenceOppositeStudy, {
-            'dwi2ref_opposite_to_correct': 'to_be_corrected',
-            'dwi2ref_opposite_to_correct_nii': 'to_be_corrected_nifti',
-            'dwi2ref_opposite_ref': 'topup_ref',
-            'dwi2ref_opposite_ref_nii': 'topup_ref_nifti',
-            'dwi2ref_opposite_brain_mask': 'brain_mask',
-            'dwi2ref_opposite_brain': 'masked',
-            'dwi2ref_opposite_preproc': 'preproc',
-            'dwi2ref_opposite_ped': 'ped',
-            'dwi2ref_opposite_pe_angle': 'pe_angle',
-            'dwi2ref_opposite_tr': 'tr',
-            'dwi2ref_opposite_real_duration': 'real_duration',
-            'dwi2ref_opposite_tot_duration': 'tot_duration',
-            'dwi2ref_opposite_start_time': 'start_time',
-            'dwi2ref_opposite_dcm_info': 'dcm_info'}),
+        SubStudySpec('opposite_dwi2ref', DiffusionReferenceOppositeStudy, {
+            'opposite_dwi2ref_to_correct': 'to_be_corrected',
+            'opposite_dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
+            'opposite_dwi2ref_ref': 'topup_ref',
+            'opposite_dwi2ref_ref_nii': 'topup_ref_nifti',
+            'opposite_dwi2ref_brain_mask': 'brain_mask',
+            'opposite_dwi2ref_brain': 'masked',
+            'opposite_dwi2ref_preproc': 'preproc',
+            'opposite_dwi2ref_ped': 'ped',
+            'opposite_dwi2ref_pe_angle': 'pe_angle',
+            'opposite_dwi2ref_tr': 'tr',
+            'opposite_dwi2ref_real_duration': 'real_duration',
+            'opposite_dwi2ref_tot_duration': 'tot_duration',
+            'opposite_dwi2ref_start_time': 'start_time',
+            'opposite_dwi2ref_dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
@@ -581,13 +581,13 @@ class CoregisteredDWIStudy(MultiStudy):
             'dwi_opposite_qform_mat': 'qform_mat',
             'dwi_opposite_reg': 'registered',
             'dwi_opposite_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_dwi2ref_opposite', CoregisteredStudy, {
-            'dwi2ref_opposite_brain': 'to_register',
+        SubStudySpec('coreg_opposite_dwi2ref', CoregisteredStudy, {
+            'opposite_dwi2ref_brain': 'to_register',
             'ref_brain': 'reference',
-            'dwi2ref_opposite_qformed': 'qformed',
-            'dwi2ref_opposite_qform_mat': 'qform_mat',
-            'dwi2ref_opposite_reg': 'registered',
-            'dwi2ref_opposite_reg_mat': 'matrix'}))
+            'opposite_dwi2ref_qformed': 'qformed',
+            'opposite_dwi2ref_qform_mat': 'qform_mat',
+            'opposite_dwi2ref_reg': 'registered',
+            'opposite_dwi2ref_reg_mat': 'matrix'}))
 
     _data_specs = set_specs(
         DatasetSpec('dwi_main', dicom_format),
@@ -596,8 +596,8 @@ class CoregisteredDWIStudy(MultiStudy):
         DatasetSpec('dwi2ref_ref', dicom_format),
         DatasetSpec('dwi_opposite_to_correct', dicom_format),
         DatasetSpec('dwi_opposite_ref', dicom_format),
-        DatasetSpec('dwi2ref_opposite_to_correct', dicom_format),
-        DatasetSpec('dwi2ref_opposite_ref', dicom_format),
+        DatasetSpec('opposite_dwi2ref_to_correct', dicom_format),
+        DatasetSpec('opposite_dwi2ref_ref', dicom_format),
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('dwi_main_brain', nifti_gz_format, dwi_main_bet_pipeline),
         DatasetSpec('dwi_main_brain_mask', nifti_gz_format,
@@ -657,26 +657,26 @@ class CoregisteredDWIStudy(MultiStudy):
                     dwi_opposite_qform_transform_pipeline),
         DatasetSpec('dwi_opposite_motion_mats', directory_format,
                     dwi_opposite_motion_mat_pipeline),
-        DatasetSpec('dwi2ref_opposite_brain', nifti_gz_format,
-                    dwi2ref_opposite_bet_pipeline),
-        DatasetSpec('dwi2ref_opposite_to_correct_nii', nifti_gz_format,
-                    dwi2ref_opposite_main_dcm2nii_pipeline),
-        DatasetSpec('dwi2ref_opposite_ref_nii', nifti_gz_format,
-                    dwi2ref_opposite_ref_dcm2nii_pipeline),
-        DatasetSpec('dwi2ref_opposite_brain_mask', nifti_gz_format,
-                    dwi2ref_opposite_bet_pipeline),
-        DatasetSpec('dwi2ref_opposite_preproc', nifti_gz_format,
-                    dwi2ref_opposite_topup_pipeline),
-        DatasetSpec('dwi2ref_opposite_reg', nifti_gz_format,
-                    dwi2ref_opposite_rigid_registration_pipeline),
-        DatasetSpec('dwi2ref_opposite_qformed', nifti_gz_format,
-                    dwi2ref_opposite_qform_transform_pipeline),
-        DatasetSpec('dwi2ref_opposite_reg_mat', text_matrix_format,
-                    dwi2ref_opposite_rigid_registration_pipeline),
-        DatasetSpec('dwi2ref_opposite_qform_mat', text_matrix_format,
-                    dwi2ref_opposite_qform_transform_pipeline),
-        DatasetSpec('dwi2ref_opposite_motion_mats', directory_format,
-                    dwi2ref_opposite_motion_mat_pipeline),
+        DatasetSpec('opposite_dwi2ref_brain', nifti_gz_format,
+                    opposite_dwi2ref_bet_pipeline),
+        DatasetSpec('opposite_dwi2ref_to_correct_nii', nifti_gz_format,
+                    opposite_dwi2ref_main_dcm2nii_pipeline),
+        DatasetSpec('opposite_dwi2ref_ref_nii', nifti_gz_format,
+                    opposite_dwi2ref_ref_dcm2nii_pipeline),
+        DatasetSpec('opposite_dwi2ref_brain_mask', nifti_gz_format,
+                    opposite_dwi2ref_bet_pipeline),
+        DatasetSpec('opposite_dwi2ref_preproc', nifti_gz_format,
+                    opposite_dwi2ref_topup_pipeline),
+        DatasetSpec('opposite_dwi2ref_reg', nifti_gz_format,
+                    opposite_dwi2ref_rigid_registration_pipeline),
+        DatasetSpec('opposite_dwi2ref_qformed', nifti_gz_format,
+                    opposite_dwi2ref_qform_transform_pipeline),
+        DatasetSpec('opposite_dwi2ref_reg_mat', text_matrix_format,
+                    opposite_dwi2ref_rigid_registration_pipeline),
+        DatasetSpec('opposite_dwi2ref_qform_mat', text_matrix_format,
+                    opposite_dwi2ref_qform_transform_pipeline),
+        DatasetSpec('opposite_dwi2ref_motion_mats', directory_format,
+                    opposite_dwi2ref_motion_mat_pipeline),
         DatasetSpec('ref_preproc', nifti_gz_format,
                     ref_basic_preproc_pipeline),
         DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
@@ -688,8 +688,8 @@ class CoregisteredDWIStudy(MultiStudy):
                     dwi_opposite_dcm_info_pipeline),
         DatasetSpec('dwi2ref_dcm_info', text_format,
                     dwi2ref_dcm_info_pipeline),
-        DatasetSpec('dwi2ref_opposite_dcm_info', text_format,
-                    dwi2ref_opposite_dcm_info_pipeline),
+        DatasetSpec('opposite_dwi2ref_dcm_info', text_format,
+                    opposite_dwi2ref_dcm_info_pipeline),
         FieldSpec('dwi_main_ped', str, dwi_main_dcm_info_pipeline),
         FieldSpec('dwi_main_pe_angle', str, dwi_main_dcm_info_pipeline),
         FieldSpec('dwi_main_tr', float, dwi_main_dcm_info_pipeline),
@@ -712,15 +712,15 @@ class CoregisteredDWIStudy(MultiStudy):
                   dwi_opposite_dcm_info_pipeline),
         FieldSpec('dwi_opposite_tot_duration', str,
                   dwi_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_opposite_ped', str,
-                  dwi2ref_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_opposite_pe_angle', str,
-                  dwi2ref_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_opposite_tr', float,
-                  dwi2ref_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_opposite_start_time', str,
-                  dwi2ref_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_opposite_real_duration', str,
-                  dwi2ref_opposite_dcm_info_pipeline),
-        FieldSpec('dwi2ref_opposite_tot_duration', str,
-                  dwi2ref_opposite_dcm_info_pipeline))
+        FieldSpec('opposite_dwi2ref_ped', str,
+                  opposite_dwi2ref_dcm_info_pipeline),
+        FieldSpec('opposite_dwi2ref_pe_angle', str,
+                  opposite_dwi2ref_dcm_info_pipeline),
+        FieldSpec('opposite_dwi2ref_tr', float,
+                  opposite_dwi2ref_dcm_info_pipeline),
+        FieldSpec('opposite_dwi2ref_start_time', str,
+                  opposite_dwi2ref_dcm_info_pipeline),
+        FieldSpec('opposite_dwi2ref_real_duration', str,
+                  opposite_dwi2ref_dcm_info_pipeline),
+        FieldSpec('opposite_dwi2ref_tot_duration', str,
+                  opposite_dwi2ref_dcm_info_pipeline))

@@ -143,8 +143,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='fix_classification',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('train_data', rdata_format,
-                                multiplicity='per_project'),
+            inputs=[DatasetSpec('train_data', rdata_format),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
             description=("Automatic classification of noisy"
@@ -173,8 +172,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='fix_regression',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('train_data', rdata_format,
-                                multiplicity='per_project'),
+            inputs=[DatasetSpec('train_data', rdata_format),
                     DatasetSpec('fix_dir', directory_format),
                     DatasetSpec('labelled_components', text_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
