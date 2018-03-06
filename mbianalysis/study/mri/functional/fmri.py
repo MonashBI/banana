@@ -6,9 +6,9 @@ from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
                                          ConvertXFM)
 from mbianalysis.interfaces.fsl import (MelodicL1FSF, FSLFIX, CheckLabelFile,
-                                       FSLFixTraining, FSLSlices)
+                                        FSLFixTraining, FSLSlices)
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.dataset import DatasetSpec
+from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import set_specs
 from ..base import MRIStudy
 from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
@@ -17,7 +17,7 @@ from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
-    text_format)
+    text_format, dicom_format)
 from mbianalysis.interfaces.ants import AntsRegSyn
 from mbianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
@@ -30,13 +30,23 @@ from nipype.interfaces.utility.base import IdentityInterface
 
 class FunctionalMRIStudy(MRIStudy):
 
+    def header_info_extraction_pipeline(self, **kwargs):
+        return (super(FunctionalMRIStudy, self).
+                header_info_extraction_pipeline_factory(
+                    'rs_fmri', **kwargs))
+
+    def dcm2nii_conversion_pipeline(self, **kwargs):
+        return (super(FunctionalMRIStudy, self).
+                dcm2nii_conversion_pipeline_factory(
+                    'rsfmri_dcm2nii', 'rs_fmri', **kwargs))
+
     def feat_pipeline(self, **options):
         pipeline = self.create_pipeline(
             name='feat',
             inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
                     DatasetSpec('field_map_phase', nifti_gz_format),
                     DatasetSpec('t1', nifti_gz_format),
-                    DatasetSpec('rs_fmri', nifti_gz_format),
+                    DatasetSpec('rs_fmri_nifti', nifti_gz_format),
                     DatasetSpec('rs_fmri_ref', nifti_gz_format)],
             outputs=[DatasetSpec('feat_dir', directory_format)],
             description="MELODIC Level 1",
@@ -75,7 +85,7 @@ class FunctionalMRIStudy(MRIStudy):
         ml1.inputs.unwarp_dir = "x"
         ml1.inputs.sfwhm = 3
         ml1.inputs.output_type = 'NIFTI_GZ'
-        pipeline.connect_input('rs_fmri', ml1, 'fmri')
+        pipeline.connect_input('rs_fmri_nifti', ml1, 'fmri')
         pipeline.connect_input('rs_fmri_ref', ml1, 'fmri_ref')
 #        ml1.inputs.fmap_mag = [0]
 #        ml1.inputs.structural = struct[0]
@@ -326,7 +336,8 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline = self.create_pipeline(
             name='MelodicL1',
-            inputs=[DatasetSpec('filtered_data', nifti_gz_format)],
+            inputs=[DatasetSpec('filtered_data', nifti_gz_format),
+                    FieldSpec('rsfmri_tr', float)],
             outputs=[DatasetSpec('melodic_ica', directory_format)],
             description=("python implementation of Melodic"),
             default_options={'brain_thresh_percent': 5},
@@ -338,12 +349,13 @@ class FunctionalMRIStudy(MRIStudy):
                                    requirements=[fsl5_req])
         mel.inputs.no_bet = True
         mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
-        mel.inputs.tr_sec = 2.45
+#         mel.inputs.tr_sec = 2.45
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
         mel.inputs.out_dir = 'melodic.ica'
 #         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
+        pipeline.connect_input('rsfmri_tr', mel, 'tr_sec')
         pipeline.connect_input('filtered_data', mel, 'in_files')
 
         pipeline.connect_output('melodic_ica', mel, 'out_dir')
@@ -357,8 +369,9 @@ class FunctionalMRIStudy(MRIStudy):
             name='rsfMRI_filtering',
             inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
                     DatasetSpec('field_map_phase', nifti_gz_format),
-                    DatasetSpec('rs_fmri', nifti_gz_format),
-                    DatasetSpec('betted_file', nifti_gz_format)],
+                    DatasetSpec('rs_fmri_nifti', nifti_gz_format),
+                    DatasetSpec('betted_file', nifti_gz_format),
+                    FieldSpec('rsfmri_tr', float)],
             outputs=[DatasetSpec('filtered_data', nifti_gz_format),
                      DatasetSpec('hires2example', text_matrix_format),
                      DatasetSpec('rsfmri_mask', nifti_gz_format),
@@ -382,7 +395,7 @@ class FunctionalMRIStudy(MRIStudy):
         bet_rsfmri.inputs.robust = True
         bet_rsfmri.inputs.frac = 0.4
         bet_rsfmri.inputs.mask = True
-        pipeline.connect_input('rs_fmri', bet_rsfmri, 'in_file')
+        pipeline.connect_input('rs_fmri_nifti', bet_rsfmri, 'in_file')
 
         create_fmap = pipeline.create_node(PrepareFieldmap(), name="prepfmap",
                                            wall_time=5,
@@ -397,7 +410,7 @@ class FunctionalMRIStudy(MRIStudy):
         fugue.inputs.dwell_time = 0.000275
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
-        pipeline.connect_input('rs_fmri', fugue, 'in_file')
+        pipeline.connect_input('rs_fmri_nifti', fugue, 'in_file')
 
         flirt_t1 = pipeline.create_node(FLIRT(), name='FLIRT_T1', wall_time=5,
                                         requirements=[fsl5_req])
@@ -423,10 +436,11 @@ class FunctionalMRIStudy(MRIStudy):
         filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
                                     requirements=[afni_req])
         filt.inputs.stopband = (0, 0.01)
-        filt.inputs.delta_t = 2.45
+#         filt.inputs.delta_t = 2.45
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
+        pipeline.connect_input('rsfmri_tr', filt, 'delta_t')
         pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
         pipeline.connect(bet_rsfmri, 'mask_file', filt, 'mask')
 
@@ -525,7 +539,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('betted_file', nifti_gz_format),
                     DatasetSpec('mc_par', par_format),
                     DatasetSpec('rsfmri_mask', nifti_gz_format),
-                    DatasetSpec('rs_fmri', nifti_gz_format)],
+                    DatasetSpec('rs_fmri_nifti', nifti_gz_format)],
             outputs=[DatasetSpec('fix_dir', directory_format)],
             description=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
@@ -605,7 +619,7 @@ class FunctionalMRIStudy(MRIStudy):
         meanfunc = pipeline.create_node(
             ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
             wall_time=5, requirements=[fsl509_req])
-        pipeline.connect_input('rs_fmri', meanfunc, 'in_file')
+        pipeline.connect_input('rs_fmri_nifti', meanfunc, 'in_file')
 
         cp6 = pipeline.create_node(CopyFile(), name='copyfile6', wall_time=5)
         cp6.inputs.dst = 'mean_func.nii.gz'
@@ -674,7 +688,8 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='group_melodic',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('smoothed_file', nifti_gz_format)],
+            inputs=[DatasetSpec('smoothed_file', nifti_gz_format),
+                    FieldSpec('rsfmri_tr', float)],
             outputs=[DatasetSpec('group_melodic', directory_format)],
             description=("Group ICA"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
@@ -691,7 +706,7 @@ class FunctionalMRIStudy(MRIStudy):
         gica.inputs.no_bet = True
         gica.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
         gica.inputs.bg_image = pipeline.option('MNI_template')
-        gica.inputs.tr_sec = 2.45
+#         gica.inputs.tr_sec = 2.45
         gica.inputs.dim = 15
         gica.inputs.report = True
         gica.inputs.out_stats = True
@@ -701,6 +716,7 @@ class FunctionalMRIStudy(MRIStudy):
         gica.inputs.out_dir = 'melodic.gica'
 #         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
         pipeline.connect_input('smoothed_file', gica, 'in_files')
+        pipeline.connect_input('rsfmri_tr', gica, 'tr_sec')
 
         pipeline.connect_output('group_melodic', gica, 'out_dir')
 
@@ -711,7 +727,9 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('field_map_mag', nifti_gz_format),
         DatasetSpec('field_map_phase', nifti_gz_format),
         DatasetSpec('t1', nifti_gz_format),
-        DatasetSpec('rs_fmri', nifti_gz_format),
+        DatasetSpec('rs_fmri', dicom_format),
+        DatasetSpec('rs_fmri_nifti', nifti_gz_format,
+                    dcm2nii_conversion_pipeline),
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format, TrainingFix,
                     multiplicity='per_project'),
@@ -737,4 +755,14 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('fix_dir', targz_format, PrepareFix),
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
         DatasetSpec('group_melodic', targz_format, groupMelodic,
-                    multiplicity='per_visit'))
+                    multiplicity='per_visit'),
+        FieldSpec('rsfmri_tr', dtype=float,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('rsfmri_start_time', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('rsfmri_real_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('rsfmri_tot_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('rsfmri_ped', str, pipeline=header_info_extraction_pipeline),
+        inherit_from=MRIStudy.data_specs())
