@@ -134,14 +134,14 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def epi_motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
-            name='epi_motion_mat_calculation',
+            name='motion_mat_calculation',
             inputs=[DatasetSpec('epi_epireg_mat', text_matrix_format),
                     DatasetSpec('epi_qform_mat', text_matrix_format),
                     DatasetSpec('epi_moco_mat', directory_format)],
-            outputs=[DatasetSpec('epi_motion_mats', directory_format)],
+            outputs=[DatasetSpec('motion_mats', directory_format)],
             description=("EPI Motion matrices calculation"),
             default_options={},
             version=1,
@@ -149,11 +149,11 @@ class CoregisteredEPIStudy(MultiStudy):
             options=options)
 
         mm = pipeline.create_node(
-            MotionMatCalculation(), name='epi_motion_mats')
+            MotionMatCalculation(), name='motion_mats')
         pipeline.connect_input('epi_epireg_mat', mm, 'reg_mat')
         pipeline.connect_input('epi_qform_mat', mm, 'qform_mat')
         pipeline.connect_input('epi_moco_mat', mm, 'align_mats')
-        pipeline.connect_output('epi_motion_mats', mm, 'motion_mats')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -212,8 +212,8 @@ class CoregisteredEPIStudy(MultiStudy):
         DatasetSpec('epi_epireg', nifti_gz_format, epireg_pipeline),
         DatasetSpec('epi_epireg_mat', text_matrix_format,
                     epireg_pipeline),
-        DatasetSpec('epi_motion_mats', directory_format,
-                    epi_motion_mat_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
         DatasetSpec('epi_moco', nifti_gz_format,
                     epi_motion_alignment_pipeline),
         DatasetSpec('epi_moco_mat', directory_format,
