@@ -339,7 +339,7 @@ class CoregisteredDWIStudy(MultiStudy):
             name='motion_mat_calculation',
             inputs=[DatasetSpec('dwi_main_reg_mat', text_matrix_format),
                     DatasetSpec('dwi_main_qform_mat', text_matrix_format),
-                    DatasetSpec('dwi_main_affine_mats', directory_format)],
+                    DatasetSpec('affine_mats', directory_format)],
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
             description=("motion matrices calculation"),
@@ -352,7 +352,7 @@ class CoregisteredDWIStudy(MultiStudy):
             MotionMatCalculation(), name='dwi_main_motion_mats')
         pipeline.connect_input('dwi_main_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('dwi_main_qform_mat', mm, 'qform_mat')
-        pipeline.connect_input('dwi_main_affine_mats', mm, 'align_mats')
+        pipeline.connect_input('affine_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
