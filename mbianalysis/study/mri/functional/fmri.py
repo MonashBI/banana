@@ -336,7 +336,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='MelodicL1',
             inputs=[DatasetSpec('filtered_data', nifti_gz_format),
-                    FieldSpec('rsfmri_tr', float)],
+                    FieldSpec('tr', float)],
             outputs=[DatasetSpec('melodic_ica', directory_format)],
             description=("python implementation of Melodic"),
             default_options={'brain_thresh_percent': 5},
@@ -354,7 +354,7 @@ class FunctionalMRIStudy(MRIStudy):
         mel.inputs.mm_thresh = 0.5
         mel.inputs.out_dir = 'melodic.ica'
 #         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
-        pipeline.connect_input('rsfmri_tr', mel, 'tr_sec')
+        pipeline.connect_input('tr', mel, 'tr_sec')
         pipeline.connect_input('filtered_data', mel, 'in_files')
 
         pipeline.connect_output('melodic_ica', mel, 'out_dir')
@@ -370,7 +370,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('field_map_phase', nifti_gz_format),
                     DatasetSpec('rs_fmri_nifti', nifti_gz_format),
                     DatasetSpec('betted_file', nifti_gz_format),
-                    FieldSpec('rsfmri_tr', float)],
+                    FieldSpec('tr', float)],
             outputs=[DatasetSpec('filtered_data', nifti_gz_format),
                      DatasetSpec('hires2example', text_matrix_format),
                      DatasetSpec('rsfmri_mask', nifti_gz_format),
@@ -439,7 +439,7 @@ class FunctionalMRIStudy(MRIStudy):
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
-        pipeline.connect_input('rsfmri_tr', filt, 'delta_t')
+        pipeline.connect_input('tr', filt, 'delta_t')
         pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
         pipeline.connect(bet_rsfmri, 'mask_file', filt, 'mask')
 
@@ -755,13 +755,5 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
         DatasetSpec('group_melodic', targz_format, groupMelodic,
                     multiplicity='per_visit'),
-        FieldSpec('rsfmri_tr', dtype=float,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('rsfmri_start_time', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('rsfmri_real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('rsfmri_tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('rsfmri_ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('tr', float, header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())
