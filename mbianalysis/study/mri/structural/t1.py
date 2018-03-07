@@ -9,7 +9,7 @@ from nianalysis.data_formats import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     directory_format)
 from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.utils import ZipDir, JoinPath
+from nianalysis.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
@@ -56,13 +56,9 @@ class T1Study(MRIStudy):
         join = pipeline.create_node(interface=JoinPath(), name='join')
         pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')
         pipeline.connect(recon_all, 'subject_id', join, 'filename')
-        # Zip directory before returning
-        zip_dir = pipeline.create_node(interface=ZipDir(), name='zip_dir')
-        zip_dir.inputs.ext_prefix = '.fs'
-        pipeline.connect(join, 'path', zip_dir, 'dirname')
         # Connect inputs/outputs
         pipeline.connect_input('primary', recon_all, 'T1_files')
-        pipeline.connect_output('fs_recon_all', zip_dir, 'zipped')
+        pipeline.connect_output('fs_recon_all', join, 'path')
         pipeline.assert_connected()
         return pipeline
 
