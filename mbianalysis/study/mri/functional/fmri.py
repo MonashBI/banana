@@ -337,7 +337,7 @@ class FunctionalMRIStudy(MRIStudy):
             name='MelodicL1',
             inputs=[DatasetSpec('filtered_data', nifti_gz_format),
                     FieldSpec('tr', float)],
-            outputs=[DatasetSpec('melodic_ica', ica_format)],
+            outputs=[DatasetSpec('melodic_ica', directory_format)],
             description=("python implementation of Melodic"),
             default_options={'brain_thresh_percent': 5},
             version=1,
@@ -352,7 +352,7 @@ class FunctionalMRIStudy(MRIStudy):
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
-        mel.inputs.out_dir = 'melodic.ica'
+        mel.inputs.out_dir = 'melodic_ica'
 #         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
         pipeline.connect_input('tr', mel, 'tr_sec')
         pipeline.connect_input('filtered_data', mel, 'in_files')
@@ -530,7 +530,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='prepare_fix',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('melodic_ica', ica_format),
+            inputs=[DatasetSpec('melodic_ica', directory_format),
                     # DatasetSpec('train_data', rdata_format),
                     DatasetSpec('filtered_data', nifti_gz_format),
                     DatasetSpec('hires2example', text_matrix_format),
@@ -749,7 +749,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('mc_par', par_format, rsfMRI_filtering),
         DatasetSpec('rsfmri_mask', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
-        DatasetSpec('melodic_ica', ica_format, MelodicL1),
+        DatasetSpec('melodic_ica', zip_format, MelodicL1),
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
         DatasetSpec('fix_dir', targz_format, PrepareFix),
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
