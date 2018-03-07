@@ -94,11 +94,11 @@ class MotionDetectionStudy(MultiStudy):
             try:
                 inputs.append(
                     self.dataset(sub_study_spec.inverse_map('motion_mats')))
-                inputs.append(self.field(sub_study_spec.inverse_map('tr')))
+                inputs.append(self.dataset(sub_study_spec.inverse_map('tr')))
                 inputs.append(
-                    self.field(sub_study_spec.inverse_map('start_time')))
+                    self.dataset(sub_study_spec.inverse_map('start_time')))
                 inputs.append(
-                    self.field(sub_study_spec.inverse_map('real_duration')))
+                    self.dataset(sub_study_spec.inverse_map('real_duration')))
                 sub_study_names.append(sub_study_spec.name)
             except NiAnalysisNameError:
                 continue  # Sub study doesn't have motion mat
