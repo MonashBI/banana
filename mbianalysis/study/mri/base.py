@@ -394,7 +394,8 @@ class MRIStudy(Study):
 
     _data_specs = set_specs(
         DatasetSpec('primary', dicom_format),
-        DatasetSpec('primary_nifti', nifti_gz_format),
+        DatasetSpec('primary_nifti', nifti_gz_format,
+                    dcm2nii_conversion_pipeline),
         DatasetSpec('dicom_dwi', dicom_format),
         DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
