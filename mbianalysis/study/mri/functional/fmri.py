@@ -17,7 +17,7 @@ from nianalysis.citations import fsl_cite
 from nianalysis.data_formats import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
-    text_format, dicom_format)
+    text_format, dicom_format, ica_format)
 from mbianalysis.interfaces.ants import AntsRegSyn
 from mbianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
@@ -337,7 +337,7 @@ class FunctionalMRIStudy(MRIStudy):
             name='MelodicL1',
             inputs=[DatasetSpec('filtered_data', nifti_gz_format),
                     FieldSpec('tr', float)],
-            outputs=[DatasetSpec('melodic_ica', directory_format)],
+            outputs=[DatasetSpec('melodic_ica', ica_format)],
             description=("python implementation of Melodic"),
             default_options={'brain_thresh_percent': 5},
             version=1,
@@ -530,7 +530,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='prepare_fix',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('melodic_ica', directory_format),
+            inputs=[DatasetSpec('melodic_ica', ica_format),
                     # DatasetSpec('train_data', rdata_format),
                     DatasetSpec('filtered_data', nifti_gz_format),
                     DatasetSpec('hires2example', text_matrix_format),
@@ -689,7 +689,7 @@ class FunctionalMRIStudy(MRIStudy):
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('smoothed_file', nifti_gz_format),
                     FieldSpec('rsfmri_tr', float)],
-            outputs=[DatasetSpec('group_melodic', directory_format)],
+            outputs=[DatasetSpec('group_melodic', ica_format)],
             description=("Group ICA"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
                              'standard/MNI152_T1_2mm_brain.nii.gz',
@@ -712,7 +712,7 @@ class FunctionalMRIStudy(MRIStudy):
         gica.inputs.mm_thresh = 0.5
         gica.inputs.sep_vn = True
         gica.inputs.mask = pipeline.option('MNI_template_mask')
-        gica.inputs.out_dir = 'melodic.gica'
+        gica.inputs.out_dir = 'group_melodic.ica'
 #         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
         pipeline.connect_input('smoothed_file', gica, 'in_files')
         pipeline.connect_input('rsfmri_tr', gica, 'tr_sec')
@@ -749,11 +749,11 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('mc_par', par_format, rsfMRI_filtering),
         DatasetSpec('rsfmri_mask', nifti_gz_format, rsfMRI_filtering),
         DatasetSpec('unwarped_file', nifti_gz_format, rsfMRI_filtering),
-        DatasetSpec('melodic_ica', zip_format, MelodicL1),
+        DatasetSpec('melodic_ica', ica_format, MelodicL1),
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
         DatasetSpec('fix_dir', targz_format, PrepareFix),
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
-        DatasetSpec('group_melodic', targz_format, groupMelodic,
+        DatasetSpec('group_melodic', ica_format, groupMelodic,
                     multiplicity='per_visit'),
         FieldSpec('tr', float, header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())
