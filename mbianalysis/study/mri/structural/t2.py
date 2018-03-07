@@ -62,13 +62,13 @@ class CoregisteredT2Study(MultiStudy):
     t2_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', CoregisteredStudy.linear_registration_pipeline)
 
-    def t2_motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
-            name='t2_motion_mat_calculation',
+            name='motion_mat_calculation',
             inputs=[DatasetSpec('t2_reg_mat', text_matrix_format),
                     DatasetSpec('t2_qform_mat', text_matrix_format)],
-            outputs=[DatasetSpec('t2_motion_mats', directory_format)],
+            outputs=[DatasetSpec('motion_mats', directory_format)],
             description=("T2w Motion matrices calculation"),
             default_options={},
             version=1,
@@ -76,10 +76,10 @@ class CoregisteredT2Study(MultiStudy):
             options=options)
 
         mm = pipeline.create_node(
-            MotionMatCalculation(), name='t2_motion_mats')
+            MotionMatCalculation(), name='motion_mats')
         pipeline.connect_input('t2_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('t2_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output('t2_motion_mats', mm, 'motion_mats')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
 
@@ -130,8 +130,8 @@ class CoregisteredT2Study(MultiStudy):
         DatasetSpec('t2_reg', nifti_gz_format, t2_rigid_registration_pipeline),
         DatasetSpec('t2_reg_mat', text_matrix_format,
                     t2_rigid_registration_pipeline),
-        DatasetSpec('t2_motion_mats', directory_format,
-                    t2_motion_mat_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
         DatasetSpec('t2_dcm_info', text_format, t2_dcm_info_pipeline),
         FieldSpec('t2_ped', str, t2_dcm_info_pipeline),
         FieldSpec('t2_pe_angle', str, t2_dcm_info_pipeline),

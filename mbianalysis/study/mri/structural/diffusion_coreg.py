@@ -295,6 +295,248 @@ class CoregisteredDWIStudy(MultiStudy):
     dwi_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_main', DiffusionStudy.header_info_extraction_pipeline)
 
+    ref_bet_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.brain_mask_pipeline)
+
+    ref_basic_preproc_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.basic_preproc_pipeline,
+        override_default_options={'resolution': [1]})
+
+    dwi_main_qform_transform_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.qform_transform_pipeline)
+
+    dwi_main_rigid_registration_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.linear_registration_pipeline)
+
+    def affine_mats_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='affine_mat_generation',
+            inputs=[DatasetSpec('dwi_main_preproc', nifti_gz_format),
+                    DatasetSpec('dwi_main_eddy_par', eddy_par_format)],
+            outputs=[
+                DatasetSpec('affine_mats', directory_format)],
+            description=("Generation of the affine matrices for the main dwi "
+                         "sequence starting from eddy motion parameters"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        aff_mat = pipeline.create_node(AffineMatrixGeneration(),
+                                       name='gen_aff_mats')
+        pipeline.connect_input('dwi_main_preproc', aff_mat, 'reference_image')
+        pipeline.connect_input(
+            'dwi_main_eddy_par', aff_mat, 'motion_parameters')
+        pipeline.connect_output(
+            'affine_mats', aff_mat, 'affine_matrices')
+        pipeline.assert_connected()
+        return pipeline
+
+    def motion_mat_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=[DatasetSpec('dwi_main_reg_mat', text_matrix_format),
+                    DatasetSpec('dwi_main_qform_mat', text_matrix_format),
+                    DatasetSpec('dwi_main_affine_mats', directory_format)],
+            outputs=[
+                DatasetSpec('motion_mats', directory_format)],
+            description=("motion matrices calculation"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='dwi_main_motion_mats')
+        pipeline.connect_input('dwi_main_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('dwi_main_qform_mat', mm, 'qform_mat')
+        pipeline.connect_input('dwi_main_affine_mats', mm, 'align_mats')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('dwi_main', DiffusionStudy, {
+            'dwi_main': 'dwi_main',
+            'dwi_main_ref': 'dwi_ref',
+            'dwi_main_brain_mask': 'brain_mask',
+            'dwi_main_brain': 'masked',
+            'dwi_main_preproc': 'preproc',
+            'dwi_main_eddy_par': 'eddy_par',
+            'ped': 'ped',
+            'pe_angle': 'pe_angle',
+            'tr': 'tr',
+            'real_duration': 'real_duration',
+            'tot_duration': 'tot_duration',
+            'start_time': 'start_time',
+            'dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask'}),
+        SubStudySpec('coreg', CoregisteredStudy, {
+            'dwi_main_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi_main_qformed': 'qformed',
+            'dwi_main_qform_mat': 'qform_mat',
+            'dwi_main_reg': 'registered',
+            'dwi_main_reg_mat': 'matrix'}))
+
+    _data_specs = set_specs(
+        DatasetSpec('dwi_main', dicom_format),
+        DatasetSpec('dwi_main_ref', dicom_format),
+        DatasetSpec('reference', nifti_gz_format),
+        DatasetSpec('dwi_main_brain', nifti_gz_format, dwi_main_bet_pipeline),
+        DatasetSpec('dwi_main_brain_mask', nifti_gz_format,
+                    dwi_main_bet_pipeline),
+        DatasetSpec('dwi_main_preproc', nifti_gz_format,
+                    dwi_main_dwipreproc_pipeline),
+        DatasetSpec('dwi_main_reg', nifti_gz_format,
+                    dwi_main_rigid_registration_pipeline),
+        DatasetSpec('dwi_main_qformed', nifti_gz_format,
+                    dwi_main_qform_transform_pipeline),
+        DatasetSpec('dwi_main_reg_mat', text_matrix_format,
+                    dwi_main_rigid_registration_pipeline),
+        DatasetSpec('dwi_main_qform_mat', text_matrix_format,
+                    dwi_main_qform_transform_pipeline),
+        DatasetSpec('dwi_main_eddy_par', eddy_par_format,
+                    dwi_main_dwipreproc_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
+        DatasetSpec('affine_mats', directory_format,
+                    affine_mats_pipeline),
+        DatasetSpec('dcm_info', text_format,
+                    dwi_main_dcm_info_pipeline),
+        FieldSpec('ped', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('pe_angle', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('tr', float, dwi_main_dcm_info_pipeline),
+        FieldSpec('start_time', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('real_duration', str, dwi_main_dcm_info_pipeline),
+        FieldSpec('tot_duration', str, dwi_main_dcm_info_pipeline))
+
+
+class CoregisteredDiffusionReferenceStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
+
+    dwi2ref_topup_pipeline = MultiStudy.translate(
+        'dwi2ref', DiffusionReferenceStudy.topup_pipeline)
+
+    dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
+        'dwi2ref', DiffusionReferenceStudy.main_dcm2nii_conversion_pipeline)
+
+    dwi2ref_ref_dcm2nii_pipeline = MultiStudy.translate(
+        'dwi2ref', DiffusionReferenceStudy.ref_dcm2nii_conversion_pipeline)
+
+    dwi2ref_dcm_info_pipeline = MultiStudy.translate(
+        'dwi2ref', DiffusionReferenceStudy.header_info_extraction_pipeline)
+
+    dwi2ref_bet_pipeline = MultiStudy.translate(
+        'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
+
+    ref_bet_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.brain_mask_pipeline)
+
+    ref_basic_preproc_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.basic_preproc_pipeline,
+        override_default_options={'resolution': [1]})
+
+    dwi2ref_qform_transform_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.qform_transform_pipeline)
+
+    dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.linear_registration_pipeline)
+
+    def motion_mat_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=[DatasetSpec('dwi2ref_reg_mat', text_matrix_format),
+                    DatasetSpec('dwi2ref_qform_mat', text_matrix_format)],
+            outputs=[
+                DatasetSpec('motion_mats', directory_format)],
+            description=("DWI to reference Motion matrices calculation"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='dwi2ref_motion_mats')
+        pipeline.connect_input('dwi2ref_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('dwi2ref_qform_mat', mm, 'qform_mat')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('dwi2ref', DiffusionReferenceStudy, {
+            'dwi2ref_to_correct': 'to_be_corrected',
+            'dwi2ref_ref': 'topup_ref',
+            'dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
+            'dwi2ref_ref_nii': 'topup_ref_nifti',
+            'dwi2ref_brain_mask': 'brain_mask',
+            'dwi2ref_brain': 'masked',
+            'dwi2ref_preproc': 'preproc',
+            'ped': 'ped',
+            'pe_angle': 'pe_angle',
+            'tr': 'tr',
+            'real_duration': 'real_duration',
+            'tot_duration': 'tot_duration',
+            'start_time': 'start_time',
+            'dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask'}),
+        SubStudySpec('coreg', CoregisteredStudy, {
+            'dwi2ref_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi2ref_qformed': 'qformed',
+            'dwi2ref_qform_mat': 'qform_mat',
+            'dwi2ref_reg': 'registered',
+            'dwi2ref_reg_mat': 'matrix'}))
+
+    _data_specs = set_specs(
+        DatasetSpec('dwi2ref_to_correct', dicom_format),
+        DatasetSpec('dwi2ref_ref', dicom_format),
+        DatasetSpec('dwi2ref_brain', nifti_gz_format, dwi2ref_bet_pipeline),
+        DatasetSpec('dwi2ref_brain_mask', nifti_gz_format,
+                    dwi2ref_bet_pipeline),
+        DatasetSpec('dwi2ref_preproc', nifti_gz_format,
+                    dwi2ref_topup_pipeline),
+        DatasetSpec('dwi2ref_to_correct_nii', nifti_gz_format,
+                    dwi2ref_main_dcm2nii_pipeline),
+        DatasetSpec('dwi2ref_ref_nii', nifti_gz_format,
+                    dwi2ref_ref_dcm2nii_pipeline),
+        DatasetSpec('dwi2ref_reg', nifti_gz_format,
+                    dwi2ref_rigid_registration_pipeline),
+        DatasetSpec('dwi2ref_qformed', nifti_gz_format,
+                    dwi2ref_qform_transform_pipeline),
+        DatasetSpec('dwi2ref_reg_mat', text_matrix_format,
+                    dwi2ref_rigid_registration_pipeline),
+        DatasetSpec('dwi2ref_qform_mat', text_matrix_format,
+                    dwi2ref_qform_transform_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
+        DatasetSpec('dcm_info', text_format,
+                    dwi2ref_dcm_info_pipeline),
+        FieldSpec('ped', str, dwi2ref_dcm_info_pipeline),
+        FieldSpec('pe_angle', str, dwi2ref_dcm_info_pipeline),
+        FieldSpec('tr', float, dwi2ref_dcm_info_pipeline),
+        FieldSpec('start_time', str, dwi2ref_dcm_info_pipeline),
+        FieldSpec('real_duration', str, dwi2ref_dcm_info_pipeline),
+        FieldSpec('tot_duration', str, dwi2ref_dcm_info_pipeline))
+
+
+class CoregisteredDiffusionOppositeStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
+
     dwi_opposite_topup_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.topup_pipeline)
 
@@ -311,20 +553,111 @@ class CoregisteredDWIStudy(MultiStudy):
     dwi_opposite_bet_pipeline = MultiStudy.translate(
         'dwi_opposite', DiffusionOppositeStudy.brain_mask_pipeline)
 
-    dwi2ref_topup_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.topup_pipeline)
+    ref_bet_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.brain_mask_pipeline)
 
-    dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.main_dcm2nii_conversion_pipeline)
+    ref_basic_preproc_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.basic_preproc_pipeline,
+        override_default_options={'resolution': [1]})
 
-    dwi2ref_ref_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.ref_dcm2nii_conversion_pipeline)
+    dwi_opposite_qform_transform_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.qform_transform_pipeline)
 
-    dwi2ref_dcm_info_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.header_info_extraction_pipeline)
+    dwi_opposite_rigid_registration_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.linear_registration_pipeline)
 
-    dwi2ref_bet_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
+    def motion_mat_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=[DatasetSpec('dwi_opposite_reg_mat', text_matrix_format),
+                    DatasetSpec('dwi_opposite_qform_mat', text_matrix_format)],
+            outputs=[
+                DatasetSpec('motion_mats', directory_format)],
+            description=("DWI opposite Motion matrices calculation"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='dwi_opposite_motion_mats')
+        pipeline.connect_input('dwi_opposite_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('dwi_opposite_qform_mat', mm, 'qform_mat')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('dwi_opposite', DiffusionOppositeStudy, {
+            'dwi_opposite_to_correct': 'to_be_corrected',
+            'dwi_opposite_ref': 'topup_ref',
+            'dwi_opposite_to_correct_nii': 'to_be_corrected_nifti',
+            'dwi_opposite_ref_nii': 'topup_ref_nifti',
+            'dwi_opposite_brain_mask': 'brain_mask',
+            'dwi_opposite_brain': 'masked',
+            'dwi_opposite_preproc': 'preproc',
+            'ped': 'ped',
+            'pe_angle': 'pe_angle',
+            'tr': 'tr',
+            'real_duration': 'real_duration',
+            'tot_duration': 'tot_duration',
+            'start_time': 'start_time',
+            'dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask'}),
+        SubStudySpec('coreg', CoregisteredStudy, {
+            'dwi_opposite_brain': 'to_register',
+            'ref_brain': 'reference',
+            'dwi_opposite_qformed': 'qformed',
+            'dwi_opposite_qform_mat': 'qform_mat',
+            'dwi_opposite_reg': 'registered',
+            'dwi_opposite_reg_mat': 'matrix'}))
+
+    _data_specs = set_specs(
+        DatasetSpec('dwi_opposite_to_correct', dicom_format),
+        DatasetSpec('dwi_opposite_ref', dicom_format),
+        DatasetSpec('reference', nifti_gz_format),
+        DatasetSpec('dwi_opposite_brain', nifti_gz_format,
+                    dwi_opposite_bet_pipeline),
+        DatasetSpec('dwi_opposite_to_correct_nii', nifti_gz_format,
+                    dwi_opposite_main_dcm2nii_pipeline),
+        DatasetSpec('dwi_opposite_ref_nii', nifti_gz_format,
+                    dwi_opposite_ref_dcm2nii_pipeline),
+        DatasetSpec('dwi_opposite_brain_mask', nifti_gz_format,
+                    dwi_opposite_bet_pipeline),
+        DatasetSpec('dwi_opposite_preproc', nifti_gz_format,
+                    dwi_opposite_topup_pipeline),
+        DatasetSpec('dwi_opposite_reg', nifti_gz_format,
+                    dwi_opposite_rigid_registration_pipeline),
+        DatasetSpec('dwi_opposite_qformed', nifti_gz_format,
+                    dwi_opposite_qform_transform_pipeline),
+        DatasetSpec('dwi_opposite_reg_mat', text_matrix_format,
+                    dwi_opposite_rigid_registration_pipeline),
+        DatasetSpec('dwi_opposite_qform_mat', text_matrix_format,
+                    dwi_opposite_qform_transform_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
+        DatasetSpec('dcm_info', text_format,
+                    dwi_opposite_dcm_info_pipeline),
+        FieldSpec('ped', str, dwi_opposite_dcm_info_pipeline),
+        FieldSpec('pe_angle', str,
+                  dwi_opposite_dcm_info_pipeline),
+        FieldSpec('tr', float, dwi_opposite_dcm_info_pipeline),
+        FieldSpec('start_time', str,
+                  dwi_opposite_dcm_info_pipeline),
+        FieldSpec('real_duration', str,
+                  dwi_opposite_dcm_info_pipeline),
+        FieldSpec('tot_duration', str,
+                  dwi_opposite_dcm_info_pipeline))
+
+
+class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
 
     opposite_dwi2ref_topup_pipeline = MultiStudy.translate(
         'opposite_dwi2ref', DiffusionReferenceOppositeStudy.topup_pipeline)
@@ -352,125 +685,14 @@ class CoregisteredDWIStudy(MultiStudy):
         'reference', MRIStudy.basic_preproc_pipeline,
         override_default_options={'resolution': [1]})
 
-    dwi_main_qform_transform_pipeline = MultiStudy.translate(
-        'coreg_dwi_main', CoregisteredStudy.qform_transform_pipeline)
-
-    dwi_main_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg_dwi_main', CoregisteredStudy.linear_registration_pipeline)
-
-    dwi_opposite_qform_transform_pipeline = MultiStudy.translate(
-        'coreg_dwi_opposite', CoregisteredStudy.qform_transform_pipeline)
-
-    dwi_opposite_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg_dwi_opposite', CoregisteredStudy.linear_registration_pipeline)
-
-    dwi2ref_qform_transform_pipeline = MultiStudy.translate(
-        'coreg_dwi2ref', CoregisteredStudy.qform_transform_pipeline)
-
-    dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg_dwi2ref', CoregisteredStudy.linear_registration_pipeline)
-
     opposite_dwi2ref_qform_transform_pipeline = MultiStudy.translate(
-        'coreg_opposite_dwi2ref', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', CoregisteredStudy.qform_transform_pipeline)
 
     opposite_dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg_opposite_dwi2ref',
+        'coreg',
         CoregisteredStudy.linear_registration_pipeline)
 
-    def dwi_main_affine_mats_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='dwi_main_affine_mat_generation',
-            inputs=[DatasetSpec('dwi_main_preproc', nifti_gz_format),
-                    DatasetSpec('dwi_main_eddy_par', eddy_par_format)],
-            outputs=[
-                DatasetSpec('dwi_main_affine_mats', directory_format)],
-            description=("Generation of the affine matrices for the main dwi "
-                         "sequence starting from eddy motion parameters"),
-            default_options={},
-            version=1,
-            citations=[fsl_cite],
-            options=options)
-
-        aff_mat = pipeline.create_node(AffineMatrixGeneration(),
-                                       name='gen_aff_mats')
-        pipeline.connect_input('dwi_main_preproc', aff_mat, 'reference_image')
-        pipeline.connect_input(
-            'dwi_main_eddy_par', aff_mat, 'motion_parameters')
-        pipeline.connect_output(
-            'dwi_main_affine_mats', aff_mat, 'affine_matrices')
-        pipeline.assert_connected()
-        return pipeline
-
-    def dwi_main_motion_mat_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='dwi_main_motion_mat_calculation',
-            inputs=[DatasetSpec('dwi_main_reg_mat', text_matrix_format),
-                    DatasetSpec('dwi_main_qform_mat', text_matrix_format),
-                    DatasetSpec('dwi_main_affine_mats', directory_format)],
-            outputs=[
-                DatasetSpec('dwi_main_motion_mats', directory_format)],
-            description=("Main dwi motion matrices calculation"),
-            default_options={},
-            version=1,
-            citations=[fsl_cite],
-            options=options)
-
-        mm = pipeline.create_node(
-            MotionMatCalculation(), name='dwi_main_motion_mats')
-        pipeline.connect_input('dwi_main_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('dwi_main_qform_mat', mm, 'qform_mat')
-        pipeline.connect_input('dwi_main_affine_mats', mm, 'align_mats')
-        pipeline.connect_output('dwi_main_motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
-        return pipeline
-
-    def dwi_opposite_motion_mat_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='dwi_opposite_motion_mat_calculation',
-            inputs=[DatasetSpec('dwi_opposite_reg_mat', text_matrix_format),
-                    DatasetSpec('dwi_opposite_qform_mat', text_matrix_format)],
-            outputs=[
-                DatasetSpec('dwi_opposite_motion_mats', directory_format)],
-            description=("DWI opposite Motion matrices calculation"),
-            default_options={},
-            version=1,
-            citations=[fsl_cite],
-            options=options)
-
-        mm = pipeline.create_node(
-            MotionMatCalculation(), name='dwi_opposite_motion_mats')
-        pipeline.connect_input('dwi_opposite_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('dwi_opposite_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output('dwi_opposite_motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
-        return pipeline
-
-    def dwi2ref_motion_mat_pipeline(self, **options):
-
-        pipeline = self.create_pipeline(
-            name='dwi2ref_motion_mat_calculation',
-            inputs=[DatasetSpec('dwi2ref_reg_mat', text_matrix_format),
-                    DatasetSpec('dwi2ref_qform_mat', text_matrix_format)],
-            outputs=[
-                DatasetSpec('dwi2ref_motion_mats', directory_format)],
-            description=("DWI to reference Motion matrices calculation"),
-            default_options={},
-            version=1,
-            citations=[fsl_cite],
-            options=options)
-
-        mm = pipeline.create_node(
-            MotionMatCalculation(), name='dwi2ref_motion_mats')
-        pipeline.connect_input('dwi2ref_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('dwi2ref_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output('dwi2ref_motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
-        return pipeline
-
-    def opposite_dwi2ref_motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
             name='opposite_dwi2ref_motion_mat_calculation',
@@ -479,7 +701,7 @@ class CoregisteredDWIStudy(MultiStudy):
                     DatasetSpec('opposite_dwi2ref_qform_mat',
                                 text_matrix_format)],
             outputs=[
-                DatasetSpec('opposite_dwi2ref_motion_mats', directory_format)],
+                DatasetSpec('motion_mats', directory_format)],
             description=("DWI to ref opposite Motion matrices calculation"),
             default_options={},
             version=1,
@@ -487,59 +709,14 @@ class CoregisteredDWIStudy(MultiStudy):
             options=options)
 
         mm = pipeline.create_node(
-            MotionMatCalculation(), name='opposite_dwi2ref_motion_mats')
+            MotionMatCalculation(), name='motion_mats')
         pipeline.connect_input('opposite_dwi2ref_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('opposite_dwi2ref_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output(
-            'opposite_dwi2ref_motion_mats', mm, 'motion_mats')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
         pipeline.assert_connected()
         return pipeline
 
     _sub_study_specs = set_specs(
-        SubStudySpec('dwi_main', DiffusionStudy, {
-            'dwi_main': 'dwi_main',
-            'dwi_main_ref': 'dwi_ref',
-            'dwi_main_brain_mask': 'brain_mask',
-            'dwi_main_brain': 'masked',
-            'dwi_main_preproc': 'preproc',
-            'dwi_main_eddy_par': 'eddy_par',
-            'dwi_main_ped': 'ped',
-            'dwi_main_pe_angle': 'pe_angle',
-            'dwi_main_tr': 'tr',
-            'dwi_main_real_duration': 'real_duration',
-            'dwi_main_tot_duration': 'tot_duration',
-            'dwi_main_start_time': 'start_time',
-            'dwi_main_dcm_info': 'dcm_info'}),
-        SubStudySpec('dwi2ref', DiffusionReferenceStudy, {
-            'dwi2ref_to_correct': 'to_be_corrected',
-            'dwi2ref_ref': 'topup_ref',
-            'dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
-            'dwi2ref_ref_nii': 'topup_ref_nifti',
-            'dwi2ref_brain_mask': 'brain_mask',
-            'dwi2ref_brain': 'masked',
-            'dwi2ref_preproc': 'preproc',
-            'dwi2ref_ped': 'ped',
-            'dwi2ref_pe_angle': 'pe_angle',
-            'dwi2ref_tr': 'tr',
-            'dwi2ref_real_duration': 'real_duration',
-            'dwi2ref_tot_duration': 'tot_duration',
-            'dwi2ref_start_time': 'start_time',
-            'dwi2ref_dcm_info': 'dcm_info'}),
-        SubStudySpec('dwi_opposite', DiffusionOppositeStudy, {
-            'dwi_opposite_to_correct': 'to_be_corrected',
-            'dwi_opposite_ref': 'topup_ref',
-            'dwi_opposite_to_correct_nii': 'to_be_corrected_nifti',
-            'dwi_opposite_ref_nii': 'topup_ref_nifti',
-            'dwi_opposite_brain_mask': 'brain_mask',
-            'dwi_opposite_brain': 'masked',
-            'dwi_opposite_preproc': 'preproc',
-            'dwi_opposite_ped': 'ped',
-            'dwi_opposite_pe_angle': 'pe_angle',
-            'dwi_opposite_tr': 'tr',
-            'dwi_opposite_real_duration': 'real_duration',
-            'dwi_opposite_tot_duration': 'tot_duration',
-            'dwi_opposite_start_time': 'start_time',
-            'dwi_opposite_dcm_info': 'dcm_info'}),
         SubStudySpec('opposite_dwi2ref', DiffusionReferenceOppositeStudy, {
             'opposite_dwi2ref_to_correct': 'to_be_corrected',
             'opposite_dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
@@ -548,40 +725,19 @@ class CoregisteredDWIStudy(MultiStudy):
             'opposite_dwi2ref_brain_mask': 'brain_mask',
             'opposite_dwi2ref_brain': 'masked',
             'opposite_dwi2ref_preproc': 'preproc',
-            'opposite_dwi2ref_ped': 'ped',
-            'opposite_dwi2ref_pe_angle': 'pe_angle',
-            'opposite_dwi2ref_tr': 'tr',
-            'opposite_dwi2ref_real_duration': 'real_duration',
-            'opposite_dwi2ref_tot_duration': 'tot_duration',
-            'opposite_dwi2ref_start_time': 'start_time',
-            'opposite_dwi2ref_dcm_info': 'dcm_info'}),
+            'ped': 'ped',
+            'pe_angle': 'pe_angle',
+            'tr': 'tr',
+            'real_duration': 'real_duration',
+            'tot_duration': 'tot_duration',
+            'start_time': 'start_time',
+            'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
             'ref_brain': 'masked',
             'ref_brain_mask': 'brain_mask'}),
-        SubStudySpec('coreg_dwi_main', CoregisteredStudy, {
-            'dwi_main_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi_main_qformed': 'qformed',
-            'dwi_main_qform_mat': 'qform_mat',
-            'dwi_main_reg': 'registered',
-            'dwi_main_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_dwi2ref', CoregisteredStudy, {
-            'dwi2ref_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi2ref_qformed': 'qformed',
-            'dwi2ref_qform_mat': 'qform_mat',
-            'dwi2ref_reg': 'registered',
-            'dwi2ref_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_dwi_opposite', CoregisteredStudy, {
-            'dwi_opposite_brain': 'to_register',
-            'ref_brain': 'reference',
-            'dwi_opposite_qformed': 'qformed',
-            'dwi_opposite_qform_mat': 'qform_mat',
-            'dwi_opposite_reg': 'registered',
-            'dwi_opposite_reg_mat': 'matrix'}),
-        SubStudySpec('coreg_opposite_dwi2ref', CoregisteredStudy, {
+        SubStudySpec('coreg', CoregisteredStudy, {
             'opposite_dwi2ref_brain': 'to_register',
             'ref_brain': 'reference',
             'opposite_dwi2ref_qformed': 'qformed',
@@ -590,73 +746,9 @@ class CoregisteredDWIStudy(MultiStudy):
             'opposite_dwi2ref_reg_mat': 'matrix'}))
 
     _data_specs = set_specs(
-        DatasetSpec('dwi_main', dicom_format),
-        DatasetSpec('dwi_main_ref', dicom_format),
-        DatasetSpec('dwi2ref_to_correct', dicom_format),
-        DatasetSpec('dwi2ref_ref', dicom_format),
-        DatasetSpec('dwi_opposite_to_correct', dicom_format),
-        DatasetSpec('dwi_opposite_ref', dicom_format),
         DatasetSpec('opposite_dwi2ref_to_correct', dicom_format),
         DatasetSpec('opposite_dwi2ref_ref', dicom_format),
         DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('dwi_main_brain', nifti_gz_format, dwi_main_bet_pipeline),
-        DatasetSpec('dwi_main_brain_mask', nifti_gz_format,
-                    dwi_main_bet_pipeline),
-        DatasetSpec('dwi_main_preproc', nifti_gz_format,
-                    dwi_main_dwipreproc_pipeline),
-        DatasetSpec('dwi_main_reg', nifti_gz_format,
-                    dwi_main_rigid_registration_pipeline),
-        DatasetSpec('dwi_main_qformed', nifti_gz_format,
-                    dwi_main_qform_transform_pipeline),
-        DatasetSpec('dwi_main_reg_mat', text_matrix_format,
-                    dwi_main_rigid_registration_pipeline),
-        DatasetSpec('dwi_main_qform_mat', text_matrix_format,
-                    dwi_main_qform_transform_pipeline),
-        DatasetSpec('dwi_main_eddy_par', eddy_par_format,
-                    dwi_main_dwipreproc_pipeline),
-        DatasetSpec('dwi_main_motion_mats', directory_format,
-                    dwi_main_motion_mat_pipeline),
-        DatasetSpec('dwi_main_affine_mats', directory_format,
-                    dwi_main_affine_mats_pipeline),
-        DatasetSpec('dwi2ref_brain', nifti_gz_format, dwi2ref_bet_pipeline),
-        DatasetSpec('dwi2ref_brain_mask', nifti_gz_format,
-                    dwi2ref_bet_pipeline),
-        DatasetSpec('dwi2ref_preproc', nifti_gz_format,
-                    dwi2ref_topup_pipeline),
-        DatasetSpec('dwi2ref_to_correct_nii', nifti_gz_format,
-                    dwi2ref_main_dcm2nii_pipeline),
-        DatasetSpec('dwi2ref_ref_nii', nifti_gz_format,
-                    dwi2ref_ref_dcm2nii_pipeline),
-        DatasetSpec('dwi2ref_reg', nifti_gz_format,
-                    dwi2ref_rigid_registration_pipeline),
-        DatasetSpec('dwi2ref_qformed', nifti_gz_format,
-                    dwi2ref_qform_transform_pipeline),
-        DatasetSpec('dwi2ref_reg_mat', text_matrix_format,
-                    dwi2ref_rigid_registration_pipeline),
-        DatasetSpec('dwi2ref_qform_mat', text_matrix_format,
-                    dwi2ref_qform_transform_pipeline),
-        DatasetSpec('dwi2ref_motion_mats', directory_format,
-                    dwi2ref_motion_mat_pipeline),
-        DatasetSpec('dwi_opposite_brain', nifti_gz_format,
-                    dwi_opposite_bet_pipeline),
-        DatasetSpec('dwi_opposite_to_correct_nii', nifti_gz_format,
-                    dwi_opposite_main_dcm2nii_pipeline),
-        DatasetSpec('dwi_opposite_ref_nii', nifti_gz_format,
-                    dwi_opposite_ref_dcm2nii_pipeline),
-        DatasetSpec('dwi_opposite_brain_mask', nifti_gz_format,
-                    dwi_opposite_bet_pipeline),
-        DatasetSpec('dwi_opposite_preproc', nifti_gz_format,
-                    dwi_opposite_topup_pipeline),
-        DatasetSpec('dwi_opposite_reg', nifti_gz_format,
-                    dwi_opposite_rigid_registration_pipeline),
-        DatasetSpec('dwi_opposite_qformed', nifti_gz_format,
-                    dwi_opposite_qform_transform_pipeline),
-        DatasetSpec('dwi_opposite_reg_mat', text_matrix_format,
-                    dwi_opposite_rigid_registration_pipeline),
-        DatasetSpec('dwi_opposite_qform_mat', text_matrix_format,
-                    dwi_opposite_qform_transform_pipeline),
-        DatasetSpec('dwi_opposite_motion_mats', directory_format,
-                    dwi_opposite_motion_mat_pipeline),
         DatasetSpec('opposite_dwi2ref_brain', nifti_gz_format,
                     opposite_dwi2ref_bet_pipeline),
         DatasetSpec('opposite_dwi2ref_to_correct_nii', nifti_gz_format,
@@ -675,52 +767,24 @@ class CoregisteredDWIStudy(MultiStudy):
                     opposite_dwi2ref_rigid_registration_pipeline),
         DatasetSpec('opposite_dwi2ref_qform_mat', text_matrix_format,
                     opposite_dwi2ref_qform_transform_pipeline),
-        DatasetSpec('opposite_dwi2ref_motion_mats', directory_format,
-                    opposite_dwi2ref_motion_mat_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
         DatasetSpec('ref_preproc', nifti_gz_format,
                     ref_basic_preproc_pipeline),
         DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
         DatasetSpec('ref_brain_mask', nifti_gz_format,
                     ref_bet_pipeline),
-        DatasetSpec('dwi_main_dcm_info', text_format,
-                    dwi_main_dcm_info_pipeline),
-        DatasetSpec('dwi_opposite_dcm_info', text_format,
-                    dwi_opposite_dcm_info_pipeline),
-        DatasetSpec('dwi2ref_dcm_info', text_format,
-                    dwi2ref_dcm_info_pipeline),
-        DatasetSpec('opposite_dwi2ref_dcm_info', text_format,
+        DatasetSpec('dcm_info', text_format,
                     opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi_main_ped', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('dwi_main_pe_angle', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('dwi_main_tr', float, dwi_main_dcm_info_pipeline),
-        FieldSpec('dwi_main_start_time', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('dwi_main_real_duration', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('dwi_main_tot_duration', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('dwi2ref_ped', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi2ref_pe_angle', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi2ref_tr', float, dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi2ref_start_time', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi2ref_real_duration', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi2ref_tot_duration', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('dwi_opposite_ped', str, dwi_opposite_dcm_info_pipeline),
-        FieldSpec('dwi_opposite_pe_angle', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('dwi_opposite_tr', float, dwi_opposite_dcm_info_pipeline),
-        FieldSpec('dwi_opposite_start_time', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('dwi_opposite_real_duration', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('dwi_opposite_tot_duration', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('opposite_dwi2ref_ped', str,
+        FieldSpec('ped', str,
                   opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('opposite_dwi2ref_pe_angle', str,
+        FieldSpec('pe_angle', str,
                   opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('opposite_dwi2ref_tr', float,
+        FieldSpec('tr', float,
                   opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('opposite_dwi2ref_start_time', str,
+        FieldSpec('start_time', str,
                   opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('opposite_dwi2ref_real_duration', str,
+        FieldSpec('real_duration', str,
                   opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('opposite_dwi2ref_tot_duration', str,
+        FieldSpec('tot_duration', str,
                   opposite_dwi2ref_dcm_info_pipeline))

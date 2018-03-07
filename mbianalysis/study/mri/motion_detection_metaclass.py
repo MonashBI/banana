@@ -14,9 +14,12 @@ from .structural.t1 import CoregisteredT1Study, T1Study
 from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge
 # from .base import MotionReferenceStudy
-from .structural.diffusion_coreg import CoregisteredDiffusionStudy
+from .structural.diffusion_coreg import (
+    CoregisteredDiffusionStudy, CoregisteredDiffusionOppositeStudy,
+    CoregisteredDiffusionReferenceStudy)
 from nianalysis.requirements import fsl509_req
 from nianalysis.exceptions import NiAnalysisNameError
+from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionReferenceOppositeStudy
 
 
 class MotionReferenceT1Study(T1Study):
@@ -90,12 +93,12 @@ class MotionDetectionStudy(MultiStudy):
         for sub_study_spec in self.sub_study_specs():
             try:
                 inputs.append(
-                    self.dataset(sub_study_spec.reverse_map('motion_mats')))
-                inputs.append(self.field(sub_study_spec.reverse_map('tr')))
+                    self.dataset(sub_study_spec.inverse_map('motion_mats')))
+                inputs.append(self.field(sub_study_spec.inverse_map('tr')))
                 inputs.append(
-                    self.field(sub_study_spec.reverse_map('start_time')))
+                    self.field(sub_study_spec.inverse_map('start_time')))
                 inputs.append(
-                    self.field(sub_study_spec.reverse_map('real_duration')))
+                    self.field(sub_study_spec.inverse_map('real_duration')))
                 sub_study_names.append(sub_study_spec.name)
             except NiAnalysisNameError:
                 continue  # Sub study doesn't have motion mat
@@ -130,16 +133,16 @@ class MotionDetectionStudy(MultiStudy):
         for i, sub_study_name in enumerate(sub_study_names):
             spec = self.sub_study_spec(sub_study_name)
             pipeline.connect_input(
-                spec.reverse_map('motion_mats'), merge_motion_mats,
+                spec.inverse_map('motion_mats'), merge_motion_mats,
                 'in{}'.format(i))
             pipeline.connect_input(
-                spec.reverse_map('tr'), merge_tr,
+                spec.inverse_map('tr'), merge_tr,
                 'in{}'.format(i))
             pipeline.connect_input(
-                spec.reverse_map('start_time'), merge_start_time,
+                spec.inverse_map('start_time'), merge_start_time,
                 'in{}'.format(i))
             pipeline.connect_input(
-                spec.reverse_map('real_duration'), merge_real_duration,
+                spec.inverse_map('real_duration'), merge_real_duration,
                 'in{}'.format(i))
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
@@ -361,7 +364,16 @@ class MotionDetectionStudy(MultiStudy):
             'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask',
             'ref_wmseg': 'ref_wmseg'}),
-        SubStudySpec('dwi_1', CoregisteredDiffusionStudy, {
+        SubStudySpec('dwi_1_main', CoregisteredDiffusionStudy, {
+            'ref_preproc': 'ref_preproc',
+            'ref_brain': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('dwi_1_to_ref', CoregisteredDiffusionReferenceStudy, {
+            'ref_preproc': 'ref_preproc',
+            'ref_brain': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec(
+            'dwi_1_opposite', CoregisteredDiffusionReferenceOppositeStudy, {
             'ref_preproc': 'ref_preproc',
             'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}))
