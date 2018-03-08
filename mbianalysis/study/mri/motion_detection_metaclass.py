@@ -1,7 +1,7 @@
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (
-    nifti_gz_format, text_matrix_format, directory_format, dicom_format,
-    par_format, text_format, eddy_par_format, png_format)
+    nifti_gz_format, text_matrix_format, directory_format, text_format,
+    png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
@@ -13,13 +13,11 @@ from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study, T1Study
 from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge
-# from .base import MotionReferenceStudy
 from .structural.diffusion_coreg import (
-    CoregisteredDiffusionStudy, CoregisteredDiffusionOppositeStudy,
+    CoregisteredDiffusionStudy, CoregisteredDiffusionReferenceOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
 from nianalysis.requirements import fsl509_req
 from nianalysis.exceptions import NiAnalysisNameError
-from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionReferenceOppositeStudy
 
 
 class MotionReferenceT1Study(T1Study):
@@ -30,8 +28,19 @@ class MotionReferenceT1Study(T1Study):
                     'primary', ref=reference, multivol=multivol,
                     **kwargs))
     _data_specs = set_specs(
-        DatasetSpec('ref_motion_mats', directory_format,
+        DatasetSpec('motion_mats', directory_format,
                     header_info_extraction_pipeline),
+        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+        FieldSpec('start_time', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('real_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('tot_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str,
+                  pipeline=header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
         inherit_from=T1Study.data_specs())
 
 
@@ -39,53 +48,53 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    t2_1_ref_bet_pipeline = MultiStudy.translate(
-        't2_1', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_2_ref_bet_pipeline = MultiStudy.translate(
-        't2_2', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_3_ref_bet_pipeline = MultiStudy.translate(
-        't2_3', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_4_ref_bet_pipeline = MultiStudy.translate(
-        't2_4', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_5_ref_bet_pipeline = MultiStudy.translate(
-        't2_5', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
-
-    epi1_ref_bet_pipeline = MultiStudy.translate(
-        'epi1', CoregisteredEPIStudy.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
+#     t2_1_ref_bet_pipeline = MultiStudy.translate(
+#         't2_1', CoregisteredT2Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
+# 
+#     t2_2_ref_bet_pipeline = MultiStudy.translate(
+#         't2_2', CoregisteredT2Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
+# 
+#     t2_3_ref_bet_pipeline = MultiStudy.translate(
+#         't2_3', CoregisteredT2Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
+# 
+#     t2_4_ref_bet_pipeline = MultiStudy.translate(
+#         't2_4', CoregisteredT2Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
+# 
+#     t2_5_ref_bet_pipeline = MultiStudy.translate(
+#         't2_5', CoregisteredT2Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
+# 
+#     epi1_ref_bet_pipeline = MultiStudy.translate(
+#         'epi1', CoregisteredEPIStudy.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
 
     epi1_ref_segmentation_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline,
         override_default_options={'img_type': 1})
 
-    fm_ref_bet_pipeline = MultiStudy.translate(
-        'fm', CoregisteredT2Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
+#     fm_ref_bet_pipeline = MultiStudy.translate(
+#         'fm', CoregisteredT2Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
 
     t1_bet_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    t1_ref_bet_pipeline = MultiStudy.translate(
-        't1_1', CoregisteredT1Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
+#     t1_ref_bet_pipeline = MultiStudy.translate(
+#         't1_1', CoregisteredT1Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
 
     ute_bet_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-    ute_ref_bet_pipeline = MultiStudy.translate(
-        'ute', CoregisteredT1Study.ref_bet_pipeline,
-        override_default_options={'bet_method': 'optibet'})
+#     ute_ref_bet_pipeline = MultiStudy.translate(
+#         'ute', CoregisteredT1Study.ref_bet_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
 
     def mean_displacement_pipeline(self, **options):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
@@ -130,7 +139,7 @@ class MotionDetectionStudy(MultiStudy):
         merge_real_duration = pipeline.create_node(Merge(num_motion_mats),
                                                    name='merge_real_duration')
 
-        for i, sub_study_name in enumerate(sub_study_names):
+        for i, sub_study_name in enumerate(sub_study_names, start=1):
             spec = self.sub_study_spec(sub_study_name)
             pipeline.connect_input(
                 spec.inverse_map('motion_mats'), merge_motion_mats,
@@ -329,54 +338,54 @@ class MotionDetectionStudy(MultiStudy):
         SubStudySpec('ref', MotionReferenceT1Study),
         SubStudySpec('fm', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_1', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_2', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_3', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_4', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_5', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('ute', CoregisteredT1Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t1_1', CoregisteredT1Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('epi1', CoregisteredEPIStudy, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask',
-            'ref_wmseg': 'ref_wmseg'}),
+            'ref_wm_seg': 'ref_wmseg'}),
         SubStudySpec('dwi_1_main', CoregisteredDiffusionStudy, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('dwi_1_to_ref', CoregisteredDiffusionReferenceStudy, {
             'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
+            'ref_masked': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec(
             'dwi_1_opposite', CoregisteredDiffusionReferenceOppositeStudy, {
-            'ref_preproc': 'ref_preproc',
-            'ref_brain': 'ref_masked',
-            'ref_brain_mask': 'ref_brain_mask'}))
+                'ref_preproc': 'ref_preproc',
+                'ref_masked': 'ref_brain',
+                'ref_brain_mask': 'ref_brain_mask'}))
 
     _data_specs = set_specs(
         DatasetSpec('mean_displacement', text_format,
@@ -405,8 +414,8 @@ class MotionDetectionStudy(MultiStudy):
                     frame2ref_alignment_pipeline))
 
 
-# def create_motion_detection_class(name, reference, ref_type, t1s=None, t2s=None,
-#                                   dmris=None, epis=None):
+# def create_motion_detection_class(name, reference, ref_type, t1s=None,
+#                                   t2s=None, dmris=None, epis=None):
 #     ref_cls = type('MotionReference{}'.format(ref_type.__name__),
 #                    (ref_type, MotionReferenceMixin), {})
 #     study_specs = [SubStudySpec('ref', ref_cls)]
