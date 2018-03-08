@@ -69,6 +69,7 @@ class T1Study(MRIStudy):
     _data_specs = set_specs(
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline),
+        DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
         inherit_from=MRIStudy.data_specs())
 
 
@@ -133,8 +134,8 @@ class CoregisteredT1Study(MultiStudy):
             't1_preproc': 'preproc',
             't1_brain': 'masked',
             't1_brain_mask': 'brain_mask',
-            't1_ped': 'ped',
-            't1_pe_angle': 'pe_angle',
+            'ped': 'ped',
+            'pe_angle': 'pe_angle',
             'tr': 'tr',
             'real_duration': 'real_duration',
             'tot_duration': 'tot_duration',

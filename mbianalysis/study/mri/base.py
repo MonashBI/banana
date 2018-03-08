@@ -325,7 +325,7 @@ class MRIStudy(Study):
                         FieldSpec('pe_angle', dtype=str),
                         DatasetSpec('dcm_info', text_format)]
         if ref:
-            output_files.append(DatasetSpec('ref_motion_mats',
+            output_files.append(DatasetSpec('motion_mats',
                                             directory_format))
 
         pipeline = self.create_pipeline(
@@ -353,7 +353,7 @@ class MRIStudy(Study):
         pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
         pipeline.connect_output('dcm_info', hd_extraction, 'dcm_info')
         if ref:
-            pipeline.connect_output('ref_motion_mats', hd_extraction,
+            pipeline.connect_output('motion_mats', hd_extraction,
                                     'ref_motion_mats')
         pipeline.assert_connected()
         return pipeline
@@ -418,5 +418,6 @@ class MRIStudy(Study):
         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline)
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+        DatasetSpec('motion_mats', directory_format, header_info_extraction_pipeline)
         )
