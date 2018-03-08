@@ -21,13 +21,21 @@ from nianalysis.exceptions import NiAnalysisNameError
 
 
 class MotionReferenceT1Study(T1Study):
+
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
         return (super(MotionReferenceT1Study, self).
                 header_info_extraction_pipeline_factory(
                     'primary', ref=reference, multivol=multivol,
                     **kwargs))
+
+    def segmentation_pipeline(self, img_type=1, **kwargs):
+        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
+            img_type=img_type, **kwargs)
+        return pipeline
+
     _data_specs = set_specs(
+        DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
         DatasetSpec('motion_mats', directory_format,
                     header_info_extraction_pipeline),
         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
