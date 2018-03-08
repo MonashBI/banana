@@ -188,9 +188,9 @@ class TestMC(TestCase):
                 'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
                 'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
                 'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
-                't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
+#                 't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
                 'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
-                'dwi_1_opposite_motion_mats': Dataset('mc_detection_study_dwi_1_opposite_motion_mats', directory_format),
+                'dwi_1_opposite_motion_mats': Dataset('dwi_1_opposite_motion_mats', directory_format),
                 'dwi_1_to_ref_motion_mats': Dataset('dwi_1_to_ref_motion_mats', directory_format)
                 })
         study.plot_mean_displacement_pipeline().run(work_dir=self.work_dir)
