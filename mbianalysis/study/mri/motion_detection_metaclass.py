@@ -56,53 +56,17 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-#     t2_1_ref_bet_pipeline = MultiStudy.translate(
-#         't2_1', CoregisteredT2Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-# 
-#     t2_2_ref_bet_pipeline = MultiStudy.translate(
-#         't2_2', CoregisteredT2Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-# 
-#     t2_3_ref_bet_pipeline = MultiStudy.translate(
-#         't2_3', CoregisteredT2Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-# 
-#     t2_4_ref_bet_pipeline = MultiStudy.translate(
-#         't2_4', CoregisteredT2Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-# 
-#     t2_5_ref_bet_pipeline = MultiStudy.translate(
-#         't2_5', CoregisteredT2Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-# 
-#     epi1_ref_bet_pipeline = MultiStudy.translate(
-#         'epi1', CoregisteredEPIStudy.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-
     epi1_ref_segmentation_pipeline = MultiStudy.translate(
         'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline,
         override_default_options={'img_type': 1})
-
-#     fm_ref_bet_pipeline = MultiStudy.translate(
-#         'fm', CoregisteredT2Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
 
     t1_bet_pipeline = MultiStudy.translate(
         't1_1', CoregisteredT1Study.t1_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
 
-#     t1_ref_bet_pipeline = MultiStudy.translate(
-#         't1_1', CoregisteredT1Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
-
     ute_bet_pipeline = MultiStudy.translate(
         'ute', CoregisteredT1Study.t1_bet_pipeline,
         override_default_options={'bet_method': 'optibet'})
-
-#     ute_ref_bet_pipeline = MultiStudy.translate(
-#         'ute', CoregisteredT1Study.ref_bet_pipeline,
-#         override_default_options={'bet_method': 'optibet'})
 
     def mean_displacement_pipeline(self, **options):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
