@@ -112,7 +112,7 @@ class SignalRegressionInputSpec(BaseInterfaceInputSpec):
         desc=("Text file with FIX classified components."))
     motion_regression = traits.Bool(desc='Regress 24 motion paremeters.',
                                     default=False)
-    highpass = traits.Int(
+    highpass = traits.Float(
         desc='Whether or not to high pass the motion parameters', default=None)
     customRegressors = File(exists=True, default=None,
                             desc='File containing custom regressors.')
