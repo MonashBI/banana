@@ -5,8 +5,9 @@ from nipype.interfaces.fsl.preprocess import (
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
                                          ConvertXFM)
-from mbianalysis.interfaces.fsl import (MelodicL1FSF, FSLFIX, CheckLabelFile,
-                                        FSLFixTraining, FSLSlices)
+from mbianalysis.interfaces.fsl import (
+    MelodicL1FSF, FSLFIX, CheckLabelFile, FSLFixTraining, FSLSlices,
+    SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import set_specs
@@ -143,7 +144,8 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='fix_classification',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('train_data', rdata_format),
+            inputs=[DatasetSpec('train_data', rdata_format,
+                                multiplicity='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
             description=("Automatic classification of noisy"
@@ -170,29 +172,28 @@ class FunctionalMRIStudy(MRIStudy):
     def fix_regression(self, **options):
 
         pipeline = self.create_pipeline(
-            name='fix_regression',
+            name='signal_regression',
             # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('train_data', rdata_format),
-                    DatasetSpec('fix_dir', directory_format),
+            inputs=[DatasetSpec('fix_dir', directory_format),
                     DatasetSpec('labelled_components', text_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
             description=("Regression of the noisy"
                          "components from the rsfMRI data"),
-            default_options={'component_threshold': 20, 'motion_reg': True},
+            default_options={'highpass': 0.01, 'motion_reg': True},
             version=1,
             citations=[fsl_cite],
             options=options)
 
-        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
-                                   requirements=[fsl509_req, fix_req])
-        pipeline.connect_input("fix_dir", fix, "feat_dir")
-        pipeline.connect_input("train_data", fix, "train_data")
-        fix.inputs.component_threshold = pipeline.option(
-            'component_threshold')
-        fix.inputs.motion_reg = pipeline.option('motion_reg')
-        fix.inputs.classification = True
+        signal_reg = pipeline.create_node(
+            SignalRegression(), name="signal_reg", wall_time=30,
+            requirements=[fsl509_req, fix_req])
+        pipeline.connect_input("fix_dir", signal_reg, "fix_dir")
+        pipeline.connect_input("labelled_components", signal_reg,
+                               "labelled_components")
+        signal_reg.inputs.motion_regression = pipeline.option('motion_reg')
+        signal_reg.inputs.highpass = pipeline.option('highpass')
 
-        pipeline.connect_output('labelled_components', fix, 'label_file')
+        pipeline.connect_output('cleaned_file', signal_reg, 'output')
 
         pipeline.assert_connected()
         return pipeline
@@ -732,8 +733,8 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format, TrainingFix,
                     multiplicity='per_project'),
-        DatasetSpec('labelled_components', text_format, fix_all),
-        DatasetSpec('cleaned_file', nifti_gz_format, fix_all),
+        DatasetSpec('labelled_components', text_format, fix_classification),
+        DatasetSpec('cleaned_file', nifti_gz_format, fix_regression),
         DatasetSpec('betted_file', nifti_gz_format, optiBET),
         DatasetSpec('betted_mask', nifti_gz_format, optiBET),
         DatasetSpec('optiBET_report', gif_format, optiBET),
