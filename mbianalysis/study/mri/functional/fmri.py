@@ -690,7 +690,7 @@ class FunctionalMRIStudy(MRIStudy):
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('smoothed_file', nifti_gz_format),
                     FieldSpec('rsfmri_tr', float)],
-            outputs=[DatasetSpec('group_melodic', ica_format)],
+            outputs=[DatasetSpec('group_melodic', directory_format)],
             description=("Group ICA"),
             default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
                              'standard/MNI152_T1_2mm_brain.nii.gz',
@@ -754,7 +754,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('registered_file', nifti_gz_format, applyTransform),
         DatasetSpec('fix_dir', targz_format, PrepareFix),
         DatasetSpec('smoothed_file', nifti_gz_format, applySmooth),
-        DatasetSpec('group_melodic', ica_format, groupMelodic,
+        DatasetSpec('group_melodic', directory_format, groupMelodic,
                     multiplicity='per_visit'),
         FieldSpec('tr', float, header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())
