@@ -9,14 +9,14 @@ from nianalysis.archive.local import LocalArchive
 list_t1 = ['t1_1_dicom']
 list_t2 = ['t2_1_dicom', 't2_2_dicom', 't2_3_dicom', 't2_4_dicom',
            't2_5_dicom', 'fm_dicom']
-list_epi = ['epi_1_dicom',]
+list_epi = ['epi_1_dicom']
 list_dwi = [['dwi_1_main_dicom', '0'], ['dwi2ref_1_opposite_dicom', '-1'],
             ['dwi2ref_1_dicom', '1']]
 list_utes = ['ute_dicom']
 
 cls, inputs = create_motion_detection_class(
-    'test_mixin', 'reference_dicom', 't1', t1s=list_t1, t2s=list_t2, dmris=list_dwi,
-    epis=list_epi, utes=list_utes)
+    'test_mixin', 'reference_dicom', 't1', t1s=list_t1, t2s=list_t2,
+    dmris=list_dwi, epis=list_epi, utes=list_utes)
 
 WORK_PATH = os.path.join('/Users', 'fsforazz', 'Desktop',
                          'test_mc_mixin_cache')

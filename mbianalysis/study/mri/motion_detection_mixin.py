@@ -14,13 +14,12 @@ from .structural.t1 import CoregisteredT1Study, T1Study
 from .structural.t2 import CoregisteredT2Study, T2Study
 from nipype.interfaces.utility import Merge
 from .structural.diffusion_coreg import (
-    CoregisteredDiffusionStudy, CoregisteredDiffusionOppositeStudy,
+    CoregisteredDiffusionStudy, CoregisteredDiffusionReferenceOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
 from nianalysis.requirements import fsl509_req
 from nianalysis.exceptions import NiAnalysisNameError
 from nianalysis.dataset import Dataset
 from mbianalysis.study.mri.base import MRIStudy
-from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionReferenceOppositeStudy
 
 
 class MotionReferenceT1Study(T1Study):
@@ -480,14 +479,16 @@ def create_motion_detection_class(name, reference, ref_type, t1s=None,
             if not dmris_ref:
                 study_specs.extend(
                     [SubStudySpec('dwi_{}_opposite'.format(i),
-                                  CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
+                     CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
                      for i in range(len(dmris_main))])
-                inputs.update({'dwi_{}_opposite_opposite_dwi2ref_ref'.format(i):
-                               Dataset(dmris_main_scan[0], dicom_format) for i,
-                               dmris_main_scan in enumerate(dmris_main)})
-                inputs.update({'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
-                               Dataset(dmris_opposite[i][0], dicom_format)
-                               for i in range(len(dmris_main))})
+                inputs.update(
+                    {'dwi_{}_opposite_opposite_dwi2ref_ref'.format(i):
+                     Dataset(dmris_main_scan[0], dicom_format) for i,
+                     dmris_main_scan in enumerate(dmris_main)})
+                inputs.update(
+                    {'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
+                     Dataset(dmris_opposite[i][0], dicom_format)
+                     for i in range(len(dmris_main))})
         elif dmris_main and dmris_opposite and (
                 len(dmris_main) != len(dmris_opposite)):
             study_specs.extend(
@@ -503,24 +504,28 @@ def create_motion_detection_class(name, reference, ref_type, t1s=None,
             if not dmris_ref:
                 study_specs.extend(
                     [SubStudySpec('dwi_{}_opposite'.format(i),
-                                  CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
+                     CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
                      for i in range(len(dmris_opposite))])
-                inputs.update({'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
-                               Dataset(dmris_opp_scan[0], dicom_format) for i,
-                               dmris_opp_scan in enumerate(dmris_opposite)})
-                inputs.update({'dwi_{}_opposite_opposite_dwi2ref_ref'.format(i):
-                               Dataset(dmris_main[0][0], dicom_format) for i
-                               in range(len(dmris_opposite))})
+                inputs.update(
+                    {'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
+                     Dataset(dmris_opp_scan[0], dicom_format) for i,
+                     dmris_opp_scan in enumerate(dmris_opposite)})
+                inputs.update(
+                    {'dwi_{}_opposite_opposite_dwi2ref_ref'.format(i):
+                     Dataset(dmris_main[0][0], dicom_format) for i
+                     in range(len(dmris_opposite))})
         if dmris_ref and (len(dmris_ref) == len(dmris_opposite)):
             study_specs.extend([SubStudySpec('dwi_{}_toref'.format(i),
                                 CoregisteredDiffusionReferenceStudy, ref_spec)
                                 for i in range(len(dmris_ref))])
-            study_specs.extend([SubStudySpec('dwi_{}_opposite'.format(i),
-                                CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
-                                for i in range(len(dmris_ref))])
-            inputs.update({'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
-                           Dataset(dmris_opposite[i][0], dicom_format)
-                           for i in range(len(dmris_ref))})
+            study_specs.extend(
+                [SubStudySpec('dwi_{}_opposite'.format(i),
+                 CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
+                 for i in range(len(dmris_ref))])
+            inputs.update(
+                {'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
+                 Dataset(dmris_opposite[i][0], dicom_format)
+                 for i in range(len(dmris_ref))})
             inputs.update({'dwi_{}_opposite_opposite_dwi2ref_ref'.format(i):
                            Dataset(dmris_ref_scan[0], dicom_format) for i,
                            dmris_ref_scan in enumerate(dmris_ref)})
@@ -541,15 +546,17 @@ def create_motion_detection_class(name, reference, ref_type, t1s=None,
                            Dataset(dmris_ref_scan[0], dicom_format) for i,
                            dmris_ref_scan in enumerate(dmris_ref)})
 
-            study_specs.extend([SubStudySpec('dwi_{}_opposite'.format(i),
-                                CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
-                                for i in range(len(dmris_opposite))])
+            study_specs.extend(
+                [SubStudySpec('dwi_{}_opposite'.format(i),
+                 CoregisteredDiffusionReferenceOppositeStudy, ref_spec)
+                 for i in range(len(dmris_opposite))])
             inputs.update({'dwi_{}_opposite_opposite_dwi2ref_ref'.format(i):
                            Dataset(dmris_ref[0][0], dicom_format)
                            for i in range(len(dmris_opposite))})
-            inputs.update({'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
-                           Dataset(dmris_opp_scan[0], dicom_format) for i,
-                           dmris_ref_scan in enumerate(dmris_opposite)})
+            inputs.update(
+                {'dwi_{}_opposite_opposite_dwi2ref_to_correct'.format(i):
+                 Dataset(dmris_opp_scan[0], dicom_format) for i,
+                 dmris_ref_scan in enumerate(dmris_opposite)})
     dct['_sub_study_specs'] = set_specs(*study_specs)
     dct['_data_specs'] = set_specs(
         *data_specs, inherit_from=MotionDetectionMixin.data_specs())
