@@ -14,12 +14,12 @@ from .structural.t1 import CoregisteredT1Study, T1Study
 from .structural.t2 import CoregisteredT2Study, T2Study
 from nipype.interfaces.utility import Merge
 from .structural.diffusion_coreg import (
-    CoregisteredDiffusionStudy, CoregisteredDiffusionReferenceOppositeStudy,
+    CoregisteredDiffusionStudy, CoregisteredDiffusionOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
 from nianalysis.requirements import fsl509_req
 from nianalysis.exceptions import NiAnalysisNameError
 from nianalysis.dataset import Dataset
-from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionOppositeStudy
+from mbianalysis.study.mri.base import MRIStudy
 
 
 class MotionReferenceT1Study(T1Study):
@@ -323,10 +323,12 @@ class MotionDetectionMixin(MultiStudy):
     def frame2ref_alignment_pipeline(self, **options):
         return self.frame2ref_alignment_pipeline_factory(
             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
-            'ute_qform_mat', umap='umap',
+            'ute_qform_mat', umap='umap_nifti',
             pct=False, fixed_binning=False, **options)
+
     _sub_study_specs = {}
     _data_specs = set_specs(
+        DatasetSpec('umap_nifti', nifti_gz_format),
         DatasetSpec('mean_displacement', text_format,
                     mean_displacement_pipeline),
         DatasetSpec('mean_displacement_rc', text_format,
@@ -351,11 +353,15 @@ class MotionDetectionMixin(MultiStudy):
                     frame2ref_alignment_pipeline),
         DatasetSpec('frame2reference_mats', directory_format,
                     frame2ref_alignment_pipeline))
-  
+
+
 def create_motion_detection_class(name, reference, ref_type, t1s=None,
-                                  t2s=None, dmris=None, epis=None):
+                                  utes=None, t2s=None, dmris=None, epis=None,
+                                  umaps=None):
 
     inputs = {}
+    dct = {}
+    data_specs = []
     if ref_type == 't1':
         ref_study = MotionReferenceT1Study
     elif ref_type == 't2':
@@ -366,132 +372,190 @@ def create_motion_detection_class(name, reference, ref_type, t1s=None,
                 'ref_masked': 'ref_brain',
                 'ref_brain_mask': 'ref_brain_mask'}
     inputs['ref_primary'] = Dataset(reference, dicom_format)
-    
+
+    if utes is not None and umaps is None:
+        t1s = t1s+utes
+
     if t1s is not None:
         study_specs.extend(
                 [SubStudySpec('t1_{}_t1'.format(i), CoregisteredT1Study,
-                             ref_spec) for i in range(len(t1s))])
-        inputs.update({'t1_{}_t1'.format(i): Dataset(t1_scan, dicom_format) for i, t1_scan 
-                       in enumerate(t1s)})
+                              ref_spec) for i in range(len(t1s))])
+        inputs.update({'t1_{}_t1'.format(i): Dataset(t1_scan, dicom_format)
+                       for i, t1_scan in enumerate(t1s)})
+    if utes is not None and umaps is not None:
+        if len(umaps) != 1:
+            raise Exception('Please provide just one umap.')
+        study_specs.extend(
+                [SubStudySpec('ute_{}_t1'.format(i), CoregisteredT1Study,
+                              ref_spec) for i in range(len(utes))])
+        inputs.update({'ute_{}_t1'.format(i): Dataset(ute_scan, dicom_format)
+                       for i, ute_scan in enumerate(utes)})
+        dct.update(
+            {'ute_{}_t1_qform_transform_pipeline'.format(i):
+             MultiStudy.translate(
+                 'ute_{}_t1'.format(i),
+                 CoregisteredT1Study.t1_qform_transform_pipeline)
+             for i in range(len(utes))})
+        dct.update(
+            {'ute_{}_t1_bet_pipeline'.format(i):
+             MultiStudy.translate(
+                 'ute_{}_t1'.format(i),
+                 CoregisteredT1Study.t1_bet_pipeline,
+                 override_default_options={'f_threshold': 0.65,
+                                           'g_threshold': -0.1})
+             for i in range(len(utes))})
+        dct.update(
+            {'ute_{}_t1_rigid_registration_pipeline'.format(i):
+             MultiStudy.translate(
+                 'ute_{}_t1'.format(i),
+                 CoregisteredT1Study.t1_rigid_registration_pipeline)
+             for i in range(len(utes))})
+        data_specs.extend([DatasetSpec(
+            'ute_{}_t1_reg'.format(i), nifti_gz_format,
+            dct['ute_{}_t1_rigid_registration_pipeline'.format(i)])
+            for i in range(len(utes))])
+        data_specs.extend([DatasetSpec(
+            'ute_{}_t1_reg_mat'.format(i), text_matrix_format,
+            dct['ute_{}_t1_rigid_registration_pipeline'.format(i)])
+            for i in range(len(utes))])
+        data_specs.extend([DatasetSpec(
+            'ute_{}_t1_qformed'.format(i), nifti_gz_format,
+            dct['ute_{}_t1_qform_transform_pipeline'.format(i)])
+            for i in range(len(utes))])
+        data_specs.extend([DatasetSpec(
+            'ute_{}_t1_qform_mat'.format(i), text_matrix_format,
+            dct['ute_{}_t1_qform_transform_pipeline'.format(i)])
+            for i in range(len(utes))])
+        data_specs.extend([DatasetSpec(
+            'ute_{}_brain'.format(i), nifti_gz_format,
+            dct['ute_{}_t1_bet_pipeline'.format(i)])
+            for i in range(len(utes))])
+        data_specs.extend([DatasetSpec(
+            'ute_{}_brain_mask'.format(i), nifti_gz_format,
+            dct['ute_{}_t1_bet_pipeline'.format(i)])
+            for i in range(len(utes))])
+
+        dct.update({'umap_dcm2nii_conversion_pipeline': MultiStudy.translate(
+            'umap', MRIStudy.dcm2nii_conversion_pipeline)})
+        study_specs.append(SubStudySpec('umap', MRIStudy))
+        inputs['umap_primary'] = Dataset(umaps[0], dicom_format)
+        data_specs.append(DatasetSpec(
+            'umap_nifti', nifti_gz_format, 'umap_dcm2nii_conversion_pipeline'))
+
     if t2s is not None:
         study_specs.extend(
                 [SubStudySpec('t2_{}_t2'.format(i), CoregisteredT2Study,
-                             ref_spec) for i in range(len(t2s))])
-        inputs.update({'t2_{}_t2'.format(i): Dataset(t2_scan, dicom_format) for i, t2_scan 
-                       in enumerate(t2s)})
+                              ref_spec) for i in range(len(t2s))])
+        inputs.update({'t2_{}_t2'.format(i): Dataset(t2_scan, dicom_format)
+                       for i, t2_scan in enumerate(t2s)})
     if epis is not None:
-        study_specs.extend(
-                [SubStudySpec('epi_{}_epi'.format(i), CoregisteredEPIStudy,
-                             ref_spec.update({'ref_wm_seg': 'ref_wmseg'})) for i in range(len(epis))])
-        inputs.update({'epi_{}_epi'.format(i): Dataset(epi_scan, dicom_format) for i, epi_scan 
-                       in enumerate(epis)})
+        study_specs.extend([SubStudySpec('epi_{}_epi'.format(i),
+                                         CoregisteredEPIStudy,
+                            ref_spec.update({'ref_wm_seg': 'ref_wmseg'}))
+                            for i in range(len(epis))])
+        inputs.update({'epi_{}_epi'.format(i): Dataset(epi_scan, dicom_format)
+                       for i, epi_scan in enumerate(epis)})
     if dmris is not None:
-        dmris_main = [x for x in dmris if x[-1]=='0']
-        dmris_ref = [x for x in dmris if x[-1]=='1']
-        dmris_opposite = [x for x in dmris if x[-1]=='-1']
+        dmris_main = [x for x in dmris if x[-1] == '0']
+        dmris_ref = [x for x in dmris if x[-1] == '1']
+        dmris_opposite = [x for x in dmris if x[-1] == '-1']
         if dmris_main and not dmris_opposite:
             raise Exception('If you provide one main Diffusion image you '
                             'have also to provide an opposite ped image.')
-        if dmris_main and dmris_opposite and (len(dmris_main) == len(dmris_opposite)):
+        if dmris_main and dmris_opposite and (
+                len(dmris_main) == len(dmris_opposite)):
             study_specs.extend(
-                [SubStudySpec('dwi_{}_dwi_main'.format(i), CoregisteredDiffusionStudy,
+                [SubStudySpec('dwi_{}_dwi_main'.format(i),
+                              CoregisteredDiffusionStudy,
                               ref_spec) for i in range(len(dmris_main))])
-            inputs.update({'dwi_{}_dwi_main'.format(i): Dataset(dmris_main_scan[0], dicom_format) for i, dmris_main_scan 
-                       in enumerate(dmris_main)})
-            inputs.update({'dwi_{}_dwi_main_ref'.format(i): Dataset(dmris_opposite[i][0], dicom_format) for i 
-                       in range(len(dmris_main))})
-#             for i, dmris_main_scan in enumerate(dmris_main):
-#                 study_specs.extend(
-#                     SubStudySpec('dwi_{}_dwi_main'.format(i), CoregisteredDiffusionStudy,
-#                                  ref_spec))
-#                 inputs['dwi_{}_dwi_main'.format(i)] = Dataset(
-#                     dmris_main_scan, dicom_format)
-#                 inputs['dwi_{}_dwi_main_ref'.format(i)] = Dataset(
-#                     dmris_opposite[i], dicom_format)
+            inputs.update({'dwi_{}_dwi_main'.format(i):
+                           Dataset(dmris_main_scan[0], dicom_format) for i,
+                           dmris_main_scan in enumerate(dmris_main)})
+            inputs.update({'dwi_{}_dwi_main_ref'.format(i):
+                           Dataset(dmris_opposite[i][0], dicom_format) for i
+                           in range(len(dmris_main))})
             if not dmris_ref:
                 study_specs.extend(
-                [SubStudySpec('dwi_{}_dwi_opposite'.format(i),
-                        CoregisteredDiffusionOppositeStudy, ref_spec) for i in range(len(dmris_main))])
-                inputs.update({'dwi_{}_dwi_opposite_ref'.format(i): Dataset(dmris_main_scan[0], dicom_format) for i, dmris_main_scan 
-                       in enumerate(dmris_main)})
-                inputs.update({'dwi_{}_dwi_opposite_to_correct'.format(i): Dataset(dmris_opposite[0][i], dicom_format) for i 
-                       in range(len(dmris_main))})
-#                 study_specs.extend(
-#                     SubStudySpec(
-#                         'dwi_{}_dwi_opposite'.format(i),
-#                         CoregisteredDiffusionOppositeStudy, ref_spec))
-#                 inputs['dwi_{}_dwi_opposite_to_correct'.format(i)] = Dataset(
-#                     dmris_opposite[i], dicom_format)
-#                 inputs['dwi_{}_dwi_opposite_ref'.format(i)] = Dataset(
-#                     dmris_main_scan, dicom_format)
-        elif dmris_main and dmris_opposite and (len(dmris_main) != len(dmris_opposite)):
-            for i, dmris_main_scan in enumerate(dmris_main):
-                study_specs.extend(
-                    SubStudySpec('dwi_{}_dwi_main'.format(i), CoregisteredDiffusionStudy,
-                                 ref_spec))
-                inputs['dwi_{}_dwi_main'.format(i)] = Dataset(
-                    dmris_main_scan, dicom_format)
-                inputs['dwi_{}_dwi_main_ref'.format(i)] = Dataset(
-                    dmris_opposite[0], dicom_format)
+                    [SubStudySpec('dwi_{}_dwi_opposite'.format(i),
+                                  CoregisteredDiffusionOppositeStudy, ref_spec)
+                     for i in range(len(dmris_main))])
+                inputs.update({'dwi_{}_dwi_opposite_ref'.format(i):
+                               Dataset(dmris_main_scan[0], dicom_format) for i,
+                               dmris_main_scan in enumerate(dmris_main)})
+                inputs.update({'dwi_{}_dwi_opposite_to_correct'.format(i):
+                               Dataset(dmris_opposite[i][0], dicom_format)
+                               for i in range(len(dmris_main))})
+        elif dmris_main and dmris_opposite and (
+                len(dmris_main) != len(dmris_opposite)):
+            study_specs.extend(
+                [SubStudySpec('dwi_{}_dwi_main'.format(i),
+                              CoregisteredDiffusionStudy,
+                              ref_spec) for i in range(len(dmris_main))])
+            inputs.update({'dwi_{}_dwi_main'.format(i):
+                           Dataset(dmris_main_scan[0], dicom_format) for i,
+                           dmris_main_scan in enumerate(dmris_main)})
+            inputs.update({'dwi_{}_dwi_main_ref'.format(i):
+                           Dataset(dmris_opposite[0][0], dicom_format) for i
+                           in range(len(dmris_main))})
             if not dmris_ref:
-                for i, dmris_opp_scan in enumerate(dmris_opposite):
-                    study_specs.extend(
-                        SubStudySpec(
-                            'dwi_{}_dwi_opposite'.format(i),
-                            CoregisteredDiffusionOppositeStudy, ref_spec))
-                    inputs['dwi_{}_dwi_opposite_to_correct'.format(i)] = Dataset(
-                        dmris_opp_scan, dicom_format)
-                    inputs['dwi_{}_dwi_opposite_ref'.format(i)] = Dataset(
-                        dmris_main[0], dicom_format)
+                study_specs.extend(
+                    [SubStudySpec('dwi_{}_dwi_opposite'.format(i),
+                                  CoregisteredDiffusionOppositeStudy, ref_spec)
+                     for i in range(len(dmris_opposite))])
+                inputs.update({'dwi_{}_dwi_opposite_to_correct'.format(i):
+                               Dataset(dmris_opp_scan[0], dicom_format) for i,
+                               dmris_opp_scan in enumerate(dmris_opposite)})
+                inputs.update({'dwi_{}_dwi_opposite_ref'.format(i):
+                               Dataset(dmris_main[0][0], dicom_format) for i
+                               in range(len(dmris_opposite))})
         if dmris_ref and (len(dmris_ref) == len(dmris_opposite)):
-            for i, dmris_ref_scan in enumerate(dmris_ref):
-                study_specs.extend(
-                    SubStudySpec('dwi_{}_toref'.format(i),
-                                 CoregisteredDiffusionReferenceStudy,
-                                 ref_spec))
-                study_specs.extend(
-                    SubStudySpec(
-                        'dwi_{}_dwi_opposite'.format(i),
-                        CoregisteredDiffusionOppositeStudy, ref_spec))
-                inputs['dwi_{}_dwi_opposite_to_correct'.format(i)] = Dataset(
-                    dmris_opposite[i], dicom_format)
-                inputs['dwi_{}_dwi_opposite_ref'.format(i)] = Dataset(
-                    dmris_ref_scan, dicom_format)
-                inputs['dwi_{}_toref_dwi2ref_to_correct'.format(i)] = Dataset(
-                    dmris_ref_scan, dicom_format)
-                inputs['dwi_{}_dwi_dwi2ref_ref'.format(i)] = Dataset(
-                    dmris_opposite[i], dicom_format)
+            study_specs.extend([SubStudySpec('dwi_{}_toref'.format(i),
+                                CoregisteredDiffusionReferenceStudy, ref_spec)
+                                for i in range(len(dmris_ref))])
+            study_specs.extend([SubStudySpec('dwi_{}_dwi_opposite'.format(i),
+                                CoregisteredDiffusionOppositeStudy, ref_spec)
+                                for i in range(len(dmris_ref))])
+            inputs.update({'dwi_{}_dwi_opposite_to_correct'.format(i):
+                           Dataset(dmris_opposite[i][0], dicom_format)
+                           for i in range(len(dmris_ref))})
+            inputs.update({'dwi_{}_dwi_opposite_ref'.format(i):
+                           Dataset(dmris_ref_scan[0], dicom_format) for i,
+                           dmris_ref_scan in enumerate(dmris_ref)})
+            inputs.update({'dwi_{}_dwi_dwi2ref_ref'.format(i):
+                           Dataset(dmris_opposite[i][0], dicom_format)
+                           for i in range(len(dmris_ref))})
+            inputs.update({'dwi_{}_toref_dwi2ref_to_correct'.format(i):
+                           Dataset(dmris_ref_scan[0], dicom_format) for i,
+                           dmris_ref_scan in enumerate(dmris_ref)})
         elif dmris_ref and (len(dmris_ref) != len(dmris_opposite)):
-            for i, dmris_ref_scan in enumerate(dmris_ref):
-                study_specs.extend(
-                    SubStudySpec('dwi_{}_toref'.format(i),
-                                 CoregisteredDiffusionReferenceStudy,
-                                 ref_spec))
-                inputs['dwi_{}_toref_dwi2ref_to_correct'.format(i)] = Dataset(
-                    dmris_ref_scan, dicom_format)
-                inputs['dwi_{}_dwi_dwi2ref_ref'.format(i)] = Dataset(
-                    dmris_opposite[0], dicom_format)
-            for i, dmris_opp_scan in enumerate(dmris_opposite):
-                study_specs.extend(
-                    SubStudySpec(
-                        'dwi_{}_dwi_opposite'.format(i),
-                        CoregisteredDiffusionOppositeStudy, ref_spec))
-                inputs['dwi_{}_dwi_opposite_to_correct'.format(i)] = Dataset(
-                    dmris_opp_scan, dicom_format)
-                inputs['dwi_{}_dwi_opposite_ref'.format(i)] = Dataset(
-                    dmris_ref[0], dicom_format)
-    dct = {}
-    dct['_sub_study_specs'] = set_specs(study_specs)
-    dct['_data_specs'] = {}
-    return MultiStudyMetaClass(name, [MotionDetectionMixin], dct), inputs
+            study_specs.extend([SubStudySpec('dwi_{}_toref'.format(i),
+                                CoregisteredDiffusionReferenceStudy, ref_spec)
+                                for i in range(len(dmris_ref))])
+            inputs.update({'dwi_{}_dwi_dwi2ref_ref'.format(i):
+                           Dataset(dmris_opposite[0][0], dicom_format)
+                           for i in range(len(dmris_ref))})
+            inputs.update({'dwi_{}_toref_dwi2ref_to_correct'.format(i):
+                           Dataset(dmris_ref_scan[0], dicom_format) for i,
+                           dmris_ref_scan in enumerate(dmris_ref)})
 
-list_t1 = ['t1_1_dicom', 't1_2_dicom']
-list_t2 = ['t2_1_dicom', 't2_2_dicom']
-list_epi = ['epi_1_dicom', 'asl_dicom']
-list_dwi = [['dwi_main_dicom', '0'], ['dwi_opp_dicom', '-1'], ['dwi_ref_dicom', '1']]
+            study_specs.extend([SubStudySpec('dwi_{}_dwi_opposite'.format(i),
+                                CoregisteredDiffusionOppositeStudy, ref_spec)
+                                for i in range(len(dmris_opposite))])
+            inputs.update({'dwi_{}_dwi_opposite_ref'.format(i):
+                           Dataset(dmris_ref[0][0], dicom_format)
+                           for i in range(len(dmris_opposite))})
+            inputs.update({'dwi_{}_dwi_opposite_to_correct'.format(i):
+                           Dataset(dmris_opp_scan[0], dicom_format) for i,
+                           dmris_ref_scan in enumerate(dmris_opposite)})
+    dct['_sub_study_specs'] = set_specs(*study_specs)
+    dct['_data_specs'] = set_specs(
+        *data_specs, inherit_from=MotionDetectionMixin.data_specs())
+#     dct['_data_specs'] = MotionDetectionMixin._data_specs
+    return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
 
-create_motion_detection_class('test_mixin', 't1_dicom' , 't1', t1s=list_t1,
-                                  t2s=list_t2, dmris=list_dwi, epis=list_epi)
+
+# create_motion_detection_class('test_mixin', 't1_dicom' , 't1', t1s=list_t1,
+#                                   t2s=list_t2, dmris=list_dwi, epis=list_epi)
 # class MotionReferenceMixin(MRIStudy):
 #     def header_info_extraction_pipeline(self, reference=True, multivol=False,
 #                                         **kwargs):
