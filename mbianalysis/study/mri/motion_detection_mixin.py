@@ -383,7 +383,7 @@ def create_motion_detection_class(name, reference, ref_type, t1s=None,
         inputs.update({'t1_{}_t1'.format(i): Dataset(t1_scan, dicom_format)
                        for i, t1_scan in enumerate(t1s)})
     if utes is not None and umaps is not None:
-        if len(umaps) != 1:
+        if len(umaps) > 1:
             raise Exception('Please provide just one umap.')
         study_specs.extend(
                 [SubStudySpec('ute_{}_t1'.format(i), CoregisteredT1Study,
