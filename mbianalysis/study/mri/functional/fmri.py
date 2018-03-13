@@ -385,8 +385,8 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline = self.create_pipeline(
             name='rsfMRI_filtering',
-            inputs=[DatasetSpec('fm_mag_nifti', nifti_gz_format),
-                    DatasetSpec('fm_phase_nifti', nifti_gz_format),
+            inputs=[DatasetSpec('field_map_mag_nifti', nifti_gz_format),
+                    DatasetSpec('field_map_phase_nifti', nifti_gz_format),
                     DatasetSpec('rs_fmri_nifti', nifti_gz_format),
                     DatasetSpec('betted_file', nifti_gz_format),
                     FieldSpec('tr', float)],
@@ -406,7 +406,7 @@ class FunctionalMRIStudy(MRIStudy):
         bet = pipeline.create_node(BET(), name="bet", wall_time=5,
                                    requirements=[fsl5_req])
         bet.inputs.robust = True
-        pipeline.connect_input('fm_mag_nifti', bet, 'in_file')
+        pipeline.connect_input('field_map_mag_nifti', bet, 'in_file')
 
         bet_rsfmri = pipeline.create_node(BET(), name="bet_rsfmri",
                                           wall_time=5, requirements=[fsl5_req])
@@ -420,7 +420,7 @@ class FunctionalMRIStudy(MRIStudy):
                                            requirements=[fsl5_req])
         create_fmap.inputs.delta_TE = 2.46
         pipeline.connect(bet, "out_file", create_fmap, "in_magnitude")
-        pipeline.connect_input('fm_phase_nifti', create_fmap,
+        pipeline.connect_input('field_map_phase_nifti', create_fmap,
                                'in_phase')
 
         fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
@@ -751,9 +751,9 @@ class FunctionalMRIStudy(MRIStudy):
                     rsfmri_dcm2nii_conversion_pipeline),
         DatasetSpec('t1_nifti', nifti_gz_format,
                     t1_dcm2nii_conversion_pipeline),
-        DatasetSpec('fm_mag_nifti', nifti_gz_format,
+        DatasetSpec('field_map_mag_nifti', nifti_gz_format,
                     fm_mag_dcm2nii_conversion_pipeline),
-        DatasetSpec('fm_phase_nifti', nifti_gz_format,
+        DatasetSpec('field_map_phase_nifti', nifti_gz_format,
                     fm_phase_dcm2nii_conversion_pipeline),
         DatasetSpec('melodic_dir', zip_format, feat_pipeline),
         DatasetSpec('train_data', rdata_format, TrainingFix,
