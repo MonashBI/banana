@@ -57,7 +57,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
                     tr = float(line.split('=')[-1].strip())/1000000
-                elif 'SliceArray.asSlice[0].dInPlaneRot' in line and multivol:
+                elif 'SliceArray.asSlice[0].dInPlaneRot' in line:
                     if len(line.split('=')) > 1:
                         phase_offset = float(line.split('=')[-1].strip())
                         if (np.abs(phase_offset) > 1 and
