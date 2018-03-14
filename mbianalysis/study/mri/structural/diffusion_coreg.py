@@ -179,10 +179,10 @@ class DiffusionStudy(MRIStudy):
 
 class DiffusionReferenceStudy(DiffusionStudy):
 
-    def header_info_extraction_pipeline(self, **kwargs):
+    def header_info_extraction_pipeline(self, multivol=False, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'to_be_corrected', **kwargs))
+                    'to_be_corrected', multivol=multivol, **kwargs))
 
     def main_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
@@ -214,10 +214,10 @@ class DiffusionReferenceStudy(DiffusionStudy):
 
 class DiffusionOppositeStudy(DiffusionReferenceStudy):
 
-    def header_info_extraction_pipeline(self, **kwargs):
-        return (super(DiffusionOppositeStudy, self).
+    def header_info_extraction_pipeline(self, multivol=False, **kwargs):
+        return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'to_be_corrected', **kwargs))
+                    'to_be_corrected', multivol=multivol, **kwargs))
 
     def main_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
@@ -249,10 +249,10 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
 
 class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
 
-    def header_info_extraction_pipeline(self, **kwargs):
-        return (super(DiffusionReferenceOppositeStudy, self).
+    def header_info_extraction_pipeline(self, multivol=False, **kwargs):
+        return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'to_be_corrected', **kwargs))
+                    'to_be_corrected', multivol=multivol, **kwargs))
 
     def main_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
