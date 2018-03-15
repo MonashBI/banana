@@ -179,19 +179,19 @@ class TestMC(TestCase):
                                               dicom_format),
                 'ute_t1': Dataset('ute_dicom', dicom_format),
                 'fm_t2': Dataset('fm_dicom', dicom_format),
-                'ref_primary': Dataset('reference_dicom', dicom_format),
-                't2_1_motion_mats': Dataset('t2_1_motion_mats', directory_format),
-                't2_2_motion_mats': Dataset('t2_2_motion_mats', directory_format),
-                't2_3_motion_mats': Dataset('t2_3_motion_mats', directory_format),
-                't2_4_motion_mats': Dataset('t2_4_motion_mats', directory_format),
-                't2_5_motion_mats': Dataset('t2_5_motion_mats', directory_format),
-                'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
-                'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
-                'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
+                'ref_primary': Dataset('reference_dicom', dicom_format)
+#                 't2_1_motion_mats': Dataset('t2_1_motion_mats', directory_format),
+#                 't2_2_motion_mats': Dataset('t2_2_motion_mats', directory_format),
+#                 't2_3_motion_mats': Dataset('t2_3_motion_mats', directory_format),
+#                 't2_4_motion_mats': Dataset('t2_4_motion_mats', directory_format),
+#                 't2_5_motion_mats': Dataset('t2_5_motion_mats', directory_format),
+#                 'fm_motion_mats': Dataset('fm_motion_mats', directory_format),
+#                 'ute_motion_mats': Dataset('ute_motion_mats', directory_format),
+#                 'epi1_motion_mats': Dataset('epi1_motion_mats', directory_format),
 #                 't1_1_motion_mats': Dataset('t1_1_motion_mats', directory_format),
-                'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
-                'dwi_1_opposite_motion_mats': Dataset('dwi_1_opposite_motion_mats', directory_format),
-                'dwi_1_to_ref_motion_mats': Dataset('dwi_1_to_ref_motion_mats', directory_format)
+#                 'dwi_1_main_motion_mats': Dataset('dwi_1_main_motion_mats', directory_format),
+#                 'dwi_1_opposite_motion_mats': Dataset('dwi_1_opposite_motion_mats', directory_format),
+#                 'dwi_1_to_ref_motion_mats': Dataset('dwi_1_to_ref_motion_mats', directory_format)
                 })
         study.plot_mean_displacement_pipeline().run(work_dir=self.work_dir)
         self.assertDatasetCreated('frame2reference_mats', study.name)
