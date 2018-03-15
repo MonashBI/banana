@@ -154,7 +154,7 @@ class PrepareDWI(BaseInterface):
         dwi1 = nib.load(self.inputs.dwi1)
         dwi1 = dwi1.get_data()
         if pe_dir == 'ROW':
-            if np.sign(phase_offset) == -1:
+            if np.sign(phase_offset) == 1:
                 self.dict_output['pe'] = 'RL'
             else:
                 self.dict_output['pe'] = 'LR'
