@@ -9,7 +9,7 @@ import shutil
 # from nianalysis.archive.xnat import XNATArchive
 from nianalysis.dataset import Dataset, Field  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format, dicom_format
-from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
+# from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
 from nipype.workflows import dmri
 
 
@@ -135,10 +135,11 @@ t1s = ['t1_1_dicom']
 t2s = ['t2_1_dicom', 't2_2_dicom', 't2_3_dicom', 't2_4_dicom',
            't2_5_dicom', 'fm_dicom']
 epis = ['epi_1_dicom']
-dmris = [['dwi_1_main_dicom', '0'], ['dwi2ref_1_opposite_dicom', '-1'],
-            ['dwi2ref_1_dicom', '1']]
+dmris = []
+# dmris = [['dwi2ref_1_opposite_dicom', '-1'],
+#             ['dwi2ref_1_dicom', '1']]
 utes = ['ute_dicom']
-umaps = []
+umaps = ['umap_dicom']
 ref = 'reference_dicom'
 ref_type = 't1'
 
@@ -146,7 +147,7 @@ ref_type = 't1'
 input_dir = '/Users/francescosforazzini/git/mbi-analysis/test/'
 # ref, ref_type, t1s, epis, t2s, dmris, utes, umaps = (
 #     prepare_mc_detection(input_dir))
- 
+
 cls, inputs = create_motion_detection_class(
     'test_mixin', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris, epis=epis,
     utes=utes, umaps=umaps)
@@ -192,9 +193,9 @@ except OSError as e:
 study = cls(
     name='test_mixin',
     project_id='data', archive=LocalArchive(input_dir),
-  
+
     inputs=inputs)
-study.plot_mean_displacement_pipeline().run(
+study.frame2ref_alignment_pipeline().run(
     subject_ids=['cache'],
     visit_ids=['STUDYMRIMC_MC'], work_dir=WORK_PATH)
 print 'Done!'

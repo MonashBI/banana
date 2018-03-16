@@ -87,8 +87,8 @@ class CoregisteredT1Study(MultiStudy):
         't1', T1Study.header_info_extraction_pipeline,
         override_default_options={'multivol': False})
 
-    t1_bet_pipeline = MultiStudy.translate(
-        't1', T1Study.brain_mask_pipeline)
+#     t1_bet_pipeline = MultiStudy.translate(
+#         't1', T1Study.brain_mask_pipeline)
 
     ref_bet_pipeline = MultiStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
@@ -165,7 +165,7 @@ class CoregisteredT1Study(MultiStudy):
                     ref_basic_preproc_pipeline),
         DatasetSpec('t1_qformed', nifti_gz_format,
                     t1_qform_transform_pipeline),
-        DatasetSpec('masked', nifti_gz_format, t1_bet_pipeline),
+#         DatasetSpec('masked', nifti_gz_format, t1_bet_pipeline),
         DatasetSpec('t1_qform_mat', text_matrix_format,
                     t1_qform_transform_pipeline),
         DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
