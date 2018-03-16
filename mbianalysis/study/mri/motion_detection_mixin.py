@@ -19,8 +19,13 @@ from .structural.diffusion_coreg import (
 from nianalysis.requirements import fsl509_req
 from nianalysis.exceptions import NiAnalysisNameError
 from nianalysis.dataset import Dataset
-from mbianalysis.study.mri.base import MRIStudy
+from nianalysis.interfaces.mrtrix import MRConvert
+from nianalysis.requirements import mrtrix3_req
 import logging
+from nianalysis.interfaces.converters import Nii2Dicom
+from nianalysis.interfaces.utils import (
+    CopyToDir, ListDir, dicom_fname_sort_key)
+from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 
 
 logger = logging.getLogger('NiAnalysis')
@@ -100,6 +105,10 @@ class MotionReferenceT2Study(T2Study):
 class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
+
+#     ute_brain_mask_pipeline = MultiStudy.translate(
+#         'ute', CoregisteredT1Study.t1_brain_mask_pipeline,
+#         override_default_options={'bet_method': 'optibet'})
 
     def mean_displacement_pipeline(self, **options):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
@@ -286,6 +295,27 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
+    def umap_dcm2nii_conversion_pipeline(self, **options):
+        pipeline = self.create_pipeline(
+            name='umap_dcm2nii',
+            inputs=[DatasetSpec('umap', dicom_format)],
+            outputs=[DatasetSpec('umap_nifti', nifti_gz_format)],
+            description=("DICOM to NIFTI conversion."),
+            default_options={},
+            version=1,
+            citations=[],
+            options=options)
+
+        conv = pipeline.create_node(MRConvert(), name='converter',
+                                    requirements=[mrtrix3_req])
+        conv.inputs.out_ext = '.nii.gz'
+        pipeline.connect_input('umap', conv, 'in_file')
+        pipeline.connect_output(
+            'umap_nifti', conv, 'out_file')
+
+        pipeline.assert_connected()
+        return pipeline
+
     def frame2ref_alignment_pipeline_factory(
             self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
             pct=False, fixed_binning=False, **options):
@@ -337,9 +367,46 @@ class MotionDetectionMixin(MultiStudy):
             'ute_qform_mat', umap='umap_nifti',
             pct=False, fixed_binning=False, **options)
 
+    def nifti2dcm_conversion_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='conversion_to_dicom',
+            inputs=[DatasetSpec('umaps_align2ref', directory_format),
+                    DatasetSpec('umap', dicom_format)],
+            outputs=[DatasetSpec('umap_align2ref_dicoms', directory_format)],
+            description=(
+                "Conversing aligned umap from nifti to dicom format - "
+                "parallel implementation"),
+            default_options={},
+            version=1,
+            citations=(),
+            options=options)
+
+        list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
+        nii2dicom = pipeline.create_map_node(
+            Nii2Dicom(), name='nii2dicom',
+            iterfield=['in_file'], wall_time=20)
+        list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
+        list_dicoms.inputs.sort_key = dicom_fname_sort_key
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        # Connect nodes
+        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
+        pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
+        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
+        # Connect inputs
+        pipeline.connect_input('umaps_align2ref', list_niftis, 'files')
+        pipeline.connect_input('umap', list_dicoms, 'directory')
+        # Connect outputs
+        pipeline.connect_output('umap_align2ref_dicoms', copy2dir, 'out_dir')
+
+        pipeline.assert_connected()
+        return pipeline
+
     _sub_study_specs = {}
     _data_specs = set_specs(
-        DatasetSpec('umap_nifti', nifti_gz_format),
+        DatasetSpec('umap', dicom_format),
+        DatasetSpec('umap_nifti', nifti_gz_format,
+                    umap_dcm2nii_conversion_pipeline),
         DatasetSpec('mean_displacement', text_format,
                     mean_displacement_pipeline),
         DatasetSpec('mean_displacement_rc', text_format,
@@ -362,6 +429,8 @@ class MotionDetectionMixin(MultiStudy):
                     pet_correction_factors_pipeline),
         DatasetSpec('umaps_align2ref', directory_format,
                     frame2ref_alignment_pipeline),
+        DatasetSpec('umaps_align2ref_dicoms', directory_format,
+                    nifti2dcm_conversion_pipeline),
         DatasetSpec('frame2reference_mats', directory_format,
                     frame2ref_alignment_pipeline))
 
@@ -402,59 +471,61 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         study_specs.extend(
                 [SubStudySpec('ute_{}'.format(i), CoregisteredT1Study,
                               ref_spec) for i in range(len(utes))])
-        inputs.update({'ute_{}_t1'.format(i): Dataset(ute_scan, dicom_format)
+        inputs.update({'ute_{}_ute'.format(i): Dataset(ute_scan, dicom_format)
                        for i, ute_scan in enumerate(utes)})
-        dct.update(
-            {'ute_{}_t1_qform_transform_pipeline'.format(i):
-             MultiStudy.translate(
-                 'ute_{}_t1'.format(i),
-                 CoregisteredT1Study.t1_qform_transform_pipeline)
-             for i in range(len(utes))})
-        dct.update(
-            {'ute_{}_t1_bet_pipeline'.format(i):
-             MultiStudy.translate(
-                 'ute_{}_t1'.format(i),
-                 CoregisteredT1Study.t1_bet_pipeline,
-                 override_default_options={'f_threshold': 0.65,
-                                           'g_threshold': -0.1})
-             for i in range(len(utes))})
+#         dct.update(
+#             {'ute_{}_t1_qform_transform_pipeline'.format(i):
+#              MultiStudy.translate(
+#                  'ute_{}'.format(i),
+#                  CoregisteredT1Study.t1_qform_transform_pipeline)
+#              for i in range(len(utes))})
+#         dct.update(
+#             {'ute_{}_t1_bet_pipeline_new'.format(i):
+#              MultiStudy.translate(
+#                  'ute_{}'.format(i),
+#                  CoregisteredT1Study.t1_brain_mask_pipeline,
+#                  override_default_options={'f_threshold': 0.65,
+#                                            'g_threshold': -0.1})
+#              for i in range(len(utes))})
 
         def frame2ref_alignment_pipeline_altered(self, **options):
             return self.frame2ref_alignment_pipeline_factory(
-                'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
-                'ute_qform_mat', umap=None,
+                'frame2ref_alignment', 'average_mats',
+                'ute_{}_reg_mat'.format(len(utes)-1),
+                'ute_{}_qform_mat'.format(len(utes)-1), umap=None,
                 pct=False, fixed_binning=False, **options)
-        dct['frame2ref_alignment_pipeline'] = frame2ref_alignment_pipeline_altered
-        dct.update(
-            {'ute_{}_t1_rigid_registration_pipeline'.format(i):
-             MultiStudy.translate(
-                 'ute_{}'.format(i),
-                 CoregisteredT1Study.t1_rigid_registration_pipeline)
-             for i in range(len(utes))})
-        data_specs.extend([DatasetSpec(
-            'ute_{}_reg'.format(i), nifti_gz_format,
-            dct['ute_{}_t1_rigid_registration_pipeline'.format(i)])
-            for i in range(len(utes))])
-        data_specs.extend([DatasetSpec(
-            'ute_{}_reg_mat'.format(i), text_matrix_format,
-            dct['ute_{}_t1_rigid_registration_pipeline'.format(i)])
-            for i in range(len(utes))])
-        data_specs.extend([DatasetSpec(
-            'ute_{}_qformed'.format(i), nifti_gz_format,
-            dct['ute_{}_t1_qform_transform_pipeline'.format(i)])
-            for i in range(len(utes))])
-        data_specs.extend([DatasetSpec(
-            'ute_{}_qform_mat'.format(i), text_matrix_format,
-            dct['ute_{}_t1_qform_transform_pipeline'.format(i)])
-            for i in range(len(utes))])
-        data_specs.extend([DatasetSpec(
-            'ute_{}_brain'.format(i), nifti_gz_format,
-            dct['ute_{}_t1_bet_pipeline'.format(i)])
-            for i in range(len(utes))])
-        data_specs.extend([DatasetSpec(
-            'ute_{}_brain_mask'.format(i), nifti_gz_format,
-            dct['ute_{}_t1_bet_pipeline'.format(i)])
-            for i in range(len(utes))])
+        dct['frame2ref_alignment_pipeline'] = (
+            frame2ref_alignment_pipeline_altered)
+#         dct.update(
+#             {'ute_{}_t1_rigid_registration_pipeline'.format(i):
+#              MultiStudy.translate(
+#                  'ute_{}'.format(i),
+#                  CoregisteredT1Study.t1_rigid_registration_pipeline)
+#              for i in range(len(utes))})
+#         data_specs.extend([DatasetSpec(
+#             'ute_{}_reg'.format(i), nifti_gz_format,
+#             dct['ute_{}_t1_rigid_registration_pipeline'.format(i)])
+#             for i in range(len(utes))])
+#         data_specs.extend([DatasetSpec(
+#             'ute_{}_reg_mat'.format(i), text_matrix_format,
+#             dct['ute_{}_t1_rigid_registration_pipeline'.format(i)])
+#             for i in range(len(utes))])
+#         data_specs.extend([DatasetSpec(
+#             'ute_{}_qformed'.format(i), nifti_gz_format,
+#             dct['ute_{}_t1_qform_transform_pipeline'.format(i)])
+#             for i in range(len(utes))])
+#         data_specs.extend([DatasetSpec(
+#             'ute_{}_qform_mat'.format(i), text_matrix_format,
+#             dct['ute_{}_t1_qform_transform_pipeline'.format(i)])
+#             for i in range(len(utes))])
+#         data_specs.extend([DatasetSpec(
+#             'ute_{}_brain'.format(i), nifti_gz_format,
+#             dct['ute_{}_t1_bet_pipeline_new'.format(i)])
+#             for i in range(len(utes))])
+#         data_specs.extend([DatasetSpec(
+#             'ute_{}_brain_mask'.format(i), nifti_gz_format,
+#             dct['ute_{}_t1_bet_pipeline_new'.format(i)])
+#             for i in range(len(utes))])
         data_specs.append(DatasetSpec(
             'frame2reference_mats', directory_format,
             frame2ref_alignment_pipeline_altered))
@@ -465,12 +536,32 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                     'reference will be calculated.')
         if len(umaps) > 1:
             raise Exception('Please provide just one umap.')
-        dct.update({'umap_dcm2nii_conversion_pipeline': MultiStudy.translate(
-            'umap', MRIStudy.dcm2nii_conversion_pipeline)})
-        study_specs.append(SubStudySpec('umap', MRIStudy))
-        inputs['umap_primary'] = Dataset(umaps[0], dicom_format)
+        study_specs.extend(
+                [SubStudySpec('ute_{}'.format(i), CoregisteredT1Study,
+                              ref_spec) for i in range(len(utes))])
+        inputs.update({'ute_{}_t1'.format(i): Dataset(ute_scan, dicom_format)
+                       for i, ute_scan in enumerate(utes)})
+
+        def frame2ref_alignment_pipeline_altered(self, **options):
+            return self.frame2ref_alignment_pipeline_factory(
+                'frame2ref_alignment', 'average_mats',
+                'ute_{}_t1_reg_mat'.format(len(utes)-1),
+                'ute_{}_t1_qform_mat'.format(len(utes)-1),
+                umap='umap_nifti',
+                pct=False, fixed_binning=False, **options)
+
+        dct['frame2ref_alignment_pipeline'] = (
+            frame2ref_alignment_pipeline_altered)
+#         dct.update({'umap_dcm2nii_conversion_pipeline': MultiStudy.translate(
+#             'umap', MRIStudy.dcm2nii_conversion_pipeline)})
+#         study_specs.append(SubStudySpec('umap', MRIStudy))
+        inputs['umap'.format(len(utes)-1)] = Dataset(
+            umaps[0], dicom_format)
         data_specs.append(DatasetSpec(
-            'umap_nifti', nifti_gz_format, 'umap_dcm2nii_conversion_pipeline'))
+            'frame2reference_mats', directory_format,
+            frame2ref_alignment_pipeline_altered))
+        run_pipeline = True
+
     elif not utes and umaps:
         logger.warning('Umap provided without corresponding UTE image. '
                        'Realignment cannot be performed without UTE. Umap will'
@@ -605,7 +696,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if not run_pipeline:
         raise Exception('At least one scan, other than the reference, must be '
                         'provided!')
-    dct['_sub_study_specs'] = set_specs(*study_specs)
+    dct['_sub_study_specs'] = set_specs(
+        *study_specs, inherit_from=MotionDetectionMixin.sub_study_specs())
     dct['_data_specs'] = set_specs(
         *data_specs, inherit_from=MotionDetectionMixin.data_specs())
 #     dct['_data_specs'] = MotionDetectionMixin._data_specs

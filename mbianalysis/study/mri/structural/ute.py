@@ -1,6 +1,6 @@
 from ..base import MRIStudy
 from nianalysis.study.base import set_specs
-from nianalysis.dataset import DatasetSpec
+from nianalysis.dataset import DatasetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
 from nipype.interfaces.fsl.utils import ConvertXFM, Smooth, Split
 from nipype.interfaces.fsl.maths import (
@@ -12,13 +12,18 @@ from nianalysis.interfaces.converters import Nii2Dicom
 from mbianalysis.interfaces.mrtrix.utils import MRConvert
 from nianalysis.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)
-
+from nianalysis.study.multi import (
+    MultiStudy, SubStudySpec, MultiStudyMetaClass)
+from ..coregistered import CoregisteredStudy
 from nianalysis.citations import (
     fsl_cite, spm_cite, matlab_cite)
 from nianalysis.data_formats import (
-    dicom_format, nifti_gz_format, nifti_format, text_matrix_format)
+    dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
+    directory_format, text_format)
 from nianalysis.requirements import (
     fsl5_req, spm12_req, matlab2015_req)
+from mbianalysis.interfaces.custom.motion_correction import (
+    MotionMatCalculation)
 
 
 class UTEStudy(MRIStudy):
@@ -28,6 +33,18 @@ class UTEStudy(MRIStudy):
         '/Users/jakubb/Desktop/ACProject/template/template_template0.nii.gz')
     # tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
     tpm_path = '/Users/jakubb/Desktop/ACProject/template/head_tpm.nii'
+
+    def brain_mask_pipeline(self, robust=True, f_threshold=0.65,
+                            g_threshold=-0.15, **kwargs):
+        pipeline = super(UTEStudy, self).brain_mask_pipeline(
+            robust=robust, f_threshold=f_threshold,
+            g_threshold=g_threshold, **kwargs)
+        return pipeline
+
+    def header_info_extraction_pipeline(self, **kwargs):
+        return (super(UTEStudy, self).
+                header_info_extraction_pipeline_factory(
+                    'primary', **kwargs))
 
     def registration_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
@@ -461,8 +478,10 @@ class UTEStudy(MRIStudy):
         list_dicoms.inputs.sort_key = dicom_fname_sort_key
         cont_copy2dir = pipeline.create_node(CopyToDir(),
                                              name='cont_copy2dir')
+        cont_copy2dir.inputs.file_ext = '.dcm'
         fix_copy2dir = pipeline.create_node(CopyToDir(),
                                             name='fix_copy2dir')
+        fix_copy2dir.inputs.file_ext = '.dcm'
         # Connect nodes
         pipeline.connect(cont_split, 'out_files', cont_nii2dicom, 'in_file')
         pipeline.connect(fix_split, 'out_files', fix_nii2dicom, 'in_file')
@@ -522,5 +541,158 @@ class UTEStudy(MRIStudy):
             'sute_cont_dicoms',
             dicom_format,
             conversion_to_dicom_pipeline),
+        inherit_from=MRIStudy.data_specs())
 
-        inherit_from=MRIStudy.generated_data_specs())
+
+class CoregisteredUTEStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
+
+    ute_basic_preproc_pipeline = MultiStudy.translate(
+        'ute', UTEStudy.basic_preproc_pipeline)
+
+    ute_dcm2nii_pipeline = MultiStudy.translate(
+        'ute', MRIStudy.dcm2nii_conversion_pipeline)
+
+    umap_dcm2nii_pipeline = MultiStudy.translate(
+        'ute', MRIStudy.dcm2nii_conversion_pipeline)
+
+    ute_dcm_info_pipeline = MultiStudy.translate(
+        'ute', UTEStudy.header_info_extraction_pipeline,
+        override_default_options={'multivol': False})
+
+    ref_bet_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.brain_mask_pipeline)
+
+    ref_basic_preproc_pipeline = MultiStudy.translate(
+        'reference', MRIStudy.basic_preproc_pipeline,
+        override_default_options={'resolution': [1]})
+
+    ute_qform_transform_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.qform_transform_pipeline)
+
+    ute_brain_mask_pipeline = MultiStudy.translate(
+        'ute', UTEStudy.brain_mask_pipeline)
+
+    ute_rigid_registration_pipeline = MultiStudy.translate(
+        'coreg', CoregisteredStudy.linear_registration_pipeline)
+
+    def motion_mat_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=[DatasetSpec('ute_reg_mat', text_matrix_format),
+                    DatasetSpec('ute_qform_mat', text_matrix_format)],
+            outputs=[DatasetSpec('motion_mats', directory_format)],
+            description=("utew Motion matrices calculation"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='motion_mats')
+        pipeline.connect_input('ute_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('ute_qform_mat', mm, 'qform_mat')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    def nifti2dcm_conversion_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='conversion_to_dicom',
+            inputs=[DatasetSpec('umap_aligned_niftis', directory_format),
+                    DatasetSpec('umap', dicom_format)],
+            outputs=[DatasetSpec('umap_aligned_dicoms', directory_format)],
+            description=(
+                "Conversing aligned umap from nifti to dicom format - "
+                "parallel implementation"),
+            default_options={},
+            version=1,
+            citations=(),
+            options=options)
+
+        list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
+        nii2dicom = pipeline.create_map_node(
+            Nii2Dicom(), name='nii2dicom',
+            iterfield=['in_file'], wall_time=20)
+        list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
+        list_dicoms.inputs.sort_key = dicom_fname_sort_key
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        # Connect nodes
+        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
+        pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
+        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
+        # Connect inputs
+        pipeline.connect_input('umap_aligned_nifti', list_niftis, 'files')
+        pipeline.connect_input('umap', list_dicoms, 'directory')
+        # Connect outputs
+        pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
+
+        pipeline.assert_connected()
+        return pipeline
+
+    _sub_study_specs = set_specs(
+        SubStudySpec('ute', UTEStudy, {
+            'ute': 'primary',
+            'ute_nifti': 'primary_nifti',
+            'ute_preproc': 'preproc',
+            'ute_brain': 'masked',
+            'ute_brain_mask': 'brain_mask',
+            'ped': 'ped',
+            'pe_angle': 'pe_angle',
+            'tr': 'tr',
+            'real_duration': 'real_duration',
+            'tot_duration': 'tot_duration',
+            'start_time': 'start_time',
+            'dcm_info': 'dcm_info'}),
+        SubStudySpec('reference', MRIStudy, {
+            'reference': 'primary_nifti',
+            'ref_preproc': 'preproc',
+            'ref_brain': 'masked',
+            'ref_brain_mask': 'brain_mask'}),
+        SubStudySpec('coreg', CoregisteredStudy, {
+            'ute_brain': 'to_register',
+            'ref_brain': 'reference',
+            'ute_qformed': 'qformed',
+            'ute_qform_mat': 'qform_mat',
+            'ute_reg': 'registered',
+            'ute_reg_mat': 'matrix'}))
+
+    _data_specs = set_specs(
+        DatasetSpec('ute', dicom_format),
+        DatasetSpec('umap', dicom_format),
+        DatasetSpec('umap_nifti', nifti_gz_format, umap_dcm2nii_pipeline),
+        DatasetSpec('umap_aligned_niftis', directory_format),
+        DatasetSpec('umap_aligned_dicoms', directory_format,
+                    nifti2dcm_conversion_pipeline),
+        DatasetSpec('ute_nifti', nifti_gz_format, ute_dcm2nii_pipeline),
+        DatasetSpec('reference', nifti_gz_format),
+        DatasetSpec('ute_preproc', nifti_gz_format,
+                    ute_basic_preproc_pipeline),
+        DatasetSpec('ute_brain', nifti_gz_format, ute_brain_mask_pipeline),
+        DatasetSpec('ute_brain_mask', nifti_gz_format,
+                    ute_brain_mask_pipeline),
+        DatasetSpec('ref_preproc', nifti_gz_format,
+                    ref_basic_preproc_pipeline),
+        DatasetSpec('ute_qformed', nifti_gz_format,
+                    ute_qform_transform_pipeline),
+        DatasetSpec('ute_qform_mat', text_matrix_format,
+                    ute_qform_transform_pipeline),
+        DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
+        DatasetSpec('ref_brain_mask', nifti_gz_format,
+                    ref_bet_pipeline),
+        DatasetSpec('ute_reg', nifti_gz_format,
+                    ute_rigid_registration_pipeline),
+        DatasetSpec('ute_reg_mat', text_matrix_format,
+                    ute_rigid_registration_pipeline),
+        DatasetSpec('motion_mats', directory_format,
+                    motion_mat_pipeline),
+        DatasetSpec('dcm_info', text_format, ute_dcm_info_pipeline),
+        FieldSpec('ped', str, ute_dcm_info_pipeline),
+        FieldSpec('pe_angle', str, ute_dcm_info_pipeline),
+        FieldSpec('tr', float, ute_dcm_info_pipeline),
+        FieldSpec('start_time', str, ute_dcm_info_pipeline),
+        FieldSpec('real_duration', str, ute_dcm_info_pipeline),
+        FieldSpec('tot_duration', str, ute_dcm_info_pipeline))
