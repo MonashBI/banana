@@ -144,14 +144,14 @@ ref = 'reference_dicom'
 ref_type = 't1'
 
 # input_dir = '/Volumes/ELEMENTS/test_mc_mixin/'
-input_dir = '/Users/francescosforazzini/git/mbi-analysis/test/'
+
 # ref, ref_type, t1s, epis, t2s, dmris, utes, umaps = (
 #     prepare_mc_detection(input_dir))
 
 cls, inputs = create_motion_detection_class(
-    'test_mixin', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris, epis=epis,
+    'test_mixin', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris, epis=None,
     utes=utes, umaps=umaps)
-
+input_dir = '/Users/fsforazz/git_test/mbi-analysis/test/'
 WORK_PATH = os.path.join(input_dir,
                          'test_mc_mixin_cache')
 try:

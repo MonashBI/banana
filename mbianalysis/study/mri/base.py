@@ -312,7 +312,7 @@ class MRIStudy(Study):
         return pipeline
 
     def header_info_extraction_pipeline(self, **options):
-        return self.header_info_extraction_pipeline_factory('dicom_file',
+        return self.header_info_extraction_pipeline_factory('primary',
                                                             **options)
 
     def header_info_extraction_pipeline_factory(self, dcm_in_name, ref=False,
@@ -396,8 +396,8 @@ class MRIStudy(Study):
         DatasetSpec('primary', dicom_format),
         DatasetSpec('primary_nifti', nifti_gz_format,
                     dcm2nii_conversion_pipeline),
-        DatasetSpec('dicom_dwi', dicom_format),
-        DatasetSpec('dicom_dwi_1', dicom_format),
+#         DatasetSpec('dicom_dwi', dicom_format),
+#         DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
                     basic_preproc_pipeline),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
@@ -407,7 +407,7 @@ class MRIStudy(Study):
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
-        DatasetSpec('dicom_file', dicom_format),
+#         DatasetSpec('dicom_file', dicom_format),
         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
         FieldSpec('start_time', str,
                   pipeline=header_info_extraction_pipeline),
