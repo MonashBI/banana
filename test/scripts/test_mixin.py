@@ -151,7 +151,7 @@ ref_type = 't1'
 cls, inputs = create_motion_detection_class(
     'test_mixin', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris, epis=None,
     utes=utes, umaps=umaps)
-input_dir = '/Users/fsforazz/git_test/mbi-analysis/test/'
+input_dir = '/Users/francescosforazzini/git/mbi-analysis/test/'
 WORK_PATH = os.path.join(input_dir,
                          'test_mc_mixin_cache')
 try:
@@ -195,7 +195,7 @@ study = cls(
     project_id='data', archive=LocalArchive(input_dir),
 
     inputs=inputs)
-study.frame2ref_alignment_pipeline().run(
+study.nii2dcm_conversion_pipeline().run(
     subject_ids=['cache'],
     visit_ids=['STUDYMRIMC_MC'], work_dir=WORK_PATH)
 print 'Done!'
