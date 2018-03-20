@@ -21,6 +21,7 @@ from nianalysis.exceptions import NiAnalysisNameError
 from nianalysis.dataset import Dataset
 import logging
 from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
+from nianalysis.interfaces.utils import CopyToDir
 
 
 logger = logging.getLogger('NiAnalysis')
@@ -129,6 +130,7 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('mean_displacement_consecutive', text_format),
                      DatasetSpec('start_times', text_format),
                      DatasetSpec('motion_par_rc', text_format),
+                     DatasetSpec('motion_par', text_format),
                      DatasetSpec('offset_indexes', text_format),
                      DatasetSpec('mats4average', text_format)],
             description=("Calculate the mean displacement between each motion"
@@ -177,7 +179,8 @@ class MotionDetectionMixin(MultiStudy):
             'mean_displacement_consecutive', md,
             'mean_displacement_consecutive')
         pipeline.connect_output('start_times', md, 'start_times')
-        pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
+        pipeline.connect_output('motion_par_rc', md, 'motion_parameters_rc')
+        pipeline.connect_output('motion_par', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
         pipeline.connect_output('mats4average', md, 'mats4average')
         pipeline.assert_connected()
@@ -191,7 +194,8 @@ class MotionDetectionMixin(MultiStudy):
                     DatasetSpec('mean_displacement_consecutive', text_format),
                     DatasetSpec('start_times', text_format)],
             outputs=[DatasetSpec('frame_start_times', text_format),
-                     DatasetSpec('frame_vol_numbers', text_format)],
+                     DatasetSpec('frame_vol_numbers', text_format),
+                     DatasetSpec('timestamps', directory_format)],
             description=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
             default_options={'th': 2.0, 'temporal_th': 30.0},
@@ -211,6 +215,7 @@ class MotionDetectionMixin(MultiStudy):
                                 'frame_start_times')
         pipeline.connect_output('frame_vol_numbers', framing,
                                 'frame_vol_numbers')
+        pipeline.connect_output('timestamps', framing, 'timestamps_dir')
         pipeline.assert_connected()
         return pipeline
 
@@ -341,6 +346,51 @@ class MotionDetectionMixin(MultiStudy):
             'ute_qform_mat', umap='umap_nifti',
             pct=False, fixed_binning=False, **options)
 
+    def gather_outputs_factory(self, name, align_mats=False,
+                               pet_corr_fac=False, aligned_umaps=False,
+                               timestamps=False, **options):
+        inputs = [DatasetSpec('mean_displacement_plot', png_format),
+                  DatasetSpec('motion_par', text_format)]
+        if align_mats:
+            inputs.append(
+                DatasetSpec('frame2reference_mats', directory_format))
+        if pet_corr_fac:
+            inputs.append(DatasetSpec('correction_factors', text_format))
+        if aligned_umaps:
+            inputs.append(
+                DatasetSpec('umaps_align2ref_dicom', directory_format))
+        if timestamps:
+            inputs.append(DatasetSpec('timestamps', directory_format))
+
+        pipeline = self.create_pipeline(
+            name=name,
+            inputs=inputs,
+            outputs=[DatasetSpec('motion_detection_output', directory_format)],
+            description=("Pipeline to gather together all the outputs from "
+                         "the motion detection pipeline."),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        merge_inputs = pipeline.create_node(Merge(len(inputs)),
+                                            name='merge_inputs')
+        for i, dataset in enumerate(inputs, start=1):
+            pipeline.connect_input(
+                dataset.name, merge_inputs, 'in{}'.format(i))
+
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        pipeline.connect(merge_inputs, 'out', copy2dir, 'in_files')
+
+        pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
+        pipeline.assert_connected()
+        return pipeline
+
+    def gather_outputs_pipeline(self, **options):
+        return self.gather_outputs_factory(
+            'gather_md_outputs', pet_corr_fac=False, aligned_umaps=False,
+            timestamps=False, align_mats=False)
+
     _sub_study_specs = {}
     _data_specs = set_specs(
         DatasetSpec('mean_displacement', text_format,
@@ -352,11 +402,13 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('mats4average', text_format, mean_displacement_pipeline),
         DatasetSpec('start_times', text_format, mean_displacement_pipeline),
         DatasetSpec('motion_par_rc', text_format, mean_displacement_pipeline),
+        DatasetSpec('motion_par', text_format, mean_displacement_pipeline),
         DatasetSpec('offset_indexes', text_format, mean_displacement_pipeline),
         DatasetSpec('frame_start_times', text_format,
                     motion_framing_pipeline),
         DatasetSpec('frame_vol_numbers', text_format,
                     motion_framing_pipeline),
+        DatasetSpec('timestamps', directory_format, motion_framing_pipeline),
         DatasetSpec('mean_displacement_plot', png_format,
                     plot_mean_displacement_pipeline),
         DatasetSpec('average_mats', directory_format,
@@ -366,12 +418,14 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('umaps_align2ref', directory_format,
                     frame2ref_alignment_pipeline),
         DatasetSpec('frame2reference_mats', directory_format,
-                    frame2ref_alignment_pipeline))
+                    frame2ref_alignment_pipeline),
+        DatasetSpec('motion_detection_output', directory_format,
+                    gather_outputs_pipeline))
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                   utes=None, t2s=None, dmris=None, epis=None,
-                                  umaps=None):
+                                  umaps=None, dynamic=False):
 
     inputs = {}
     dct = {}
@@ -397,13 +451,22 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         logger.info('UTE not provided. The matrices that realign the PET image'
                     ' in each detected frame to the reference cannot be '
                     'generated')
+
+        def gather_md_outputs_pipeline_altered(self, **options):
+            return self.gather_outputs_factory(
+                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
+                timestamps=True, align_mats=False)
+
+        dct['gather_outputs_pipeline'] = (
+            gather_md_outputs_pipeline_altered)
+
     elif utes and not umaps:
         logger.info('Umap not provided. The umap realignment will not be '
                     'performed. Matrices that realign each detected frame to '
                     'the reference will be calculated.')
 
         study_specs.extend(
-                [SubStudySpec('ute_{}'.format(i), CoregisteredT1Study,
+                [SubStudySpec('ute_{}'.format(i), CoregisteredUTEStudy,
                               ref_spec) for i in range(len(utes))])
         inputs.update({'ute_{}_ute'.format(i): Dataset(ute_scan, dicom_format)
                        for i, ute_scan in enumerate(utes)})
@@ -411,10 +474,17 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         def frame2ref_alignment_pipeline_altered(self, **options):
             return self.frame2ref_alignment_pipeline_factory(
                 'frame2ref_alignment', 'average_mats',
-                'ute_{}_reg_mat'.format(len(utes)-1),
-                'ute_{}_qform_mat'.format(len(utes)-1), umap=None,
+                'ute_{}_ute_reg_mat'.format(len(utes)-1),
+                'ute_{}_ute_qform_mat'.format(len(utes)-1), umap=None,
                 pct=False, fixed_binning=False, **options)
 
+        def gather_md_outputs_pipeline_altered(self, **options):
+            return self.gather_outputs_factory(
+                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
+                timestamps=True, align_mats=True)
+
+        dct['gather_outputs_pipeline'] = (
+            gather_md_outputs_pipeline_altered)
         dct['frame2ref_alignment_pipeline'] = (
             frame2ref_alignment_pipeline_altered)
         data_specs.append(DatasetSpec(
@@ -445,6 +515,13 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 umap='ute_{}_umap_nifti'.format(len(utes)-1),
                 pct=False, fixed_binning=False, **options)
 
+        def gather_md_outputs_pipeline_altered(self, **options):
+            return self.gather_outputs_factory(
+                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
+                timestamps=True, align_mats=True)
+
+        dct['gather_outputs_pipeline'] = (
+            gather_md_outputs_pipeline_altered)
         dct['frame2ref_alignment_pipeline'] = (
             frame2ref_alignment_pipeline_altered)
         dct['nii2dcm_conversion_pipeline'] = MultiStudy.translate(

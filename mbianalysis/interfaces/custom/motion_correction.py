@@ -419,6 +419,7 @@ class MeanDisplacementCalculationOutputSpec(TraitedSpec):
     mean_displacement_rc = File(exists=True)
     mean_displacement_consecutive = File(exists=True)
     start_times = File(exists=True)
+    motion_parameters_rc = File(exists=True)
     motion_parameters = File(exists=True)
     offset_indexes = File(exists=True)
     mats4average = File(exists=True)
@@ -447,6 +448,7 @@ class MeanDisplacementCalculation(BaseInterface):
         mean_displacement_rc = np.zeros(study_len)-1
         motion_par_rc = np.zeros((6, study_len))
         mean_displacement = []
+        motion_par = []
         idt_mat = np.eye(4)
         all_mats = []
         all_mats4average = []
@@ -472,6 +474,7 @@ class MeanDisplacementCalculation(BaseInterface):
                         int(start_scan*1000):int(end_scan*1000)] = md
                     mean_displacement.append(md)
                     mp = self.avscale(m, ref_cog)
+                    motion_par.append(mp)
                     duration = int(end_scan*1000)-int(start_scan*1000)
                     motion_par_rc[:, int(start_scan*1000):
                                   int(end_scan*1000)] = np.array(
@@ -489,6 +492,7 @@ class MeanDisplacementCalculation(BaseInterface):
                     int(start_scan*1000):int(end_scan*1000)] = md
                 mean_displacement.append(md)
                 mp = self.avscale(m, ref_cog)
+                motion_par.append(mp)
                 duration = int(end_scan*1000)-int(start_scan*1000)
                 motion_par_rc[:, int(start_scan*1000):
                               int(end_scan*1000)] = np.array(
@@ -511,10 +515,10 @@ class MeanDisplacementCalculation(BaseInterface):
 
         to_save = [mean_displacement, mean_displacement_consecutive,
                    mean_displacement_rc, motion_par_rc, start_times,
-                   offset_indexes, all_mats4average]
+                   offset_indexes, all_mats4average, motion_par]
         to_save_name = ['mean_displacement', 'mean_displacement_consecutive',
                         'mean_displacement_rc', 'motion_par_rc', 'start_times',
-                        'offset_indexes', 'mats4average']
+                        'offset_indexes', 'mats4average', 'motion_par']
         for i in range(len(to_save)):
             np.savetxt(to_save_name[i]+'.txt', np.asarray(to_save[i]),
                        fmt='%s')
@@ -576,7 +580,8 @@ class MeanDisplacementCalculation(BaseInterface):
         outputs["mean_displacement_consecutive"] = (
             os.getcwd()+'/mean_displacement_consecutive.txt')
         outputs["start_times"] = os.getcwd()+'/start_times.txt'
-        outputs["motion_parameters"] = os.getcwd()+'/motion_par_rc.txt'
+        outputs["motion_parameters"] = os.getcwd()+'/motion_par.txt'
+        outputs["motion_parameters_rc"] = os.getcwd()+'/motion_par_rc.txt'
         outputs["offset_indexes"] = os.getcwd()+'/offset_indexes.txt'
         outputs["mats4average"] = os.getcwd()+'/mats4average.txt'
 
@@ -603,6 +608,8 @@ class MotionFramingOutputSpec(TraitedSpec):
     frame_start_times = File(exists=True)
     frame_vol_numbers = File(exists=True, desc='Text file with the number of '
                              'volume where the motion occurred.')
+    timestamps_dir = Directory(desc='Directory with the timestamps for all'
+                               ' the detected frames')
 
 
 class MotionFraming(BaseInterface):
@@ -672,6 +679,12 @@ class MotionFraming(BaseInterface):
         frame_start_times = [start_times[x] for x in frame_vol]
         np.savetxt('frame_start_times.txt', np.asarray(frame_start_times),
                    fmt='%s')
+        os.mkdir('timestamps')
+        for i in range(len(frame_start_times)-1):
+            with open('timestamps/timestamps_Frame{}'
+                      .format(str(i).zfill(3)), 'w') as f:
+                f.write(frame_start_times[i]+'\n'+frame_start_times[i+1])
+            f.close()
         np.savetxt('frame_vol_numbers.txt', np.asarray(frame_vol), fmt='%s')
 
         return runtime
@@ -681,6 +694,7 @@ class MotionFraming(BaseInterface):
 
         outputs["frame_start_times"] = os.getcwd()+'/frame_start_times.txt'
         outputs["frame_vol_numbers"] = os.getcwd()+'/frame_vol_numbers.txt'
+        outputs["timestamps_dir"] = os.getcwd()+'/timestamps'
 
         return outputs
 

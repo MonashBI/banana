@@ -10,55 +10,62 @@ import shutil
 from nianalysis.dataset import Dataset, Field  # @IgnorePep8
 from nianalysis.data_formats import nifti_gz_format, dicom_format
 # from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
-from nipype.workflows import dmri
 
 
 def prepare_mc_detection(input_dir):
 
     ref = None
-    t1s = None
-    t2s = None
-    epis = None
-    dmris = None
-    utes = None
     umaps = None
-
+    scan_description = []
     dcm_files = sorted(glob.glob(input_dir+'/*.dcm'))
     if not dcm_files:
         dcm_files = sorted(glob.glob(input_dir+'/*.IMA'))
+    else:
+        dcm = True
     if not dcm_files:
-        raise Exception('No DICOM files found in {}'.format(input_dir))
+        scan_description = [f for f in os.listdir(input_dir) if not
+                            f.startswith('.')]
+        dcm = False
+    else:
+        dcm = True
+    if not dcm_files and not scan_description:
+        raise Exception('No DICOM files or folders found in {}'
+                        .format(input_dir))
     os.mkdir(input_dir+'/work_dir')
     os.mkdir(input_dir+'/work_dir/work_sub_dir')
     os.mkdir(input_dir+'/work_dir/work_sub_dir/work_session_dir')
     working_dir = input_dir+'/work_dir/work_sub_dir/work_session_dir/'
-    hdr = pydicom.read_file(dcm_files[0])
-    name_scan = (
-        str(hdr.SeriesNumber).zfill(2)+'_'+hdr.SeriesDescription)
-    name_scan = name_scan.replace(" ", "_")
-    scan_description = [name_scan]
-    files = []
-    for i, im in enumerate(dcm_files):
-        hdr = pydicom.read_file(im)
+    if dcm:
+        hdr = pydicom.read_file(dcm_files[0])
         name_scan = (
             str(hdr.SeriesNumber).zfill(2)+'_'+hdr.SeriesDescription)
         name_scan = name_scan.replace(" ", "_")
-        if name_scan in scan_description[-1]:
-            files.append(im)
-        else:
-            if (os.path.isdir(
-                    working_dir+scan_description[-1]) is False):
-                os.mkdir(working_dir+scan_description[-1])
-                for f in files:
-                    shutil.copy(f, working_dir+scan_description[-1])
-            files = [im]
-            scan_description.append(name_scan)
-        if i == len(dcm_files)-1:
-            if (os.path.isdir(working_dir+scan_description[-1]) is
-                    False):
-                os.mkdir(working_dir+scan_description[-1])
-                for f in files:
-                    shutil.copy(f, working_dir+scan_description[-1])
+        scan_description = [name_scan]
+        files = []
+        for i, im in enumerate(dcm_files):
+            hdr = pydicom.read_file(im)
+            name_scan = (
+                str(hdr.SeriesNumber).zfill(2)+'_'+hdr.SeriesDescription)
+            name_scan = name_scan.replace(" ", "_")
+            if name_scan in scan_description[-1]:
+                files.append(im)
+            else:
+                if (os.path.isdir(
+                        working_dir+scan_description[-1]) is False):
+                    os.mkdir(working_dir+scan_description[-1])
+                    for f in files:
+                        shutil.copy(f, working_dir+scan_description[-1])
+                files = [im]
+                scan_description.append(name_scan)
+            if i == len(dcm_files)-1:
+                if (os.path.isdir(working_dir+scan_description[-1]) is
+                        False):
+                    os.mkdir(working_dir+scan_description[-1])
+                    for f in files:
+                        shutil.copy(f, working_dir+scan_description[-1])
+    else:
+        for s in scan_description:
+            shutil.copytree(input_dir+s, working_dir+'/'+s)
     for i, scan in enumerate(sorted(scan_description), start=1):
         if i == 1:
             print 'Available scans: '
@@ -78,10 +85,10 @@ def prepare_mc_detection(input_dir):
     correct_ref_type = False
     while not correct_ref_type:
         ref_type = raw_input(
-            "Please enter the reference type ('t1' or 't2'): ")
+            "Please enter the reference type ('t1' or 't2'): ").split()[0]
         if ref_type != 't1' and ref_type != 't2':
             print ('{} is not a recognized ref_type!The available '
-                   'ref_types are t1 or t2.'.format(ref_type[0]))
+                   'ref_types are t1 or t2.'.format(ref_type))
         else:
             correct_ref_type = True
     t1s = raw_input("Please select the T1 weighted scans: ").split()
@@ -131,27 +138,27 @@ def prepare_mc_detection(input_dir):
     return ref, ref_type, t1s, epis, t2s, dmris, utes, umaps
 
 
-t1s = ['t1_1_dicom']
-t2s = ['t2_1_dicom', 't2_2_dicom', 't2_3_dicom', 't2_4_dicom',
-           't2_5_dicom', 'fm_dicom']
-epis = ['epi_1_dicom']
-dmris = []
-# dmris = [['dwi2ref_1_opposite_dicom', '-1'],
-#             ['dwi2ref_1_dicom', '1']]
-utes = ['ute_dicom']
-umaps = ['umap_dicom']
-ref = 'reference_dicom'
-ref_type = 't1'
+# t1s = ['t1_1_dicom']
+# t2s = ['t2_1_dicom', 't2_2_dicom', 't2_3_dicom', 't2_4_dicom',
+#        't2_5_dicom', 'fm_dicom']
+# epis = ['epi_1_dicom']
+# dmris = []
+# # dmris = [['dwi2ref_1_opposite_dicom', '-1'],
+# #             ['dwi2ref_1_dicom', '1']]
+# utes = ['ute_dicom']
+# umaps = ['umap_dicom']
+# ref = 'reference_dicom'
+# ref_type = 't1'
 
-# input_dir = '/Volumes/ELEMENTS/test_mc_mixin/'
+input_dir = '/Volumes/ELEMENTS/test_mc_mixin_folder/'
 
-# ref, ref_type, t1s, epis, t2s, dmris, utes, umaps = (
-#     prepare_mc_detection(input_dir))
+ref, ref_type, t1s, epis, t2s, dmris, utes, umaps = (
+    prepare_mc_detection(input_dir))
 
 cls, inputs = create_motion_detection_class(
     'test_mixin', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris, epis=None,
     utes=utes, umaps=umaps)
-input_dir = '/Users/francescosforazzini/git/mbi-analysis/test/'
+# input_dir = '/Users/francescosforazzini/git/mbi-analysis/test/'
 WORK_PATH = os.path.join(input_dir,
                          'test_mc_mixin_cache')
 try:
@@ -181,33 +188,22 @@ except OSError as e:
 #                 'ute_t1': Dataset('ute_dicom', dicom_format),
 #                 'fm_t2': Dataset('fm_dicom', dicom_format),
 #                 'ref_primary': Dataset('reference_dicom', dicom_format)}
-# study = cls(
-#     name='test_mixin',
-#     project_id='work_dir', archive=LocalArchive(input_dir),
-#  
-#     inputs=inputs)
-# study.plot_mean_displacement_pipeline().run(
-#     subject_ids=['work_sub_dir'],
-#     visit_ids=['work_session_dir'], work_dir=WORK_PATH)
-
 study = cls(
     name='test_mixin',
-    project_id='data', archive=LocalArchive(input_dir),
-
+    project_id='work_dir', archive=LocalArchive(input_dir),
+ 
     inputs=inputs)
-study.nii2dcm_conversion_pipeline().run(
-    subject_ids=['cache'],
-    visit_ids=['STUDYMRIMC_MC'], work_dir=WORK_PATH)
-print 'Done!'
+study.gather_outputs_pipeline().run(
+    subject_ids=['work_sub_dir'],
+    visit_ids=['work_session_dir'], work_dir=WORK_PATH)
 
 # study = cls(
-#     name='test_mc_mixin',
-#     project_id='MMH008', archive=LocalArchive(
-#         '/Users/fsforazz/Desktop/test_mc_mixin'),
+#     name='test_mixin',
+#     project_id='data', archive=LocalArchive(input_dir),
 # 
 #     inputs=inputs)
-# study.plot_mean_displacement_pipeline().run(
-#     subject_ids=['MMH008_{}'.format(i) for i in ['CON012']],
-#     visit_ids=['MRPT01'], work_dir=WORK_PATH)
-# 
-# print 'Done!'
+# study.gather_outputs_pipeline().run(
+#     subject_ids=['cache'],
+#     visit_ids=['STUDYMRIMC_MC'], work_dir=WORK_PATH)
+
+print 'Done!'
