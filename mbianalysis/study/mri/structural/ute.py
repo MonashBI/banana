@@ -611,10 +611,11 @@ class CoregisteredUTEStudy(MultiStudy):
         nii2dicom = pipeline.create_map_node(
             Nii2Dicom(), name='nii2dicom',
             iterfield=['in_file'], wall_time=20)
-        nii2dicom.inputs.extension = 'Frame'
+#         nii2dicom.inputs.extension = 'Frame'
         list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
         list_dicoms.inputs.sort_key = dicom_fname_sort_key
         copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        copy2dir.inputs.extension = 'Frame'
         # Connect nodes
         pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
         pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
