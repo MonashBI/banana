@@ -70,13 +70,13 @@ class MotionReferenceT2Study(T2Study):
 
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
-        return (super(MotionReferenceT1Study, self).
+        return (super(MotionReferenceT2Study, self).
                 header_info_extraction_pipeline_factory(
                     'primary', ref=reference, multivol=multivol,
                     **kwargs))
 
     def segmentation_pipeline(self, img_type=2, **kwargs):
-        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
+        pipeline = super(MotionReferenceT2Study, self).segmentation_pipeline(
             img_type=img_type, **kwargs)
         return pipeline
 
@@ -95,7 +95,7 @@ class MotionReferenceT2Study(T2Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
-        inherit_from=T1Study.data_specs())
+        inherit_from=T2Study.data_specs())
 
 
 class MotionDetectionMixin(MultiStudy):
