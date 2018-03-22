@@ -264,7 +264,10 @@ class MRIStudy(Study):
         split.inputs.splits = [1, 1, 1]
         split.inputs.squeeze = True
         pipeline.connect(fast, 'tissue_class_files', split, 'inlist')
-        pipeline.connect_output('wm_seg', split, 'out3')
+        if pipeline.option('img_type') == 1:
+            pipeline.connect_output('wm_seg', split, 'out3')
+        elif pipeline.option('img_type') == 2:
+            pipeline.connect_output('wm_seg', split, 'out2')
 
         pipeline.assert_connected()
         return pipeline
