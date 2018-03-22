@@ -43,6 +43,11 @@ class MotionReferenceT1Study(T1Study):
                     'primary', ref=reference, multivol=multivol,
                     **kwargs))
 
+    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
+        return super(MotionReferenceT1Study, self).basic_preproc_pipeline(
+            resolution=resolution,
+            **kwargs)
+
     def segmentation_pipeline(self, img_type=1, **kwargs):
         pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
             img_type=img_type, **kwargs)
@@ -63,6 +68,7 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+        DatasetSpec('preproc', nifti_gz_format, basic_preproc_pipeline),
         inherit_from=T1Study.data_specs())
 
 
@@ -80,6 +86,11 @@ class MotionReferenceT2Study(T2Study):
             img_type=img_type, **kwargs)
         return pipeline
 
+    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
+        return super(MotionReferenceT2Study, self).basic_preproc_pipeline(
+            resolution=resolution,
+            **kwargs)
+
     _data_specs = set_specs(
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
         DatasetSpec('motion_mats', directory_format,
@@ -95,6 +106,7 @@ class MotionReferenceT2Study(T2Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+        DatasetSpec('preproc', nifti_gz_format, basic_preproc_pipeline),
         inherit_from=T2Study.data_specs())
 
 
