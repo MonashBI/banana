@@ -5,6 +5,8 @@ import nibabel as nib
 import numpy as np
 from nipype.utils.filemanip import split_filename
 import os
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plot
 from sklearn.decomposition import PCA
 import subprocess as sp
