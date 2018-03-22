@@ -10,8 +10,8 @@ import nibabel as nib
 from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
-import matplotlib as mpl
-mpl.use('Agg')
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plot
 from nipype.interfaces import fsl
 
@@ -745,7 +745,7 @@ class PlotMeanDisplacementRC(BaseInterface):
         fig, ax = plot.subplots()
         fig.set_size_inches(21, 9)
         font = {'weight': 'bold', 'size': 30}
-        mpl.rc('font', **font)
+        matplotlib.rc('font', **font)
         ax.set_xlim(0, dates[-1])
         ax.set_ylim(-0.3, np.max(mean_disp_rc) + 1)
         for i in range(0, len(start_true_period)):
