@@ -11,7 +11,6 @@ from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plot
 from nipype.interfaces import fsl
 
