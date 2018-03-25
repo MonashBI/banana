@@ -450,7 +450,7 @@ class MeanDisplacementCalculation(BaseInterface):
                     if i == 1:
                         start_times.append(line.strip().split()[1])
                     elif i == 2:
-                        trs.append(line.strip().split()[1])
+                        trs.append(float(line.strip().split()[1]))
                     elif i == 4:
                         real_durations.append(line.strip().split()[1])
 
