@@ -40,8 +40,9 @@ class DiffusionStudy(MRIStudy):
             name='dwipreproc_pipeline',
             inputs=[DatasetSpec('dwi_main', dicom_format),
                     DatasetSpec('dwi_ref', dicom_format),
-                    FieldSpec('ped', dtype=str),
-                    FieldSpec('pe_angle', dtype=str)],
+#                     FieldSpec('ped', dtype=str),
+#                     FieldSpec('pe_angle', dtype=str),
+                    DatasetSpec('dcm_info', text_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format),
                      DatasetSpec('eddy_par', eddy_par_format)],
             description=("Diffusion pre-processing pipeline"),
@@ -59,8 +60,9 @@ class DiffusionStudy(MRIStudy):
         converter2.inputs.out_ext = '.nii.gz'
         pipeline.connect_input('dwi_ref', converter2, 'in_file')
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
-        pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-        pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
+        pipeline.connect_input('dcm_info', prep_dwi, 'dcm_info')
+#         pipeline.connect_input('ped', prep_dwi, 'pe_dir')
+#         pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
 #         prep_dwi.inputs.pe_dir = 'ROW'
 #         prep_dwi.inputs.phase_offset = '-1.5'
         pipeline.connect(converter1, 'out_file', prep_dwi, 'dwi')
@@ -104,14 +106,15 @@ class DiffusionStudy(MRIStudy):
         return pipeline
 
     def topup_factory(self, name, to_be_corrected_name, ref_input_name,
-                      pe_dir, pe_angle, output_name, **options):
+                      dcm_info, output_name, **options):
 
         pipeline = self.create_pipeline(
             name=name,
             inputs=[DatasetSpec(to_be_corrected_name, nifti_gz_format),
                     DatasetSpec(ref_input_name, nifti_gz_format),
-                    FieldSpec(pe_dir, dtype=str),
-                    FieldSpec(pe_angle, dtype=str)],
+#                     FieldSpec(pe_dir, dtype=str),
+#                     FieldSpec(pe_angle, dtype=str),
+                    DatasetSpec(dcm_info, text_format)],
             outputs=[DatasetSpec(output_name, nifti_gz_format)],
             description=("Topup distortion correction pipeline."),
             default_options={},
@@ -121,8 +124,9 @@ class DiffusionStudy(MRIStudy):
 
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
         prep_dwi.inputs.topup = True
-        pipeline.connect_input(pe_dir, prep_dwi, 'pe_dir')
-        pipeline.connect_input(pe_angle, prep_dwi, 'phase_offset')
+        pipeline.connect_input(dcm_info, prep_dwi, 'dcm_info')
+#         pipeline.connect_input(pe_dir, prep_dwi, 'pe_dir')
+#         pipeline.connect_input(pe_angle, prep_dwi, 'phase_offset')
 #         prep_dwi.inputs.pe_dir = pe_dir
 #         prep_dwi.inputs.phase_offset = pe_angle
         pipeline.connect_input(to_be_corrected_name, prep_dwi, 'dwi')
@@ -161,8 +165,8 @@ class DiffusionStudy(MRIStudy):
 
     def topup_pipeline(self, **options):
         return self.topup_factory(
-            'dwi_topup', 'topup_in', 'topup_ref', 'dwi_distorted', 'ped',
-            'pe_angle', **options)
+            'dwi_topup', 'topup_in', 'topup_ref', 'dwi_distorted', 'dcm_info',
+            **options)
 
     _data_specs = set_specs(
         DatasetSpec('dwi_main', dicom_format),
@@ -172,8 +176,9 @@ class DiffusionStudy(MRIStudy):
         DatasetSpec('preproc', nifti_gz_format, dwipreproc_pipeline),
         DatasetSpec('eddy_par', eddy_par_format, dwipreproc_pipeline),
         DatasetSpec('dwi_distorted', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+#         FieldSpec('ped', str, header_info_extraction_pipeline),
+#         FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=MRIStudy.data_specs())
 
 
@@ -197,7 +202,7 @@ class DiffusionReferenceStudy(DiffusionStudy):
     def topup_pipeline(self, **kwargs):
         return super(DiffusionReferenceStudy, self).topup_factory(
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref_nifti',
-            'ped', 'pe_angle', 'preproc', **kwargs)
+            'dcm_info', 'preproc', **kwargs)
 
     _data_specs = set_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -207,8 +212,9 @@ class DiffusionReferenceStudy(DiffusionStudy):
         DatasetSpec('topup_ref_nifti', nifti_gz_format,
                     ref_dcm2nii_conversion_pipeline),
         DatasetSpec('preproc', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+#         FieldSpec('ped', str, header_info_extraction_pipeline),
+#         FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=DiffusionStudy.data_specs())
 
 
@@ -232,7 +238,7 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
     def topup_pipeline(self, **kwargs):
         return super(DiffusionOppositeStudy, self).topup_factory(
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref_nifti',
-            'ped', 'pe_angle', 'preproc', **kwargs)
+            'dcm_info', 'preproc', **kwargs)
 
     _data_specs = set_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -242,8 +248,9 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
         DatasetSpec('topup_ref_nifti', nifti_gz_format,
                     ref_dcm2nii_conversion_pipeline),
         DatasetSpec('preproc', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+#         FieldSpec('ped', str, header_info_extraction_pipeline),
+#         FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=DiffusionStudy.data_specs())
 
 
@@ -267,7 +274,7 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
     def topup_pipeline(self, **kwargs):
         return super(DiffusionReferenceOppositeStudy, self).topup_factory(
             'dwi_ref_topup', 'to_be_corrected_nifti', 'topup_ref_nifti',
-            'ped', 'pe_angle', 'preproc', **kwargs)
+            'dcm_info', 'preproc', **kwargs)
 
     _data_specs = set_specs(
         DatasetSpec('to_be_corrected', dicom_format),
@@ -277,8 +284,9 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
         DatasetSpec('topup_ref_nifti', nifti_gz_format,
                     ref_dcm2nii_conversion_pipeline),
         DatasetSpec('preproc', nifti_gz_format, topup_pipeline),
-        FieldSpec('ped', str, header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str, header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+#         FieldSpec('ped', str, header_info_extraction_pipeline),
+#         FieldSpec('pe_angle', str, header_info_extraction_pipeline),
         inherit_from=DiffusionStudy.data_specs())
 
 
@@ -365,12 +373,12 @@ class CoregisteredDWIStudy(MultiStudy):
             'dwi_main_brain': 'masked',
             'dwi_main_preproc': 'preproc',
             'dwi_main_eddy_par': 'eddy_par',
-            'ped': 'ped',
-            'pe_angle': 'pe_angle',
-            'tr': 'tr',
-            'real_duration': 'real_duration',
-            'tot_duration': 'tot_duration',
-            'start_time': 'start_time',
+#             'ped': 'ped',
+#             'pe_angle': 'pe_angle',
+#             'tr': 'tr',
+#             'real_duration': 'real_duration',
+#             'tot_duration': 'tot_duration',
+#             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
@@ -409,13 +417,13 @@ class CoregisteredDWIStudy(MultiStudy):
         DatasetSpec('affine_mats', directory_format,
                     affine_mats_pipeline),
         DatasetSpec('dcm_info', text_format,
-                    dwi_main_dcm_info_pipeline),
-        FieldSpec('ped', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('pe_angle', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('tr', float, dwi_main_dcm_info_pipeline),
-        FieldSpec('start_time', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('real_duration', str, dwi_main_dcm_info_pipeline),
-        FieldSpec('tot_duration', str, dwi_main_dcm_info_pipeline))
+                    dwi_main_dcm_info_pipeline))
+#         FieldSpec('ped', str, dwi_main_dcm_info_pipeline),
+#         FieldSpec('pe_angle', str, dwi_main_dcm_info_pipeline),
+#         FieldSpec('tr', float, dwi_main_dcm_info_pipeline),
+#         FieldSpec('start_time', str, dwi_main_dcm_info_pipeline),
+#         FieldSpec('real_duration', str, dwi_main_dcm_info_pipeline),
+#         FieldSpec('tot_duration', str, dwi_main_dcm_info_pipeline))
 
 
 class CoregisteredDiffusionReferenceStudy(MultiStudy):
@@ -481,12 +489,12 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
             'dwi2ref_brain_mask': 'brain_mask',
             'dwi2ref_brain': 'masked',
             'dwi2ref_preproc': 'preproc',
-            'ped': 'ped',
-            'pe_angle': 'pe_angle',
-            'tr': 'tr',
-            'real_duration': 'real_duration',
-            'tot_duration': 'tot_duration',
-            'start_time': 'start_time',
+#             'ped': 'ped',
+#             'pe_angle': 'pe_angle',
+#             'tr': 'tr',
+#             'real_duration': 'real_duration',
+#             'tot_duration': 'tot_duration',
+#             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
@@ -524,13 +532,13 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
         DatasetSpec('motion_mats', directory_format,
                     motion_mat_pipeline),
         DatasetSpec('dcm_info', text_format,
-                    dwi2ref_dcm_info_pipeline),
-        FieldSpec('ped', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('pe_angle', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('tr', float, dwi2ref_dcm_info_pipeline),
-        FieldSpec('start_time', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('real_duration', str, dwi2ref_dcm_info_pipeline),
-        FieldSpec('tot_duration', str, dwi2ref_dcm_info_pipeline))
+                    dwi2ref_dcm_info_pipeline))
+#         FieldSpec('ped', str, dwi2ref_dcm_info_pipeline),
+#         FieldSpec('pe_angle', str, dwi2ref_dcm_info_pipeline),
+#         FieldSpec('tr', float, dwi2ref_dcm_info_pipeline),
+#         FieldSpec('start_time', str, dwi2ref_dcm_info_pipeline),
+#         FieldSpec('real_duration', str, dwi2ref_dcm_info_pipeline),
+#         FieldSpec('tot_duration', str, dwi2ref_dcm_info_pipeline))
 
 
 class CoregisteredDiffusionOppositeStudy(MultiStudy):
@@ -597,12 +605,12 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
             'dwi_opposite_brain_mask': 'brain_mask',
             'dwi_opposite_brain': 'masked',
             'dwi_opposite_preproc': 'preproc',
-            'ped': 'ped',
-            'pe_angle': 'pe_angle',
-            'tr': 'tr',
-            'real_duration': 'real_duration',
-            'tot_duration': 'tot_duration',
-            'start_time': 'start_time',
+#             'ped': 'ped',
+#             'pe_angle': 'pe_angle',
+#             'tr': 'tr',
+#             'real_duration': 'real_duration',
+#             'tot_duration': 'tot_duration',
+#             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
@@ -642,17 +650,17 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
         DatasetSpec('motion_mats', directory_format,
                     motion_mat_pipeline),
         DatasetSpec('dcm_info', text_format,
-                    dwi_opposite_dcm_info_pipeline),
-        FieldSpec('ped', str, dwi_opposite_dcm_info_pipeline),
-        FieldSpec('pe_angle', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('tr', float, dwi_opposite_dcm_info_pipeline),
-        FieldSpec('start_time', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('real_duration', str,
-                  dwi_opposite_dcm_info_pipeline),
-        FieldSpec('tot_duration', str,
-                  dwi_opposite_dcm_info_pipeline))
+                    dwi_opposite_dcm_info_pipeline))
+#         FieldSpec('ped', str, dwi_opposite_dcm_info_pipeline),
+#         FieldSpec('pe_angle', str,
+#                   dwi_opposite_dcm_info_pipeline),
+#         FieldSpec('tr', float, dwi_opposite_dcm_info_pipeline),
+#         FieldSpec('start_time', str,
+#                   dwi_opposite_dcm_info_pipeline),
+#         FieldSpec('real_duration', str,
+#                   dwi_opposite_dcm_info_pipeline),
+#         FieldSpec('tot_duration', str,
+#                   dwi_opposite_dcm_info_pipeline))
 
 
 class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
@@ -725,12 +733,12 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
             'opposite_dwi2ref_brain_mask': 'brain_mask',
             'opposite_dwi2ref_brain': 'masked',
             'opposite_dwi2ref_preproc': 'preproc',
-            'ped': 'ped',
-            'pe_angle': 'pe_angle',
-            'tr': 'tr',
-            'real_duration': 'real_duration',
-            'tot_duration': 'tot_duration',
-            'start_time': 'start_time',
+#             'ped': 'ped',
+#             'pe_angle': 'pe_angle',
+#             'tr': 'tr',
+#             'real_duration': 'real_duration',
+#             'tot_duration': 'tot_duration',
+#             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
@@ -775,16 +783,16 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
         DatasetSpec('ref_brain_mask', nifti_gz_format,
                     ref_bet_pipeline),
         DatasetSpec('dcm_info', text_format,
-                    opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('ped', str,
-                  opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('pe_angle', str,
-                  opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('tr', float,
-                  opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('start_time', str,
-                  opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('real_duration', str,
-                  opposite_dwi2ref_dcm_info_pipeline),
-        FieldSpec('tot_duration', str,
-                  opposite_dwi2ref_dcm_info_pipeline))
+                    opposite_dwi2ref_dcm_info_pipeline))
+#         FieldSpec('ped', str,
+#                   opposite_dwi2ref_dcm_info_pipeline),
+#         FieldSpec('pe_angle', str,
+#                   opposite_dwi2ref_dcm_info_pipeline),
+#         FieldSpec('tr', float,
+#                   opposite_dwi2ref_dcm_info_pipeline),
+#         FieldSpec('start_time', str,
+#                   opposite_dwi2ref_dcm_info_pipeline),
+#         FieldSpec('real_duration', str,
+#                   opposite_dwi2ref_dcm_info_pipeline),
+#         FieldSpec('tot_duration', str,
+#                   opposite_dwi2ref_dcm_info_pipeline))

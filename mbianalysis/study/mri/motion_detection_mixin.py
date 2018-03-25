@@ -125,11 +125,13 @@ class MotionDetectionMixin(MultiStudy):
             try:
                 inputs.append(
                     self.dataset(sub_study_spec.inverse_map('motion_mats')))
-                inputs.append(self.dataset(sub_study_spec.inverse_map('tr')))
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('start_time')))
-                inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('real_duration')))
+                    self.dataset(sub_study_spec.inverse_map('dcm_info')))
+#                 inputs.append(self.dataset(sub_study_spec.inverse_map('tr')))
+#                 inputs.append(
+#                     self.dataset(sub_study_spec.inverse_map('start_time')))
+#                 inputs.append(
+#                     self.dataset(sub_study_spec.inverse_map('real_duration')))
                 sub_study_names.append(sub_study_spec.name)
             except NiAnalysisNameError:
                 continue  # Sub study doesn't have motion mat
@@ -155,12 +157,14 @@ class MotionDetectionMixin(MultiStudy):
         num_motion_mats = len(sub_study_names)
         merge_motion_mats = pipeline.create_node(Merge(num_motion_mats),
                                                  name='merge_motion_mats')
-        merge_tr = pipeline.create_node(Merge(num_motion_mats),
-                                        name='merge_tr')
-        merge_start_time = pipeline.create_node(Merge(num_motion_mats),
-                                                name='merge_start_time')
-        merge_real_duration = pipeline.create_node(Merge(num_motion_mats),
-                                                   name='merge_real_duration')
+        merge_dcm_info = pipeline.create_node(Merge(num_motion_mats),
+                                              name='merge_dcm_info')
+#         merge_tr = pipeline.create_node(Merge(num_motion_mats),
+#                                         name='merge_tr')
+#         merge_start_time = pipeline.create_node(Merge(num_motion_mats),
+#                                                 name='merge_start_time')
+#         merge_real_duration = pipeline.create_node(Merge(num_motion_mats),
+#                                                    name='merge_real_duration')
 
         for i, sub_study_name in enumerate(sub_study_names, start=1):
             spec = self.sub_study_spec(sub_study_name)
@@ -168,21 +172,25 @@ class MotionDetectionMixin(MultiStudy):
                 spec.inverse_map('motion_mats'), merge_motion_mats,
                 'in{}'.format(i))
             pipeline.connect_input(
-                spec.inverse_map('tr'), merge_tr,
+                spec.inverse_map('dcm_info'), merge_dcm_info,
                 'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('start_time'), merge_start_time,
-                'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('real_duration'), merge_real_duration,
-                'in{}'.format(i))
+#             pipeline.connect_input(
+#                 spec.inverse_map('tr'), merge_tr,
+#                 'in{}'.format(i))
+#             pipeline.connect_input(
+#                 spec.inverse_map('start_time'), merge_start_time,
+#                 'in{}'.format(i))
+#             pipeline.connect_input(
+#                 spec.inverse_map('real_duration'), merge_real_duration,
+#                 'in{}'.format(i))
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
         pipeline.connect(merge_motion_mats, 'out', md, 'motion_mats')
-        pipeline.connect(merge_tr, 'out', md, 'trs')
-        pipeline.connect(merge_start_time, 'out', md, 'start_times')
-        pipeline.connect(merge_real_duration, 'out', md, 'real_durations')
+        pipeline.connect(merge_dcm_info, 'out', md, 'dcm_infos')
+#         pipeline.connect(merge_tr, 'out', md, 'trs')
+#         pipeline.connect(merge_start_time, 'out', md, 'start_times')
+#         pipeline.connect(merge_real_duration, 'out', md, 'real_durations')
         pipeline.connect_input('ref_masked', md, 'reference')
         pipeline.connect_output('mean_displacement', md, 'mean_displacement')
         pipeline.connect_output(

@@ -1,20 +1,18 @@
-from itertools import chain
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
-# from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nianalysis.requirements import freesurfer_req
-from nianalysis.citations import (
-    freesurfer_cites, optimal_t1_bet_params_cite)
+from nianalysis.citations import freesurfer_cites
 from nianalysis.data_formats import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     directory_format, dicom_format, text_format)
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.interfaces.utils import ZipDir, JoinPath
+from nianalysis.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from ..coregistered import CoregisteredStudy
-from nianalysis.study.multi import (MultiStudy, SubStudySpec, MultiStudyMetaClass)
+from nianalysis.study.multi import (MultiStudy, SubStudySpec,
+                                    MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -26,11 +24,6 @@ class T1Study(MRIStudy):
         return super(T1Study, self).brain_mask_pipeline(
             robust=robust, f_threshold=f_threshold, g_threshold=g_threshold,
             **kwargs)
-#     def brain_mask_pipeline(self, robust=True, f_threshold=0.57,
-#                             g_threshold=-0.1, **kwargs):
-#         return (super(T1Study, self).brain_mask_pipeline(
-#             robust=robust, f_threshold=f_threshold,
-#             g_threshold=g_threshold, **kwargs))
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(T1Study, self).
@@ -90,9 +83,6 @@ class CoregisteredT1Study(MultiStudy):
         't1', T1Study.header_info_extraction_pipeline,
         override_default_options={'multivol': False})
 
-#     t1_bet_pipeline = MultiStudy.translate(
-#         't1', T1Study.brain_mask_pipeline)
-
     ref_bet_pipeline = MultiStudy.translate(
         'reference', MRIStudy.brain_mask_pipeline)
 
@@ -137,12 +127,12 @@ class CoregisteredT1Study(MultiStudy):
             't1_preproc': 'preproc',
             't1_brain': 'masked',
             't1_brain_mask': 'brain_mask',
-            'ped': 'ped',
-            'pe_angle': 'pe_angle',
-            'tr': 'tr',
-            'real_duration': 'real_duration',
-            'tot_duration': 'tot_duration',
-            'start_time': 'start_time',
+#             'ped': 'ped',
+#             'pe_angle': 'pe_angle',
+#             'tr': 'tr',
+#             'real_duration': 'real_duration',
+#             'tot_duration': 'tot_duration',
+#             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
@@ -168,7 +158,6 @@ class CoregisteredT1Study(MultiStudy):
                     ref_basic_preproc_pipeline),
         DatasetSpec('t1_qformed', nifti_gz_format,
                     t1_qform_transform_pipeline),
-#         DatasetSpec('masked', nifti_gz_format, t1_bet_pipeline),
         DatasetSpec('t1_qform_mat', text_matrix_format,
                     t1_qform_transform_pipeline),
         DatasetSpec('ref_brain', nifti_gz_format, ref_bet_pipeline),
@@ -179,10 +168,10 @@ class CoregisteredT1Study(MultiStudy):
                     t1_rigid_registration_pipeline),
         DatasetSpec('motion_mats', directory_format,
                     motion_mat_pipeline),
-        DatasetSpec('dcm_info', text_format, t1_dcm_info_pipeline),
-        FieldSpec('ped', str, t1_dcm_info_pipeline),
-        FieldSpec('pe_angle', str, t1_dcm_info_pipeline),
-        FieldSpec('tr', float, t1_dcm_info_pipeline),
-        FieldSpec('start_time', str, t1_dcm_info_pipeline),
-        FieldSpec('real_duration', str, t1_dcm_info_pipeline),
-        FieldSpec('tot_duration', str, t1_dcm_info_pipeline))
+        DatasetSpec('dcm_info', text_format, t1_dcm_info_pipeline))
+#         FieldSpec('ped', str, t1_dcm_info_pipeline),
+#         FieldSpec('pe_angle', str, t1_dcm_info_pipeline),
+#         FieldSpec('tr', float, t1_dcm_info_pipeline),
+#         FieldSpec('start_time', str, t1_dcm_info_pipeline),
+#         FieldSpec('real_duration', str, t1_dcm_info_pipeline),
+#         FieldSpec('tot_duration', str, t1_dcm_info_pipeline))

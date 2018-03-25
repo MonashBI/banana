@@ -121,8 +121,9 @@ class MergeListMotionMat(BaseInterface):
 
 class PrepareDWIInputSpec(BaseInterfaceInputSpec):
 
-    pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction')
-    phase_offset = traits.Str(mandatory=True, desc='phase offset')
+    dcm_info = File(mandatory=True, desc='DICOM information')
+#     pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction')
+#     phase_offset = traits.Str(mandatory=True, desc='phase offset')
     dwi = File(mandatory=True, exists=True)
     dwi1 = File(mandatory=True, exists=True)
     topup = traits.Bool(desc='Specify whether the PrepareDWI output will be'
@@ -146,8 +147,15 @@ class PrepareDWI(BaseInterface):
     def _run_interface(self, runtime):
 
         self.dict_output = {}
-        pe_dir = self.inputs.pe_dir
-        phase_offset = float(self.inputs.phase_offset)
+        dcm_info = {}
+        with open(self.inputs.dcm_info, 'r') as f:
+            for i, line in enumerate(f):
+                if i > 0:
+                    dcm_info[line.strip().split()[0]] = line.strip().split()[1]
+            f.close()
+
+        pe_dir = dcm_info['ped']
+        phase_offset = float(dcm_info['pe_angle'])
         topup = self.inputs.topup
         dwi = nib.load(self.inputs.dwi)
         dwi = dwi.get_data()
@@ -407,9 +415,10 @@ class AffineMatrixGeneration(BaseInterface):
 class MeanDisplacementCalculationInputSpec(BaseInterfaceInputSpec):
 
     motion_mats = traits.List(desc='List of motion mats.')
-    trs = traits.List(desc='List of repetition times.')
-    start_times = traits.List(desc='List of start times.')
-    real_durations = traits.List(desc='List of real durations.')
+    dcm_infos = traits.List(desc='List DICOM information.')
+#     trs = traits.List(desc='List of repetition times.')
+#     start_times = traits.List(desc='List of start times.')
+#     real_durations = traits.List(desc='List of real durations.')
     reference = File(desc='Reference image.')
 
 
@@ -432,8 +441,21 @@ class MeanDisplacementCalculation(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        list_inputs = zip(self.inputs.motion_mats, self.inputs.start_times,
-                          self.inputs.real_durations, self.inputs.trs)
+        start_times = []
+        real_durations = []
+        trs = []
+        for dcm in self.inputs.dcm_infos:
+            with open(dcm, 'r') as f:
+                for i, line in enumerate(f):
+                    if i == 1:
+                        start_times.append(line.strip().split()[1])
+                    elif i == 2:
+                        trs.append(line.strip().split()[1])
+                    elif i == 4:
+                        real_durations.append(line.strip().split()[1])
+
+        list_inputs = zip(self.inputs.motion_mats, start_times,
+                          real_durations, trs)
         ref = nib.load(self.inputs.reference)
         ref_data = ref.get_data()
         # centre of gravity

@@ -320,12 +320,12 @@ class MRIStudy(Study):
 
     def header_info_extraction_pipeline_factory(self, dcm_in_name, ref=False,
                                                 **options):
-        output_files = [FieldSpec('tr', dtype=float),
-                        FieldSpec('start_time', dtype=str),
-                        FieldSpec('tot_duration', dtype=str),
-                        FieldSpec('real_duration', dtype=str),
-                        FieldSpec('ped', dtype=str),
-                        FieldSpec('pe_angle', dtype=str),
+        output_files = [# FieldSpec('tr', dtype=float),
+#                         FieldSpec('start_time', dtype=str),
+#                         FieldSpec('tot_duration', dtype=str),
+#                         FieldSpec('real_duration', dtype=str),
+#                         FieldSpec('ped', dtype=str),
+#                         FieldSpec('pe_angle', dtype=str),
                         DatasetSpec('dcm_info', text_format)]
         if ref:
             output_files.append(DatasetSpec('motion_mats',
@@ -346,14 +346,14 @@ class MRIStudy(Study):
         hd_extraction.inputs.multivol = pipeline.option('multivol')
         hd_extraction.inputs.reference = ref
         pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
-        pipeline.connect_output('tr', hd_extraction, 'tr')
-        pipeline.connect_output('start_time', hd_extraction, 'start_time')
-        pipeline.connect_output(
-            'tot_duration', hd_extraction, 'tot_duration')
-        pipeline.connect_output(
-            'real_duration', hd_extraction, 'real_duration')
-        pipeline.connect_output('ped', hd_extraction, 'ped')
-        pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
+#         pipeline.connect_output('tr', hd_extraction, 'tr')
+#         pipeline.connect_output('start_time', hd_extraction, 'start_time')
+#         pipeline.connect_output(
+#             'tot_duration', hd_extraction, 'tot_duration')
+#         pipeline.connect_output(
+#             'real_duration', hd_extraction, 'real_duration')
+#         pipeline.connect_output('ped', hd_extraction, 'ped')
+#         pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
         pipeline.connect_output('dcm_info', hd_extraction, 'dcm_info')
         if ref:
             pipeline.connect_output('motion_mats', hd_extraction,
@@ -399,8 +399,6 @@ class MRIStudy(Study):
         DatasetSpec('primary', dicom_format),
         DatasetSpec('primary_nifti', nifti_gz_format,
                     dcm2nii_conversion_pipeline),
-#         DatasetSpec('dicom_dwi', dicom_format),
-#         DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
                     basic_preproc_pipeline),
         DatasetSpec('masked', nifti_gz_format, brain_mask_pipeline),
@@ -410,17 +408,17 @@ class MRIStudy(Study):
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     coregister_to_atlas_pipeline),
         DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
-#         DatasetSpec('dicom_file', dicom_format),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
+#         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+#         FieldSpec('start_time', str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('real_duration', str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('tot_duration', str,
+#                   pipeline=header_info_extraction_pipeline),
+#         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+#         FieldSpec('pe_angle', str,
+#                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
-        DatasetSpec('motion_mats', directory_format, header_info_extraction_pipeline)
+        DatasetSpec('motion_mats', directory_format,
+                    header_info_extraction_pipeline)
         )
