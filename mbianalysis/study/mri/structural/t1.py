@@ -21,10 +21,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
 
 class T1Study(MRIStudy):
 
-    def brain_mask_pipeline(self, robust=True, f_threshold=0.57,
-                            g_threshold=-0.1, **kwargs):
-        return super(T1Study, self).brain_mask_pipeline(
-            robust=robust, f_threshold=f_threshold, g_threshold=g_threshold,
+    def brain_mask_pipeline(self, bet_method='optibet', **kwargs):
+        return super(T1Study, self).brain_mask_pipeline(bet_method=bet_method,
             **kwargs)
 #     def brain_mask_pipeline(self, robust=True, f_threshold=0.57,
 #                             g_threshold=-0.1, **kwargs):
