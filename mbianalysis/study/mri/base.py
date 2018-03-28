@@ -21,6 +21,10 @@ from nianalysis.interfaces.converters import Dcm2niix
 import subprocess as sp
 
 
+atlas_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../../atlases'))
+
+
 class MRIStudy(Study):
 
     def brain_mask_pipeline(self, **options):
@@ -72,14 +76,14 @@ class MRIStudy(Study):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
-        try:
-            cmd = 'which ANTS'
-            antspath = sp.check_output(cmd, shell=True)
-            antspath = '/'.join(antspath.split('/')[0:-1])
-            os.environ['ANTSPATH'] = antspath
-#             print antspath
-        except ImportError:
-            print "NO ANTs module found. Please ensure to have it in you PATH."
+#         try:
+#             cmd = 'which ANTS'
+#             antspath = sp.check_output(cmd, shell=True)
+#             antspath = '/'.join(antspath.split('/')[0:-1])
+#             os.environ['ANTSPATH'] = antspath
+# #             print antspath
+#         except ImportError:
+#             print "NO ANTs module found. Please ensure to have it in you PATH."
 
         gen_report_default = False
         outputs = [DatasetSpec('masked', nifti_gz_format),
@@ -91,12 +95,12 @@ class MRIStudy(Study):
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=outputs,
             description=("Modified implementation of optiBET.sh"),
-            default_options={'MNI_template': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm.nii.gz',
-                             'MNI_template_mask': os.environ['FSLDIR']+'/data/'
-                             'standard/MNI152_T1_2mm_brain_mask.nii.gz',
-                             'gen_report': gen_report_default,
-                             'bet_method': 'optibet'},
+            default_options={
+                'MNI_template': atlas_path+'/MNI152_T1_2mm.nii.gz',
+                'MNI_template_mask': (atlas_path +
+                                      '/MNI152_T1_2mm_brain_mask.nii.gz'),
+                'gen_report': gen_report_default,
+                'bet_method': 'optibet'},
             version=1,
             citations=[fsl_cite],
             options=options)
