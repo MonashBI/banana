@@ -18,6 +18,7 @@ import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.converters import Dcm2niix
+import subprocess as sp
 
 
 class MRIStudy(Study):
@@ -71,6 +72,15 @@ class MRIStudy(Study):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
+        try:
+            cmd = 'which ANTS'
+            antspath = sp.check_output(cmd, shell=True)
+            antspath = '/'.join(antspath.split('/')[0:-1])
+            os.environ['ANTSPATH'] = antspath
+#             print antspath
+        except ImportError:
+            print "NO ANTs module found. Please ensure to have it in you PATH."
+
         gen_report_default = False
         outputs = [DatasetSpec('masked', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
