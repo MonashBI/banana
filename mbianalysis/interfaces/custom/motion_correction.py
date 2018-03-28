@@ -13,6 +13,7 @@ import datetime as dt
 import matplotlib
 import matplotlib.pyplot as plot
 from nipype.interfaces import fsl
+import math
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -561,37 +562,71 @@ class MeanDisplacementCalculation(BaseInterface):
 
         return rms
 
-    def avscale(self, mat, com, res=[1, 1, 1]):
+    def avscale(self, mat, com, res=[1, 1, 1], moco=False):
+        """Python implementation of the avscale function in fsl. However this
+        works just with affine matrices from rigid body motion, i.e. it assumes
+        that there is no scales or skew effect. Furthermore, if moco=True,
+        it returns the rigid body motion parameters in Siemens moco series
+        convetion."""
 
         c = np.asarray(com)
 
-        rot_y = np.arcsin(-mat[0, 2])
-        cos_y = np.cos(rot_y)
-        cos_x = mat[2, 2]/cos_y
-        if np.abs(cos_x) > 1:
-            cos_x = 1*np.sign(cos_x)
-        rot_x = np.arccos(cos_x)
-        sin_z = mat[0, 1]/cos_y
-        if np.abs(sin_z) > 1:
-            sin_z = 1*np.sign(sin_z)
-        rot_z = np.arcsin(sin_z)
-
-        R0 = np.eye(4)
-        T = np.eye(4)
-        R0[:3, :3] = mat[:3, :3]
-        R0[:3, 3] = mat[:3, 3]
-        T[:3, 3] = c*res
-
-        T_1 = np.linalg.inv(T)
-
-        new_orig = np.dot(T_1, np.dot(R0, T))[:, -1]
-
-        trans_tot = new_orig
+        rot_x, rot_y, rot_z = self.rotationMatrixToEulerAngles(mat)
+        trans_init = mat[:3, -1]
+        rot_mat = mat[:3, :3]
+        centre = c*res
+        trans_tot = np.dot(rot_mat, centre)+trans_init-centre
         trans_x = trans_tot[0]
         trans_y = trans_tot[1]
         trans_z = trans_tot[2]
 
+        if moco:
+            rot_x_moco = -self.rad2degree(rot_y)
+            rot_y_moco = self.rad2degree(rot_x)
+            rot_z_moco = -self.rad2degree(rot_z)
+            trans_x_moco = -trans_y
+            trans_y_moco = trans_x
+            trans_z_moco = -trans_z
+            print [trans_x_moco, trans_y_moco, trans_z_moco, rot_x_moco,
+                   rot_y_moco, rot_z_moco]
+
         return [rot_x, rot_y, rot_z, trans_x, trans_y, trans_z]
+
+    def rad2degree(self, alpha_rad):
+        return alpha_rad*180/np.pi
+
+    def isRotationMatrix(self, R):
+        Rt = np.transpose(R)
+        shouldBeIdentity = np.dot(Rt, R)
+        Identity = np.identity(3, dtype=R.dtype)
+        n = np.linalg.norm(Identity - shouldBeIdentity)
+        return n < 1e-4
+
+    def rotationMatrixToEulerAngles(self, R):
+
+        assert(self.isRotationMatrix(R))
+
+        cy = math.sqrt(R[0, 0]*R[0, 0]+R[0, 1]*R[0, 1])
+        singular = cy < 1e-4
+
+        if not singular:
+            cz = R[0, 0]/cy
+            sz = R[0, 1]/cy
+            cx = R[2, 2]/cy
+            sx = R[1, 2]/cy
+            sy = -R[0, 2]
+            x = math.atan2(sx, cx)
+            y = math.atan2(sy, cy)
+            z = math.atan2(sz, cz)
+        else:
+            cx = R[1, 1]
+            sx = -R[2, 1]
+            sy = -R[0, 2]
+            x = math.atan2(sx, cx)
+            y = math.atan2(sy, 0.0)
+            z = 0.0
+
+        return np.array([x, y, z])
 
     def _list_outputs(self):
         outputs = self._outputs().get()
@@ -703,7 +738,7 @@ class MotionFraming(BaseInterface):
                    fmt='%s')
         os.mkdir('timestamps')
         for i in range(len(frame_start_times)-1):
-            with open('timestamps/timestamps_Frame{}'
+            with open('timestamps/timestamps_Frame{}.txt'
                       .format(str(i).zfill(3)), 'w') as f:
                 f.write(frame_start_times[i]+'\n'+frame_start_times[i+1])
             f.close()
