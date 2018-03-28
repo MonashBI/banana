@@ -570,11 +570,10 @@ class MeanDisplacementCalculation(BaseInterface):
         convetion."""
 
         c = np.asarray(com)
-
-        rot_x, rot_y, rot_z = self.rotationMatrixToEulerAngles(mat)
         trans_init = mat[:3, -1]
         rot_mat = mat[:3, :3]
         centre = c*res
+        rot_x, rot_y, rot_z = self.rotationMatrixToEulerAngles(rot_mat)
         trans_tot = np.dot(rot_mat, centre)+trans_init-centre
         trans_x = trans_tot[0]
         trans_y = trans_tot[1]
