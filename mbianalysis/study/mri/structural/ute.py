@@ -31,12 +31,9 @@ class UTEStudy(MRIStudy):
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
 
-    def brain_mask_pipeline(self, robust=True, f_threshold=0.65,
-                            g_threshold=-0.15, **kwargs):
-        pipeline = super(UTEStudy, self).brain_mask_pipeline(
-            robust=robust, f_threshold=f_threshold,
-            g_threshold=g_threshold, **kwargs)
-        return pipeline
+    def brain_mask_pipeline(self, bet_method='optibet', **kwargs):
+        return super(UTEStudy, self).brain_mask_pipeline(bet_method=bet_method,
+                                                         **kwargs)
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(UTEStudy, self).
