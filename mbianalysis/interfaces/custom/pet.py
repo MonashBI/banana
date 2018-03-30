@@ -12,6 +12,9 @@ from sklearn.decomposition import PCA
 import subprocess as sp
 from nipype.interfaces.base.traits_extension import Directory
 import shutil
+import glob
+import pydicom
+
 
 list_mode_framing_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', 'resources', 'C_C++',
@@ -399,5 +402,140 @@ class MergeUnlistingOutputs(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["sinogram_folder"] = os.getcwd()+'/PET_sinograms_for_PCA'
+
+        return outputs
+
+
+class PreparePetDirInputSpec(BaseInterfaceInputSpec):
+
+    pet_dir = Directory(exists=True, desc='Directory with the PET images to '
+                        'use for motion correction.')
+
+class PreparePetDirOutputSpec(TraitedSpec):
+
+    pet_images = traits.List(desc='List of nifti(gz) PET images')
+
+class PreparePetDir(BaseInterface):
+    
+    input_spec = PreparePetDirInputSpec
+    output_spec = PreparePetDirOutputSpec
+    
+    def _run_interface(self, runtime):
+
+        pet_dir = self.inputs.pet_dir
+        e7tool = 'old'
+        basename = 'frame'
+        self.out_dct = {}
+        pet_images = sorted(
+            glob.glob(pet_dir+'/{0}*.nii.gz'.format(basename)))
+
+        if not pet_images:
+            list_pet_frames = sorted(
+                glob.glob(pet_dir+'/{0}*.nii'.format(basename)))
+        if pet_images:
+            im = nib.load(list_pet_frames[0])
+            hd = im.header
+            if 'New_e7tools' in hd['db_name']:
+                e7tool = 'new'
+                print ('New e7tool version detected.')
+        if not pet_images:
+            pet_dicoms = sorted(glob.glob(pet_dir + '/Frame*'))
+            if pet_dicoms:
+                vol0 = sorted(glob.glob(pet_dicoms[0]+'/*'))[0]
+                hd = pydicom.read_file(vol0)
+                if ('e7tools' in hd.SoftwareVersions or
+                        'syngo MR B20P' in hd.SoftwareVersions or
+                        'syngo MR E11' in hd.SoftwareVersions):
+                    e7tool = 'new'
+                    print ('New e7tool version detected.')
+                for dcm in pet_dicoms:
+                    frame_num = dcm.split('/')[-1][5:]
+                    cmd = ('mrconvert -force {0} {1}/{2}{3}.nii.gz'
+                           .format(dcm, pet_dir, basename,
+                                   str(frame_num).zfill(3)))
+                    sp.check_output(cmd, shell=True)
+                    if frame_num == '0' and e7tool == 'new':
+                        im = nib.load('{0}/{1}{2}.nii.gz'.format(
+                                pet_dir, basename, str(frame_num).zfill(3)))
+                        hd = im.header
+                        hd['db_name'] = 'New_e7tools'
+                        nib.save(
+                            im, '{0}/{1}{2}.nii.gz'.format(
+                                pet_dir, basename, str(frame_num).zfill(3)))
+                pet_images = sorted(glob.glob(
+                    pet_dir+'/{0}*.nii.gz'.format(basename)))
+            else:
+                raise Exception("No PET images found in {0}!".format(pet_dir))
+        if e7tool == 'old':
+            raise Exception(
+                "Could not find any e7tools version information. If you are sure "
+                "that the images are reconstructed with the new version of the "
+                "e7tools (after June 2017) then specify e72=True as input. "
+                "Otherwise reconstruct your images with the new version. This "
+                "software does not support the old e7tools version.")
+        
+        self.out_dct['pet_images'] = pet_images
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["pet_images"] = self.out_dct['pet_images']
+
+        return outputs
+
+
+class PETFovCroppingInputSpec(BaseInterfaceInputSpec):
+    
+    pet_image = File(exists=True, desc='PET images to crop.')
+    ref_pet = File(exists=True, desc='Reference image to use to save the cropped PET. '
+                   'Usually is the output of fslroi command with the same '
+                   'cropping parameters.')
+    x_min = traits.Int()
+    x_size = traits.Int()
+    y_min = traits.Int()
+    y_size = traits.Int()
+    z_min = traits.Int()
+    z_size = traits.Int()
+
+class PETFovCroppingOutputSpec(TraitedSpec):
+
+    pet_cropped = File(exists=True, desc='Cropped PET')
+
+
+class PETFovCropping(BaseInterface):
+    
+    input_spec = PETFovCroppingInputSpec
+    output_spec = PETFovCroppingOutputSpec
+    
+    def _run_interface(self, runtime):
+
+        pet_image = self.inputs.pet_image
+        ref = self.inputs.ref_pet
+        x_min = self.inputs.x_min
+        x_size = self.inputs.x_size
+        y_min = self.inputs.y_min
+        y_size = self.inputs.y_size
+        z_min = self.inputs.z_min
+        z_size = self.inputs.z_size
+        _, basename, ext = split_filename(pet_image)
+        outname = basename+'_crop'+ext
+        pet = nib.load(pet_image)
+        pet = pet.get_data()
+        pet_cropped = pet[x_min:x_size, y_min:y_size, z_min:z_size]
+#         cmd = 'fslroi {} ref_roi 100 130 100 130 20 100'.format(im)
+#         sp.check_output(cmd, shell=True)
+        ref = nib.load(ref)
+        im2save = nib.Nifti1Image(pet_cropped, affine=ref.get_affine())
+        nib.save(im2save, outname)
+
+        return runtime
+    
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        pet_image = self.inputs.pet_image
+        _, outname, _ = split_filename(pet_image)
+
+        outputs["sinogram_folder"] = os.getcwd()+outname
 
         return outputs
