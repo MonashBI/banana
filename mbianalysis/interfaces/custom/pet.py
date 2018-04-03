@@ -430,10 +430,10 @@ class PreparePetDir(BaseInterface):
             glob.glob(pet_dir+'/{0}*.nii.gz'.format(basename)))
 
         if not pet_images:
-            list_pet_frames = sorted(
+            pet_images = sorted(
                 glob.glob(pet_dir+'/{0}*.nii'.format(basename)))
         if pet_images:
-            im = nib.load(list_pet_frames[0])
+            im = nib.load(pet_images[0])
             hd = im.header
             if 'New_e7tools' in hd['db_name']:
                 e7tool = 'new'
@@ -534,8 +534,9 @@ class PETFovCropping(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         pet_image = self.inputs.pet_image
-        _, outname, _ = split_filename(pet_image)
+        _, basename, ext = split_filename(pet_image)
+        outname = basename+'_crop'+ext
 
-        outputs["sinogram_folder"] = os.getcwd()+outname
+        outputs["pet_cropped"] = os.getcwd()+'/'+outname
 
         return outputs
