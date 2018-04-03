@@ -69,7 +69,7 @@ class MotionCorrection(PETStudy):
         
         mean = pipeline.create_node(ImageMaths(), name='time_average',
                                     requirements=[fsl509_req])
-        mean.inputs.op_string = 'Tmean'
+        mean.inputs.op_string = '-Tmean'
         pipeline.connect(mcflirt, 'out_file', mean, 'in_file')
         
         pipeline.connect_output('fixed_maf_pet', mean, 'out_file')

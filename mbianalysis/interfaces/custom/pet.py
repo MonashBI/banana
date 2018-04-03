@@ -522,7 +522,8 @@ class PETFovCropping(BaseInterface):
         outname = basename+'_crop'+ext
         pet = nib.load(pet_image)
         pet = pet.get_data()
-        pet_cropped = pet[x_min:x_size, y_min:y_size, z_min:z_size]
+        pet_cropped = pet[x_min:x_min+x_size, y_min:y_min+y_size,
+                          z_min:z_min+z_size]
 #         cmd = 'fslroi {} ref_roi 100 130 100 130 20 100'.format(im)
 #         sp.check_output(cmd, shell=True)
         ref = nib.load(ref)
