@@ -465,11 +465,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     run_pipeline = False
     if pet_data_dir is not None:
         data_specs.append(Dataset('pet_data_dir', directory_format))
-        inputs['pet_data_dir'] = Dataset(pet_data_dir, directory_format)
+        inputs['pet_data_dir'] = Dataset('pet_data_dir', directory_format)
 
         def motion_framing_pipeline_altered(self, **options):
             return self.motion_framing_pipeline_factory(
-                pet_data_dir=pet_data_dir, **options)
+                pet_data_dir='pet_data_dir', **options)
 
         dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
         data_specs.append(
