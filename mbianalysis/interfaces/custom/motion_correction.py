@@ -764,7 +764,11 @@ class MotionFraming(BaseInterface):
     def pet_time_info(self, pet_data_dir):
 
         pet_duration = None
-        bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
+        for root, dirs, files in os.walk(pet_data_dir):
+            bf_files = [f for f in files if not f[0] == '.' and '.bf' in f]
+            dirs[:] = [d for d in dirs if not d[0] == '.']
+
+#         bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
         if not bf_files:
             pet_start_time = None
             pet_endtime = None
@@ -773,10 +777,10 @@ class MotionFraming(BaseInterface):
         else:
             max_size = 0
             for bf in bf_files:
-                size = os.path.getsize(bf)
+                size = os.path.getsize(os.path.join(root, bf))
                 if size > max_size:
                     max_size = size
-                    list_mode_file = bf
+                    list_mode_file = os.path.join(root, bf)
 
             pet_image = list_mode_file.split('.bf')[0] + '.dcm'
             try:
