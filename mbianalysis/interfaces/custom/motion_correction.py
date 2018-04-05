@@ -719,6 +719,30 @@ class MotionFraming(BaseInterface):
                     dt.datetime.strptime(frame_st4pet[-2], '%H%M%S.%f'))
                     .total_seconds() < 30):
                 frame_st4pet.remove(frame_st4pet[-2])
+            frame_vol = [i for i in range(len(start_times)) for j in
+                         range(len(frame_st4pet)) if start_times[i] ==
+                         frame_st4pet[j]]
+            if (dt.datetime.strptime(start_times[0], '%H%M%S.%f') >
+                    dt.datetime.strptime(pet_st, '%H%M%S.%f')):
+                frame_vol.append(0)
+            else:
+                vol = [i for i in range(len(start_times)) if
+                       (dt.datetime.strptime(start_times[i], '%H%M%S.%f') <
+                        dt.datetime.strptime(frame_st4pet[0], '%H%M%S.%f') and
+                        dt.datetime.strptime(start_times[i+1], '%H%M%S.%f') >
+                        dt.datetime.strptime(frame_st4pet[0], '%H%M%S.%f'))]
+                frame_vol.append(vol[0])
+            if (dt.datetime.strptime(start_times[-1], '%H%M%S.%f') <
+                    dt.datetime.strptime(pet_endtime, '%H%M%S.%f')):
+                frame_vol.append(len(start_times)-1)
+            else:
+                vol = [i for i in range(len(start_times)) if
+                       (dt.datetime.strptime(start_times[i], '%H%M%S.%f') <
+                        dt.datetime.strptime(frame_st4pet[-1], '%H%M%S.%f') and
+                        dt.datetime.strptime(start_times[i+1], '%H%M%S.%f') >
+                        dt.datetime.strptime(frame_st4pet[-1], '%H%M%S.%f'))]
+                frame_vol.append(vol[0])
+            frame_vol = sorted(frame_vol)
         np.savetxt('frame_start_times.txt', np.asarray(frame_start_times),
                    fmt='%s')
         os.mkdir('timestamps')
@@ -729,7 +753,7 @@ class MotionFraming(BaseInterface):
         np.savetxt('timestamps/frame_start_times_4PET.txt',
                    np.asarray(timestamps_2save), fmt='%s')
         for i in range(len(timestamps_2save)-1):
-            with open('timestamps/timestamps_Frame{}'
+            with open('timestamps/timestamps_Frame{}.txt'
                       .format(str(i).zfill(3)), 'w') as f:
                 f.write(timestamps_2save[i]+'\n'+timestamps_2save[i+1])
             f.close()
