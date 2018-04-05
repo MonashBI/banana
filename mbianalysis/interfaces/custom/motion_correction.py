@@ -13,6 +13,7 @@ import datetime as dt
 import matplotlib
 import matplotlib.pyplot as plot
 from nipype.interfaces import fsl
+import pydicom
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -601,6 +602,14 @@ class MotionFramingInputSpec(BaseInterfaceInputSpec):
                                       'shorter than this value (in sec) then '
                                       'the frame will be discarded. Default '
                                       '30sec', default=30)
+    pet_data_dir = Directory(
+        exists=True, desc='PET directory with all the acquired data from the '
+        'scanner. This folder must contain at list the list-mode data and its '
+        'headerto which will be used to extract the pet start time and end '
+        'time. This must be provided if motion detection has to be then '
+        'applied to PET motion correction.', default=None)
+    pet_start_time = traits.Str(desc='PET start time', default=None)
+    pet_duration = traits.Str(desc='PET duration in seconds', default=None)
 
 
 class MotionFramingOutputSpec(TraitedSpec):
@@ -626,10 +635,21 @@ class MotionFraming(BaseInterface):
         th = self.inputs.motion_threshold
         start_times = np.loadtxt(self.inputs.start_times, dtype=str)
         temporal_th = self.inputs.temporal_threshold
+        pet_data_dir = self.inputs.pet_data_dir
+        pet_start_time = self.inputs.pet_start_time
+        pet_duration = self.inputs.pet_duration
+        if pet_data_dir:
+            pet_st, pet_endtime = self.pet_time_info(pet_data_dir)
+        elif pet_start_time and pet_duration:
+            pet_st = pet_start_time
+            pet_endtime = ((
+                dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
+                dt.timedelta(seconds=int(pet_duration))).strftime('%H%M%S.%f'))
 
         md_0 = mean_displacement[0]
         max_md = mean_displacement[0]
         frame_vol = [0]
+        frame_st4pet = []
 
         scan_duration = [
             (dt.datetime.strptime(start_times[i], '%H%M%S.%f') -
@@ -677,17 +697,82 @@ class MotionFraming(BaseInterface):
 
         frame_vol = sorted(frame_vol)
         frame_start_times = [start_times[x] for x in frame_vol]
+        if pet_st and pet_endtime:
+            frame_st4pet = [
+                x for x in frame_start_times if
+                (dt.datetime.strptime(x, '%H%M%S.%f') >
+                 dt.datetime.strptime(pet_st, '%H%M%S.%f')
+                 and dt.datetime.strptime(x, '%H%M%S.%f') <
+                 dt.datetime.strptime(pet_endtime, '%H%M%S.%f'))]
+            frame_st4pet.remove(frame_st4pet[0])
+            frame_st4pet.remove(frame_st4pet[-1])
+            frame_st4pet.append(pet_st)
+            frame_st4pet.append(pet_endtime)
+            frame_st4pet = sorted(frame_st4pet)
+            if ((dt.datetime.strptime(frame_st4pet[1], '%H%M%S.%f') -
+                    dt.datetime.strptime(frame_st4pet[0], '%H%M%S.%f'))
+                    .total_seconds() < 30):
+                frame_st4pet.remove(frame_st4pet[1])
+            if ((dt.datetime.strptime(frame_st4pet[-1], '%H%M%S.%f') -
+                    dt.datetime.strptime(frame_st4pet[-2], '%H%M%S.%f'))
+                    .total_seconds() < 30):
+                frame_st4pet.remove(frame_st4pet[-2])
         np.savetxt('frame_start_times.txt', np.asarray(frame_start_times),
                    fmt='%s')
         os.mkdir('timestamps')
-        for i in range(len(frame_start_times)-1):
+        if frame_st4pet:
+            timestamps_2save = frame_st4pet
+        else:
+            timestamps_2save = frame_start_times
+        np.savetxt('timestamps/frame_start_times_4PET.txt',
+                   np.asarray(timestamps_2save), fmt='%s')
+        for i in range(len(timestamps_2save)-1):
             with open('timestamps/timestamps_Frame{}'
                       .format(str(i).zfill(3)), 'w') as f:
-                f.write(frame_start_times[i]+'\n'+frame_start_times[i+1])
+                f.write(timestamps_2save[i]+'\n'+timestamps_2save[i+1])
             f.close()
         np.savetxt('frame_vol_numbers.txt', np.asarray(frame_vol), fmt='%s')
 
         return runtime
+
+    def pet_time_info(self, pet_data_dir):
+
+        pet_duration = None
+        bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
+        if not bf_files:
+            pet_start_time = None
+            pet_endtime = None
+            print ('No .bf file found in {}. If you want to perform motion '
+                   'correction please provide the right pet data. ')
+        else:
+            max_size = 0
+            for bf in bf_files:
+                size = os.path.getsize(bf)
+                if size > max_size:
+                    max_size = size
+                    list_mode_file = bf
+
+            pet_image = list_mode_file.split('.bf')[0] + '.dcm'
+            try:
+                hd = pydicom.read_file(pet_image)
+                pet_start_time = hd.AcquisitionTime
+            except AttributeError:
+                pet_start_time = None
+            with open(pet_image, 'r') as f:
+                for line in f:
+                    if 'image duration' in line:
+                        pet_duration = line.strip()
+                        pet_duration = int(pet_duration.split(':=')[-1])
+            if pet_duration:
+                pet_endtime = ((
+                    dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
+                    dt.timedelta(seconds=pet_duration))
+                                    .strftime('%H%M%S.%f'))
+                pet_duration = pet_duration
+            else:
+                pet_endtime = None
+
+        return pet_start_time, pet_endtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
@@ -871,8 +956,8 @@ class AffineMatAveraging(BaseInterface):
 
 class PetCorrectionFactorInputSpec(BaseInterfaceInputSpec):
 
-    frame_start_times = File(exists=True, desc='Frame start times as detected'
-                             'by the motion framing pipeline')
+    timestamps = Directory(exists=True, desc='Frame start times as detected'
+                           'by the motion framing pipeline')
 
 
 class PetCorrectionFactorOutputSpec(TraitedSpec):
@@ -887,7 +972,8 @@ class PetCorrectionFactor(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        frame_st = np.loadtxt(self.inputs.frame_start_times, dtype=str)
+        frame_st = np.loadtxt(
+            self.inputs.timestamps+'/frame_start_times_4PET.txt', dtype=str)
         start = dt.datetime.strptime(frame_st[0], '%H%M%S.%f')
         end = dt.datetime.strptime(frame_st[-1], '%H%M%S.%f')
         tot_duration = (end - start).total_seconds()

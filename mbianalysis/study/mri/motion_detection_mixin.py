@@ -1,4 +1,4 @@
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from nianalysis.dataset import DatasetSpec, FieldSpec, Field
 from nianalysis.data_formats import (
     nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format, dicom_format)
@@ -199,12 +199,24 @@ class MotionDetectionMixin(MultiStudy):
         return pipeline
 
     def motion_framing_pipeline(self, **options):
+        return self.motion_framing_pipeline_factory(
+            pet_data_dir=None, pet_start_time=None, pet_duration=None,
+            **options)
 
+    def motion_framing_pipeline_factory(
+            self, pet_data_dir=None, pet_start_time=None, pet_duration=None,
+            **options):
+        inputs = [DatasetSpec('mean_displacement', text_format),
+                  DatasetSpec('mean_displacement_consecutive', text_format),
+                  DatasetSpec('start_times', text_format)]
+        if pet_data_dir is not None:
+            inputs.append(DatasetSpec(pet_data_dir, directory_format))
+        elif pet_start_time is not None and pet_duration is not None:
+            inputs.append(FieldSpec(pet_start_time, str))
+            inputs.append(FieldSpec(pet_duration, str))
         pipeline = self.create_pipeline(
             name='motion_framing',
-            inputs=[DatasetSpec('mean_displacement', text_format),
-                    DatasetSpec('mean_displacement_consecutive', text_format),
-                    DatasetSpec('start_times', text_format)],
+            inputs=inputs,
             outputs=[DatasetSpec('frame_start_times', text_format),
                      DatasetSpec('frame_vol_numbers', text_format),
                      DatasetSpec('timestamps', directory_format)],
@@ -223,6 +235,13 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_input('mean_displacement_consecutive', framing,
                                'mean_displacement_consec')
         pipeline.connect_input('start_times', framing, 'start_times')
+        if pet_data_dir is not None:
+            pipeline.connect_input('pet_data_dir', framing, 'pet_data_dir')
+        elif pet_start_time is not None and pet_duration is not None:
+            pipeline.connect_input('pet_start_time', framing, 'pet_start_time')
+            pipeline.connect_input('pet_duration', framing, 'pet_duration')
+#         else:
+#             framing.inputs.pet_data_dir = None
         pipeline.connect_output('frame_start_times', framing,
                                 'frame_start_times')
         pipeline.connect_output('frame_vol_numbers', framing,
@@ -288,7 +307,7 @@ class MotionDetectionMixin(MultiStudy):
 
         pipeline = self.create_pipeline(
             name='pet_correction_factors',
-            inputs=[DatasetSpec('frame_start_times', text_format)],
+            inputs=[DatasetSpec('timestamps', directory_format)],
             outputs=[DatasetSpec('correction_factors', text_format)],
             description=("Pipeline to calculate the correction factors to "
                          "account for frame duration when averaging the PET "
@@ -300,8 +319,8 @@ class MotionDetectionMixin(MultiStudy):
 
         corr_factors = pipeline.create_node(PetCorrectionFactor(),
                                             name='pet_corr_factors')
-        pipeline.connect_input('frame_start_times', corr_factors,
-                               'frame_start_times')
+        pipeline.connect_input('timestamps', corr_factors,
+                               'timestamps')
         pipeline.connect_output('correction_factors', corr_factors,
                                 'corr_factors')
         pipeline.assert_connected()
@@ -437,12 +456,52 @@ class MotionDetectionMixin(MultiStudy):
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                   utes=None, t2s=None, dmris=None, epis=None,
-                                  umaps=None, dynamic=False):
+                                  umaps=None, dynamic=False,
+                                  pet_data_dir=None, pet_time_info=None):
 
     inputs = {}
     dct = {}
     data_specs = []
     run_pipeline = False
+    if pet_data_dir is not None:
+        data_specs.append(Dataset('pet_data_dir', directory_format))
+        inputs['pet_data_dir'] = Dataset(pet_data_dir, directory_format)
+
+        def motion_framing_pipeline_altered(self, **options):
+            return self.motion_framing_pipeline_factory(
+                pet_data_dir=pet_data_dir, **options)
+
+        dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
+        data_specs.append(
+            DatasetSpec('frame_start_times', text_format,
+                        motion_framing_pipeline_altered))
+        data_specs.append(
+            DatasetSpec('frame_vol_numbers', text_format,
+                        motion_framing_pipeline_altered))
+        data_specs.append(
+            DatasetSpec('timestamps', directory_format,
+                        motion_framing_pipeline_altered))
+    elif pet_time_info is not None:
+        data_specs.append(Field('pet_start_time', str))
+        data_specs.append(Field('pet_duration', str))
+        inputs['pet_start_time'] = Field(pet_time_info[0], str)
+        inputs['pet_duration'] = Field(pet_time_info[1], str)
+
+        def motion_framing_pipeline_altered(self, **options):
+            return self.motion_framing_pipeline_factory(
+                pet_start_time=pet_time_info[0], pet_duration=pet_time_info[1],
+                **options)
+
+        dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
+        data_specs.append(
+            DatasetSpec('frame_start_times', text_format,
+                        motion_framing_pipeline_altered))
+        data_specs.append(
+            DatasetSpec('frame_vol_numbers', text_format,
+                        motion_framing_pipeline_altered))
+        data_specs.append(
+            DatasetSpec('timestamps', directory_format,
+                        motion_framing_pipeline_altered))
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
