@@ -704,8 +704,10 @@ class MotionFraming(BaseInterface):
                  dt.datetime.strptime(pet_st, '%H%M%S.%f')
                  and dt.datetime.strptime(x, '%H%M%S.%f') <
                  dt.datetime.strptime(pet_endtime, '%H%M%S.%f'))]
-            frame_st4pet.remove(frame_st4pet[0])
-            frame_st4pet.remove(frame_st4pet[-1])
+            if frame_start_times[0] in frame_st4pet:
+                frame_st4pet.remove(frame_start_times[0])
+            if frame_start_times[-1] in frame_st4pet:
+                frame_st4pet.remove(frame_start_times[-1])
             frame_st4pet.append(pet_st)
             frame_st4pet.append(pet_endtime)
             frame_st4pet = sorted(frame_st4pet)
