@@ -379,7 +379,7 @@ class MotionDetectionMixin(MultiStudy):
 
     def gather_outputs_factory(self, name, align_mats=False,
                                pet_corr_fac=False, aligned_umaps=False,
-                               timestamps=False, **options):
+                               timestamps=False, ute=None, **options):
         inputs = [DatasetSpec('mean_displacement_plot', png_format),
                   DatasetSpec('motion_par', text_format)]
         if align_mats:
@@ -392,6 +392,8 @@ class MotionDetectionMixin(MultiStudy):
                 DatasetSpec('umaps_align2ref_dicom', directory_format))
         if timestamps:
             inputs.append(DatasetSpec('timestamps', directory_format))
+        if ute is not None:
+            inputs.append(DatasetSpec(ute, nifti_gz_format))
 
         pipeline = self.create_pipeline(
             name=name,
@@ -589,7 +591,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         def gather_md_outputs_pipeline_altered(self, **options):
             return self.gather_outputs_factory(
                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
-                timestamps=True, align_mats=True)
+                timestamps=True, align_mats=True,
+                ute='ute_{}_ute_preproc'.format(len(utes)-1))
 
         dct['gather_outputs_pipeline'] = (
             gather_md_outputs_pipeline_altered)
