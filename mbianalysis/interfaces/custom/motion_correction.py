@@ -645,6 +645,9 @@ class MotionFraming(BaseInterface):
             pet_endtime = ((
                 dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
                 dt.timedelta(seconds=int(pet_duration))).strftime('%H%M%S.%f'))
+        else:
+            pet_st = None
+            pet_endtime = None
 
         md_0 = mean_displacement[0]
         max_md = mean_displacement[0]
