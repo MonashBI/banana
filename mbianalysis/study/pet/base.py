@@ -1,11 +1,17 @@
 from nianalysis.study.base import Study, set_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.data_formats import (nifti_gz_format, text_format,
-                                     text_matrix_format)
+                                     text_matrix_format, directory_format)
 from mbianalysis.interfaces.sklearn import FastICA
 from mbianalysis.interfaces.ants import AntsRegSyn
 import os
 from abc import abstractmethod
+from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
+                                     fsl509_req, fsl510_req, mrtrix3_req)
+from nianalysis.citations import fsl_cite
+from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
+from nianalysis.interfaces.utils import ListDir, SelectOne, CopyToDir
+from nipype.interfaces.fsl import Merge, ExtractROI
 
 
 template_path = os.path.abspath(
@@ -82,9 +88,84 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
+    def pet_data_preparation_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='pet_data_preparation',
+            inputs=[DatasetSpec('pet_dir', directory_format)],
+            outputs=[DatasetSpec('pet_dir_prepared', directory_format)],
+            description=("Given a folder with reconstructed PET data, this "
+                         "pipeline will prepare the data for the motion "
+                         "correction"),
+            default_options={'image_orientation_check': False},
+            version=1,
+            citations=[],
+            options=options)
+
+        prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
+                                        requirements=[mrtrix3_req])
+        prep_dir.inputs.image_orientation_check = pipeline.option(
+            'image_orientation_check')
+        pipeline.connect_input('pet_dir', prep_dir, 'pet_dir')
+
+        pipeline.connect_output('pet_dir_prepared', prep_dir,
+                                'pet_dir_prepared')
+        pipeline.assert_connected()
+        return pipeline
+
+    def pet_fov_cropping_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='pet_fov_cropping',
+            inputs=[DatasetSpec('pet_dir_prepared', directory_format)],
+            outputs=[DatasetSpec('pet_data_cropped', directory_format)],
+            description=("Given a folder with reconstructed PET data, this "
+                         "pipeline will crop the PET field of view."),
+            default_options={'xmin': 100, 'xsize': 130, 'ymin': 100,
+                             'ysize': 130, 'zmin': 20, 'zsize': 100},
+            version=1,
+            citations=[],
+            options=options)
+
+        list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
+        pipeline.connect_input('pet_dir_prepared', list_dir, 'directory')
+        select = pipeline.create_node(SelectOne(), name='select_ref')
+        pipeline.connect(list_dir, 'files', select, 'inlist')
+        select.inputs.index = 0
+        crop_ref = pipeline.create_node(ExtractROI(), name='crop_ref',
+                                        requirements=[fsl509_req])
+        pipeline.connect(select, 'out', crop_ref, 'in_file')
+        crop_ref.inputs.x_min = pipeline.option('xmin')
+        crop_ref.inputs.x_size = pipeline.option('xsize')
+        crop_ref.inputs.y_min = pipeline.option('ymin')
+        crop_ref.inputs.y_size = pipeline.option('ysize')
+        crop_ref.inputs.z_min = pipeline.option('zmin')
+        crop_ref.inputs.z_size = pipeline.option('zsize')
+        cropping = pipeline.create_map_node(PETFovCropping(), name='cropping',
+                                            iterfield=['pet_image'])
+        cropping.inputs.x_min = pipeline.option('xmin')
+        cropping.inputs.x_size = pipeline.option('xsize')
+        cropping.inputs.y_min = pipeline.option('ymin')
+        cropping.inputs.y_size = pipeline.option('ysize')
+        cropping.inputs.z_min = pipeline.option('zmin')
+        cropping.inputs.z_size = pipeline.option('zsize')
+        pipeline.connect(crop_ref, 'roi_file', cropping, 'ref_pet')
+        pipeline.connect(list_dir, 'files', cropping, 'pet_image')
+        cp2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        pipeline.connect(cropping, 'pet_cropped', cp2dir, 'in_files')
+
+        pipeline.connect_output('pet_data_cropped', cp2dir, 'out_dir')
+        pipeline.assert_connected()
+        return pipeline
+
     _data_specs = set_specs(
         DatasetSpec('registered_volumes', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format),
+        DatasetSpec('pet_dir', directory_format),
+        DatasetSpec('pet_dir_prepared', directory_format,
+                    pet_data_preparation_pipeline),
+        DatasetSpec('pet_data_cropped', directory_format,
+                    pet_fov_cropping_pipeline),
         DatasetSpec('decomposed_file', nifti_gz_format, ICA_pipeline),
         DatasetSpec('timeseries', nifti_gz_format, ICA_pipeline),
         DatasetSpec('mixing_mat', text_format, ICA_pipeline),

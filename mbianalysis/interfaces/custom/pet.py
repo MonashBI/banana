@@ -410,22 +410,34 @@ class PreparePetDirInputSpec(BaseInterfaceInputSpec):
 
     pet_dir = Directory(exists=True, desc='Directory with the PET images to '
                         'use for motion correction.')
+    image_orientation_check = traits.Bool(
+        desc='This check is to assure that the PET images have the correct '
+        'orientation (for example, using old version of e7tools the fineal PET'
+        'images had wrong RL, AP and IS labels with respect to the actual '
+        'image orientation). By default the pipeline checks the version of the'
+        ' e7tools version used for the reconstrution in the PET header. If '
+        'there is no information there and you are sure the orientation is '
+        'correct then set this to True, otherwise recontruct the images with a'
+        'new e7tools version. This software does not support old e7tools.',
+        default=False)
+
 
 class PreparePetDirOutputSpec(TraitedSpec):
 
-    pet_images = traits.List(desc='List of nifti(gz) PET images')
+    pet_dir_prepared = Directory(desc='Directory with PET images ready for the'
+                                 ' motion correction.')
+
 
 class PreparePetDir(BaseInterface):
-    
+
     input_spec = PreparePetDirInputSpec
     output_spec = PreparePetDirOutputSpec
-    
+
     def _run_interface(self, runtime):
 
         pet_dir = self.inputs.pet_dir
-        e7tool = 'old'
+        image_orientation_check = self.inputs.image_orientation_check
         basename = 'frame'
-        self.out_dct = {}
         pet_images = sorted(
             glob.glob(pet_dir+'/{0}*.nii.gz'.format(basename)))
 
@@ -436,7 +448,7 @@ class PreparePetDir(BaseInterface):
             im = nib.load(pet_images[0])
             hd = im.header
             if 'New_e7tools' in hd['db_name']:
-                e7tool = 'new'
+                image_orientation_check = True
                 print ('New e7tool version detected.')
         if not pet_images:
             pet_dicoms = sorted(glob.glob(pet_dir + '/Frame*'))
@@ -446,7 +458,7 @@ class PreparePetDir(BaseInterface):
                 if ('e7tools' in hd.SoftwareVersions or
                         'syngo MR B20P' in hd.SoftwareVersions or
                         'syngo MR E11' in hd.SoftwareVersions):
-                    e7tool = 'new'
+                    image_orientation_check = True
                     print ('New e7tool version detected.')
                 for dcm in pet_dicoms:
                     frame_num = dcm.split('/')[-1][5:]
@@ -454,7 +466,7 @@ class PreparePetDir(BaseInterface):
                            .format(dcm, pet_dir, basename,
                                    str(frame_num).zfill(3)))
                     sp.check_output(cmd, shell=True)
-                    if frame_num == '0' and e7tool == 'new':
+                    if frame_num == '0' and image_orientation_check:
                         im = nib.load('{0}/{1}{2}.nii.gz'.format(
                                 pet_dir, basename, str(frame_num).zfill(3)))
                         hd = im.header
@@ -466,27 +478,29 @@ class PreparePetDir(BaseInterface):
                     pet_dir+'/{0}*.nii.gz'.format(basename)))
             else:
                 raise Exception("No PET images found in {0}!".format(pet_dir))
-        if e7tool == 'old':
+        if not image_orientation_check:
             raise Exception(
-                "Could not find any e7tools version information. If you are sure "
-                "that the images are reconstructed with the new version of the "
-                "e7tools (after June 2017) then specify e72=True as input. "
-                "Otherwise reconstruct your images with the new version. This "
-                "software does not support the old e7tools version.")
-        
-        self.out_dct['pet_images'] = pet_images
+                "Could not find any e7tools version information and the PET "
+                "header. If you are sure that the reconstructed PET images "
+                "have correct orientation then specify image_orientation_check"
+                "=True. Otherwise reconstruct your images with the new version"
+                ". This software does not support the old e7tools version.")
+        os.mkdir('pet_data')
+        for f in pet_images:
+            shutil.move(f, 'pet_data')
+
         return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
 
-        outputs["pet_images"] = self.out_dct['pet_images']
+        outputs["pet_dir_prepared"] = os.getcwd()+'/pet_data'
 
         return outputs
 
 
 class PETFovCroppingInputSpec(BaseInterfaceInputSpec):
-    
+
     pet_image = File(exists=True, desc='PET images to crop.')
     ref_pet = File(exists=True, desc='Reference image to use to save the cropped PET. '
                    'Usually is the output of fslroi command with the same '

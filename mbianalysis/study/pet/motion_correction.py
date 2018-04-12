@@ -13,7 +13,7 @@ from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
 
 
 class MotionCorrection(PETStudy):
-    
+
     def fixed_maf_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
@@ -29,11 +29,11 @@ class MotionCorrection(PETStudy):
             version=1,
             citations=[fsl_cite],
             options=options)
-        
+
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
                                         requirements=[mrtrix3_req])
         pipeline.connect_input('pet_dir', prep_dir, 'pet_dir')
-        
+
         select = pipeline.create_node(SelectOne(), name='select_ref')
         pipeline.connect(prep_dir, 'pet_images', select, 'inlist')
         select.inputs.index = 0
@@ -56,22 +56,22 @@ class MotionCorrection(PETStudy):
         cropping.inputs.z_size = pipeline.option('zsize')
         pipeline.connect(crop_ref, 'roi_file', cropping, 'ref_pet')
         pipeline.connect(prep_dir, 'pet_images', cropping, 'pet_image')
-        
+
         merge = pipeline.create_node(Merge(), name='pet_merge',
                                      requirements=[fsl509_req])
         pipeline.connect(cropping, 'pet_cropped', merge, 'in_files')
         merge.inputs.dimension = 't'
-        
+
         mcflirt = pipeline.create_node(MCFLIRT(), name='mcflirt',
                                        requirements=[fsl509_req])
         mcflirt.inputs.cost = 'normmi'
         pipeline.connect(merge, 'merged_file', mcflirt, 'in_file')
-        
+
         mean = pipeline.create_node(ImageMaths(), name='time_average',
                                     requirements=[fsl509_req])
         mean.inputs.op_string = '-Tmean'
         pipeline.connect(mcflirt, 'out_file', mean, 'in_file')
-        
+
         pipeline.connect_output('fixed_maf_pet', mean, 'out_file')
         pipeline.assert_connected()
         return pipeline
@@ -79,4 +79,3 @@ class MotionCorrection(PETStudy):
     _data_specs = set_specs(
         DatasetSpec('pet_dir', directory_format),
         DatasetSpec('fixed_maf_pet', nifti_gz_format, fixed_maf_pipeline))
-        
