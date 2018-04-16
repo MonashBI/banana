@@ -615,6 +615,7 @@ class StaticMotionCorrection(BaseInterface):
                                             np.linalg.inv(pet_qform))
         fixed_MRPET_transformation_inv = np.linalg.inv(
             fixed_MRPET_transformation)
+        curr_dir = os.getcwd()
         os.mkdir('mc_results')
         os.chdir('mc_results')
         np.savetxt('MRPET_transformation.mat', fixed_MRPET_transformation)
@@ -656,7 +657,7 @@ class StaticMotionCorrection(BaseInterface):
         corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_corr']
         for tps in corr_types:
             self.frames_sum(tps, out_basename)
-        os.chdir('../')
+        os.chdir(curr_dir)
 
         return runtime
 
