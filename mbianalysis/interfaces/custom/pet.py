@@ -656,6 +656,7 @@ class StaticMotionCorrection(BaseInterface):
         corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_corr']
         for tps in corr_types:
             self.frames_sum(tps, out_basename)
+        os.chdir('../')
 
         return runtime
 
