@@ -626,7 +626,7 @@ class StaticMotionCorrection(BaseInterface):
                 np.dot(motion_mat, fixed_MRPET_transformation))
             transformation_mat_petspace = (
                 np.dot(fixed_MRPET_transformation_inv, transformation_mat))
-            if structural_image is not None:
+            if structural_image:
                 transformation_mat = (np.dot(ute2structural_regmat,
                                              transformation_mat))
                 ref = structural_image
