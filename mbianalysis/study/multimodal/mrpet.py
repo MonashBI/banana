@@ -507,7 +507,9 @@ class MotionCorrectionMixin(MultiStudy):
         DatasetSpec('frame2reference_mats', directory_format,
                     frame2ref_alignment_pipeline),
         DatasetSpec('motion_detection_output', directory_format,
-                    gather_outputs_pipeline))
+                    gather_outputs_pipeline),
+        DatasetSpec('static_pet_mc', directory_format,
+                    static_motion_correction_pipeline))
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
