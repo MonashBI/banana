@@ -546,6 +546,8 @@ class PETFovCropping(BaseInterface):
 #         sp.check_output(cmd, shell=True)
 #         ref = nib.load(ref)
         im2save = nib.Nifti1Image(pet_cropped, affine=new_affine)
+        im2save.set_qform(new_affine, code='scanner')
+        im2save.set_sform(new_affine, code='scanner')
         nib.save(im2save, outname)
 
         return runtime
