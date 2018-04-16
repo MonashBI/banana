@@ -501,9 +501,9 @@ class PreparePetDir(BaseInterface):
 class PETFovCroppingInputSpec(BaseInterfaceInputSpec):
 
     pet_image = File(exists=True, desc='PET images to crop.')
-    ref_pet = File(exists=True, desc='Reference image to use to save the '
-                   'cropped PET. Usually is the output of fslroi command with '
-                   'the same cropping parameters.')
+#     ref_pet = File(exists=True, desc='Reference image to use to save the '
+#                    'cropped PET. Usually is the output of fslroi command with '
+#                    'the same cropping parameters.')
     x_min = traits.Int()
     x_size = traits.Int()
     y_min = traits.Int()
@@ -525,7 +525,7 @@ class PETFovCropping(BaseInterface):
     def _run_interface(self, runtime):
 
         pet_image = self.inputs.pet_image
-        ref = self.inputs.ref_pet
+#         ref = self.inputs.ref_pet
         x_min = self.inputs.x_min
         x_size = self.inputs.x_size
         y_min = self.inputs.y_min
@@ -535,13 +535,17 @@ class PETFovCropping(BaseInterface):
         _, basename, ext = split_filename(pet_image)
         outname = basename+'_crop'+ext
         pet = nib.load(pet_image)
+        new_affine = np.copy(pet.affine)
+        new_affine[:3, -1] = (pet.affine[:3, -1]-np.multiply(
+            pet.header.get_zooms(), (x_min, y_min, z_min)) *
+            np.sign(pet.affine[:3, -1]))
         pet = pet.get_data()
         pet_cropped = pet[x_min:x_min+x_size, y_min:y_min+y_size,
                           z_min:z_min+z_size]
 #         cmd = 'fslroi {} ref_roi 100 130 100 130 20 100'.format(im)
 #         sp.check_output(cmd, shell=True)
-        ref = nib.load(ref)
-        im2save = nib.Nifti1Image(pet_cropped, affine=ref.get_affine())
+#         ref = nib.load(ref)
+        im2save = nib.Nifti1Image(pet_cropped, affine=new_affine)
         nib.save(im2save, outname)
 
         return runtime

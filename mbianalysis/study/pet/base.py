@@ -129,18 +129,18 @@ class PETStudy(Study):
 
         list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
         pipeline.connect_input('pet_dir_prepared', list_dir, 'directory')
-        select = pipeline.create_node(SelectOne(), name='select_ref')
-        pipeline.connect(list_dir, 'files', select, 'inlist')
-        select.inputs.index = 0
-        crop_ref = pipeline.create_node(ExtractROI(), name='crop_ref',
-                                        requirements=[fsl509_req])
-        pipeline.connect(select, 'out', crop_ref, 'in_file')
-        crop_ref.inputs.x_min = pipeline.option('xmin')
-        crop_ref.inputs.x_size = pipeline.option('xsize')
-        crop_ref.inputs.y_min = pipeline.option('ymin')
-        crop_ref.inputs.y_size = pipeline.option('ysize')
-        crop_ref.inputs.z_min = pipeline.option('zmin')
-        crop_ref.inputs.z_size = pipeline.option('zsize')
+#         select = pipeline.create_node(SelectOne(), name='select_ref')
+#         pipeline.connect(list_dir, 'files', select, 'inlist')
+#         select.inputs.index = 0
+#         crop_ref = pipeline.create_node(ExtractROI(), name='crop_ref',
+#                                         requirements=[fsl509_req])
+#         pipeline.connect(select, 'out', crop_ref, 'in_file')
+#         crop_ref.inputs.x_min = pipeline.option('xmin')
+#         crop_ref.inputs.x_size = pipeline.option('xsize')
+#         crop_ref.inputs.y_min = pipeline.option('ymin')
+#         crop_ref.inputs.y_size = pipeline.option('ysize')
+#         crop_ref.inputs.z_min = pipeline.option('zmin')
+#         crop_ref.inputs.z_size = pipeline.option('zsize')
         cropping = pipeline.create_map_node(PETFovCropping(), name='cropping',
                                             iterfield=['pet_image'])
         cropping.inputs.x_min = pipeline.option('xmin')
@@ -149,7 +149,7 @@ class PETStudy(Study):
         cropping.inputs.y_size = pipeline.option('ysize')
         cropping.inputs.z_min = pipeline.option('zmin')
         cropping.inputs.z_size = pipeline.option('zsize')
-        pipeline.connect(crop_ref, 'roi_file', cropping, 'ref_pet')
+#         pipeline.connect(crop_ref, 'roi_file', cropping, 'ref_pet')
         pipeline.connect(list_dir, 'files', cropping, 'pet_image')
         cp2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
         pipeline.connect(cropping, 'pet_cropped', cp2dir, 'in_files')
