@@ -649,11 +649,11 @@ class StaticMotionCorrection(BaseInterface):
             self.applyxfm(
                 pet_data[i], pet_data[i],
                 'transformation_{}_ps.mat'.format(str(i)), outname+'_mc_ps')
-            corr_types = ['_mc', '_mc_ps', '', '_no_mc']
+            corr_types = ['_mc', '_mc_ps', '_no_mc']
             for tps in corr_types:
                 self.apply_temporal_correction(outname, corr_factors[i], tps)
         print 'Generating static PET images...'
-        corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_ps_corr', 'no_mc_corr']
+        corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_corr']
         for tps in corr_types:
             self.frames_sum(tps, out_basename)
 
