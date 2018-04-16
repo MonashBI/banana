@@ -1,65 +1,45 @@
 from nianalysis.dataset import DatasetSpec
-from nianalysis.data_formats import (
-    nifti_gz_format, text_matrix_format, directory_format, text_format,
-    png_format, dicom_format)
+from nianalysis.data_formats import (nifti_gz_format, directory_format)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
-from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
-from nipype.interfaces.fsl import Merge, ExtractROI, MCFLIRT, ImageMaths
-from nianalysis.interfaces.utils import SelectOne
+from mbianalysis.interfaces.custom.pet import (StaticMotionCorrection)
+from nipype.interfaces.fsl import Merge, MCFLIRT, ImageMaths
+from nianalysis.interfaces.utils import ListDir
 from mbianalysis.study.pet.base import PETStudy
-from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
-                                     fsl509_req, fsl510_req, mrtrix3_req)
+from nianalysis.requirements import fsl509_req
 
 
-class MotionCorrection(PETStudy):
+class FixedMAFMotionCorrection(PETStudy):
+
+    def pet_data_preparation_pipeline(self, **kwargs):
+        return (super(FixedMAFMotionCorrection, self).
+                pet_data_preparation_pipeline(**kwargs))
+
+    def pet_fov_cropping_pipeline(self, **kwargs):
+        return (super(FixedMAFMotionCorrection, self).
+                pet_fov_cropping_pipeline(**kwargs))
 
     def fixed_maf_pipeline(self, **options):
 
         pipeline = self.create_pipeline(
             name='fixed_maf',
-            inputs=[DatasetSpec('pet_dir', directory_format)],
+            inputs=[DatasetSpec('pet_data_cropped', directory_format)],
             outputs=[DatasetSpec('fixed_maf_pet', nifti_gz_format)],
             description=("Given a folder with reconstructed PET data, this "
                          "pipeline will align all of them to a reference and "
                          "create a static PET image by averaging the realigned"
                          "images."),
-            default_options={'xmin': 100, 'xsize': 130, 'ymin': 100, 'ysize':130,
-                             'zmin': 20, 'zsize': 100},
+            default_options={'xmin': 100, 'xsize': 130, 'ymin': 100,
+                             'ysize': 130, 'zmin': 20, 'zsize': 100},
             version=1,
             citations=[fsl_cite],
             options=options)
 
-        prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
-                                        requirements=[mrtrix3_req])
-        pipeline.connect_input('pet_dir', prep_dir, 'pet_dir')
-
-        select = pipeline.create_node(SelectOne(), name='select_ref')
-        pipeline.connect(prep_dir, 'pet_images', select, 'inlist')
-        select.inputs.index = 0
-        crop_ref = pipeline.create_node(ExtractROI(), name='crop_ref',
-                                        requirements=[fsl509_req])
-        pipeline.connect(select, 'out', crop_ref, 'in_file')
-        crop_ref.inputs.x_min = pipeline.option('xmin')
-        crop_ref.inputs.x_size = pipeline.option('xsize')
-        crop_ref.inputs.y_min = pipeline.option('ymin')
-        crop_ref.inputs.y_size = pipeline.option('ysize')
-        crop_ref.inputs.z_min = pipeline.option('zmin')
-        crop_ref.inputs.z_size = pipeline.option('zsize')
-        cropping = pipeline.create_map_node(PETFovCropping(), name='cropping',
-                                            iterfield=['pet_image'])
-        cropping.inputs.x_min = pipeline.option('xmin')
-        cropping.inputs.x_size = pipeline.option('xsize')
-        cropping.inputs.y_min = pipeline.option('ymin')
-        cropping.inputs.y_size = pipeline.option('ysize')
-        cropping.inputs.z_min = pipeline.option('zmin')
-        cropping.inputs.z_size = pipeline.option('zsize')
-        pipeline.connect(crop_ref, 'roi_file', cropping, 'ref_pet')
-        pipeline.connect(prep_dir, 'pet_images', cropping, 'pet_image')
-
+        list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
+        pipeline.connect_input('pet_data_cropped', list_dir, 'directory')
         merge = pipeline.create_node(Merge(), name='pet_merge',
                                      requirements=[fsl509_req])
-        pipeline.connect(cropping, 'pet_cropped', merge, 'in_files')
+        pipeline.connect(list_dir, 'files', merge, 'in_files')
         merge.inputs.dimension = 't'
 
         mcflirt = pipeline.create_node(MCFLIRT(), name='mcflirt',
@@ -78,4 +58,59 @@ class MotionCorrection(PETStudy):
 
     _data_specs = set_specs(
         DatasetSpec('pet_dir', directory_format),
-        DatasetSpec('fixed_maf_pet', nifti_gz_format, fixed_maf_pipeline))
+        DatasetSpec('fixed_maf_pet', nifti_gz_format, fixed_maf_pipeline),
+        inherit_from=PETStudy.data_specs())
+
+
+class StaticPETMotionCorrection(PETStudy):
+
+    def pet_data_preparation_pipeline(self, **kwargs):
+        return (super(FixedMAFMotionCorrection, self).
+                pet_data_preparation_pipeline(**kwargs))
+
+    def pet_fov_cropping_pipeline(self, **kwargs):
+        return (super(FixedMAFMotionCorrection, self).
+                pet_fov_cropping_pipeline(**kwargs))
+
+    def static_motion_correction_pipeline_factory(self, StructAlignment=None,
+                                                  **options):
+        inputs = [DatasetSpec('pet_data_cropped', directory_format),
+                  DatasetSpec('motion_detection_output', directory_format)]
+        if StructAlignment is not None:
+            inputs.append(DatasetSpec(StructAlignment, nifti_gz_format))
+
+        pipeline = self.create_pipeline(
+            name='static_mc',
+            inputs=inputs,
+            outputs=[DatasetSpec('static_pet_mc', directory_format)],
+            description=("Given a folder with reconstructed PET data, this "
+                         "pipeline will generate a motion corrected static PET"
+                         "image using information extracted from the MR-based "
+                         "motion detection pipeline"),
+            default_options={},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        static_mc = pipeline.create_node(
+            StaticMotionCorrection(), name='static_mc',
+            requirements=[fsl509_req])
+        pipeline.connect_input('pet_data_cropped', static_mc, 'pet_cropped')
+        pipeline.connect_input('motion_detection_output', static_mc, 'md_dir')
+        if StructAlignment is not None:
+            pipeline.connect_input(StructAlignment, static_mc,
+                                   'structural_image')
+        pipeline.connect_output('static_pet_mc', static_mc, 'pet_mc_results')
+        pipeline.assert_connected()
+        return pipeline
+
+    def static_motion_correction_pipeline(self, **options):
+        return self.static_motion_correction_pipeline_factory(
+            StructAlignment=None)
+
+    _data_specs = set_specs(
+        DatasetSpec('pet_dir', directory_format),
+        DatasetSpec('motion_detection_output', directory_format),
+        DatasetSpec('static_pet_mc', directory_format,
+                    static_motion_correction_pipeline),
+        inherit_from=PETStudy.data_specs())
