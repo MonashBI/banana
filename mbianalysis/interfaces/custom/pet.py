@@ -564,6 +564,8 @@ class StaticMotionCorrectionInputSpec(BaseInterfaceInputSpec):
                        'motion detection pipeline.')
     structural_image = File(desc='If provided, the final PET mc image will be '
                             'aligned to this image.', default=None)
+    ute2structural_regmat = File(default=None)
+    ute2structural_qform = File(default=None)
 
 
 class StaticMotionCorrectionOutputSpec(TraitedSpec):
