@@ -664,7 +664,7 @@ class StaticMotionCorrection(BaseInterface):
     def frames_sum(self, im_type, outname):
 
         cmd = 'fslmaths '
-        frames = glob.glob('frame_*{0}_{1}.nii.gz'.format(outname, im_type))
+        frames = glob.glob('frame*{0}_{1}.nii.gz'.format(outname, im_type))
         for i, frame in enumerate(frames):
             if i != len(frames)-1:
                 cmd = cmd + '{0} -add '.format(frame)
