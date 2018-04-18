@@ -4,7 +4,8 @@ from nianalysis.data_formats import (
     png_format, dicom_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
-    AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
+    AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference,
+    CreateMocoSeries)
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import set_specs
 from nianalysis.study.multi import (
@@ -22,6 +23,7 @@ from nianalysis.dataset import Dataset
 import logging
 from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 from nianalysis.interfaces.utils import CopyToDir
+import os
 
 
 logger = logging.getLogger('NiAnalysis')
@@ -32,6 +34,10 @@ handler.setFormatter(formatter)
 logger.addHandler(handler)
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
+
+template_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../../../mbianalysis',
+                 'reference_data'))
 
 
 class MotionReferenceT1Study(T1Study):
@@ -377,6 +383,32 @@ class MotionDetectionMixin(MultiStudy):
             'ute_qform_mat', umap='umap_nifti',
             pct=False, fixed_binning=False, **options)
 
+    def create_moco_series_pipeline(self, **options):
+
+        pipeline = self.create_pipeline(
+            name='create_moco_series',
+            inputs=[DatasetSpec('start_times', text_format),
+                    DatasetSpec('motion_par', text_format)],
+            outputs=[DatasetSpec('moco_series', directory_format)],
+            description=("Pipeline to generate a moco_series that can be then "
+                         "imported back in the scanner and used to correct the"
+                         " pet data"),
+            default_options={'moco_template':
+                             template_path+'/moco_template.IMA'},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+
+        moco = pipeline.create_node(CreateMocoSeries(),
+                                    name='create_moco_series')
+        pipeline.connect_input('start_times', moco, 'start_times')
+        pipeline.connect_input('motion_par', moco, 'motion_par')
+        moco.inputs.moco_template = pipeline.option('moco_template')
+
+        pipeline.connect_output('moco_series', moco, 'modified_moco')
+        pipeline.assert_connected()
+        return pipeline
+
     def gather_outputs_factory(self, name, align_mats=False,
                                pet_corr_fac=False, aligned_umaps=False,
                                timestamps=False, ute=None, **options):
@@ -453,7 +485,9 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('frame2reference_mats', directory_format,
                     frame2ref_alignment_pipeline),
         DatasetSpec('motion_detection_output', directory_format,
-                    gather_outputs_pipeline))
+                    gather_outputs_pipeline),
+        DatasetSpec('moco_series', directory_format,
+                    create_moco_series_pipeline))
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,

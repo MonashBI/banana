@@ -14,6 +14,7 @@ import matplotlib
 import matplotlib.pyplot as plot
 from nipype.interfaces import fsl
 import pydicom
+import math
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -540,37 +541,63 @@ class MeanDisplacementCalculation(BaseInterface):
 
         return rms
 
-    def avscale(self, mat, com, res=[1, 1, 1]):
-
+    def avscale(self, mat, com, res=[1, 1, 1], moco=False):
+        """Python implementation of the avscale function in fsl. However this
+        works just with affine matrices from rigid body motion, i.e. it assumes
+        that there is no scales or skew effect. Furthermore, if moco=True,
+        it returns the rigid body motion parameters in Siemens moco series
+        convetion."""
         c = np.asarray(com)
-
-        rot_y = np.arcsin(-mat[0, 2])
-        cos_y = np.cos(rot_y)
-        cos_x = mat[2, 2]/cos_y
-        if np.abs(cos_x) > 1:
-            cos_x = 1*np.sign(cos_x)
-        rot_x = np.arccos(cos_x)
-        sin_z = mat[0, 1]/cos_y
-        if np.abs(sin_z) > 1:
-            sin_z = 1*np.sign(sin_z)
-        rot_z = np.arcsin(sin_z)
-
-        R0 = np.eye(4)
-        T = np.eye(4)
-        R0[:3, :3] = mat[:3, :3]
-        R0[:3, 3] = mat[:3, 3]
-        T[:3, 3] = c*res
-
-        T_1 = np.linalg.inv(T)
-
-        new_orig = np.dot(T_1, np.dot(R0, T))[:, -1]
-
-        trans_tot = new_orig
+        trans_init = mat[:3, -1]
+        rot_mat = mat[:3, :3]
+        centre = c*res
+        rot_x, rot_y, rot_z = self.rotationMatrixToEulerAngles(rot_mat)
+        trans_tot = np.dot(rot_mat, centre)+trans_init-centre
         trans_x = trans_tot[0]
         trans_y = trans_tot[1]
         trans_z = trans_tot[2]
-
+        if moco:
+            rot_x_moco = -self.rad2degree(rot_y)
+            rot_y_moco = self.rad2degree(rot_x)
+            rot_z_moco = -self.rad2degree(rot_z)
+            trans_x_moco = -trans_y
+            trans_y_moco = trans_x
+            trans_z_moco = -trans_z
+            print [trans_x_moco, trans_y_moco, trans_z_moco, rot_x_moco,
+                   rot_y_moco, rot_z_moco]
         return [rot_x, rot_y, rot_z, trans_x, trans_y, trans_z]
+
+    def rad2degree(self, alpha_rad):
+        return alpha_rad*180/np.pi
+
+    def isRotationMatrix(self, R):
+        Rt = np.transpose(R)
+        shouldBeIdentity = np.dot(Rt, R)
+        Identity = np.identity(3, dtype=R.dtype)
+        n = np.linalg.norm(Identity - shouldBeIdentity)
+        return n < 1e-4
+
+    def rotationMatrixToEulerAngles(self, R):
+        assert(self.isRotationMatrix(R))
+        cy = math.sqrt(R[0, 0]*R[0, 0]+R[0, 1]*R[0, 1])
+        singular = cy < 1e-4
+        if not singular:
+            cz = R[0, 0]/cy
+            sz = R[0, 1]/cy
+            cx = R[2, 2]/cy
+            sx = R[1, 2]/cy
+            sy = -R[0, 2]
+            x = math.atan2(sx, cx)
+            y = math.atan2(sy, cy)
+            z = math.atan2(sz, cz)
+        else:
+            cx = R[1, 1]
+            sx = -R[2, 1]
+            sy = -R[0, 2]
+            x = math.atan2(sx, cx)
+            y = math.atan2(sy, 0.0)
+            z = 0.0
+        return np.array([x, y, z])
 
     def _list_outputs(self):
         outputs = self._outputs().get()
@@ -1143,5 +1170,83 @@ class FrameAlign2Reference(BaseInterface):
         if self.inputs.umap:
             outputs["umaps_align2ref"] = (
                 os.getcwd()+'/umaps_align2ref')
+
+        return outputs
+
+
+class CreateMocoSeriesInputSpec(BaseInterfaceInputSpec):
+
+    moco_template = File(exists=True, mandatory=True, desc='Existing moco '
+                         'series template to modify according to the extracted'
+                         'motion information.')
+    motion_par = File(exists=True, mandatory=True, desc='Text file with the '
+                      'motion parameters extracted by the mean displacement '
+                      'calculation pipeline.')
+    start_times = File(exists=True, mandatory=True, desc='start times of all '
+                       'the sequences (or volumes) acquired in the study ('
+                       'this is the output of the mean displacement calculatio'
+                       'n pipeline).')
+
+
+class CreateMocoSeriesOutputSpec(TraitedSpec):
+
+    modified_moco = Directory(entries=True, desc='Directory with the new moco '
+                              'series')
+
+
+class CreateMocoSeries(BaseInterface):
+
+    input_spec = CreateMocoSeriesInputSpec
+    output_spec = CreateMocoSeriesOutputSpec
+
+    def _run_interface(self, runtime):
+
+        moco_template = self.inputs.moco_template
+        motion_par = np.loadtxt(self.inputs.motion_par)
+        start_times = np.loadtxt(self.inputs.start_times, dtype=str)
+        start_times = start_times[:-1]
+
+        if len(motion_par) != len(start_times):
+            raise Exception('Detected a different number of motion parameters '
+                            'and start times. This number must be the same in '
+                            'order to create a new moco series. Please check.')
+        motion_par_moco = [self.fsl2moco(x) for x in motion_par]
+        new_uid = pydicom.uid.generate_uid()
+        for i in range(len(start_times)):
+            hd = pydicom.read_file(moco_template)
+            for n in range(3):
+                hd[0x19, 0x1025].value[n] = motion_par_moco[i][n]
+            for n in range(3):
+                hd[0x19, 0x1026].value[n] = motion_par_moco[i][n+3]
+            hd.AcquisitionTime = start_times[i]
+            hd.SeriesInstanceUID = new_uid
+            hd.SeriesDescription = 'MoCoSeries'
+            hd.SeriesNumber = '100'
+            hd.save_as('{}.IMA'.format(str(i).zfill(6)))
+
+        os.mkdir('new_moco_series')
+        dicoms = sorted(glob.glob('*.IMA'))
+        for dcm in dicoms:
+            shutil.move(dcm, 'new_moco_series')
+
+        return runtime
+
+    def fsl2moco(self, mp):
+        rot_x_moco = -self.rad2degree(mp[1])
+        rot_y_moco = self.rad2degree(mp[0])
+        rot_z_moco = -self.rad2degree(mp[2])
+        trans_x_moco = -mp[4]
+        trans_y_moco = mp[3]
+        trans_z_moco = -mp[5]
+        return [trans_x_moco, trans_y_moco, trans_z_moco, rot_x_moco,
+                rot_y_moco, rot_z_moco]
+
+    def rad2degree(self, alpha_rad):
+        return alpha_rad*180/np.pi
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["modified_moco"] = os.getcwd()+'/new_moco_series'
 
         return outputs
