@@ -1219,9 +1219,11 @@ class CreateMocoSeries(BaseInterface):
             for n in range(3):
                 hd[0x19, 0x1026].value[n] = motion_par_moco[i][n+3]
             hd.AcquisitionTime = start_times[i]
+            hd.InstanceNumber = pydicom.valuerep.IS(i+1)
+            hd.AcquisitionNumber = pydicom.valuerep.IS(i+1)
             hd.SeriesInstanceUID = new_uid
             hd.SeriesDescription = 'MoCoSeries'
-            hd.SeriesNumber = '100'
+            hd.SeriesNumber = '150'
             hd.save_as('{}.IMA'.format(str(i).zfill(6)))
 
         os.mkdir('new_moco_series')
