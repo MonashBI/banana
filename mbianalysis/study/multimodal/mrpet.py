@@ -513,6 +513,8 @@ class MotionCorrectionMixin(MultiStudy):
         DatasetSpec('motion_detection_output', directory_format,
                     gather_outputs_pipeline),
         DatasetSpec('static_pet_mc', directory_format,
+                    static_motion_correction_pipeline),
+        DatasetSpec('static_pet_mc2crop', directory_format,
                     static_motion_correction_pipeline))
 
 
