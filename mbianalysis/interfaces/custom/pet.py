@@ -577,7 +577,10 @@ class StaticMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 class StaticMotionCorrectionOutputSpec(TraitedSpec):
 
     pet_mc_results = Directory(
-        entries=True, desc='Motin corrected static PET image.')
+        entries=True, desc='Motin corrected static PET results.')
+    pet_mc_results_to_crop = Directory(
+        entries=True, desc='Motin corrected static PET results to crop (those '
+        'in PET space).')
 
 
 class StaticMotionCorrection(BaseInterface):
@@ -663,6 +666,8 @@ class StaticMotionCorrection(BaseInterface):
         corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_corr']
         for tps in corr_types:
             self.frames_sum(tps, out_basename)
+        os.mkdir('images2crop')
+        shutil.move('frame_mc_ps_corr.nii.gz', 'images2crop')
         os.chdir(curr_dir)
 
         return runtime
@@ -719,4 +724,6 @@ class StaticMotionCorrection(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["pet_mc_results"] = os.getcwd()+'/mc_results'
+        outputs["pet_mc_results_to_crop"] = (
+            os.getcwd()+'/mc_results/images2crop')
         return outputs

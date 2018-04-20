@@ -434,7 +434,7 @@ class MotionCorrectionMixin(MultiStudy):
 
     def static_motion_correction_pipeline_factory(self, StructAlignment=None,
                                                   **options):
-        inputs = [DatasetSpec('pet_data_cropped', directory_format),
+        inputs = [DatasetSpec('pet_data_prepared', directory_format),
                   DatasetSpec('motion_detection_output', directory_format)]
         if StructAlignment is not None:
             inputs.append(DatasetSpec(StructAlignment, nifti_gz_format))
@@ -442,7 +442,8 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline = self.create_pipeline(
             name='static_mc',
             inputs=inputs,
-            outputs=[DatasetSpec('static_pet_mc', directory_format)],
+            outputs=[DatasetSpec('static_pet_mc', directory_format),
+                     DatasetSpec('static_pet_mc2crop', directory_format)],
             description=("Given a folder with reconstructed PET data, this "
                          "pipeline will generate a motion corrected static PET"
                          "image using information extracted from the MR-based "
@@ -455,12 +456,14 @@ class MotionCorrectionMixin(MultiStudy):
         static_mc = pipeline.create_node(
             StaticMotionCorrection(), name='static_mc',
             requirements=[fsl509_req])
-        pipeline.connect_input('pet_data_cropped', static_mc, 'pet_cropped')
+        pipeline.connect_input('pet_data_prepared', static_mc, 'pet_cropped')
         pipeline.connect_input('motion_detection_output', static_mc, 'md_dir')
         if StructAlignment is not None:
             pipeline.connect_input(StructAlignment, static_mc,
                                    'structural_image')
         pipeline.connect_output('static_pet_mc', static_mc, 'pet_mc_results')
+        pipeline.connect_output('static_pet_mc2crop', static_mc,
+                                'pet_mc_results_to_crop')
         pipeline.assert_connected()
         return pipeline
 
@@ -472,7 +475,8 @@ class MotionCorrectionMixin(MultiStudy):
         SubStudySpec('pet_mc', PETStudy, {
             'pet_data_reconstructed': 'pet_dir',
             'pet_data_prepared': 'pet_dir_prepared',
-            'pet_data_cropped': 'pet_data_cropped'}))
+            'pet_data_cropped': 'pet_data_cropped',
+            'static_pet_mc2crop': 'pet2crop'}))
 
     _data_specs = set_specs(
         DatasetSpec('pet_data_reconstructed', directory_format),

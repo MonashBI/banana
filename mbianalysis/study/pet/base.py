@@ -114,10 +114,13 @@ class PETStudy(Study):
         return pipeline
 
     def pet_fov_cropping_pipeline(self, **options):
+        return self.pet_fov_cropping_pipeline_factory('pet2crop', **options)
+
+    def pet_fov_cropping_pipeline_factory(self, dir2crop_name, **options):
 
         pipeline = self.create_pipeline(
             name='pet_fov_cropping',
-            inputs=[DatasetSpec('pet_dir_prepared', directory_format)],
+            inputs=[DatasetSpec(dir2crop_name, directory_format)],
             outputs=[DatasetSpec('pet_data_cropped', directory_format)],
             description=("Given a folder with reconstructed PET data, this "
                          "pipeline will crop the PET field of view."),
@@ -162,6 +165,7 @@ class PETStudy(Study):
         DatasetSpec('registered_volumes', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('pet_dir', directory_format),
+        DatasetSpec('pet2crop', directory_format),
         DatasetSpec('pet_dir_prepared', directory_format,
                     pet_data_preparation_pipeline),
         DatasetSpec('pet_data_cropped', directory_format,
