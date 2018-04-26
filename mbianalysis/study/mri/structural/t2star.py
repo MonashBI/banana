@@ -2,7 +2,7 @@ from nianalysis.requirements import fsl5_req, matlab2015_req
 from nianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec
 from mbianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy

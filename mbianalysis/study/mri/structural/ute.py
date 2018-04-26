@@ -1,5 +1,5 @@
 from ..base import MRIStudy
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
 from nipype.interfaces.fsl.utils import ConvertXFM, Smooth

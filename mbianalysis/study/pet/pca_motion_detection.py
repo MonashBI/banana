@@ -1,4 +1,4 @@
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (list_mode_format, directory_format)
 from mbianalysis.study.pet.base import PETStudy

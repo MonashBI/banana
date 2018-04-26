@@ -12,7 +12,7 @@ from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
 from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (

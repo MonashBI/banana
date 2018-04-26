@@ -10,7 +10,7 @@ from mbianalysis.interfaces.fsl import (
     SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from ..base import MRIStudy
 from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)

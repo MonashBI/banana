@@ -1,6 +1,6 @@
 from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from mbianalysis.interfaces.custom.pet import SUVRCalculation
 from nianalysis.data_formats import (nifti_gz_format)
 import os

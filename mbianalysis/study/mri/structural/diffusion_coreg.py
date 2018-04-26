@@ -7,7 +7,7 @@ from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)

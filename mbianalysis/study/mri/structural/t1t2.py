@@ -1,10 +1,9 @@
 from nipype.interfaces.fsl import ApplyMask
 from nianalysis.data_formats import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
-from nianalysis.study.base import set_specs
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.multi import (
-    MultiStudy, translate_pipeline, SubStudySpec, MultiStudyMetaClass)
+    MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
@@ -30,17 +29,17 @@ class T1T2Study(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    coregister_to_atlas_pipeline = translate_pipeline(
+    coregister_to_atlas_pipeline = MultiStudy.translate(
         't1', 'coregister_to_atlas_pipeline')
 
-    t2_registration_pipeline = translate_pipeline(
+    t2_registration_pipeline = MultiStudy.translate(
         't2coregt1', 'linear_registration_pipeline')
 
-    manual_wmh_mask_registration_pipeline = translate_pipeline(
+    manual_wmh_mask_registration_pipeline = MultiStudy.translate(
         'wmhcoregt1',
         CoregisteredToMatrixStudy.linear_registration_pipeline)
 
-    t2_brain_mask_pipeline = translate_pipeline(
+    t2_brain_mask_pipeline = MultiStudy.translate(
         't2', 'brain_mask_pipeline')
 
     def t1_brain_mask_pipeline(self, **options):

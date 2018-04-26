@@ -20,7 +20,7 @@ from nianalysis.data_formats import (
 from nianalysis.requirements import (
     fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.iterators import SelectSession
 

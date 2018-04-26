@@ -1,6 +1,6 @@
 from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.utils import Merge

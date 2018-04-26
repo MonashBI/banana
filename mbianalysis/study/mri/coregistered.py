@@ -6,7 +6,7 @@ from nianalysis.requirements import spm12_req
 from nianalysis.citations import spm_cite
 from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, text_matrix_format)
-from nianalysis.study.base import set_specs, Study
+from nianalysis.study.base import StudyMetaClass, Study
 from nianalysis.dataset import DatasetSpec
 
 

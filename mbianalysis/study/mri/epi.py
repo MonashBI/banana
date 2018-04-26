@@ -7,7 +7,7 @@ from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
 from nianalysis.citations import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirements import fsl509_req
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from .coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)

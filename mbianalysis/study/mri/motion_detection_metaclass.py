@@ -6,7 +6,7 @@ from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
 from nianalysis.citations import fsl_cite
-from nianalysis.study.base import set_specs
+from nianalysis.study.base import StudyMetaClass
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from .epi import CoregisteredEPIStudy
