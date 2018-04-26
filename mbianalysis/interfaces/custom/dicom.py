@@ -177,3 +177,73 @@ class ScanTimesInfo(BaseInterface):
         outputs["scan_time_infos"] = os.getcwd()+'/scan_time_info.txt'
 
         return outputs
+
+
+class PetTimeInfoInputSpec(BaseInterfaceInputSpec):
+    pet_data_dir = Directory(exists=True, desc='Directory the the list-mode data.')
+
+
+class PetTimeInfoOutputSpec(TraitedSpec):
+    
+    pet_end_time = traits.Str(desc='PET end time.')
+    pet_start_time = traits.Str(desc='PET start time.')
+    pet_duration = traits.Int(desc='PET temporal duration in seconds.')
+
+
+class PetTimeInfo(BaseInterface):
+
+    def _run_interface(self, runtime):
+        pet_data_dir = self.inputs.pet_data_dir
+        self.dict_output = {}
+        pet_duration = None
+        for root, dirs, files in os.walk(pet_data_dir):
+            bf_files = [f for f in files if not f[0] == '.' and '.bf' in f]
+            dirs[:] = [d for d in dirs if not d[0] == '.']
+    
+    #         bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
+        if not bf_files:
+            pet_start_time = None
+            pet_endtime = None
+            print ('No .bf file found in {}. If you want to perform motion '
+                   'correction please provide the right pet data. ')
+        else:
+            max_size = 0
+            for bf in bf_files:
+                size = os.path.getsize(os.path.join(root, bf))
+                if size > max_size:
+                    max_size = size
+                    list_mode_file = os.path.join(root, bf)
+    
+            pet_image = list_mode_file.split('.bf')[0] + '.dcm'
+            try:
+                hd = pydicom.read_file(pet_image)
+                pet_start_time = hd.AcquisitionTime
+            except AttributeError:
+                pet_start_time = None
+            with open(pet_image, 'r') as f:
+                for line in f:
+                    if 'image duration' in line:
+                        pet_duration = line.strip()
+                        pet_duration = int(pet_duration.split(':=')[-1])
+            if pet_duration:
+                pet_endtime = ((
+                    dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
+                    dt.timedelta(seconds=pet_duration))
+                                    .strftime('%H%M%S.%f'))
+                pet_duration = pet_duration
+            else:
+                pet_endtime = None
+        self.dict_output['pet_endtime'] = pet_endtime
+        self.dict_output['pet_duration'] = pet_duration
+        self.dict_output['pet_start_time'] = pet_start_time
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["pet_end_time"] = self.dict_output['pet_endtime']
+        outputs["pet_start_time"] = self.dict_output['pet_start_time']
+        outputs["pet_duration"] = self.dict_output['pet_duration']
+
+        return outputs

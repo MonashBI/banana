@@ -1,5 +1,5 @@
 from nianalysis.study.base import Study, set_specs
-from nianalysis.dataset import DatasetSpec
+from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_formats import (nifti_gz_format, text_format,
                                      text_matrix_format, directory_format)
 from mbianalysis.interfaces.sklearn import FastICA
@@ -12,6 +12,7 @@ from nianalysis.citations import fsl_cite
 from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
 from nianalysis.interfaces.utils import ListDir, SelectOne, CopyToDir
 from nipype.interfaces.fsl import Merge, ExtractROI
+from mbianalysis.interfaces.custom.dicom import PetTimeInfo
 
 
 template_path = os.path.abspath(
@@ -92,8 +93,8 @@ class PETStudy(Study):
 
         pipeline = self.create_pipeline(
             name='pet_data_preparation',
-            inputs=[DatasetSpec('pet_dir', directory_format)],
-            outputs=[DatasetSpec('pet_dir_prepared', directory_format)],
+            inputs=[DatasetSpec('pet_recon_dir', directory_format)],
+            outputs=[DatasetSpec('pet_recon_dir_prepared', directory_format)],
             description=("Given a folder with reconstructed PET data, this "
                          "pipeline will prepare the data for the motion "
                          "correction"),
@@ -106,10 +107,32 @@ class PETStudy(Study):
                                         requirements=[mrtrix3_req])
         prep_dir.inputs.image_orientation_check = pipeline.option(
             'image_orientation_check')
-        pipeline.connect_input('pet_dir', prep_dir, 'pet_dir')
+        pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
 
-        pipeline.connect_output('pet_dir_prepared', prep_dir,
-                                'pet_dir_prepared')
+        pipeline.connect_output('pet_recon_dir_prepared', prep_dir,
+                                'pet_recon_dir_prepared')
+        pipeline.assert_connected()
+        return pipeline
+
+    def pet_time_info_extraction_pipeline(self, **options):
+        pipeline = self.create_pipeline(
+            name='pet_fov_cropping',
+            inputs=[DatasetSpec('pet_data_dir', directory_format)],
+            outputs=[FieldSpec('pet_end_time', dtype=float),
+                     FieldSpec('pet_start_time', dtype=str),
+                     FieldSpec('pet_duration', dtype=int)],
+            description=("Extract PET time info from list-mode header."),
+            default_options={},
+            version=1,
+            citations=[],
+            options=options)
+    
+        time_info = pipeline.create_node(PetTimeInfo(), name='PET_time_info')
+        pipeline.connect_input('pet_data_dir', time_info, 'pet_data_dir')
+        pipeline.connect_output('pet_end_time', time_info, 'pet_end_time')
+        pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')
+        pipeline.connect_output('pet_duration', time_info, 'pet_duration')
+        
         pipeline.assert_connected()
         return pipeline
 
@@ -131,7 +154,7 @@ class PETStudy(Study):
             options=options)
 
         list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
-        pipeline.connect_input('pet_dir_prepared', list_dir, 'directory')
+        pipeline.connect_input('pet_recon_dir_prepared', list_dir, 'directory')
 #         select = pipeline.create_node(SelectOne(), name='select_ref')
 #         pipeline.connect(list_dir, 'files', select, 'inlist')
 #         select.inputs.index = 0
@@ -164,9 +187,10 @@ class PETStudy(Study):
     _data_specs = set_specs(
         DatasetSpec('registered_volumes', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format),
-        DatasetSpec('pet_dir', directory_format),
+        DatasetSpec('pet_data_dir', directory_format),
+        DatasetSpec('pet_recon_dir', directory_format),
         DatasetSpec('pet2crop', directory_format),
-        DatasetSpec('pet_dir_prepared', directory_format,
+        DatasetSpec('pet_recon_dir_prepared', directory_format,
                     pet_data_preparation_pipeline),
         DatasetSpec('pet_data_cropped', directory_format,
                     pet_fov_cropping_pipeline),
@@ -180,4 +204,10 @@ class PETStudy(Study):
         DatasetSpec('invwarp_file', nifti_gz_format,
                     Image_normalization_pipeline),
         DatasetSpec('affine_mat', text_matrix_format,
-                    Image_normalization_pipeline))
+                    Image_normalization_pipeline),
+        FieldSpec('pet_duration', dtype=int,
+                  pipeline=pet_time_info_extraction_pipeline),
+        FieldSpec('pet_end_time', dtype=str,
+                  pipeline=pet_time_info_extraction_pipeline),
+        FieldSpec('pet_start_time', dtype=str,
+                  pipeline=pet_time_info_extraction_pipeline))

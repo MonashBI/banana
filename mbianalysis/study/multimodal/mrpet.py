@@ -431,6 +431,9 @@ class MotionCorrectionMixin(MultiStudy):
 
     pet_fov_cropping_pipeline = MultiStudy.translate(
         'pet_mc', PETStudy.pet_fov_cropping_pipeline)
+    
+    pet_time_info_extraction_pipeline = MultiStudy.translate(
+        'pet_mc', PETStudy.pet_time_info_extraction_pipeline)
 
     def static_motion_correction_pipeline_factory(self, StructAlignment=None,
                                                   **options):
@@ -473,12 +476,14 @@ class MotionCorrectionMixin(MultiStudy):
 
     _sub_study_specs = set_specs(
         SubStudySpec('pet_mc', PETStudy, {
-            'pet_data_reconstructed': 'pet_dir',
-            'pet_data_prepared': 'pet_dir_prepared',
+            'pet_data_dir': 'pet_data_dir',
+            'pet_data_reconstructed': 'pet_recon_dir',
+            'pet_data_prepared': 'pet_recon_dir_prepared',
             'pet_data_cropped': 'pet_data_cropped',
             'static_pet_mc2crop': 'pet2crop'}))
 
     _data_specs = set_specs(
+        DatasetSpec('pet_data_dir', directory_format),
         DatasetSpec('pet_data_reconstructed', directory_format),
         DatasetSpec('pet_data_prepared', directory_format,
                     prepare_pet_pipeline),
@@ -515,7 +520,13 @@ class MotionCorrectionMixin(MultiStudy):
         DatasetSpec('static_pet_mc', directory_format,
                     static_motion_correction_pipeline),
         DatasetSpec('static_pet_mc2crop', directory_format,
-                    static_motion_correction_pipeline))
+                    static_motion_correction_pipeline),
+        FieldSpec('pet_duration', dtype=int,
+                  pipeline=pet_time_info_extraction_pipeline),
+        FieldSpec('pet_end_time', dtype=str,
+                  pipeline=pet_time_info_extraction_pipeline),
+        FieldSpec('pet_start_time', dtype=str,
+                  pipeline=pet_time_info_extraction_pipeline))
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
