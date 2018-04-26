@@ -58,11 +58,10 @@ class EPIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('moco', nifti_gz_format, 'motion_alignment_pipeline'),
         DatasetSpec('moco_mat', directory_format, 'motion_alignment_pipeline'),
-        DatasetSpec('moco_par', text_format, 'motion_alignment_pipeline'),
-        inherit_from=MRIStudy.data_specs())
+        DatasetSpec('moco_par', text_format, 'motion_alignment_pipeline')]
 
 
 class CoregisteredEPIStudy(MultiStudy):
@@ -186,7 +185,7 @@ class CoregisteredEPIStudy(MultiStudy):
             'epi_qformed': 'qformed',
             'epi_qform_mat': 'qform_mat'}))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('epi', dicom_format),
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('epi_preproc', nifti_gz_format,
@@ -226,4 +225,4 @@ class CoregisteredEPIStudy(MultiStudy):
         FieldSpec('tr', float, 'epi_dcm_info_pipeline'),
         FieldSpec('start_time', str, 'epi_dcm_info_pipeline'),
         FieldSpec('real_duration', str, 'epi_dcm_info_pipeline'),
-        FieldSpec('tot_duration', str, 'epi_dcm_info_pipeline'))
+        FieldSpec('tot_duration', str, 'epi_dcm_info_pipeline')]

@@ -59,7 +59,7 @@ class MotionReferenceT1Study(T1Study):
             img_type=img_type, **kwargs)
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
@@ -74,8 +74,7 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline'),
-        inherit_from=T1Study.data_specs())
+        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
 
 class MotionReferenceT2Study(T2Study):
@@ -97,7 +96,7 @@ class MotionReferenceT2Study(T2Study):
             resolution=resolution,
             **kwargs)
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
@@ -112,8 +111,7 @@ class MotionReferenceT2Study(T2Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline'),
-        inherit_from=T2Study.data_specs())
+        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
 
 class MotionDetectionMixin(MultiStudy):
@@ -457,7 +455,7 @@ class MotionDetectionMixin(MultiStudy):
             timestamps=False, align_mats=False)
 
     _sub_study_specs = {}
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_rc', text_format,
@@ -487,7 +485,7 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('motion_detection_output', directory_format,
                     'gather_outputs_pipeline'),
         DatasetSpec('moco_series', directory_format,
-                    'create_moco_series_pipeline'))
+                    'create_moco_series_pipeline')]
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
@@ -798,7 +796,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #                 header_info_extraction_pipeline_factory(
 #                     'primary', ref=reference, multivol=multivol,
 #                     **kwargs))
-#     _data_specs = set_specs(
+#     add_data_specs = [
 #         DatasetSpec('ref_motion_mats', directory_format,
-#                     header_info_extraction_pipeline),
-#         inherit_from=MRIStudy.data_specs())
+#                     header_info_extraction_pipeline)]

@@ -956,7 +956,7 @@ class MotionDetectionStudy(MultiStudy):
             'asl_start_time': 'epi_start_time',
             'asl_dcm_info': 'epi_dcm_info'}))
 
-    _data_specs = set_specs([
+    add_data_specs = [
         DatasetSpec('reference', dicom_format),
         DatasetSpec('ref_motion_mats', directory_format,
                     'ref_dcm_info_pipeline'),
@@ -1419,4 +1419,4 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('motion_par_rc', text_format, 'mean_displacement_pipeline'),
         DatasetSpec('offset_indexes', text_format, 'mean_displacement_pipeline'),
         DatasetSpec('frame_start_times', text_format,
-                    'motion_framing_pipeline')])
+                    'motion_framing_pipeline')]

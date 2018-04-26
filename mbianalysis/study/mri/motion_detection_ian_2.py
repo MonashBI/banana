@@ -1126,7 +1126,7 @@ class MotionDetectionStudy(MultiStudy):
             'dwi_ref_brain_mask': 'ref_brain_mask',
             'dwi_reference': 'reference'}))
 
-    _data_specs = set_specs([
+    add_data_specs = [
         DatasetSpec('dwi_1_main', dicom_format),
         DatasetSpec('dwi_1_main_ref', nifti_gz_format),
         DatasetSpec('umap', nifti_gz_format),
@@ -1551,4 +1551,4 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('umaps_align2ref', directory_format,
                     'frame2ref_alignment_pipeline'),
         DatasetSpec('frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline')])
+                    'frame2ref_alignment_pipeline')]

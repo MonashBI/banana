@@ -55,7 +55,7 @@ class MotionReferenceT1Study(T1Study):
             img_type=img_type, **kwargs)
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
@@ -70,8 +70,7 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline'),
-        inherit_from=T1Study.data_specs())
+        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
 
 class MotionReferenceT2Study(T2Study):
@@ -93,7 +92,7 @@ class MotionReferenceT2Study(T2Study):
             resolution=resolution,
             **kwargs)
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
@@ -108,8 +107,7 @@ class MotionReferenceT2Study(T2Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline'),
-        inherit_from=T2Study.data_specs())
+        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
 
 class MotionCorrectionMixin(MultiStudy):
@@ -482,7 +480,7 @@ class MotionCorrectionMixin(MultiStudy):
             'pet_data_cropped': 'pet_data_cropped',
             'static_pet_mc2crop': 'pet2crop'}))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('pet_data_dir', directory_format),
         DatasetSpec('pet_data_reconstructed', directory_format),
         DatasetSpec('pet_data_prepared', directory_format,
@@ -526,7 +524,7 @@ class MotionCorrectionMixin(MultiStudy):
         FieldSpec('pet_end_time', dtype=str,
                   pipeline=pet_time_info_extraction_pipeline),
         FieldSpec('pet_start_time', dtype=str,
-                  pipeline=pet_time_info_extraction_pipeline))
+                  pipeline=pet_time_info_extraction_pipeline)]
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,

@@ -1089,7 +1089,7 @@ class MotionDetectionStudy(MultiStudy):
             'dwi_ref_brain_mask': 'ref_brain_mask',
             'dwi_reference': 'reference'}))
 
-    _data_specs = set_specs([
+    add_data_specs = [
         DatasetSpec('dwi_1_main', dicom_format),
         DatasetSpec('dwi_1_main_ref', nifti_gz_format),
         DatasetSpec('dwi_reference', nifti_gz_format),
@@ -1583,4 +1583,4 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('frame_start_times', text_format,
                     'motion_framing_pipeline'),
         DatasetSpec('mean_displacement_plot', png_format,
-                    'plot_mean_displacement_pipeline')])
+                    'plot_mean_displacement_pipeline')]

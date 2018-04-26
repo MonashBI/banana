@@ -164,7 +164,7 @@ class T2StarStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('coils', directory_format,
                     description=("Reconstructed T2* complex image for each "
                                  "coil")),
@@ -178,4 +178,4 @@ class T2StarStudy(MRIStudy):
                     description=("Mask for each coil corresponding to areas of"
                                  " high magnitude")),
         DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline,
-                    description=("Brain mask generated from T2* image")))
+                    description=("Brain mask generated from T2* image"))]

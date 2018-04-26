@@ -95,7 +95,7 @@ class T1T2Study(MultiStudy):
             't2_coreg_matrix': 'matrix',
             'manual_wmh_mask_coreg': 'registered'}))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('t1', nifti_gz_format,
                     description="Raw T1-weighted image (e.g. MPRAGE)"),
         DatasetSpec('t2', nifti_gz_format,
@@ -122,4 +122,4 @@ class T1T2Study(MultiStudy):
                     'coregister_to_atlas_pipeline'),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline,
-                    description="Output directory from Freesurfer recon_all"))
+                    description="Output directory from Freesurfer recon_all")]

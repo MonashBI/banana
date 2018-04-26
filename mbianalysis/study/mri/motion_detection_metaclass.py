@@ -34,7 +34,7 @@ class MotionReferenceT1Study(T1Study):
             img_type=img_type, **kwargs)
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
@@ -48,8 +48,7 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        inherit_from=T1Study.data_specs())
+        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline')]
 
 
 class MotionDetectionStudy(MultiStudy):
@@ -359,7 +358,7 @@ class MotionDetectionStudy(MultiStudy):
                 'ref_masked': 'ref_brain',
                 'ref_brain_mask': 'ref_brain_mask'}))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_rc', text_format,
@@ -383,7 +382,7 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('umaps_align2ref', directory_format,
                     'frame2ref_alignment_pipeline'),
         DatasetSpec('frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline'))
+                    'frame2ref_alignment_pipeline')]
 
 
 # def create_motion_detection_class(name, reference, ref_type, t1s=None,
@@ -406,7 +405,6 @@ class MotionDetectionStudy(MultiStudy):
 #                 header_info_extraction_pipeline_factory(
 #                     'primary', ref=reference, multivol=multivol,
 #                     **kwargs))
-#     _data_specs = set_specs(
+#     add_data_specs = [
 #         DatasetSpec('ref_motion_mats', directory_format,
-#                     header_info_extraction_pipeline),
-#         inherit_from=MRIStudy.data_specs())
+#                     header_info_extraction_pipeline)]

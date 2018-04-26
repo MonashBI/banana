@@ -35,8 +35,7 @@ class StaticPETStudy(PETStudy):
     def _ica_inputs(self):
         pass
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('base_mask', nifti_gz_format),
-        DatasetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline'),
-        inherit_from=PETStudy.generated_data_specs())
+        DatasetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]

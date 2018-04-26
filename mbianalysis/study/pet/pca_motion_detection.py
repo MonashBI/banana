@@ -51,10 +51,10 @@ class PETPCAMotionDetectionStudy(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('list_mode', list_mode_format),
         FieldSpec('time_offset', int),
         FieldSpec('temporal_length', float),
         FieldSpec('num_frames', int),
         DatasetSpec('ssrb_sinograms', directory_format,
-                    'sinogram_unlisting_pipeline'))
+                    'sinogram_unlisting_pipeline')]

@@ -67,11 +67,10 @@ class T1Study(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline'),
-        inherit_from=MRIStudy.data_specs())
+        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline')]
 
 
 class CoregisteredT1Study(MultiStudy):
@@ -155,7 +154,7 @@ class CoregisteredT1Study(MultiStudy):
             't1_reg': 'registered',
             't1_reg_mat': 'matrix'}))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('t1', dicom_format),
         DatasetSpec('t1_nifti', nifti_gz_format, 't1_dcm2nii_pipeline'),
         DatasetSpec('reference', nifti_gz_format),
@@ -183,4 +182,4 @@ class CoregisteredT1Study(MultiStudy):
         FieldSpec('tr', float, 't1_dcm_info_pipeline'),
         FieldSpec('start_time', str, 't1_dcm_info_pipeline'),
         FieldSpec('real_duration', str, 't1_dcm_info_pipeline'),
-        FieldSpec('tot_duration', str, 't1_dcm_info_pipeline'))
+        FieldSpec('tot_duration', str, 't1_dcm_info_pipeline')]

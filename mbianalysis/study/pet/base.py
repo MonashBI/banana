@@ -184,7 +184,7 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('registered_volumes', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('pet_data_dir', directory_format),
@@ -210,4 +210,4 @@ class PETStudy(Study):
         FieldSpec('pet_end_time', dtype=str,
                   pipeline=pet_time_info_extraction_pipeline),
         FieldSpec('pet_start_time', dtype=str,
-                  pipeline=pet_time_info_extraction_pipeline))
+                  pipeline=pet_time_info_extraction_pipeline)]

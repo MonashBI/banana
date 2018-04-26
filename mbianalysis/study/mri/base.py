@@ -409,7 +409,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('primary', dicom_format),
         DatasetSpec('primary_nifti', nifti_gz_format,
                     'dcm2nii_conversion_pipeline'),
@@ -436,5 +436,4 @@ class MRIStudy(Study):
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('motion_mats', directory_format, 'header_info_extraction_pipeline')
-        )
+        DatasetSpec('motion_mats', directory_format, 'header_info_extraction_pipeline')]

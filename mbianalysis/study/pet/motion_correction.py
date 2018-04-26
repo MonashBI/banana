@@ -56,10 +56,9 @@ class FixedMAFMotionCorrection(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('pet_dir', directory_format),
-        DatasetSpec('fixed_maf_pet', nifti_gz_format, 'fixed_maf_pipeline'),
-        inherit_from=PETStudy.data_specs())
+        DatasetSpec('fixed_maf_pet', nifti_gz_format, 'fixed_maf_pipeline')]
 
 
 class StaticPETMotionCorrection(PETStudy):
@@ -108,9 +107,8 @@ class StaticPETMotionCorrection(PETStudy):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None)
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('pet_dir', directory_format),
         DatasetSpec('motion_detection_output', directory_format),
         DatasetSpec('static_pet_mc', directory_format,
-                    'static_motion_correction_pipeline'),
-        inherit_from=PETStudy.data_specs())
+                    'static_motion_correction_pipeline')]

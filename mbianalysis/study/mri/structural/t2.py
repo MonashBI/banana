@@ -25,9 +25,6 @@ class T2Study(MRIStudy):
                 header_info_extraction_pipeline_factory(
                     'primary', **kwargs))
 
-    _data_specs = set_specs(
-        inherit_from=MRIStudy.data_specs())
-
 
 class CoregisteredT2Study(MultiStudy):
 
@@ -110,7 +107,7 @@ class CoregisteredT2Study(MultiStudy):
             't2_reg': 'registered',
             't2_reg_mat': 'matrix'}))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('t2', dicom_format),
         DatasetSpec('t2_nifti', nifti_gz_format, 't2_dcm2nii_pipeline'),
         DatasetSpec('reference', nifti_gz_format),
@@ -138,4 +135,4 @@ class CoregisteredT2Study(MultiStudy):
         FieldSpec('tr', float, 't2_dcm_info_pipeline'),
         FieldSpec('start_time', str, 't2_dcm_info_pipeline'),
         FieldSpec('real_duration', str, 't2_dcm_info_pipeline'),
-        FieldSpec('tot_duration', str, 't2_dcm_info_pipeline'))
+        FieldSpec('tot_duration', str, 't2_dcm_info_pipeline')]

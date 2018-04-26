@@ -120,7 +120,7 @@ class DynamicPETStudy(PETStudy):
         return self._ICA_pipeline_factory(
             input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('pet_volumes', nifti_gz_format),
         DatasetSpec('regression_map', nifti_gz_format),
         DatasetSpec('pet_image', nifti_gz_format, 'Extract_vol_pipeline'),
@@ -129,5 +129,4 @@ class DynamicPETStudy(PETStudy):
         DatasetSpec('detrended_volumes', nifti_gz_format,
                     'Baseline_Removal_pipeline'),
         DatasetSpec('spatial_map', nifti_gz_format, 'Dual_Regression_pipeline'),
-        DatasetSpec('ts', png_format, 'Dual_Regression_pipeline'),
-        inherit_from=PETStudy.generated_data_specs())
+        DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]

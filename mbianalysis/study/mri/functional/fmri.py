@@ -742,7 +742,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _data_specs = set_specs(
+    add_data_specs = [
         DatasetSpec('field_map_mag', nifti_gz_format),
         DatasetSpec('field_map_phase', nifti_gz_format),
         DatasetSpec('t1', nifti_gz_format),
@@ -781,5 +781,4 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('smoothed_file', nifti_gz_format, 'applySmooth'),
         DatasetSpec('group_melodic', directory_format, groupMelodic,
                     multiplicity='per_visit'),
-        FieldSpec('tr', float, 'header_info_extraction_pipeline'),
-        inherit_from=MRIStudy.data_specs())
+        FieldSpec('tr', float, 'header_info_extraction_pipeline')]
