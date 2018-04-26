@@ -119,7 +119,7 @@ class MotionCorrectionMixin(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
 #     ute_brain_mask_pipeline = MultiStudy.translate(
-#         'ute', CoregisteredT1Study.t1_brain_mask_pipeline,
+#         'ute', 't1_brain_mask_pipeline',
 #         override_default_options={'bet_method': 'optibet'})
 
     def mean_displacement_pipeline(self, **options):
@@ -429,13 +429,13 @@ class MotionCorrectionMixin(MultiStudy):
             timestamps=False, align_mats=False)
 
     prepare_pet_pipeline = MultiStudy.translate(
-        'pet_mc', PETStudy.pet_data_preparation_pipeline)
+        'pet_mc', 'pet_data_preparation_pipeline')
 
     pet_fov_cropping_pipeline = MultiStudy.translate(
-        'pet_mc', PETStudy.pet_fov_cropping_pipeline)
+        'pet_mc', 'pet_fov_cropping_pipeline')
 
     pet_time_info_extraction_pipeline = MultiStudy.translate(
-        'pet_mc', PETStudy.pet_time_info_extraction_pipeline)
+        'pet_mc', 'pet_time_info_extraction_pipeline')
 
     def static_motion_correction_pipeline_factory(self, StructAlignment=None,
                                                   **options):

@@ -33,33 +33,33 @@ class CoregisteredT2Study(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     t2_basic_preproc_pipeline = MultiStudy.translate(
-        't2', T2Study.basic_preproc_pipeline)
+        't2', 'basic_preproc_pipeline')
 
     t2_dcm2nii_pipeline = MultiStudy.translate(
-        't2', MRIStudy.dcm2nii_conversion_pipeline)
+        't2', 'dcm2nii_conversion_pipeline')
 
     t2_dcm_info_pipeline = MultiStudy.translate(
-        't2', T2Study.header_info_extraction_pipeline,
+        't2', 'header_info_extraction_pipeline',
         override_default_options={'multivol': False})
 
     t2_bet_pipeline = MultiStudy.translate(
-        't2', T2Study.brain_mask_pipeline)
+        't2', 'brain_mask_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     t2_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     t2_brain_mask_pipeline = MultiStudy.translate(
-        't2', T2Study.brain_mask_pipeline)
+        't2', 'brain_mask_pipeline')
 
     t2_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.linear_registration_pipeline)
+        'coreg', 'linear_registration_pipeline')
 
     def motion_mat_pipeline(self, **options):
 

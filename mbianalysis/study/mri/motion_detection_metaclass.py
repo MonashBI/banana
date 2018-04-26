@@ -58,15 +58,15 @@ class MotionDetectionStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     epi1_ref_segmentation_pipeline = MultiStudy.translate(
-        'epi1', CoregisteredEPIStudy.ref_segmentation_pipeline,
+        'epi1', 'ref_segmentation_pipeline',
         override_default_options={'img_type': 1})
 
     t1_bet_pipeline = MultiStudy.translate(
-        't1_1', CoregisteredT1Study.t1_bet_pipeline,
+        't1_1', 't1_bet_pipeline',
         override_default_options={'bet_method': 'optibet'})
 
     ute_bet_pipeline = MultiStudy.translate(
-        'ute', CoregisteredT1Study.t1_bet_pipeline,
+        'ute', 't1_bet_pipeline',
         override_default_options={'bet_method': 'optibet'})
 
     def mean_displacement_pipeline(self, **options):

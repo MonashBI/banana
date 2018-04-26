@@ -71,39 +71,39 @@ class CoregisteredEPIStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     epi_basic_preproc_pipeline = MultiStudy.translate(
-        'epi', EPIStudy.basic_preproc_pipeline)
+        'epi', 'basic_preproc_pipeline')
 
     epi_dcm2nii_pipeline = MultiStudy.translate(
-        'epi', MRIStudy.dcm2nii_conversion_pipeline)
+        'epi', 'dcm2nii_conversion_pipeline')
 
     epi_bet_pipeline = MultiStudy.translate(
-        'epi', EPIStudy.brain_mask_pipeline)
+        'epi', 'brain_mask_pipeline')
 
     epi_dcm_info_pipeline = MultiStudy.translate(
-        'epi', EPIStudy.header_info_extraction_pipeline,
+        'epi', 'header_info_extraction_pipeline',
         override_default_options={'multivol': True})
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_dcm2nii_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.dcm2nii_conversion_pipeline)
+        'reference', 'dcm2nii_conversion_pipeline')
 
     ref_segmentation_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.segmentation_pipeline)
+        'reference', 'segmentation_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     epi_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     epi_motion_alignment_pipeline = MultiStudy.translate(
-        'epi', EPIStudy.motion_alignment_pipeline)
+        'epi', 'motion_alignment_pipeline')
 
     epi_brain_mask_pipeline = MultiStudy.translate(
-        'epi', EPIStudy.brain_mask_pipeline)
+        'epi', 'brain_mask_pipeline')
 
     def epireg_pipeline(self, **options):
 

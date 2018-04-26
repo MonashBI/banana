@@ -291,26 +291,26 @@ class CoregisteredDWIStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     dwi_main_dwipreproc_pipeline = MultiStudy.translate(
-        'dwi_main', DiffusionStudy.dwipreproc_pipeline)
+        'dwi_main', 'dwipreproc_pipeline')
 
     dwi_main_bet_pipeline = MultiStudy.translate(
-        'dwi_main', DiffusionStudy.brain_mask_pipeline)
+        'dwi_main', 'brain_mask_pipeline')
 
     dwi_main_dcm_info_pipeline = MultiStudy.translate(
-        'dwi_main', DiffusionStudy.header_info_extraction_pipeline)
+        'dwi_main', 'header_info_extraction_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     dwi_main_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     dwi_main_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.linear_registration_pipeline)
+        'coreg', 'linear_registration_pipeline')
 
     def affine_mats_pipeline(self, **options):
 
@@ -427,32 +427,32 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     dwi2ref_topup_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.topup_pipeline)
+        'dwi2ref', 'topup_pipeline')
 
     dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.main_dcm2nii_conversion_pipeline)
+        'dwi2ref', 'main_dcm2nii_conversion_pipeline')
 
     dwi2ref_ref_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.ref_dcm2nii_conversion_pipeline)
+        'dwi2ref', 'ref_dcm2nii_conversion_pipeline')
 
     dwi2ref_dcm_info_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.header_info_extraction_pipeline)
+        'dwi2ref', 'header_info_extraction_pipeline')
 
     dwi2ref_bet_pipeline = MultiStudy.translate(
-        'dwi2ref', DiffusionReferenceStudy.brain_mask_pipeline)
+        'dwi2ref', 'brain_mask_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     dwi2ref_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.linear_registration_pipeline)
+        'coreg', 'linear_registration_pipeline')
 
     def motion_mat_pipeline(self, **options):
 
@@ -542,33 +542,33 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     dwi_opposite_topup_pipeline = MultiStudy.translate(
-        'dwi_opposite', DiffusionOppositeStudy.topup_pipeline)
+        'dwi_opposite', 'topup_pipeline')
 
     dwi_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_opposite',
         DiffusionOppositeStudy.main_dcm2nii_conversion_pipeline)
 
     dwi_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi_opposite', DiffusionOppositeStudy.ref_dcm2nii_conversion_pipeline)
+        'dwi_opposite', 'ref_dcm2nii_conversion_pipeline')
 
     dwi_opposite_dcm_info_pipeline = MultiStudy.translate(
-        'dwi_opposite', DiffusionOppositeStudy.header_info_extraction_pipeline)
+        'dwi_opposite', 'header_info_extraction_pipeline')
 
     dwi_opposite_bet_pipeline = MultiStudy.translate(
-        'dwi_opposite', DiffusionOppositeStudy.brain_mask_pipeline)
+        'dwi_opposite', 'brain_mask_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     dwi_opposite_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     dwi_opposite_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.linear_registration_pipeline)
+        'coreg', 'linear_registration_pipeline')
 
     def motion_mat_pipeline(self, **options):
 
@@ -664,7 +664,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     opposite_dwi2ref_topup_pipeline = MultiStudy.translate(
-        'opposite_dwi2ref', DiffusionReferenceOppositeStudy.topup_pipeline)
+        'opposite_dwi2ref', 'topup_pipeline')
 
     opposite_dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
         'opposite_dwi2ref',
@@ -683,14 +683,14 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
         DiffusionReferenceOppositeStudy.brain_mask_pipeline)
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     opposite_dwi2ref_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     opposite_dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
         'coreg',

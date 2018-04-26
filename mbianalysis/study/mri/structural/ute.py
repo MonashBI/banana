@@ -540,33 +540,33 @@ class CoregisteredUTEStudy(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
     ute_basic_preproc_pipeline = MultiStudy.translate(
-        'ute', UTEStudy.basic_preproc_pipeline)
+        'ute', 'basic_preproc_pipeline')
 
     ute_dcm2nii_pipeline = MultiStudy.translate(
-        'ute', MRIStudy.dcm2nii_conversion_pipeline)
+        'ute', 'dcm2nii_conversion_pipeline')
 
     ute_umap_dcm2nii_pipeline = MultiStudy.translate(
-        'ute', UTEStudy.umap_dcm2nii_conversion_pipeline)
+        'ute', 'umap_dcm2nii_conversion_pipeline')
 
     ute_dcm_info_pipeline = MultiStudy.translate(
-        'ute', UTEStudy.header_info_extraction_pipeline,
+        'ute', 'header_info_extraction_pipeline',
         override_default_options={'multivol': False})
 
     ref_bet_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.brain_mask_pipeline)
+        'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', MRIStudy.basic_preproc_pipeline,
+        'reference', 'basic_preproc_pipeline',
         override_default_options={'resolution': [1]})
 
     ute_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.qform_transform_pipeline)
+        'coreg', 'qform_transform_pipeline')
 
     ute_brain_mask_pipeline = MultiStudy.translate(
-        'ute', UTEStudy.brain_mask_pipeline)
+        'ute', 'brain_mask_pipeline')
 
     ute_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', CoregisteredStudy.linear_registration_pipeline)
+        'coreg', 'linear_registration_pipeline')
 
     def motion_mat_pipeline(self, **options):
 

@@ -123,7 +123,7 @@ class MotionDetectionMixin(MultiStudy):
     __metaclass__ = MultiStudyMetaClass
 
 #     ute_brain_mask_pipeline = MultiStudy.translate(
-#         'ute', CoregisteredT1Study.t1_brain_mask_pipeline,
+#         'ute', 't1_brain_mask_pipeline',
 #         override_default_options={'bet_method': 'optibet'})
 
     def mean_displacement_pipeline(self, **options):

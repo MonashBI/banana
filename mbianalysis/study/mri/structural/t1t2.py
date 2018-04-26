@@ -31,17 +31,17 @@ class T1T2Study(MultiStudy):
         return pipeline
 
     coregister_to_atlas_pipeline = translate_pipeline(
-        't1', T1Study.coregister_to_atlas_pipeline)
+        't1', 'coregister_to_atlas_pipeline')
 
     t2_registration_pipeline = translate_pipeline(
-        't2coregt1', CoregisteredStudy.linear_registration_pipeline)
+        't2coregt1', 'linear_registration_pipeline')
 
     manual_wmh_mask_registration_pipeline = translate_pipeline(
         'wmhcoregt1',
         CoregisteredToMatrixStudy.linear_registration_pipeline)
 
     t2_brain_mask_pipeline = translate_pipeline(
-        't2', T2Study.brain_mask_pipeline)
+        't2', 'brain_mask_pipeline')
 
     def t1_brain_mask_pipeline(self, **options):
         """
