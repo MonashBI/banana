@@ -38,6 +38,8 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 class MotionReferenceT1Study(T1Study):
 
+    __metaclass__ = StudyMetaClass
+
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
         return (super(MotionReferenceT1Study, self).
@@ -74,6 +76,8 @@ class MotionReferenceT1Study(T1Study):
 
 
 class MotionReferenceT2Study(T2Study):
+
+    __metaclass__ = StudyMetaClass
 
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
@@ -429,7 +433,7 @@ class MotionCorrectionMixin(MultiStudy):
 
     pet_fov_cropping_pipeline = MultiStudy.translate(
         'pet_mc', PETStudy.pet_fov_cropping_pipeline)
-    
+
     pet_time_info_extraction_pipeline = MultiStudy.translate(
         'pet_mc', PETStudy.pet_time_info_extraction_pipeline)
 

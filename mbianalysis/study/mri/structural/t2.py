@@ -14,6 +14,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
 
 class T2Study(MRIStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def brain_mask_pipeline(self, robust=True, f_threshold=0.5,
                             reduce_bias=False, **kwargs):
         return super(T2Study, self).brain_mask_pipeline(

@@ -11,6 +11,8 @@ from nipype.interfaces import fsl
 
 class T2StarStudy(MRIStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def qsm_de_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Process dual echo data for QSM (TE=[7.38, 22.14])

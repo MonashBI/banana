@@ -42,6 +42,8 @@ template_path = os.path.abspath(
 
 class MotionReferenceT1Study(T1Study):
 
+    __metaclass__ = StudyMetaClass
+
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
         return (super(MotionReferenceT1Study, self).
@@ -78,6 +80,8 @@ class MotionReferenceT1Study(T1Study):
 
 
 class MotionReferenceT2Study(T2Study):
+
+    __metaclass__ = StudyMetaClass
 
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):

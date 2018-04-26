@@ -22,6 +22,8 @@ from nianalysis.exceptions import NiAnalysisNameError
 
 class MotionReferenceT1Study(T1Study):
 
+    __metaclass__ = StudyMetaClass
+
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
         return (super(MotionReferenceT1Study, self).

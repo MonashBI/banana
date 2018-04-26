@@ -21,6 +21,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
 
 class T1Study(MRIStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def brain_mask_pipeline(self, bet_method='optibet', **kwargs):
         return super(T1Study, self).brain_mask_pipeline(bet_method=bet_method,
                                                         **kwargs)

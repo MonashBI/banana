@@ -16,6 +16,8 @@ template_path = os.path.abspath(
 
 class DynamicPETStudy(PETStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def Extract_vol_pipeline(self, **options):
         pipeline = self.create_pipeline(
             name='Extract_volume',

@@ -9,6 +9,8 @@ from nianalysis.requirements import stir_req
 
 class PETPCAMotionDetectionStudy(PETStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def sinogram_unlisting_pipeline(self, **options):
 
         pipeline = self.create_pipeline(

@@ -166,6 +166,8 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
     supplied as an input (typically by another sub-study)
     """
 
+    __metaclass__ = StudyMetaClass
+
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format),
                             DatasetSpec('matrix', text_matrix_format)]

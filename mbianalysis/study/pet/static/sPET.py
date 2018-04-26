@@ -12,6 +12,8 @@ template_path = os.path.abspath(
 
 class StaticPETStudy(PETStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def suvr_pipeline(self, **options):
 
         pipeline = self.create_pipeline(

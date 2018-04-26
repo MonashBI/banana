@@ -22,6 +22,8 @@ from nianalysis.interfaces.mrtrix import MRConvert
 
 class DiffusionStudy(MRIStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def brain_mask_pipeline(self, robust=True, f_threshold=0.2, **kwargs):
         return super(DiffusionStudy, self).brain_mask_pipeline(
             robust=robust, f_threshold=f_threshold, **kwargs)
@@ -178,6 +180,8 @@ class DiffusionStudy(MRIStudy):
 
 class DiffusionReferenceStudy(DiffusionStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def header_info_extraction_pipeline(self, multivol=False, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
@@ -212,6 +216,8 @@ class DiffusionReferenceStudy(DiffusionStudy):
 
 class DiffusionOppositeStudy(DiffusionReferenceStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def header_info_extraction_pipeline(self, multivol=False, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
@@ -245,6 +251,8 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
 
 
 class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
+
+    __metaclass__ = StudyMetaClass
 
     def header_info_extraction_pipeline(self, multivol=False, **kwargs):
         return (super(DiffusionReferenceStudy, self).

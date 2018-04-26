@@ -28,6 +28,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
 
 class UTEStudy(MRIStudy):
 
+    __metaclass__ = StudyMetaClass
+
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
 

@@ -27,6 +27,8 @@ from nianalysis.interfaces.iterators import SelectSession
 
 class DiffusionStudy(T2Study):
 
+    __metaclass__ = StudyMetaClass
+
     def preprocess_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
@@ -756,6 +758,8 @@ class DiffusionStudy(T2Study):
 
 
 class NODDIStudy(DiffusionStudy):
+
+    __metaclass__ = StudyMetaClass
 
     def concatenate_pipeline(self, **options):  # @UnusedVariable
         """

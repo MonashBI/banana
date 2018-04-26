@@ -31,6 +31,8 @@ from nipype.interfaces.utility.base import IdentityInterface
 
 class FunctionalMRIStudy(MRIStudy):
 
+    __metaclass__ = StudyMetaClass
+
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(FunctionalMRIStudy, self).
                 header_info_extraction_pipeline_factory(

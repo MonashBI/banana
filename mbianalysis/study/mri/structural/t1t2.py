@@ -13,11 +13,11 @@ from nianalysis.citations import fsl_cite
 
 
 class T1T2Study(MultiStudy):
-
-    __metaclass__ = MultiStudyMetaClass
     """
     T1 and T2 weighted MR dataset, with the T2-weighted coregistered to the T1.
     """
+
+    __metaclass__ = MultiStudyMetaClass
 
     def freesurfer_pipeline(self, **options):
         pipeline = self.TranslatedPipeline(
@@ -102,24 +102,24 @@ class T1T2Study(MultiStudy):
                     description="Raw T2-weighted image (e.g. FLAIR)"),
         DatasetSpec('manual_wmh_mask', nifti_gz_format,
                     description="Manual WMH segmentations"),
-        DatasetSpec('t2_coreg', nifti_gz_format, t2_registration_pipeline,
+        DatasetSpec('t2_coreg', nifti_gz_format, 't2_registration_pipeline',
                     description="T2 registered to T1 weighted"),
-        DatasetSpec('t1_masked', nifti_gz_format, t1_brain_mask_pipeline,
+        DatasetSpec('t1_masked', nifti_gz_format, 't1_brain_mask_pipeline',
                     description="T1 masked by brain mask"),
-        DatasetSpec('t2_masked', nifti_gz_format, t2_brain_mask_pipeline,
+        DatasetSpec('t2_masked', nifti_gz_format, 't2_brain_mask_pipeline',
                     description="Coregistered T2 masked by brain mask"),
-        DatasetSpec('brain_mask', nifti_gz_format, t2_brain_mask_pipeline,
+        DatasetSpec('brain_mask', nifti_gz_format, 't2_brain_mask_pipeline',
                     description="Brain mask generated from coregistered T2"),
         DatasetSpec('manual_wmh_mask_coreg', nifti_gz_format,
-                    manual_wmh_mask_registration_pipeline,
+                    'manual_wmh_mask_registration_pipeline',
                     description="Manual WMH segmentations coregistered to T1"),
         DatasetSpec('t2_coreg_matrix', text_matrix_format,
-                    t2_registration_pipeline,
+                    't2_registration_pipeline',
                     description="Coregistration matrix for T2 to T1"),
         DatasetSpec('t1_coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
-                    freesurfer_pipeline,
+                    'freesurfer_pipeline',
                     description="Output directory from Freesurfer recon_all")]
