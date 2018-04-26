@@ -502,8 +502,8 @@ class PETFovCroppingInputSpec(BaseInterfaceInputSpec):
 
     pet_image = File(exists=True, desc='PET images to crop.')
 #     ref_pet = File(exists=True, desc='Reference image to use to save the '
-#                    'cropped PET. Usually is the output of fslroi command with '
-#                    'the same cropping parameters.')
+#                    'cropped PET. Usually is the output of fslroi command '
+#                    'with the same cropping parameters.')
     x_min = traits.Int()
     x_size = traits.Int()
     y_min = traits.Int()
@@ -727,3 +727,6 @@ class StaticMotionCorrection(BaseInterface):
         outputs["pet_mc_results_to_crop"] = (
             os.getcwd()+'/mc_results/images2crop')
         return outputs
+
+
+# class PETImageAlignment(BaseInterfaceInputSpec):

@@ -1252,3 +1252,165 @@ class CreateMocoSeries(BaseInterface):
         outputs["modified_moco"] = os.getcwd()+'/new_moco_series'
 
         return outputs
+
+
+class FixedBinning(BaseInterface):
+    """
+        Function to divide PET list-mode files into a fixed number of bins
+        with specified length.
+        Motion matrices for each bin are then calculated averaging all
+        the matrices within that bin.
+
+        Parameters
+        ----------
+        mc : Boolean
+            If True, motion correction within bins is performed. If bin
+            length is less than 2 minutes, the motion correction cannot be
+            performed.
+        bin_len : Integer
+            Temporal length of each PET bin.
+        pet_offset : Integer
+            Time offset (in seconds) to start the fixed binning from a
+            time point different from the PET start time. Default is zero.
+        n_frames : Integer
+            Number of PET frames you want to correct for motion. By default
+            is the total lenght of the PET acquisition divided by the
+            bin_len.
+
+        Returns
+        -------
+        One motion matrix and one timestamp per bin. If mc=True it will
+        return motion matrices and timestamps for each sub-bin too.
+    """
+
+    def _run_interface(self, runtime):
+
+        n_frames = self.inputs.n_frames
+        pet_offset = self.inputs.pet_offset
+        bin_len = self.inputs.bin_len
+        start_times = self.inputs.start_times
+        pet_duration = self.inputs.pet_duration
+        pet_start_time = self.inputs.pet_start_time
+        motion_mats = np.loadtxt(self.inputs.all_mats4average, dtype=str)
+        if n_frames == 'all' and pet_offset == 0:
+            pet_len = pet_duration
+        elif n_frames == 'all' and pet_offset != 0:
+            pet_len = pet_duration-pet_offset
+        elif n_frames != 'all':
+            pet_len = bin_len*n_frames
+
+        MR_start_time = str(start_times[0])
+        start_times_diff = [
+            (dt.datetime.strptime(str(start_times[i+1]), '%H%M%S.%f') -
+             dt.datetime.strptime(
+                 str(start_times[i]), '%H%M%S.%f')).total_seconds()
+            for i in range(len(start_times)-1)]
+        scan_duration = np.cumsum(np.asarray(start_times_diff))
+
+        pet_st = (dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
+                  dt.timedelta(seconds=pet_offset))
+        PetBins = [pet_st+dt.timedelta(seconds=x) for x in
+                   range(0, pet_len, bin_len)]
+        MrBins = [MR_start_time+dt.timedelta(milliseconds=x)
+                  for x in scan_duration]
+        MrStartPoints = [MrBins[i]+dt.timedelta(
+            seconds=(MrBins[i+1]-MrBins[i]).total_seconds()/2) for i in
+                         range(len(MrBins)-1)]
+
+        indxs = []
+        PetBins.append(pet_st+dt.timedelta(seconds=pet_len))
+        if pet_offset != 0:
+            print ('PET start time offset of {0} seconds detected. '
+                   'Fixed binning will start at {2} and will last '
+                   'for {1} seconds.'.format(str(pet_offset), str(pet_len),
+                                             pet_st.strftime('%H%M%S.%f')))
+        for pet_bin in PetBins:
+
+            for i in range(len(MrStartPoints)-1):
+                if (pet_bin > MrStartPoints[i] and
+                        pet_bin < MrStartPoints[i+1]):
+                    MrDiff = (
+                        (MrStartPoints[i+1]-MrStartPoints[i]).total_seconds())
+                    w0 = (MrStartPoints[i+1]-pet_bin).total_seconds()/MrDiff
+                    w1 = (pet_bin-MrStartPoints[i]).total_seconds()/MrDiff
+                    indxs.append([[w0, i], [w1, i+1]])
+                    break
+                elif pet_bin < MrStartPoints[i]:
+                    indxs.append([[1, i], [0, i+1]])
+                    break
+        while len(indxs) < len(PetBins):
+            indxs.append([[0, len(MrStartPoints)-2],
+                          [1, len(MrStartPoints)-1]])
+        # PetBins.append(pet_st+dt.timedelta(seconds=pet_len))
+        z = 0
+        for ii in range(len(indxs)-1):
+            start = indxs[ii]
+            end = indxs[ii+1]
+            s1 = start[0][1]
+            e1 = start[1][1]
+            s2 = end[0][1]
+            e2 = end[1][1]
+            if s1 == s2 and e1 == e2:
+                mat_s1 = np.loadtxt(motion_mats[s1])
+                mat_e1 = np.loadtxt(motion_mats[e1])
+                av_mat = start[0][0]*mat_s1 + start[1][0]*mat_e1
+                np.savetxt(
+                    'average_motion_mat_bin_{0}.txt'.format(str(z).zfill(3)),
+                    av_mat)
+                z = z+1
+                bin_border = [PetBins[ii].strftime('%H%M%S.%f'),
+                              PetBins[ii+1].strftime('%H%M%S.%f')]
+                with (open('timestamps_bin_{0}.txt'.format(str(ii).zfill(3)),
+                           'w')) as f:
+                    for b in bin_border:
+                        f.write(b+'\n')
+                    f.close()
+            elif (s1+1 == s2 and e1+1 == e2) or (s1+2 == s2 and e1+2 == e2):
+                mat_s1 = np.loadtxt(motion_mats[s1])
+                mat_e1 = np.loadtxt(motion_mats[e1])
+                mat_s2 = np.loadtxt(motion_mats[s2])
+                mat_e2 = np.loadtxt(motion_mats[e2])
+                av_mat_1 = start[0][0]*mat_s1 + start[1][0]*mat_e1
+                av_mat_2 = end[0][0]*mat_s2 + end[1][0]*mat_e2
+                mean_mat = (av_mat_1 + av_mat_2)/2
+                np.savetxt(
+                    'average_motion_mat_bin_{0}.txt'.format(str(z).zfill(3)),
+                    mean_mat)
+                z = z+1
+                bin_border = [PetBins[ii].strftime('%H%M%S.%f'),
+                              PetBins[ii+1].strftime('%H%M%S.%f')]
+                with (open('timestamps_bin_{0}.txt'.format(str(ii).zfill(3)),
+                           'w')) as f:
+                    for b in bin_border:
+                        f.write(b+'\n')
+                    f.close()
+            else:
+                mat_tot = np.zeros((4, 4, (s2-s1)))
+                mat_s1 = np.loadtxt(motion_mats[s1])
+                mat_e1 = np.loadtxt(motion_mats[e1])
+                mat_s2 = np.loadtxt(motion_mats[s2])
+                mat_e2 = np.loadtxt(motion_mats[e2])
+    #                     m1 = start[0][0]*mat_s1 + start[1][0]*mat_e1
+                mat_tot[:, :, 0] = (
+                    start[0][0]*mat_s1 + start[1][0]*mat_e1)
+                mat_tot[:, :, -1] = (
+                    end[0][0]*mat_s2 + end[1][0]*mat_e2)
+                for i, m in enumerate(range(e1+1, s2)):
+                    mat_tot[:, :, i+1] = np.loadtxt(motion_mats[m])
+                mean_mat = np.mean(mat_tot, axis=2)
+                np.savetxt(
+                    'average_motion_mat_bin_{0}.txt'
+                    .format(str(z).zfill(3)), mean_mat)
+    #                     np.savetxt(
+    #                         'average_motion_mat_bin_{0}_m1.txt'
+    #                         .format(str(z).zfill(3)), mat_e1)
+                z = z+1
+                bin_border = [PetBins[ii].strftime('%H%M%S.%f'),
+                              PetBins[ii+1].strftime('%H%M%S.%f')]
+                with (open(
+                    'timestamps_bin_{0}.txt'.format(str(ii).zfill(3)),
+                        'w')) as f:
+                    for b in bin_border:
+                        f.write(b+'\n')
+                    f.close()
+        return runtime
