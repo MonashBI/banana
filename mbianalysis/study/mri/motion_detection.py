@@ -436,7 +436,7 @@ class MotionDetectionStudy(MultiStudy):
     asl_ref_nifti_pipeline = MultiStudy.translate(
         'asl', 'ref_dcm2nii_pipeline')
 
-    def mean_displacement_pipeline(self, **options):
+    def mean_displacement_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='mean_displacement_calculation',
@@ -504,7 +504,7 @@ class MotionDetectionStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         merge_ref = pipeline.create_node(merge_lists(4), name='merge_ref')
         pipeline.connect_input('ref_motion_mats', merge_ref, 'in1')
@@ -616,7 +616,7 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def motion_framing_pipeline(self, **options):
+    def motion_framing_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_framing',
@@ -629,7 +629,7 @@ class MotionDetectionStudy(MultiStudy):
             default_options={'th': 2.0, 'temporal_th': 30.0},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         framing = pipeline.create_node(MotionFraming(), name='motion_framing')
         framing.inputs.motion_threshold = pipeline.option('th')

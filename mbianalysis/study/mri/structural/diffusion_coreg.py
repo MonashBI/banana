@@ -36,7 +36,7 @@ class DiffusionStudy(MRIStudy):
         return (super(DiffusionStudy, self).
                 header_info_extraction_pipeline_factory('dwi_main', **kwargs))
 
-    def dwipreproc_pipeline(self, **options):
+    def dwipreproc_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='dwipreproc_pipeline',
@@ -50,7 +50,7 @@ class DiffusionStudy(MRIStudy):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         converter1 = pipeline.create_node(MRConvert(), name='converter1',
                                           requirements=[mrtrix3_req])
@@ -119,7 +119,7 @@ class DiffusionStudy(MRIStudy):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
         prep_dwi.inputs.topup = True
@@ -161,7 +161,7 @@ class DiffusionStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def topup_pipeline(self, **options):
+    def topup_pipeline(self, **kwargs):
         return self.topup_factory(
             'dwi_topup', 'topup_in', 'topup_ref', 'dwi_distorted', 'ped',
             'pe_angle', **options)
@@ -312,7 +312,7 @@ class CoregisteredDWIStudy(MultiStudy):
     dwi_main_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', 'linear_registration_pipeline')
 
-    def affine_mats_pipeline(self, **options):
+    def affine_mats_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='affine_mat_generation',
@@ -325,7 +325,7 @@ class CoregisteredDWIStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         aff_mat = pipeline.create_node(AffineMatrixGeneration(),
                                        name='gen_aff_mats')
@@ -337,7 +337,7 @@ class CoregisteredDWIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -350,7 +350,7 @@ class CoregisteredDWIStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='dwi_main_motion_mats')
@@ -454,7 +454,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
     dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', 'linear_registration_pipeline')
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -466,7 +466,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='dwi2ref_motion_mats')
@@ -570,7 +570,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
     dwi_opposite_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', 'linear_registration_pipeline')
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -582,7 +582,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='dwi_opposite_motion_mats')
@@ -696,7 +696,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
         'coreg',
         CoregisteredStudy.linear_registration_pipeline)
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='opposite_dwi2ref_motion_mat_calculation',
@@ -710,7 +710,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='motion_mats')

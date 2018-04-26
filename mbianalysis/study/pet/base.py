@@ -26,7 +26,7 @@ class PETStudy(Study):
 #     def _ica_inputs(self):
 #         pass
 
-    def ICA_pipeline(self, **options):
+    def ICA_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(
             input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
 
@@ -43,7 +43,7 @@ class PETStudy(Study):
             default_options={'n_components': 2, 'ica_type': 'spatial'},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         ica = pipeline.create_node(FastICA(), name='ICA')
         ica.inputs.n_components = pipeline.option('n_components')
@@ -57,7 +57,7 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def Image_normalization_pipeline(self, **options):
+    def Image_normalization_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='Image_registration',
@@ -72,7 +72,7 @@ class PETStudy(Study):
                                                     '/PET_template.nii.gz')},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         reg = pipeline.create_node(AntsRegSyn(out_prefix='vol2template'),
                                    name='ANTs')
@@ -89,7 +89,7 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def pet_data_preparation_pipeline(self, **options):
+    def pet_data_preparation_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='pet_data_preparation',
@@ -101,7 +101,7 @@ class PETStudy(Study):
             default_options={'image_orientation_check': False},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
                                         requirements=[mrtrix3_req])
@@ -114,7 +114,7 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def pet_time_info_extraction_pipeline(self, **options):
+    def pet_time_info_extraction_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='pet_fov_cropping',
             inputs=[DatasetSpec('pet_data_dir', directory_format)],
@@ -125,7 +125,7 @@ class PETStudy(Study):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
     
         time_info = pipeline.create_node(PetTimeInfo(), name='PET_time_info')
         pipeline.connect_input('pet_data_dir', time_info, 'pet_data_dir')
@@ -136,7 +136,7 @@ class PETStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def pet_fov_cropping_pipeline(self, **options):
+    def pet_fov_cropping_pipeline(self, **kwargs):
         return self.pet_fov_cropping_pipeline_factory('pet2crop', **options)
 
     def pet_fov_cropping_pipeline_factory(self, dir2crop_name, **options):
@@ -151,7 +151,7 @@ class PETStudy(Study):
                              'ysize': 130, 'zmin': 20, 'zsize': 100},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
         pipeline.connect_input('pet_recon_dir_prepared', list_dir, 'directory')

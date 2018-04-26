@@ -29,7 +29,7 @@ class DiffusionStudy(T2Study):
 
     __metaclass__ = StudyMetaClass
 
-    def preprocess_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def preprocess_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
@@ -56,7 +56,7 @@ class DiffusionStudy(T2Study):
             citations=(
                 [fsl_cite, eddy_cite, topup_cite, distort_correct_cite] +
                 dwidenoise_cites),
-            options=options)
+            **kwargs)
         # Denoise the dwi-scan
         if pipeline.option('preproc_denoise'):
             # Run denoising
@@ -171,7 +171,7 @@ class DiffusionStudy(T2Study):
                 "'mrtrix')".format(mask_tool))
         return pipeline
 
-    def bias_correct_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def bias_correct_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Corrects B1 field inhomogeneities
         """
@@ -193,7 +193,7 @@ class DiffusionStudy(T2Study):
             version=1,
             citations=[fast_cite,
                        (n4_cite if bias_method == 'ants' else fsl_cite)],
-            options=options)
+            **kwargs)
         # Create bias correct node
         bias_correct = pipeline.create_node(
             DWIBiasCorrect(), name="bias_correct",
@@ -216,7 +216,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def intensity_normalisation_pipeline(self, **options):
+    def intensity_normalisation_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='intensity_normalization',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
@@ -232,7 +232,7 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[mrtrix3_req],
-            options=options)
+            **kwargs)
         # Convert from nifti to mrtrix format
         grad_merge = pipeline.create_node(MergeTuple(2), name="grad_merge")
         mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
@@ -283,7 +283,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def tensor_pipeline(self, **options):  # @UnusedVariable
+    def tensor_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -299,7 +299,7 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
         # Create tensor fit node
         dwi2tensor = pipeline.create_node(FitTensor(), name='dwi2tensor')
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
@@ -318,7 +318,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def fa_pipeline(self, **options):  # @UnusedVariable
+    def fa_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -332,7 +332,7 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
         # Create tensor fit node
         metrics = pipeline.create_node(TensorMetrics(), name='metrics',
                                        requirements=[mrtrix3_req])
@@ -348,7 +348,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def response_pipeline(self, **options):  # @UnusedVariable
+    def response_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -369,7 +369,7 @@ class DiffusionStudy(T2Study):
             default_options={'fod_response_algorithm': 'tax'},
             version=1,
             citations=[mrtrix_cite],
-            options=options)
+            **kwargs)
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
@@ -389,7 +389,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def average_response_pipeline(self, **options):
+    def average_response_pipeline(self, **kwargs):
         """
         Averages the estimate response function over all subjects in the
         project
@@ -404,7 +404,7 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[mrtrix_cite],
-            options=options)
+            **kwargs)
         join_subjects = pipeline.create_join_subjects_node(
             IdentityInterface(['responses']), name='join_subjects',
             joinfield=['responses'])
@@ -423,7 +423,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def fod_pipeline(self, **options):  # @UnusedVariable
+    def fod_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -443,7 +443,7 @@ class DiffusionStudy(T2Study):
             default_options={'fod_response_algorithm': 'tax'},
             version=1,
             citations=[mrtrix_cite],
-            options=options)
+            **kwargs)
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
@@ -463,7 +463,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def tbss_pipeline(self, **options):  # @UnusedVariable
+    def tbss_pipeline(self, **kwargs):  # @UnusedVariable
         pipeline = self.create_pipeline(
             name='tbss',
             inputs=[DatasetSpec('fa', nifti_gz_format)],
@@ -477,7 +477,7 @@ class DiffusionStudy(T2Study):
             default_options={'tbss_skel_thresh': 0.2},
             version=1,
             citations=[tbss_cite, fsl_cite],
-            options=options)
+            **kwargs)
         # Create TBSS workflow
         tbss = create_tbss_all(name='tbss')
         # Connect inputs
@@ -495,7 +495,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def extract_b0_pipeline(self, **options):  # @UnusedVariable
+    def extract_b0_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Extracts the b0 images from a DWI study and takes their mean
         """
@@ -509,7 +509,7 @@ class DiffusionStudy(T2Study):
             default_options={},
             version=1,
             citations=[mrtrix_cite],
-            options=options)
+            **kwargs)
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Extraction node
@@ -544,7 +544,7 @@ class DiffusionStudy(T2Study):
         # Check inputs/outputs are connected
         return pipeline
 
-    def track_gen_pipeline(self, **options):
+    def track_gen_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='extract_b0',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
@@ -761,7 +761,7 @@ class NODDIStudy(DiffusionStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def concatenate_pipeline(self, **options):  # @UnusedVariable
+    def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Concatenates two dMRI datasets (with different b-values) along the
         DW encoding (4th) axis
@@ -777,7 +777,7 @@ class NODDIStudy(DiffusionStudy):
             default_options={},
             version=1,
             citations=[mrtrix_cite],
-            options=options)
+            **kwargs)
         # Create concatenation node
         mrcat = pipeline.create_node(MRCat(), name='mrcat',
                                      requirements=[mrtrix3_req])
@@ -830,7 +830,7 @@ class NODDIStudy(DiffusionStudy):
             default_options={'noddi_model': 'WatsonSHStickTortIsoV_B0',
                              'single_slice': False},
             citations=[noddi_cite],
-            options=options)
+            **kwargs)
         # Create node to unzip the nifti files
         unzip_bias_correct = pipeline.create_node(
             MRConvert(), name="unzip_bias_correct",

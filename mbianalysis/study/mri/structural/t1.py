@@ -52,7 +52,7 @@ class T1Study(MRIStudy):
             default_options={},
             version=1,
             citations=copy(freesurfer_cites),
-            options=options)
+            **kwargs)
         # FS ReconAll node
         recon_all = pipeline.create_node(
             interface=ReconAll(), name='recon_all',
@@ -108,7 +108,7 @@ class CoregisteredT1Study(MultiStudy):
     t1_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', 'linear_registration_pipeline')
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -119,7 +119,7 @@ class CoregisteredT1Study(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='motion_mats')

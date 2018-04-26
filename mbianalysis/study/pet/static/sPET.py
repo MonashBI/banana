@@ -14,7 +14,7 @@ class StaticPETStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def suvr_pipeline(self, **options):
+    def suvr_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='SUVR',
@@ -25,7 +25,7 @@ class StaticPETStudy(PETStudy):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         suvr = pipeline.create_node(SUVRCalculation(), name='SUVR')
         pipeline.connect_input('registered_volume', suvr, 'volume')

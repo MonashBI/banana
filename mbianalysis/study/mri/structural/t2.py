@@ -61,7 +61,7 @@ class CoregisteredT2Study(MultiStudy):
     t2_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', 'linear_registration_pipeline')
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -72,7 +72,7 @@ class CoregisteredT2Study(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='motion_mats')

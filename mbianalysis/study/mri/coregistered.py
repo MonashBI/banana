@@ -30,7 +30,7 @@ class CoregisteredStudy(Study):
                 " 'spm'.".format(coreg_tool))
         return pipeline
 
-    def qform_transform_pipeline(self, **options):
+    def qform_transform_pipeline(self, **kwargs):
 
         outputs = [DatasetSpec('qformed', nifti_gz_format),
                    DatasetSpec('qform_mat', text_matrix_format)]
@@ -65,7 +65,7 @@ class CoregisteredStudy(Study):
                 'qsform': False},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
                                      requirements=[fsl5_req], wall_time=5)
         if reg_type == 'useqform':
@@ -90,7 +90,7 @@ class CoregisteredStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def _fsl_fnirt_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_fnirt_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -100,7 +100,7 @@ class CoregisteredStudy(Study):
         """
         raise NotImplementedError
 
-    def _spm_coreg_pipeline(self, **options):  # @UnusedVariable
+    def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Coregisters T2 image to T1 image using SPM's
         "Register" method.
@@ -116,7 +116,7 @@ class CoregisteredStudy(Study):
             default_options={},
             version=1,
             citations=[spm_cite],
-            options=options)
+            **kwargs)
         coreg = pipeline.create_node(Coregister(), name='coreg',
                                      requirements=[spm12_req], wall_time=30)
         coreg.inputs.jobtype = 'estwrite'
@@ -202,7 +202,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
                 'interpolate')
         return pipeline
 
-    def _spm_coreg_pipeline(self, **options):
+    def _spm_coreg_pipeline(self, **kwargs):
         raise NotImplementedError(
             "SPM pipeline doesn't have (or at least it isn't implemented in "
             "NiAnalysis) a registration pipeline")

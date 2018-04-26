@@ -11,7 +11,7 @@ class PETPCAMotionDetectionStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def sinogram_unlisting_pipeline(self, **options):
+    def sinogram_unlisting_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='prepare_sinogram',
@@ -26,7 +26,7 @@ class PETPCAMotionDetectionStudy(PETStudy):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         prepare_inputs = pipeline.create_node(PrepareUnlistingInputs(),
                                               name='prepare_inputs')

@@ -122,7 +122,7 @@ class MotionCorrectionMixin(MultiStudy):
 #         'ute', 't1_brain_mask_pipeline',
 #         override_default_options={'bet_method': 'optibet'})
 
-    def mean_displacement_pipeline(self, **options):
+    def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
         sub_study_names = []
         for sub_study_spec in self.sub_study_specs():
@@ -154,7 +154,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         num_motion_mats = len(sub_study_names)
         merge_motion_mats = pipeline.create_node(Merge(num_motion_mats),
@@ -202,7 +202,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def motion_framing_pipeline(self, **options):
+    def motion_framing_pipeline(self, **kwargs):
         return self.motion_framing_pipeline_factory(
             pet_data_dir=None, pet_start_time=None, pet_duration=None,
             **options)
@@ -229,7 +229,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={'th': 2.0, 'temporal_th': 30.0},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         framing = pipeline.create_node(MotionFraming(), name='motion_framing')
         framing.inputs.motion_threshold = pipeline.option('th')
@@ -254,7 +254,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def plot_mean_displacement_pipeline(self, **options):
+    def plot_mean_displacement_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='plot_mean_displacement',
@@ -266,7 +266,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={'framing': True},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         plot_md = pipeline.create_node(PlotMeanDisplacementRC(),
                                        name='plot_md')
@@ -282,7 +282,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def frame_mean_transformation_mats_pipeline(self, **options):
+    def frame_mean_transformation_mats_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='frame_mean_transformation_mats',
@@ -294,7 +294,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         average = pipeline.create_node(AffineMatAveraging(),
                                        name='mats_averaging')
@@ -307,7 +307,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def pet_correction_factors_pipeline(self, **options):
+    def pet_correction_factors_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='pet_correction_factors',
@@ -319,7 +319,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         corr_factors = pipeline.create_node(PetCorrectionFactor(),
                                             name='pet_corr_factors')
@@ -353,7 +353,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={'pct': pct, 'fixed_binning': fixed_binning},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         frame_align = pipeline.create_node(
             FrameAlign2Reference(), name='frame2ref_alignment',
@@ -375,7 +375,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def frame2ref_alignment_pipeline(self, **options):
+    def frame2ref_alignment_pipeline(self, **kwargs):
         return self.frame2ref_alignment_pipeline_factory(
             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
             'ute_qform_mat', umap='umap_nifti',
@@ -408,7 +408,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         merge_inputs = pipeline.create_node(Merge(len(inputs)),
                                             name='merge_inputs')
@@ -423,7 +423,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def gather_outputs_pipeline(self, **options):
+    def gather_outputs_pipeline(self, **kwargs):
         return self.gather_outputs_factory(
             'gather_md_outputs', pet_corr_fac=False, aligned_umaps=False,
             timestamps=False, align_mats=False)
@@ -456,7 +456,7 @@ class MotionCorrectionMixin(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         static_mc = pipeline.create_node(
             StaticMotionCorrection(), name='static_mc',
@@ -472,7 +472,7 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def static_motion_correction_pipeline(self, **options):
+    def static_motion_correction_pipeline(self, **kwargs):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None)
 
@@ -548,7 +548,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         data_specs.append(Dataset('pet_data_dir', directory_format))
         inputs['pet_data_dir'] = Dataset('pet_data_dir', directory_format)
 
-        def motion_framing_pipeline_altered(self, **options):
+        def motion_framing_pipeline_altered(self, **kwargs):
             return self.motion_framing_pipeline_factory(
                 pet_data_dir='pet_data_dir', **options)
 
@@ -568,7 +568,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         inputs['pet_start_time'] = Field(pet_time_info[0], str)
         inputs['pet_duration'] = Field(pet_time_info[1], str)
 
-        def motion_framing_pipeline_altered(self, **options):
+        def motion_framing_pipeline_altered(self, **kwargs):
             return self.motion_framing_pipeline_factory(
                 pet_start_time=pet_time_info[0], pet_duration=pet_time_info[1],
                 **options)
@@ -604,7 +604,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                     ' in each detected frame to the reference cannot be '
                     'generated')
 
-        def gather_md_outputs_pipeline_altered(self, **options):
+        def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(
                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
                 timestamps=True, align_mats=False)
@@ -623,14 +623,14 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         inputs.update({'ute_{}_ute'.format(i): Dataset(ute_scan, dicom_format)
                        for i, ute_scan in enumerate(utes)})
 
-        def frame2ref_alignment_pipeline_altered(self, **options):
+        def frame2ref_alignment_pipeline_altered(self, **kwargs):
             return self.frame2ref_alignment_pipeline_factory(
                 'frame2ref_alignment', 'average_mats',
                 'ute_{}_ute_reg_mat'.format(len(utes)-1),
                 'ute_{}_ute_qform_mat'.format(len(utes)-1), umap=None,
                 pct=False, fixed_binning=False, **options)
 
-        def gather_md_outputs_pipeline_altered(self, **options):
+        def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(
                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
                 timestamps=True, align_mats=True)
@@ -659,7 +659,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         inputs.update({'ute_{}_ute'.format(i): Dataset(ute_scan, dicom_format)
                        for i, ute_scan in enumerate(utes)})
 
-        def frame2ref_alignment_pipeline_altered(self, **options):
+        def frame2ref_alignment_pipeline_altered(self, **kwargs):
             return self.frame2ref_alignment_pipeline_factory(
                 'frame2ref_alignment', 'average_mats',
                 'ute_{}_ute_reg_mat'.format(len(utes)-1),
@@ -667,7 +667,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 umap='ute_{}_umap_nifti'.format(len(utes)-1),
                 pct=False, fixed_binning=False, **options)
 
-        def gather_md_outputs_pipeline_altered(self, **options):
+        def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(
                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
                 timestamps=True, align_mats=True,

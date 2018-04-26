@@ -27,7 +27,7 @@ atlas_path = os.path.abspath(
 
 class MRIStudy(Study):
 
-    def brain_mask_pipeline(self, **options):
+    def brain_mask_pipeline(self, **kwargs):
         bet_method = options.get('bet_method', 'fsl_bet')
         if bet_method == 'fsl_bet':
             pipeline = self._fsl_bet_brain_mask_pipeline(**options)
@@ -38,7 +38,7 @@ class MRIStudy(Study):
                                   .format(bet_method))
         return pipeline
 
-    def _fsl_bet_brain_mask_pipeline(self, **options):
+    def _fsl_bet_brain_mask_pipeline(self, **kwargs):
         """
         Generates a whole brain mask using FSL's BET command.
         """
@@ -53,7 +53,7 @@ class MRIStudy(Study):
                              'bet_method': 'fsl_bet'},
             version=1,
             citations=[fsl_cite, bet_cite, bet2_cite],
-            options=options)
+            **kwargs)
         # Create mask node
         bet = pipeline.create_node(interface=fsl.BET(), name="bet",
                                    requirements=[fsl509_req])
@@ -72,7 +72,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def _optiBET_brain_mask_pipeline(self, **options):
+    def _optiBET_brain_mask_pipeline(self, **kwargs):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
@@ -103,7 +103,7 @@ class MRIStudy(Study):
                 'bet_method': 'optibet'},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mni_reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
@@ -157,7 +157,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def coregister_to_atlas_pipeline(self, **options):
+    def coregister_to_atlas_pipeline(self, **kwargs):
         atlas_reg_tool = options.get('atlas_reg_tool', 'fnirt')
         if atlas_reg_tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**options)
@@ -166,7 +166,7 @@ class MRIStudy(Study):
                                   .format(atlas_reg_tool))
         return pipeline
 
-    def _fsl_fnirt_to_atlas_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_fnirt_to_atlas_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -191,7 +191,7 @@ class MRIStudy(Study):
                              'subsampling': [4, 4, 2, 2, 1, 1]},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         # Get the reference atlas from FSL directory
         ref_atlas = get_atlas_path(pipeline.option('atlas'), 'image',
                                    resolution=pipeline.option('resolution'))
@@ -257,7 +257,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def segmentation_pipeline(self, **options):
+    def segmentation_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='FAST_segmentation',
             inputs=[DatasetSpec('masked', nifti_gz_format)],
@@ -266,7 +266,7 @@ class MRIStudy(Study):
             default_options={'img_type': 2},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         fast = pipeline.create_node(fsl.FAST(), name='fast',
                                     requirements=[fsl509_req])
@@ -286,7 +286,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def basic_preproc_pipeline(self, **options):
+    def basic_preproc_pipeline(self, **kwargs):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -310,7 +310,7 @@ class MRIStudy(Study):
                              'resolution': None},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
                                     name='fslswapdim',
                                     requirements=[fsl509_req])
@@ -328,7 +328,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def header_info_extraction_pipeline(self, **options):
+    def header_info_extraction_pipeline(self, **kwargs):
         return self.header_info_extraction_pipeline_factory('primary',
                                                             **options)
 
@@ -354,7 +354,7 @@ class MRIStudy(Study):
             default_options={'multivol': True},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
         hd_extraction.inputs.multivol = pipeline.option('multivol')
@@ -389,7 +389,7 @@ class MRIStudy(Study):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         if converter == 'mrtrix':
             conv = pipeline.create_node(MRConvert(), name='converter',

@@ -18,7 +18,7 @@ class T1T2Study(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    def freesurfer_pipeline(self, **options):
+    def freesurfer_pipeline(self, **kwargs):
         pipeline = self.TranslatedPipeline(
             self, self.t1, T1Study.freesurfer_pipeline, options,
             default_options={'use_T2': True},
@@ -42,7 +42,7 @@ class T1T2Study(MultiStudy):
     t2_brain_mask_pipeline = MultiStudy.translate(
         't2', 'brain_mask_pipeline')
 
-    def t1_brain_mask_pipeline(self, **options):
+    def t1_brain_mask_pipeline(self, **kwargs):
         """
         Masks the T1 image using the coregistered T2 brain mask as the brain
         mask from T2 is usually more reliable (using BET in any case)
@@ -56,7 +56,7 @@ class T1T2Study(MultiStudy):
             version=1,
             description="Mask T1 with T2 brain mask",
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         # Create apply mask node
         apply_mask = pipeline.create_node(
             ApplyMask(), name='appy_mask', requirements=[fsl5_req])

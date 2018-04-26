@@ -46,7 +46,7 @@ class UTEStudy(MRIStudy):
         return super(UTEStudy, self).dcm2nii_conversion_pipeline_factory(
             'umap_dcm2nii', 'umap', **kwargs)
 
-    def registration_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def registration_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Register T1 and T2 to the
 
@@ -65,7 +65,7 @@ class UTEStudy(MRIStudy):
             default_options={},
             version=1,
             citations=(fsl_cite),
-            options=options)
+            **kwargs)
 
         echo1_conv = pipeline.create_node(MRConvert(), name='echo1_conv')
         echo1_conv.inputs.out_ext = '.nii.gz'
@@ -138,7 +138,7 @@ class UTEStudy(MRIStudy):
 
         return pipeline
 
-    def segmentation_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def segmentation_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
 
         pipeline = self.create_pipeline(
             name='ute1_segmentation',
@@ -149,7 +149,7 @@ class UTEStudy(MRIStudy):
             default_options={},
             version=1,
             citations=(spm_cite, matlab_cite),
-            options=options)
+            **kwargs)
 
         segmentation = pipeline.create_node(
             NewSegment(), name='ute1_registered_segmentation',
@@ -234,7 +234,7 @@ class UTEStudy(MRIStudy):
 
         return pipeline
 
-    def umaps_calculation_pipeline(self, **options):
+    def umaps_calculation_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='core_umaps_calculation',
@@ -248,7 +248,7 @@ class UTEStudy(MRIStudy):
             default_options={},
             version=1,
             citations=(matlab_cite),
-            options=options)
+            **kwargs)
 
         umaps_calculation = pipeline.create_node(
             CoreUmapCalc(), name='umaps_calculation_based_on_masks_and_r2star',
@@ -276,7 +276,7 @@ class UTEStudy(MRIStudy):
 
         return pipeline
 
-    def backwrap_to_ute_pipeline(self, **options):
+    def backwrap_to_ute_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='backwrap_to_ute',
@@ -292,7 +292,7 @@ class UTEStudy(MRIStudy):
             default_options={},
             version=1,
             citations=(matlab_cite),
-            options=options)
+            **kwargs)
 
         echo1_conv = pipeline.create_node(MRConvert(), name='echo1_conv')
         echo1_conv.inputs.out_ext = '.nii.gz'
@@ -439,7 +439,7 @@ class UTEStudy(MRIStudy):
 
         return pipeline
 
-#     def conversion_to_dicom_pipeline(self, **options):
+#     def conversion_to_dicom_pipeline(self, **kwargs):
 #
 #         pipeline = self.create_pipeline(
 #             name='conversion_to_dicom',
@@ -568,7 +568,7 @@ class CoregisteredUTEStudy(MultiStudy):
     ute_rigid_registration_pipeline = MultiStudy.translate(
         'coreg', 'linear_registration_pipeline')
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -579,7 +579,7 @@ class CoregisteredUTEStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='motion_mats')
@@ -589,7 +589,7 @@ class CoregisteredUTEStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def nifti2dcm_conversion_pipeline(self, **options):
+    def nifti2dcm_conversion_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='conversion_to_dicom',
@@ -602,7 +602,7 @@ class CoregisteredUTEStudy(MultiStudy):
             default_options={},
             version=1,
             citations=(),
-            options=options)
+            **kwargs)
 
         list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
         nii2dicom = pipeline.create_map_node(

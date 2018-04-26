@@ -18,7 +18,7 @@ class DynamicPETStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def Extract_vol_pipeline(self, **options):
+    def Extract_vol_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='Extract_volume',
             inputs=[DatasetSpec('pet_volumes', nifti_gz_format)],
@@ -27,7 +27,7 @@ class DynamicPETStudy(PETStudy):
             default_options={},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         fslroi = pipeline.create_node(
             ExtractROI(roi_file='vol.nii.gz', t_min=79, t_size=1),
@@ -37,7 +37,7 @@ class DynamicPETStudy(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def ApplyTransform_pipeline(self, **options):
+    def ApplyTransform_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='applytransform',
             inputs=[DatasetSpec('pet_volumes', nifti_gz_format),
@@ -49,7 +49,7 @@ class DynamicPETStudy(PETStudy):
                                           '/PET_template.nii.gz')},
             version=1,
             citations=[],
-            options=options)
+            **kwargs)
 
         merge_trans = pipeline.create_node(Merge(2), name='merge_transforms')
         pipeline.connect_input('warp_file', merge_trans, 'in1')
@@ -68,7 +68,7 @@ class DynamicPETStudy(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def Baseline_Removal_pipeline(self, **options):
+    def Baseline_Removal_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='Baseline_removal',
@@ -78,7 +78,7 @@ class DynamicPETStudy(PETStudy):
             default_options={'th': 0, 'binarize': False},
             citations=[],
             version=1,
-            options=options)
+            **kwargs)
 
         br = pipeline.create_node(GlobalTrendRemoval(),
                                   name='Baseline_removal')
@@ -87,7 +87,7 @@ class DynamicPETStudy(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def Dual_Regression_pipeline(self, **options):
+    def Dual_Regression_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='Dual_regression',
@@ -99,7 +99,7 @@ class DynamicPETStudy(PETStudy):
             default_options={'th': 0, 'binarize': False},
             citations=[],
             version=1,
-            options=options)
+            **kwargs)
 
         dr = pipeline.create_node(PETdr(), name='PET_dr')
         dr.inputs.threshold = pipeline.option('th')
@@ -118,7 +118,7 @@ class DynamicPETStudy(PETStudy):
 #             pipeline = self._anothertool_pipeline(**options)
 #         return pipeline
 
-    def dynamics_ica_pipeline(self, **options):
+    def dynamics_ica_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(
             input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
 

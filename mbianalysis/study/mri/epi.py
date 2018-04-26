@@ -28,7 +28,7 @@ class EPIStudy(MRIStudy):
                 header_info_extraction_pipeline_factory(
                     'primary', **kwargs))
 
-    def motion_alignment_pipeline(self, **options):
+    def motion_alignment_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='MCFLIRT_pipeline',
@@ -40,7 +40,7 @@ class EPIStudy(MRIStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         mcflirt = pipeline.create_node(fsl.MCFLIRT(), name='mcflirt',
                                        requirements=[fsl509_req])
         mcflirt.inputs.ref_vol = 0
@@ -105,7 +105,7 @@ class CoregisteredEPIStudy(MultiStudy):
     epi_brain_mask_pipeline = MultiStudy.translate(
         'epi', 'brain_mask_pipeline')
 
-    def epireg_pipeline(self, **options):
+    def epireg_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='EPIREG_pipeline',
@@ -120,7 +120,7 @@ class CoregisteredEPIStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         epireg = pipeline.create_node(fsl.epi.EpiReg(), name='epireg',
                                       requirements=[fsl509_req])
 
@@ -135,7 +135,7 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def motion_mat_pipeline(self, **options):
+    def motion_mat_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -147,7 +147,7 @@ class CoregisteredEPIStudy(MultiStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='motion_mats')

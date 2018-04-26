@@ -19,7 +19,7 @@ class FixedMAFMotionCorrection(PETStudy):
         return (super(FixedMAFMotionCorrection, self).
                 pet_fov_cropping_pipeline(**kwargs))
 
-    def fixed_maf_pipeline(self, **options):
+    def fixed_maf_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='fixed_maf',
@@ -33,7 +33,7 @@ class FixedMAFMotionCorrection(PETStudy):
                              'ysize': 130, 'zmin': 20, 'zsize': 100},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
         pipeline.connect_input('pet_data_cropped', list_dir, 'directory')
@@ -89,7 +89,7 @@ class StaticPETMotionCorrection(PETStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
 
         static_mc = pipeline.create_node(
             StaticMotionCorrection(), name='static_mc',
@@ -103,7 +103,7 @@ class StaticPETMotionCorrection(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def static_motion_correction_pipeline(self, **options):
+    def static_motion_correction_pipeline(self, **kwargs):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None)
 

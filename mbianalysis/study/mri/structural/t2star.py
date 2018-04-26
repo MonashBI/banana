@@ -13,7 +13,7 @@ class T2StarStudy(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def qsm_de_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def qsm_de_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Process dual echo data for QSM (TE=[7.38, 22.14])
 
@@ -31,7 +31,7 @@ class T2StarStudy(MRIStudy):
             default_options={},
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
-            options=options)
+            **kwargs)
 
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
@@ -66,7 +66,7 @@ class T2StarStudy(MRIStudy):
         pipeline.assert_connected()
         return pipeline
     
-    def bet_T1(self, **options):
+    def bet_T1(self, **kwargs):
         
         pipeline = self.create_pipeline(
             name='BET_T1',
@@ -77,7 +77,7 @@ class T2StarStudy(MRIStudy):
             default_options={},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
@@ -93,7 +93,7 @@ class T2StarStudy(MRIStudy):
         
         return pipeline
     
-    def cet_T1(self, **options):
+    def cet_T1(self, **kwargs):
         pipeline = self.create_pipeline(
             name='CET_T1',
             inputs=[DatasetSpec('betted_T1', nifti_gz_format),
@@ -105,7 +105,7 @@ class T2StarStudy(MRIStudy):
             default_options={'SUIT_mask': self._lookup_template_mask_path('SUIT')},
             version=1,
             citations=[fsl_cite],
-            options=options)
+            **kwargs)
         
         # Initially use MNI space to warp SUIT into T1 and threshold to mask
         merge_trans = pipeline.create_node(utils.Merge(2), name='merge_transforms')
@@ -113,7 +113,7 @@ class T2StarStudy(MRIStudy):
         pipeline.connect_input(self._lookup_l_tfm_to_name('MNI'), merge_trans, 'in1')
 
 
-    def qsm_pipeline(self, **options):  # @UnusedVariable @IgnorePep8
+    def qsm_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Process single echo data (TE=20ms)
 
@@ -131,7 +131,7 @@ class T2StarStudy(MRIStudy):
             default_options={},
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
-            options=options)
+            **kwargs)
 
         # Prepare and reformat SWI_COILS
         prepare = pipeline.create_node(interface=Prepare(), name='prepare',
