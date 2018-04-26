@@ -156,7 +156,7 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('epi', EPIStudy, {
             'epi': 'primary',
             'epi_nifti': 'primary_nifti',
@@ -183,7 +183,7 @@ class CoregisteredEPIStudy(MultiStudy):
             'epi_brain': 'to_register',
             'ref_brain': 'reference',
             'epi_qformed': 'qformed',
-            'epi_qform_mat': 'qform_mat'}))
+            'epi_qform_mat': 'qform_mat'})]
 
     add_data_specs = [
         DatasetSpec('epi', dicom_format),

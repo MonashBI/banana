@@ -353,7 +353,7 @@ class CoregisteredDWIStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('dwi_main', DiffusionStudy, {
             'dwi_main': 'dwi_main',
             'dwi_main_ref': 'dwi_ref',
@@ -379,7 +379,7 @@ class CoregisteredDWIStudy(MultiStudy):
             'dwi_main_qformed': 'qformed',
             'dwi_main_qform_mat': 'qform_mat',
             'dwi_main_reg': 'registered',
-            'dwi_main_reg_mat': 'matrix'}))
+            'dwi_main_reg_mat': 'matrix'})]
 
     add_data_specs = [
         DatasetSpec('dwi_main', dicom_format),
@@ -468,7 +468,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('dwi2ref', DiffusionReferenceStudy, {
             'dwi2ref_to_correct': 'to_be_corrected',
             'dwi2ref_ref': 'topup_ref',
@@ -495,7 +495,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
             'dwi2ref_qformed': 'qformed',
             'dwi2ref_qform_mat': 'qform_mat',
             'dwi2ref_reg': 'registered',
-            'dwi2ref_reg_mat': 'matrix'}))
+            'dwi2ref_reg_mat': 'matrix'})]
 
     add_data_specs = [
         DatasetSpec('dwi2ref_to_correct', dicom_format),
@@ -584,7 +584,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('dwi_opposite', DiffusionOppositeStudy, {
             'dwi_opposite_to_correct': 'to_be_corrected',
             'dwi_opposite_ref': 'topup_ref',
@@ -611,7 +611,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
             'dwi_opposite_qformed': 'qformed',
             'dwi_opposite_qform_mat': 'qform_mat',
             'dwi_opposite_reg': 'registered',
-            'dwi_opposite_reg_mat': 'matrix'}))
+            'dwi_opposite_reg_mat': 'matrix'})]
 
     add_data_specs = [
         DatasetSpec('dwi_opposite_to_correct', dicom_format),
@@ -712,7 +712,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('opposite_dwi2ref', DiffusionReferenceOppositeStudy, {
             'opposite_dwi2ref_to_correct': 'to_be_corrected',
             'opposite_dwi2ref_to_correct_nii': 'to_be_corrected_nifti',
@@ -739,7 +739,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
             'opposite_dwi2ref_qformed': 'qformed',
             'opposite_dwi2ref_qform_mat': 'qform_mat',
             'opposite_dwi2ref_reg': 'registered',
-            'opposite_dwi2ref_reg_mat': 'matrix'}))
+            'opposite_dwi2ref_reg_mat': 'matrix'})]
 
     add_data_specs = [
         DatasetSpec('opposite_dwi2ref_to_correct', dicom_format),

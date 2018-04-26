@@ -71,7 +71,7 @@ class T1T2Study(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('t1', T1Study, {
             't1': 'primary',
             't1_coreg_to_atlas': 'coreg_to_atlas',
@@ -93,7 +93,7 @@ class T1T2Study(MultiStudy):
             't1': 'reference',
             'manual_wmh_mask': 'to_register',
             't2_coreg_matrix': 'matrix',
-            'manual_wmh_mask_coreg': 'registered'}))
+            'manual_wmh_mask_coreg': 'registered'})]
 
     add_data_specs = [
         DatasetSpec('t1', nifti_gz_format,

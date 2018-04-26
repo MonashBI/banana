@@ -472,13 +472,13 @@ class MotionCorrectionMixin(MultiStudy):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None)
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('pet_mc', PETStudy, {
             'pet_data_dir': 'pet_data_dir',
             'pet_data_reconstructed': 'pet_recon_dir',
             'pet_data_prepared': 'pet_recon_dir_prepared',
             'pet_data_cropped': 'pet_data_cropped',
-            'static_pet_mc2crop': 'pet2crop'}))
+            'static_pet_mc2crop': 'pet2crop'})]
 
     add_data_specs = [
         DatasetSpec('pet_data_dir', directory_format),

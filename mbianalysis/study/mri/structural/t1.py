@@ -127,7 +127,7 @@ class CoregisteredT1Study(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('t1', T1Study, {
             't1': 'primary',
             't1_nifti': 'primary_nifti',
@@ -152,7 +152,7 @@ class CoregisteredT1Study(MultiStudy):
             't1_qformed': 'qformed',
             't1_qform_mat': 'qform_mat',
             't1_reg': 'registered',
-            't1_reg_mat': 'matrix'}))
+            't1_reg_mat': 'matrix'})]
 
     add_data_specs = [
         DatasetSpec('t1', dicom_format),

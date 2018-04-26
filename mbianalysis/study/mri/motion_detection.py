@@ -644,7 +644,7 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
             'ref_ped': 'ped',
@@ -954,7 +954,7 @@ class MotionDetectionStudy(MultiStudy):
             'asl_real_duration': 'epi_real_duration',
             'asl_tot_duration': 'epi_tot_duration',
             'asl_start_time': 'epi_start_time',
-            'asl_dcm_info': 'epi_dcm_info'}))
+            'asl_dcm_info': 'epi_dcm_info'})]
 
     add_data_specs = [
         DatasetSpec('reference', dicom_format),

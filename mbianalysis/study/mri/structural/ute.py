@@ -624,7 +624,7 @@ class CoregisteredUTEStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('ute', UTEStudy, {
             'ute': 'primary',
             'umap': 'umap',
@@ -651,7 +651,7 @@ class CoregisteredUTEStudy(MultiStudy):
             'ute_qformed': 'qformed',
             'ute_qform_mat': 'qform_mat',
             'ute_reg': 'registered',
-            'ute_reg_mat': 'matrix'}))
+            'ute_reg_mat': 'matrix'})]
 
     add_data_specs = [
         DatasetSpec('ute', dicom_format),

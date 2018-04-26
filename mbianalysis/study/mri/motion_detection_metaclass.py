@@ -305,7 +305,7 @@ class MotionDetectionStudy(MultiStudy):
 
     cls = T1Study
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('ref', MotionReferenceT1Study),
         SubStudySpec('fm', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
@@ -356,7 +356,7 @@ class MotionDetectionStudy(MultiStudy):
             'dwi_1_opposite', CoregisteredDiffusionReferenceOppositeStudy, {
                 'ref_preproc': 'ref_preproc',
                 'ref_masked': 'ref_brain',
-                'ref_brain_mask': 'ref_brain_mask'}))
+                'ref_brain_mask': 'ref_brain_mask'})]
 
     add_data_specs = [
         DatasetSpec('mean_displacement', text_format,

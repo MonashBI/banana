@@ -768,7 +768,7 @@ class MotionDetectionStudy(MultiStudy):
             'ute_qform_mat', umap='umap',
             pct=False, fixed_binning=False, **options)
 
-    _sub_study_specs = set_specs(
+    sub_study_specs = [
         SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
             'ref_ped': 'ped',
@@ -1124,7 +1124,7 @@ class MotionDetectionStudy(MultiStudy):
             'dwi_ref_preproc': 'ref_preproc',
             'dwi_ref_brain': 'ref_brain',
             'dwi_ref_brain_mask': 'ref_brain_mask',
-            'dwi_reference': 'reference'}))
+            'dwi_reference': 'reference'})]
 
     add_data_specs = [
         DatasetSpec('dwi_1_main', dicom_format),
