@@ -38,5 +38,5 @@ class StaticPETStudy(PETStudy):
     _data_specs = set_specs(
         DatasetSpec('pet_image', nifti_gz_format),
         DatasetSpec('base_mask', nifti_gz_format),
-        DatasetSpec('SUVR_image', nifti_gz_format, suvr_pipeline),
+        DatasetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline'),
         inherit_from=PETStudy.generated_data_specs())

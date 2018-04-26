@@ -35,9 +35,9 @@ class MotionReferenceT1Study(T1Study):
         return pipeline
 
     _data_specs = set_specs(
-        DatasetSpec('wm_seg', nifti_gz_format, segmentation_pipeline),
+        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
-                    header_info_extraction_pipeline),
+                    'header_info_extraction_pipeline'),
         FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
         FieldSpec('start_time', str,
                   pipeline=header_info_extraction_pipeline),
@@ -48,7 +48,7 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
         inherit_from=T1Study.data_specs())
 
 
@@ -361,29 +361,29 @@ class MotionDetectionStudy(MultiStudy):
 
     _data_specs = set_specs(
         DatasetSpec('mean_displacement', text_format,
-                    mean_displacement_pipeline),
+                    'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_rc', text_format,
-                    mean_displacement_pipeline),
+                    'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_consecutive', text_format,
-                    mean_displacement_pipeline),
-        DatasetSpec('mats4average', text_format, mean_displacement_pipeline),
-        DatasetSpec('start_times', text_format, mean_displacement_pipeline),
-        DatasetSpec('motion_par_rc', text_format, mean_displacement_pipeline),
-        DatasetSpec('offset_indexes', text_format, mean_displacement_pipeline),
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mats4average', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('start_times', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('motion_par_rc', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('offset_indexes', text_format, 'mean_displacement_pipeline'),
         DatasetSpec('frame_start_times', text_format,
-                    motion_framing_pipeline),
+                    'motion_framing_pipeline'),
         DatasetSpec('frame_vol_numbers', text_format,
-                    motion_framing_pipeline),
+                    'motion_framing_pipeline'),
         DatasetSpec('mean_displacement_plot', png_format,
-                    plot_mean_displacement_pipeline),
+                    'plot_mean_displacement_pipeline'),
         DatasetSpec('average_mats', directory_format,
-                    frame_mean_transformation_mats_pipeline),
+                    'frame_mean_transformation_mats_pipeline'),
         DatasetSpec('correction_factors', text_format,
-                    pet_correction_factors_pipeline),
+                    'pet_correction_factors_pipeline'),
         DatasetSpec('umaps_align2ref', directory_format,
-                    frame2ref_alignment_pipeline),
+                    'frame2ref_alignment_pipeline'),
         DatasetSpec('frame2reference_mats', directory_format,
-                    frame2ref_alignment_pipeline))
+                    'frame2ref_alignment_pipeline'))
 
 
 # def create_motion_detection_class(name, reference, ref_type, t1s=None,

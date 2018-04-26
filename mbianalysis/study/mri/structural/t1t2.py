@@ -117,9 +117,9 @@ class T1T2Study(MultiStudy):
                     t2_registration_pipeline,
                     description="Coregistration matrix for T2 to T1"),
         DatasetSpec('t1_coreg_to_atlas', nifti_gz_format,
-                    coregister_to_atlas_pipeline),
+                    'coregister_to_atlas_pipeline'),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
-                    coregister_to_atlas_pipeline),
+                    'coregister_to_atlas_pipeline'),
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     freesurfer_pipeline,
                     description="Output directory from Freesurfer recon_all"))

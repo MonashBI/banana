@@ -58,7 +58,7 @@ class FixedMAFMotionCorrection(PETStudy):
 
     _data_specs = set_specs(
         DatasetSpec('pet_dir', directory_format),
-        DatasetSpec('fixed_maf_pet', nifti_gz_format, fixed_maf_pipeline),
+        DatasetSpec('fixed_maf_pet', nifti_gz_format, 'fixed_maf_pipeline'),
         inherit_from=PETStudy.data_specs())
 
 
@@ -112,5 +112,5 @@ class StaticPETMotionCorrection(PETStudy):
         DatasetSpec('pet_dir', directory_format),
         DatasetSpec('motion_detection_output', directory_format),
         DatasetSpec('static_pet_mc', directory_format,
-                    static_motion_correction_pipeline),
+                    'static_motion_correction_pipeline'),
         inherit_from=PETStudy.data_specs())

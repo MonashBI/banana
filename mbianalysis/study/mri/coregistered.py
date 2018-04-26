@@ -153,11 +153,11 @@ class CoregisteredStudy(Study):
         DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('to_register', nifti_gz_format),
         DatasetSpec('registered', nifti_gz_format,
-                    linear_registration_pipeline),
+                    'linear_registration_pipeline'),
         DatasetSpec('matrix', text_matrix_format,
-                    linear_registration_pipeline),
-        DatasetSpec('qformed', nifti_gz_format, qform_transform_pipeline),
-        DatasetSpec('qform_mat', text_matrix_format, qform_transform_pipeline))
+                    'linear_registration_pipeline'),
+        DatasetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
+        DatasetSpec('qform_mat', text_matrix_format, 'qform_transform_pipeline'))
 
 
 class CoregisteredToMatrixStudy(CoregisteredStudy):

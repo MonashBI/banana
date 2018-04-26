@@ -57,4 +57,4 @@ class PETPCAMotionDetectionStudy(PETStudy):
         FieldSpec('temporal_length', float),
         FieldSpec('num_frames', int),
         DatasetSpec('ssrb_sinograms', directory_format,
-                    sinogram_unlisting_pipeline))
+                    'sinogram_unlisting_pipeline'))
