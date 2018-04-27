@@ -37,7 +37,6 @@ class EPIStudy(MRIStudy):
                      DatasetSpec('moco_mat', directory_format),
                      DatasetSpec('moco_par', par_format)],
             description=("Intra-epi volumes alignment."),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -70,6 +69,9 @@ class CoregisteredEPIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'reference_resolution': [1],
+                           'multivol': True}
+
     epi_basic_preproc_pipeline = MultiStudy.translate(
         'epi', 'basic_preproc_pipeline')
 
@@ -80,8 +82,7 @@ class CoregisteredEPIStudy(MultiStudy):
         'epi', 'brain_mask_pipeline')
 
     epi_dcm_info_pipeline = MultiStudy.translate(
-        'epi', 'header_info_extraction_pipeline',
-        override_default_options={'multivol': True})
+        'epi', 'header_info_extraction_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
         'reference', 'brain_mask_pipeline')
@@ -93,8 +94,7 @@ class CoregisteredEPIStudy(MultiStudy):
         'reference', 'segmentation_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
+        'reference', 'basic_preproc_pipeline')
 
     epi_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
@@ -117,7 +117,6 @@ class CoregisteredEPIStudy(MultiStudy):
                      DatasetSpec('epi_epireg_mat', text_matrix_format)],
             description=("Intra-subjects epi registration improved "
                          "using white matter boundaries."),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -144,7 +143,6 @@ class CoregisteredEPIStudy(MultiStudy):
                     DatasetSpec('epi_moco_mat', directory_format)],
             outputs=[DatasetSpec('motion_mats', directory_format)],
             description=("EPI Motion matrices calculation"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)

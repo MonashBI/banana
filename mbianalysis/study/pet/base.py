@@ -122,7 +122,6 @@ class PETStudy(Study):
                      FieldSpec('pet_start_time', dtype=str),
                      FieldSpec('pet_duration', dtype=int)],
             description=("Extract PET time info from list-mode header."),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)

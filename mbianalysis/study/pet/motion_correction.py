@@ -86,7 +86,6 @@ class StaticPETMotionCorrection(PETStudy):
                          "pipeline will generate a motion corrected static PET"
                          "image using information extracted from the MR-based "
                          "motion detection pipeline"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)

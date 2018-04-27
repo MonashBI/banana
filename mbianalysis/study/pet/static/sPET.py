@@ -22,7 +22,6 @@ class StaticPETStudy(PETStudy):
                     DatasetSpec('base_mask', nifti_gz_format)],
             outputs=[DatasetSpec('SUVR_image', nifti_gz_format)],
             description=('Calculate SUVR image'),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)

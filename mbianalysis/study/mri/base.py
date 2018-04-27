@@ -1,6 +1,6 @@
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import Study, set_specs
+from nianalysis.study.base import Study, StudyMetaClass
 from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
@@ -8,7 +8,8 @@ from nianalysis.requirements import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
-from nianalysis.exceptions import NiAnalysisError
+from nianalysis.exceptions import (
+    NiAnalysisError, NiAnalysisUsageError)
 from mbianalysis.interfaces.mrtrix.transform import MRResize
 from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
@@ -18,21 +19,77 @@ import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.converters import Dcm2niix
-import subprocess as sp
 
 
 atlas_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../../atlases'))
+    os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))
 
 
 class MRIStudy(Study):
 
+    __metaclass__ = StudyMetaClass
+
+    add_default_options = {
+        'bet_robust': True,
+        'bet_f_threshold': 0.5,
+        'bet_reduce_bias': False,
+        'bet_g_threshold': 0.0,
+        'bet_method': 'fsl_bet',
+        'MNI_template': os.path.join(atlas_path,
+                                     'MNI152_T1_2mm.nii.gz'),
+        'MNI_template_mask': os.path.join(
+            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz'),
+        'optibet_gen_report': False,
+        'fnirt_atlas_reg_tool': 'fnirt',
+        'fnirt_atlas': 'MNI152',
+        'fnirt_resolution': '2mm',
+        'fnirt_intensity_model': 'global_non_linear_with_bias',
+        'fnirt_subsampling': [4, 4, 2, 2, 1, 1],
+        'seg_img_type': 2,
+        'preproc_new_dims': ('RL', 'AP', 'IS'),
+        'preproc_resolution': None,
+        'info_extract_multivol': True}
+
+    add_data_specs = [
+        DatasetSpec('primary', dicom_format),
+        DatasetSpec('primary_nifti', nifti_gz_format,
+                    'dcm2nii_conversion_pipeline'),
+        # DatasetSpec('dicom_dwi', dicom_format),
+        # DatasetSpec('dicom_dwi_1', dicom_format),
+        DatasetSpec('preproc', nifti_gz_format,
+                    'basic_preproc_pipeline'),
+        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain_mask', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('coreg_to_atlas', nifti_gz_format,
+                    'coregister_to_atlas_pipeline'),
+        DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
+                    'coregister_to_atlas_pipeline'),
+        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
+        # DatasetSpec('dicom_file', dicom_format),
+        FieldSpec('tr', dtype=float,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('start_time', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('real_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('tot_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str,
+                  pipeline=header_info_extraction_pipeline),
+        DatasetSpec(
+            'dcm_info',
+            text_format,
+            'header_info_extraction_pipeline'),
+        DatasetSpec('motion_mats', directory_format,
+                    'header_info_extraction_pipeline')]
+
     def brain_mask_pipeline(self, **kwargs):
         bet_method = options.get('bet_method', 'fsl_bet')
         if bet_method == 'fsl_bet':
-            pipeline = self._fsl_bet_brain_mask_pipeline(**options)
+            pipeline = self._fsl_bet_brain_mask_pipeline(**kwargs)
         elif bet_method == 'optibet':
-            pipeline = self._optiBET_brain_mask_pipeline(**options)
+            pipeline = self._optiBET_brain_mask_pipeline(**kwargs)
         else:
             raise NiAnalysisError("Unrecognised brain extraction tool '{}'"
                                   .format(bet_method))
@@ -48,9 +105,6 @@ class MRIStudy(Study):
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             description="Generate brain mask from mr_scan",
-            default_options={'robust': True, 'f_threshold': 0.5,
-                             'reduce_bias': False, 'g_threshold': 0.0,
-                             'bet_method': 'fsl_bet'},
             version=1,
             citations=[fsl_cite, bet_cite, bet2_cite],
             **kwargs)
@@ -59,12 +113,13 @@ class MRIStudy(Study):
                                    requirements=[fsl509_req])
         bet.inputs.mask = True
         bet.inputs.output_type = 'NIFTI_GZ'
-        if pipeline.option('robust'):
+        if pipeline.option('bet_robust'):
             bet.inputs.robust = True
-        if pipeline.option('reduce_bias'):
+        if pipeline.option('bet_reduce_bias'):
             bet.inputs.reduce_bias = True
-        bet.inputs.frac = pipeline.option('f_threshold')
-        bet.inputs.vertical_gradient = pipeline.option('g_threshold')
+        bet.inputs.frac = pipeline.option('bet_f_threshold')
+        bet.inputs.vertical_gradient = pipeline.option(
+            'bet_g_threshold')
         # Connect inputs/outputs
         pipeline.connect_input('preproc', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
@@ -83,24 +138,17 @@ class MRIStudy(Study):
 #             os.environ['ANTSPATH'] = antspath
 # #             print antspath
 #         except ImportError:
-#             print "NO ANTs module found. Please ensure to have it in you PATH."
+# print "NO ANTs module found. Please ensure to have it in you PATH."
 
-        gen_report_default = False
         outputs = [DatasetSpec('masked', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if options.get('gen_report', gen_report_default):
+        if options.get('optibet_gen_report', gen_report_default):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name='brain_mask',
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=outputs,
             description=("Modified implementation of optiBET.sh"),
-            default_options={
-                'MNI_template': atlas_path+'/MNI152_T1_2mm.nii.gz',
-                'MNI_template_mask': (atlas_path +
-                                      '/MNI152_T1_2mm_brain_mask.nii.gz'),
-                'gen_report': gen_report_default,
-                'bet_method': 'optibet'},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -142,7 +190,7 @@ class MRIStudy(Study):
             name='mask', wall_time=5, requirements=[fsl5_req])
         pipeline.connect_input('preproc', maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
-        if pipeline.option('gen_report'):
+        if pipeline.option('optibet_gen_report'):
             slices = pipeline.create_node(
                 FSLSlices(), name='slices', wall_time=5,
                 requirements=[fsl5_req])
@@ -160,13 +208,14 @@ class MRIStudy(Study):
     def coregister_to_atlas_pipeline(self, **kwargs):
         atlas_reg_tool = options.get('atlas_reg_tool', 'fnirt')
         if atlas_reg_tool == 'fnirt':
-            pipeline = self._fsl_fnirt_to_atlas_pipeline(**options)
+            pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
         else:
             raise NiAnalysisError("Unrecognised coregistration tool '{}'"
                                   .format(atlas_reg_tool))
         return pipeline
 
-    def _fsl_fnirt_to_atlas_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
+    # @UnusedVariable @IgnorePep8
+    def _fsl_fnirt_to_atlas_pipeline(self, **kwargs):
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -184,20 +233,15 @@ class MRIStudy(Study):
                      DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             description=("Nonlinearly registers a MR scan to a standard space,"
                          "e.g. MNI-space"),
-            default_options={'atlas_reg_tool': 'fnirt',
-                             'atlas': 'MNI152',
-                             'resolution': '2mm',
-                             'intensity_model': 'global_non_linear_with_bias',
-                             'subsampling': [4, 4, 2, 2, 1, 1]},
             version=1,
             citations=[fsl_cite],
             **kwargs)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(pipeline.option('atlas'), 'image',
+        ref_atlas = get_atlas_path(pipeline.option('fnirt_atlas'), 'image',
                                    resolution=pipeline.option('resolution'))
-        ref_mask = get_atlas_path(pipeline.option('atlas'), 'mask_dilated',
+        ref_mask = get_atlas_path(pipeline.option('fnirt_atlas'), 'mask_dilated',
                                   resolution=pipeline.option('resolution'))
-        ref_masked = get_atlas_path(pipeline.option('atlas'), 'masked',
+        ref_masked = get_atlas_path(pipeline.option('fnirt_atlas'), 'masked',
                                     resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
         reorient = pipeline.create_node(Reorient2Std(), name='reorient',
@@ -223,11 +267,11 @@ class MRIStudy(Study):
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
         fnirt.inputs.output_type = 'NIFTI_GZ'
-        intensity_model = pipeline.option('intensity_model')
+        intensity_model = pipeline.option('fnirt_intensity_model')
         if intensity_model is None:
             intensity_model = 'none'
         fnirt.inputs.intensity_mapping_model = intensity_model
-        fnirt.inputs.subsampling_scheme = pipeline.option('subsampling')
+        fnirt.inputs.subsampling_scheme = pipeline.option('fnirt_subsampling')
         fnirt.inputs.fieldcoeff_file = True
         fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
@@ -236,7 +280,8 @@ class MRIStudy(Study):
         fnirt.inputs.max_nonlin_iter = [5, 5, 5, 5, 5, 10]
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
-        apply_mask = [int(s == 1) for s in pipeline.option('subsampling')]
+        apply_mask = [int(s == 1)
+                      for s in pipeline.option('fnirt_subsampling')]
         fnirt.inputs.apply_inmask = apply_mask
         fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
@@ -263,14 +308,13 @@ class MRIStudy(Study):
             inputs=[DatasetSpec('masked', nifti_gz_format)],
             outputs=[DatasetSpec('wm_seg', nifti_gz_format)],
             description="White matter segmentation of the reference image",
-            default_options={'img_type': 2},
             version=1,
             citations=[fsl_cite],
             **kwargs)
 
         fast = pipeline.create_node(fsl.FAST(), name='fast',
                                     requirements=[fsl509_req])
-        fast.inputs.img_type = pipeline.option('img_type')
+        fast.inputs.img_type = pipeline.option('seg_img_type')
         fast.inputs.segments = True
         fast.inputs.out_basename = 'Reference_segmentation'
         pipeline.connect_input('masked', fast, 'in_files')
@@ -278,10 +322,14 @@ class MRIStudy(Study):
         split.inputs.splits = [1, 1, 1]
         split.inputs.squeeze = True
         pipeline.connect(fast, 'tissue_class_files', split, 'inlist')
-        if pipeline.option('img_type') == 1:
+        if pipeline.option('seg_img_type') == 1:
             pipeline.connect_output('wm_seg', split, 'out3')
-        elif pipeline.option('img_type') == 2:
+        elif pipeline.option('seg_img_type') == 2:
             pipeline.connect_output('wm_seg', split, 'out2')
+        else:
+            raise NiAnalysisUsageError(
+                "'seg_img_type' option can either be 1 or 2 (not {})"
+                .format(pipeline.option('seg_img_type')))
 
         pipeline.assert_connected()
         return pipeline
@@ -306,20 +354,18 @@ class MRIStudy(Study):
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             description=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
-            default_options={'new_dims': ('RL', 'AP', 'IS'),
-                             'resolution': None},
             version=1,
             citations=[fsl_cite],
             **kwargs)
         swap = pipeline.create_node(fsl.utils.SwapDimensions(),
                                     name='fslswapdim',
                                     requirements=[fsl509_req])
-        swap.inputs.new_dims = pipeline.option('new_dims')
+        swap.inputs.new_dims = pipeline.option('preproc_new_dims')
         pipeline.connect_input('primary_nifti', swap, 'in_file')
-        if pipeline.option('resolution') is not None:
+        if pipeline.option('preproc_resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample",
                                             requirements=[mrtrix3_req])
-            resample.inputs.voxel = pipeline.option('resolution')
+            resample.inputs.voxel = pipeline.option('preproc_resolution')
             pipeline.connect(swap, 'out_file', resample, 'in_file')
             pipeline.connect_output('preproc', resample, 'out_file')
         else:
@@ -330,10 +376,10 @@ class MRIStudy(Study):
 
     def header_info_extraction_pipeline(self, **kwargs):
         return self.header_info_extraction_pipeline_factory('primary',
-                                                            **options)
+                                                            **kwargs)
 
     def header_info_extraction_pipeline_factory(self, dcm_in_name, ref=False,
-                                                **options):
+                                                **kwargs):
         output_files = [FieldSpec('tr', dtype=float),
                         FieldSpec('start_time', dtype=str),
                         FieldSpec('tot_duration', dtype=str),
@@ -351,13 +397,13 @@ class MRIStudy(Study):
             outputs=output_files,
             description=("Pipeline to extract the most important scan "
                          "information from the image header"),
-            default_options={'multivol': True},
             version=1,
             citations=[],
             **kwargs)
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
-        hd_extraction.inputs.multivol = pipeline.option('multivol')
+        hd_extraction.inputs.multivol = pipeline.option(
+            'info_extract_multivol')
         hd_extraction.inputs.reference = ref
         pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
         pipeline.connect_output('tr', hd_extraction, 'tr')
@@ -377,16 +423,17 @@ class MRIStudy(Study):
 
     def dcm2nii_conversion_pipeline(self, **kwargs):
         return self.dcm2nii_conversion_pipeline_factory(
-                    'dcm2nii_conversion', 'primary', **kwargs)
+            'dcm2nii_conversion', 'primary', **kwargs)
 
     def dcm2nii_conversion_pipeline_factory(self, name, dcm_in_name,
-                                            converter='mrtrix', **options):
+                                            converter='mrtrix',
+                                            **kwargs):
         pipeline = self.create_pipeline(
             name=name,
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
-            outputs=[DatasetSpec(dcm_in_name+'_nifti', nifti_gz_format)],
+            outputs=[DatasetSpec(dcm_in_name + '_nifti',
+                                 nifti_gz_format)],
             description=("DICOM to NIFTI conversion."),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)
@@ -397,43 +444,14 @@ class MRIStudy(Study):
             conv.inputs.out_ext = '.nii.gz'
             pipeline.connect_input(dcm_in_name, conv, 'in_file')
             pipeline.connect_output(
-                dcm_in_name+'_nifti', conv, 'out_file')
+                dcm_in_name + '_nifti', conv, 'out_file')
         elif converter == 'dcm2niix':
             conv = pipeline.create_node(Dcm2niix(), name='converter',
                                         requirements=[dcm2niix1_req])
             conv.inputs.compression = 'y'
             pipeline.connect_input(dcm_in_name, conv, 'input_dir')
             pipeline.connect_output(
-                dcm_in_name+'_nifti', conv, 'converted')
+                dcm_in_name + '_nifti', conv, 'converted')
 
         pipeline.assert_connected()
         return pipeline
-
-    add_data_specs = [
-        DatasetSpec('primary', dicom_format),
-        DatasetSpec('primary_nifti', nifti_gz_format,
-                    'dcm2nii_conversion_pipeline'),
-#         DatasetSpec('dicom_dwi', dicom_format),
-#         DatasetSpec('dicom_dwi_1', dicom_format),
-        DatasetSpec('preproc', nifti_gz_format,
-                    'basic_preproc_pipeline'),
-        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline'),
-        DatasetSpec('brain_mask', nifti_gz_format, 'brain_mask_pipeline'),
-        DatasetSpec('coreg_to_atlas', nifti_gz_format,
-                    'coregister_to_atlas_pipeline'),
-        DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
-                    'coregister_to_atlas_pipeline'),
-        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
-#         DatasetSpec('dicom_file', dicom_format),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('motion_mats', directory_format, 'header_info_extraction_pipeline')]

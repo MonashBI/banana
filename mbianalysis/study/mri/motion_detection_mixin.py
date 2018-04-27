@@ -155,7 +155,6 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('mats4average', text_format)],
             description=("Calculate the mean displacement between each motion"
                          " matrix and a reference."),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -295,7 +294,6 @@ class MotionDetectionMixin(MultiStudy):
             outputs=[DatasetSpec('average_mats', directory_format)],
             description=("Average all the transformation mats within each "
                          "detected frame."),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -320,7 +318,6 @@ class MotionDetectionMixin(MultiStudy):
             description=("Pipeline to calculate the correction factors to "
                          "account for frame duration when averaging the PET "
                          "frames to create the static PET image"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -435,7 +432,6 @@ class MotionDetectionMixin(MultiStudy):
             outputs=[DatasetSpec('motion_detection_output', directory_format)],
             description=("Pipeline to gather together all the outputs from "
                          "the motion detection pipeline."),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)

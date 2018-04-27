@@ -559,7 +559,6 @@ class MotionDetectionStudy(MultiStudy):
                      DatasetSpec('offset_indexes', text_format)],
             description=("Calculate the mean displacement between each motion"
                          " matrix and a reference."),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)

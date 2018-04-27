@@ -13,6 +13,10 @@ class T2StarStudy(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_default_options = {
+#         'SUIT_mask': lookup_template_mask_path('SUIT')
+        }
+
     def qsm_de_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Process dual echo data for QSM (TE=[7.38, 22.14])
@@ -28,7 +32,6 @@ class T2StarStudy(MRIStudy):
                      DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
             description="Resolve QSM from t2star coils",
-            default_options={},
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             **kwargs)
@@ -65,53 +68,59 @@ class T2StarStudy(MRIStudy):
 
         pipeline.assert_connected()
         return pipeline
-    
+
     def bet_T1(self, **kwargs):
-        
+
         pipeline = self.create_pipeline(
             name='BET_T1',
             inputs=[DatasetSpec('t1', nifti_gz_format)],
             outputs=[DatasetSpec('betted_T1', nifti_gz_format),
                      DatasetSpec('betted_T1_mask', nifti_gz_format)],
             description=("python implementation of BET"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
-        
+
         bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
                                     name='n4_bias_correction', requirements=[ants19_req],
                                     wall_time=60, memory=12000)
         pipeline.connect_input('t1', bias, 'input_image')
-        
+
         bet = pipeline.create_node(
             fsl.BET(frac=0.15, reduce_bias=True), name='bet', requirements=[fsl5_req], memory=8000, wall_time=45)
-            
-        pipeline.connect(bias,'output_image', bet, 'in_file')
+
+        pipeline.connect(bias, 'output_image', bet, 'in_file')
         pipeline.connect_output('betted_T1', bet, 'out_file')
         pipeline.connect_output('betted_T1_mask', bet, 'mask_file')
-        
+
         return pipeline
-    
+
     def cet_T1(self, **kwargs):
         pipeline = self.create_pipeline(
             name='CET_T1',
             inputs=[DatasetSpec('betted_T1', nifti_gz_format),
-                    DatasetSpec(self._lookup_l_tfm_to_name('MNI'), text_matrix_format),
-                    DatasetSpec(self._lookup_nl_tfm_inv_name('MNI'), nifti_gz_format)],
+                    DatasetSpec(
+                self._lookup_l_tfm_to_name('MNI'),
+                text_matrix_format),
+                DatasetSpec(self._lookup_nl_tfm_inv_name('MNI'), nifti_gz_format)],
             outputs=[DatasetSpec('cetted_T1_mask', nifti_gz_format),
                      DatasetSpec('cetted_T1', nifti_gz_format)],
             description=("Construct cerebellum mask using SUIT template"),
-            default_options={'SUIT_mask': self._lookup_template_mask_path('SUIT')},
             version=1,
             citations=[fsl_cite],
             **kwargs)
-        
-        # Initially use MNI space to warp SUIT into T1 and threshold to mask
-        merge_trans = pipeline.create_node(utils.Merge(2), name='merge_transforms')
-        pipeline.connect_input(self._lookup_nl_tfm_inv_name('MNI'), merge_trans, 'in2')
-        pipeline.connect_input(self._lookup_l_tfm_to_name('MNI'), merge_trans, 'in1')
 
+        # Initially use MNI space to warp SUIT into T1 and threshold to mask
+        merge_trans = pipeline.create_node(
+            utils.Merge(2), name='merge_transforms')
+        pipeline.connect_input(
+            self._lookup_nl_tfm_inv_name('MNI'),
+            merge_trans,
+            'in2')
+        pipeline.connect_input(
+            self._lookup_l_tfm_to_name('MNI'),
+            merge_trans,
+            'in1')
 
     def qsm_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -128,7 +137,6 @@ class T2StarStudy(MRIStudy):
                      DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
             description="Resolve QSM from t2star coils",
-            default_options={},
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             **kwargs)

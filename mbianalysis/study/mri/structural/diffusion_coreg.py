@@ -47,7 +47,6 @@ class DiffusionStudy(MRIStudy):
             outputs=[DatasetSpec('preproc', nifti_gz_format),
                      DatasetSpec('eddy_par', eddy_par_format)],
             description=("Diffusion pre-processing pipeline"),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)
@@ -116,7 +115,6 @@ class DiffusionStudy(MRIStudy):
                     FieldSpec(pe_angle, dtype=str)],
             outputs=[DatasetSpec(output_name, nifti_gz_format)],
             description=("Topup distortion correction pipeline."),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)
@@ -290,6 +288,8 @@ class CoregisteredDWIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'reference_resolution': [1]}
+
     dwi_main_dwipreproc_pipeline = MultiStudy.translate(
         'dwi_main', 'dwipreproc_pipeline')
 
@@ -303,8 +303,7 @@ class CoregisteredDWIStudy(MultiStudy):
         'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
+        'reference', 'basic_preproc_pipeline')
 
     dwi_main_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
@@ -322,7 +321,6 @@ class CoregisteredDWIStudy(MultiStudy):
                 DatasetSpec('affine_mats', directory_format)],
             description=("Generation of the affine matrices for the main dwi "
                          "sequence starting from eddy motion parameters"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -347,7 +345,6 @@ class CoregisteredDWIStudy(MultiStudy):
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
             description=("motion matrices calculation"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -426,6 +423,8 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'reference_resolution': [1]}
+
     dwi2ref_topup_pipeline = MultiStudy.translate(
         'dwi2ref', 'topup_pipeline')
 
@@ -445,8 +444,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
         'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
+        'reference', 'basic_preproc_pipeline')
 
     dwi2ref_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
@@ -463,7 +461,6 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
             description=("DWI to reference Motion matrices calculation"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -541,6 +538,8 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'reference_resolution': [1]}
+
     dwi_opposite_topup_pipeline = MultiStudy.translate(
         'dwi_opposite', 'topup_pipeline')
 
@@ -561,8 +560,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
         'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
+        'reference', 'basic_preproc_pipeline')
 
     dwi_opposite_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
@@ -579,7 +577,6 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
             description=("DWI opposite Motion matrices calculation"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -663,6 +660,8 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'reference_resolution': [1]}
+
     opposite_dwi2ref_topup_pipeline = MultiStudy.translate(
         'opposite_dwi2ref', 'topup_pipeline')
 
@@ -686,8 +685,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
         'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
+        'reference', 'basic_preproc_pipeline')
 
     opposite_dwi2ref_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
@@ -707,7 +705,6 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
             description=("DWI to ref opposite Motion matrices calculation"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)

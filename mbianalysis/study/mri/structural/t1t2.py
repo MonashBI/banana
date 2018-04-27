@@ -20,12 +20,13 @@ class T1T2Study(MultiStudy):
 
     def freesurfer_pipeline(self, **kwargs):
         pipeline = self.TranslatedPipeline(
-            self, self.t1, T1Study.freesurfer_pipeline, options,
-            default_options={'use_T2': True},
-            add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)])
+            self, self.t1, T1Study.freesurfer_pipeline,
+            add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)],
+            **kwargs)
         recon_all = pipeline.node('recon_all')
         # Connect T2-weighted input
         pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
+        recon_all.inputs.use_T2 = True
         pipeline.assert_connected()
         return pipeline
 
@@ -52,7 +53,6 @@ class T1T2Study(MultiStudy):
             inputs=[DatasetSpec('t1', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('t1_masked', nifti_gz_format)],
-            default_options={},
             version=1,
             description="Mask T1 with T2 brain mask",
             citations=[fsl_cite],

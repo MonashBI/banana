@@ -62,7 +62,6 @@ class UTEStudy(MRIStudy):
                      DatasetSpec('template_to_ute_mat', text_matrix_format),
                      DatasetSpec('ute_to_template_mat', text_matrix_format)],
             description="Register ute images to the template",
-            default_options={},
             version=1,
             citations=(fsl_cite),
             **kwargs)
@@ -146,7 +145,6 @@ class UTEStudy(MRIStudy):
             outputs=[DatasetSpec('air_mask', nifti_gz_format),
                      DatasetSpec('bones_mask', nifti_gz_format)],
             description="Segmentation of the first echo UTE image",
-            default_options={},
             version=1,
             citations=(spm_cite, matlab_cite),
             **kwargs)
@@ -245,7 +243,6 @@ class UTEStudy(MRIStudy):
             outputs=[DatasetSpec('sute_cont_template', nifti_gz_format),
                      DatasetSpec('sute_fix_template', nifti_gz_format)],
             description="Umaps calculation in the template space",
-            default_options={},
             version=1,
             citations=(matlab_cite),
             **kwargs)
@@ -289,7 +286,6 @@ class UTEStudy(MRIStudy):
             outputs=[DatasetSpec('sute_cont_ute', nifti_gz_format),
                      DatasetSpec('sute_fix_ute', nifti_gz_format)],
             description="Moving umaps back to the UTE space",
-            default_options={},
             version=1,
             citations=(matlab_cite),
             **kwargs)
@@ -451,7 +447,6 @@ class UTEStudy(MRIStudy):
 #             description=(
 #                 "Conversing resulted two umaps from nifti to dicom format - "
 #                 "parallel implementation"),
-#             default_options={},
 #             version=1,
 #             citations=(),
 #             options=options)
@@ -539,6 +534,9 @@ class CoregisteredUTEStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'t1_multivol': False,
+                           'reference_resolution': [1]}
+
     ute_basic_preproc_pipeline = MultiStudy.translate(
         'ute', 'basic_preproc_pipeline')
 
@@ -549,15 +547,13 @@ class CoregisteredUTEStudy(MultiStudy):
         'ute', 'umap_dcm2nii_conversion_pipeline')
 
     ute_dcm_info_pipeline = MultiStudy.translate(
-        'ute', 'header_info_extraction_pipeline',
-        override_default_options={'multivol': False})
+        'ute', 'header_info_extraction_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
         'reference', 'brain_mask_pipeline')
 
     ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
+        'reference', 'basic_preproc_pipeline')
 
     ute_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
@@ -576,7 +572,6 @@ class CoregisteredUTEStudy(MultiStudy):
                     DatasetSpec('ute_qform_mat', text_matrix_format)],
             outputs=[DatasetSpec('motion_mats', directory_format)],
             description=("utew Motion matrices calculation"),
-            default_options={},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -599,7 +594,6 @@ class CoregisteredUTEStudy(MultiStudy):
             description=(
                 "Conversing aligned umap from nifti to dicom format - "
                 "parallel implementation"),
-            default_options={},
             version=1,
             citations=(),
             **kwargs)

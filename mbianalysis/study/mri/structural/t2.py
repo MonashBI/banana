@@ -32,55 +32,8 @@ class CoregisteredT2Study(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    t2_basic_preproc_pipeline = MultiStudy.translate(
-        't2', 'basic_preproc_pipeline')
-
-    t2_dcm2nii_pipeline = MultiStudy.translate(
-        't2', 'dcm2nii_conversion_pipeline')
-
-    t2_dcm_info_pipeline = MultiStudy.translate(
-        't2', 'header_info_extraction_pipeline',
-        override_default_options={'multivol': False})
-
-    t2_bet_pipeline = MultiStudy.translate(
-        't2', 'brain_mask_pipeline')
-
-    ref_bet_pipeline = MultiStudy.translate(
-        'reference', 'brain_mask_pipeline')
-
-    ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline',
-        override_default_options={'resolution': [1]})
-
-    t2_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', 'qform_transform_pipeline')
-
-    t2_brain_mask_pipeline = MultiStudy.translate(
-        't2', 'brain_mask_pipeline')
-
-    t2_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', 'linear_registration_pipeline')
-
-    def motion_mat_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='motion_mat_calculation',
-            inputs=[DatasetSpec('t2_reg_mat', text_matrix_format),
-                    DatasetSpec('t2_qform_mat', text_matrix_format)],
-            outputs=[DatasetSpec('motion_mats', directory_format)],
-            description=("T2w Motion matrices calculation"),
-            default_options={},
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        mm = pipeline.create_node(
-            MotionMatCalculation(), name='motion_mats')
-        pipeline.connect_input('t2_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('t2_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
-        return pipeline
+    add_default_options = {'resolution': [1],
+                           'multivol': False}
 
     sub_study_specs = [
         SubStudySpec('t2', T2Study, {
@@ -113,9 +66,12 @@ class CoregisteredT2Study(MultiStudy):
         DatasetSpec('t2', dicom_format),
         DatasetSpec('t2_nifti', nifti_gz_format, 't2_dcm2nii_pipeline'),
         DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('t2_preproc', nifti_gz_format, 't2_basic_preproc_pipeline'),
-        DatasetSpec('t2_brain', nifti_gz_format, 't2_brain_mask_pipeline'),
-        DatasetSpec('t2_brain_mask', nifti_gz_format, 't2_brain_mask_pipeline'),
+        DatasetSpec('t2_preproc', nifti_gz_format,
+                    't2_basic_preproc_pipeline'),
+        DatasetSpec('t2_brain', nifti_gz_format,
+                    't2_brain_mask_pipeline'),
+        DatasetSpec('t2_brain_mask', nifti_gz_format,
+                    't2_brain_mask_pipeline'),
         DatasetSpec('ref_preproc', nifti_gz_format,
                     'ref_basic_preproc_pipeline'),
         DatasetSpec('t2_qformed', nifti_gz_format,
@@ -126,7 +82,8 @@ class CoregisteredT2Study(MultiStudy):
         DatasetSpec('ref_brain', nifti_gz_format, 'ref_bet_pipeline'),
         DatasetSpec('ref_brain_mask', nifti_gz_format,
                     'ref_bet_pipeline'),
-        DatasetSpec('t2_reg', nifti_gz_format, 't2_rigid_registration_pipeline'),
+        DatasetSpec('t2_reg', nifti_gz_format,
+                    't2_rigid_registration_pipeline'),
         DatasetSpec('t2_reg_mat', text_matrix_format,
                     't2_rigid_registration_pipeline'),
         DatasetSpec('motion_mats', directory_format,
@@ -138,3 +95,50 @@ class CoregisteredT2Study(MultiStudy):
         FieldSpec('start_time', str, 't2_dcm_info_pipeline'),
         FieldSpec('real_duration', str, 't2_dcm_info_pipeline'),
         FieldSpec('tot_duration', str, 't2_dcm_info_pipeline')]
+
+    t2_basic_preproc_pipeline = MultiStudy.translate(
+        't2', 'basic_preproc_pipeline')
+
+    t2_dcm2nii_pipeline = MultiStudy.translate(
+        't2', 'dcm2nii_conversion_pipeline')
+
+    t2_dcm_info_pipeline = MultiStudy.translate(
+        't2', 'header_info_extraction_pipeline')
+
+    t2_bet_pipeline = MultiStudy.translate(
+        't2', 'brain_mask_pipeline')
+
+    ref_bet_pipeline = MultiStudy.translate(
+        'reference', 'brain_mask_pipeline')
+
+    ref_basic_preproc_pipeline = MultiStudy.translate(
+        'reference', 'basic_preproc_pipeline')
+
+    t2_qform_transform_pipeline = MultiStudy.translate(
+        'coreg', 'qform_transform_pipeline')
+
+    t2_brain_mask_pipeline = MultiStudy.translate(
+        't2', 'brain_mask_pipeline')
+
+    t2_rigid_registration_pipeline = MultiStudy.translate(
+        'coreg', 'linear_registration_pipeline')
+
+    def motion_mat_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=[DatasetSpec('t2_reg_mat', text_matrix_format),
+                    DatasetSpec('t2_qform_mat', text_matrix_format)],
+            outputs=[DatasetSpec('motion_mats', directory_format)],
+            description=("T2w Motion matrices calculation"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='motion_mats')
+        pipeline.connect_input('t2_reg_mat', mm, 'reg_mat')
+        pipeline.connect_input('t2_qform_mat', mm, 'qform_mat')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        pipeline.assert_connected()
+        return pipeline

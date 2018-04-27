@@ -12,6 +12,25 @@ from nianalysis.dataset import DatasetSpec
 
 class CoregisteredStudy(Study):
 
+    __metaclass__ = StudyMetaClass
+
+    add_data_specs = [
+        DatasetSpec('reference', nifti_gz_format),
+        DatasetSpec('to_register', nifti_gz_format),
+        DatasetSpec('registered', nifti_gz_format,
+                    'linear_registration_pipeline'),
+        DatasetSpec('matrix', text_matrix_format,
+                    'linear_registration_pipeline'),
+        DatasetSpec('qformed', nifti_gz_format,
+                    'qform_transform_pipeline'),
+        DatasetSpec('qform_mat', text_matrix_format,
+                    'qform_transform_pipeline')]
+
+    add_default_options = {
+        'flirt_degrees_of_freedom': 6,
+        'flirt_cost_func': 'normmi',
+        'flirt_qsform': False}
+
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format)]
 
@@ -26,8 +45,8 @@ class CoregisteredStudy(Study):
             pipeline = self._spm_coreg_pipeline(**options)
         else:
             raise NotImplementedError(
-                "Unrecognised coregistration tool '{}'. Can be one of 'flirt',"
-                " 'spm'.".format(coreg_tool))
+                "Unrecognised coregistration tool '{}'. Can be one of "
+                "'flirt', 'spm'.".format(coreg_tool))
         return pipeline
 
     def qform_transform_pipeline(self, **kwargs):
@@ -35,9 +54,11 @@ class CoregisteredStudy(Study):
         outputs = [DatasetSpec('qformed', nifti_gz_format),
                    DatasetSpec('qform_mat', text_matrix_format)]
         reg_type = 'useqform'
-        return self._fsl_flirt_pipeline(outputs, reg_type=reg_type, **options)
+        return self._fsl_flirt_pipeline(outputs, reg_type=reg_type,
+                                        **kwargs)
 
-    def _fsl_flirt_pipeline(self, outputs, reg_type='registration', **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self, outputs, reg_type='registration',
+                            **kwargs):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -60,9 +81,6 @@ class CoregisteredStudy(Study):
             inputs=self._registration_inputs,
             outputs=outputs,
             description="Registers a MR scan against a reference image",
-            default_options={
-                'degrees_of_freedom': 6, 'cost_func': 'normmi',
-                'qsform': False},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -75,9 +93,9 @@ class CoregisteredStudy(Study):
             pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
         elif reg_type == 'registration':
             # Set registration options
-            flirt.inputs.dof = pipeline.option('degrees_of_freedom')
-            flirt.inputs.cost = pipeline.option('cost_func')
-            flirt.inputs.cost_func = pipeline.option('cost_func')
+            flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
+            flirt.inputs.cost = pipeline.option('flirt_cost_func')
+            flirt.inputs.cost_func = pipeline.option('flirt_cost_func')
             flirt.inputs.output_type = 'NIFTI_GZ'
             # Connect outputs
             pipeline.connect_output('registered', flirt, 'out_file')
@@ -89,16 +107,6 @@ class CoregisteredStudy(Study):
 
         pipeline.assert_connected()
         return pipeline
-
-    def _fsl_fnirt_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
-        """
-        Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
-        command
-
-        Parameters
-        ----------
-        """
-        raise NotImplementedError
 
     def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -113,7 +121,6 @@ class CoregisteredStudy(Study):
                     DatasetSpec('t2', nifti_format)],
             outputs=[DatasetSpec('t2_coreg_t1', nifti_format)],
             description="Coregister T2-weighted images to T1",
-            default_options={},
             version=1,
             citations=[spm_cite],
             **kwargs)
@@ -138,26 +145,8 @@ class CoregisteredStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def segmentation_pipeline(self, segment_tool='spm', **options):
-        if segment_tool == 'spm':
-            pipeline = self._spm_segmentation_pipeline(**options)
-        else:
-            raise NotImplementedError(
-                "Unrecognised segmentation tool '{}'".format(segment_tool))
-        return pipeline
-
     def _connect_matrix(self, pipeline, flirt):
         pipeline.connect_output('matrix', flirt, 'out_matrix_file')
-
-    add_data_specs = [
-        DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('to_register', nifti_gz_format),
-        DatasetSpec('registered', nifti_gz_format,
-                    'linear_registration_pipeline'),
-        DatasetSpec('matrix', text_matrix_format,
-                    'linear_registration_pipeline'),
-        DatasetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
-        DatasetSpec('qform_mat', text_matrix_format, 'qform_transform_pipeline')]
 
 
 class CoregisteredToMatrixStudy(CoregisteredStudy):
@@ -173,7 +162,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
                             DatasetSpec('matrix', text_matrix_format)]
     _registration_outputs = [DatasetSpec('registered', nifti_gz_format)]
 
-    def _fsl_flirt_pipeline(self, outputs, **options):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_pipeline(self, outputs, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a reference MR scan with FSL's FLIRT command
         using an existing registration matrix
@@ -190,7 +179,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         default_interp = 'trilinear'
         pipeline = super(
             CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(
-                outputs, **options)
+                outputs, **kwargs)
         # Edit the coregister pipeline from CoregisteredStudy
         pipeline.default_options['interpolate'] = default_interp
         pipeline._options['interpolate'] = options.get('interpolate',

@@ -24,7 +24,6 @@ class DynamicPETStudy(PETStudy):
             inputs=[DatasetSpec('pet_volumes', nifti_gz_format)],
             outputs=[DatasetSpec('pet_image', nifti_gz_format)],
             description=('Extract the last volume of the 4D PET timeseries'),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)

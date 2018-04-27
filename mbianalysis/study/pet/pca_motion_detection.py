@@ -23,7 +23,6 @@ class PETPCAMotionDetectionStudy(PETStudy):
             description=('Unlist pet listmode data into several sinograms and '
                          'perform ssrb compression to prepare data for motion '
                          'detection using PCA pipeline.'),
-            default_options={},
             version=1,
             citations=[],
             **kwargs)
