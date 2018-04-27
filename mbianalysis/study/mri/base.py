@@ -28,6 +28,9 @@ atlas_path = os.path.abspath(
 
 class MRIStudy(Study):
 
+    BRAIN_MASK_NAME = 'brain_mask'
+    COREGISTER_TO_ATLAS_NAME = 'coregister_to_atlas'
+
     __metaclass__ = StudyMetaClass
 
     add_option_specs = [
@@ -35,7 +38,8 @@ class MRIStudy(Study):
         OptionSpec('bet_f_threshold', 0.5),
         OptionSpec('bet_reduce_bias', False),
         OptionSpec('bet_g_threshold', 0.0),
-        OptionSpec('bet_method', 'fsl_bet'),
+        OptionSpec('bet_method', 'fsl_bet', choices=('fsl_bet',
+                                                     'optibet')),
         OptionSpec('MNI_template',
                    os.path.join(atlas_path), 'MNI152_T1_2mm.nii.gz'),
         OptionSpec('MNI_template_mask', os.path.join(
@@ -86,7 +90,7 @@ class MRIStudy(Study):
                     'header_info_extraction_pipeline')]
 
     def brain_mask_pipeline(self, **kwargs):
-        bet_method = options.get('bet_method', 'fsl_bet')
+        bet_method = self.option('bet_method', self.BRAIN_MASK_NAME)
         if bet_method == 'fsl_bet':
             pipeline = self._fsl_bet_brain_mask_pipeline(**kwargs)
         elif bet_method == 'optibet':
@@ -101,7 +105,7 @@ class MRIStudy(Study):
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.create_pipeline(
-            name='brain_mask',
+            name=self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
@@ -143,10 +147,10 @@ class MRIStudy(Study):
 
         outputs = [DatasetSpec('masked', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if options.get('optibet_gen_report', gen_report_default):
+        if self.option('optibet_gen_report', self.BRAIN_MASK_NAME):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
-            name='brain_mask',
+            name=self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=outputs,
             description=("Modified implementation of optiBET.sh"),
@@ -207,7 +211,8 @@ class MRIStudy(Study):
         return pipeline
 
     def coregister_to_atlas_pipeline(self, **kwargs):
-        atlas_reg_tool = options.get('atlas_reg_tool', 'fnirt')
+        atlas_reg_tool = self.option.get('atlas_reg_tool',
+                                         self.COREGISTER_TO_ATLAS_NAME)
         if atlas_reg_tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
         else:
@@ -226,7 +231,7 @@ class MRIStudy(Study):
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
         pipeline = self.create_pipeline(
-            name='coregister_to_atlas_fnirt',
+            name=self.COREGISTER_TO_ATLAS_NAME,
             inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('masked', nifti_gz_format)],

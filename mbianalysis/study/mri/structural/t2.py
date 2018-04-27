@@ -20,8 +20,8 @@ class T2Study(MRIStudy):
     def brain_mask_pipeline(self, robust=True, f_threshold=0.5,
                             reduce_bias=False, **kwargs):
         return super(T2Study, self).brain_mask_pipeline(
-            robust=robust, f_threshold=f_threshold, reduce_bias=reduce_bias,
-            **kwargs)
+            robust=robust, f_threshold=f_threshold,
+            reduce_bias=reduce_bias, **kwargs)
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(T2Study, self).

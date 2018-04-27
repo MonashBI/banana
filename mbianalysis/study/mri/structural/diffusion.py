@@ -69,9 +69,11 @@ class DiffusionStudy(T2Study):
 
     add_option_specs = [OptionSpec('preproc_pe_dir', None),
                         OptionSpec('preproc_denoise', True),
-                        OptionSpec('bias_correct_method', 'ants'),
+                        OptionSpec('bias_correct_method', 'ants',
+                                   choices=('ants', 'fsl')),
                         OptionSpec('fod_response_algorithm', 'tax'),
-                        OptionSpec('tbss_skel_thresh', 0.2)]
+                        OptionSpec('tbss_skel_thresh', 0.2),
+                        OptionSpec('fsl_mask_f', 0.25)]
 
     def preprocess_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -176,22 +178,22 @@ class DiffusionStudy(T2Study):
             Can be either 'bet' or 'dwi2mask' depending on which mask tool you
             want to use
         """
+        pipeline_name = 'brain_mask_mrtrix'
+        mask_tool = self.option('mask_tool', pipeline_name)
         if mask_tool == 'fsl':
-            if 'f' not in options:
-                options['f'] = 0.25
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
         elif mask_tool == 'mrtrix':
             pipeline = self.create_pipeline(
-                name='brain_mask_mrtrix',
+                pipeline_name,
                 inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
                         DatasetSpec('grad_dirs', fsl_bvecs_format),
                         DatasetSpec('bvalues', fsl_bvals_format)],
                 outputs=[DatasetSpec('brain_mask', nifti_gz_format)],
                 description="Generate brain mask from b0 images",
-                    version=1,
+                version=1,
                 citations=[mrtrix_cite],
-                options=options)
+                **kwargs)
             # Create mask node
             dwi2mask = pipeline.create_node(BrainMask(), name='dwi2mask',
                                             requirements=[mrtrix3_req])
@@ -218,14 +220,10 @@ class DiffusionStudy(T2Study):
         """
         Corrects B1 field inhomogeneities
         """
-        bias_method_default = 
-        bias_method = options.get('bias_method', bias_method_default)
-        if bias_method not in ('ants', 'fsl'):
-            raise NiAnalysisError(
-                "Unrecognised value for 'bias_method' option '{}'. It can "
-                "be one of 'ants' or 'fsl'.".format(bias_method))
+        pipeline_name = 'bias_correct'
+        bias_method = self.option('bias_method', pipeline_name)
         pipeline = self.create_pipeline(
-            name='bias_correct',
+            name=pipeline_name,
             inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -820,15 +818,16 @@ class NODDIStudy(DiffusionStudy):
         nthreads: Int
             Number of processes to use
         """
+        pipeline_name = 'noddi_fitting'
         inputs = [DatasetSpec('bias_correct', nifti_gz_format),
                   DatasetSpec('grad_dirs', fsl_bvecs_format),
                   DatasetSpec('bvalues', fsl_bvals_format)]
-        if options.get('single_slice', False):
+        if self.option('single_slice', pipeline_name):
             inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(DatasetSpec('brain_mask', nifti_gz_format))
         pipeline = self.create_pipeline(
-            name='noddi_fitting',
+            name=pipeline_name,
             inputs=inputs,
             outputs=[DatasetSpec('ficvf', nifti_format),
                      DatasetSpec('odi', nifti_format),
