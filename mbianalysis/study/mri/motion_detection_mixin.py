@@ -451,7 +451,7 @@ class MotionDetectionMixin(MultiStudy):
     def gather_outputs_pipeline(self, **kwargs):
         return self.gather_outputs_factory(
             'gather_md_outputs', pet_corr_fac=False, aligned_umaps=False,
-            timestamps=False, align_mats=False)
+            timestamps=False, align_mats=False, **kwargs)
 
     _sub_study_specs = {}
     add_data_specs = [
@@ -470,7 +470,8 @@ class MotionDetectionMixin(MultiStudy):
                     'motion_framing_pipeline'),
         DatasetSpec('frame_vol_numbers', text_format,
                     'motion_framing_pipeline'),
-        DatasetSpec('timestamps', directory_format, 'motion_framing_pipeline'),
+        DatasetSpec('timestamps', directory_format,
+                    'motion_framing_pipeline'),
         DatasetSpec('mean_displacement_plot', png_format,
                     'plot_mean_displacement_pipeline'),
         DatasetSpec('average_mats', directory_format,
