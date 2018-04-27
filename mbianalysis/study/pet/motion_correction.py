@@ -11,6 +11,13 @@ from nianalysis.requirements import fsl509_req
 
 class FixedMAFMotionCorrection(PETStudy):
 
+    add_default_options = {'maf_xmin': 100,
+                           'maf_xsize': 130,
+                           'maf_ymin': 100,
+                           'maf_ysize': 130,
+                           'maf_zmin': 20,
+                           'maf_zsize': 100},
+
     def pet_data_preparation_pipeline(self, **kwargs):
         return (super(FixedMAFMotionCorrection, self).
                 pet_data_preparation_pipeline(**kwargs))
@@ -29,8 +36,6 @@ class FixedMAFMotionCorrection(PETStudy):
                          "pipeline will align all of them to a reference and "
                          "create a static PET image by averaging the realigned"
                          "images."),
-            default_options={'xmin': 100, 'xsize': 130, 'ymin': 100,
-                             'ysize': 130, 'zmin': 20, 'zsize': 100},
             version=1,
             citations=[fsl_cite],
             **kwargs)

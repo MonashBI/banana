@@ -18,6 +18,14 @@ class DynamicPETStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_default_options = {
+        'trans_template': os.path.join(template_path,
+                                       'PET_template.nii.gz'),
+        'base_remove_th': 0,
+        'base_remove_binarize': False,
+        'regress_th': 0,
+        'regress_binarize': False}
+
     def Extract_vol_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='Extract_volume',
@@ -44,8 +52,6 @@ class DynamicPETStudy(PETStudy):
                     DatasetSpec('affine_mat', text_matrix_format)],
             outputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
             description=('Apply transformation the the 4D PET timeseries'),
-            default_options={'template': (template_path +
-                                          '/PET_template.nii.gz')},
             version=1,
             citations=[],
             **kwargs)
@@ -56,7 +62,8 @@ class DynamicPETStudy(PETStudy):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform')
-        apply_trans.inputs.reference_image = pipeline.option('template')
+        apply_trans.inputs.reference_image = pipeline.option(
+            'trans_template')
         apply_trans.inputs.interpolation = 'Linear'
         apply_trans.inputs.input_image_type = 3
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
@@ -74,7 +81,6 @@ class DynamicPETStudy(PETStudy):
             inputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
             outputs=[DatasetSpec('detrended_volumes', nifti_gz_format)],
             description=('PET dual regression'),
-            default_options={'th': 0, 'binarize': False},
             citations=[],
             version=1,
             **kwargs)
@@ -95,14 +101,13 @@ class DynamicPETStudy(PETStudy):
             outputs=[DatasetSpec('spatial_map', nifti_gz_format),
                      DatasetSpec('ts', png_format)],
             description=('PET dual regression'),
-            default_options={'th': 0, 'binarize': False},
             citations=[],
             version=1,
             **kwargs)
 
         dr = pipeline.create_node(PETdr(), name='PET_dr')
-        dr.inputs.threshold = pipeline.option('th')
-        dr.inputs.binarize = pipeline.option('binarize')
+        dr.inputs.threshold = pipeline.option('regress_th')
+        dr.inputs.binarize = pipeline.option('regress_binarize')
         pipeline.connect_input('detrended_volumes', dr, 'volume')
         pipeline.connect_input('regression_map', dr, 'regression_map')
 
@@ -119,15 +124,18 @@ class DynamicPETStudy(PETStudy):
 
     def dynamics_ica_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(
-            input_dataset=DatasetSpec('registered_volumes', nifti_gz_format))
+            input_dataset=DatasetSpec(
+                'registered_volumes', nifti_gz_format, **kwargs))
 
     add_data_specs = [
         DatasetSpec('pet_volumes', nifti_gz_format),
         DatasetSpec('regression_map', nifti_gz_format),
-        DatasetSpec('pet_image', nifti_gz_format, 'Extract_vol_pipeline'),
+        DatasetSpec('pet_image', nifti_gz_format,
+                    'Extract_vol_pipeline'),
         DatasetSpec('registered_volumes', nifti_gz_format,
                     'ApplyTransform_pipeline'),
         DatasetSpec('detrended_volumes', nifti_gz_format,
                     'Baseline_Removal_pipeline'),
-        DatasetSpec('spatial_map', nifti_gz_format, 'Dual_Regression_pipeline'),
+        DatasetSpec('spatial_map', nifti_gz_format,
+                    'Dual_Regression_pipeline'),
         DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]

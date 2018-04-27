@@ -22,6 +22,11 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'framing_th': 2.0,
+                           'framing_temporal_th': 30.0,
+                           'md_framing': True,
+                           'dwi_1_bet_method': 'optibet'}
+
     dwi_1_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi_main_dcm_info_pipeline')
 
@@ -45,8 +50,7 @@ class MotionDetectionStudy(MultiStudy):
         CoregisteredDiffusionStudy.dwi_main_rigid_registration_pipeline)
 
     dwi_1_main_ref_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
+        'dwi_1', 'ref_bet_pipeline')
 
     dwi_1_main_ref_basic_preproc_pipeline = MultiStudy.translate(
         'dwi_1', 'ref_basic_preproc_pipeline')
@@ -620,7 +624,6 @@ class MotionDetectionStudy(MultiStudy):
                      DatasetSpec('frame_vol_numbers', text_format)],
             description=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
-            default_options={'th': 2.0, 'temporal_th': 30.0},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -649,7 +652,6 @@ class MotionDetectionStudy(MultiStudy):
                     DatasetSpec('frame_start_times', text_format)],
             outputs=[DatasetSpec('mean_displacement_plot', png_format)],
             description=("Plot the mean displacement real clock"),
-            default_options={'framing': True},
             version=1,
             citations=[fsl_cite],
             **kwargs)

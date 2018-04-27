@@ -122,9 +122,13 @@ class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-#     ute_brain_mask_pipeline = MultiStudy.translate(
-#         'ute', 't1_brain_mask_pipeline',
-#         override_default_options={'bet_method': 'optibet'})
+    add_default_options = {'framing_th': 2.0,
+                           'framing_temporal_th': 30.0,
+                           'md_framing': True,
+                           'align_pct': False,
+                           'align_fixed_binning': False,
+                           'moco_template': os.path.join(
+                               template_path, 'moco_template.IMA')}
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
@@ -208,11 +212,11 @@ class MotionDetectionMixin(MultiStudy):
     def motion_framing_pipeline(self, **kwargs):
         return self.motion_framing_pipeline_factory(
             pet_data_dir=None, pet_start_time=None, pet_duration=None,
-            **options)
+            **kwargs)
 
     def motion_framing_pipeline_factory(
             self, pet_data_dir=None, pet_start_time=None, pet_duration=None,
-            **options):
+            **kwargs):
         inputs = [DatasetSpec('mean_displacement', text_format),
                   DatasetSpec('mean_displacement_consecutive', text_format),
                   DatasetSpec('start_times', text_format)]
@@ -229,14 +233,13 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('timestamps', directory_format)],
             description=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
-            default_options={'th': 2.0, 'temporal_th': 30.0},
             version=1,
             citations=[fsl_cite],
             **kwargs)
 
         framing = pipeline.create_node(MotionFraming(), name='motion_framing')
-        framing.inputs.motion_threshold = pipeline.option('th')
-        framing.inputs.temporal_threshold = pipeline.option('temporal_th')
+        framing.inputs.motion_threshold = pipeline.option('framing_th')
+        framing.inputs.temporal_threshold = pipeline.option('framing_temporal_th')
         pipeline.connect_input('mean_displacement', framing,
                                'mean_displacement')
         pipeline.connect_input('mean_displacement_consecutive', framing,
@@ -266,14 +269,13 @@ class MotionDetectionMixin(MultiStudy):
                     DatasetSpec('frame_start_times', text_format)],
             outputs=[DatasetSpec('mean_displacement_plot', png_format)],
             description=("Plot the mean displacement real clock"),
-            default_options={'framing': True},
             version=1,
             citations=[fsl_cite],
             **kwargs)
 
         plot_md = pipeline.create_node(PlotMeanDisplacementRC(),
                                        name='plot_md')
-        plot_md.inputs.framing = pipeline.option('framing')
+        plot_md.inputs.framing = pipeline.option('md_framing')
         pipeline.connect_input('mean_displacement_rc', plot_md,
                                'mean_disp_rc')
         pipeline.connect_input('offset_indexes', plot_md,
@@ -332,8 +334,8 @@ class MotionDetectionMixin(MultiStudy):
         return pipeline
 
     def frame2ref_alignment_pipeline_factory(
-            self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
-            pct=False, fixed_binning=False, **options):
+            self, name, average_mats, ute_regmat, ute_qform_mat,
+            umap=None, **kwargs):
         inputs = [DatasetSpec(average_mats, directory_format),
                   DatasetSpec(ute_regmat, text_matrix_format),
                   DatasetSpec(ute_qform_mat, text_matrix_format)]
@@ -351,7 +353,6 @@ class MotionDetectionMixin(MultiStudy):
                          ", it will be also aligned to match the head position"
                          " in each frame and improve the static PET image "
                          "quality."),
-            default_options={'pct': pct, 'fixed_binning': fixed_binning},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -359,8 +360,8 @@ class MotionDetectionMixin(MultiStudy):
         frame_align = pipeline.create_node(
             FrameAlign2Reference(), name='frame2ref_alignment',
             requirements=[fsl509_req])
-        frame_align.inputs.pct = pipeline.option('pct')
-        frame_align.inputs.fixed_binning = pipeline.option('fixed_binning')
+        frame_align.inputs.pct = pipeline.option('align_pct')
+        frame_align.inputs.fixed_binning = pipeline.option('align_fixed_binning')
         pipeline.connect_input(average_mats, frame_align,
                                'average_mats')
         pipeline.connect_input(ute_regmat, frame_align,
@@ -380,7 +381,7 @@ class MotionDetectionMixin(MultiStudy):
         return self.frame2ref_alignment_pipeline_factory(
             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
             'ute_qform_mat', umap='umap_nifti',
-            pct=False, fixed_binning=False, **options)
+            pct=False, fixed_binning=False, **kwargs)
 
     def create_moco_series_pipeline(self, **kwargs):
 
@@ -392,8 +393,6 @@ class MotionDetectionMixin(MultiStudy):
             description=("Pipeline to generate a moco_series that can be then "
                          "imported back in the scanner and used to correct the"
                          " pet data"),
-            default_options={'moco_template':
-                             template_path+'/moco_template.IMA'},
             version=1,
             citations=[fsl_cite],
             **kwargs)

@@ -50,28 +50,119 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline')]
+        DatasetSpec('dcm_info', text_format,
+                    'header_info_extraction_pipeline')]
 
 
 class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'img_type': 1,
+                           'bet_method': 'optibet',
+                           'md_framing': True,
+                           'framing_th': 2.0,
+                           'framing_temporal_th': 30.0,
+                           'align_pct': False,
+                           'align_fixed_binning': False}
+
+    sub_study_specs = [
+        SubStudySpec('ref', MotionReferenceT1Study),
+        SubStudySpec('fm', CoregisteredT2Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('t2_1', CoregisteredT2Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('t2_2', CoregisteredT2Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('t2_3', CoregisteredT2Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('t2_4', CoregisteredT2Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('t2_5', CoregisteredT2Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('ute', CoregisteredT1Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('t1_1', CoregisteredT1Study, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('epi1', CoregisteredEPIStudy, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask',
+            'ref_wm_seg': 'ref_wmseg'}),
+        SubStudySpec('dwi_1_main', CoregisteredDiffusionStudy, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec('dwi_1_to_ref', CoregisteredDiffusionReferenceStudy, {
+            'ref_preproc': 'ref_preproc',
+            'ref_masked': 'ref_brain',
+            'ref_brain_mask': 'ref_brain_mask'}),
+        SubStudySpec(
+            'dwi_1_opposite', CoregisteredDiffusionReferenceOppositeStudy, {
+                'ref_preproc': 'ref_preproc',
+                'ref_masked': 'ref_brain',
+                'ref_brain_mask': 'ref_brain_mask'})]
+
+    add_data_specs = [
+        DatasetSpec('mean_displacement', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mean_displacement_rc', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mean_displacement_consecutive', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mats4average', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('start_times', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('motion_par_rc', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('offset_indexes', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('frame_start_times', text_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('frame_vol_numbers', text_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('mean_displacement_plot', png_format,
+                    'plot_mean_displacement_pipeline'),
+        DatasetSpec('average_mats', directory_format,
+                    'frame_mean_transformation_mats_pipeline'),
+        DatasetSpec('correction_factors', text_format,
+                    'pet_correction_factors_pipeline'),
+        DatasetSpec('umaps_align2ref', directory_format,
+                    'frame2ref_alignment_pipeline'),
+        DatasetSpec('frame2reference_mats', directory_format,
+                    'frame2ref_alignment_pipeline')]
+
     epi1_ref_segmentation_pipeline = MultiStudy.translate(
-        'epi1', 'ref_segmentation_pipeline',
-        override_default_options={'img_type': 1})
+        'epi1', 'ref_segmentation_pipeline')
 
     t1_bet_pipeline = MultiStudy.translate(
-        't1_1', 't1_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
+        't1_1', 't1_bet_pipeline')
 
     ute_bet_pipeline = MultiStudy.translate(
-        'ute', 't1_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
+        'ute', 't1_bet_pipeline')
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
         sub_study_names = []
+        # Loop through all sub-studies to find the studies that have
+        # a motion matrix data spec, and add them to the list of inputs
         for sub_study_spec in self.sub_study_specs():
             try:
                 inputs.append(
@@ -157,7 +248,6 @@ class MotionDetectionStudy(MultiStudy):
                      DatasetSpec('frame_vol_numbers', text_format)],
             description=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
-            default_options={'th': 2.0, 'temporal_th': 30.0},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -186,7 +276,6 @@ class MotionDetectionStudy(MultiStudy):
                     DatasetSpec('frame_start_times', text_format)],
             outputs=[DatasetSpec('mean_displacement_plot', png_format)],
             description=("Plot the mean displacement real clock"),
-            default_options={'framing': True},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -252,8 +341,8 @@ class MotionDetectionStudy(MultiStudy):
         return pipeline
 
     def frame2ref_alignment_pipeline_factory(
-            self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
-            pct=False, fixed_binning=False, **options):
+            self, name, average_mats, ute_regmat, ute_qform_mat,
+            umap=None, **kwargs):
         inputs = [DatasetSpec(average_mats, directory_format),
                   DatasetSpec(ute_regmat, text_matrix_format),
                   DatasetSpec(ute_qform_mat, text_matrix_format)]
@@ -271,7 +360,6 @@ class MotionDetectionStudy(MultiStudy):
                          ", it will be also aligned to match the head position"
                          " in each frame and improve the static PET image "
                          "quality."),
-            default_options={'pct': pct, 'fixed_binning': fixed_binning},
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -300,88 +388,10 @@ class MotionDetectionStudy(MultiStudy):
         return self.frame2ref_alignment_pipeline_factory(
             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
             'ute_qform_mat', umap='umap',
-            pct=False, fixed_binning=False, **options)
+            pct=False, fixed_binning=False, **kwargs)
 
     cls = T1Study
 
-    sub_study_specs = [
-        SubStudySpec('ref', MotionReferenceT1Study),
-        SubStudySpec('fm', CoregisteredT2Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('t2_1', CoregisteredT2Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('t2_2', CoregisteredT2Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('t2_3', CoregisteredT2Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('t2_4', CoregisteredT2Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('t2_5', CoregisteredT2Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('ute', CoregisteredT1Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('t1_1', CoregisteredT1Study, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('epi1', CoregisteredEPIStudy, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask',
-            'ref_wm_seg': 'ref_wmseg'}),
-        SubStudySpec('dwi_1_main', CoregisteredDiffusionStudy, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec('dwi_1_to_ref', CoregisteredDiffusionReferenceStudy, {
-            'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
-            'ref_brain_mask': 'ref_brain_mask'}),
-        SubStudySpec(
-            'dwi_1_opposite', CoregisteredDiffusionReferenceOppositeStudy, {
-                'ref_preproc': 'ref_preproc',
-                'ref_masked': 'ref_brain',
-                'ref_brain_mask': 'ref_brain_mask'})]
-
-    add_data_specs = [
-        DatasetSpec('mean_displacement', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_rc', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_consecutive', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mats4average', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('start_times', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('motion_par_rc', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('offset_indexes', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('frame_start_times', text_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('frame_vol_numbers', text_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('mean_displacement_plot', png_format,
-                    'plot_mean_displacement_pipeline'),
-        DatasetSpec('average_mats', directory_format,
-                    'frame_mean_transformation_mats_pipeline'),
-        DatasetSpec('correction_factors', text_format,
-                    'pet_correction_factors_pipeline'),
-        DatasetSpec('umaps_align2ref', directory_format,
-                    'frame2ref_alignment_pipeline'),
-        DatasetSpec('frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline')]
 
 
 # def create_motion_detection_class(name, reference, ref_type, t1s=None,

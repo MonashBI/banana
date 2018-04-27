@@ -19,7 +19,16 @@ class EPIStudy(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def brain_mask_pipeline(self, robust=True, f_threshold=0.2, **kwargs):
+    add_data_specs = [
+        DatasetSpec('moco', nifti_gz_format,
+                    'motion_alignment_pipeline'),
+        DatasetSpec('moco_mat', directory_format,
+                    'motion_alignment_pipeline'),
+        DatasetSpec('moco_par', text_format,
+                    'motion_alignment_pipeline')]
+
+    def brain_mask_pipeline(self, robust=True, f_threshold=0.2,
+                            **kwargs):
         return super(EPIStudy, self).brain_mask_pipeline(
             robust=robust, f_threshold=f_threshold, **kwargs)
 
@@ -58,11 +67,6 @@ class EPIStudy(MRIStudy):
 
         pipeline.assert_connected()
         return pipeline
-
-    add_data_specs = [
-        DatasetSpec('moco', nifti_gz_format, 'motion_alignment_pipeline'),
-        DatasetSpec('moco_mat', directory_format, 'motion_alignment_pipeline'),
-        DatasetSpec('moco_par', text_format, 'motion_alignment_pipeline')]
 
 
 class CoregisteredEPIStudy(MultiStudy):

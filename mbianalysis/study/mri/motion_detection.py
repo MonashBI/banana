@@ -19,6 +19,8 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+    add_default_options = {'th': 2.0, 'temporal_th': 30.0}
+
     ref_dcm_info_pipeline = MultiStudy.translate(
         'ref', 'header_info_extraction_pipeline')
 
@@ -625,7 +627,6 @@ class MotionDetectionStudy(MultiStudy):
             outputs=[DatasetSpec('frame_start_times', text_format)],
             description=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
-            default_options={'th': 2.0, 'temporal_th': 30.0},
             version=1,
             citations=[fsl_cite],
             **kwargs)
