@@ -13,13 +13,15 @@ from .structural.t1 import CoregisteredT1Study
 from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge as merge_lists
 from .base import MotionReferenceStudy
+from nianalysis.options import OptionSpec
 
 
 class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'th': 2.0, 'temporal_th': 30.0}
+    add_option_specs = [OptionSpec('th', 2.0),
+                        OptionSpec('temporal_th', 30.0)]
 
     ref_dcm_info_pipeline = MultiStudy.translate(
         'ref', 'header_info_extraction_pipeline')

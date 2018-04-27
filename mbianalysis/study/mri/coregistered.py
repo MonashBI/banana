@@ -8,6 +8,7 @@ from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, text_matrix_format)
 from nianalysis.study.base import StudyMetaClass, Study
 from nianalysis.dataset import DatasetSpec
+from nianalysis.options import OptionSpec
 
 
 class CoregisteredStudy(Study):
@@ -26,10 +27,10 @@ class CoregisteredStudy(Study):
         DatasetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline')]
 
-    add_default_options = {
-        'flirt_degrees_of_freedom': 6,
-        'flirt_cost_func': 'normmi',
-        'flirt_qsform': False}
+    add_option_specs = [
+        OptionSpec('flirt_degrees_of_freedom', 6),
+        OptionSpec('flirt_cost_func', 'normmi'),
+        OptionSpec('flirt_qsform', False)]
 
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format)]

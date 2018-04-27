@@ -18,6 +18,7 @@ from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nianalysis.requirements import fsl509_req, mrtrix3_req, fsl510_req
 from nianalysis.interfaces.mrtrix import MRConvert
+from nianalysis.options import OptionSpec
 
 
 class DiffusionStudy(MRIStudy):
@@ -288,7 +289,7 @@ class CoregisteredDWIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'reference_resolution': [1]}
+    add_option_specs = [OptionSpec('reference_resolution', [1])]
 
     dwi_main_dwipreproc_pipeline = MultiStudy.translate(
         'dwi_main', 'dwipreproc_pipeline')
@@ -423,7 +424,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'reference_resolution': [1]}
+    add_option_specs = [OptionSpec('reference_resolution', [1])]
 
     dwi2ref_topup_pipeline = MultiStudy.translate(
         'dwi2ref', 'topup_pipeline')
@@ -538,7 +539,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'reference_resolution': [1]}
+    add_option_specs = [OptionSpec('reference_resolution', [1])]
 
     dwi_opposite_topup_pipeline = MultiStudy.translate(
         'dwi_opposite', 'topup_pipeline')
@@ -660,7 +661,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'reference_resolution': [1]}
+    add_option_specs = [OptionSpec('reference_resolution', [1])]
 
     opposite_dwi2ref_topup_pipeline = MultiStudy.translate(
         'opposite_dwi2ref', 'topup_pipeline')

@@ -24,6 +24,7 @@ import logging
 from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 from nianalysis.interfaces.utils import CopyToDir
 import os
+from nianalysis.options import OptionSpec
 
 
 logger = logging.getLogger('NiAnalysis')
@@ -122,13 +123,13 @@ class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'framing_th': 2.0,
-                           'framing_temporal_th': 30.0,
-                           'md_framing': True,
-                           'align_pct': False,
-                           'align_fixed_binning': False,
-                           'moco_template': os.path.join(
-                               template_path, 'moco_template.IMA')}
+    add_option_specs = [OptionSpec('framing_th', 2.0),
+                        OptionSpec('framing_temporal_th', 30.0),
+                        OptionSpec('md_framing', True),
+                        OptionSpec('align_pct', False),
+                        OptionSpec('align_fixed_binning', False),
+                        OptionSpec('moco_template', os.path.join(
+                            template_path, 'moco_template.IMA'))]
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]

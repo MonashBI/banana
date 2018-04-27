@@ -19,6 +19,7 @@ import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.converters import Dcm2niix
+from nianalysis.options import OptionSpec
 
 
 atlas_path = os.path.abspath(
@@ -29,26 +30,26 @@ class MRIStudy(Study):
 
     __metaclass__ = StudyMetaClass
 
-    add_default_options = {
-        'bet_robust': True,
-        'bet_f_threshold': 0.5,
-        'bet_reduce_bias': False,
-        'bet_g_threshold': 0.0,
-        'bet_method': 'fsl_bet',
-        'MNI_template': os.path.join(atlas_path,
-                                     'MNI152_T1_2mm.nii.gz'),
-        'MNI_template_mask': os.path.join(
-            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz'),
-        'optibet_gen_report': False,
-        'fnirt_atlas_reg_tool': 'fnirt',
-        'fnirt_atlas': 'MNI152',
-        'fnirt_resolution': '2mm',
-        'fnirt_intensity_model': 'global_non_linear_with_bias',
-        'fnirt_subsampling': [4, 4, 2, 2, 1, 1],
-        'seg_img_type': 2,
-        'preproc_new_dims': ('RL', 'AP', 'IS'),
-        'preproc_resolution': None,
-        'info_extract_multivol': True}
+    add_option_specs = [
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.5),
+        OptionSpec('bet_reduce_bias', False),
+        OptionSpec('bet_g_threshold', 0.0),
+        OptionSpec('bet_method', 'fsl_bet'),
+        OptionSpec('MNI_template',
+                   os.path.join(atlas_path), 'MNI152_T1_2mm.nii.gz'),
+        OptionSpec('MNI_template_mask', os.path.join(
+            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
+        OptionSpec('optibet_gen_report', False),
+        OptionSpec('fnirt_atlas_reg_tool', 'fnirt'),
+        OptionSpec('fnirt_atlas', 'MNI152'),
+        OptionSpec('fnirt_resolution', '2mm'),
+        OptionSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
+        OptionSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
+        OptionSpec('seg_img_type', 2),
+        OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
+        OptionSpec('preproc_resolution', None),
+        OptionSpec('info_extract_multivol', True)]
 
     add_data_specs = [
         DatasetSpec('primary', dicom_format),

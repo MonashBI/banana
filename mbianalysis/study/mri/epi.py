@@ -13,6 +13,7 @@ from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
+from nianalysis.options import OptionSpec
 
 
 class EPIStudy(MRIStudy):
@@ -73,8 +74,8 @@ class CoregisteredEPIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'reference_resolution': [1],
-                           'multivol': True}
+    add_option_specs = [OptionSpec('reference_resolution', [1]),
+                        OptionSpec('multivol', True)]
 
     epi_basic_preproc_pipeline = MultiStudy.translate(
         'epi', 'basic_preproc_pipeline')

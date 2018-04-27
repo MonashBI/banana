@@ -24,6 +24,7 @@ from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 from nianalysis.interfaces.utils import CopyToDir
 from mbianalysis.study.pet.base import PETStudy
 from mbianalysis.interfaces.custom.pet import StaticMotionCorrection
+from nianalysis.options import OptionSpec
 
 
 logger = logging.getLogger('NiAnalysis')
@@ -128,11 +129,71 @@ class MotionCorrectionMixin(MultiStudy):
 #         'ute', 't1_brain_mask_pipeline',
 #         override_default_options={'bet_method': 'optibet'})
 
-    add_default_options = {'framing_th': 2.0,
-                           'framing_temporal_th': 30.0,
-                           'md_framing': True,
-                           'align_pct': False,
-                           'align_fixed_binning': False}
+    sub_study_specs = [
+        SubStudySpec('pet_mc', PETStudy, {
+            'pet_data_dir': 'pet_data_dir',
+            'pet_data_reconstructed': 'pet_recon_dir',
+            'pet_data_prepared': 'pet_recon_dir_prepared',
+            'pet_data_cropped': 'pet_data_cropped',
+            'static_pet_mc2crop': 'pet2crop'})]
+
+    add_data_specs = [
+        DatasetSpec('pet_data_dir', directory_format),
+        DatasetSpec('pet_data_reconstructed', directory_format),
+        DatasetSpec('pet_data_prepared', directory_format,
+                    'prepare_pet_pipeline'),
+        DatasetSpec('pet_data_cropped', directory_format,
+                    'pet_fov_cropping_pipeline'),
+        DatasetSpec('mean_displacement', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mean_displacement_rc', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mean_displacement_consecutive', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mats4average', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('start_times', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('motion_par_rc', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('motion_par', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('offset_indexes', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('frame_start_times', text_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('frame_vol_numbers', text_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('timestamps', directory_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('mean_displacement_plot', png_format,
+                    'plot_mean_displacement_pipeline'),
+        DatasetSpec('average_mats', directory_format,
+                    'frame_mean_transformation_mats_pipeline'),
+        DatasetSpec('correction_factors', text_format,
+                    'pet_correction_factors_pipeline'),
+        DatasetSpec('umaps_align2ref', directory_format,
+                    'frame2ref_alignment_pipeline'),
+        DatasetSpec('frame2reference_mats', directory_format,
+                    'frame2ref_alignment_pipeline'),
+        DatasetSpec('motion_detection_output', directory_format,
+                    'gather_outputs_pipeline'),
+        DatasetSpec('static_pet_mc', directory_format,
+                    'static_motion_correction_pipeline'),
+        DatasetSpec('static_pet_mc2crop', directory_format,
+                    'static_motion_correction_pipeline'),
+        FieldSpec('pet_duration', dtype=int,
+                  pipeline='pet_time_info_extraction_pipeline'),
+        FieldSpec('pet_end_time', dtype=str,
+                  pipeline='pet_time_info_extraction_pipeline'),
+        FieldSpec('pet_start_time', dtype=str,
+                  pipeline='pet_time_info_extraction_pipeline')]
+
+    add_option_specs = [OptionSpec('framing_th', 2.0),
+                        OptionSpec('framing_temporal_th', 30.0),
+                        OptionSpec('md_framing', True),
+                        OptionSpec('align_pct', False),
+                        OptionSpec('align_fixed_binning', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
@@ -481,66 +542,6 @@ class MotionCorrectionMixin(MultiStudy):
     def static_motion_correction_pipeline(self, **kwargs):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None, **kwargs)
-
-    sub_study_specs = [
-        SubStudySpec('pet_mc', PETStudy, {
-            'pet_data_dir': 'pet_data_dir',
-            'pet_data_reconstructed': 'pet_recon_dir',
-            'pet_data_prepared': 'pet_recon_dir_prepared',
-            'pet_data_cropped': 'pet_data_cropped',
-            'static_pet_mc2crop': 'pet2crop'})]
-
-    add_data_specs = [
-        DatasetSpec('pet_data_dir', directory_format),
-        DatasetSpec('pet_data_reconstructed', directory_format),
-        DatasetSpec('pet_data_prepared', directory_format,
-                    'prepare_pet_pipeline'),
-        DatasetSpec('pet_data_cropped', directory_format,
-                    'pet_fov_cropping_pipeline'),
-        DatasetSpec('mean_displacement', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_rc', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_consecutive', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mats4average', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('start_times', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('motion_par_rc', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('motion_par', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('offset_indexes', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('frame_start_times', text_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('frame_vol_numbers', text_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('timestamps', directory_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('mean_displacement_plot', png_format,
-                    'plot_mean_displacement_pipeline'),
-        DatasetSpec('average_mats', directory_format,
-                    'frame_mean_transformation_mats_pipeline'),
-        DatasetSpec('correction_factors', text_format,
-                    'pet_correction_factors_pipeline'),
-        DatasetSpec('umaps_align2ref', directory_format,
-                    'frame2ref_alignment_pipeline'),
-        DatasetSpec('frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline'),
-        DatasetSpec('motion_detection_output', directory_format,
-                    'gather_outputs_pipeline'),
-        DatasetSpec('static_pet_mc', directory_format,
-                    'static_motion_correction_pipeline'),
-        DatasetSpec('static_pet_mc2crop', directory_format,
-                    'static_motion_correction_pipeline'),
-        FieldSpec('pet_duration', dtype=int,
-                  pipeline=pet_time_info_extraction_pipeline),
-        FieldSpec('pet_end_time', dtype=str,
-                  pipeline=pet_time_info_extraction_pipeline),
-        FieldSpec('pet_start_time', dtype=str,
-                  pipeline=pet_time_info_extraction_pipeline)]
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,

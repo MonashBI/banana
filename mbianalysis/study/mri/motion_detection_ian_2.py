@@ -16,16 +16,17 @@ from nipype.interfaces.utility import Merge as merge_lists
 from .base import MotionReferenceStudy
 from .structural.diffusion_coreg import CoregisteredDiffusionStudy
 from nianalysis.requirements import fsl509_req
+from nianalysis.options import OptionSpec
 
 
 class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'framing_th': 2.0,
-                           'framing_temporal_th': 30.0,
-                           'md_framing': True,
-                           'dwi_1_bet_method': 'optibet'}
+    add_option_specs = [OptionSpec('framing_th', 2.0),
+                        OptionSpec('framing_temporal_th', 30.0),
+                        OptionSpec('md_framing', True),
+                        OptionSpec('dwi_1_bet_method', 'optibet')]
 
     dwi_1_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi_main_dcm_info_pipeline')

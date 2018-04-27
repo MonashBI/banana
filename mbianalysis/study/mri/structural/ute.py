@@ -24,6 +24,7 @@ from nianalysis.requirements import (
     fsl5_req, spm12_req, matlab2015_req)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
+from nianalysis.options import OptionSpec
 
 
 class UTEStudy(MRIStudy):
@@ -534,8 +535,8 @@ class CoregisteredUTEStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'t1_multivol': False,
-                           'reference_resolution': [1]}
+    add_option_specs = [OptionSpec('t1_multivol', False),
+                        OptionSpec('reference_resolution', [1])]
 
     ute_basic_preproc_pipeline = MultiStudy.translate(
         'ute', 'basic_preproc_pipeline')

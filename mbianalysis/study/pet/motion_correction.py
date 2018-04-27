@@ -7,16 +7,17 @@ from nipype.interfaces.fsl import Merge, MCFLIRT, ImageMaths
 from nianalysis.interfaces.utils import ListDir
 from mbianalysis.study.pet.base import PETStudy
 from nianalysis.requirements import fsl509_req
+from nianalysis.options import OptionSpec
 
 
 class FixedMAFMotionCorrection(PETStudy):
 
-    add_default_options = {'maf_xmin': 100,
-                           'maf_xsize': 130,
-                           'maf_ymin': 100,
-                           'maf_ysize': 130,
-                           'maf_zmin': 20,
-                           'maf_zsize': 100},
+    add_option_specs = [OptionSpec('maf_xmin', 100),
+                        OptionSpec('maf_xsize', 130),
+                        OptionSpec('maf_ymin', 100),
+                        OptionSpec('maf_ysize', 130),
+                        OptionSpec('maf_zmin', 20),
+                        OptionSpec('maf_zsize', 100)]
 
     def pet_data_preparation_pipeline(self, **kwargs):
         return (super(FixedMAFMotionCorrection, self).

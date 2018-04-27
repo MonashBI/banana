@@ -7,13 +7,14 @@ from nianalysis.dataset import DatasetSpec
 from mbianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
 from nipype.interfaces import fsl
+from nianalysis.options import OptionSpec
 
 
 class T2StarStudy(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
-    add_default_options = {
+    add_option_specs = [
 #         'SUIT_mask': lookup_template_mask_path('SUIT')
         }
 

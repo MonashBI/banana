@@ -17,6 +17,7 @@ from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
+from nianalysis.options import OptionSpec
 
 
 class T1Study(MRIStudy):
@@ -79,8 +80,8 @@ class CoregisteredT1Study(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'t1_multivol': False,
-                           'reference_resolution': [1]}
+    add_option_specs = [OptionSpec('t1_multivol', False),
+                        OptionSpec('reference_resolution', [1])]
 
     sub_study_specs = [
         SubStudySpec('t1', T1Study, {

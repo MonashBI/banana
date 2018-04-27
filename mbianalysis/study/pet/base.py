@@ -13,6 +13,7 @@ from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
 from nianalysis.interfaces.utils import ListDir, SelectOne, CopyToDir
 from nipype.interfaces.fsl import Merge, ExtractROI
 from mbianalysis.interfaces.custom.dicom import PetTimeInfo
+from nianalysis.options import OptionSpec
 
 
 template_path = os.path.abspath(
@@ -26,19 +27,20 @@ class PETStudy(Study):
 #     def _ica_inputs(self):
 #         pass
 
-    add_default_options = {'ica_n_components': 2,
-                           'ica_type': 'spatial',
-                           'norm_transformation': 's',
-                           'norm_dim': 3,
-                           'norm_template': os.path.join(
-                               template_path, 'PET_template.nii.gz'),
-                           'crop_xmin': 100,
-                           'crop_xsize': 130,
-                           'crop_ymin': 100,
-                           'crop_ysize': 130,
-                           'crop_zmin': 20,
-                           'crop_zsize': 100,
-                           'image_orientation_check': False}
+    add_option_specs = [OptionSpec('ica_n_components', 2),
+                        OptionSpec('ica_type', 'spatial'),
+                        OptionSpec('norm_transformation', 's'),
+                        OptionSpec('norm_dim', 3),
+                        OptionSpec('norm_template',
+                                   os.path.join(template_path,
+                                                'PET_template.nii.gz')),
+                        OptionSpec('crop_xmin', 100),
+                        OptionSpec('crop_xsize', 130),
+                        OptionSpec('crop_ymin', 100),
+                        OptionSpec('crop_ysize', 130),
+                        OptionSpec('crop_zmin', 20),
+                        OptionSpec('crop_zsize', 100),
+                        OptionSpec('image_orientation_check', False)]
 
     add_data_specs = [
         DatasetSpec('registered_volumes', nifti_gz_format),

@@ -27,23 +27,24 @@ from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
 from nipype.interfaces.utility.base import IdentityInterface
+from nianalysis.options import OptionSpec
 
 
 class FunctionalMRIStudy(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
-    add_default_options = {
-        'component_threshold': 20,
-        'motion_reg': True,
-        'highpass': 0.01,
-        'brain_thresh_percent': 5,
-        'MNI_template': os.path.join(
+    add_option_specs = [
+        OptionSpec('component_threshold', 20),
+        OptionSpec('motion_reg', True),
+        OptionSpec('highpass', 0.01),
+        OptionSpec('brain_thresh_percent', 5),
+        OptionSpec('MNI_template', os.path.join(
             os.environ['FSLDIR'], 'data', 'standard',
-            'MNI152_T1_2mm_brain.nii.gz'),
-        'MNI_template_mask': os.path.join(
+            'MNI152_T1_2mm_brain.nii.gz')),
+        OptionSpec('MNI_template_mask', os.path.join(
             os.environ['FSLDIR'], 'data', 'standard',
-            'MNI152_T1_2mm_brain_mask.nii.gz')}
+            'MNI152_T1_2mm_brain_mask.nii.gz'))]
 
     add_data_specs = [
         DatasetSpec('field_map_mag', nifti_gz_format),

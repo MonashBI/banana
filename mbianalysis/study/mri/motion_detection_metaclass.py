@@ -18,6 +18,7 @@ from .structural.diffusion_coreg import (
     CoregisteredDiffusionReferenceStudy)
 from nianalysis.requirements import fsl509_req
 from nianalysis.exceptions import NiAnalysisNameError
+from nianalysis.options import OptionSpec
 
 
 class MotionReferenceT1Study(T1Study):
@@ -58,13 +59,13 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_default_options = {'img_type': 1,
-                           'bet_method': 'optibet',
-                           'md_framing': True,
-                           'framing_th': 2.0,
-                           'framing_temporal_th': 30.0,
-                           'align_pct': False,
-                           'align_fixed_binning': False}
+    add_option_specs = [OptionSpec('img_type', 1),
+                        OptionSpec('bet_method', 'optibet'),
+                        OptionSpec('md_framing', True),
+                        OptionSpec('framing_th', 2.0),
+                        OptionSpec('framing_temporal_th', 30.0),
+                        OptionSpec('align_pct', False),
+                        OptionSpec('align_fixed_binning', False)]
 
     sub_study_specs = [
         SubStudySpec('ref', MotionReferenceT1Study),
@@ -166,12 +167,13 @@ class MotionDetectionStudy(MultiStudy):
         for sub_study_spec in self.sub_study_specs():
             try:
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('motion_mats')))
-                inputs.append(self.dataset(sub_study_spec.inverse_map('tr')))
+                    self.data_spec(sub_study_spec.inverse_map('motion_mats')))
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('start_time')))
+                    self.data_spec(sub_study_spec.inverse_map('tr')))
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('real_duration')))
+                    self.data_spec(sub_study_spec.inverse_map('start_time')))
+                inputs.append(
+                    self.data_spec(sub_study_spec.inverse_map('real_duration')))
                 sub_study_names.append(sub_study_spec.name)
             except NiAnalysisNameError:
                 continue  # Sub study doesn't have motion mat

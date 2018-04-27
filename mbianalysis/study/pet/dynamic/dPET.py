@@ -7,6 +7,7 @@ from nianalysis.interfaces.utils import Merge
 from mbianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
 from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
                                      png_format)
+from nianalysis.options import OptionSpec
 import os
 
 template_path = os.path.abspath(
@@ -18,13 +19,13 @@ class DynamicPETStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
-    add_default_options = {
-        'trans_template': os.path.join(template_path,
-                                       'PET_template.nii.gz'),
-        'base_remove_th': 0,
-        'base_remove_binarize': False,
-        'regress_th': 0,
-        'regress_binarize': False}
+    add_option_specs = [
+        OptionSpec('trans_template',
+                   os.path.join(template_path, 'PET_template.nii.gz')),
+        OptionSpec('base_remove_th', 0),
+        OptionSpec('base_remove_binarize', False),
+        OptionSpec('regress_th', 0),
+        OptionSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
