@@ -17,11 +17,10 @@ class T2Study(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
-    def brain_mask_pipeline(self, robust=True, f_threshold=0.5,
-                            reduce_bias=False, **kwargs):
-        return super(T2Study, self).brain_mask_pipeline(
-            robust=robust, f_threshold=f_threshold,
-            reduce_bias=reduce_bias, **kwargs)
+    add_option_specs = [
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.5),
+        OptionSpec('bet_reduce_bias', False)]
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(T2Study, self).

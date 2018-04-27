@@ -62,21 +62,17 @@ class MotionReferenceT1Study(T1Study):
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
+    add_option_specs = [
+        OptionSpec('preproc_resolution', [1])]
+
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(MotionReferenceT1Study, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
+                    'primary', ref=True, multivol=False, **kwargs))
 
-    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
-        return super(MotionReferenceT1Study, self).basic_preproc_pipeline(
-            resolution=resolution,
-            **kwargs)
-
-    def segmentation_pipeline(self, img_type=1, **kwargs):
+    def segmentation_pipeline(self, **kwargs):
         pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
+            img_type=1, **kwargs)
         return pipeline
 
 
@@ -98,25 +94,23 @@ class MotionReferenceT2Study(T2Study):
         FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
         FieldSpec('pe_angle', str,
                   pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
+        DatasetSpec('dcm_info', text_format,
+                    'header_info_extraction_pipeline'),
+        DatasetSpec('preproc', nifti_gz_format,
+                    'basic_preproc_pipeline')]
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
+    add_option_specs = [
+        OptionSpec('preproc_resolution', [1])]
+
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(MotionReferenceT2Study, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
+                    'primary', ref=True, multivol=False, **kwargs))
 
-    def segmentation_pipeline(self, img_type=2, **kwargs):
+    def segmentation_pipeline(self, **kwargs):
         pipeline = super(MotionReferenceT2Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
+            img_type=2, **kwargs)
         return pipeline
-
-    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
-        return super(MotionReferenceT2Study, self).basic_preproc_pipeline(
-            resolution=resolution,
-            **kwargs)
 
 
 class MotionDetectionMixin(MultiStudy):
@@ -132,11 +126,16 @@ class MotionDetectionMixin(MultiStudy):
                     'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_consecutive', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('mats4average', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('start_times', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('motion_par_rc', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('motion_par', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('offset_indexes', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('mats4average', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('start_times', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('motion_par_rc', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('motion_par', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('offset_indexes', text_format,
+                    'mean_displacement_pipeline'),
         DatasetSpec('frame_start_times', text_format,
                     'motion_framing_pipeline'),
         DatasetSpec('frame_vol_numbers', text_format,
@@ -782,22 +781,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if not run_pipeline:
         raise Exception('At least one scan, other than the reference, must be '
                         'provided!')
-    dct['_sub_study_specs'] = set_specs(
-        *study_specs, inherit_from=MotionDetectionMixin.sub_study_specs())
-    dct['_data_specs'] = set_specs(
-        *data_specs, inherit_from=MotionDetectionMixin.data_specs())
+    dct['sub_study_specs'] = (
+        study_specs + MotionDetectionMixin.sub_study_specs)
+    dct['add_data_specs'] = data_specs
     return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
-
-
-# create_motion_detection_class('test_mixin', 't1_dicom' , 't1', t1s=list_t1,
-#                                   t2s=list_t2, dmris=list_dwi, epis=list_epi)
-# class MotionReferenceMixin(MRIStudy):
-#     def header_info_extraction_pipeline(self, reference=True, multivol=False,
-#                                         **kwargs):
-#         return (super(MotionReferenceStudy, self).
-#                 header_info_extraction_pipeline_factory(
-#                     'primary', ref=reference, multivol=multivol,
-#                     **kwargs))
-#     add_data_specs = [
-#         DatasetSpec('ref_motion_mats', directory_format,
-#                     header_info_extraction_pipeline)]

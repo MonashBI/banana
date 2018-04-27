@@ -73,7 +73,10 @@ class DiffusionStudy(T2Study):
                                    choices=('ants', 'fsl')),
                         OptionSpec('fod_response_algorithm', 'tax'),
                         OptionSpec('tbss_skel_thresh', 0.2),
-                        OptionSpec('fsl_mask_f', 0.25)]
+                        OptionSpec('fsl_mask_f', 0.25),
+                        OptionSpec('bet_robust', True),
+                        OptionSpec('bet_f_threshold', 0.2),
+                        OptionSpec('bet_reduce_bias', False)]
 
     def preprocess_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -168,7 +171,7 @@ class DiffusionStudy(T2Study):
         pipeline.assert_connected()
         return pipeline
 
-    def brain_mask_pipeline(self, mask_tool='mrtrix', **kwargs):  # @UnusedVariable @IgnorePep8
+    def brain_mask_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
 
@@ -804,7 +807,7 @@ class NODDIStudy(DiffusionStudy):
         pipeline.assert_connected()
         return pipeline
 
-    def noddi_fitting_pipeline(self, nthreads=4, **kwargs):  # @UnusedVariable
+    def noddi_fitting_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Creates a ROI in which the NODDI processing will be performed
 
@@ -866,7 +869,7 @@ class NODDIStudy(DiffusionStudy):
             requirements=[noddi_req, matlab2015_req], wall_time=180,
             memory=8000)
         batch_fit.inputs.model = pipeline.option('noddi_model')
-        batch_fit.inputs.nthreads = nthreads
+        batch_fit.inputs.nthreads = self.runner.num_processes
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
         save_params = pipeline.create_node(

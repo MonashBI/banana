@@ -33,28 +33,6 @@ class MRIStudy(Study):
 
     __metaclass__ = StudyMetaClass
 
-    add_option_specs = [
-        OptionSpec('bet_robust', True),
-        OptionSpec('bet_f_threshold', 0.5),
-        OptionSpec('bet_reduce_bias', False),
-        OptionSpec('bet_g_threshold', 0.0),
-        OptionSpec('bet_method', 'fsl_bet', choices=('fsl_bet',
-                                                     'optibet')),
-        OptionSpec('MNI_template',
-                   os.path.join(atlas_path), 'MNI152_T1_2mm.nii.gz'),
-        OptionSpec('MNI_template_mask', os.path.join(
-            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        OptionSpec('optibet_gen_report', False),
-        OptionSpec('fnirt_atlas_reg_tool', 'fnirt'),
-        OptionSpec('fnirt_atlas', 'MNI152'),
-        OptionSpec('fnirt_resolution', '2mm'),
-        OptionSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
-        OptionSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
-        OptionSpec('seg_img_type', 2),
-        OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
-        OptionSpec('preproc_resolution', None),
-        OptionSpec('info_extract_multivol', True)]
-
     add_data_specs = [
         DatasetSpec('primary', dicom_format),
         DatasetSpec('primary_nifti', nifti_gz_format,
@@ -88,6 +66,27 @@ class MRIStudy(Study):
             'header_info_extraction_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline')]
+
+    add_option_specs = [
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.5),
+        OptionSpec('bet_reduce_bias', False),
+        OptionSpec('bet_g_threshold', 0.0),
+        OptionSpec('bet_method', 'fsl_bet',
+                   choices=('fsl_bet', 'optibet')),
+        OptionSpec('MNI_template',
+                   os.path.join(atlas_path), 'MNI152_T1_2mm.nii.gz'),
+        OptionSpec('MNI_template_mask', os.path.join(
+            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
+        OptionSpec('optibet_gen_report', False),
+        OptionSpec('fnirt_atlas_reg_tool', 'fnirt'),
+        OptionSpec('fnirt_atlas', 'MNI152'),
+        OptionSpec('fnirt_resolution', '2mm'),
+        OptionSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
+        OptionSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
+        OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
+        OptionSpec('preproc_resolution', None),
+        OptionSpec('info_extract_multivol', True)]
 
     def brain_mask_pipeline(self, **kwargs):
         bet_method = self.option('bet_method', self.BRAIN_MASK_NAME)
@@ -308,7 +307,7 @@ class MRIStudy(Study):
         pipeline.assert_connected()
         return pipeline
 
-    def segmentation_pipeline(self, **kwargs):
+    def segmentation_pipeline(self, img_type=2, **kwargs):
         pipeline = self.create_pipeline(
             name='FAST_segmentation',
             inputs=[DatasetSpec('masked', nifti_gz_format)],
@@ -320,7 +319,7 @@ class MRIStudy(Study):
 
         fast = pipeline.create_node(fsl.FAST(), name='fast',
                                     requirements=[fsl509_req])
-        fast.inputs.img_type = pipeline.option('seg_img_type')
+        fast.inputs.img_type = img_type
         fast.inputs.segments = True
         fast.inputs.out_basename = 'Reference_segmentation'
         pipeline.connect_input('masked', fast, 'in_files')

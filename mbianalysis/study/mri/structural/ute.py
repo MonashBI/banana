@@ -39,28 +39,33 @@ class UTEStudy(MRIStudy):
         DatasetSpec('ute_echo1', dicom_format),
         DatasetSpec('ute_echo2', dicom_format),
         DatasetSpec('umap_ute', dicom_format),
-        DatasetSpec('ute1_registered', nifti_gz_format, 'registration_pipeline'),
-        DatasetSpec('ute2_registered', nifti_gz_format, 'registration_pipeline'),
+        DatasetSpec('ute1_registered', nifti_gz_format,
+                    'registration_pipeline'),
+        DatasetSpec('ute2_registered', nifti_gz_format,
+                    'registration_pipeline'),
         DatasetSpec('template_to_ute_mat', text_matrix_format,
                     'registration_pipeline'),
         DatasetSpec('ute_to_template_mat', text_matrix_format,
                     'registration_pipeline'),
-        DatasetSpec('air_mask', nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('bones_mask', nifti_gz_format, 'segmentation_pipeline'),
+        DatasetSpec('air_mask', nifti_gz_format,
+                    'segmentation_pipeline'),
+        DatasetSpec('bones_mask', nifti_gz_format,
+                    'segmentation_pipeline'),
         DatasetSpec('sute_cont_template', nifti_gz_format,
                     'umaps_calculation_pipeline'),
         DatasetSpec('sute_fix_template', nifti_gz_format,
                     'umaps_calculation_pipeline'),
-        DatasetSpec('sute_fix_ute', nifti_gz_format, 'backwrap_to_ute_pipeline'),
+        DatasetSpec('sute_fix_ute', nifti_gz_format,
+                    'backwrap_to_ute_pipeline'),
         DatasetSpec('sute_cont_ute', nifti_gz_format,
                     'backwrap_to_ute_pipeline')]
 
+    add_option_specs = [
+        OptionSpec('bet_method', 'optibet',
+                   choices=MRIStudy.option_spec('bet_method').choices)]
+
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
-
-    def brain_mask_pipeline(self, bet_method='optibet', **kwargs):
-        return super(UTEStudy, self).brain_mask_pipeline(bet_method=bet_method,
-                                                         **kwargs)
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(UTEStudy, self).

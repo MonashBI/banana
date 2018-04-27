@@ -42,16 +42,14 @@ class MotionReferenceT1Study(T1Study):
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline')]
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(MotionReferenceT1Study, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
+                    'primary', ref=True, multivol=False, **kwargs))
 
-    def segmentation_pipeline(self, img_type=1, **kwargs):
+    def segmentation_pipeline(self, **kwargs):
         pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
+            img_type=1, **kwargs)
         return pipeline
 
 
@@ -393,29 +391,3 @@ class MotionDetectionStudy(MultiStudy):
             pct=False, fixed_binning=False, **kwargs)
 
     cls = T1Study
-
-
-
-# def create_motion_detection_class(name, reference, ref_type, t1s=None,
-#                                   t2s=None, dmris=None, epis=None):
-#     ref_cls = type('MotionReference{}'.format(ref_type.__name__),
-#                    (ref_type, MotionReferenceMixin), {})
-#     study_specs = [SubStudySpec('ref', ref_cls)]
-#     if t1s is not None:
-#         study_specs.extend(SubStudySpec())
-#     dct = {}
-#     dct['_sub_study_specs'] = set_specs(study_specs)
-#     dct['_data_specs'] = {}
-#     return MultiStudyMetaClass(name, [MotionDetectionMixin], dct)
-
-
-# class MotionReferenceMixin(MRIStudy):
-#     def header_info_extraction_pipeline(self, reference=True, multivol=False,
-#                                         **kwargs):
-#         return (super(MotionReferenceStudy, self).
-#                 header_info_extraction_pipeline_factory(
-#                     'primary', ref=reference, multivol=multivol,
-#                     **kwargs))
-#     add_data_specs = [
-#         DatasetSpec('ref_motion_mats', directory_format,
-#                     header_info_extraction_pipeline)]

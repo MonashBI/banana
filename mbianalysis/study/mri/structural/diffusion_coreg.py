@@ -36,9 +36,10 @@ class DiffusionStudy(MRIStudy):
         FieldSpec('ped', str, 'header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
-    def brain_mask_pipeline(self, robust=True, f_threshold=0.2, **kwargs):
-        return super(DiffusionStudy, self).brain_mask_pipeline(
-            robust=robust, f_threshold=f_threshold, **kwargs)
+    add_option_specs = [
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.2),
+        OptionSpec('bet_reduce_bias', False)]
 
     def dcm2nii_conversion_pipeline(self, **kwargs):
         return super(DiffusionStudy, self).dcm2nii_conversion_pipeline_factory(
@@ -192,10 +193,10 @@ class DiffusionReferenceStudy(DiffusionStudy):
         FieldSpec('ped', str, 'header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
-    def header_info_extraction_pipeline(self, multivol=False, **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'to_be_corrected', multivol=multivol, **kwargs))
+                    'to_be_corrected', multivol=False, **kwargs))
 
     def main_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
@@ -228,10 +229,10 @@ class DiffusionOppositeStudy(DiffusionReferenceStudy):
         FieldSpec('ped', str, 'header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
-    def header_info_extraction_pipeline(self, multivol=False, **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'to_be_corrected', multivol=multivol, **kwargs))
+                    'to_be_corrected', multivol=False, **kwargs))
 
     def main_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
@@ -264,15 +265,16 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
         FieldSpec('ped', str, 'header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
-    def header_info_extraction_pipeline(self, multivol=False, **kwargs):
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'to_be_corrected', multivol=multivol, **kwargs))
+                    'to_be_corrected', multivol=False, **kwargs))
 
     def main_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).
                 dcm2nii_conversion_pipeline_factory(
-                    'dwi2ref_opp_main_dcm2nii', 'to_be_corrected', **kwargs))
+                    'dwi2ref_opp_main_dcm2nii', 'to_be_corrected',
+                    **kwargs))
 
     def ref_dcm2nii_conversion_pipeline(self, **kwargs):
         return (super(DiffusionReferenceStudy, self).

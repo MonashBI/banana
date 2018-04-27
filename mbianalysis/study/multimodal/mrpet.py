@@ -61,21 +61,17 @@ class MotionReferenceT1Study(T1Study):
             'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
+    add_option_specs = [
+        OptionSpec('preproc_resolution', [1])]
+
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(MotionReferenceT1Study, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
+                    'primary', ref=True, multivol=False, **kwargs))
 
-    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
-        return super(MotionReferenceT1Study, self).basic_preproc_pipeline(
-            resolution=resolution,
-            **kwargs)
-
-    def segmentation_pipeline(self, img_type=1, **kwargs):
+    def segmentation_pipeline(self, **kwargs):
         pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
+            img_type=1, **kwargs)
         return pipeline
 
 
@@ -103,22 +99,18 @@ class MotionReferenceT2Study(T2Study):
             'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
+    add_option_specs = [
+        OptionSpec('preproc_resolution', [1])]
+
+    def header_info_extraction_pipeline(self, **kwargs):
         return (super(MotionReferenceT2Study, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
+                    'primary', ref=True, multivol=False, **kwargs))
 
-    def segmentation_pipeline(self, img_type=2, **kwargs):
+    def segmentation_pipeline(self, **kwargs):
         pipeline = super(MotionReferenceT2Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
+            img_type=2, **kwargs)
         return pipeline
-
-    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
-        return super(MotionReferenceT2Study, self).basic_preproc_pipeline(
-            resolution=resolution,
-            **kwargs)
 
 
 class MotionCorrectionMixin(MultiStudy):

@@ -178,7 +178,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
                             DatasetSpec('matrix', text_matrix_format)]
     _registration_outputs = [DatasetSpec('registered', nifti_gz_format)]
 
-    def _fsl_flirt_pipeline(self, outputs, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _fsl_flirt_factory(self, outputs, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Registers a MR scan to a reference MR scan with FSL's FLIRT command
         using an existing registration matrix
@@ -193,7 +193,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         (NB: see CoregisteredStudy.registration_pipeline for remaining params)
         """
         pipeline = super(
-            CoregisteredToMatrixStudy, self)._fsl_flirt_pipeline(
+            CoregisteredToMatrixStudy, self)._fsl_flirt_factory(
                 outputs, **kwargs)
         flirt = pipeline.node('flirt')
         if pipeline.option('interpolate') is not None:

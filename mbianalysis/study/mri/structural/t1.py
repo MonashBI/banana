@@ -3,8 +3,7 @@ from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from nianalysis.requirements import freesurfer_req
-from nianalysis.citations import (
-    freesurfer_cites, optimal_t1_bet_params_cite)
+from nianalysis.citations import freesurfer_cites
 from nianalysis.data_formats import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     directory_format, dicom_format, text_format)
@@ -14,7 +13,8 @@ from ..base import MRIStudy
 from nianalysis.citations import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from ..coregistered import CoregisteredStudy
-from nianalysis.study.multi import (MultiStudy, SubStudySpec, MultiStudyMetaClass)
+from nianalysis.study.multi import (MultiStudy, SubStudySpec,
+                                    MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from nianalysis.options import OptionSpec
@@ -29,14 +29,15 @@ class T1Study(MRIStudy):
                     'freesurfer_pipeline'),
         DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline')]
 
-    def brain_mask_pipeline(self, bet_method='optibet', **kwargs):
-        return super(T1Study, self).brain_mask_pipeline(bet_method=bet_method,
-                                                        **kwargs)
-#     def brain_mask_pipeline(self, robust=True, f_threshold=0.57,
-#                             g_threshold=-0.1, **kwargs):
-#         return (super(T1Study, self).brain_mask_pipeline(
-#             robust=robust, f_threshold=f_threshold,
-#             g_threshold=g_threshold, **kwargs))
+    add_option_specs = [
+        OptionSpec('bet_method', 'optibet',
+                   choices=MRIStudy.option_spec('bet_method').choices),
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.57),
+        OptionSpec('bet_g_threshold', -0.1)]
+
+    def brain_mask_pipeline(self, **kwargs):
+        return super(T1Study, self).brain_mask_pipeline(**kwargs)
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(T1Study, self).

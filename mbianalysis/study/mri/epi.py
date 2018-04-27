@@ -28,10 +28,10 @@ class EPIStudy(MRIStudy):
         DatasetSpec('moco_par', text_format,
                     'motion_alignment_pipeline')]
 
-    def brain_mask_pipeline(self, robust=True, f_threshold=0.2,
-                            **kwargs):
-        return super(EPIStudy, self).brain_mask_pipeline(
-            robust=robust, f_threshold=f_threshold, **kwargs)
+    add_option_specs = [
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.2),
+        OptionSpec('bet_reduce_bias', False)]
 
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(EPIStudy, self).
