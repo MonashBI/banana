@@ -105,7 +105,7 @@ class DiffusionStudy(MRIStudy):
         return pipeline
 
     def topup_factory(self, name, to_be_corrected_name, ref_input_name,
-                      pe_dir, pe_angle, output_name, **options):
+                      pe_dir, pe_angle, output_name, **kwargs):
 
         pipeline = self.create_pipeline(
             name=name,
@@ -162,7 +162,7 @@ class DiffusionStudy(MRIStudy):
     def topup_pipeline(self, **kwargs):
         return self.topup_factory(
             'dwi_topup', 'topup_in', 'topup_ref', 'dwi_distorted', 'ped',
-            'pe_angle', **options)
+            'pe_angle', **kwargs)
 
     add_data_specs = [
         DatasetSpec('dwi_main', dicom_format),

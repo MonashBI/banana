@@ -35,14 +35,14 @@ class CoregisteredStudy(Study):
                             DatasetSpec('to_register', nifti_gz_format)]
 
     def linear_registration_pipeline(self, coreg_tool='flirt',
-                                     **options):
+                                     **kwargs):
         if coreg_tool == 'flirt':
             registration_outputs = [DatasetSpec('registered', nifti_gz_format),
                                     DatasetSpec('matrix', text_matrix_format)]
             pipeline = self._fsl_flirt_pipeline(registration_outputs,
-                                                **options)
+                                                **kwargs)
         elif coreg_tool == 'spm':
-            pipeline = self._spm_coreg_pipeline(**options)
+            pipeline = self._spm_coreg_pipeline(**kwargs)
         else:
             raise NotImplementedError(
                 "Unrecognised coregistration tool '{}'. Can be one of "

@@ -718,7 +718,7 @@ class MotionDetectionStudy(MultiStudy):
 
     def frame2ref_alignment_pipeline_factory(
             self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
-            pct=False, fixed_binning=False, **options):
+            pct=False, fixed_binning=False, **kwargs):
         inputs = [DatasetSpec(average_mats, directory_format),
                   DatasetSpec(ute_regmat, text_matrix_format),
                   DatasetSpec(ute_qform_mat, text_matrix_format)]
@@ -765,7 +765,7 @@ class MotionDetectionStudy(MultiStudy):
         return self.frame2ref_alignment_pipeline_factory(
             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
             'ute_qform_mat', umap='umap',
-            pct=False, fixed_binning=False, **options)
+            pct=False, fixed_binning=False, **kwargs)
 
     sub_study_specs = [
         SubStudySpec('ref', MotionReferenceStudy, {

@@ -409,7 +409,7 @@ class MotionDetectionMixin(MultiStudy):
 
     def gather_outputs_factory(self, name, align_mats=False,
                                pet_corr_fac=False, aligned_umaps=False,
-                               timestamps=False, ute=None, **options):
+                               timestamps=False, ute=None, **kwargs):
         inputs = [DatasetSpec('mean_displacement_plot', png_format),
                   DatasetSpec('motion_par', text_format)]
         if align_mats:
@@ -502,7 +502,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
         def motion_framing_pipeline_altered(self, **kwargs):
             return self.motion_framing_pipeline_factory(
-                pet_data_dir='pet_data_dir', **options)
+                pet_data_dir='pet_data_dir', **kwargs)
 
         dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
         data_specs.append(
@@ -523,7 +523,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         def motion_framing_pipeline_altered(self, **kwargs):
             return self.motion_framing_pipeline_factory(
                 pet_start_time=pet_time_info[0], pet_duration=pet_time_info[1],
-                **options)
+                **kwargs)
 
         dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
         data_specs.append(
@@ -580,7 +580,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 'frame2ref_alignment', 'average_mats',
                 'ute_{}_ute_reg_mat'.format(len(utes)-1),
                 'ute_{}_ute_qform_mat'.format(len(utes)-1), umap=None,
-                pct=False, fixed_binning=False, **options)
+                pct=False, fixed_binning=False, **kwargs)
 
         def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(
@@ -617,7 +617,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 'ute_{}_ute_reg_mat'.format(len(utes)-1),
                 'ute_{}_ute_qform_mat'.format(len(utes)-1),
                 umap='ute_{}_umap_nifti'.format(len(utes)-1),
-                pct=False, fixed_binning=False, **options)
+                pct=False, fixed_binning=False, **kwargs)
 
         def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(

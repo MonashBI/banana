@@ -115,11 +115,11 @@ class DynamicPETStudy(PETStudy):
         pipeline.connect_output('ts', dr, 'timecourse')
         pipeline.assert_connected()
         return pipeline
-#     def example_pipeline_switch(self, tool='atool', **options):
+#     def example_pipeline_switch(self, tool='atool', **kwargs):
 #         if tool == 'atool':
-#             pipeline = self._atool_pipeline(**options)
+#             pipeline = self._atool_pipeline(**kwargs)
 #         else:
-#             pipeline = self._anothertool_pipeline(**options)
+#             pipeline = self._anothertool_pipeline(**kwargs)
 #         return pipeline
 
     def dynamics_ica_pipeline(self, **kwargs):

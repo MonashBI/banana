@@ -77,7 +77,7 @@ class StaticPETMotionCorrection(PETStudy):
                 pet_fov_cropping_pipeline(**kwargs))
 
     def static_motion_correction_pipeline_factory(self, StructAlignment=None,
-                                                  **options):
+                                                  **kwargs):
         inputs = [DatasetSpec('pet_data_cropped', directory_format),
                   DatasetSpec('motion_detection_output', directory_format)]
         if StructAlignment is not None:
