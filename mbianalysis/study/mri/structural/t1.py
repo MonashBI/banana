@@ -24,6 +24,11 @@ class T1Study(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
+                    'freesurfer_pipeline'),
+        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline')]
+
     def brain_mask_pipeline(self, bet_method='optibet', **kwargs):
         return super(T1Study, self).brain_mask_pipeline(bet_method=bet_method,
                                                         **kwargs)
@@ -69,11 +74,6 @@ class T1Study(MRIStudy):
         pipeline.connect_output('fs_recon_all', join, 'path')
         pipeline.assert_connected()
         return pipeline
-
-    add_data_specs = [
-        DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
-                    'freesurfer_pipeline'),
-        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline')]
 
 
 class CoregisteredT1Study(MultiStudy):

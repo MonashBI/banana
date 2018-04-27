@@ -18,58 +18,6 @@ class T1T2Study(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    def freesurfer_pipeline(self, **kwargs):
-        pipeline = self.TranslatedPipeline(
-            self, self.t1, T1Study.freesurfer_pipeline,
-            add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)],
-            **kwargs)
-        recon_all = pipeline.node('recon_all')
-        # Connect T2-weighted input
-        pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
-        recon_all.inputs.use_T2 = True
-        pipeline.assert_connected()
-        return pipeline
-
-    coregister_to_atlas_pipeline = MultiStudy.translate(
-        't1', 'coregister_to_atlas_pipeline')
-
-    t2_registration_pipeline = MultiStudy.translate(
-        't2coregt1', 'linear_registration_pipeline')
-
-    manual_wmh_mask_registration_pipeline = MultiStudy.translate(
-        'wmhcoregt1',
-        CoregisteredToMatrixStudy.linear_registration_pipeline)
-
-    t2_brain_mask_pipeline = MultiStudy.translate(
-        't2', 'brain_mask_pipeline')
-
-    def t1_brain_mask_pipeline(self, **kwargs):
-        """
-        Masks the T1 image using the coregistered T2 brain mask as the brain
-        mask from T2 is usually more reliable (using BET in any case)
-        """
-        pipeline = self.create_pipeline(
-            name='t1_brain_mask_pipeline',
-            inputs=[DatasetSpec('t1', nifti_gz_format),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('t1_masked', nifti_gz_format)],
-            version=1,
-            description="Mask T1 with T2 brain mask",
-            citations=[fsl_cite],
-            **kwargs)
-        # Create apply mask node
-        apply_mask = pipeline.create_node(
-            ApplyMask(), name='appy_mask', requirements=[fsl5_req])
-        apply_mask.inputs.output_type = 'NIFTI_GZ'
-        # Connect inputs
-        pipeline.connect_input('t1', apply_mask, 'in_file')
-        pipeline.connect_input('brain_mask', apply_mask, 'mask_file')
-        # Connect outputs
-        pipeline.connect_output('t1_masked', apply_mask, 'out_file')
-        # Check and return
-        pipeline.assert_connected()
-        return pipeline
-
     sub_study_specs = [
         SubStudySpec('t1', T1Study, {
             't1': 'primary',
@@ -122,3 +70,55 @@ class T1T2Study(MultiStudy):
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline',
                     description="Output directory from Freesurfer recon_all")]
+
+    def freesurfer_pipeline(self, **kwargs):
+        pipeline = self.TranslatedPipeline(
+            self, self.t1, T1Study.freesurfer_pipeline,
+            add_inputs=[DatasetSpec('t2_coreg', nifti_gz_format)],
+            **kwargs)
+        recon_all = pipeline.node('recon_all')
+        # Connect T2-weighted input
+        pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
+        recon_all.inputs.use_T2 = True
+        pipeline.assert_connected()
+        return pipeline
+
+    coregister_to_atlas_pipeline = MultiStudy.translate(
+        't1', 'coregister_to_atlas_pipeline')
+
+    t2_registration_pipeline = MultiStudy.translate(
+        't2coregt1', 'linear_registration_pipeline')
+
+    manual_wmh_mask_registration_pipeline = MultiStudy.translate(
+        'wmhcoregt1',
+        CoregisteredToMatrixStudy.linear_registration_pipeline)
+
+    t2_brain_mask_pipeline = MultiStudy.translate(
+        't2', 'brain_mask_pipeline')
+
+    def t1_brain_mask_pipeline(self, **kwargs):
+        """
+        Masks the T1 image using the coregistered T2 brain mask as the brain
+        mask from T2 is usually more reliable (using BET in any case)
+        """
+        pipeline = self.create_pipeline(
+            name='t1_brain_mask_pipeline',
+            inputs=[DatasetSpec('t1', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('t1_masked', nifti_gz_format)],
+            version=1,
+            description="Mask T1 with T2 brain mask",
+            citations=[fsl_cite],
+            **kwargs)
+        # Create apply mask node
+        apply_mask = pipeline.create_node(
+            ApplyMask(), name='appy_mask', requirements=[fsl5_req])
+        apply_mask.inputs.output_type = 'NIFTI_GZ'
+        # Connect inputs
+        pipeline.connect_input('t1', apply_mask, 'in_file')
+        pipeline.connect_input('brain_mask', apply_mask, 'mask_file')
+        # Connect outputs
+        pipeline.connect_output('t1_masked', apply_mask, 'out_file')
+        # Check and return
+        pipeline.assert_connected()
+        return pipeline

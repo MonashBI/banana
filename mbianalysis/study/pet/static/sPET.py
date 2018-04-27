@@ -14,6 +14,11 @@ class StaticPETStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('pet_image', nifti_gz_format),
+        DatasetSpec('base_mask', nifti_gz_format),
+        DatasetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]
+
     def suvr_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
@@ -35,8 +40,3 @@ class StaticPETStudy(PETStudy):
 
     def _ica_inputs(self):
         pass
-
-    add_data_specs = [
-        DatasetSpec('pet_image', nifti_gz_format),
-        DatasetSpec('base_mask', nifti_gz_format),
-        DatasetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]

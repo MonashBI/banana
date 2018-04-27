@@ -757,6 +757,22 @@ class NODDIStudy(DiffusionStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('low_b_dw_scan', mrtrix_format),
+        DatasetSpec('high_b_dw_scan', mrtrix_format),
+        DatasetSpec('forward_pe', mrtrix_format),
+        DatasetSpec('reverse_pe', mrtrix_format),
+        DatasetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
+        DatasetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('fibredirs_xvec', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('fibredirs_yvec', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('fibredirs_zvec', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('fmin', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
+        DatasetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
+
     add_option_specs = [OptionSpec('noddi_model',
                                    'WatsonSHStickTortIsoV_B0'),
                         OptionSpec('single_slice', False)]
@@ -887,20 +903,3 @@ class NODDIStudy(DiffusionStudy):
         # Check inputs/outputs are connected
         pipeline.assert_connected()
         return pipeline
-
-    add_data_specs = [
-        DatasetSpec('low_b_dw_scan', mrtrix_format),
-        DatasetSpec('high_b_dw_scan', mrtrix_format),
-        DatasetSpec('forward_pe', mrtrix_format),
-        DatasetSpec('reverse_pe', mrtrix_format),
-        DatasetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
-        DatasetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fibredirs_xvec', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fibredirs_yvec', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fibredirs_zvec', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fmin', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('error_code', nifti_format, 'noddi_fitting_pipeline'),
-        inherit_from=DiffusionStudy.generated_data_specs())

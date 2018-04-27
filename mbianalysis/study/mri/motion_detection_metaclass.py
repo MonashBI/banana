@@ -25,18 +25,6 @@ class MotionReferenceT1Study(T1Study):
 
     __metaclass__ = StudyMetaClass
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
-        return (super(MotionReferenceT1Study, self).
-                header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
-
-    def segmentation_pipeline(self, img_type=1, **kwargs):
-        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
-        return pipeline
-
     add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
@@ -54,18 +42,22 @@ class MotionReferenceT1Study(T1Study):
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline')]
 
+    def header_info_extraction_pipeline(self, reference=True, multivol=False,
+                                        **kwargs):
+        return (super(MotionReferenceT1Study, self).
+                header_info_extraction_pipeline_factory(
+                    'primary', ref=reference, multivol=multivol,
+                    **kwargs))
+
+    def segmentation_pipeline(self, img_type=1, **kwargs):
+        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
+            img_type=img_type, **kwargs)
+        return pipeline
+
 
 class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
-
-    add_option_specs = [OptionSpec('img_type', 1),
-                        OptionSpec('bet_method', 'optibet'),
-                        OptionSpec('md_framing', True),
-                        OptionSpec('framing_th', 2.0),
-                        OptionSpec('framing_temporal_th', 30.0),
-                        OptionSpec('align_pct', False),
-                        OptionSpec('align_fixed_binning', False)]
 
     sub_study_specs = [
         SubStudySpec('ref', MotionReferenceT1Study),
@@ -149,6 +141,14 @@ class MotionDetectionStudy(MultiStudy):
                     'frame2ref_alignment_pipeline'),
         DatasetSpec('frame2reference_mats', directory_format,
                     'frame2ref_alignment_pipeline')]
+
+    add_option_specs = [OptionSpec('img_type', 1),
+                        OptionSpec('bet_method', 'optibet'),
+                        OptionSpec('md_framing', True),
+                        OptionSpec('framing_th', 2.0),
+                        OptionSpec('framing_temporal_th', 30.0),
+                        OptionSpec('align_pct', False),
+                        OptionSpec('align_fixed_binning', False)]
 
     epi1_ref_segmentation_pipeline = MultiStudy.translate(
         'epi1', 'ref_segmentation_pipeline')

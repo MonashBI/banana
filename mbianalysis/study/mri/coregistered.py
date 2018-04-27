@@ -158,6 +158,13 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('reference', nifti_gz_format),
+        DatasetSpec('to_register', nifti_gz_format),
+        DatasetSpec('matrix', text_matrix_format),
+        DatasetSpec('registered', nifti_gz_format,
+                    CoregisteredStudy.linear_registration_pipeline)]
+
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format),
                             DatasetSpec('matrix', text_matrix_format)]
@@ -199,10 +206,3 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
 
     def _connect_matrix(self, pipeline, flirt):
         pipeline.connect_input('matrix', flirt, 'in_matrix_file')
-
-    add_data_specs = [
-        DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('to_register', nifti_gz_format),
-        DatasetSpec('matrix', text_matrix_format),
-        DatasetSpec('registered', nifti_gz_format,
-                    CoregisteredStudy.linear_registration_pipeline)]

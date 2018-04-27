@@ -14,6 +14,22 @@ class T2StarStudy(MRIStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('coils', directory_format,
+                    description=("Reconstructed T2* complex image for each "
+                                 "coil")),
+        DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
+                    description=("Quantitative susceptibility image resolved "
+                                 "from T2* coil images")),
+        DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline,
+                    description=("Phase map for each coil following unwrapping"
+                                 " and background field removal")),
+        DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline,
+                    description=("Mask for each coil corresponding to areas of"
+                                 " high magnitude")),
+        DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline,
+                    description=("Brain mask generated from T2* image"))]
+
     add_option_specs = [
 #         'SUIT_mask': lookup_template_mask_path('SUIT')
         }
@@ -174,19 +190,3 @@ class T2StarStudy(MRIStudy):
 
         pipeline.assert_connected()
         return pipeline
-
-    add_data_specs = [
-        DatasetSpec('coils', directory_format,
-                    description=("Reconstructed T2* complex image for each "
-                                 "coil")),
-        DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
-                    description=("Quantitative susceptibility image resolved "
-                                 "from T2* coil images")),
-        DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline,
-                    description=("Phase map for each coil following unwrapping"
-                                 " and background field removal")),
-        DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline,
-                    description=("Mask for each coil corresponding to areas of"
-                                 " high magnitude")),
-        DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline,
-                    description=("Brain mask generated from T2* image"))]

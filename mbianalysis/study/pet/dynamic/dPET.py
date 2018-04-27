@@ -19,6 +19,19 @@ class DynamicPETStudy(PETStudy):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('pet_volumes', nifti_gz_format),
+        DatasetSpec('regression_map', nifti_gz_format),
+        DatasetSpec('pet_image', nifti_gz_format,
+                    'Extract_vol_pipeline'),
+        DatasetSpec('registered_volumes', nifti_gz_format,
+                    'ApplyTransform_pipeline'),
+        DatasetSpec('detrended_volumes', nifti_gz_format,
+                    'Baseline_Removal_pipeline'),
+        DatasetSpec('spatial_map', nifti_gz_format,
+                    'Dual_Regression_pipeline'),
+        DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]
+
     add_option_specs = [
         OptionSpec('trans_template',
                    os.path.join(template_path, 'PET_template.nii.gz')),
@@ -127,16 +140,3 @@ class DynamicPETStudy(PETStudy):
         return self._ICA_pipeline_factory(
             input_dataset=DatasetSpec(
                 'registered_volumes', nifti_gz_format, **kwargs))
-
-    add_data_specs = [
-        DatasetSpec('pet_volumes', nifti_gz_format),
-        DatasetSpec('regression_map', nifti_gz_format),
-        DatasetSpec('pet_image', nifti_gz_format,
-                    'Extract_vol_pipeline'),
-        DatasetSpec('registered_volumes', nifti_gz_format,
-                    'ApplyTransform_pipeline'),
-        DatasetSpec('detrended_volumes', nifti_gz_format,
-                    'Baseline_Removal_pipeline'),
-        DatasetSpec('spatial_map', nifti_gz_format,
-                    'Dual_Regression_pipeline'),
-        DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]

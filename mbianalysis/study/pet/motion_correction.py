@@ -12,6 +12,13 @@ from nianalysis.options import OptionSpec
 
 class FixedMAFMotionCorrection(PETStudy):
 
+    __metaclass__ = StudyMetaClass
+
+    add_data_specs = [
+        DatasetSpec('pet_dir', directory_format),
+        DatasetSpec('fixed_maf_pet', nifti_gz_format,
+                    'fixed_maf_pipeline')]
+
     add_option_specs = [OptionSpec('maf_xmin', 100),
                         OptionSpec('maf_xsize', 130),
                         OptionSpec('maf_ymin', 100),
@@ -62,12 +69,16 @@ class FixedMAFMotionCorrection(PETStudy):
         pipeline.assert_connected()
         return pipeline
 
-    add_data_specs = [
-        DatasetSpec('pet_dir', directory_format),
-        DatasetSpec('fixed_maf_pet', nifti_gz_format, 'fixed_maf_pipeline')]
-
 
 class StaticPETMotionCorrection(PETStudy):
+
+    __metaclass__ = StudyMetaClass
+
+    add_data_specs = [
+        DatasetSpec('pet_dir', directory_format),
+        DatasetSpec('motion_detection_output', directory_format),
+        DatasetSpec('static_pet_mc', directory_format,
+                    'static_motion_correction_pipeline')]
 
     def pet_data_preparation_pipeline(self, **kwargs):
         return (super(FixedMAFMotionCorrection, self).
@@ -111,9 +122,3 @@ class StaticPETMotionCorrection(PETStudy):
     def static_motion_correction_pipeline(self, **kwargs):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None)
-
-    add_data_specs = [
-        DatasetSpec('pet_dir', directory_format),
-        DatasetSpec('motion_detection_output', directory_format),
-        DatasetSpec('static_pet_mc', directory_format,
-                    'static_motion_correction_pipeline')]

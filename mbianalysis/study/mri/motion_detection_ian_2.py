@@ -23,751 +23,6 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    add_option_specs = [OptionSpec('framing_th', 2.0),
-                        OptionSpec('framing_temporal_th', 30.0),
-                        OptionSpec('md_framing', True),
-                        OptionSpec('dwi_1_bet_method', 'optibet')]
-
-    dwi_1_main_dcm_info_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi_main_dcm_info_pipeline')
-
-    dwi_1_main_basic_preproc_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi_main_dwipreproc_pipeline')
-
-    dwi_1_main_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi_main_bet_pipeline')
-
-    dwi_1_main_motion_alignment_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi_main_motion_mat_pipeline')
-
-    dwi_1_main_aff_mat_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi_main_affine_mats_pipeline')
-
-    dwi_1_main_qform_transform_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi_main_qform_transform_pipeline')
-
-    dwi_1_main_rigid_registration_pipeline = MultiStudy.translate(
-        'dwi_1',
-        CoregisteredDiffusionStudy.dwi_main_rigid_registration_pipeline)
-
-    dwi_1_main_ref_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_bet_pipeline')
-
-    dwi_1_main_ref_basic_preproc_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_basic_preproc_pipeline')
-
-    dwi2ref_1_opposite_dcm_info_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_opposite_dcm_info_pipeline')
-
-    dwi2ref_1_opposite_basic_preproc_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_opposite_topup_pipeline')
-
-    dwi2ref_1_opposite_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_opposite_bet_pipeline')
-
-    dwi2ref_1_opposite_motion_alignment_pipeline = MultiStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.
-        dwi2ref_opposite_motion_mat_pipeline)
-
-    dwi2ref_1_opposite_qform_transform_pipeline = MultiStudy.translate(
-        'dwi_1',
-        CoregisteredDiffusionStudy.dwi2ref_opposite_qform_transform_pipeline)
-
-    dwi2ref_1_opposite_rigid_registration_pipeline = MultiStudy.translate(
-        'dwi_1',
-        CoregisteredDiffusionStudy.
-        dwi2ref_opposite_rigid_registration_pipeline)
-
-    dwi2ref_1_opposite_ref_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    dwi2ref_1_opposite_ref_basic_preproc_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_basic_preproc_pipeline')
-
-    dwi2ref_1_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.
-        dwi2ref_opposite_main_dcm2nii_pipeline)
-
-    dwi2ref_1_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi_1', CoregisteredDiffusionStudy.
-        dwi2ref_opposite_ref_dcm2nii_pipeline)
-
-    dwi2ref_1_dcm_info_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_dcm_info_pipeline')
-
-    dwi2ref_1_basic_preproc_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_topup_pipeline')
-
-    dwi2ref_1_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_bet_pipeline')
-
-    dwi2ref_1_motion_alignment_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_motion_mat_pipeline')
-
-    dwi2ref_1_qform_transform_pipeline = MultiStudy.translate(
-        'dwi_1',
-        CoregisteredDiffusionStudy.dwi2ref_qform_transform_pipeline)
-
-    dwi2ref_1_rigid_registration_pipeline = MultiStudy.translate(
-        'dwi_1',
-        CoregisteredDiffusionStudy.dwi2ref_rigid_registration_pipeline)
-
-    dwi2ref_1_ref_bet_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    dwi2ref_1_ref_basic_preproc_pipeline = MultiStudy.translate(
-        'dwi_1', 'ref_basic_preproc_pipeline')
-
-    dwi2ref_1_main_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_main_dcm2nii_pipeline')
-
-    dwi2ref_1_ref_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi_1', 'dwi2ref_ref_dcm2nii_pipeline')
-
-    ref_dcm_info_pipeline = MultiStudy.translate(
-        'ref', 'header_info_extraction_pipeline')
-
-    t1_motion_alignment_pipeline = MultiStudy.translate(
-        't1_1', 't1_motion_mat_pipeline')
-
-    t1_dcm2nii_pipeline = MultiStudy.translate(
-        't1_1', 't1_dcm2nii_pipeline')
-
-    t1_dcm_info_pipeline = MultiStudy.translate(
-        't1_1', 't1_dcm_info_pipeline')
-
-    t1_motion_mat_pipeline = MultiStudy.translate(
-        't1_1', 't1_motion_mat_pipeline')
-
-    t1_basic_preproc_pipeline = MultiStudy.translate(
-        't1_1', 't1_basic_preproc_pipeline')
-
-    t1_qform_transform_pipeline = MultiStudy.translate(
-        't1_1', 't1_qform_transform_pipeline')
-
-    t1_bet_pipeline = MultiStudy.translate(
-        't1_1', 't1_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t1_ref_bet_pipeline = MultiStudy.translate(
-        't1_1', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t1_ref_basic_preproc_pipeline = MultiStudy.translate(
-        't1_1', 'ref_basic_preproc_pipeline')
-
-    t1_rigid_registration_pipeline = MultiStudy.translate(
-        't1_1', 't1_rigid_registration_pipeline')
-
-    ute_motion_alignment_pipeline = MultiStudy.translate(
-        'ute', 't1_motion_mat_pipeline')
-
-    ute_dcm2nii_pipeline = MultiStudy.translate(
-        'ute', 't1_dcm2nii_pipeline')
-
-    ute_dcm_info_pipeline = MultiStudy.translate(
-        'ute', 't1_dcm_info_pipeline')
-
-    ute_motion_mat_pipeline = MultiStudy.translate(
-        'ute', 't1_motion_mat_pipeline')
-
-    ute_basic_preproc_pipeline = MultiStudy.translate(
-        'ute', 't1_basic_preproc_pipeline')
-
-    ute_qform_transform_pipeline = MultiStudy.translate(
-        'ute', 't1_qform_transform_pipeline')
-
-    ute_bet_pipeline = MultiStudy.translate(
-        'ute', 't1_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    ute_ref_bet_pipeline = MultiStudy.translate(
-        'ute', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    ute_ref_basic_preproc_pipeline = MultiStudy.translate(
-        'ute', 'ref_basic_preproc_pipeline')
-
-    ute_rigid_registration_pipeline = MultiStudy.translate(
-        'ute', 't1_rigid_registration_pipeline')
-
-    fm_motion_alignment_pipeline = MultiStudy.translate(
-        'fm', 't2_motion_mat_pipeline')
-
-    fm_dcm2nii_pipeline = MultiStudy.translate(
-        'fm', 't2_dcm2nii_pipeline')
-
-    fm_dcm_info_pipeline = MultiStudy.translate(
-        'fm', 't2_dcm_info_pipeline')
-
-    fm_motion_mat_pipeline = MultiStudy.translate(
-        'fm', 't2_motion_mat_pipeline')
-
-    fm_basic_preproc_pipeline = MultiStudy.translate(
-        'fm', 't2_basic_preproc_pipeline')
-
-    fm_qform_transform_pipeline = MultiStudy.translate(
-        'fm', 't2_qform_transform_pipeline')
-
-    fm_bet_pipeline = MultiStudy.translate(
-        'fm', 't2_bet_pipeline')
-
-    fm_ref_bet_pipeline = MultiStudy.translate(
-        'fm', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    fm_ref_basic_preproc_pipeline = MultiStudy.translate(
-        'fm', 'ref_basic_preproc_pipeline')
-
-    fm_rigid_registration_pipeline = MultiStudy.translate(
-        'fm', 't2_rigid_registration_pipeline')
-
-    t2_1_motion_alignment_pipeline = MultiStudy.translate(
-        't2_1', 't2_motion_mat_pipeline')
-
-    t2_1_dcm2nii_pipeline = MultiStudy.translate(
-        't2_1', 't2_dcm2nii_pipeline')
-
-    t2_1_dcm_info_pipeline = MultiStudy.translate(
-        't2_1', 't2_dcm_info_pipeline')
-
-    t2_1_motion_mat_pipeline = MultiStudy.translate(
-        't2_1', 't2_motion_mat_pipeline')
-
-    t2_1_basic_preproc_pipeline = MultiStudy.translate(
-        't2_1', 't2_basic_preproc_pipeline')
-
-    t2_1_qform_transform_pipeline = MultiStudy.translate(
-        't2_1', 't2_qform_transform_pipeline')
-
-    t2_1_bet_pipeline = MultiStudy.translate(
-        't2_1', 't2_bet_pipeline')
-
-    t2_1_ref_bet_pipeline = MultiStudy.translate(
-        't2_1', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_1_ref_basic_preproc_pipeline = MultiStudy.translate(
-        't2_1', 'ref_basic_preproc_pipeline')
-
-    t2_1_rigid_registration_pipeline = MultiStudy.translate(
-        't2_1', 't2_rigid_registration_pipeline')
-
-    t2_2_motion_alignment_pipeline = MultiStudy.translate(
-        't2_2', 't2_motion_mat_pipeline')
-
-    t2_2_dcm2nii_pipeline = MultiStudy.translate(
-        't2_2', 't2_dcm2nii_pipeline')
-
-    t2_2_dcm_info_pipeline = MultiStudy.translate(
-        't2_2', 't2_dcm_info_pipeline')
-
-    t2_2_motion_mat_pipeline = MultiStudy.translate(
-        't2_2', 't2_motion_mat_pipeline')
-
-    t2_2_basic_preproc_pipeline = MultiStudy.translate(
-        't2_2', 't2_basic_preproc_pipeline')
-
-    t2_2_qform_transform_pipeline = MultiStudy.translate(
-        't2_2', 't2_qform_transform_pipeline')
-
-    t2_2_bet_pipeline = MultiStudy.translate(
-        't2_2', 't2_bet_pipeline')
-
-    t2_2_ref_bet_pipeline = MultiStudy.translate(
-        't2_2', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_2_ref_basic_preproc_pipeline = MultiStudy.translate(
-        't2_2', 'ref_basic_preproc_pipeline')
-
-    t2_2_rigid_registration_pipeline = MultiStudy.translate(
-        't2_2', 't2_rigid_registration_pipeline')
-
-    t2_3_motion_alignment_pipeline = MultiStudy.translate(
-        't2_3', 't2_motion_mat_pipeline')
-
-    t2_3_dcm2nii_pipeline = MultiStudy.translate(
-        't2_3', 't2_dcm2nii_pipeline')
-
-    t2_3_dcm_info_pipeline = MultiStudy.translate(
-        't2_3', 't2_dcm_info_pipeline')
-
-    t2_3_motion_mat_pipeline = MultiStudy.translate(
-        't2_3', 't2_motion_mat_pipeline')
-
-    t2_3_basic_preproc_pipeline = MultiStudy.translate(
-        't2_3', 't2_basic_preproc_pipeline')
-
-    t2_3_qform_transform_pipeline = MultiStudy.translate(
-        't2_3', 't2_qform_transform_pipeline')
-
-    t2_3_bet_pipeline = MultiStudy.translate(
-        't2_3', 't2_bet_pipeline')
-
-    t2_3_ref_bet_pipeline = MultiStudy.translate(
-        't2_3', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_3_ref_basic_preproc_pipeline = MultiStudy.translate(
-        't2_3', 'ref_basic_preproc_pipeline')
-
-    t2_3_rigid_registration_pipeline = MultiStudy.translate(
-        't2_3', 't2_rigid_registration_pipeline')
-
-    t2_4_motion_alignment_pipeline = MultiStudy.translate(
-        't2_4', 't2_motion_mat_pipeline')
-
-    t2_4_dcm2nii_pipeline = MultiStudy.translate(
-        't2_4', 't2_dcm2nii_pipeline')
-
-    t2_4_dcm_info_pipeline = MultiStudy.translate(
-        't2_4', 't2_dcm_info_pipeline')
-
-    t2_4_motion_mat_pipeline = MultiStudy.translate(
-        't2_4', 't2_motion_mat_pipeline')
-
-    t2_4_basic_preproc_pipeline = MultiStudy.translate(
-        't2_4', 't2_basic_preproc_pipeline')
-
-    t2_4_qform_transform_pipeline = MultiStudy.translate(
-        't2_4', 't2_qform_transform_pipeline')
-
-    t2_4_bet_pipeline = MultiStudy.translate(
-        't2_4', 't2_bet_pipeline')
-
-    t2_4_ref_bet_pipeline = MultiStudy.translate(
-        't2_4', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_4_ref_basic_preproc_pipeline = MultiStudy.translate(
-        't2_4', 'ref_basic_preproc_pipeline')
-
-    t2_4_rigid_registration_pipeline = MultiStudy.translate(
-        't2_4', 't2_rigid_registration_pipeline')
-
-    t2_5_motion_alignment_pipeline = MultiStudy.translate(
-        't2_5', 't2_motion_mat_pipeline')
-
-    t2_5_dcm2nii_pipeline = MultiStudy.translate(
-        't2_5', 't2_dcm2nii_pipeline')
-
-    t2_5_dcm_info_pipeline = MultiStudy.translate(
-        't2_5', 't2_dcm_info_pipeline')
-
-    t2_5_motion_mat_pipeline = MultiStudy.translate(
-        't2_5', 't2_motion_mat_pipeline')
-
-    t2_5_basic_preproc_pipeline = MultiStudy.translate(
-        't2_5', 't2_basic_preproc_pipeline')
-
-    t2_5_qform_transform_pipeline = MultiStudy.translate(
-        't2_5', 't2_qform_transform_pipeline')
-
-    t2_5_bet_pipeline = MultiStudy.translate(
-        't2_5', 't2_bet_pipeline')
-
-    t2_5_ref_bet_pipeline = MultiStudy.translate(
-        't2_5', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    t2_5_ref_basic_preproc_pipeline = MultiStudy.translate(
-        't2_5', 'ref_basic_preproc_pipeline')
-
-    t2_5_rigid_registration_pipeline = MultiStudy.translate(
-        't2_5', 't2_rigid_registration_pipeline')
-
-    epi1_motion_alignment_pipeline = MultiStudy.translate(
-        'epi1', 'epi_motion_alignment_pipeline')
-
-    epi1_dcm2nii_pipeline = MultiStudy.translate(
-        'epi1', 'epi_dcm2nii_pipeline')
-
-    epi1_epireg_pipeline = MultiStudy.translate(
-        'epi1', 'epireg_pipeline')
-
-    epi1_dcm_info_pipeline = MultiStudy.translate(
-        'epi1', 'epi_dcm_info_pipeline')
-
-    epi1_motion_mat_pipeline = MultiStudy.translate(
-        'epi1', 'epi_motion_mat_pipeline')
-
-    epi1_basic_preproc_pipeline = MultiStudy.translate(
-        'epi1', 'epi_basic_preproc_pipeline')
-
-    epi1_qform_transform_pipeline = MultiStudy.translate(
-        'epi1', 'epi_qform_transform_pipeline')
-
-    epi1_bet_pipeline = MultiStudy.translate(
-        'epi1', 'epi_bet_pipeline')
-
-    epi1_ref_bet_pipeline = MultiStudy.translate(
-        'epi1', 'ref_bet_pipeline',
-        override_default_options={'bet_method': 'optibet'})
-
-    epi1_ref_segmentation_pipeline = MultiStudy.translate(
-        'epi1', 'ref_segmentation_pipeline',
-        override_default_options={'img_type': 1})
-
-    epi1_ref_basic_preproc_pipeline = MultiStudy.translate(
-        'epi1', 'ref_basic_preproc_pipeline')
-
-    epi1_ref_nifti_pipeline = MultiStudy.translate(
-        'epi1', 'ref_dcm2nii_pipeline')
-
-    def mean_displacement_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='mean_displacement_calculation',
-            inputs=[DatasetSpec('t1_1_motion_mats', directory_format),
-                    DatasetSpec('ref_motion_mats', directory_format),
-                    DatasetSpec('ute_motion_mats', directory_format),
-                    DatasetSpec('fm_motion_mats', directory_format),
-                    DatasetSpec('epi1_motion_mats', directory_format),
-                    DatasetSpec('t2_1_motion_mats', directory_format),
-                    DatasetSpec('t2_2_motion_mats', directory_format),
-                    DatasetSpec('t2_3_motion_mats', directory_format),
-                    DatasetSpec('t2_4_motion_mats', directory_format),
-                    DatasetSpec('t2_5_motion_mats', directory_format),
-                    DatasetSpec('dwi_1_main_motion_mats', directory_format),
-                    DatasetSpec('dwi2ref_1_motion_mats', directory_format),
-                    DatasetSpec('dwi2ref_1_opposite_motion_mats',
-                                directory_format),
-                    DatasetSpec('epi1_ref_brain', nifti_gz_format),
-                    FieldSpec('ref_tr', float),
-                    FieldSpec('ref_start_time', str),
-                    FieldSpec('ref_real_duration', str),
-                    FieldSpec('t1_1_tr', float),
-                    FieldSpec('t1_1_start_time', str),
-                    FieldSpec('t1_1_real_duration', str),
-                    FieldSpec('ute_tr', float),
-                    FieldSpec('ute_start_time', str),
-                    FieldSpec('ute_real_duration', str),
-                    FieldSpec('fm_tr', float),
-                    FieldSpec('fm_start_time', str),
-                    FieldSpec('fm_real_duration', str),
-                    FieldSpec('epi1_tr', float),
-                    FieldSpec('epi1_start_time', str),
-                    FieldSpec('epi1_real_duration', str),
-                    FieldSpec('t2_1_tr', float),
-                    FieldSpec('t2_1_start_time', str),
-                    FieldSpec('t2_1_real_duration', str),
-                    FieldSpec('t2_2_tr', float),
-                    FieldSpec('t2_2_start_time', str),
-                    FieldSpec('t2_2_real_duration', str),
-                    FieldSpec('t2_3_tr', float),
-                    FieldSpec('t2_3_start_time', str),
-                    FieldSpec('t2_3_real_duration', str),
-                    FieldSpec('t2_4_tr', float),
-                    FieldSpec('t2_4_start_time', str),
-                    FieldSpec('t2_4_real_duration', str),
-                    FieldSpec('t2_5_tr', float),
-                    FieldSpec('t2_5_start_time', str),
-                    FieldSpec('t2_5_real_duration', str),
-                    FieldSpec('dwi_1_main_tr', float),
-                    FieldSpec('dwi_1_main_start_time', str),
-                    FieldSpec('dwi_1_main_real_duration', str),
-                    FieldSpec('dwi2ref_1_tr', float),
-                    FieldSpec('dwi2ref_1_start_time', str),
-                    FieldSpec('dwi2ref_1_real_duration', str),
-                    FieldSpec('dwi2ref_1_opposite_tr', float),
-                    FieldSpec('dwi2ref_1_opposite_start_time', str),
-                    FieldSpec('dwi2ref_1_opposite_real_duration', str)],
-            outputs=[DatasetSpec('mean_displacement', text_format),
-                     DatasetSpec('mean_displacement_rc', text_format),
-                     DatasetSpec('mean_displacement_consecutive', text_format),
-                     DatasetSpec('start_times', text_format),
-                     DatasetSpec('motion_par_rc', text_format),
-                     DatasetSpec('offset_indexes', text_format),
-                     DatasetSpec('mats4average', text_format)],
-            description=("Calculate the mean displacement between each motion"
-                         " matrix and a reference."),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        merge_ref = pipeline.create_node(merge_lists(4), name='merge_ref')
-        pipeline.connect_input('ref_motion_mats', merge_ref, 'in1')
-        pipeline.connect_input('ref_start_time', merge_ref, 'in2')
-        pipeline.connect_input('ref_real_duration', merge_ref, 'in3')
-        pipeline.connect_input('ref_tr', merge_ref, 'in4')
-
-        merge_t1_1 = pipeline.create_node(merge_lists(4), name='merge_t1_1')
-        pipeline.connect_input('t1_1_motion_mats', merge_t1_1, 'in1')
-        pipeline.connect_input('t1_1_start_time', merge_t1_1, 'in2')
-        pipeline.connect_input('t1_1_real_duration', merge_t1_1, 'in3')
-        pipeline.connect_input('t1_1_tr', merge_t1_1, 'in4')
-
-        merge_ute = pipeline.create_node(merge_lists(4), name='merge_ute')
-        pipeline.connect_input('ute_motion_mats', merge_ute, 'in1')
-        pipeline.connect_input('ute_start_time', merge_ute, 'in2')
-        pipeline.connect_input('ute_real_duration', merge_ute, 'in3')
-        pipeline.connect_input('ute_tr', merge_ute, 'in4')
-
-        merge_fm = pipeline.create_node(merge_lists(4), name='merge_fm')
-        pipeline.connect_input('fm_motion_mats', merge_fm, 'in1')
-        pipeline.connect_input('fm_start_time', merge_fm, 'in2')
-        pipeline.connect_input('fm_real_duration', merge_fm, 'in3')
-        pipeline.connect_input('fm_tr', merge_fm, 'in4')
-
-        merge_t2_1 = pipeline.create_node(merge_lists(4), name='merge_t2_1')
-        pipeline.connect_input('t2_1_motion_mats', merge_t2_1, 'in1')
-        pipeline.connect_input('t2_1_start_time', merge_t2_1, 'in2')
-        pipeline.connect_input('t2_1_real_duration', merge_t2_1, 'in3')
-        pipeline.connect_input('t2_1_tr', merge_t2_1, 'in4')
-
-        merge_t2_2 = pipeline.create_node(merge_lists(4), name='merge_t2_2')
-        pipeline.connect_input('t2_2_motion_mats', merge_t2_2, 'in1')
-        pipeline.connect_input('t2_2_start_time', merge_t2_2, 'in2')
-        pipeline.connect_input('t2_2_real_duration', merge_t2_2, 'in3')
-        pipeline.connect_input('t2_2_tr', merge_t2_2, 'in4')
-
-        merge_t2_3 = pipeline.create_node(merge_lists(4), name='merge_t2_3')
-        pipeline.connect_input('t2_3_motion_mats', merge_t2_3, 'in1')
-        pipeline.connect_input('t2_3_start_time', merge_t2_3, 'in2')
-        pipeline.connect_input('t2_3_real_duration', merge_t2_3, 'in3')
-        pipeline.connect_input('t2_3_tr', merge_t2_3, 'in4')
-
-        merge_t2_4 = pipeline.create_node(merge_lists(4), name='merge_t2_4')
-        pipeline.connect_input('t2_4_motion_mats', merge_t2_4, 'in1')
-        pipeline.connect_input('t2_4_start_time', merge_t2_4, 'in2')
-        pipeline.connect_input('t2_4_real_duration', merge_t2_4, 'in3')
-        pipeline.connect_input('t2_4_tr', merge_t2_4, 'in4')
-
-        merge_t2_5 = pipeline.create_node(merge_lists(4), name='merge_t2_5')
-        pipeline.connect_input('t2_5_motion_mats', merge_t2_5, 'in1')
-        pipeline.connect_input('t2_5_start_time', merge_t2_5, 'in2')
-        pipeline.connect_input('t2_5_real_duration', merge_t2_5, 'in3')
-        pipeline.connect_input('t2_5_tr', merge_t2_5, 'in4')
-
-        merge_epi1 = pipeline.create_node(merge_lists(4), name='merge_epi1')
-        pipeline.connect_input('epi1_motion_mats', merge_epi1, 'in1')
-        pipeline.connect_input('epi1_start_time', merge_epi1, 'in2')
-        pipeline.connect_input('epi1_real_duration', merge_epi1, 'in3')
-        pipeline.connect_input('epi1_tr', merge_epi1, 'in4')
-
-        merge_dwi_1_main = pipeline.create_node(merge_lists(4),
-                                                name='merge_dwi_1_main')
-        pipeline.connect_input('dwi_1_main_motion_mats', merge_dwi_1_main,
-                               'in1')
-        pipeline.connect_input('dwi_1_main_start_time', merge_dwi_1_main,
-                               'in2')
-        pipeline.connect_input('dwi_1_main_real_duration', merge_dwi_1_main,
-                               'in3')
-        pipeline.connect_input('dwi_1_main_tr', merge_dwi_1_main, 'in4')
-
-        merge_dwi2ref_1 = pipeline.create_node(
-            merge_lists(4), name='merge_dwi2ref_1')
-        pipeline.connect_input(
-            'dwi2ref_1_motion_mats', merge_dwi2ref_1, 'in1')
-        pipeline.connect_input(
-            'dwi2ref_1_start_time', merge_dwi2ref_1, 'in2')
-        pipeline.connect_input(
-            'dwi2ref_1_real_duration', merge_dwi2ref_1, 'in3')
-        pipeline.connect_input(
-            'dwi2ref_1_tr', merge_dwi2ref_1, 'in4')
-
-        merge_dwi2ref_1_opposite = pipeline.create_node(
-            merge_lists(4), name='merge_dwi2ref_1_opposite')
-        pipeline.connect_input(
-            'dwi2ref_1_opposite_motion_mats', merge_dwi2ref_1_opposite, 'in1')
-        pipeline.connect_input(
-            'dwi2ref_1_opposite_start_time', merge_dwi2ref_1_opposite, 'in2')
-        pipeline.connect_input(
-            'dwi2ref_1_opposite_real_duration', merge_dwi2ref_1_opposite,
-            'in3')
-        pipeline.connect_input(
-            'dwi2ref_1_opposite_tr', merge_dwi2ref_1_opposite, 'in4')
-
-        merge_scans = pipeline.create_node(merge_lists(13), name='merge_scans')
-        merge_scans.inputs.no_flatten = True
-        pipeline.connect(merge_epi1, 'out', merge_scans, 'in1')
-        pipeline.connect(merge_t2_1, 'out', merge_scans, 'in2')
-        pipeline.connect(merge_t2_2, 'out', merge_scans, 'in3')
-        pipeline.connect(merge_t2_3, 'out', merge_scans, 'in4')
-        pipeline.connect(merge_t2_4, 'out', merge_scans, 'in5')
-        pipeline.connect(merge_t1_1, 'out', merge_scans, 'in6')
-        pipeline.connect(merge_ute, 'out', merge_scans, 'in7')
-        pipeline.connect(merge_fm, 'out', merge_scans, 'in8')
-        pipeline.connect(merge_ref, 'out', merge_scans, 'in9')
-        pipeline.connect(merge_dwi_1_main, 'out', merge_scans, 'in10')
-        pipeline.connect(merge_t2_5, 'out', merge_scans, 'in11')
-        pipeline.connect(merge_dwi2ref_1_opposite, 'out', merge_scans, 'in12')
-        pipeline.connect(merge_dwi2ref_1, 'out', merge_scans, 'in13')
-
-        md = pipeline.create_node(MeanDisplacementCalculation(),
-                                  name='scan_time_info')
-        pipeline.connect(merge_scans, 'out', md, 'list_inputs')
-        pipeline.connect_input('epi1_ref_brain', md, 'reference')
-        pipeline.connect_output('mean_displacement', md, 'mean_displacement')
-        pipeline.connect_output(
-            'mean_displacement_rc', md, 'mean_displacement_rc')
-        pipeline.connect_output(
-            'mean_displacement_consecutive', md,
-            'mean_displacement_consecutive')
-        pipeline.connect_output('start_times', md, 'start_times')
-        pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
-        pipeline.connect_output('offset_indexes', md, 'offset_indexes')
-        pipeline.connect_output('mats4average', md, 'mats4average')
-        pipeline.assert_connected()
-        return pipeline
-
-    def motion_framing_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='motion_framing',
-            inputs=[DatasetSpec('mean_displacement', text_format),
-                    DatasetSpec('mean_displacement_consecutive', text_format),
-                    DatasetSpec('start_times', text_format)],
-            outputs=[DatasetSpec('frame_start_times', text_format),
-                     DatasetSpec('frame_vol_numbers', text_format)],
-            description=("Calculate when the head movement exceeded a "
-                         "predefined threshold (default 2mm)."),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        framing = pipeline.create_node(MotionFraming(), name='motion_framing')
-        framing.inputs.motion_threshold = pipeline.option('th')
-        framing.inputs.temporal_threshold = pipeline.option('temporal_th')
-        pipeline.connect_input('mean_displacement', framing,
-                               'mean_displacement')
-        pipeline.connect_input('mean_displacement_consecutive', framing,
-                               'mean_displacement_consec')
-        pipeline.connect_input('start_times', framing, 'start_times')
-        pipeline.connect_output('frame_start_times', framing,
-                                'frame_start_times')
-        pipeline.connect_output('frame_vol_numbers', framing,
-                                'frame_vol_numbers')
-        pipeline.assert_connected()
-        return pipeline
-
-    def plot_mean_displacement_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='plot_mean_displacement',
-            inputs=[DatasetSpec('mean_displacement_rc', text_format),
-                    DatasetSpec('offset_indexes', text_format),
-                    DatasetSpec('frame_start_times', text_format)],
-            outputs=[DatasetSpec('mean_displacement_plot', png_format)],
-            description=("Plot the mean displacement real clock"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        plot_md = pipeline.create_node(PlotMeanDisplacementRC(),
-                                       name='plot_md')
-        plot_md.inputs.framing = pipeline.option('framing')
-        pipeline.connect_input('mean_displacement_rc', plot_md,
-                               'mean_disp_rc')
-        pipeline.connect_input('offset_indexes', plot_md,
-                               'false_indexes')
-        pipeline.connect_input('frame_start_times', plot_md,
-                               'frame_start_times')
-        pipeline.connect_output('mean_displacement_plot', plot_md,
-                                'mean_disp_plot')
-        pipeline.assert_connected()
-        return pipeline
-
-    def frame_mean_transformation_mats_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='frame_mean_transformation_mats',
-            inputs=[DatasetSpec('mats4average', text_format),
-                    DatasetSpec('frame_vol_numbers', text_format)],
-            outputs=[DatasetSpec('average_mats', directory_format)],
-            description=("Average all the transformation mats within each "
-                         "detected frame."),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        average = pipeline.create_node(AffineMatAveraging(),
-                                       name='mats_averaging')
-        pipeline.connect_input('frame_vol_numbers', average,
-                               'frame_vol_numbers')
-        pipeline.connect_input('mats4average', average,
-                               'all_mats4average')
-        pipeline.connect_output('average_mats', average,
-                                'average_mats')
-        pipeline.assert_connected()
-        return pipeline
-
-    def pet_correction_factors_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='pet_correction_factors',
-            inputs=[DatasetSpec('frame_start_times', text_format)],
-            outputs=[DatasetSpec('correction_factors', text_format)],
-            description=("Pipeline to calculate the correction factors to "
-                         "account for frame duration when averaging the PET "
-                         "frames to create the static PET image"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        corr_factors = pipeline.create_node(PetCorrectionFactor(),
-                                            name='pet_corr_factors')
-        pipeline.connect_input('frame_start_times', corr_factors,
-                               'frame_start_times')
-        pipeline.connect_output('correction_factors', corr_factors,
-                                'corr_factors')
-        pipeline.assert_connected()
-        return pipeline
-
-    def frame2ref_alignment_pipeline_factory(
-            self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
-            pct=False, fixed_binning=False, **kwargs):
-        inputs = [DatasetSpec(average_mats, directory_format),
-                  DatasetSpec(ute_regmat, text_matrix_format),
-                  DatasetSpec(ute_qform_mat, text_matrix_format)]
-        outputs = [DatasetSpec('frame2reference_mats', directory_format)]
-        if umap:
-            inputs.append(DatasetSpec(umap, nifti_gz_format))
-            outputs.append(DatasetSpec('umaps_align2ref', directory_format))
-
-        pipeline = self.create_pipeline(
-            name=name,
-            inputs=inputs,
-            outputs=outputs,
-            description=("Pipeline to create an affine mat to align each "
-                         "detected frame to the reference. If umap is provided"
-                         ", it will be also aligned to match the head position"
-                         " in each frame and improve the static PET image "
-                         "quality."),
-            default_options={'pct': pct, 'fixed_binning': fixed_binning},
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        frame_align = pipeline.create_node(
-            FrameAlign2Reference(), name='frame2ref_alignment',
-            requirements=[fsl509_req])
-        frame_align.inputs.pct = pipeline.option('pct')
-        frame_align.inputs.fixed_binning = pipeline.option('fixed_binning')
-        pipeline.connect_input(average_mats, frame_align,
-                               'average_mats')
-        pipeline.connect_input(ute_regmat, frame_align,
-                               'ute_regmat')
-        pipeline.connect_input(ute_qform_mat, frame_align,
-                               'ute_qform_mat')
-        if umap:
-            pipeline.connect_input(umap, frame_align, 'umap')
-            pipeline.connect_output('umaps_align2ref', frame_align,
-                                    'umaps_align2ref')
-        pipeline.connect_output('frame2reference_mats', frame_align,
-                                'frame2reference_mats')
-        pipeline.assert_connected()
-        return pipeline
-
-    def frame2ref_alignment_pipeline(self, **kwargs):
-        return self.frame2ref_alignment_pipeline_factory(
-            'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
-            'ute_qform_mat', umap='umap',
-            pct=False, fixed_binning=False, **kwargs)
-
     sub_study_specs = [
         SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
@@ -1552,3 +807,748 @@ class MotionDetectionStudy(MultiStudy):
                     'frame2ref_alignment_pipeline'),
         DatasetSpec('frame2reference_mats', directory_format,
                     'frame2ref_alignment_pipeline')]
+
+    add_option_specs = [OptionSpec('framing_th', 2.0),
+                        OptionSpec('framing_temporal_th', 30.0),
+                        OptionSpec('md_framing', True),
+                        OptionSpec('dwi_1_bet_method', 'optibet')]
+
+    dwi_1_main_dcm_info_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi_main_dcm_info_pipeline')
+
+    dwi_1_main_basic_preproc_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi_main_dwipreproc_pipeline')
+
+    dwi_1_main_bet_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi_main_bet_pipeline')
+
+    dwi_1_main_motion_alignment_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi_main_motion_mat_pipeline')
+
+    dwi_1_main_aff_mat_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi_main_affine_mats_pipeline')
+
+    dwi_1_main_qform_transform_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi_main_qform_transform_pipeline')
+
+    dwi_1_main_rigid_registration_pipeline = MultiStudy.translate(
+        'dwi_1',
+        CoregisteredDiffusionStudy.dwi_main_rigid_registration_pipeline)
+
+    dwi_1_main_ref_bet_pipeline = MultiStudy.translate(
+        'dwi_1', 'ref_bet_pipeline')
+
+    dwi_1_main_ref_basic_preproc_pipeline = MultiStudy.translate(
+        'dwi_1', 'ref_basic_preproc_pipeline')
+
+    dwi2ref_1_opposite_dcm_info_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_opposite_dcm_info_pipeline')
+
+    dwi2ref_1_opposite_basic_preproc_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_opposite_topup_pipeline')
+
+    dwi2ref_1_opposite_bet_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_opposite_bet_pipeline')
+
+    dwi2ref_1_opposite_motion_alignment_pipeline = MultiStudy.translate(
+        'dwi_1', CoregisteredDiffusionStudy.
+        dwi2ref_opposite_motion_mat_pipeline)
+
+    dwi2ref_1_opposite_qform_transform_pipeline = MultiStudy.translate(
+        'dwi_1',
+        CoregisteredDiffusionStudy.dwi2ref_opposite_qform_transform_pipeline)
+
+    dwi2ref_1_opposite_rigid_registration_pipeline = MultiStudy.translate(
+        'dwi_1',
+        CoregisteredDiffusionStudy.
+        dwi2ref_opposite_rigid_registration_pipeline)
+
+    dwi2ref_1_opposite_ref_bet_pipeline = MultiStudy.translate(
+        'dwi_1', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    dwi2ref_1_opposite_ref_basic_preproc_pipeline = MultiStudy.translate(
+        'dwi_1', 'ref_basic_preproc_pipeline')
+
+    dwi2ref_1_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
+        'dwi_1', CoregisteredDiffusionStudy.
+        dwi2ref_opposite_main_dcm2nii_pipeline)
+
+    dwi2ref_1_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
+        'dwi_1', CoregisteredDiffusionStudy.
+        dwi2ref_opposite_ref_dcm2nii_pipeline)
+
+    dwi2ref_1_dcm_info_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_dcm_info_pipeline')
+
+    dwi2ref_1_basic_preproc_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_topup_pipeline')
+
+    dwi2ref_1_bet_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_bet_pipeline')
+
+    dwi2ref_1_motion_alignment_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_motion_mat_pipeline')
+
+    dwi2ref_1_qform_transform_pipeline = MultiStudy.translate(
+        'dwi_1',
+        CoregisteredDiffusionStudy.dwi2ref_qform_transform_pipeline)
+
+    dwi2ref_1_rigid_registration_pipeline = MultiStudy.translate(
+        'dwi_1',
+        CoregisteredDiffusionStudy.dwi2ref_rigid_registration_pipeline)
+
+    dwi2ref_1_ref_bet_pipeline = MultiStudy.translate(
+        'dwi_1', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    dwi2ref_1_ref_basic_preproc_pipeline = MultiStudy.translate(
+        'dwi_1', 'ref_basic_preproc_pipeline')
+
+    dwi2ref_1_main_dcm2nii_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_main_dcm2nii_pipeline')
+
+    dwi2ref_1_ref_dcm2nii_pipeline = MultiStudy.translate(
+        'dwi_1', 'dwi2ref_ref_dcm2nii_pipeline')
+
+    ref_dcm_info_pipeline = MultiStudy.translate(
+        'ref', 'header_info_extraction_pipeline')
+
+    t1_motion_alignment_pipeline = MultiStudy.translate(
+        't1_1', 't1_motion_mat_pipeline')
+
+    t1_dcm2nii_pipeline = MultiStudy.translate(
+        't1_1', 't1_dcm2nii_pipeline')
+
+    t1_dcm_info_pipeline = MultiStudy.translate(
+        't1_1', 't1_dcm_info_pipeline')
+
+    t1_motion_mat_pipeline = MultiStudy.translate(
+        't1_1', 't1_motion_mat_pipeline')
+
+    t1_basic_preproc_pipeline = MultiStudy.translate(
+        't1_1', 't1_basic_preproc_pipeline')
+
+    t1_qform_transform_pipeline = MultiStudy.translate(
+        't1_1', 't1_qform_transform_pipeline')
+
+    t1_bet_pipeline = MultiStudy.translate(
+        't1_1', 't1_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t1_ref_bet_pipeline = MultiStudy.translate(
+        't1_1', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t1_ref_basic_preproc_pipeline = MultiStudy.translate(
+        't1_1', 'ref_basic_preproc_pipeline')
+
+    t1_rigid_registration_pipeline = MultiStudy.translate(
+        't1_1', 't1_rigid_registration_pipeline')
+
+    ute_motion_alignment_pipeline = MultiStudy.translate(
+        'ute', 't1_motion_mat_pipeline')
+
+    ute_dcm2nii_pipeline = MultiStudy.translate(
+        'ute', 't1_dcm2nii_pipeline')
+
+    ute_dcm_info_pipeline = MultiStudy.translate(
+        'ute', 't1_dcm_info_pipeline')
+
+    ute_motion_mat_pipeline = MultiStudy.translate(
+        'ute', 't1_motion_mat_pipeline')
+
+    ute_basic_preproc_pipeline = MultiStudy.translate(
+        'ute', 't1_basic_preproc_pipeline')
+
+    ute_qform_transform_pipeline = MultiStudy.translate(
+        'ute', 't1_qform_transform_pipeline')
+
+    ute_bet_pipeline = MultiStudy.translate(
+        'ute', 't1_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    ute_ref_bet_pipeline = MultiStudy.translate(
+        'ute', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    ute_ref_basic_preproc_pipeline = MultiStudy.translate(
+        'ute', 'ref_basic_preproc_pipeline')
+
+    ute_rigid_registration_pipeline = MultiStudy.translate(
+        'ute', 't1_rigid_registration_pipeline')
+
+    fm_motion_alignment_pipeline = MultiStudy.translate(
+        'fm', 't2_motion_mat_pipeline')
+
+    fm_dcm2nii_pipeline = MultiStudy.translate(
+        'fm', 't2_dcm2nii_pipeline')
+
+    fm_dcm_info_pipeline = MultiStudy.translate(
+        'fm', 't2_dcm_info_pipeline')
+
+    fm_motion_mat_pipeline = MultiStudy.translate(
+        'fm', 't2_motion_mat_pipeline')
+
+    fm_basic_preproc_pipeline = MultiStudy.translate(
+        'fm', 't2_basic_preproc_pipeline')
+
+    fm_qform_transform_pipeline = MultiStudy.translate(
+        'fm', 't2_qform_transform_pipeline')
+
+    fm_bet_pipeline = MultiStudy.translate(
+        'fm', 't2_bet_pipeline')
+
+    fm_ref_bet_pipeline = MultiStudy.translate(
+        'fm', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    fm_ref_basic_preproc_pipeline = MultiStudy.translate(
+        'fm', 'ref_basic_preproc_pipeline')
+
+    fm_rigid_registration_pipeline = MultiStudy.translate(
+        'fm', 't2_rigid_registration_pipeline')
+
+    t2_1_motion_alignment_pipeline = MultiStudy.translate(
+        't2_1', 't2_motion_mat_pipeline')
+
+    t2_1_dcm2nii_pipeline = MultiStudy.translate(
+        't2_1', 't2_dcm2nii_pipeline')
+
+    t2_1_dcm_info_pipeline = MultiStudy.translate(
+        't2_1', 't2_dcm_info_pipeline')
+
+    t2_1_motion_mat_pipeline = MultiStudy.translate(
+        't2_1', 't2_motion_mat_pipeline')
+
+    t2_1_basic_preproc_pipeline = MultiStudy.translate(
+        't2_1', 't2_basic_preproc_pipeline')
+
+    t2_1_qform_transform_pipeline = MultiStudy.translate(
+        't2_1', 't2_qform_transform_pipeline')
+
+    t2_1_bet_pipeline = MultiStudy.translate(
+        't2_1', 't2_bet_pipeline')
+
+    t2_1_ref_bet_pipeline = MultiStudy.translate(
+        't2_1', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t2_1_ref_basic_preproc_pipeline = MultiStudy.translate(
+        't2_1', 'ref_basic_preproc_pipeline')
+
+    t2_1_rigid_registration_pipeline = MultiStudy.translate(
+        't2_1', 't2_rigid_registration_pipeline')
+
+    t2_2_motion_alignment_pipeline = MultiStudy.translate(
+        't2_2', 't2_motion_mat_pipeline')
+
+    t2_2_dcm2nii_pipeline = MultiStudy.translate(
+        't2_2', 't2_dcm2nii_pipeline')
+
+    t2_2_dcm_info_pipeline = MultiStudy.translate(
+        't2_2', 't2_dcm_info_pipeline')
+
+    t2_2_motion_mat_pipeline = MultiStudy.translate(
+        't2_2', 't2_motion_mat_pipeline')
+
+    t2_2_basic_preproc_pipeline = MultiStudy.translate(
+        't2_2', 't2_basic_preproc_pipeline')
+
+    t2_2_qform_transform_pipeline = MultiStudy.translate(
+        't2_2', 't2_qform_transform_pipeline')
+
+    t2_2_bet_pipeline = MultiStudy.translate(
+        't2_2', 't2_bet_pipeline')
+
+    t2_2_ref_bet_pipeline = MultiStudy.translate(
+        't2_2', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t2_2_ref_basic_preproc_pipeline = MultiStudy.translate(
+        't2_2', 'ref_basic_preproc_pipeline')
+
+    t2_2_rigid_registration_pipeline = MultiStudy.translate(
+        't2_2', 't2_rigid_registration_pipeline')
+
+    t2_3_motion_alignment_pipeline = MultiStudy.translate(
+        't2_3', 't2_motion_mat_pipeline')
+
+    t2_3_dcm2nii_pipeline = MultiStudy.translate(
+        't2_3', 't2_dcm2nii_pipeline')
+
+    t2_3_dcm_info_pipeline = MultiStudy.translate(
+        't2_3', 't2_dcm_info_pipeline')
+
+    t2_3_motion_mat_pipeline = MultiStudy.translate(
+        't2_3', 't2_motion_mat_pipeline')
+
+    t2_3_basic_preproc_pipeline = MultiStudy.translate(
+        't2_3', 't2_basic_preproc_pipeline')
+
+    t2_3_qform_transform_pipeline = MultiStudy.translate(
+        't2_3', 't2_qform_transform_pipeline')
+
+    t2_3_bet_pipeline = MultiStudy.translate(
+        't2_3', 't2_bet_pipeline')
+
+    t2_3_ref_bet_pipeline = MultiStudy.translate(
+        't2_3', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t2_3_ref_basic_preproc_pipeline = MultiStudy.translate(
+        't2_3', 'ref_basic_preproc_pipeline')
+
+    t2_3_rigid_registration_pipeline = MultiStudy.translate(
+        't2_3', 't2_rigid_registration_pipeline')
+
+    t2_4_motion_alignment_pipeline = MultiStudy.translate(
+        't2_4', 't2_motion_mat_pipeline')
+
+    t2_4_dcm2nii_pipeline = MultiStudy.translate(
+        't2_4', 't2_dcm2nii_pipeline')
+
+    t2_4_dcm_info_pipeline = MultiStudy.translate(
+        't2_4', 't2_dcm_info_pipeline')
+
+    t2_4_motion_mat_pipeline = MultiStudy.translate(
+        't2_4', 't2_motion_mat_pipeline')
+
+    t2_4_basic_preproc_pipeline = MultiStudy.translate(
+        't2_4', 't2_basic_preproc_pipeline')
+
+    t2_4_qform_transform_pipeline = MultiStudy.translate(
+        't2_4', 't2_qform_transform_pipeline')
+
+    t2_4_bet_pipeline = MultiStudy.translate(
+        't2_4', 't2_bet_pipeline')
+
+    t2_4_ref_bet_pipeline = MultiStudy.translate(
+        't2_4', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t2_4_ref_basic_preproc_pipeline = MultiStudy.translate(
+        't2_4', 'ref_basic_preproc_pipeline')
+
+    t2_4_rigid_registration_pipeline = MultiStudy.translate(
+        't2_4', 't2_rigid_registration_pipeline')
+
+    t2_5_motion_alignment_pipeline = MultiStudy.translate(
+        't2_5', 't2_motion_mat_pipeline')
+
+    t2_5_dcm2nii_pipeline = MultiStudy.translate(
+        't2_5', 't2_dcm2nii_pipeline')
+
+    t2_5_dcm_info_pipeline = MultiStudy.translate(
+        't2_5', 't2_dcm_info_pipeline')
+
+    t2_5_motion_mat_pipeline = MultiStudy.translate(
+        't2_5', 't2_motion_mat_pipeline')
+
+    t2_5_basic_preproc_pipeline = MultiStudy.translate(
+        't2_5', 't2_basic_preproc_pipeline')
+
+    t2_5_qform_transform_pipeline = MultiStudy.translate(
+        't2_5', 't2_qform_transform_pipeline')
+
+    t2_5_bet_pipeline = MultiStudy.translate(
+        't2_5', 't2_bet_pipeline')
+
+    t2_5_ref_bet_pipeline = MultiStudy.translate(
+        't2_5', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    t2_5_ref_basic_preproc_pipeline = MultiStudy.translate(
+        't2_5', 'ref_basic_preproc_pipeline')
+
+    t2_5_rigid_registration_pipeline = MultiStudy.translate(
+        't2_5', 't2_rigid_registration_pipeline')
+
+    epi1_motion_alignment_pipeline = MultiStudy.translate(
+        'epi1', 'epi_motion_alignment_pipeline')
+
+    epi1_dcm2nii_pipeline = MultiStudy.translate(
+        'epi1', 'epi_dcm2nii_pipeline')
+
+    epi1_epireg_pipeline = MultiStudy.translate(
+        'epi1', 'epireg_pipeline')
+
+    epi1_dcm_info_pipeline = MultiStudy.translate(
+        'epi1', 'epi_dcm_info_pipeline')
+
+    epi1_motion_mat_pipeline = MultiStudy.translate(
+        'epi1', 'epi_motion_mat_pipeline')
+
+    epi1_basic_preproc_pipeline = MultiStudy.translate(
+        'epi1', 'epi_basic_preproc_pipeline')
+
+    epi1_qform_transform_pipeline = MultiStudy.translate(
+        'epi1', 'epi_qform_transform_pipeline')
+
+    epi1_bet_pipeline = MultiStudy.translate(
+        'epi1', 'epi_bet_pipeline')
+
+    epi1_ref_bet_pipeline = MultiStudy.translate(
+        'epi1', 'ref_bet_pipeline',
+        override_default_options={'bet_method': 'optibet'})
+
+    epi1_ref_segmentation_pipeline = MultiStudy.translate(
+        'epi1', 'ref_segmentation_pipeline',
+        override_default_options={'img_type': 1})
+
+    epi1_ref_basic_preproc_pipeline = MultiStudy.translate(
+        'epi1', 'ref_basic_preproc_pipeline')
+
+    epi1_ref_nifti_pipeline = MultiStudy.translate(
+        'epi1', 'ref_dcm2nii_pipeline')
+
+    def mean_displacement_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='mean_displacement_calculation',
+            inputs=[DatasetSpec('t1_1_motion_mats', directory_format),
+                    DatasetSpec('ref_motion_mats', directory_format),
+                    DatasetSpec('ute_motion_mats', directory_format),
+                    DatasetSpec('fm_motion_mats', directory_format),
+                    DatasetSpec('epi1_motion_mats', directory_format),
+                    DatasetSpec('t2_1_motion_mats', directory_format),
+                    DatasetSpec('t2_2_motion_mats', directory_format),
+                    DatasetSpec('t2_3_motion_mats', directory_format),
+                    DatasetSpec('t2_4_motion_mats', directory_format),
+                    DatasetSpec('t2_5_motion_mats', directory_format),
+                    DatasetSpec('dwi_1_main_motion_mats', directory_format),
+                    DatasetSpec('dwi2ref_1_motion_mats', directory_format),
+                    DatasetSpec('dwi2ref_1_opposite_motion_mats',
+                                directory_format),
+                    DatasetSpec('epi1_ref_brain', nifti_gz_format),
+                    FieldSpec('ref_tr', float),
+                    FieldSpec('ref_start_time', str),
+                    FieldSpec('ref_real_duration', str),
+                    FieldSpec('t1_1_tr', float),
+                    FieldSpec('t1_1_start_time', str),
+                    FieldSpec('t1_1_real_duration', str),
+                    FieldSpec('ute_tr', float),
+                    FieldSpec('ute_start_time', str),
+                    FieldSpec('ute_real_duration', str),
+                    FieldSpec('fm_tr', float),
+                    FieldSpec('fm_start_time', str),
+                    FieldSpec('fm_real_duration', str),
+                    FieldSpec('epi1_tr', float),
+                    FieldSpec('epi1_start_time', str),
+                    FieldSpec('epi1_real_duration', str),
+                    FieldSpec('t2_1_tr', float),
+                    FieldSpec('t2_1_start_time', str),
+                    FieldSpec('t2_1_real_duration', str),
+                    FieldSpec('t2_2_tr', float),
+                    FieldSpec('t2_2_start_time', str),
+                    FieldSpec('t2_2_real_duration', str),
+                    FieldSpec('t2_3_tr', float),
+                    FieldSpec('t2_3_start_time', str),
+                    FieldSpec('t2_3_real_duration', str),
+                    FieldSpec('t2_4_tr', float),
+                    FieldSpec('t2_4_start_time', str),
+                    FieldSpec('t2_4_real_duration', str),
+                    FieldSpec('t2_5_tr', float),
+                    FieldSpec('t2_5_start_time', str),
+                    FieldSpec('t2_5_real_duration', str),
+                    FieldSpec('dwi_1_main_tr', float),
+                    FieldSpec('dwi_1_main_start_time', str),
+                    FieldSpec('dwi_1_main_real_duration', str),
+                    FieldSpec('dwi2ref_1_tr', float),
+                    FieldSpec('dwi2ref_1_start_time', str),
+                    FieldSpec('dwi2ref_1_real_duration', str),
+                    FieldSpec('dwi2ref_1_opposite_tr', float),
+                    FieldSpec('dwi2ref_1_opposite_start_time', str),
+                    FieldSpec('dwi2ref_1_opposite_real_duration', str)],
+            outputs=[DatasetSpec('mean_displacement', text_format),
+                     DatasetSpec('mean_displacement_rc', text_format),
+                     DatasetSpec('mean_displacement_consecutive', text_format),
+                     DatasetSpec('start_times', text_format),
+                     DatasetSpec('motion_par_rc', text_format),
+                     DatasetSpec('offset_indexes', text_format),
+                     DatasetSpec('mats4average', text_format)],
+            description=("Calculate the mean displacement between each motion"
+                         " matrix and a reference."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        merge_ref = pipeline.create_node(merge_lists(4), name='merge_ref')
+        pipeline.connect_input('ref_motion_mats', merge_ref, 'in1')
+        pipeline.connect_input('ref_start_time', merge_ref, 'in2')
+        pipeline.connect_input('ref_real_duration', merge_ref, 'in3')
+        pipeline.connect_input('ref_tr', merge_ref, 'in4')
+
+        merge_t1_1 = pipeline.create_node(merge_lists(4), name='merge_t1_1')
+        pipeline.connect_input('t1_1_motion_mats', merge_t1_1, 'in1')
+        pipeline.connect_input('t1_1_start_time', merge_t1_1, 'in2')
+        pipeline.connect_input('t1_1_real_duration', merge_t1_1, 'in3')
+        pipeline.connect_input('t1_1_tr', merge_t1_1, 'in4')
+
+        merge_ute = pipeline.create_node(merge_lists(4), name='merge_ute')
+        pipeline.connect_input('ute_motion_mats', merge_ute, 'in1')
+        pipeline.connect_input('ute_start_time', merge_ute, 'in2')
+        pipeline.connect_input('ute_real_duration', merge_ute, 'in3')
+        pipeline.connect_input('ute_tr', merge_ute, 'in4')
+
+        merge_fm = pipeline.create_node(merge_lists(4), name='merge_fm')
+        pipeline.connect_input('fm_motion_mats', merge_fm, 'in1')
+        pipeline.connect_input('fm_start_time', merge_fm, 'in2')
+        pipeline.connect_input('fm_real_duration', merge_fm, 'in3')
+        pipeline.connect_input('fm_tr', merge_fm, 'in4')
+
+        merge_t2_1 = pipeline.create_node(merge_lists(4), name='merge_t2_1')
+        pipeline.connect_input('t2_1_motion_mats', merge_t2_1, 'in1')
+        pipeline.connect_input('t2_1_start_time', merge_t2_1, 'in2')
+        pipeline.connect_input('t2_1_real_duration', merge_t2_1, 'in3')
+        pipeline.connect_input('t2_1_tr', merge_t2_1, 'in4')
+
+        merge_t2_2 = pipeline.create_node(merge_lists(4), name='merge_t2_2')
+        pipeline.connect_input('t2_2_motion_mats', merge_t2_2, 'in1')
+        pipeline.connect_input('t2_2_start_time', merge_t2_2, 'in2')
+        pipeline.connect_input('t2_2_real_duration', merge_t2_2, 'in3')
+        pipeline.connect_input('t2_2_tr', merge_t2_2, 'in4')
+
+        merge_t2_3 = pipeline.create_node(merge_lists(4), name='merge_t2_3')
+        pipeline.connect_input('t2_3_motion_mats', merge_t2_3, 'in1')
+        pipeline.connect_input('t2_3_start_time', merge_t2_3, 'in2')
+        pipeline.connect_input('t2_3_real_duration', merge_t2_3, 'in3')
+        pipeline.connect_input('t2_3_tr', merge_t2_3, 'in4')
+
+        merge_t2_4 = pipeline.create_node(merge_lists(4), name='merge_t2_4')
+        pipeline.connect_input('t2_4_motion_mats', merge_t2_4, 'in1')
+        pipeline.connect_input('t2_4_start_time', merge_t2_4, 'in2')
+        pipeline.connect_input('t2_4_real_duration', merge_t2_4, 'in3')
+        pipeline.connect_input('t2_4_tr', merge_t2_4, 'in4')
+
+        merge_t2_5 = pipeline.create_node(merge_lists(4), name='merge_t2_5')
+        pipeline.connect_input('t2_5_motion_mats', merge_t2_5, 'in1')
+        pipeline.connect_input('t2_5_start_time', merge_t2_5, 'in2')
+        pipeline.connect_input('t2_5_real_duration', merge_t2_5, 'in3')
+        pipeline.connect_input('t2_5_tr', merge_t2_5, 'in4')
+
+        merge_epi1 = pipeline.create_node(merge_lists(4), name='merge_epi1')
+        pipeline.connect_input('epi1_motion_mats', merge_epi1, 'in1')
+        pipeline.connect_input('epi1_start_time', merge_epi1, 'in2')
+        pipeline.connect_input('epi1_real_duration', merge_epi1, 'in3')
+        pipeline.connect_input('epi1_tr', merge_epi1, 'in4')
+
+        merge_dwi_1_main = pipeline.create_node(merge_lists(4),
+                                                name='merge_dwi_1_main')
+        pipeline.connect_input('dwi_1_main_motion_mats', merge_dwi_1_main,
+                               'in1')
+        pipeline.connect_input('dwi_1_main_start_time', merge_dwi_1_main,
+                               'in2')
+        pipeline.connect_input('dwi_1_main_real_duration', merge_dwi_1_main,
+                               'in3')
+        pipeline.connect_input('dwi_1_main_tr', merge_dwi_1_main, 'in4')
+
+        merge_dwi2ref_1 = pipeline.create_node(
+            merge_lists(4), name='merge_dwi2ref_1')
+        pipeline.connect_input(
+            'dwi2ref_1_motion_mats', merge_dwi2ref_1, 'in1')
+        pipeline.connect_input(
+            'dwi2ref_1_start_time', merge_dwi2ref_1, 'in2')
+        pipeline.connect_input(
+            'dwi2ref_1_real_duration', merge_dwi2ref_1, 'in3')
+        pipeline.connect_input(
+            'dwi2ref_1_tr', merge_dwi2ref_1, 'in4')
+
+        merge_dwi2ref_1_opposite = pipeline.create_node(
+            merge_lists(4), name='merge_dwi2ref_1_opposite')
+        pipeline.connect_input(
+            'dwi2ref_1_opposite_motion_mats', merge_dwi2ref_1_opposite, 'in1')
+        pipeline.connect_input(
+            'dwi2ref_1_opposite_start_time', merge_dwi2ref_1_opposite, 'in2')
+        pipeline.connect_input(
+            'dwi2ref_1_opposite_real_duration', merge_dwi2ref_1_opposite,
+            'in3')
+        pipeline.connect_input(
+            'dwi2ref_1_opposite_tr', merge_dwi2ref_1_opposite, 'in4')
+
+        merge_scans = pipeline.create_node(merge_lists(13), name='merge_scans')
+        merge_scans.inputs.no_flatten = True
+        pipeline.connect(merge_epi1, 'out', merge_scans, 'in1')
+        pipeline.connect(merge_t2_1, 'out', merge_scans, 'in2')
+        pipeline.connect(merge_t2_2, 'out', merge_scans, 'in3')
+        pipeline.connect(merge_t2_3, 'out', merge_scans, 'in4')
+        pipeline.connect(merge_t2_4, 'out', merge_scans, 'in5')
+        pipeline.connect(merge_t1_1, 'out', merge_scans, 'in6')
+        pipeline.connect(merge_ute, 'out', merge_scans, 'in7')
+        pipeline.connect(merge_fm, 'out', merge_scans, 'in8')
+        pipeline.connect(merge_ref, 'out', merge_scans, 'in9')
+        pipeline.connect(merge_dwi_1_main, 'out', merge_scans, 'in10')
+        pipeline.connect(merge_t2_5, 'out', merge_scans, 'in11')
+        pipeline.connect(merge_dwi2ref_1_opposite, 'out', merge_scans, 'in12')
+        pipeline.connect(merge_dwi2ref_1, 'out', merge_scans, 'in13')
+
+        md = pipeline.create_node(MeanDisplacementCalculation(),
+                                  name='scan_time_info')
+        pipeline.connect(merge_scans, 'out', md, 'list_inputs')
+        pipeline.connect_input('epi1_ref_brain', md, 'reference')
+        pipeline.connect_output('mean_displacement', md, 'mean_displacement')
+        pipeline.connect_output(
+            'mean_displacement_rc', md, 'mean_displacement_rc')
+        pipeline.connect_output(
+            'mean_displacement_consecutive', md,
+            'mean_displacement_consecutive')
+        pipeline.connect_output('start_times', md, 'start_times')
+        pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
+        pipeline.connect_output('offset_indexes', md, 'offset_indexes')
+        pipeline.connect_output('mats4average', md, 'mats4average')
+        pipeline.assert_connected()
+        return pipeline
+
+    def motion_framing_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='motion_framing',
+            inputs=[DatasetSpec('mean_displacement', text_format),
+                    DatasetSpec('mean_displacement_consecutive', text_format),
+                    DatasetSpec('start_times', text_format)],
+            outputs=[DatasetSpec('frame_start_times', text_format),
+                     DatasetSpec('frame_vol_numbers', text_format)],
+            description=("Calculate when the head movement exceeded a "
+                         "predefined threshold (default 2mm)."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        framing = pipeline.create_node(MotionFraming(), name='motion_framing')
+        framing.inputs.motion_threshold = pipeline.option('th')
+        framing.inputs.temporal_threshold = pipeline.option('temporal_th')
+        pipeline.connect_input('mean_displacement', framing,
+                               'mean_displacement')
+        pipeline.connect_input('mean_displacement_consecutive', framing,
+                               'mean_displacement_consec')
+        pipeline.connect_input('start_times', framing, 'start_times')
+        pipeline.connect_output('frame_start_times', framing,
+                                'frame_start_times')
+        pipeline.connect_output('frame_vol_numbers', framing,
+                                'frame_vol_numbers')
+        pipeline.assert_connected()
+        return pipeline
+
+    def plot_mean_displacement_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='plot_mean_displacement',
+            inputs=[DatasetSpec('mean_displacement_rc', text_format),
+                    DatasetSpec('offset_indexes', text_format),
+                    DatasetSpec('frame_start_times', text_format)],
+            outputs=[DatasetSpec('mean_displacement_plot', png_format)],
+            description=("Plot the mean displacement real clock"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        plot_md = pipeline.create_node(PlotMeanDisplacementRC(),
+                                       name='plot_md')
+        plot_md.inputs.framing = pipeline.option('framing')
+        pipeline.connect_input('mean_displacement_rc', plot_md,
+                               'mean_disp_rc')
+        pipeline.connect_input('offset_indexes', plot_md,
+                               'false_indexes')
+        pipeline.connect_input('frame_start_times', plot_md,
+                               'frame_start_times')
+        pipeline.connect_output('mean_displacement_plot', plot_md,
+                                'mean_disp_plot')
+        pipeline.assert_connected()
+        return pipeline
+
+    def frame_mean_transformation_mats_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='frame_mean_transformation_mats',
+            inputs=[DatasetSpec('mats4average', text_format),
+                    DatasetSpec('frame_vol_numbers', text_format)],
+            outputs=[DatasetSpec('average_mats', directory_format)],
+            description=("Average all the transformation mats within each "
+                         "detected frame."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        average = pipeline.create_node(AffineMatAveraging(),
+                                       name='mats_averaging')
+        pipeline.connect_input('frame_vol_numbers', average,
+                               'frame_vol_numbers')
+        pipeline.connect_input('mats4average', average,
+                               'all_mats4average')
+        pipeline.connect_output('average_mats', average,
+                                'average_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    def pet_correction_factors_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='pet_correction_factors',
+            inputs=[DatasetSpec('frame_start_times', text_format)],
+            outputs=[DatasetSpec('correction_factors', text_format)],
+            description=("Pipeline to calculate the correction factors to "
+                         "account for frame duration when averaging the PET "
+                         "frames to create the static PET image"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        corr_factors = pipeline.create_node(PetCorrectionFactor(),
+                                            name='pet_corr_factors')
+        pipeline.connect_input('frame_start_times', corr_factors,
+                               'frame_start_times')
+        pipeline.connect_output('correction_factors', corr_factors,
+                                'corr_factors')
+        pipeline.assert_connected()
+        return pipeline
+
+    def frame2ref_alignment_pipeline_factory(
+            self, name, average_mats, ute_regmat, ute_qform_mat, umap=None,
+            pct=False, fixed_binning=False, **kwargs):
+        inputs = [DatasetSpec(average_mats, directory_format),
+                  DatasetSpec(ute_regmat, text_matrix_format),
+                  DatasetSpec(ute_qform_mat, text_matrix_format)]
+        outputs = [DatasetSpec('frame2reference_mats', directory_format)]
+        if umap:
+            inputs.append(DatasetSpec(umap, nifti_gz_format))
+            outputs.append(DatasetSpec('umaps_align2ref', directory_format))
+
+        pipeline = self.create_pipeline(
+            name=name,
+            inputs=inputs,
+            outputs=outputs,
+            description=("Pipeline to create an affine mat to align each "
+                         "detected frame to the reference. If umap is provided"
+                         ", it will be also aligned to match the head position"
+                         " in each frame and improve the static PET image "
+                         "quality."),
+            default_options={'pct': pct, 'fixed_binning': fixed_binning},
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        frame_align = pipeline.create_node(
+            FrameAlign2Reference(), name='frame2ref_alignment',
+            requirements=[fsl509_req])
+        frame_align.inputs.pct = pipeline.option('pct')
+        frame_align.inputs.fixed_binning = pipeline.option('fixed_binning')
+        pipeline.connect_input(average_mats, frame_align,
+                               'average_mats')
+        pipeline.connect_input(ute_regmat, frame_align,
+                               'ute_regmat')
+        pipeline.connect_input(ute_qform_mat, frame_align,
+                               'ute_qform_mat')
+        if umap:
+            pipeline.connect_input(umap, frame_align, 'umap')
+            pipeline.connect_output('umaps_align2ref', frame_align,
+                                    'umaps_align2ref')
+        pipeline.connect_output('frame2reference_mats', frame_align,
+                                'frame2reference_mats')
+        pipeline.assert_connected()
+        return pipeline
+
+    def frame2ref_alignment_pipeline(self, **kwargs):
+        return self.frame2ref_alignment_pipeline_factory(
+            'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
+            'ute_qform_mat', umap='umap',
+            pct=False, fixed_binning=False, **kwargs)

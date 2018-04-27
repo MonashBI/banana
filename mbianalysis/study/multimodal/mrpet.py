@@ -41,6 +41,26 @@ class MotionReferenceT1Study(T1Study):
 
     __metaclass__ = StudyMetaClass
 
+    add_data_specs = [
+        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
+        DatasetSpec('motion_mats', directory_format,
+                    'header_info_extraction_pipeline'),
+        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+        FieldSpec('start_time', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('real_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('tot_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str,
+                  pipeline=header_info_extraction_pipeline),
+        DatasetSpec(
+            'dcm_info',
+            text_format,
+            'header_info_extraction_pipeline'),
+        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
+
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
         return (super(MotionReferenceT1Study, self).
@@ -58,6 +78,11 @@ class MotionReferenceT1Study(T1Study):
             img_type=img_type, **kwargs)
         return pipeline
 
+
+class MotionReferenceT2Study(T2Study):
+
+    __metaclass__ = StudyMetaClass
+
     add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
@@ -77,11 +102,6 @@ class MotionReferenceT1Study(T1Study):
             text_format,
             'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
-
-
-class MotionReferenceT2Study(T2Study):
-
-    __metaclass__ = StudyMetaClass
 
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
@@ -99,26 +119,6 @@ class MotionReferenceT2Study(T2Study):
         return super(MotionReferenceT2Study, self).basic_preproc_pipeline(
             resolution=resolution,
             **kwargs)
-
-    add_data_specs = [
-        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
-                    'header_info_extraction_pipeline'),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
-        DatasetSpec(
-            'dcm_info',
-            text_format,
-            'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
 
 class MotionCorrectionMixin(MultiStudy):

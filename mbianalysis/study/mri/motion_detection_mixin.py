@@ -45,23 +45,6 @@ class MotionReferenceT1Study(T1Study):
 
     __metaclass__ = StudyMetaClass
 
-    def header_info_extraction_pipeline(self, reference=True, multivol=False,
-                                        **kwargs):
-        return (super(MotionReferenceT1Study, self).
-                header_info_extraction_pipeline_factory(
-                    'primary', ref=reference, multivol=multivol,
-                    **kwargs))
-
-    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
-        return super(MotionReferenceT1Study, self).basic_preproc_pipeline(
-            resolution=resolution,
-            **kwargs)
-
-    def segmentation_pipeline(self, img_type=1, **kwargs):
-        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
-            img_type=img_type, **kwargs)
-        return pipeline
-
     add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
@@ -79,10 +62,44 @@ class MotionReferenceT1Study(T1Study):
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
+    def header_info_extraction_pipeline(self, reference=True, multivol=False,
+                                        **kwargs):
+        return (super(MotionReferenceT1Study, self).
+                header_info_extraction_pipeline_factory(
+                    'primary', ref=reference, multivol=multivol,
+                    **kwargs))
+
+    def basic_preproc_pipeline(self, resolution=[1], **kwargs):
+        return super(MotionReferenceT1Study, self).basic_preproc_pipeline(
+            resolution=resolution,
+            **kwargs)
+
+    def segmentation_pipeline(self, img_type=1, **kwargs):
+        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
+            img_type=img_type, **kwargs)
+        return pipeline
+
 
 class MotionReferenceT2Study(T2Study):
 
     __metaclass__ = StudyMetaClass
+
+    add_data_specs = [
+        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
+        DatasetSpec('motion_mats', directory_format,
+                    'header_info_extraction_pipeline'),
+        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+        FieldSpec('start_time', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('real_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('tot_duration', str,
+                  pipeline=header_info_extraction_pipeline),
+        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+        FieldSpec('pe_angle', str,
+                  pipeline=header_info_extraction_pipeline),
+        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
+        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
     def header_info_extraction_pipeline(self, reference=True, multivol=False,
                                         **kwargs):
@@ -101,27 +118,45 @@ class MotionReferenceT2Study(T2Study):
             resolution=resolution,
             **kwargs)
 
-    add_data_specs = [
-        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
-                    'header_info_extraction_pipeline'),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
-        FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
-        FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
-        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
-
 
 class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
+
+    sub_study_specs = []
+
+    add_data_specs = [
+        DatasetSpec('mean_displacement', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mean_displacement_rc', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mean_displacement_consecutive', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('mats4average', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('start_times', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('motion_par_rc', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('motion_par', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('offset_indexes', text_format, 'mean_displacement_pipeline'),
+        DatasetSpec('frame_start_times', text_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('frame_vol_numbers', text_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('timestamps', directory_format,
+                    'motion_framing_pipeline'),
+        DatasetSpec('mean_displacement_plot', png_format,
+                    'plot_mean_displacement_pipeline'),
+        DatasetSpec('average_mats', directory_format,
+                    'frame_mean_transformation_mats_pipeline'),
+        DatasetSpec('correction_factors', text_format,
+                    'pet_correction_factors_pipeline'),
+        DatasetSpec('umaps_align2ref', directory_format,
+                    'frame2ref_alignment_pipeline'),
+        DatasetSpec('frame2reference_mats', directory_format,
+                    'frame2ref_alignment_pipeline'),
+        DatasetSpec('motion_detection_output', directory_format,
+                    'gather_outputs_pipeline'),
+        DatasetSpec('moco_series', directory_format,
+                    'create_moco_series_pipeline')]
 
     add_option_specs = [OptionSpec('framing_th', 2.0),
                         OptionSpec('framing_temporal_th', 30.0),
@@ -453,40 +488,6 @@ class MotionDetectionMixin(MultiStudy):
         return self.gather_outputs_factory(
             'gather_md_outputs', pet_corr_fac=False, aligned_umaps=False,
             timestamps=False, align_mats=False, **kwargs)
-
-    _sub_study_specs = {}
-    add_data_specs = [
-        DatasetSpec('mean_displacement', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_rc', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_consecutive', text_format,
-                    'mean_displacement_pipeline'),
-        DatasetSpec('mats4average', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('start_times', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('motion_par_rc', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('motion_par', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('offset_indexes', text_format, 'mean_displacement_pipeline'),
-        DatasetSpec('frame_start_times', text_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('frame_vol_numbers', text_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('timestamps', directory_format,
-                    'motion_framing_pipeline'),
-        DatasetSpec('mean_displacement_plot', png_format,
-                    'plot_mean_displacement_pipeline'),
-        DatasetSpec('average_mats', directory_format,
-                    'frame_mean_transformation_mats_pipeline'),
-        DatasetSpec('correction_factors', text_format,
-                    'pet_correction_factors_pipeline'),
-        DatasetSpec('umaps_align2ref', directory_format,
-                    'frame2ref_alignment_pipeline'),
-        DatasetSpec('frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline'),
-        DatasetSpec('motion_detection_output', directory_format,
-                    'gather_outputs_pipeline'),
-        DatasetSpec('moco_series', directory_format,
-                    'create_moco_series_pipeline')]
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
