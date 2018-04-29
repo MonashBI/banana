@@ -117,7 +117,7 @@ class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = []
+    add_sub_study_specs = []
 
     add_data_specs = [
         DatasetSpec('mean_displacement', text_format,

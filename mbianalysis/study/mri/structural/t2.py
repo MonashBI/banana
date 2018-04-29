@@ -35,7 +35,7 @@ class CoregisteredT2Study(MultiStudy):
     add_option_specs = [OptionSpec('resolution', [1]),
                         OptionSpec('multivol', False)]
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('t2', T2Study, {
             't2': 'primary',
             't2_nifti': 'primary_nifti',

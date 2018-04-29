@@ -291,7 +291,7 @@ class CoregisteredDWIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('dwi_main', DiffusionStudy, {
             'dwi_main': 'dwi_main',
             'dwi_main_ref': 'dwi_ref',
@@ -427,7 +427,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('dwi2ref', DiffusionReferenceStudy, {
             'dwi2ref_to_correct': 'to_be_corrected',
             'dwi2ref_ref': 'topup_ref',
@@ -542,7 +542,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('dwi_opposite', DiffusionOppositeStudy, {
             'dwi_opposite_to_correct': 'to_be_corrected',
             'dwi_opposite_ref': 'topup_ref',
@@ -664,7 +664,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('opposite_dwi2ref', DiffusionReferenceOppositeStudy, {
             'opposite_dwi2ref_to_correct': 'to_be_corrected',
             'opposite_dwi2ref_to_correct_nii': 'to_be_corrected_nifti',

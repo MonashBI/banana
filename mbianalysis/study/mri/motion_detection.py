@@ -646,7 +646,7 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.assert_connected()
         return pipeline
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
             'ref_ped': 'ped',

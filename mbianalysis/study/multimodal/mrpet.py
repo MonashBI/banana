@@ -121,7 +121,7 @@ class MotionCorrectionMixin(MultiStudy):
 #         'ute', 't1_brain_mask_pipeline',
 #         override_default_options={'bet_method': 'optibet'})
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('pet_mc', PETStudy, {
             'pet_data_dir': 'pet_data_dir',
             'pet_data_reconstructed': 'pet_recon_dir',

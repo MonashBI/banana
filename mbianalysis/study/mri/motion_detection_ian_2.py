@@ -23,7 +23,7 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('ref', MotionReferenceStudy, {
             'reference': 'primary',
             'ref_ped': 'ped',
@@ -403,7 +403,8 @@ class MotionDetectionStudy(MultiStudy):
                   'dwi_1_main_dcm_info_pipeline'),
         FieldSpec('dwi_1_main_tot_duration', str,
                   'dwi_1_main_dcm_info_pipeline'),
-        FieldSpec('dwi_1_main_start_time', str, 'dwi_1_main_dcm_info_pipeline'),
+        FieldSpec('dwi_1_main_start_time', str,
+                  'dwi_1_main_dcm_info_pipeline'),
         DatasetSpec('dwi_1_main_affine_mats', directory_format,
                     'dwi_1_main_aff_mat_pipeline'),
         DatasetSpec('dwi_1_main_motion_mats', directory_format,
@@ -551,7 +552,8 @@ class MotionDetectionStudy(MultiStudy):
                     't2_1_basic_preproc_pipeline'),
         DatasetSpec('t2_1_ref_preproc', nifti_gz_format,
                     't2_1_ref_basic_preproc_pipeline'),
-        DatasetSpec('t2_1_ref_brain', nifti_gz_format, 't2_1_ref_bet_pipeline'),
+        DatasetSpec('t2_1_ref_brain', nifti_gz_format,
+                    't2_1_ref_bet_pipeline'),
         DatasetSpec('t2_1_ref_brain_mask', nifti_gz_format,
                     't2_1_ref_bet_pipeline'),
         DatasetSpec('t2_1_motion_mats', directory_format,
@@ -581,7 +583,8 @@ class MotionDetectionStudy(MultiStudy):
                     't2_2_basic_preproc_pipeline'),
         DatasetSpec('t2_2_ref_preproc', nifti_gz_format,
                     't2_2_ref_basic_preproc_pipeline'),
-        DatasetSpec('t2_2_ref_brain', nifti_gz_format, 't2_2_ref_bet_pipeline'),
+        DatasetSpec('t2_2_ref_brain', nifti_gz_format,
+                    't2_2_ref_bet_pipeline'),
         DatasetSpec('t2_2_ref_brain_mask', nifti_gz_format,
                     't2_2_ref_bet_pipeline'),
         DatasetSpec('t2_2_motion_mats', directory_format,
@@ -671,7 +674,8 @@ class MotionDetectionStudy(MultiStudy):
                     't2_5_basic_preproc_pipeline'),
         DatasetSpec('t2_5_ref_preproc', nifti_gz_format,
                     't2_5_ref_basic_preproc_pipeline'),
-        DatasetSpec('t2_5_ref_brain', nifti_gz_format, 't2_5_ref_bet_pipeline'),
+        DatasetSpec('t2_5_ref_brain', nifti_gz_format,
+                    't2_5_ref_bet_pipeline'),
         DatasetSpec('t2_5_ref_brain_mask', nifti_gz_format,
                     't2_5_ref_bet_pipeline'),
         DatasetSpec('t2_5_motion_mats', directory_format,

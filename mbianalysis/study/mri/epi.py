@@ -74,7 +74,7 @@ class CoregisteredEPIStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('epi', EPIStudy, {
             'epi': 'primary',
             'epi_nifti': 'primary_nifti',

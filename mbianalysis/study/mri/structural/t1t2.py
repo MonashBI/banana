@@ -18,7 +18,7 @@ class T1T2Study(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('t1', T1Study, {
             't1': 'primary',
             't1_coreg_to_atlas': 'coreg_to_atlas',

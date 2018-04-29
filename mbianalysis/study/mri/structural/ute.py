@@ -540,7 +540,7 @@ class CoregisteredUTEStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('ute', UTEStudy, {
             'ute': 'primary',
             'umap': 'umap',

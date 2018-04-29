@@ -57,7 +57,7 @@ class MotionDetectionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('ref', MotionReferenceT1Study),
         SubStudySpec('fm', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',

@@ -84,7 +84,7 @@ class CoregisteredT1Study(MultiStudy):
     add_option_specs = [OptionSpec('t1_multivol', False),
                         OptionSpec('reference_resolution', [1])]
 
-    sub_study_specs = [
+    add_sub_study_specs = [
         SubStudySpec('t1', T1Study, {
             't1': 'primary',
             't1_nifti': 'primary_nifti',
