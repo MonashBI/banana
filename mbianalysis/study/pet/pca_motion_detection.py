@@ -57,5 +57,4 @@ class PETPCAMotionDetectionStudy(PETStudy):
         pipeline.connect(ssrb, 'ssrb_sinograms', merge, 'sinograms')
         pipeline.connect_output('ssrb_sinograms', merge, 'sinogram_folder')
 
-        pipeline.assert_connected()
         return pipeline

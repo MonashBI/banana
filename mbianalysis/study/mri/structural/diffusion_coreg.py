@@ -114,7 +114,6 @@ class DiffusionStudy(MRIStudy):
         pipeline.connect_output('preproc', dwipreproc, 'out_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
 
-        pipeline.assert_connected()
         return pipeline
 
     def topup_factory(self, name, to_be_corrected_name, ref_input_name,
@@ -169,7 +168,6 @@ class DiffusionStudy(MRIStudy):
             topup1, 'out_fieldcoef', apply_topup1, 'in_topup_fieldcoef')
 
         pipeline.connect_output(output_name, apply_topup1, 'out_corrected')
-        pipeline.assert_connected()
         return pipeline
 
     def topup_pipeline(self, **kwargs):
@@ -396,7 +394,6 @@ class CoregisteredDWIStudy(MultiStudy):
             'dwi_main_eddy_par', aff_mat, 'motion_parameters')
         pipeline.connect_output(
             'affine_mats', aff_mat, 'affine_matrices')
-        pipeline.assert_connected()
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):
@@ -419,7 +416,6 @@ class CoregisteredDWIStudy(MultiStudy):
         pipeline.connect_input('dwi_main_qform_mat', mm, 'qform_mat')
         pipeline.connect_input('affine_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -534,7 +530,6 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
         pipeline.connect_input('dwi2ref_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('dwi2ref_qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -656,7 +651,6 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
         pipeline.connect_input('dwi_opposite_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('dwi_opposite_qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -791,5 +785,4 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
         pipeline.connect_input('opposite_dwi2ref_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('opposite_dwi2ref_qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline

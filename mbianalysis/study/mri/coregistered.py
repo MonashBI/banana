@@ -111,7 +111,6 @@ class CoregisteredStudy(Study):
         pipeline.connect_input('to_register', flirt, 'in_file')
         pipeline.connect_input('reference', flirt, 'reference')
 
-        pipeline.assert_connected()
         return pipeline
 
     def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
@@ -148,7 +147,6 @@ class CoregisteredStudy(Study):
         pipeline.connect_input('t2', coreg, 'source')
         # Connect outputs
         pipeline.connect_output('t2_coreg_t1', coreg, 'coregistered_source')
-        pipeline.assert_connected()
         return pipeline
 
     def _connect_matrix(self, pipeline, flirt):

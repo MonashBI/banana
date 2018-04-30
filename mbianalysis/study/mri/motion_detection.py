@@ -616,7 +616,6 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.connect_output('start_times', md, 'start_times')
         pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
-        pipeline.assert_connected()
         return pipeline
 
     def motion_framing_pipeline(self, **kwargs):
@@ -643,7 +642,6 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.connect_input('start_times', framing, 'start_times')
         pipeline.connect_output('frame_start_times', framing,
                                 'frame_start_times')
-        pipeline.assert_connected()
         return pipeline
 
     add_sub_study_specs = [

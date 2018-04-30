@@ -83,7 +83,6 @@ class T2StarStudy(MRIStudy):
         pipeline.connect(mask, 'mask_file', qsmrecon, 'mask_file')
         pipeline.connect(prepare, 'out_dir', qsmrecon, 'in_dir')
 
-        pipeline.assert_connected()
         return pipeline
 
     def bet_T1(self, **kwargs):
@@ -188,5 +187,4 @@ class T2StarStudy(MRIStudy):
         pipeline.connect(mask, 'mask_file', qsmrecon, 'mask_file')
         pipeline.connect(prepare, 'out_dir', qsmrecon, 'in_dir')
 
-        pipeline.assert_connected()
         return pipeline

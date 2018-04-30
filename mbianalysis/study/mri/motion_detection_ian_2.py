@@ -1400,7 +1400,6 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.connect_output('motion_par_rc', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
         pipeline.connect_output('mats4average', md, 'mats4average')
-        pipeline.assert_connected()
         return pipeline
 
     def motion_framing_pipeline(self, **kwargs):
@@ -1430,7 +1429,6 @@ class MotionDetectionStudy(MultiStudy):
                                 'frame_start_times')
         pipeline.connect_output('frame_vol_numbers', framing,
                                 'frame_vol_numbers')
-        pipeline.assert_connected()
         return pipeline
 
     def plot_mean_displacement_pipeline(self, **kwargs):
@@ -1457,7 +1455,6 @@ class MotionDetectionStudy(MultiStudy):
                                'frame_start_times')
         pipeline.connect_output('mean_displacement_plot', plot_md,
                                 'mean_disp_plot')
-        pipeline.assert_connected()
         return pipeline
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
@@ -1481,7 +1478,6 @@ class MotionDetectionStudy(MultiStudy):
                                'all_mats4average')
         pipeline.connect_output('average_mats', average,
                                 'average_mats')
-        pipeline.assert_connected()
         return pipeline
 
     def pet_correction_factors_pipeline(self, **kwargs):
@@ -1503,7 +1499,6 @@ class MotionDetectionStudy(MultiStudy):
                                'frame_start_times')
         pipeline.connect_output('correction_factors', corr_factors,
                                 'corr_factors')
-        pipeline.assert_connected()
         return pipeline
 
     def frame2ref_alignment_pipeline_factory(
@@ -1548,7 +1543,6 @@ class MotionDetectionStudy(MultiStudy):
                                     'umaps_align2ref')
         pipeline.connect_output('frame2reference_mats', frame_align,
                                 'frame2reference_mats')
-        pipeline.assert_connected()
         return pipeline
 
     def frame2ref_alignment_pipeline(self, **kwargs):

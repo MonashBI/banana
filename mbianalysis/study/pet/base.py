@@ -98,7 +98,6 @@ class PETStudy(Study):
         pipeline.connect_output('timeseries', ica, 'ica_timeseries')
         pipeline.connect_output('mixing_mat', ica, 'mixing_mat')
 
-        pipeline.assert_connected()
         return pipeline
 
     def Image_normalization_pipeline(self, **kwargs):
@@ -127,7 +126,6 @@ class PETStudy(Study):
         pipeline.connect_output('warp_file', reg, 'warp_file')
         pipeline.connect_output('invwarp_file', reg, 'inv_warp')
         pipeline.connect_output('affine_mat', reg, 'regmat')
-        pipeline.assert_connected()
         return pipeline
 
     def pet_data_preparation_pipeline(self, **kwargs):
@@ -151,7 +149,6 @@ class PETStudy(Study):
 
         pipeline.connect_output('pet_recon_dir_prepared', prep_dir,
                                 'pet_recon_dir_prepared')
-        pipeline.assert_connected()
         return pipeline
 
     def pet_time_info_extraction_pipeline(self, **kwargs):
@@ -170,7 +167,6 @@ class PETStudy(Study):
         pipeline.connect_output('pet_end_time', time_info, 'pet_end_time')
         pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')
         pipeline.connect_output('pet_duration', time_info, 'pet_duration')
-        pipeline.assert_connected()
         return pipeline
 
     def pet_fov_cropping_pipeline(self, **kwargs):
@@ -216,5 +212,4 @@ class PETStudy(Study):
         pipeline.connect(cropping, 'pet_cropped', cp2dir, 'in_files')
 
         pipeline.connect_output('pet_data_cropped', cp2dir, 'out_dir')
-        pipeline.assert_connected()
         return pipeline

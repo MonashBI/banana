@@ -60,7 +60,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('field_map_phase_nifti', nifti_gz_format,
                     'fm_phase_dcm2nii_conversion_pipeline'),
         DatasetSpec('melodic_dir', zip_format, 'feat_pipeline'),
-        DatasetSpec('train_data', rdata_format, TrainingFix,
+        DatasetSpec('train_data', rdata_format, 'TrainingFix',
                     frequency='per_project'),
         DatasetSpec('labelled_components', text_format,
                     'fix_classification'),
@@ -96,7 +96,7 @@ class FunctionalMRIStudy(MRIStudy):
                     'applyTransform'),
         DatasetSpec('fix_dir', targz_format, 'PrepareFix'),
         DatasetSpec('smoothed_file', nifti_gz_format, 'applySmooth'),
-        DatasetSpec('group_melodic', directory_format, groupMelodic,
+        DatasetSpec('group_melodic', directory_format, 'groupMelodic',
                     frequency='per_visit'),
         FieldSpec('tr', float, 'header_info_extraction_pipeline')]
 
@@ -190,7 +190,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect(ml1, 'fsf_file', feat, 'fsf_file')
         pipeline.connect_output('feat_dir', feat, 'feat_dir')
 
-        pipeline.assert_connected()
         return pipeline
 
     def fix_all(self, **kwargs):
@@ -221,7 +220,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_output('cleaned_file', fix, 'output')
         pipeline.connect_output('labelled_components', fix, 'label_file')
 
-        pipeline.assert_connected()
         return pipeline
 
     def fix_classification(self, **kwargs):
@@ -250,7 +248,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('labelled_components', fix, 'label_file')
 
-        pipeline.assert_connected()
         return pipeline
 
     def fix_regression(self, **kwargs):
@@ -278,7 +275,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('cleaned_file', signal_reg, 'output')
 
-        pipeline.assert_connected()
         return pipeline
 
     def optiBET(self, **kwargs):
@@ -342,7 +338,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_output('betted_file', maths2, 'out_file')
         pipeline.connect_output('optiBET_report', slices, 'report')
 
-        pipeline.assert_connected()
         return pipeline
 
     def ANTsRegistration(self, **kwargs):
@@ -406,7 +401,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_output('T12MNI_invwarp', t1reg, 'inv_warp')
         pipeline.connect_output('T12MNI_reg_report', slices, 'report')
 
-        pipeline.assert_connected()
         return pipeline
 
     def MelodicL1(self, **kwargs):
@@ -436,7 +430,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('melodic_ica', mel, 'out_dir')
 
-        pipeline.assert_connected()
         return pipeline
 
     def rsfMRI_filtering(self, **kwargs):
@@ -534,7 +527,6 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline.connect_output('mc_par', afni_mc, 'oned_file')
         pipeline.connect_output('unwarped_file', fugue, 'unwarped_file')
 
-        pipeline.assert_connected()
         return pipeline
 
     def applyTransform(self, **kwargs):
@@ -569,7 +561,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('registered_file', apply_trans, 'output_image')
 
-        pipeline.assert_connected()
         return pipeline
 
     def applySmooth(self, **kwargs):
@@ -592,7 +583,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('smoothed_file', smooth, 'out_file')
 
-        pipeline.assert_connected()
         return pipeline
 
     def PrepareFix(self, **kwargs):
@@ -710,7 +700,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('fix_dir', cp8, 'basedir')
 
-        pipeline.assert_connected()
         return pipeline
 
     def TrainingFix(self, **kwargs):
@@ -745,7 +734,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('train_data', fix_training, 'training_set')
 
-        pipeline.assert_connected()
         return pipeline
 
     def groupMelodic(self, **kwargs):
@@ -780,5 +768,4 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline.connect_output('group_melodic', gica, 'out_dir')
 
-        pipeline.assert_connected()
         return pipeline

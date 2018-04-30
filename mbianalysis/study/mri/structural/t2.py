@@ -140,5 +140,4 @@ class CoregisteredT2Study(MultiStudy):
         pipeline.connect_input('t2_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('t2_qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline

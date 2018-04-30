@@ -35,7 +35,6 @@ class StaticPETStudy(PETStudy):
         pipeline.connect_input('registered_volume', suvr, 'volume')
         pipeline.connect_input('base_mask', suvr, 'base_mask')
         pipeline.connect_output('SUVR_image', suvr, 'SUVR_file')
-        pipeline.assert_connected()
         return pipeline
 
     def _ica_inputs(self):

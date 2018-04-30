@@ -656,7 +656,6 @@ class CoregisteredUTEStudy(MultiStudy):
         pipeline.connect_input('ute_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('ute_qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline
 
     def nifti2dcm_conversion_pipeline(self, **kwargs):
@@ -692,5 +691,4 @@ class CoregisteredUTEStudy(MultiStudy):
         # Connect outputs
         pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
 
-        pipeline.assert_connected()
         return pipeline

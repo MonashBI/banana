@@ -128,7 +128,6 @@ class MRIStudy(Study):
         pipeline.connect_input('preproc', bet, 'in_file')
         pipeline.connect_output('masked', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
-        pipeline.assert_connected()
         return pipeline
 
     def _optiBET_brain_mask_pipeline(self, **kwargs):
@@ -206,7 +205,6 @@ class MRIStudy(Study):
         pipeline.connect_output('brain_mask', maths1, 'out_file')
         pipeline.connect_output('masked', maths2, 'out_file')
 
-        pipeline.assert_connected()
         return pipeline
 
     def coregister_to_atlas_pipeline(self, **kwargs):
@@ -304,7 +302,6 @@ class MRIStudy(Study):
         pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('coreg_to_atlas_coeff', fnirt,
                                 'fieldcoeff_file')
-        pipeline.assert_connected()
         return pipeline
 
     def segmentation_pipeline(self, img_type=2, **kwargs):
@@ -336,7 +333,6 @@ class MRIStudy(Study):
                 "'seg_img_type' option can either be 1 or 2 (not {})"
                 .format(pipeline.option('seg_img_type')))
 
-        pipeline.assert_connected()
         return pipeline
 
     def basic_preproc_pipeline(self, **kwargs):
@@ -376,7 +372,6 @@ class MRIStudy(Study):
         else:
             pipeline.connect_output('preproc', swap, 'out_file')
 
-        pipeline.assert_connected()
         return pipeline
 
     def header_info_extraction_pipeline(self, **kwargs):
@@ -423,7 +418,6 @@ class MRIStudy(Study):
         if ref:
             pipeline.connect_output('motion_mats', hd_extraction,
                                     'ref_motion_mats')
-        pipeline.assert_connected()
         return pipeline
 
     def dcm2nii_conversion_pipeline(self, **kwargs):
@@ -458,5 +452,4 @@ class MRIStudy(Study):
             pipeline.connect_output(
                 dcm_in_name + '_nifti', conv, 'converted')
 
-        pipeline.assert_connected()
         return pipeline

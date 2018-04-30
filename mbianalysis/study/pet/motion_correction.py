@@ -66,7 +66,6 @@ class FixedMAFMotionCorrection(PETStudy):
         pipeline.connect(mcflirt, 'out_file', mean, 'in_file')
 
         pipeline.connect_output('fixed_maf_pet', mean, 'out_file')
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -116,7 +115,6 @@ class StaticPETMotionCorrection(PETStudy):
             pipeline.connect_input(StructAlignment, static_mc,
                                    'structural_image')
         pipeline.connect_output('static_pet_mc', static_mc, 'pet_mc_results')
-        pipeline.assert_connected()
         return pipeline
 
     def static_motion_correction_pipeline(self, **kwargs):

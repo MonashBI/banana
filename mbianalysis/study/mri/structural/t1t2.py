@@ -80,7 +80,6 @@ class T1T2Study(MultiStudy):
         # Connect T2-weighted input
         pipeline.connect_input('t2_coreg', recon_all, 'T2_file')
         recon_all.inputs.use_T2 = True
-        pipeline.assert_connected()
         return pipeline
 
     coregister_to_atlas_pipeline = MultiStudy.translate(
@@ -120,5 +119,4 @@ class T1T2Study(MultiStudy):
         # Connect outputs
         pipeline.connect_output('t1_masked', apply_mask, 'out_file')
         # Check and return
-        pipeline.assert_connected()
         return pipeline

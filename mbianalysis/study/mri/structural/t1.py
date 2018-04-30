@@ -73,7 +73,6 @@ class T1Study(MRIStudy):
         # Connect inputs/outputs
         pipeline.connect_input('primary', recon_all, 'T1_files')
         pipeline.connect_output('fs_recon_all', join, 'path')
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -189,5 +188,4 @@ class CoregisteredT1Study(MultiStudy):
         pipeline.connect_input('t1_reg_mat', mm, 'reg_mat')
         pipeline.connect_input('t1_qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline

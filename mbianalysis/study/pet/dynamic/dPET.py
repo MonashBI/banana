@@ -55,7 +55,6 @@ class DynamicPETStudy(PETStudy):
             name='fslroi')
         pipeline.connect_input('pet_volumes', fslroi, 'in_file')
         pipeline.connect_output('pet_image', fslroi, 'roi_file')
-        pipeline.assert_connected()
         return pipeline
 
     def ApplyTransform_pipeline(self, **kwargs):
@@ -85,7 +84,6 @@ class DynamicPETStudy(PETStudy):
 
         pipeline.connect_output('registered_volumes', apply_trans,
                                 'output_image')
-        pipeline.assert_connected()
         return pipeline
 
     def Baseline_Removal_pipeline(self, **kwargs):
@@ -103,7 +101,6 @@ class DynamicPETStudy(PETStudy):
                                   name='Baseline_removal')
         pipeline.connect_input('registered_volumes', br, 'volume')
         pipeline.connect_output('detrended_volumes', br, 'detrended_file')
-        pipeline.assert_connected()
         return pipeline
 
     def Dual_Regression_pipeline(self, **kwargs):
@@ -127,7 +124,6 @@ class DynamicPETStudy(PETStudy):
 
         pipeline.connect_output('spatial_map', dr, 'spatial_map')
         pipeline.connect_output('ts', dr, 'timecourse')
-        pipeline.assert_connected()
         return pipeline
 #     def example_pipeline_switch(self, tool='atool', **kwargs):
 #         if tool == 'atool':

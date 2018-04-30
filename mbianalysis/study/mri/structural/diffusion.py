@@ -168,7 +168,6 @@ class DiffusionStudy(T2Study):
         if pipeline.option('preproc_denoise'):
             pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
-        pipeline.assert_connected()
         return pipeline
 
     def brain_mask_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
@@ -256,7 +255,6 @@ class DiffusionStudy(T2Study):
         # Connect to outputs
         pipeline.connect_output('bias_correct', bias_correct, 'out_file')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def intensity_normalisation_pipeline(self, **kwargs):
@@ -322,7 +320,6 @@ class DiffusionStudy(T2Study):
                                 'fa_template')
         pipeline.connect_output('norm_intens_wm_mask', intensity_norm,
                                 'wm_mask')
-        pipeline.assert_connected()
         return pipeline
 
     def tensor_pipeline(self, **kwargs):  # @UnusedVariable
@@ -356,7 +353,6 @@ class DiffusionStudy(T2Study):
         # Connect to outputs
         pipeline.connect_output('tensor', dwi2tensor, 'out_file')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def fa_pipeline(self, **kwargs):  # @UnusedVariable
@@ -385,7 +381,6 @@ class DiffusionStudy(T2Study):
         pipeline.connect_output('fa', metrics, 'out_fa')
         pipeline.connect_output('adc', metrics, 'out_adc')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def response_pipeline(self, **kwargs):  # @UnusedVariable
@@ -425,7 +420,6 @@ class DiffusionStudy(T2Study):
         # Connect to outputs
         pipeline.connect_output('response', response, 'out_file')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def average_response_pipeline(self, **kwargs):
@@ -458,7 +452,6 @@ class DiffusionStudy(T2Study):
         # Connect outputs
         pipeline.connect_output('avg_response', avg_response, 'out_file')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def fod_pipeline(self, **kwargs):  # @UnusedVariable
@@ -497,7 +490,6 @@ class DiffusionStudy(T2Study):
         # Connect to outputs
         pipeline.connect_output('fod', dwi2fod, 'out_file')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def tbss_pipeline(self, **kwargs):  # @UnusedVariable
@@ -528,7 +520,6 @@ class DiffusionStudy(T2Study):
         pipeline.connect_output('tbss_skeleton_mask', tbss,
                                 'outputnode.skeleton_mask')
         # Check inputs/output are connected
-        pipeline.assert_connected()
         return pipeline
 
     def extract_b0_pipeline(self, **kwargs):  # @UnusedVariable
@@ -589,7 +580,6 @@ class DiffusionStudy(T2Study):
             description="Extract b0 image from a DWI study",
             version=1,
             citations=[mrtrix_cite], options=options)
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -804,7 +794,6 @@ class NODDIStudy(DiffusionStudy):
         # Connect outputs
         pipeline.connect_output('dwi_scan', mrcat, 'out_file')
         # Check inputs/outputs are connected
-        pipeline.assert_connected()
         return pipeline
 
     def noddi_fitting_pipeline(self, **kwargs):  # @UnusedVariable
@@ -903,5 +892,4 @@ class NODDIStudy(DiffusionStudy):
         pipeline.connect_output('kappa', save_params, 'kappa')
         pipeline.connect_output('error_code', save_params, 'error_code')
         # Check inputs/outputs are connected
-        pipeline.assert_connected()
         return pipeline

@@ -66,7 +66,6 @@ class EPIStudy(MRIStudy):
         pipeline.connect(mcflirt, 'mat_file', merge, 'file_list')
         pipeline.connect_output('moco_mat', merge, 'out_dir')
 
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -207,7 +206,6 @@ class CoregisteredEPIStudy(MultiStudy):
 
         pipeline.connect_output('epi_epireg', epireg, 'out_file')
         pipeline.connect_output('epi_epireg_mat', epireg, 'epi2str_mat')
-        pipeline.assert_connected()
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):
@@ -229,5 +227,4 @@ class CoregisteredEPIStudy(MultiStudy):
         pipeline.connect_input('epi_qform_mat', mm, 'qform_mat')
         pipeline.connect_input('epi_moco_mat', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        pipeline.assert_connected()
         return pipeline
