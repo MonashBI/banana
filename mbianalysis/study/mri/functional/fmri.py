@@ -61,7 +61,7 @@ class FunctionalMRIStudy(MRIStudy):
                     'fm_phase_dcm2nii_conversion_pipeline'),
         DatasetSpec('melodic_dir', zip_format, 'feat_pipeline'),
         DatasetSpec('train_data', rdata_format, TrainingFix,
-                    multiplicity='per_project'),
+                    frequency='per_project'),
         DatasetSpec('labelled_components', text_format,
                     'fix_classification'),
         DatasetSpec('cleaned_file', nifti_gz_format,
@@ -97,7 +97,7 @@ class FunctionalMRIStudy(MRIStudy):
         DatasetSpec('fix_dir', targz_format, 'PrepareFix'),
         DatasetSpec('smoothed_file', nifti_gz_format, 'applySmooth'),
         DatasetSpec('group_melodic', directory_format, groupMelodic,
-                    multiplicity='per_visit'),
+                    frequency='per_visit'),
         FieldSpec('tr', float, 'header_info_extraction_pipeline')]
 
     def header_info_extraction_pipeline(self, **kwargs):
@@ -199,7 +199,7 @@ class FunctionalMRIStudy(MRIStudy):
             name='fix',
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('train_data', rdata_format,
-                                multiplicity='per_project'),
+                                frequency='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format),
                      DatasetSpec('labelled_components', text_format)],
@@ -230,7 +230,7 @@ class FunctionalMRIStudy(MRIStudy):
             name='fix_classification',
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('train_data', rdata_format,
-                                multiplicity='per_project'),
+                                frequency='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
             description=("Automatic classification of noisy"
