@@ -1,9 +1,9 @@
 from nipype.interfaces.fsl import FLIRT
 from nipype.interfaces.spm.preprocess import Coregister
-from nianalysis.requirements import fsl5_req
-from nianalysis.citations import fsl_cite
-from nianalysis.requirements import spm12_req
-from nianalysis.citations import spm_cite
+from mbianalysis.requirements import fsl5_req
+from mbianalysis.citations import fsl_cite
+from mbianalysis.requirements import spm12_req
+from mbianalysis.citations import spm_cite
 from nianalysis.data_formats import (
     nifti_gz_format, nifti_format, text_matrix_format)
 from nianalysis.study.base import StudyMetaClass, Study

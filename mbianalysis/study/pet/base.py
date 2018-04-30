@@ -6,9 +6,9 @@ from mbianalysis.interfaces.sklearn import FastICA
 from mbianalysis.interfaces.ants import AntsRegSyn
 import os
 from abc import abstractmethod
-from nianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
+from mbianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req, mrtrix3_req)
-from nianalysis.citations import fsl_cite
+from mbianalysis.citations import fsl_cite
 from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
 from nianalysis.interfaces.utils import ListDir, SelectOne, CopyToDir
 from nipype.interfaces.fsl import Merge, ExtractROI

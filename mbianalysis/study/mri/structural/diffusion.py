@@ -11,13 +11,13 @@ from .t2 import T2Study
 from mbianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from nianalysis.interfaces.utils import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
-from nianalysis.citations import (
+from mbianalysis.citations import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from nianalysis.data_formats import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format)
-from nianalysis.requirements import (
+from mbianalysis.requirements import (
     fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from nianalysis.exceptions import NiAnalysisError
 from nianalysis.study.base import StudyMetaClass

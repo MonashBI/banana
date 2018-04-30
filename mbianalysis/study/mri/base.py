@@ -1,10 +1,10 @@
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
-from nianalysis.citations import fsl_cite, bet_cite, bet2_cite
+from mbianalysis.citations import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_formats import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
-from nianalysis.requirements import (fsl5_req, mrtrix3_req, fsl509_req,
+from mbianalysis.requirements import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path

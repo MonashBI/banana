@@ -4,7 +4,7 @@ from nianalysis.data_formats import (
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC)
-from nianalysis.citations import fsl_cite
+from mbianalysis.citations import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)

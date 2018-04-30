@@ -4,7 +4,7 @@ from nianalysis.data_formats import (list_mode_format, directory_format)
 from mbianalysis.study.pet.base import PETStudy
 from mbianalysis.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
-from nianalysis.requirements import stir_req
+from mbianalysis.requirements import stir_req
 
 
 class PETPCAMotionDetectionStudy(PETStudy):

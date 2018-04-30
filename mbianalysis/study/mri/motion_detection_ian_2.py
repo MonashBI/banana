@@ -5,7 +5,7 @@ from nianalysis.data_formats import (
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
-from nianalysis.citations import fsl_cite
+from mbianalysis.citations import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
@@ -15,7 +15,7 @@ from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge as merge_lists
 from .base import MotionReferenceStudy
 from .structural.diffusion_coreg import CoregisteredDiffusionStudy
-from nianalysis.requirements import fsl509_req
+from mbianalysis.requirements import fsl509_req
 from nianalysis.options import OptionSpec
 
 

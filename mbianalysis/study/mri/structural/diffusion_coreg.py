@@ -6,7 +6,7 @@ from nianalysis.data_formats import (
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
-from nianalysis.citations import fsl_cite
+from mbianalysis.citations import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
@@ -16,7 +16,7 @@ from mbianalysis.interfaces.custom.motion_correction import (
 from nipype.interfaces.utility import Merge as merge_lists
 from mbianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
-from nianalysis.requirements import fsl509_req, mrtrix3_req, fsl510_req
+from mbianalysis.requirements import fsl509_req, mrtrix3_req, fsl510_req
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.options import OptionSpec
 

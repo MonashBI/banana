@@ -1,5 +1,5 @@
-from nianalysis.requirements import fsl5_req, matlab2015_req
-from nianalysis.citations import (
+from mbianalysis.requirements import fsl5_req, matlab2015_req
+from mbianalysis.citations import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.data_formats import directory_format, nifti_gz_format
 from nianalysis.study.base import StudyMetaClass

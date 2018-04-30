@@ -4,7 +4,7 @@ from nianalysis.data_formats import nifti_gz_format
 from nianalysis.data_formats import (text_matrix_format, directory_format,
                                      text_format, dicom_format)
 from ..base import MRIStudy
-from nianalysis.citations import fsl_cite
+from mbianalysis.citations import fsl_cite
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)

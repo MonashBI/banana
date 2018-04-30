@@ -7,8 +7,8 @@ from nianalysis.study.multi import (
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study
 from .t2 import T2Study
-from nianalysis.requirements import fsl5_req
-from nianalysis.citations import fsl_cite
+from mbianalysis.requirements import fsl5_req
+from mbianalysis.citations import fsl_cite
 
 
 class T1T2Study(MultiStudy):

@@ -1,12 +1,12 @@
 from nianalysis.dataset import DatasetSpec
 from nianalysis.data_formats import (nifti_gz_format, directory_format)
-from nianalysis.citations import fsl_cite
+from mbianalysis.citations import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from mbianalysis.interfaces.custom.pet import (StaticMotionCorrection)
 from nipype.interfaces.fsl import Merge, MCFLIRT, ImageMaths
 from nianalysis.interfaces.utils import ListDir
 from mbianalysis.study.pet.base import PETStudy
-from nianalysis.requirements import fsl509_req
+from mbianalysis.requirements import fsl509_req
 from nianalysis.options import OptionSpec
 
 
