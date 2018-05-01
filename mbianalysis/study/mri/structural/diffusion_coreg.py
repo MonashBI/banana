@@ -360,7 +360,7 @@ class CoregisteredDWIStudy(MultiStudy):
 
 #     ref_bet_pipeline = MultiStudy.translate(
 #         'reference', 'brain_mask_pipeline')
-# 
+#
 #     ref_basic_preproc_pipeline = MultiStudy.translate(
 #         'reference', 'basic_preproc_pipeline')
 
@@ -437,13 +437,10 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask'}),
+            'reference': 'primary_nifti'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             'dwi2ref_brain': 'to_register',
-            'ref_brain': 'reference',
+            'reference_masked': 'reference',
             'dwi2ref_qformed': 'qformed',
             'dwi2ref_qform_mat': 'qform_mat',
             'dwi2ref_reg': 'registered',
@@ -551,13 +548,10 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask'}),
+            'reference': 'primary_nifti'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             'dwi_opposite_brain': 'to_register',
-            'ref_brain': 'reference',
+            'reference_masked': 'reference',
             'dwi_opposite_qformed': 'qformed',
             'dwi_opposite_qform_mat': 'qform_mat',
             'dwi_opposite_reg': 'registered',
@@ -672,13 +666,10 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask'}),
+            'reference': 'primary_nifti'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             'opposite_dwi2ref_brain': 'to_register',
-            'ref_brain': 'reference',
+            'reference_masked': 'reference',
             'opposite_dwi2ref_qformed': 'qformed',
             'opposite_dwi2ref_qform_mat': 'qform_mat',
             'opposite_dwi2ref_reg': 'registered',
