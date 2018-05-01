@@ -2,7 +2,7 @@
 from nianalysis.dataset import Dataset
 from mbianalysis.study.mri.phantom import PhantomStudy
 from nianalysis.archive.xnat import XNATArchive
-from nianalysis.data_formats import dicom_format
+from nianalysis.data_format import dicom_format
 
 qc_study = PhantomStudy(
     name='qc',

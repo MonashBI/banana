@@ -2,22 +2,22 @@ from itertools import chain
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from nianalysis.interfaces.utils import DummyReconAll as ReconAll
-from mbianalysis.requirements import freesurfer_req
-from mbianalysis.citations import freesurfer_cites
-from nianalysis.data_formats import (
+from mbianalysis.requirement import freesurfer_req
+from mbianalysis.citation import freesurfer_cites
+from nianalysis.data_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     directory_format, dicom_format, text_format)
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.interfaces.utils import ZipDir, JoinPath
 from ..base import MRIStudy
-from mbianalysis.citations import fsl_cite
+from mbianalysis.citation import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (MultiStudy, SubStudySpec,
                                     MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 class T1Study(MRIStudy):

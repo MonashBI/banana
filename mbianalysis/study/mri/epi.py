@@ -1,19 +1,19 @@
 
 from base import MRIStudy
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
+from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      text_format, directory_format, par_format,
                                      dicom_format)
-from mbianalysis.citations import fsl_cite
+from mbianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
-from mbianalysis.requirements import fsl509_req
+from mbianalysis.requirement import fsl509_req
 from nianalysis.study.base import StudyMetaClass
 from .coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 class EPIStudy(MRIStudy):

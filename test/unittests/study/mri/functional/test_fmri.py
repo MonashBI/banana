@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 from nipype import config
-from nianalysis.data_formats import text_matrix_format
+from nianalysis.data_format import text_matrix_format
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
-from nianalysis.data_formats import (nifti_gz_format, rdata_format, zip_format, # @IgnorePep8
+from nianalysis.data_format import (nifti_gz_format, rdata_format, zip_format, # @IgnorePep8
                                      directory_format, targz_format, par_format) # @IgnorePep8
 from mbianalysis.study.mri.functional.fmri import FunctionalMRIStudy  # @IgnorePep8
 from mbianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport

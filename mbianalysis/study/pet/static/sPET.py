@@ -2,7 +2,7 @@ from ..base import PETStudy
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.base import StudyMetaClass
 from mbianalysis.interfaces.custom.pet import SUVRCalculation
-from nianalysis.data_formats import (nifti_gz_format)
+from nianalysis.data_format import (nifti_gz_format)
 import os
 
 template_path = os.path.abspath(

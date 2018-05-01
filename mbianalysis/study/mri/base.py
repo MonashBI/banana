@@ -1,14 +1,14 @@
 from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
-from mbianalysis.citations import fsl_cite, bet_cite, bet2_cite
-from nianalysis.data_formats import (nifti_gz_format, dicom_format,
+from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
+from nianalysis.data_format import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
-from mbianalysis.requirements import (fsl5_req, mrtrix3_req, fsl509_req,
+from mbianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
-from nianalysis.exceptions import (
+from nianalysis.exception import (
     NiAnalysisError, NiAnalysisUsageError)
 from mbianalysis.interfaces.mrtrix.transform import MRResize
 from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
@@ -19,7 +19,7 @@ import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.converters import Dcm2niix
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 atlas_path = os.path.abspath(

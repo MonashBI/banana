@@ -1,14 +1,14 @@
 from nipype.interfaces.fsl import FLIRT
 from nipype.interfaces.spm.preprocess import Coregister
-from mbianalysis.requirements import fsl5_req
-from mbianalysis.citations import fsl_cite
-from mbianalysis.requirements import spm12_req
-from mbianalysis.citations import spm_cite
-from nianalysis.data_formats import (
+from mbianalysis.requirement import fsl5_req
+from mbianalysis.citation import fsl_cite
+from mbianalysis.requirement import spm12_req
+from mbianalysis.citation import spm_cite
+from nianalysis.data_format import (
     nifti_gz_format, nifti_format, text_matrix_format)
 from nianalysis.study.base import StudyMetaClass, Study
 from nianalysis.dataset import DatasetSpec
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 class CoregisteredStudy(Study):

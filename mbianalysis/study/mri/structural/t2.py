@@ -1,16 +1,16 @@
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_formats import nifti_gz_format
-from nianalysis.data_formats import (text_matrix_format, directory_format,
+from nianalysis.data_format import nifti_gz_format
+from nianalysis.data_format import (text_matrix_format, directory_format,
                                      text_format, dicom_format)
 from ..base import MRIStudy
-from mbianalysis.citations import fsl_cite
+from mbianalysis.citation import fsl_cite
 from ..coregistered import CoregisteredStudy
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 class T2Study(MRIStudy):

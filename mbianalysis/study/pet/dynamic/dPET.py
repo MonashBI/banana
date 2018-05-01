@@ -5,9 +5,9 @@ from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.utils import Merge
 from mbianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
-from nianalysis.data_formats import (nifti_gz_format, text_matrix_format,
+from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      png_format)
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 import os
 
 template_path = os.path.abspath(

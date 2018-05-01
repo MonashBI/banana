@@ -1,19 +1,19 @@
 from nianalysis.study.base import Study, set_specs
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_formats import (nifti_gz_format, text_format,
+from nianalysis.data_format import (nifti_gz_format, text_format,
                                      text_matrix_format, directory_format)
 from mbianalysis.interfaces.sklearn import FastICA
 from mbianalysis.interfaces.ants import AntsRegSyn
 import os
 from abc import abstractmethod
-from mbianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
+from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req, mrtrix3_req)
-from mbianalysis.citations import fsl_cite
+from mbianalysis.citation import fsl_cite
 from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
 from nianalysis.interfaces.utils import ListDir, SelectOne, CopyToDir
 from nipype.interfaces.fsl import Merge, ExtractROI
 from mbianalysis.interfaces.custom.dicom import PetTimeInfo
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 template_path = os.path.abspath(

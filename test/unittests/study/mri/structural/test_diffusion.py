@@ -4,7 +4,7 @@ config.enable_debug_mode()
 from nianalysis.dataset import Dataset  # @IgnorePep8
 from mbianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
-from nianalysis.data_formats import (  # @IgnorePep8
+from nianalysis.data_format import (  # @IgnorePep8
     mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
     text_format)
 from mbianalysis.testing import BaseTestCase, BaseMultiSubjectTestCase  # @IgnorePep8 @Reimport

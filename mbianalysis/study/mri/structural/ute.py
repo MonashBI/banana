@@ -15,16 +15,16 @@ from nianalysis.interfaces.utils import (
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from ..coregistered import CoregisteredStudy
-from mbianalysis.citations import (
+from mbianalysis.citation import (
     fsl_cite, spm_cite, matlab_cite)
-from nianalysis.data_formats import (
+from nianalysis.data_format import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
     directory_format, text_format)
-from mbianalysis.requirements import (
+from mbianalysis.requirement import (
     fsl5_req, spm12_req, matlab2015_req)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 class UTEStudy(MRIStudy):

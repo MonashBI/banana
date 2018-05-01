@@ -8,7 +8,7 @@ import glob
 import shutil
 # from nianalysis.archive.xnat import XNATArchive
 from nianalysis.dataset import Dataset, Field  # @IgnorePep8
-from nianalysis.data_formats import nifti_gz_format, dicom_format
+from nianalysis.data_format import nifti_gz_format, dicom_format
 # from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
 
 

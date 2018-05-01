@@ -1,6 +1,6 @@
 import re
-from nianalysis.requirements import Requirement, date_split
-from nianalysis.exceptions import NiAnalysisRequirementVersionException
+from nianalysis.requirement import Requirement, date_split
+from nianalysis.exception import NiAnalysisRequirementVersionException
 
 
 def matlab_version_split(version_str):

@@ -1,10 +1,10 @@
 from nipype import config
 from mbianalysis.study.mri.structural.t1 import CoregisteredT1Study
 from mbianalysis.study.mri.structural.t2 import CoregisteredT2Study
-from nianalysis.data_formats import directory_format, text_format
+from nianalysis.data_format import directory_format, text_format
 config.enable_debug_mode()
 from nianalysis.dataset import Dataset, Field  # @IgnorePep8
-from nianalysis.data_formats import nifti_gz_format, dicom_format  # @IgnorePep8
+from nianalysis.data_format import nifti_gz_format, dicom_format  # @IgnorePep8
 from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport

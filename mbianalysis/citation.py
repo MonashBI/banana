@@ -1,4 +1,4 @@
-from nianalysis.citations import Citation
+from nianalysis.citation import Citation
 
 
 mrtrix_cite = Citation(

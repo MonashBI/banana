@@ -4,7 +4,7 @@ import errno
 from nianalysis.dataset import Dataset
 from mbianalysis.study.mri.structural.t2star import T2StarStudy
 from nianalysis.archive.xnat import XNATArchive
-from nianalysis.data_formats import zip_format
+from nianalysis.data_format import zip_format
 import argparse
 import cPickle as pkl
 

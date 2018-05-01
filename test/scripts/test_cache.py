@@ -1,4 +1,4 @@
-from nianalysis.data_formats import dicom_format
+from nianalysis.data_format import dicom_format
 from nianalysis.dataset import Dataset
 from nianalysis.archive.xnat import XNATArchive
 

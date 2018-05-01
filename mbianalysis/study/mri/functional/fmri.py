@@ -12,10 +12,10 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import StudyMetaClass
 from ..base import MRIStudy
-from mbianalysis.requirements import (fsl5_req, ants2_req, afni_req, fix_req,
+from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
-from mbianalysis.citations import fsl_cite
-from nianalysis.data_formats import (
+from mbianalysis.citation import fsl_cite
+from nianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
     text_format, dicom_format, ica_format)
@@ -27,7 +27,7 @@ from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
 from nipype.interfaces.utility.base import IdentityInterface
-from nianalysis.options import OptionSpec
+from nianalysis.option import OptionSpec
 
 
 class FunctionalMRIStudy(MRIStudy):

@@ -1,11 +1,11 @@
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_formats import (
+from nianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
-from mbianalysis.citations import fsl_cite
+from mbianalysis.citation import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
@@ -15,8 +15,8 @@ from .structural.t2 import CoregisteredT2Study
 from nipype.interfaces.utility import Merge as merge_lists
 from .base import MotionReferenceStudy
 from .structural.diffusion_coreg import CoregisteredDiffusionStudy
-from mbianalysis.requirements import fsl509_req
-from nianalysis.options import OptionSpec
+from mbianalysis.requirement import fsl509_req
+from nianalysis.option import OptionSpec
 
 
 class MotionDetectionStudy(MultiStudy):
