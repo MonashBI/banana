@@ -1,6 +1,6 @@
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (list_mode_format, directory_format)
+from mbianalysis.data_format import (list_mode_format, directory_format)
 from mbianalysis.study.pet.base import PETStudy
 from mbianalysis.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)

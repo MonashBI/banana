@@ -1,7 +1,7 @@
 from mbianalysis.requirement import fsl5_req, matlab2015_req
 from mbianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
-from nianalysis.data_format import directory_format, nifti_gz_format
+from mbianalysis.data_format import directory_format, nifti_gz_format
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec
 from mbianalysis.interfaces.qsm import STI, STI_SE, Prepare
@@ -18,21 +18,21 @@ class T2StarStudy(MRIStudy):
         DatasetSpec('coils', directory_format,
                     description=("Reconstructed T2* complex image for each "
                                  "coil")),
-        DatasetSpec('qsm', nifti_gz_format, qsm_pipeline,
+        DatasetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     description=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
-        DatasetSpec('tissue_phase', nifti_gz_format, qsm_pipeline,
+        DatasetSpec('tissue_phase', nifti_gz_format, 'qsm_pipeline',
                     description=("Phase map for each coil following unwrapping"
                                  " and background field removal")),
-        DatasetSpec('tissue_mask', nifti_gz_format, qsm_pipeline,
+        DatasetSpec('tissue_mask', nifti_gz_format, 'qsm_pipeline',
                     description=("Mask for each coil corresponding to areas of"
                                  " high magnitude")),
-        DatasetSpec('qsm_mask', nifti_gz_format, qsm_pipeline,
+        DatasetSpec('qsm_mask', nifti_gz_format, 'qsm_pipeline',
                     description=("Brain mask generated from T2* image"))]
 
     add_option_specs = [
 #         'SUIT_mask': lookup_template_mask_path('SUIT')
-        }
+        ]
 
     def qsm_de_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """

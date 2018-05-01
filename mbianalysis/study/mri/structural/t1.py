@@ -4,7 +4,7 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from mbianalysis.requirement import freesurfer_req
 from mbianalysis.citation import freesurfer_cites
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     directory_format, dicom_format, text_format)
 from nianalysis.dataset import DatasetSpec, FieldSpec

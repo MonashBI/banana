@@ -1,5 +1,5 @@
 from nipype.interfaces.fsl import ApplyMask
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from nianalysis.dataset import DatasetSpec
 from nianalysis.study.multi import (
@@ -90,7 +90,7 @@ class T1T2Study(MultiStudy):
 
     manual_wmh_mask_registration_pipeline = MultiStudy.translate(
         'wmhcoregt1',
-        CoregisteredToMatrixStudy.linear_registration_pipeline)
+        'linear_registration_pipeline')
 
     t2_brain_mask_pipeline = MultiStudy.translate(
         't2', 'brain_mask_pipeline')

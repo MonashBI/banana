@@ -1,7 +1,7 @@
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import nifti_gz_format
-from nianalysis.data_format import (text_matrix_format, directory_format,
+from mbianalysis.data_format import nifti_gz_format
+from mbianalysis.data_format import (text_matrix_format, directory_format,
                                      text_format, dicom_format)
 from ..base import MRIStudy
 from mbianalysis.citation import fsl_cite

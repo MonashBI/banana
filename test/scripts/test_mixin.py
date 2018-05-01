@@ -7,8 +7,8 @@ import pydicom
 import glob
 import shutil
 # from nianalysis.archive.xnat import XNATArchive
-from nianalysis.dataset import Dataset, Field  # @IgnorePep8
-from nianalysis.data_format import nifti_gz_format, dicom_format
+from nianalysis.dataset import DatasetMatch, Field  # @IgnorePep8
+from mbianalysis.data_format import nifti_gz_format, dicom_format
 # from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
 
 
@@ -166,15 +166,15 @@ try:
 except OSError as e:
     if e.errno != errno.EEXIST:
         raise
-# inputs={
-#                 'epi1_epi': Dataset('epi_1_dicom', dicom_format),
-#                 't1_1_t1': Dataset('t1_1_dicom', dicom_format),
-#                 't2_1_t2': Dataset('t2_1_dicom', dicom_format),
-#                 't2_2_t2': Dataset('t2_2_dicom', dicom_format),
-#                 't2_3_t2': Dataset('t2_3_dicom', dicom_format),
-#                 't2_4_t2': Dataset('t2_4_dicom', dicom_format),
-#                 't2_5_t2': Dataset('t2_5_dicom', dicom_format),
-#                 'dwi_1_main_dwi_main': Dataset('dwi_1_main_dicom', dicom_format),
+# inputs=[
+#                 DatasetMatch('epi1_epi', dicom_format, 'epi_1_dicom'),
+#                 DatasetMatch('t1_1_t1', dicom_format, 't1_1_dicom'),
+#                 DatasetMatch('t2_1_t2', dicom_format, 't2_1_dicom'),
+#                 DatasetMatch('t2_2_t2', dicom_format, 't2_2_dicom'),
+#                 DatasetMatch('t2_3_t2', dicom_format, 't2_3_dicom'),
+#                 DatasetMatch('t2_4_t2', dicom_format, 't2_4_dicom'),
+#                 DatasetMatch('t2_5_t2', dicom_format, 't2_5_dicom'),
+#                 DatasetMatch('dwi_1_main_dwi_main', dicom_format, 'dwi_1_main_dicom'),
 #                 'dwi_1_to_ref_dwi2ref_to_correct': Dataset('dwi2ref_1_dicom',
 #                                                      dicom_format),
 #                 'dwi_1_opposite_opposite_dwi2ref_to_correct': Dataset('dwi2ref_1_opposite_dicom',
@@ -185,9 +185,9 @@ except OSError as e:
 #                                               dicom_format),
 #                 'dwi_1_opposite_opposite_dwi2ref_ref': Dataset('dwi2ref_1_dicom',
 #                                               dicom_format),
-#                 'ute_t1': Dataset('ute_dicom', dicom_format),
-#                 'fm_t2': Dataset('fm_dicom', dicom_format),
-#                 'ref_primary': Dataset('reference_dicom', dicom_format)}
+#                 DatasetMatch('ute_t1', dicom_format, 'ute_dicom'),
+#                 DatasetMatch('fm_t2', dicom_format, 'fm_dicom'),
+#                 DatasetMatch('ref_primary', dicom_format, 'reference_dicom')}
 study = cls(
     name='test_mixin',
     project_id='work_dir', archive=LocalArchive(input_dir),

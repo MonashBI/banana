@@ -2,7 +2,7 @@ from nipype.interfaces import fsl
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
-from nianalysis.data_format import (nifti_gz_format, dicom_format,
+from mbianalysis.data_format import (nifti_gz_format, dicom_format,
                                      text_format, directory_format, gif_format)
 from mbianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
@@ -50,16 +50,16 @@ class MRIStudy(Study):
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         # DatasetSpec('dicom_file', dicom_format),
         FieldSpec('tr', dtype=float,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
+        FieldSpec('ped', str, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         DatasetSpec(
             'dcm_info',
             text_format,

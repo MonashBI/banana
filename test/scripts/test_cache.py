@@ -1,5 +1,5 @@
-from nianalysis.data_format import dicom_format
-from nianalysis.dataset import Dataset
+from mbianalysis.data_format import dicom_format
+from nianalysis.dataset import DatasetMatch
 from nianalysis.archive.xnat import XNATArchive
 
 

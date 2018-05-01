@@ -1,6 +1,6 @@
 from ..base import MRIStudy
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     eddy_par_format, text_format)
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)

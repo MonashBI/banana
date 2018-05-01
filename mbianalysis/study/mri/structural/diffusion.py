@@ -14,7 +14,7 @@ from nipype.interfaces.utility import IdentityInterface
 from mbianalysis.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format)
 from mbianalysis.requirement import (
@@ -35,7 +35,7 @@ class DiffusionStudy(T2Study):
     add_data_specs = [
         DatasetSpec('dwi_scan', mrtrix_format),
         DatasetSpec('reverse_pe', mrtrix_format),
-        DatasetSpec('primary', nifti_gz_format, extract_b0_pipeline,
+        DatasetSpec('primary', nifti_gz_format, 'extract_b0_pipeline',
                     description="b0 image"),
         DatasetSpec('noise_residual', mrtrix_format, 'preprocess_pipeline'),
         DatasetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),

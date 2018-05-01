@@ -1,6 +1,6 @@
-from nianalysis.study.base import Study, set_specs
+from nianalysis.study.base import Study
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (nifti_gz_format, text_format,
+from mbianalysis.data_format import (nifti_gz_format, text_format,
                                      text_matrix_format, directory_format)
 from mbianalysis.interfaces.sklearn import FastICA
 from mbianalysis.interfaces.ants import AntsRegSyn
@@ -10,7 +10,7 @@ from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req, mrtrix3_req)
 from mbianalysis.citation import fsl_cite
 from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
-from nianalysis.interfaces.utils import ListDir, SelectOne, CopyToDir
+from nianalysis.interfaces.utils import ListDir, CopyToDir  # SelectOne, 
 from nipype.interfaces.fsl import Merge, ExtractROI
 from mbianalysis.interfaces.custom.dicom import PetTimeInfo
 from nianalysis.option import OptionSpec
@@ -64,11 +64,11 @@ class PETStudy(Study):
         DatasetSpec('affine_mat', text_matrix_format,
                     'Image_normalization_pipeline'),
         FieldSpec('pet_duration', dtype=int,
-                  pipeline=pet_time_info_extraction_pipeline),
+                  pipeline_name='pet_time_info_extraction_pipeline'),
         FieldSpec('pet_end_time', dtype=str,
-                  pipeline=pet_time_info_extraction_pipeline),
+                  pipeline_name='pet_time_info_extraction_pipeline'),
         FieldSpec('pet_start_time', dtype=str,
-                  pipeline=pet_time_info_extraction_pipeline)]
+                  pipeline_name='pet_time_info_extraction_pipeline')]
 
     def ICA_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(

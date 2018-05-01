@@ -15,7 +15,7 @@ from ..base import MRIStudy
 from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
 from mbianalysis.citation import fsl_cite
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
     text_format, dicom_format, ica_format)

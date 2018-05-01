@@ -1,5 +1,5 @@
 from nianalysis.dataset import DatasetSpec, FieldSpec, Field
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format, dicom_format)
 from mbianalysis.interfaces.custom.motion_correction import (
@@ -19,7 +19,7 @@ from .structural.diffusion_coreg import (
     CoregisteredDiffusionReferenceStudy)
 from mbianalysis.requirement import fsl509_req
 from nianalysis.exception import NiAnalysisNameError
-from nianalysis.dataset import Dataset
+from nianalysis.dataset import DatasetMatch
 import logging
 from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 from nianalysis.interfaces.utils import CopyToDir
@@ -49,16 +49,16 @@ class MotionReferenceT1Study(T1Study):
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+        FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
+        FieldSpec('ped', str, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
 
@@ -84,16 +84,16 @@ class MotionReferenceT2Study(T2Study):
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
-        FieldSpec('tr', dtype=float, pipeline=header_info_extraction_pipeline),
+        FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('start_time', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('real_duration', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('tot_duration', str,
-                  pipeline=header_info_extraction_pipeline),
-        FieldSpec('ped', str, pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
+        FieldSpec('ped', str, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str,
-                  pipeline=header_info_extraction_pipeline),
+                  pipeline_name='header_info_extraction_pipeline'),
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline'),
         DatasetSpec('preproc', nifti_gz_format,

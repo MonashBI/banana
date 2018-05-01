@@ -1,5 +1,5 @@
 from nianalysis.dataset import DatasetSpec
-from nianalysis.data_format import (nifti_gz_format, directory_format)
+from mbianalysis.data_format import (nifti_gz_format, directory_format)
 from mbianalysis.citation import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from mbianalysis.interfaces.custom.pet import (StaticMotionCorrection)

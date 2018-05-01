@@ -17,7 +17,7 @@ from nianalysis.study.multi import (
 from ..coregistered import CoregisteredStudy
 from mbianalysis.citation import (
     fsl_cite, spm_cite, matlab_cite)
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
     directory_format, text_format)
 from mbianalysis.requirement import (

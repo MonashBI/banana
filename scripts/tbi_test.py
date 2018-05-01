@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from nianalysis.dataset import Dataset
+from nianalysis.dataset import DatasetMatch
 from mbianalysis.study.mri.diffusion import DiffusionStudy
 from nianalysis.archive.local import LocalArchive
-from nianalysis.data_format import mrtrix_format
+from mbianalysis.data_format import mrtrix_format
 
 archive_path = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'tbi', ))

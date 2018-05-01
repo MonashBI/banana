@@ -87,6 +87,10 @@ gif_format = DataFormat(name='gif', extension='.gif')
 png_format = DataFormat(name='portable-network-graphics',
                         extension='.png')
 
+# PET formats
+list_mode_format = DataFormat('list_mode', directory=True,
+                              within_dir_exts=('.bf', '.dcm'))
+
 # Record list of all data formats registered by module (not really
 # used currently but could be useful in future)
 registered_data_formats = []

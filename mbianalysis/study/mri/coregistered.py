@@ -4,7 +4,7 @@ from mbianalysis.requirement import fsl5_req
 from mbianalysis.citation import fsl_cite
 from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
-from nianalysis.data_format import (
+from mbianalysis.data_format import (
     nifti_gz_format, nifti_format, text_matrix_format)
 from nianalysis.study.base import StudyMetaClass, Study
 from nianalysis.dataset import DatasetSpec
@@ -166,7 +166,7 @@ class CoregisteredToMatrixStudy(CoregisteredStudy):
         DatasetSpec('to_register', nifti_gz_format),
         DatasetSpec('matrix', text_matrix_format),
         DatasetSpec('registered', nifti_gz_format,
-                    CoregisteredStudy.linear_registration_pipeline)]
+                    pipeline_name='linear_registration_pipeline')]
 
     add_option_specs = [
         OptionSpec('interpolate', 'trilinear')]
