@@ -35,3 +35,4 @@ dcm2niix_req = Requirement('dcm2niix', min_version=(2017, 2, 7),
 fix_req = Requirement('fix', min_version=(1, 0))
 afni_req = Requirement('afni', min_version=(16, 2, 10))
 mricrogl_req = Requirement('mricrogl', min_version=(1, 0, 20170207))
+stir_req = Requirement('stir', min_version=(3, 0))
