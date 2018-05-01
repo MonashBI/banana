@@ -305,13 +305,10 @@ class CoregisteredDWIStudy(MultiStudy):
             'start_time': 'start_time',
             'dcm_info': 'dcm_info'}),
         SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
-            'ref_brain_mask': 'brain_mask'}),
+            'reference': 'primary_nifti'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             'dwi_main_brain': 'to_register',
-            'ref_brain': 'reference',
+            'reference_masked': 'reference',
             'dwi_main_qformed': 'qformed',
             'dwi_main_qform_mat': 'qform_mat',
             'dwi_main_reg': 'registered',
@@ -361,11 +358,11 @@ class CoregisteredDWIStudy(MultiStudy):
     dwi_main_dcm_info_pipeline = MultiStudy.translate(
         'dwi_main', 'header_info_extraction_pipeline')
 
-    ref_bet_pipeline = MultiStudy.translate(
-        'reference', 'brain_mask_pipeline')
-
-    ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline')
+#     ref_bet_pipeline = MultiStudy.translate(
+#         'reference', 'brain_mask_pipeline')
+# 
+#     ref_basic_preproc_pipeline = MultiStudy.translate(
+#         'reference', 'basic_preproc_pipeline')
 
     dwi_main_qform_transform_pipeline = MultiStudy.translate(
         'coreg', 'qform_transform_pipeline')
