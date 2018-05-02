@@ -24,12 +24,12 @@ class T1T2Study(MultiStudy):
             't1_coreg_to_atlas': 'coreg_to_atlas',
             'coreg_to_atlas_coeff': 'coreg_to_atlas_coeff',
             'brain_mask': 'brain_mask',
-            't1_masked': 'masked',
+            't1_brain': 'brain',
             'fs_recon_all': 'fs_recon_all'}),
         SubStudySpec('t2', T2Study, {
             't2_coreg': 'primary',
             'manual_wmh_mask_coreg': 'manual_wmh_mask',
-            't2_masked': 'masked',
+            't2_brain': 'brain',
             'brain_mask': 'brain_mask'}),
         SubStudySpec('t2coregt1', CoregisteredStudy, {
             't1': 'reference',
@@ -51,10 +51,10 @@ class T1T2Study(MultiStudy):
                     desc="Manual WMH segmentations"),
         DatasetSpec('t2_coreg', nifti_gz_format, 't2_registration_pipeline',
                     desc="T2 registered to T1 weighted"),
-        DatasetSpec('t1_masked', nifti_gz_format, 't1_brain_mask_pipeline',
-                    desc="T1 masked by brain mask"),
-        DatasetSpec('t2_masked', nifti_gz_format, 't2_brain_mask_pipeline',
-                    desc="Coregistered T2 masked by brain mask"),
+        DatasetSpec('t1_brain', nifti_gz_format, 't1_brain_mask_pipeline',
+                    desc="T1 brain by brain mask"),
+        DatasetSpec('t2_brain', nifti_gz_format, 't2_brain_mask_pipeline',
+                    desc="Coregistered T2 brain by brain mask"),
         DatasetSpec('brain_mask', nifti_gz_format, 't2_brain_mask_pipeline',
                     desc="Brain mask generated from coregistered T2"),
         DatasetSpec('manual_wmh_mask_coreg', nifti_gz_format,
@@ -104,7 +104,7 @@ class T1T2Study(MultiStudy):
             name='t1_brain_mask_pipeline',
             inputs=[DatasetSpec('t1', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('t1_masked', nifti_gz_format)],
+            outputs=[DatasetSpec('t1_brain', nifti_gz_format)],
             version=1,
             desc="Mask T1 with T2 brain mask",
             citations=[fsl_cite],
@@ -117,6 +117,6 @@ class T1T2Study(MultiStudy):
         pipeline.connect_input('t1', apply_mask, 'in_file')
         pipeline.connect_input('brain_mask', apply_mask, 'mask_file')
         # Connect outputs
-        pipeline.connect_output('t1_masked', apply_mask, 'out_file')
+        pipeline.connect_output('t1_brain', apply_mask, 'out_file')
         # Check and return
         return pipeline

@@ -27,7 +27,7 @@ class T1Study(MRIStudy):
     add_data_specs = [
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline')]
+        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline')]
 
     add_option_specs = [
         OptionSpec('bet_method', 'optibet',
@@ -88,7 +88,7 @@ class CoregisteredT1Study(MultiStudy):
             't1': 'primary',
             't1_nifti': 'primary_nifti',
             't1_preproc': 'preproc',
-            't1_brain': 'masked',
+            't1_brain': 'brain',
             't1_brain_mask': 'brain_mask',
             'ped': 'ped',
             'pe_angle': 'pe_angle',
@@ -100,7 +100,7 @@ class CoregisteredT1Study(MultiStudy):
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
+            'ref_brain': 'brain',
             'ref_brain_mask': 'brain_mask'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             't1_brain': 'to_register',
@@ -124,7 +124,7 @@ class CoregisteredT1Study(MultiStudy):
                     'ref_basic_preproc_pipeline'),
         DatasetSpec('t1_qformed', nifti_gz_format,
                     't1_qform_transform_pipeline'),
-        # DatasetSpec('masked', nifti_gz_format, 't1_bet_pipeline'),
+        # DatasetSpec('brain', nifti_gz_format, 't1_bet_pipeline'),
         DatasetSpec('t1_qform_mat', text_matrix_format,
                     't1_qform_transform_pipeline'),
         DatasetSpec('ref_brain', nifti_gz_format, 'ref_bet_pipeline'),

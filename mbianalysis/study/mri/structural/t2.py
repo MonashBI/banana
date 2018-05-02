@@ -40,7 +40,7 @@ class CoregisteredT2Study(MultiStudy):
             't2': 'primary',
             't2_nifti': 'primary_nifti',
             't2_preproc': 'preproc',
-            't2_brain': 'masked',
+            't2_brain': 'brain',
             't2_brain_mask': 'brain_mask',
             'ped': 'ped',
             'pe_angle': 'pe_angle',
@@ -52,7 +52,7 @@ class CoregisteredT2Study(MultiStudy):
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
+            'ref_brain': 'brain',
             'ref_brain_mask': 'brain_mask'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             't2_brain': 'to_register',
@@ -76,7 +76,7 @@ class CoregisteredT2Study(MultiStudy):
                     'ref_basic_preproc_pipeline'),
         DatasetSpec('t2_qformed', nifti_gz_format,
                     't2_qform_transform_pipeline'),
-        DatasetSpec('masked', nifti_gz_format, 't2_bet_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 't2_bet_pipeline'),
         DatasetSpec('t2_qform_mat', text_matrix_format,
                     't2_qform_transform_pipeline'),
         DatasetSpec('ref_brain', nifti_gz_format, 'ref_bet_pipeline'),

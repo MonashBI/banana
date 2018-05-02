@@ -56,7 +56,7 @@ class DiffusionStudy(T2Study):
                     frequency='per_project'),
         DatasetSpec('tbss_skeleton_mask', nifti_gz_format, tbss_pipeline,
                     frequency='per_project'),
-        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline'),
         DatasetSpec('brain_mask', nifti_gz_format, 'brain_mask_pipeline'),
         DatasetSpec('norm_intensity', mrtrix_format,
                     'intensity_normalisation_pipeline'),

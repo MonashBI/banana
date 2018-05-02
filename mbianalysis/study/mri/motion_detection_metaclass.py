@@ -61,53 +61,53 @@ class MotionDetectionStudy(MultiStudy):
         SubStudySpec('ref', MotionReferenceT1Study),
         SubStudySpec('fm', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_1', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_2', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_3', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_4', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t2_5', CoregisteredT2Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('ute', CoregisteredT1Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('t1_1', CoregisteredT1Study, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('epi1', CoregisteredEPIStudy, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask',
             'ref_wm_seg': 'ref_wmseg'}),
         SubStudySpec('dwi_1_main', CoregisteredDiffusionStudy, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec('dwi_1_to_ref', CoregisteredDiffusionReferenceStudy, {
             'ref_preproc': 'ref_preproc',
-            'ref_masked': 'ref_brain',
+            'ref_brain': 'ref_brain',
             'ref_brain_mask': 'ref_brain_mask'}),
         SubStudySpec(
             'dwi_1_opposite', CoregisteredDiffusionReferenceOppositeStudy, {
                 'ref_preproc': 'ref_preproc',
-                'ref_masked': 'ref_brain',
+                'ref_brain': 'ref_brain',
                 'ref_brain_mask': 'ref_brain_mask'})]
 
     add_data_specs = [
@@ -158,7 +158,7 @@ class MotionDetectionStudy(MultiStudy):
         'ute', 't1_bet_pipeline')
 
     def mean_displacement_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
+        inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
         sub_study_names = []
         # Loop through all sub-studies to find the studies that have
         # a motion matrix data spec, and add them to the list of inputs
@@ -223,7 +223,7 @@ class MotionDetectionStudy(MultiStudy):
         pipeline.connect(merge_tr, 'out', md, 'trs')
         pipeline.connect(merge_start_time, 'out', md, 'start_times')
         pipeline.connect(merge_real_duration, 'out', md, 'real_durations')
-        pipeline.connect_input('ref_masked', md, 'reference')
+        pipeline.connect_input('ref_brain', md, 'reference')
         pipeline.connect_output('mean_displacement', md, 'mean_displacement')
         pipeline.connect_output(
             'mean_displacement_rc', md, 'mean_displacement_rc')

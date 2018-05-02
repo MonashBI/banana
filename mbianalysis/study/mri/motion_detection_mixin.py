@@ -167,7 +167,7 @@ class MotionDetectionMixin(MultiStudy):
                             template_path, 'moco_template.IMA'))]
 
     def mean_displacement_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('ref_masked', nifti_gz_format)]
+        inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
         sub_study_names = []
         for sub_study_spec in self.sub_study_specs():
             try:
@@ -230,7 +230,7 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect(merge_tr, 'out', md, 'trs')
         pipeline.connect(merge_start_time, 'out', md, 'start_times')
         pipeline.connect(merge_real_duration, 'out', md, 'real_durations')
-        pipeline.connect_input('ref_masked', md, 'reference')
+        pipeline.connect_input('ref_brain', md, 'reference')
         pipeline.connect_output('mean_displacement', md, 'mean_displacement')
         pipeline.connect_output(
             'mean_displacement_rc', md, 'mean_displacement_rc')
@@ -543,7 +543,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
     study_specs = [SubStudySpec('ref', ref_study)]
     ref_spec = {'ref_preproc': 'ref_preproc',
-                'ref_masked': 'ref_brain',
+                'ref_brain': 'ref_brain',
                 'ref_brain_mask': 'ref_brain_mask'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
 

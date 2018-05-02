@@ -35,7 +35,7 @@ class UTEStudy(MRIStudy):
         DatasetSpec('umap', dicom_format),
         DatasetSpec('umap_nifti', nifti_gz_format,
                     'umap_dcm2nii_conversion_pipeline'),
-        DatasetSpec('masked', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline'),
         DatasetSpec('ute_echo1', dicom_format),
         DatasetSpec('ute_echo2', dicom_format),
         DatasetSpec('umap_ute', dicom_format),
@@ -547,7 +547,7 @@ class CoregisteredUTEStudy(MultiStudy):
             'umap_nifti': 'umap_nifti',
             'ute_nifti': 'primary_nifti',
             'ute_preproc': 'preproc',
-            'ute_brain': 'masked',
+            'ute_brain': 'brain',
             'ute_brain_mask': 'brain_mask',
             'ped': 'ped',
             'pe_angle': 'pe_angle',
@@ -559,7 +559,7 @@ class CoregisteredUTEStudy(MultiStudy):
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
+            'ref_brain': 'brain',
             'ref_brain_mask': 'brain_mask'}),
         SubStudySpec('coreg', CoregisteredStudy, {
             'ute_brain': 'to_register',

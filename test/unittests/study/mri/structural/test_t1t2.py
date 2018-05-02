@@ -37,6 +37,6 @@ class TestT1T2Study(BaseTestCase):
         study.t1_brain_mask_pipeline().run(work_dir=self.work_dir)
         study.manual_wmh_mask_registration_pipeline().run(
             work_dir=self.work_dir)
-        for fname in ('t1_masked.nii.gz', 't2_masked.nii.gz',
+        for fname in ('t1_brain.nii.gz', 't2_brain.nii.gz',
                       'brain_mask.nii.gz', 'manual_wmh_mask_coreg.nii.gz'):
             self.assertDatasetCreated(fname, study.name)

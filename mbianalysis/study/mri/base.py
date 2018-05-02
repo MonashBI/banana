@@ -248,7 +248,7 @@ class MRIStudy(Study):
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
-            outputs=[DatasetSpec('masked', nifti_gz_format),
+            outputs=[DatasetSpec('brain', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             desc="Generate brain mask from mr_scan",
             version=1,
@@ -268,7 +268,7 @@ class MRIStudy(Study):
             'bet_g_threshold')
         # Connect inputs/outputs
         pipeline.connect_input('preproc', bet, 'in_file')
-        pipeline.connect_output('masked', bet, 'out_file')
+        pipeline.connect_output('brain', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         return pipeline
 
@@ -285,7 +285,7 @@ class MRIStudy(Study):
 #         except ImportError:
 # print "NO ANTs module found. Please ensure to have it in you PATH."
 
-        outputs = [DatasetSpec('masked', nifti_gz_format),
+        outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
         if self.option('optibet_gen_report', self.BRAIN_MASK_NAME):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
@@ -345,7 +345,7 @@ class MRIStudy(Study):
             pipeline.connect_output('optiBET_report', slices, 'report')
 
         pipeline.connect_output('brain_mask', maths1, 'out_file')
-        pipeline.connect_output('masked', maths2, 'out_file')
+        pipeline.connect_output('brain', maths2, 'out_file')
 
         return pipeline
 
@@ -373,7 +373,7 @@ class MRIStudy(Study):
             name=self.COREGISTER_TO_ATLAS_NAME,
             inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('masked', nifti_gz_format)],
+                    DatasetSpec('brain', nifti_gz_format)],
             outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
                      DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
@@ -386,7 +386,7 @@ class MRIStudy(Study):
                                    resolution=pipeline.option('resolution'))
         ref_mask = get_atlas_path(pipeline.option('fnirt_atlas'), 'mask_dilated',
                                   resolution=pipeline.option('resolution'))
-        ref_masked = get_atlas_path(pipeline.option('fnirt_atlas'), 'masked',
+        ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
                                     resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
         reorient = pipeline.create_node(Reorient2Std(), name='reorient',
@@ -395,14 +395,14 @@ class MRIStudy(Study):
         reorient_mask = pipeline.create_node(
             Reorient2Std(), name='reorient_mask', requirements=[fsl5_req])
         reorient_mask.inputs.output_type = 'NIFTI_GZ'
-        reorient_masked = pipeline.create_node(
-            Reorient2Std(), name='reorient_masked', requirements=[fsl5_req])
-        reorient_masked.inputs.output_type = 'NIFTI_GZ'
+        reorient_brain = pipeline.create_node(
+            Reorient2Std(), name='reorient_brain', requirements=[fsl5_req])
+        reorient_brain.inputs.output_type = 'NIFTI_GZ'
         # Affine transformation to MNI space
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
                                      requirements=[fsl5_req],
                                      wall_time=5)
-        flirt.inputs.reference = ref_masked
+        flirt.inputs.reference = ref_brain
         flirt.inputs.dof = 12
         flirt.inputs.output_type = 'NIFTI_GZ'
         # Nonlinear transformation to MNI space
@@ -430,7 +430,7 @@ class MRIStudy(Study):
         fnirt.inputs.apply_inmask = apply_mask
         fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
-        pipeline.connect(reorient_masked, 'out_file', flirt, 'in_file')
+        pipeline.connect(reorient_brain, 'out_file', flirt, 'in_file')
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
         pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
@@ -439,7 +439,7 @@ class MRIStudy(Study):
         # Connect inputs
         pipeline.connect_input('preproc', reorient, 'in_file')
         pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
-        pipeline.connect_input('masked', reorient_masked, 'in_file')
+        pipeline.connect_input('brain', reorient_brain, 'in_file')
         # Connect outputs
         pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('coreg_to_atlas_coeff', fnirt,
@@ -449,7 +449,7 @@ class MRIStudy(Study):
     def segmentation_pipeline(self, img_type=2, **kwargs):
         pipeline = self.create_pipeline(
             name='FAST_segmentation',
-            inputs=[DatasetSpec('masked', nifti_gz_format)],
+            inputs=[DatasetSpec('brain', nifti_gz_format)],
             outputs=[DatasetSpec('wm_seg', nifti_gz_format)],
             desc="White matter segmentation of the reference image",
             version=1,
@@ -461,7 +461,7 @@ class MRIStudy(Study):
         fast.inputs.img_type = img_type
         fast.inputs.segments = True
         fast.inputs.out_basename = 'Reference_segmentation'
-        pipeline.connect_input('masked', fast, 'in_files')
+        pipeline.connect_input('brain', fast, 'in_files')
         split = pipeline.create_node(Split(), name='split')
         split.inputs.splits = [1, 1, 1]
         split.inputs.squeeze = True

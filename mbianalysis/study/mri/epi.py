@@ -78,7 +78,7 @@ class CoregisteredEPIStudy(MultiStudy):
             'epi': 'primary',
             'epi_nifti': 'primary_nifti',
             'epi_preproc': 'preproc',
-            'epi_brain': 'masked',
+            'epi_brain': 'brain',
             'epi_brain_mask': 'brain_mask',
             'epi_moco': 'moco',
             'epi_moco_mat': 'moco_mat',
@@ -93,7 +93,7 @@ class CoregisteredEPIStudy(MultiStudy):
         SubStudySpec('reference', MRIStudy, {
             'reference': 'primary_nifti',
             'ref_preproc': 'preproc',
-            'ref_brain': 'masked',
+            'ref_brain': 'brain',
             'ref_brain_mask': 'brain_mask',
             'ref_wmseg': 'wm_seg'}),
         SubStudySpec('coreg', CoregisteredStudy, {
@@ -117,7 +117,7 @@ class CoregisteredEPIStudy(MultiStudy):
                     'ref_basic_preproc_pipeline'),
         DatasetSpec('epi_qformed', nifti_gz_format,
                     'epi_qform_transform_pipeline'),
-        DatasetSpec('masked', nifti_gz_format,
+        DatasetSpec('brain', nifti_gz_format,
                     'epi_bet_pipeline'),
         DatasetSpec('epi_qform_mat', text_matrix_format,
                     'epi_qform_transform_pipeline'),
