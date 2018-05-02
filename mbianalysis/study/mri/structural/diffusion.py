@@ -36,7 +36,7 @@ class DiffusionStudy(T2Study):
         DatasetSpec('dwi_scan', mrtrix_format),
         DatasetSpec('reverse_pe', mrtrix_format),
         DatasetSpec('primary', nifti_gz_format, 'extract_b0_pipeline',
-                    description="b0 image"),
+                    desc="b0 image"),
         DatasetSpec('noise_residual', mrtrix_format, 'preprocess_pipeline'),
         DatasetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         DatasetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
@@ -101,7 +101,7 @@ class DiffusionStudy(T2Study):
             inputs=[DatasetSpec('dwi_scan', mrtrix_format),
                     DatasetSpec('reverse_pe', mrtrix_format)],
             outputs=outputs,
-            description=(
+            desc=(
                 "Preprocess dMRI studies using distortion correction"),
             version=1,
             citations=citations,
@@ -192,7 +192,7 @@ class DiffusionStudy(T2Study):
                         DatasetSpec('grad_dirs', fsl_bvecs_format),
                         DatasetSpec('bvalues', fsl_bvals_format)],
                 outputs=[DatasetSpec('brain_mask', nifti_gz_format)],
-                description="Generate brain mask from b0 images",
+                desc="Generate brain mask from b0 images",
                 version=1,
                 citations=[mrtrix_cite],
                 **kwargs)
@@ -231,7 +231,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format)],
             outputs=[DatasetSpec('bias_correct', nifti_gz_format)],
-            description="Corrects for B1 field inhomogeneity",
+            desc="Corrects for B1 field inhomogeneity",
             version=1,
             citations=[fast_cite,
                        (n4_cite if bias_method == 'ants' else fsl_cite)],
@@ -269,7 +269,7 @@ class DiffusionStudy(T2Study):
                                  frequency='per_project'),
                      DatasetSpec('norm_intens_wm_mask', mrtrix_format,
                                  frequency='per_project')],
-            description="Corrects for B1 field inhomogeneity",
+            desc="Corrects for B1 field inhomogeneity",
             version=1,
             citations=[mrtrix3_req],
             **kwargs)
@@ -333,7 +333,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('tensor', nifti_gz_format)],
-            description=("Estimates the apparent diffusion tensor in each "
+            desc=("Estimates the apparent diffusion tensor in each "
                          "voxel"),
             version=1,
             citations=[],
@@ -365,7 +365,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('fa', nifti_gz_format),
                      DatasetSpec('adc', nifti_gz_format)],
-            description=("Calculates the FA and ADC from a tensor image"),
+            desc=("Calculates the FA and ADC from a tensor image"),
             version=1,
             citations=[],
             **kwargs)
@@ -400,7 +400,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('response', text_format)],
-            description=("Estimates the fibre response function"),
+            desc=("Estimates the fibre response function"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
@@ -432,7 +432,7 @@ class DiffusionStudy(T2Study):
             inputs=[DatasetSpec('response', text_format)],
             outputs=[DatasetSpec('avg_response', text_format,
                                  frequency='per_project')],
-            description=(
+            desc=(
                 "Averages the fibre response function over the project"),
             version=1,
             citations=[mrtrix_cite],
@@ -469,7 +469,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('response', text_format)],
             outputs=[DatasetSpec('fod', nifti_gz_format)],
-            description=("Estimates the fibre orientation distribution in each"
+            desc=("Estimates the fibre orientation distribution in each"
                          " voxel"),
             version=1,
             citations=[mrtrix_cite],
@@ -532,7 +532,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format)],
             outputs=[DatasetSpec('primary', nifti_gz_format)],
-            description="Extract b0 image from a DWI study",
+            desc="Extract b0 image from a DWI study",
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
@@ -577,7 +577,7 @@ class DiffusionStudy(T2Study):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format)],
             outputs=[DatasetSpec('primary', nifti_gz_format)],
-            description="Extract b0 image from a DWI study",
+            desc="Extract b0 image from a DWI study",
             version=1,
             citations=[mrtrix_cite], options=options)
         return pipeline
@@ -778,7 +778,7 @@ class NODDIStudy(DiffusionStudy):
             inputs=[DatasetSpec('low_b_dw_scan', mrtrix_format),
                     DatasetSpec('high_b_dw_scan', mrtrix_format)],
             outputs=[DatasetSpec('dwi_scan', mrtrix_format)],
-            description=(
+            desc=(
                 "Concatenate low and high b-value dMRI datasets for NODDI "
                 "processing"),
             version=1,
@@ -830,7 +830,7 @@ class NODDIStudy(DiffusionStudy):
                      DatasetSpec('fmin', nifti_format),
                      DatasetSpec('kappa', nifti_format),
                      DatasetSpec('error_code', nifti_format)],
-            description=(
+            desc=(
                 "Creates a ROI in which the NODDI processing will be "
                 "performed"),
             citations=[noddi_cite],

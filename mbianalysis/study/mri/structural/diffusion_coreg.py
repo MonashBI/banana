@@ -75,7 +75,7 @@ class DWIStudy(MRIStudy):
                     FieldSpec('pe_angle', dtype=str)],
             outputs=[DatasetSpec('preproc', nifti_gz_format),
                      DatasetSpec('eddy_par', eddy_par_format)],
-            description=("Diffusion pre-processing pipeline"),
+            desc=("Diffusion pre-processing pipeline"),
             version=1,
             citations=[],
             **kwargs)
@@ -141,7 +141,7 @@ class DWIStudy(MRIStudy):
                     FieldSpec('pe_dir', dtype=str),
                     FieldSpec('pe_angle', dtype=str)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
-            description=("Topup distortion correction pipeline."),
+            desc=("Topup distortion correction pipeline."),
             version=1,
             citations=[],
             **kwargs)
@@ -224,7 +224,7 @@ class DiffusionStudy(MRIStudy):
                     FieldSpec('pe_angle', dtype=str)],
             outputs=[DatasetSpec('preproc', nifti_gz_format),
                      DatasetSpec('eddy_par', eddy_par_format)],
-            description=("Diffusion pre-processing pipeline"),
+            desc=("Diffusion pre-processing pipeline"),
             version=1,
             citations=[],
             **kwargs)
@@ -291,7 +291,7 @@ class DiffusionStudy(MRIStudy):
                     FieldSpec(pe_dir, dtype=str),
                     FieldSpec(pe_angle, dtype=str)],
             outputs=[DatasetSpec(output_name, nifti_gz_format)],
-            description=("Topup distortion correction pipeline."),
+            desc=("Topup distortion correction pipeline."),
             version=1,
             citations=[],
             **kwargs)
@@ -543,7 +543,7 @@ class CoregisteredDiffusionStudy(MultiStudy):
                     DatasetSpec('dwi_main_eddy_par', eddy_par_format)],
             outputs=[
                 DatasetSpec('affine_mats', directory_format)],
-            description=("Generation of the affine matrices for the main dwi "
+            desc=("Generation of the affine matrices for the main dwi "
                          "sequence starting from eddy motion parameters"),
             version=1,
             citations=[fsl_cite],
@@ -567,7 +567,7 @@ class CoregisteredDiffusionStudy(MultiStudy):
                     DatasetSpec('affine_mats', directory_format)],
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
-            description=("motion matrices calculation"),
+            desc=("motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -680,7 +680,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
                     DatasetSpec('dwi2ref_qform_mat', text_matrix_format)],
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
-            description=("DWI to reference Motion matrices calculation"),
+            desc=("DWI to reference Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -797,7 +797,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
                     DatasetSpec('dwi_opposite_qform_mat', text_matrix_format)],
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
-            description=("DWI opposite Motion matrices calculation"),
+            desc=("DWI opposite Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -928,7 +928,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
                                 text_matrix_format)],
             outputs=[
                 DatasetSpec('motion_mats', directory_format)],
-            description=("DWI to ref opposite Motion matrices calculation"),
+            desc=("DWI to ref opposite Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)

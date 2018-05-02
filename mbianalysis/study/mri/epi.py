@@ -46,7 +46,7 @@ class EPIStudy(MRIStudy):
             outputs=[DatasetSpec('moco', nifti_gz_format),
                      DatasetSpec('moco_mat', directory_format),
                      DatasetSpec('moco_par', par_format)],
-            description=("Intra-epi volumes alignment."),
+            desc=("Intra-epi volumes alignment."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -190,7 +190,7 @@ class CoregisteredEPIStudy(MultiStudy):
                     DatasetSpec('ref_wmseg', nifti_gz_format)],
             outputs=[DatasetSpec('epi_epireg', nifti_gz_format),
                      DatasetSpec('epi_epireg_mat', text_matrix_format)],
-            description=("Intra-subjects epi registration improved "
+            desc=("Intra-subjects epi registration improved "
                          "using white matter boundaries."),
             version=1,
             citations=[fsl_cite],
@@ -216,7 +216,7 @@ class CoregisteredEPIStudy(MultiStudy):
                     DatasetSpec('epi_qform_mat', text_matrix_format),
                     DatasetSpec('epi_moco_mat', directory_format)],
             outputs=[DatasetSpec('motion_mats', directory_format)],
-            description=("EPI Motion matrices calculation"),
+            desc=("EPI Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)

@@ -130,7 +130,7 @@ class CoregisteredT2Study(MultiStudy):
             inputs=[DatasetSpec('t2_reg_mat', text_matrix_format),
                     DatasetSpec('t2_qform_mat', text_matrix_format)],
             outputs=[DatasetSpec('motion_mats', directory_format)],
-            description=("T2w Motion matrices calculation"),
+            desc=("T2w Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)

@@ -16,19 +16,19 @@ class T2StarStudy(MRIStudy):
 
     add_data_specs = [
         DatasetSpec('coils', directory_format,
-                    description=("Reconstructed T2* complex image for each "
+                    desc=("Reconstructed T2* complex image for each "
                                  "coil")),
         DatasetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
-                    description=("Quantitative susceptibility image resolved "
+                    desc=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
         DatasetSpec('tissue_phase', nifti_gz_format, 'qsm_pipeline',
-                    description=("Phase map for each coil following unwrapping"
+                    desc=("Phase map for each coil following unwrapping"
                                  " and background field removal")),
         DatasetSpec('tissue_mask', nifti_gz_format, 'qsm_pipeline',
-                    description=("Mask for each coil corresponding to areas of"
+                    desc=("Mask for each coil corresponding to areas of"
                                  " high magnitude")),
         DatasetSpec('qsm_mask', nifti_gz_format, 'qsm_pipeline',
-                    description=("Brain mask generated from T2* image"))]
+                    desc=("Brain mask generated from T2* image"))]
 
     add_option_specs = [
 #         'SUIT_mask': lookup_template_mask_path('SUIT')
@@ -48,7 +48,7 @@ class T2StarStudy(MRIStudy):
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
-            description="Resolve QSM from t2star coils",
+            desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             **kwargs)
@@ -92,7 +92,7 @@ class T2StarStudy(MRIStudy):
             inputs=[DatasetSpec('t1', nifti_gz_format)],
             outputs=[DatasetSpec('betted_T1', nifti_gz_format),
                      DatasetSpec('betted_T1_mask', nifti_gz_format)],
-            description=("python implementation of BET"),
+            desc=("python implementation of BET"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -121,7 +121,7 @@ class T2StarStudy(MRIStudy):
                 DatasetSpec(self._lookup_nl_tfm_inv_name('MNI'), nifti_gz_format)],
             outputs=[DatasetSpec('cetted_T1_mask', nifti_gz_format),
                      DatasetSpec('cetted_T1', nifti_gz_format)],
-            description=("Construct cerebellum mask using SUIT template"),
+            desc=("Construct cerebellum mask using SUIT template"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -152,7 +152,7 @@ class T2StarStudy(MRIStudy):
                      DatasetSpec('tissue_phase', nifti_gz_format),
                      DatasetSpec('tissue_mask', nifti_gz_format),
                      DatasetSpec('qsm_mask', nifti_gz_format)],
-            description="Resolve QSM from t2star coils",
+            desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             **kwargs)

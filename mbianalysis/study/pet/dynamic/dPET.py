@@ -45,7 +45,7 @@ class DynamicPETStudy(PETStudy):
             name='Extract_volume',
             inputs=[DatasetSpec('pet_volumes', nifti_gz_format)],
             outputs=[DatasetSpec('pet_image', nifti_gz_format)],
-            description=('Extract the last volume of the 4D PET timeseries'),
+            desc=('Extract the last volume of the 4D PET timeseries'),
             version=1,
             citations=[],
             **kwargs)
@@ -64,7 +64,7 @@ class DynamicPETStudy(PETStudy):
                     DatasetSpec('warp_file', nifti_gz_format),
                     DatasetSpec('affine_mat', text_matrix_format)],
             outputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
-            description=('Apply transformation the the 4D PET timeseries'),
+            desc=('Apply transformation the the 4D PET timeseries'),
             version=1,
             citations=[],
             **kwargs)
@@ -92,7 +92,7 @@ class DynamicPETStudy(PETStudy):
             name='Baseline_removal',
             inputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
             outputs=[DatasetSpec('detrended_volumes', nifti_gz_format)],
-            description=('PET dual regression'),
+            desc=('PET dual regression'),
             citations=[],
             version=1,
             **kwargs)
@@ -111,7 +111,7 @@ class DynamicPETStudy(PETStudy):
                     DatasetSpec('regression_map', nifti_gz_format)],
             outputs=[DatasetSpec('spatial_map', nifti_gz_format),
                      DatasetSpec('ts', png_format)],
-            description=('PET dual regression'),
+            desc=('PET dual regression'),
             citations=[],
             version=1,
             **kwargs)

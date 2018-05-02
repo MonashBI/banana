@@ -40,7 +40,7 @@ class FixedMAFMotionCorrection(PETStudy):
             name='fixed_maf',
             inputs=[DatasetSpec('pet_data_cropped', directory_format)],
             outputs=[DatasetSpec('fixed_maf_pet', nifti_gz_format)],
-            description=("Given a folder with reconstructed PET data, this "
+            desc=("Given a folder with reconstructed PET data, this "
                          "pipeline will align all of them to a reference and "
                          "create a static PET image by averaging the realigned"
                          "images."),
@@ -98,7 +98,7 @@ class StaticPETMotionCorrection(PETStudy):
             name='static_mc',
             inputs=inputs,
             outputs=[DatasetSpec('static_pet_mc', directory_format)],
-            description=("Given a folder with reconstructed PET data, this "
+            desc=("Given a folder with reconstructed PET data, this "
                          "pipeline will generate a motion corrected static PET"
                          "image using information extracted from the MR-based "
                          "motion detection pipeline"),

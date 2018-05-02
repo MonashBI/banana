@@ -503,7 +503,7 @@ class MotionDetectionStudy(MultiStudy):
                      DatasetSpec('start_times', text_format),
                      DatasetSpec('motion_par_rc', text_format),
                      DatasetSpec('offset_indexes', text_format)],
-            description=("Calculate the mean displacement between each motion"
+            desc=("Calculate the mean displacement between each motion"
                          " matrix and a reference."),
             version=1,
             citations=[fsl_cite],
@@ -626,7 +626,7 @@ class MotionDetectionStudy(MultiStudy):
                     DatasetSpec('mean_displacement_consecutive', text_format),
                     DatasetSpec('start_times', text_format)],
             outputs=[DatasetSpec('frame_start_times', text_format)],
-            description=("Calculate when the head movement exceeded a "
+            desc=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
             version=1,
             citations=[fsl_cite],

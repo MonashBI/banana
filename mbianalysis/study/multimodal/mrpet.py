@@ -214,7 +214,7 @@ class MotionCorrectionMixin(MultiStudy):
                      DatasetSpec('motion_par', text_format),
                      DatasetSpec('offset_indexes', text_format),
                      DatasetSpec('mats4average', text_format)],
-            description=("Calculate the mean displacement between each motion"
+            desc=("Calculate the mean displacement between each motion"
                          " matrix and a reference."),
             version=1,
             citations=[fsl_cite],
@@ -287,7 +287,7 @@ class MotionCorrectionMixin(MultiStudy):
             outputs=[DatasetSpec('frame_start_times', text_format),
                      DatasetSpec('frame_vol_numbers', text_format),
                      DatasetSpec('timestamps', directory_format)],
-            description=("Calculate when the head movement exceeded a "
+            desc=("Calculate when the head movement exceeded a "
                          "predefined threshold (default 2mm)."),
             version=1,
             citations=[fsl_cite],
@@ -324,7 +324,7 @@ class MotionCorrectionMixin(MultiStudy):
                     DatasetSpec('offset_indexes', text_format),
                     DatasetSpec('frame_start_times', text_format)],
             outputs=[DatasetSpec('mean_displacement_plot', png_format)],
-            description=("Plot the mean displacement real clock"),
+            desc=("Plot the mean displacement real clock"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -349,7 +349,7 @@ class MotionCorrectionMixin(MultiStudy):
             inputs=[DatasetSpec('mats4average', text_format),
                     DatasetSpec('frame_vol_numbers', text_format)],
             outputs=[DatasetSpec('average_mats', directory_format)],
-            description=("Average all the transformation mats within each "
+            desc=("Average all the transformation mats within each "
                          "detected frame."),
             version=1,
             citations=[fsl_cite],
@@ -371,7 +371,7 @@ class MotionCorrectionMixin(MultiStudy):
             name='pet_correction_factors',
             inputs=[DatasetSpec('timestamps', directory_format)],
             outputs=[DatasetSpec('correction_factors', text_format)],
-            description=("Pipeline to calculate the correction factors to "
+            desc=("Pipeline to calculate the correction factors to "
                          "account for frame duration when averaging the PET "
                          "frames to create the static PET image"),
             version=1,
@@ -401,7 +401,7 @@ class MotionCorrectionMixin(MultiStudy):
             name=name,
             inputs=inputs,
             outputs=outputs,
-            description=("Pipeline to create an affine mat to align each "
+            desc=("Pipeline to create an affine mat to align each "
                          "detected frame to the reference. If umap is provided"
                          ", it will be also aligned to match the head position"
                          " in each frame and improve the static PET image "
@@ -458,7 +458,7 @@ class MotionCorrectionMixin(MultiStudy):
             name=name,
             inputs=inputs,
             outputs=[DatasetSpec('motion_detection_output', directory_format)],
-            description=("Pipeline to gather together all the outputs from "
+            desc=("Pipeline to gather together all the outputs from "
                          "the motion detection pipeline."),
             version=1,
             citations=[fsl_cite],
@@ -502,7 +502,7 @@ class MotionCorrectionMixin(MultiStudy):
             inputs=inputs,
             outputs=[DatasetSpec('static_pet_mc', directory_format),
                      DatasetSpec('static_pet_mc2crop', directory_format)],
-            description=("Given a folder with reconstructed PET data, this "
+            desc=("Given a folder with reconstructed PET data, this "
                          "pipeline will generate a motion corrected static PET"
                          "image using information extracted from the MR-based "
                          "motion detection pipeline"),

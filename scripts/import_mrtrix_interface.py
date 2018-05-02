@@ -446,11 +446,11 @@ usage = (pp.Literal('USAGE').suppress() + nl + nl +
          pp.OneOrMore(space.suppress() + word) + nl + nl +
          pp.OneOrMore(indent(8) + word + indent(6) +
                       pp.OneOrMore(space + word) + nl + nl))
-description = (pp.Literal('DESCRIPTION').suppress() +
+desc = (pp.Literal('DESCRIPTION').suppress() +
                pp.OneOrMore(desc_line) + empty_line)
 
 parser = title + synopsis
-parser = usage + description
+parser = usage + desc
 
 p = parse(parser, 11, 44)
 print('done')

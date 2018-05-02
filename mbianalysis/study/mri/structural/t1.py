@@ -56,7 +56,7 @@ class T1Study(MRIStudy):
             inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('fs_recon_all',
                                  freesurfer_recon_all_format)],
-            description="Segment white/grey matter and csf",
+            desc="Segment white/grey matter and csf",
             version=1,
             citations=copy(freesurfer_cites),
             **kwargs)
@@ -178,7 +178,7 @@ class CoregisteredT1Study(MultiStudy):
             inputs=[DatasetSpec('t1_reg_mat', text_matrix_format),
                     DatasetSpec('t1_qform_mat', text_matrix_format)],
             outputs=[DatasetSpec('motion_mats', directory_format)],
-            description=("T1w Motion matrices calculation"),
+            desc=("T1w Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)

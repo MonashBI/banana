@@ -91,7 +91,7 @@ class UTEStudy(MRIStudy):
                      DatasetSpec('ute2_registered', nifti_gz_format),
                      DatasetSpec('template_to_ute_mat', text_matrix_format),
                      DatasetSpec('ute_to_template_mat', text_matrix_format)],
-            description="Register ute images to the template",
+            desc="Register ute images to the template",
             version=1,
             citations=(fsl_cite),
             **kwargs)
@@ -174,7 +174,7 @@ class UTEStudy(MRIStudy):
             inputs=[DatasetSpec('ute1_registered', nifti_format)],
             outputs=[DatasetSpec('air_mask', nifti_gz_format),
                      DatasetSpec('bones_mask', nifti_gz_format)],
-            description="Segmentation of the first echo UTE image",
+            desc="Segmentation of the first echo UTE image",
             version=1,
             citations=(spm_cite, matlab_cite),
             **kwargs)
@@ -272,7 +272,7 @@ class UTEStudy(MRIStudy):
                     DatasetSpec('bones_mask', nifti_gz_format)],
             outputs=[DatasetSpec('sute_cont_template', nifti_gz_format),
                      DatasetSpec('sute_fix_template', nifti_gz_format)],
-            description="Umaps calculation in the template space",
+            desc="Umaps calculation in the template space",
             version=1,
             citations=(matlab_cite),
             **kwargs)
@@ -315,7 +315,7 @@ class UTEStudy(MRIStudy):
                     DatasetSpec('sute_fix_template', nifti_gz_format)],
             outputs=[DatasetSpec('sute_cont_ute', nifti_gz_format),
                      DatasetSpec('sute_fix_ute', nifti_gz_format)],
-            description="Moving umaps back to the UTE space",
+            desc="Moving umaps back to the UTE space",
             version=1,
             citations=(matlab_cite),
             **kwargs)
@@ -474,7 +474,7 @@ class UTEStudy(MRIStudy):
 #                     DatasetSpec('umap_ute', dicom_format)],
 #             outputs=[DatasetSpec('sute_cont_dicoms', dicom_format),
 #                      DatasetSpec('sute_fix_dicoms', dicom_format)],
-#             description=(
+#             desc=(
 #                 "Conversing resulted two umaps from nifti to dicom format - "
 #                 "parallel implementation"),
 #             version=1,
@@ -646,7 +646,7 @@ class CoregisteredUTEStudy(MultiStudy):
             inputs=[DatasetSpec('ute_reg_mat', text_matrix_format),
                     DatasetSpec('ute_qform_mat', text_matrix_format)],
             outputs=[DatasetSpec('motion_mats', directory_format)],
-            description=("utew Motion matrices calculation"),
+            desc=("utew Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -665,7 +665,7 @@ class CoregisteredUTEStudy(MultiStudy):
             inputs=[DatasetSpec('umap_aligned_niftis', directory_format),
                     DatasetSpec('umap', dicom_format)],
             outputs=[DatasetSpec('umap_aligned_dicoms', directory_format)],
-            description=(
+            desc=(
                 "Conversing aligned umap from nifti to dicom format - "
                 "parallel implementation"),
             version=1,

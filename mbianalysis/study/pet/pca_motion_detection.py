@@ -28,7 +28,7 @@ class PETPCAMotionDetectionStudy(PETStudy):
                     FieldSpec('temporal_length', float),
                     FieldSpec('num_frames', int)],
             outputs=[DatasetSpec('ssrb_sinograms', directory_format)],
-            description=('Unlist pet listmode data into several sinograms and '
+            desc=('Unlist pet listmode data into several sinograms and '
                          'perform ssrb compression to prepare data for motion '
                          'detection using PCA pipeline.'),
             version=1,

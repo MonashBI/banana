@@ -83,7 +83,7 @@ class PETStudy(Study):
             outputs=[DatasetSpec('decomposed_file', nifti_gz_format),
                      DatasetSpec('timeseries', nifti_gz_format),
                      DatasetSpec('mixing_mat', text_format)],
-            description=('Decompose a 4D dataset into a set of independent '
+            desc=('Decompose a 4D dataset into a set of independent '
                          'components using FastICA'),
             version=1,
             citations=[],
@@ -109,7 +109,7 @@ class PETStudy(Study):
                      DatasetSpec('warp_file', nifti_gz_format),
                      DatasetSpec('invwarp_file', nifti_gz_format),
                      DatasetSpec('affine_mat', text_matrix_format)],
-            description=('Image registration to a template using ANTs'),
+            desc=('Image registration to a template using ANTs'),
             version=1,
             citations=[],
             **kwargs)
@@ -134,7 +134,7 @@ class PETStudy(Study):
             name='pet_data_preparation',
             inputs=[DatasetSpec('pet_recon_dir', directory_format)],
             outputs=[DatasetSpec('pet_recon_dir_prepared', directory_format)],
-            description=("Given a folder with reconstructed PET data, this "
+            desc=("Given a folder with reconstructed PET data, this "
                          "pipeline will prepare the data for the motion "
                          "correction"),
             version=1,
@@ -158,7 +158,7 @@ class PETStudy(Study):
             outputs=[FieldSpec('pet_end_time', dtype=float),
                      FieldSpec('pet_start_time', dtype=str),
                      FieldSpec('pet_duration', dtype=int)],
-            description=("Extract PET time info from list-mode header."),
+            desc=("Extract PET time info from list-mode header."),
             version=1,
             citations=[],
             **kwargs)
@@ -178,7 +178,7 @@ class PETStudy(Study):
             name='pet_fov_cropping',
             inputs=[DatasetSpec(dir2crop_name, directory_format)],
             outputs=[DatasetSpec('pet_data_cropped', directory_format)],
-            description=("Given a folder with reconstructed PET data, this "
+            desc=("Given a folder with reconstructed PET data, this "
                          "pipeline will crop the PET field of view."),
             version=1,
             citations=[],

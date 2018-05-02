@@ -15,6 +15,7 @@ from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
 from nianalysis.interfaces.mrtrix import MRConvert
 from mbianalysis.interfaces.fsl import FSLSlices
+from mbianalysis.data_format import text_matrix_format
 import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
@@ -35,6 +36,7 @@ class MRIStudy(Study):
 
     add_data_specs = [
         DatasetSpec('primary', dicom_format),
+        DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('primary_nifti', nifti_gz_format,
                     'dcm2nii_conversion_pipeline'),
         # DatasetSpec('dicom_dwi', dicom_format),
@@ -60,12 +62,18 @@ class MRIStudy(Study):
         FieldSpec('ped', str, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str,
                   pipeline_name='header_info_extraction_pipeline'),
-        DatasetSpec(
-            'dcm_info',
-            text_format,
-            'header_info_extraction_pipeline'),
+        DatasetSpec('dcm_info', text_format,
+                    'header_info_extraction_pipeline'),
         DatasetSpec('motion_mats', directory_format,
-                    'header_info_extraction_pipeline')]
+                    'header_info_extraction_pipeline'),
+        DatasetSpec('registered', nifti_gz_format,
+                    'linear_registration_pipeline'),
+        DatasetSpec('matrix', text_matrix_format,
+                    'linear_registration_pipeline'),
+        DatasetSpec('qformed', nifti_gz_format,
+                    'qform_transform_pipeline'),
+        DatasetSpec('qform_mat', text_matrix_format,
+                    'qform_transform_pipeline')]
 
     add_option_specs = [
         OptionSpec('bet_robust', True),
@@ -108,7 +116,7 @@ class MRIStudy(Study):
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('masked', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
-            description="Generate brain mask from mr_scan",
+            desc="Generate brain mask from mr_scan",
             version=1,
             citations=[fsl_cite, bet_cite, bet2_cite],
             **kwargs)
@@ -151,7 +159,7 @@ class MRIStudy(Study):
             name=self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=outputs,
-            description=("Modified implementation of optiBET.sh"),
+            desc=("Modified implementation of optiBET.sh"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -234,7 +242,7 @@ class MRIStudy(Study):
                     DatasetSpec('masked', nifti_gz_format)],
             outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
                      DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
-            description=("Nonlinearly registers a MR scan to a standard space,"
+            desc=("Nonlinearly registers a MR scan to a standard space,"
                          "e.g. MNI-space"),
             version=1,
             citations=[fsl_cite],
@@ -309,7 +317,7 @@ class MRIStudy(Study):
             name='FAST_segmentation',
             inputs=[DatasetSpec('masked', nifti_gz_format)],
             outputs=[DatasetSpec('wm_seg', nifti_gz_format)],
-            description="White matter segmentation of the reference image",
+            desc="White matter segmentation of the reference image",
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -353,7 +361,7 @@ class MRIStudy(Study):
             name='fslswapdim_pipeline',
             inputs=[DatasetSpec('primary_nifti', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
-            description=("Dimensions swapping to ensure that all the images "
+            desc=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
             version=1,
             citations=[fsl_cite],
@@ -395,7 +403,7 @@ class MRIStudy(Study):
             name='header_info_extraction',
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=output_files,
-            description=("Pipeline to extract the most important scan "
+            desc=("Pipeline to extract the most important scan "
                          "information from the image header"),
             version=1,
             citations=[],
@@ -432,7 +440,7 @@ class MRIStudy(Study):
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=[DatasetSpec(dcm_in_name + '_nifti',
                                  nifti_gz_format)],
-            description=("DICOM to NIFTI conversion."),
+            desc=("DICOM to NIFTI conversion."),
             version=1,
             citations=[],
             **kwargs)

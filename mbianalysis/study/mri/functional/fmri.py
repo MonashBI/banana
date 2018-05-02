@@ -138,7 +138,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('rs_fmri_nifti', nifti_gz_format),
                     DatasetSpec('rs_fmri_ref', nifti_gz_format)],
             outputs=[DatasetSpec('feat_dir', directory_format)],
-            description="MELODIC Level 1",
+            desc="MELODIC Level 1",
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -202,7 +202,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format),
                      DatasetSpec('labelled_components', text_format)],
-            description=("Automatic classification and removal of noisy"
+            desc=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
@@ -231,7 +231,7 @@ class FunctionalMRIStudy(MRIStudy):
                                 frequency='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
-            description=("Automatic classification of noisy"
+            desc=("Automatic classification of noisy"
                          "components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
@@ -258,7 +258,7 @@ class FunctionalMRIStudy(MRIStudy):
             inputs=[DatasetSpec('fix_dir', directory_format),
                     DatasetSpec('labelled_components', text_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
-            description=("Regression of the noisy"
+            desc=("Regression of the noisy"
                          "components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
@@ -285,7 +285,7 @@ class FunctionalMRIStudy(MRIStudy):
             outputs=[DatasetSpec('betted_file', nifti_gz_format),
                      DatasetSpec('betted_mask', nifti_gz_format),
                      DatasetSpec('optiBET_report', gif_format)],
-            description=("python implementation of optiBET.sh"),
+            desc=("python implementation of optiBET.sh"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -362,7 +362,7 @@ class FunctionalMRIStudy(MRIStudy):
                      DatasetSpec('T12MNI_warp', nifti_gz_format),
                      DatasetSpec('T12MNI_invwarp', nifti_gz_format),
                      DatasetSpec('T12MNI_reg_report', gif_format)],
-            description=("python implementation of antsRegistrationSyN.sh"),
+            desc=("python implementation of antsRegistrationSyN.sh"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -410,7 +410,7 @@ class FunctionalMRIStudy(MRIStudy):
             inputs=[DatasetSpec('filtered_data', nifti_gz_format),
                     FieldSpec('tr', float)],
             outputs=[DatasetSpec('melodic_ica', directory_format)],
-            description=("python implementation of Melodic"),
+            desc=("python implementation of Melodic"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -446,7 +446,7 @@ class FunctionalMRIStudy(MRIStudy):
                      DatasetSpec('rsfmri_mask', nifti_gz_format),
                      DatasetSpec('mc_par', par_format),
                      DatasetSpec('unwarped_file', nifti_gz_format)],
-            description=("Spatial and temporal rsfMRI filtering"),
+            desc=("Spatial and temporal rsfMRI filtering"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -538,7 +538,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('T12MNI_mat', text_matrix_format),
                     DatasetSpec('epi2T1_mat', text_matrix_format)],
             outputs=[DatasetSpec('registered_file', nifti_gz_format)],
-            description=("Spatial and temporal rsfMRI filtering"),
+            desc=("Spatial and temporal rsfMRI filtering"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -569,7 +569,7 @@ class FunctionalMRIStudy(MRIStudy):
             name='3dBlurToFWHM',
             inputs=[DatasetSpec('registered_file', nifti_gz_format)],
             outputs=[DatasetSpec('smoothed_file', nifti_gz_format)],
-            description=("Spatial and temporal rsfMRI filtering"),
+            desc=("Spatial and temporal rsfMRI filtering"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -600,7 +600,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('rsfmri_mask', nifti_gz_format),
                     DatasetSpec('rs_fmri_nifti', nifti_gz_format)],
             outputs=[DatasetSpec('fix_dir', directory_format)],
-            description=("Automatic classification and removal of noisy"
+            desc=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
@@ -709,7 +709,7 @@ class FunctionalMRIStudy(MRIStudy):
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('train_data', rdata_format)],
-            description=("Automatic classification and removal of noisy"
+            desc=("Automatic classification and removal of noisy"
                          "components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
@@ -744,7 +744,7 @@ class FunctionalMRIStudy(MRIStudy):
             inputs=[DatasetSpec('smoothed_file', nifti_gz_format),
                     FieldSpec('rsfmri_tr', float)],
             outputs=[DatasetSpec('group_melodic', directory_format)],
-            description=("Group ICA"),
+            desc=("Group ICA"),
             version=1,
             citations=[fsl_cite],
             **kwargs)

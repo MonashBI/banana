@@ -30,7 +30,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
               "two images must have the same phase"))
     rpe_header = traits.Bool(
         mandatory=False, argstr="-rpe_header",
-        description=(
+        desc=(
             "Attempt to read the phase-encoding information from headeer"))
     # Arguments
     pe_dir = traits.Str(
