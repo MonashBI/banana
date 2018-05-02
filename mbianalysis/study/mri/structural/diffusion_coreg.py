@@ -19,6 +19,171 @@ from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from mbianalysis.requirement import fsl509_req, mrtrix3_req, fsl510_req
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.option import OptionSpec
+from nianalysis.exception import NiAnalysisError, NiAnalysisUsageError
+
+
+class DWIStudy(MRIStudy):
+
+    DWI_PREPROC_NAME = 'dwi_preproc'
+    __metaclass__ = StudyMetaClass
+
+    add_option_specs = [
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.5),
+        OptionSpec('bet_reduce_bias', False),
+        OptionSpec('bet_g_threshold', 0.0),
+        OptionSpec('bet_method', 'fsl_bet',
+                   choices=('fsl_bet', 'optibet')),
+        OptionSpec('dwi_preproc_method', 'eddy',
+                   choices=('eddy', 'topup'))]
+
+    def dwi1_dcm2nii_conversion_pipeline(self, **kwargs):
+        return super(DWIStudy, self).dcm2nii_conversion_pipeline_factory(
+            'dwi_main_dcm2nii', 'dwi_1', **kwargs)
+
+    def dwi2_dcm2nii_conversion_pipeline(self, **kwargs):
+        return super(DWIStudy, self).dcm2nii_conversion_pipeline_factory(
+            'dwi_main_dcm2nii', 'dwi_2', **kwargs)
+
+    def dwi1_header_info_extraction_pipeline(self, **kwargs):
+        return (super(DWIStudy, self).
+                header_info_extraction_pipeline_factory('dwi_1', **kwargs))
+
+    def dwi2_header_info_extraction_pipeline(self, **kwargs):
+        return (super(DWIStudy, self).
+                header_info_extraction_pipeline_factory('dwi_2', **kwargs))
+
+    def dwi_preproc_pipeline_factory(self, method='eddy', main=True, **kwargs):
+        dwi_preproc_method = self.option('dwi_preproc_method',
+                                         self.DWI_PREPROC_NAME)
+        if dwi_preproc_method == 'eddy':
+            pipeline = self._eddy_dwipreproc_pipeline(**kwargs)
+        elif dwi_preproc_method == 'topup':
+            pipeline = self._optiBET_brain_mask_pipeline(**kwargs)
+        else:
+            raise NiAnalysisError("Unrecognised dwi preprocessing method '{}'"
+                                  .format(dwi_preproc_method))
+        return pipeline
+
+    def _eddy_dwipreproc_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name=self.DWI_PREPROC_NAME,
+            inputs=[DatasetSpec('dwi_1', dicom_format),
+                    DatasetSpec('dwi_2', dicom_format),
+                    FieldSpec('ped', dtype=str),
+                    FieldSpec('pe_angle', dtype=str)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format),
+                     DatasetSpec('eddy_par', eddy_par_format)],
+            description=("Diffusion pre-processing pipeline"),
+            version=1,
+            citations=[],
+            **kwargs)
+
+        converter1 = pipeline.create_node(MRConvert(), name='converter1',
+                                          requirements=[mrtrix3_req])
+        converter1.inputs.out_ext = '.nii.gz'
+        pipeline.connect_input('dwi_main', converter1, 'in_file')
+        converter2 = pipeline.create_node(MRConvert(), name='converter2',
+                                          requirements=[mrtrix3_req])
+        converter2.inputs.out_ext = '.nii.gz'
+        pipeline.connect_input('dwi_ref', converter2, 'in_file')
+        prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
+        pipeline.connect_input('ped', prep_dwi, 'pe_dir')
+        pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
+#         prep_dwi.inputs.pe_dir = 'ROW'
+#         prep_dwi.inputs.phase_offset = '-1.5'
+        pipeline.connect(converter1, 'out_file', prep_dwi, 'dwi')
+        pipeline.connect(converter2, 'out_file', prep_dwi, 'dwi1')
+
+        check_name = pipeline.create_node(CheckDwiNames(),
+                                          name='check_names')
+        pipeline.connect(prep_dwi, 'main', check_name, 'nifti_dwi')
+        pipeline.connect_input('dwi_main', check_name, 'dicom_dwi')
+        pipeline.connect_input('dwi_ref', check_name, 'dicom_dwi1')
+        roi = pipeline.create_node(ExtractROI(), name='extract_roi',
+                                   requirements=[fsl509_req])
+        roi.inputs.t_min = 0
+        roi.inputs.t_size = 1
+        pipeline.connect(prep_dwi, 'main', roi, 'in_file')
+
+        merge_outputs = pipeline.create_node(merge_lists(2),
+                                             name='merge_files')
+        pipeline.connect(roi, 'roi_file', merge_outputs, 'in1')
+        pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
+        merge = pipeline.create_node(fsl_merge(), name='fsl_merge',
+                                     requirements=[fsl509_req])
+        merge.inputs.dimension = 't'
+        pipeline.connect(merge_outputs, 'out', merge, 'in_files')
+        dwipreproc = pipeline.create_node(
+            DWIPreproc(), name='dwipreproc',
+            requirements=[fsl510_req, mrtrix3_req])
+        dwipreproc.inputs.eddy_options = '--data_is_shelled '
+        dwipreproc.inputs.rpe_pair = True
+        dwipreproc.inputs.no_clean_up = True
+        dwipreproc.inputs.out_file_ext = '.nii.gz'
+        dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
+        pipeline.connect(merge, 'merged_file', dwipreproc, 'se_epi')
+        pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
+        pipeline.connect(check_name, 'main', dwipreproc, 'in_file')
+
+        pipeline.connect_output('preproc', dwipreproc, 'out_file')
+        pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
+
+        return pipeline
+
+    def _topup_preproc_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name=self.DWI_PREPROC_NAME,
+            inputs=[DatasetSpec('dwi_1_nifti', nifti_gz_format),
+                    DatasetSpec('dwi_2_nifti', nifti_gz_format),
+                    FieldSpec('pe_dir', dtype=str),
+                    FieldSpec('pe_angle', dtype=str)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format)],
+            description=("Topup distortion correction pipeline."),
+            version=1,
+            citations=[],
+            **kwargs)
+
+        prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
+        prep_dwi.inputs.topup = True
+        pipeline.connect_input(pe_dir, prep_dwi, 'pe_dir')
+        pipeline.connect_input(pe_angle, prep_dwi, 'phase_offset')
+#         prep_dwi.inputs.pe_dir = pe_dir
+#         prep_dwi.inputs.phase_offset = pe_angle
+        pipeline.connect_input(to_be_corrected_name, prep_dwi, 'dwi')
+        pipeline.connect_input(ref_input_name, prep_dwi, 'dwi1')
+        ped1 = pipeline.create_node(GenTopupConfigFiles(), name='gen_config1')
+        pipeline.connect(prep_dwi, 'pe', ped1, 'ped')
+        merge_outputs1 = pipeline.create_node(merge_lists(2),
+                                              name='merge_files1')
+        pipeline.connect(prep_dwi, 'main', merge_outputs1, 'in1')
+        pipeline.connect(prep_dwi, 'secondary', merge_outputs1, 'in2')
+        merge1 = pipeline.create_node(fsl_merge(), name='fsl_merge1',
+                                      requirements=[fsl509_req])
+        merge1.inputs.dimension = 't'
+        pipeline.connect(merge_outputs1, 'out', merge1, 'in_files')
+        topup1 = pipeline.create_node(TOPUP(), name='topup1',
+                                      requirements=[fsl509_req])
+        pipeline.connect(merge1, 'merged_file', topup1, 'in_file')
+        pipeline.connect(ped1, 'config_file', topup1, 'encoding_file')
+        in_apply_tp1 = pipeline.create_node(merge_lists(1),
+                                            name='in_apply_tp1')
+        pipeline.connect_input(to_be_corrected_name, in_apply_tp1, 'in1')
+        apply_topup1 = pipeline.create_node(ApplyTOPUP(), name='applytopup1',
+                                            requirements=[fsl509_req])
+        apply_topup1.inputs.method = 'jac'
+        apply_topup1.inputs.in_index = [1]
+        pipeline.connect(in_apply_tp1, 'out', apply_topup1, 'in_files')
+        pipeline.connect(
+            ped1, 'apply_topup_config', apply_topup1, 'encoding_file')
+        pipeline.connect(topup1, 'out_movpar', apply_topup1, 'in_topup_movpar')
+        pipeline.connect(
+            topup1, 'out_fieldcoef', apply_topup1, 'in_topup_fieldcoef')
+
+        pipeline.connect_output(output_name, apply_topup1, 'out_corrected')
+        return pipeline
 
 
 class DiffusionStudy(MRIStudy):
@@ -285,7 +450,7 @@ class DiffusionReferenceOppositeStudy(DiffusionReferenceStudy):
             'ped', 'pe_angle', 'preproc', **kwargs)
 
 
-class CoregisteredDWIStudy(MultiStudy):
+class CoregisteredDiffusionStudy(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
@@ -449,6 +614,7 @@ class CoregisteredDiffusionReferenceStudy(MultiStudy):
     add_data_specs = [
         DatasetSpec('dwi2ref_to_correct', dicom_format),
         DatasetSpec('dwi2ref_ref', dicom_format),
+        DatasetSpec('reference', nifti_gz_format),
         DatasetSpec('dwi2ref_brain', nifti_gz_format, 'dwi2ref_bet_pipeline'),
         DatasetSpec('dwi2ref_brain_mask', nifti_gz_format,
                     'dwi2ref_bet_pipeline'),
@@ -600,8 +766,7 @@ class CoregisteredDiffusionOppositeStudy(MultiStudy):
         'dwi_opposite', 'topup_pipeline')
 
     dwi_opposite_main_dcm2nii_pipeline = MultiStudy.translate(
-        'dwi_opposite',
-        DiffusionOppositeStudy.main_dcm2nii_conversion_pipeline)
+        'dwi_opposite', 'main_dcm2nii_conversion_pipeline')
 
     dwi_opposite_ref_dcm2nii_pipeline = MultiStudy.translate(
         'dwi_opposite', 'ref_dcm2nii_conversion_pipeline')
@@ -726,19 +891,19 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
 
     opposite_dwi2ref_main_dcm2nii_pipeline = MultiStudy.translate(
         'opposite_dwi2ref',
-        DiffusionReferenceOppositeStudy.main_dcm2nii_conversion_pipeline)
+        'DiffusionReferenceOppositeStudy_pipeline')
 
     opposite_dwi2ref_ref_dcm2nii_pipeline = MultiStudy.translate(
         'opposite_dwi2ref',
-        DiffusionReferenceOppositeStudy.ref_dcm2nii_conversion_pipeline)
+        'DiffusionReferenceOppositeStudy_pipeline')
 
     opposite_dwi2ref_dcm_info_pipeline = MultiStudy.translate(
         'opposite_dwi2ref',
-        DiffusionReferenceOppositeStudy.header_info_extraction_pipeline)
+        'DiffusionReferenceOppositeStudy_pipeline')
 
     opposite_dwi2ref_bet_pipeline = MultiStudy.translate(
         'opposite_dwi2ref',
-        DiffusionReferenceOppositeStudy.brain_mask_pipeline)
+        'DiffusionReferenceOppositeStudy_pipeline')
 
     ref_bet_pipeline = MultiStudy.translate(
         'reference', 'brain_mask_pipeline')
@@ -751,7 +916,7 @@ class CoregisteredDiffusionReferenceOppositeStudy(MultiStudy):
 
     opposite_dwi2ref_rigid_registration_pipeline = MultiStudy.translate(
         'coreg',
-        CoregisteredStudy.linear_registration_pipeline)
+        'CoregisteredStudy_pipeline')
 
     def motion_mat_pipeline(self, **kwargs):
 
