@@ -18,136 +18,13 @@ class CoregisteredStudy(Study):
     __metaclass__ = StudyMetaClass
 
     add_data_specs = [
-        DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('to_register', nifti_gz_format),
-        DatasetSpec('registered', nifti_gz_format,
-                    'linear_registration_pipeline'),
-        DatasetSpec('matrix', text_matrix_format,
-                    'linear_registration_pipeline'),
-        DatasetSpec('qformed', nifti_gz_format,
-                    'qform_transform_pipeline'),
-        DatasetSpec('qform_mat', text_matrix_format,
-                    'qform_transform_pipeline')]
+        ]
 
-    add_option_specs = [
-        OptionSpec('linear_reg_tool', 'flirt',
-                   choices=('flirt', 'spm')),
-        OptionSpec('flirt_degrees_of_freedom', 6),
-        OptionSpec('flirt_cost_func', 'normmi'),
-        OptionSpec('flirt_qsform', False)]
+    add_option_specs = []
 
     _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
                             DatasetSpec('to_register', nifti_gz_format)]
 
-    def linear_registration_pipeline(self, **kwargs):
-        tool = self.option('linear_coreg_tool', self.REGISTRATION_NAME)
-        if tool == 'flirt':
-            registration_outputs = [
-                DatasetSpec('registered', nifti_gz_format),
-                DatasetSpec('matrix', text_matrix_format)]
-            pipeline = self._fsl_flirt_factory(
-                registration_outputs, reg_type=self.REGISTRATION_NAME,
-                **kwargs)
-        elif tool == 'spm':
-            pipeline = self._spm_coreg_pipeline(**kwargs)
-        else:
-            assert False
-        return pipeline
-
-    def qform_transform_pipeline(self, **kwargs):
-
-        outputs = [DatasetSpec('qformed', nifti_gz_format),
-                   DatasetSpec('qform_mat', text_matrix_format)]
-        return self._fsl_flirt_factory(outputs, reg_type='useqform',
-                                        **kwargs)
-
-    def _fsl_flirt_factory(self, outputs, reg_type, **kwargs):
-        """
-        Registers a MR scan to a refernce MR scan using FSL's FLIRT command
-
-        Parameters
-        ----------
-        degrees_of_freedom : int
-            Number of degrees of freedom used in the registration. Default is
-            6 -> affine transformation.
-        cost_func : str
-            Cost function used for the registration. Can be one of
-            'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',
-            'labeldiff', 'bbr'
-        qsform : bool
-            Whether to use the QS form supplied in the input image header (
-            the image coordinates of the FOV supplied by the scanner)
-        """
-
-        pipeline = self.create_pipeline(
-            name=reg_type,
-            inputs=self._registration_inputs,
-            outputs=outputs,
-            description="Registers a MR scan against a reference image",
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req],
-                                     wall_time=5)
-        if reg_type == 'useqform':
-            flirt.inputs.uses_qform = True
-            flirt.inputs.apply_xfm = True
-            pipeline.connect_output('qformed', flirt, 'out_file')
-            pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
-        elif reg_type == self.REGISTRATION_NAME:
-            # Set registration options
-            flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
-            flirt.inputs.cost = pipeline.option('flirt_cost_func')
-            flirt.inputs.cost_func = pipeline.option('flirt_cost_func')
-            flirt.inputs.output_type = 'NIFTI_GZ'
-            # Connect outputs
-            pipeline.connect_output('registered', flirt, 'out_file')
-            # Connect matrix
-            self._connect_matrix(pipeline, flirt)
-        else:
-            assert False
-        # Connect inputs
-        pipeline.connect_input('to_register', flirt, 'in_file')
-        pipeline.connect_input('reference', flirt, 'reference')
-
-        return pipeline
-
-    def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
-        """
-        Coregisters T2 image to T1 image using SPM's
-        "Register" method.
-
-        NB: Default values come from the W2MHS toolbox
-        """
-        pipeline = self.create_pipeline(
-            name='registration',
-            inputs=[DatasetSpec('t1', nifti_format),
-                    DatasetSpec('t2', nifti_format)],
-            outputs=[DatasetSpec('t2_coreg_t1', nifti_format)],
-            description="Coregister T2-weighted images to T1",
-            version=1,
-            citations=[spm_cite],
-            **kwargs)
-        coreg = pipeline.create_node(Coregister(), name='coreg',
-                                     requirements=[spm12_req], wall_time=30)
-        coreg.inputs.jobtype = 'estwrite'
-        coreg.inputs.cost_function = 'nmi'
-        coreg.inputs.separation = [4, 2]
-        coreg.inputs.tolerance = [
-            0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001,
-            0.001, 0.001]
-        coreg.inputs.fwhm = [7, 7]
-        coreg.inputs.write_interp = 4
-        coreg.inputs.write_wrap = [0, 0, 0]
-        coreg.inputs.write_mask = False
-        coreg.inputs.out_prefix = 'r'
-        # Connect inputs
-        pipeline.connect_input('t1', coreg, 'target')
-        pipeline.connect_input('t2', coreg, 'source')
-        # Connect outputs
-        pipeline.connect_output('t2_coreg_t1', coreg, 'coregistered_source')
-        return pipeline
 
     def _connect_matrix(self, pipeline, flirt):
         pipeline.connect_output('matrix', flirt, 'out_matrix_file')
