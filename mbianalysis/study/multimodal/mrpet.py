@@ -43,7 +43,7 @@ class MotionReferenceT1Study(T1Study):
 
     add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
+        DatasetSpec('motion_mats', motion_mats_format,
                     'header_info_extraction_pipeline'),
         FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('start_time', str,
@@ -81,7 +81,7 @@ class MotionReferenceT2Study(T2Study):
 
     add_data_specs = [
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
+        DatasetSpec('motion_mats', motion_mats_format,
                     'header_info_extraction_pipeline'),
         FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
         FieldSpec('start_time', str,

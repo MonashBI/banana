@@ -83,6 +83,11 @@ freesurfer_recon_all_format = DataFormat(name='fs_recon_all',
                                          directory=True)
 ica_format = DataFormat(name='ica', extension='.ica', directory=True)
 par_format = DataFormat(name='parameters', extension='.par')
+motion_mats_format = DataFormat(name='motion_mats', directory=True,
+                                within_dir_exts=['.mat'],
+                                desc=("Format used for storing motion matrices "
+                                      "produced during motion detection "
+                                      "pipeline"))
 
 
 # General image formats

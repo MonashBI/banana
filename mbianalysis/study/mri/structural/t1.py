@@ -1,22 +1,14 @@
-from itertools import chain
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from nianalysis.interfaces.utils import DummyReconAll as ReconAll
 from mbianalysis.requirement import freesurfer_req
 from mbianalysis.citation import freesurfer_cites
 from mbianalysis.data_format import (
-    freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
-    directory_format, dicom_format, text_format)
-from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.interfaces.utils import ZipDir, JoinPath
+    freesurfer_recon_all_format, nifti_gz_format)
+from nianalysis.dataset import DatasetSpec
+from nianalysis.interfaces.utils import JoinPath
 from ..base import MRIStudy
-from mbianalysis.citation import fsl_cite
 from nianalysis.study.base import StudyMetaClass
-from ..coregistered import CoregisteredStudy
-from nianalysis.study.multi import (MultiStudy, SubStudySpec,
-                                    MultiStudyMetaClass)
-from mbianalysis.interfaces.custom.motion_correction import (
-    MotionMatCalculation)
 from nianalysis.option import OptionSpec
 
 
@@ -35,14 +27,6 @@ class T1Study(MRIStudy):
         OptionSpec('bet_robust', True),
         OptionSpec('bet_f_threshold', 0.57),
         OptionSpec('bet_g_threshold', -0.1)]
-
-    def brain_mask_pipeline(self, **kwargs):
-        return super(T1Study, self).brain_mask_pipeline(**kwargs)
-
-    def header_info_extraction_pipeline(self, **kwargs):
-        return (super(T1Study, self).
-                header_info_extraction_pipeline_factory(
-                    'primary', **kwargs))
 
     def freesurfer_pipeline(self, **kwargs):
         """
@@ -75,117 +59,7 @@ class T1Study(MRIStudy):
         pipeline.connect_output('fs_recon_all', join, 'path')
         return pipeline
 
-
-class CoregisteredT1Study(MultiStudy):
-
-    __metaclass__ = MultiStudyMetaClass
-
-    add_option_specs = [OptionSpec('t1_multivol', False),
-                        OptionSpec('reference_resolution', [1])]
-
-    add_sub_study_specs = [
-        SubStudySpec('t1', T1Study, {
-            't1': 'primary',
-            't1_nifti': 'primary_nifti',
-            't1_preproc': 'preproc',
-            't1_brain': 'brain',
-            't1_brain_mask': 'brain_mask',
-            'ped': 'ped',
-            'pe_angle': 'pe_angle',
-            'tr': 'tr',
-            'real_duration': 'real_duration',
-            'tot_duration': 'tot_duration',
-            'start_time': 'start_time',
-            'dcm_info': 'dcm_info'}),
-        SubStudySpec('reference', MRIStudy, {
-            'reference': 'primary_nifti',
-            'ref_preproc': 'preproc',
-            'ref_brain': 'brain',
-            'ref_brain_mask': 'brain_mask'}),
-        SubStudySpec('coreg', CoregisteredStudy, {
-            't1_brain': 'to_register',
-            'ref_brain': 'reference',
-            't1_qformed': 'qformed',
-            't1_qform_mat': 'qform_mat',
-            't1_reg': 'registered',
-            't1_reg_mat': 'matrix'})]
-
-    add_data_specs = [
-        DatasetSpec('t1', dicom_format),
-        DatasetSpec('t1_nifti', nifti_gz_format, 't1_dcm2nii_pipeline'),
-        DatasetSpec('reference', nifti_gz_format),
-        DatasetSpec('t1_preproc', nifti_gz_format,
-                    't1_basic_preproc_pipeline'),
-        DatasetSpec('t1_brain', nifti_gz_format,
-                    't1_brain_mask_pipeline'),
-        DatasetSpec('t1_brain_mask', nifti_gz_format,
-                    't1_brain_mask_pipeline'),
-        DatasetSpec('ref_preproc', nifti_gz_format,
-                    'ref_basic_preproc_pipeline'),
-        DatasetSpec('t1_qformed', nifti_gz_format,
-                    't1_qform_transform_pipeline'),
-        # DatasetSpec('brain', nifti_gz_format, 't1_bet_pipeline'),
-        DatasetSpec('t1_qform_mat', text_matrix_format,
-                    't1_qform_transform_pipeline'),
-        DatasetSpec('ref_brain', nifti_gz_format, 'ref_bet_pipeline'),
-        DatasetSpec('ref_brain_mask', nifti_gz_format,
-                    'ref_bet_pipeline'),
-        DatasetSpec('t1_reg', nifti_gz_format,
-                    't1_rigid_registration_pipeline'),
-        DatasetSpec('t1_reg_mat', text_matrix_format,
-                    't1_rigid_registration_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
-                    'motion_mat_pipeline'),
-        DatasetSpec('dcm_info', text_format, 't1_dcm_info_pipeline'),
-        FieldSpec('ped', str, 't1_dcm_info_pipeline'),
-        FieldSpec('pe_angle', str, 't1_dcm_info_pipeline'),
-        FieldSpec('tr', float, 't1_dcm_info_pipeline'),
-        FieldSpec('start_time', str, 't1_dcm_info_pipeline'),
-        FieldSpec('real_duration', str, 't1_dcm_info_pipeline'),
-        FieldSpec('tot_duration', str, 't1_dcm_info_pipeline')]
-
-    t1_basic_preproc_pipeline = MultiStudy.translate(
-        't1', 'basic_preproc_pipeline')
-
-    t1_dcm2nii_pipeline = MultiStudy.translate(
-        't1', 'dcm2nii_conversion_pipeline')
-
-    t1_dcm_info_pipeline = MultiStudy.translate(
-        't1', 'header_info_extraction_pipeline')
-
-#     t1_bet_pipeline = MultiStudy.translate(
-#         't1', 'brain_mask_pipeline')
-
-    ref_bet_pipeline = MultiStudy.translate(
-        'reference', 'brain_mask_pipeline')
-
-    ref_basic_preproc_pipeline = MultiStudy.translate(
-        'reference', 'basic_preproc_pipeline')
-
-    t1_qform_transform_pipeline = MultiStudy.translate(
-        'coreg', 'qform_transform_pipeline')
-
-    t1_brain_mask_pipeline = MultiStudy.translate(
-        't1', 'brain_mask_pipeline')
-
-    t1_rigid_registration_pipeline = MultiStudy.translate(
-        'coreg', 'linear_registration_pipeline')
-
-    def motion_mat_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='motion_mat_calculation',
-            inputs=[DatasetSpec('t1_reg_mat', text_matrix_format),
-                    DatasetSpec('t1_qform_mat', text_matrix_format)],
-            outputs=[DatasetSpec('motion_mats', directory_format)],
-            desc=("T1w Motion matrices calculation"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        mm = pipeline.create_node(
-            MotionMatCalculation(), name='motion_mats')
-        pipeline.connect_input('t1_reg_mat', mm, 'reg_mat')
-        pipeline.connect_input('t1_qform_mat', mm, 'qform_mat')
-        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+    def segmentation_pipeline(self, **kwargs):
+        pipeline = super(T1Study, self).segmentation_pipeline(img_type=1,
+                                                              **kwargs)
         return pipeline

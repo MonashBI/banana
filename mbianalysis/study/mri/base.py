@@ -2,7 +2,7 @@ from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
 from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
-from mbianalysis.data_format import nifti_format
+from mbianalysis.data_format import nifti_format, motion_mats_format
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
@@ -25,6 +25,8 @@ from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.interfaces.converters import Dcm2niix
 from nianalysis.option import OptionSpec
+from mbianalysis.interfaces.custom.motion_correction import (
+    MotionMatCalculation)
 
 
 atlas_path = os.path.abspath(
@@ -40,7 +42,7 @@ class MRIStudy(Study):
 
     add_data_specs = [
         DatasetSpec('primary', dicom_format),
-        DatasetSpec('coreg_ref', nifti_gz_format,
+        DatasetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
                     optional=True),
@@ -65,8 +67,8 @@ class MRIStudy(Study):
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
-                    'header_info_extraction_pipeline'),
+        DatasetSpec('motion_mats', motion_mats_format,
+                    'motion_mat_pipeline'),
         DatasetSpec('qformed', nifti_gz_format,
                     'qform_transform_pipeline'),
         DatasetSpec('qform_mat', text_matrix_format,
@@ -98,7 +100,6 @@ class MRIStudy(Study):
         OptionSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         OptionSpec('preproc_resolution', None),
-        OptionSpec('info_extract_multivol', True),
         OptionSpec('linear_reg_method', 'flirt',
                    choices=('flirt', 'spm')),
         OptionSpec('flirt_degrees_of_freedom', 6, desc=(
@@ -120,7 +121,7 @@ class MRIStudy(Study):
         If registration is not required, i.e. a reg_ref is not supplied
         then it is simply the 'brain' dataset.
         """
-        if 'coreg_ref' in self.input_names:
+        if 'coreg_ref_brain' in self.input_names:
             name = 'coreg_brain'
         else:
             name = 'brain'
@@ -132,7 +133,7 @@ class MRIStudy(Study):
                                  **kwargs)
         if method == 'flirt':
             pipeline = self._flirt_factory(
-                pipeline_name, 'coreg_ref', 'brain',
+                pipeline_name, 'coreg_ref_brain', 'brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
         elif method == 'spm':
             raise NotImplementedError
@@ -143,7 +144,7 @@ class MRIStudy(Study):
 
     def qform_transform_pipeline(self, **kwargs):
         return self._qform_transform_factory(
-            'qform_transform', 'brain', 'coreg_ref', 'qformed',
+            'qform_transform', 'brain', 'coreg_ref_brain', 'qformed',
             'qform_mat', **kwargs)
 
     def _flirt_factory(self, name, to_reg, ref, reg, matrix, **kwargs):
@@ -551,7 +552,7 @@ class MRIStudy(Study):
                                                             **kwargs)
 
     def header_info_extraction_pipeline_factory(self, dcm_in_name, ref=False,
-                                                **kwargs):
+                                                multivol=False, **kwargs):
         output_files = [FieldSpec('tr', dtype=float),
                         FieldSpec('start_time', dtype=str),
                         FieldSpec('tot_duration', dtype=str),
@@ -561,7 +562,7 @@ class MRIStudy(Study):
                         DatasetSpec('dcm_info', text_format)]
         if ref:
             output_files.append(DatasetSpec('motion_mats',
-                                            directory_format))
+                                            motion_mats_format))
 
         pipeline = self.create_pipeline(
             name='header_info_extraction',
@@ -574,8 +575,7 @@ class MRIStudy(Study):
             **kwargs)
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
-        hd_extraction.inputs.multivol = pipeline.option(
-            'info_extract_multivol')
+        hd_extraction.inputs.multivol = multivol
         hd_extraction.inputs.reference = ref
         pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
         pipeline.connect_output('tr', hd_extraction, 'tr')
@@ -624,4 +624,23 @@ class MRIStudy(Study):
             pipeline.connect_output(
                 dcm_in_name + '_nifti', conv, 'converted')
 
+        return pipeline
+
+    def motion_mat_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=[DatasetSpec('coreg_matrix', text_matrix_format),
+                    DatasetSpec('qform_mat', text_matrix_format)],
+            outputs=[DatasetSpec('motion_mats', directory_format)],
+            desc=("Motion matrices calculation"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='motion_mats')
+        pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
+        pipeline.connect_input('qform_mat', mm, 'qform_mat')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline

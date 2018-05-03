@@ -16,6 +16,8 @@ from nianalysis.requirement import fsl509_req, mrtrix3_req, fsl510_req
 from arcana.interfaces.mrtrix import MRConvert
 from arcana.option import OptionSpec
 from nipype.interfaces import fsl
+
+
 class DWIStudy(MRIStudy):
     __metaclass__ = StudyMetaClass
     add_data_specs = [

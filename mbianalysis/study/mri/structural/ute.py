@@ -599,7 +599,7 @@ class CoregisteredUTEStudy(MultiStudy):
                     'ute_rigid_registration_pipeline'),
         DatasetSpec('ute_reg_mat', text_matrix_format,
                     'ute_rigid_registration_pipeline'),
-        DatasetSpec('motion_mats', directory_format,
+        DatasetSpec('motion_mats', motion_mats_format,
                     'motion_mat_pipeline'),
         DatasetSpec('dcm_info', text_format, 'ute_dcm_info_pipeline'),
         FieldSpec('ped', str, 'ute_dcm_info_pipeline'),
