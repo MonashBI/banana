@@ -172,12 +172,12 @@ class MotionDetectionMixin(MultiStudy):
         for sub_study_spec in self.sub_study_specs():
             try:
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('motion_mats')))
-                inputs.append(self.dataset(sub_study_spec.inverse_map('tr')))
+                    self.data(sub_study_spec.inverse_map('motion_mats')))
+                inputs.append(self.data(sub_study_spec.inverse_map('tr')))
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('start_time')))
+                    self.data(sub_study_spec.inverse_map('start_time')))
                 inputs.append(
-                    self.dataset(sub_study_spec.inverse_map('real_duration')))
+                    self.data(sub_study_spec.inverse_map('real_duration')))
                 sub_study_names.append(sub_study_spec.name)
             except NiAnalysisNameError:
                 continue  # Sub study doesn't have motion mat
@@ -853,7 +853,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if not run_pipeline:
         raise Exception('At least one scan, other than the reference, must be '
                         'provided!')
-    dct['sub_study_specs'] = (
-        study_specs + list(MotionDetectionMixin.sub_study_specs()))
+    dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
