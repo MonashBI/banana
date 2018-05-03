@@ -35,6 +35,7 @@ class MRIStudy(Study):
 
     BRAIN_MASK_NAME = 'brain_mask'
     COREGISTER_TO_ATLAS_NAME = 'coregister_to_atlas'
+    LINEAR_REG_NAME = 'linear_reg'
 
     __metaclass__ = StudyMetaClass
 
@@ -44,6 +45,8 @@ class MRIStudy(Study):
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
                     optional=True),
+        DatasetSpec('coreg_matrix', text_matrix_format,
+                    'linear_registration_pipeline'),
         DatasetSpec('primary_nifti', nifti_gz_format,
                     'dcm2nii_conversion_pipeline'),
         # DatasetSpec('dicom_dwi', dicom_format),
@@ -63,23 +66,21 @@ class MRIStudy(Study):
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
         DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
-        # DatasetSpec('dicom_file', dicom_format),
-        FieldSpec('tr', dtype=float, 'header_info_extraction_pipeline'),
-        FieldSpec('start_time', str, 'header_info_extraction_pipeline'),
-        FieldSpec('real_duration', str, 'header_info_extraction_pipeline'),
-        FieldSpec('tot_duration', str, 'header_info_extraction_pipeline'),
-        FieldSpec('ped', str, 'header_info_extraction_pipeline'),
-        FieldSpec('pe_angle', str, 'header_info_extraction_pipeline'),
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline'),
         DatasetSpec('motion_mats', directory_format,
                     'header_info_extraction_pipeline'),
-        DatasetSpec('reg_matrix', text_matrix_format,
-                    'linear_registration_pipeline'),
         DatasetSpec('qformed', nifti_gz_format,
                     'qform_transform_pipeline'),
         DatasetSpec('qform_mat', text_matrix_format,
-                    'qform_transform_pipeline')]
+                    'qform_transform_pipeline'),
+        # DatasetSpec('dicom_file', dicom_format),
+        FieldSpec('tr', float, 'header_info_extraction_pipeline'),
+        FieldSpec('start_time', str, 'header_info_extraction_pipeline'),
+        FieldSpec('real_duration', str, 'header_info_extraction_pipeline'),
+        FieldSpec('tot_duration', str, 'header_info_extraction_pipeline'),
+        FieldSpec('ped', str, 'header_info_extraction_pipeline'),
+        FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
     add_option_specs = [
         OptionSpec('bet_robust', True),
@@ -121,13 +122,15 @@ class MRIStudy(Study):
         return DatasetSpec(name, nifti_gz_format)
 
     def linear_registration_pipeline(self, **kwargs):
-        tool = self.option('linear_coreg_tool', self.REGISTRATION_NAME)
+        tool = self.pre_option('linear_reg_tool', self.LINEAR_REG_NAME)
         if tool == 'flirt':
-            registration_outputs = [
-                DatasetSpec('registered', nifti_gz_format),
-                DatasetSpec('reg_matrix', text_matrix_format)]
+            inputs = [DatasetSpec('coreg_ref', nifti_gz_format),
+                      DatasetSpec('brain', nifti_gz_format)]
+            outputs = [
+                DatasetSpec('coreg_brain', nifti_gz_format),
+                DatasetSpec('coreg_matrix', text_matrix_format)]
             pipeline = self._fsl_flirt_factory(
-                registration_outputs, reg_type=self.REGISTRATION_NAME,
+                inputs, outputs, reg_type=self.LINEAR_REG_NAME,
                 **kwargs)
         elif tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**kwargs)
@@ -136,13 +139,15 @@ class MRIStudy(Study):
         return pipeline
 
     def qform_transform_pipeline(self, **kwargs):
-
+        inputs = [
+            DatasetSpec('brain', nifti_gz_format),
+            DatasetSpec('coreg_ref', nifti_gz_format)]
         outputs = [DatasetSpec('qformed', nifti_gz_format),
                    DatasetSpec('qform_mat', text_matrix_format)]
-        return self._fsl_flirt_factory(outputs, reg_type='useqform',
-                                        **kwargs)
+        return self._fsl_flirt_factory(
+            inputs, outputs, reg_type='useqform', **kwargs)
 
-    def _fsl_flirt_factory(self, outputs, reg_type, **kwargs):
+    def _fsl_flirt_factory(self, inputs, outputs, reg_type, **kwargs):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -162,7 +167,7 @@ class MRIStudy(Study):
 
         pipeline = self.create_pipeline(
             name=reg_type,
-            inputs=self._registration_inputs,
+            inputs=inputs,
             outputs=outputs,
             desc="Registers a MR scan against a reference image",
             version=1,
@@ -176,21 +181,21 @@ class MRIStudy(Study):
             flirt.inputs.apply_xfm = True
             pipeline.connect_output('qformed', flirt, 'out_file')
             pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
-        elif reg_type == self.REGISTRATION_NAME:
+        elif reg_type == self.LINEAR_REG_NAME:
             # Set registration options
             flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
             flirt.inputs.cost = pipeline.option('flirt_cost_func')
             flirt.inputs.cost_func = pipeline.option('flirt_cost_func')
             flirt.inputs.output_type = 'NIFTI_GZ'
             # Connect outputs
-            pipeline.connect_output('registered', flirt, 'out_file')
-            # Connect matrix
-            self._connect_matrix(pipeline, flirt)
+            pipeline.connect_output('coreg_brain', flirt, 'out_file')
+            pipeline.connect_output('coreg_matrix', flirt,
+                                    'out_matrix_file')
         else:
             assert False
         # Connect inputs
-        pipeline.connect_input('to_register', flirt, 'in_file')
-        pipeline.connect_input('reference', flirt, 'reference')
+        pipeline.connect_input('brain', flirt, 'in_file')
+        pipeline.connect_input('coreg_ref', flirt, 'reference')
 
         return pipeline
 
@@ -231,7 +236,7 @@ class MRIStudy(Study):
         return pipeline
 
     def brain_mask_pipeline(self, **kwargs):
-        bet_method = self.option('bet_method', self.BRAIN_MASK_NAME)
+        bet_method = self.pre_option('bet_method', self.BRAIN_MASK_NAME)
         if bet_method == 'fsl_bet':
             pipeline = self._fsl_bet_brain_mask_pipeline(**kwargs)
         elif bet_method == 'optibet':
@@ -287,7 +292,7 @@ class MRIStudy(Study):
 
         outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if self.option('optibet_gen_report', self.BRAIN_MASK_NAME):
+        if self.pre_option('optibet_gen_report', self.BRAIN_MASK_NAME):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,

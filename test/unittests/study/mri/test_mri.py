@@ -12,6 +12,8 @@ class TestMRI(TestCase):
     def test_brain_mask(self):
         study = self.create_study(
             MRIStudy, 'mask_study', inputs=[
-                DatasetMatch('primary', nifti_gz_format, 'flair')])
-        study.brain_mask_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('brain_mask.nii.gz', study.name)
+                DatasetMatch('primary', nifti_gz_format, 'flair'),
+                DatasetMatch('coreg_ref', nifti_gz_format, 'mprage')])
+        coreg_brain = study.data('coreg_brain')[0]
+        self.assertDatasetEqual(coreg_brain,
+                                self.reference('coreg_brain'))

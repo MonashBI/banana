@@ -181,7 +181,7 @@ class DiffusionStudy(T2Study):
             want to use
         """
         pipeline_name = 'brain_mask_mrtrix'
-        mask_tool = self.option('mask_tool', pipeline_name)
+        mask_tool = self.pre_option('mask_tool', pipeline_name)
         if mask_tool == 'fsl':
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
@@ -223,7 +223,7 @@ class DiffusionStudy(T2Study):
         Corrects B1 field inhomogeneities
         """
         pipeline_name = 'bias_correct'
-        bias_method = self.option('bias_method', pipeline_name)
+        bias_method = self.pre_option('bias_method', pipeline_name)
         pipeline = self.create_pipeline(
             name=pipeline_name,
             inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
@@ -814,7 +814,7 @@ class NODDIStudy(DiffusionStudy):
         inputs = [DatasetSpec('bias_correct', nifti_gz_format),
                   DatasetSpec('grad_dirs', fsl_bvecs_format),
                   DatasetSpec('bvalues', fsl_bvals_format)]
-        if self.option('single_slice', pipeline_name):
+        if self.pre_option('single_slice', pipeline_name):
             inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(DatasetSpec('brain_mask', nifti_gz_format))

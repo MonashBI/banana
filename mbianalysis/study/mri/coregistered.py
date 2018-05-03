@@ -22,8 +22,7 @@ class CoregisteredStudy(Study):
 
     add_option_specs = []
 
-    _registration_inputs = [DatasetSpec('reference', nifti_gz_format),
-                            DatasetSpec('to_register', nifti_gz_format)]
+    _registration_inputs = 
 
 
     def _connect_matrix(self, pipeline, flirt):
