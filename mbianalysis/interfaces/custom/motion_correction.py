@@ -629,14 +629,14 @@ class MotionFramingInputSpec(BaseInterfaceInputSpec):
                                       'shorter than this value (in sec) then '
                                       'the frame will be discarded. Default '
                                       '30sec', default=30)
-    pet_data_dir = Directory(
-        exists=True, desc='PET directory with all the acquired data from the '
-        'scanner. This folder must contain at list the list-mode data and its '
-        'headerto which will be used to extract the pet start time and end '
-        'time. This must be provided if motion detection has to be then '
-        'applied to PET motion correction.', default=None)
+#    pet_data_dir = Directory(
+#        exists=True, desc='PET directory with all the acquired data from the '
+#        'scanner. This folder must contain at list the list-mode data and its '
+#        'headerto which will be used to extract the pet start time and end '
+#        'time. This must be provided if motion detection has to be then '
+#        'applied to PET motion correction.', default=None)
     pet_start_time = traits.Str(desc='PET start time', default=None)
-    pet_duration = traits.Str(desc='PET duration in seconds', default=None)
+    pet_end_time = traits.Str(desc='PET end time', default=None)
 
 
 class MotionFramingOutputSpec(TraitedSpec):
@@ -662,17 +662,9 @@ class MotionFraming(BaseInterface):
         th = self.inputs.motion_threshold
         start_times = np.loadtxt(self.inputs.start_times, dtype=str)
         temporal_th = self.inputs.temporal_threshold
-        pet_data_dir = self.inputs.pet_data_dir
-        pet_start_time = self.inputs.pet_start_time
-        pet_duration = self.inputs.pet_duration
-        if pet_data_dir:
-            pet_st, pet_endtime = self.pet_time_info(pet_data_dir)
-        elif pet_start_time and pet_duration:
-            pet_st = pet_start_time
-            pet_endtime = ((
-                dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
-                dt.timedelta(seconds=int(pet_duration))).strftime('%H%M%S.%f'))
-        else:
+        pet_st = self.inputs.pet_start_time
+        pet_endtime = self.inputs.pet_end_time
+        if not pet_st and not pet_endtime:
             pet_st = None
             pet_endtime = None
 
@@ -1256,7 +1248,7 @@ class CreateMocoSeries(BaseInterface):
 
 class FixedBinningInputSpec(BaseInterfaceInputSpec):
     
-    n_frames = traits.Int(desc='Number of frames you want to have '
+    n_frames = traits.Str(desc='Number of frames you want to have '
                           'realignment matrices for.')
     pet_offset = traits.Int(desc='seconds from the start of the PET you want to'
                             'discard before starting the data binning.')

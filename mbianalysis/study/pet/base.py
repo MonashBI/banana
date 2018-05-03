@@ -153,7 +153,7 @@ class PETStudy(Study):
 
     def pet_time_info_extraction_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
-            name='pet_fov_cropping',
+            name='pet_info_extraction',
             inputs=[DatasetSpec('pet_data_dir', directory_format)],
             outputs=[FieldSpec('pet_end_time', dtype=float),
                      FieldSpec('pet_start_time', dtype=str),

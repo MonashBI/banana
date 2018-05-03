@@ -4,7 +4,7 @@ from mbianalysis.data_format import (
     png_format, dicom_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
-    AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
+    AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference, FixedBinning)
 from mbianalysis.citation import fsl_cite
 from nianalysis.study.base import StudyMetaClass
 from nianalysis.study.multi import (
@@ -174,6 +174,8 @@ class MotionCorrectionMixin(MultiStudy):
                     'static_motion_correction_pipeline'),
         DatasetSpec('static_pet_mc2crop', directory_format,
                     'static_motion_correction_pipeline'),
+        DatasetSpec('fixed_binning_mats', directory_format,
+                    'fixed_binning_pipeline'),
         FieldSpec('pet_duration', dtype=int,
                   pipeline_name='pet_time_info_extraction_pipeline'),
         FieldSpec('pet_end_time', dtype=str,
@@ -271,16 +273,13 @@ class MotionCorrectionMixin(MultiStudy):
             **kwargs)
 
     def motion_framing_pipeline_factory(
-            self, pet_data_dir=None, pet_start_time=None, pet_duration=None,
-            **kwargs):
+            self, motion_correction=False, **kwargs):
         inputs = [DatasetSpec('mean_displacement', text_format),
                   DatasetSpec('mean_displacement_consecutive', text_format),
                   DatasetSpec('start_times', text_format)]
-        if pet_data_dir is not None:
-            inputs.append(DatasetSpec(pet_data_dir, directory_format))
-        elif pet_start_time is not None and pet_duration is not None:
-            inputs.append(FieldSpec(pet_start_time, str))
-            inputs.append(FieldSpec(pet_duration, str))
+        if motion_correction:
+            inputs.append(FieldSpec('pet_start_time', str))
+            inputs.append(FieldSpec('pet_end_time', int))
         pipeline = self.create_pipeline(
             name='motion_framing',
             inputs=inputs,
@@ -302,11 +301,9 @@ class MotionCorrectionMixin(MultiStudy):
         pipeline.connect_input('mean_displacement_consecutive', framing,
                                'mean_displacement_consec')
         pipeline.connect_input('start_times', framing, 'start_times')
-        if pet_data_dir is not None:
-            pipeline.connect_input('pet_data_dir', framing, 'pet_data_dir')
-        elif pet_start_time is not None and pet_duration is not None:
+        if motion_correction:
             pipeline.connect_input('pet_start_time', framing, 'pet_start_time')
-            pipeline.connect_input('pet_duration', framing, 'pet_duration')
+            pipeline.connect_input('pet_end_time', framing, 'pet_end_time')
 #         else:
 #             framing.inputs.pet_data_dir = None
         pipeline.connect_output('frame_start_times', framing,
@@ -527,11 +524,43 @@ class MotionCorrectionMixin(MultiStudy):
         return self.static_motion_correction_pipeline_factory(
             StructAlignment=None, **kwargs)
 
+    def fixed_binning_pipeline(self, **options):
+    
+        pipeline = self.create_pipeline(
+            name='fixed_binning',
+            inputs=[DatasetSpec('start_times', text_format),
+                    FieldSpec('pet_start_time', str),
+                    FieldSpec('pet_duration', int),
+                    DatasetSpec('mats4average', text_format)],
+            outputs=[DatasetSpec('fixed_bin_mats', directory_format)],
+            description=("Pipeline to generate average motion matrices for "
+                         "each bin in a dynamic PET reconstruction experiment."
+                         "This will be the input for the dynamic motion "
+                         "correction."),
+            default_options={'n_frames': 'all', 'pet_offset': 0,
+            'bin_len': 60},
+            version=1,
+            citations=[fsl_cite],
+            options=options)
+        
+        binning = pipeline.create_node(FixedBinning(), name='fixed_binning')
+        pipeline.connect_input('start_times', binning, 'start_times')
+        pipeline.connect_input('pet_start_time', binning, 'pet_start_time')
+        pipeline.connect_input('pet_duration', binning, 'pet_duration')
+        pipeline.connect_input('mats4average', binning, 'motion_mats')
+        binning.inputs.n_frames = pipeline.option('n_frames')
+        binning.inputs.pet_offset = pipeline.option('pet_offset')
+        binning.inputs.bin_len = pipeline.option('bin_len')
+        
+        pipeline.connect_output('fixed_bin_mats', binning, 'average_bin_mats')
+        
+        pipeline.assert_connected()
+        return pipeline
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                   utes=None, t2s=None, dmris=None, epis=None,
                                   umaps=None, dynamic=False,
-                                  pet_data_dir=None, pet_time_info=None,
+                                  pet_data_dir=None,
                                   motion_correction=False):
     inputs = {}
     dct = {}
@@ -541,12 +570,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         inputs['pet_data_reconstructed'] = Dataset(
             'pet_data_reconstructed', directory_format)
     if pet_data_dir is not None:
-        data_specs.append(Dataset('pet_data_dir', directory_format))
         inputs['pet_data_dir'] = Dataset('pet_data_dir', directory_format)
 
         def motion_framing_pipeline_altered(self, **kwargs):
             return self.motion_framing_pipeline_factory(
-                pet_data_dir='pet_data_dir', **kwargs)
+                motion_correction=True, **kwargs)
 
         dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
         data_specs.append(
@@ -558,27 +586,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         data_specs.append(
             DatasetSpec('timestamps', directory_format,
                         'motion_framing_pipeline_altered'))
-    elif pet_time_info is not None:
-        data_specs.append(Field('pet_start_time', str))
-        data_specs.append(Field('pet_duration', str))
-        inputs['pet_start_time'] = Field(pet_time_info[0], str)
-        inputs['pet_duration'] = Field(pet_time_info[1], str)
 
-        def motion_framing_pipeline_altered(self, **kwargs):
-            return self.motion_framing_pipeline_factory(
-                pet_start_time=pet_time_info[0], pet_duration=pet_time_info[1],
-                **kwargs)
-
-        dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
-        data_specs.append(
-            DatasetSpec('frame_start_times', text_format,
-                        'motion_framing_pipeline_altered'))
-        data_specs.append(
-            DatasetSpec('frame_vol_numbers', text_format,
-                        'motion_framing_pipeline_altered'))
-        data_specs.append(
-            DatasetSpec('timestamps', directory_format,
-                        'motion_framing_pipeline_altered'))
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
