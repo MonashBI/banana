@@ -45,7 +45,7 @@ class MRIStudy(Study):
                           "scan to. Should be brain extracted"),
                     optional=True),
         DatasetSpec('coreg_matrix', text_matrix_format,
-                    'linear_registration_pipeline'),
+                    'linear_coregistration_pipeline'),
         # DatasetSpec('dicom_dwi', dicom_format),
         # DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
@@ -56,7 +56,7 @@ class MRIStudy(Study):
                     'brain_mask_pipeline',
                     desc="Mask of the brain"),
         DatasetSpec('coreg_brain', nifti_gz_format,
-                    'linear_registration_pipeline',
+                    'linear_coregistration_pipeline',
                     desc=""),
         DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
@@ -99,11 +99,19 @@ class MRIStudy(Study):
         OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         OptionSpec('preproc_resolution', None),
         OptionSpec('info_extract_multivol', True),
-        OptionSpec('linear_reg_tool', 'flirt',
+        OptionSpec('linear_reg_method', 'flirt',
                    choices=('flirt', 'spm')),
-        OptionSpec('flirt_degrees_of_freedom', 6),
-        OptionSpec('flirt_cost_func', 'normmi'),
-        OptionSpec('flirt_qsform', False)]
+        OptionSpec('flirt_degrees_of_freedom', 6, desc=(
+            "Number of degrees of freedom used in the registration. "
+            "Default is 6 -> affine transformation.")),
+        OptionSpec('flirt_cost_func', 'normmi', desc=(
+            "Cost function used for the registration. Can be one of "
+            "'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',"
+            " 'labeldiff', 'bbr'")),
+        OptionSpec('flirt_qsform', False, desc=(
+            "Whether to use the QS form supplied in the input image "
+            "header (the image coordinates of the FOV supplied by the "
+            "scanner"))]
 
     @property
     def coreg_brain_spec(self):
@@ -118,56 +126,50 @@ class MRIStudy(Study):
             name = 'brain'
         return DatasetSpec(name, nifti_gz_format)
 
-    def linear_registration_pipeline(self, **kwargs):
-        pipeline_name = 'linear_reg'
-        tool = self.pre_option('linear_reg_tool', pipeline_name,
-                               **kwargs)
-        if tool == 'flirt':
-            inputs = [DatasetSpec('coreg_ref', nifti_gz_format),
-                      DatasetSpec('brain', nifti_gz_format)]
-            outputs = [
-                DatasetSpec('coreg_brain', nifti_gz_format),
-                DatasetSpec('coreg_matrix', text_matrix_format)]
-            pipeline = self._fsl_flirt_factory(
-                inputs, outputs, reg_type=pipeline_name,
-                **kwargs)
-        elif tool == 'spm':
-            pipeline = self._spm_coreg_pipeline(**kwargs)
+    def linear_coregistration_pipeline(self, **kwargs):
+        pipeline_name = 'linear_coreg'
+        method = self.pre_option('linear_reg_method', pipeline_name,
+                                 **kwargs)
+        if method == 'flirt':
+            pipeline = self._flirt_factory(
+                pipeline_name, 'coreg_ref', 'brain',
+                'coreg_brain', 'coreg_matrix', **kwargs)
+        elif method == 'spm':
+            raise NotImplementedError
+#             pipeline = self._spm_coreg_pipeline(**kwargs)
         else:
             assert False
         return pipeline
 
     def qform_transform_pipeline(self, **kwargs):
-        inputs = [
-            DatasetSpec('brain', nifti_gz_format),
-            DatasetSpec('coreg_ref', nifti_gz_format)]
-        outputs = [DatasetSpec('qformed', nifti_gz_format),
-                   DatasetSpec('qform_mat', text_matrix_format)]
-        return self._fsl_flirt_factory(
-            inputs, outputs, reg_type='useqform', **kwargs)
+        return self._qform_transform_factory(
+            'qform_transform', 'brain', 'coreg_ref', 'qformed',
+            'qform_mat', **kwargs)
 
-    def _fsl_flirt_factory(self, inputs, outputs, reg_type, **kwargs):
+    def _flirt_factory(self, name, to_reg, ref, reg, matrix, **kwargs):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
         Parameters
         ----------
-        degrees_of_freedom : int
-            Number of degrees of freedom used in the registration. Default is
-            6 -> affine transformation.
-        cost_func : str
-            Cost function used for the registration. Can be one of
-            'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',
-            'labeldiff', 'bbr'
-        qsform : bool
-            Whether to use the QS form supplied in the input image header (
-            the image coordinates of the FOV supplied by the scanner)
+        name : str
+            Name for the generated pipeline
+        to_reg : str
+            Name of the DatasetSpec to register
+        ref : str
+            Name of the DatasetSpec to use as a reference
+        reg : str
+            Name of the DatasetSpec to output as registered image
+        matrix : str
+            Name of the DatasetSpec to output as registration matrix
         """
 
         pipeline = self.create_pipeline(
-            name=reg_type,
-            inputs=inputs,
-            outputs=outputs,
+            name=name,
+            inputs=[DatasetSpec(to_reg, nifti_gz_format),
+                    DatasetSpec(ref, nifti_gz_format)],
+            outputs=[DatasetSpec(reg, nifti_gz_format),
+                     DatasetSpec(matrix, text_matrix_format)],
             desc="Registers a MR scan against a reference image",
             version=1,
             citations=[fsl_cite],
@@ -175,27 +177,44 @@ class MRIStudy(Study):
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
                                      requirements=[fsl5_req],
                                      wall_time=5)
-        if reg_type == 'useqform':
-            flirt.inputs.uses_qform = True
-            flirt.inputs.apply_xfm = True
-            pipeline.connect_output('qformed', flirt, 'out_file')
-            pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
-        elif reg_type == 'linear_reg':
-            # Set registration options
-            flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
-            flirt.inputs.cost = pipeline.option('flirt_cost_func')
-            flirt.inputs.cost_func = pipeline.option('flirt_cost_func')
-            flirt.inputs.output_type = 'NIFTI_GZ'
-            # Connect outputs
-            pipeline.connect_output('coreg_brain', flirt, 'out_file')
-            pipeline.connect_output('coreg_matrix', flirt,
-                                    'out_matrix_file')
-        else:
-            assert False
-        # Connect inputs
-        pipeline.connect_input('brain', flirt, 'in_file')
-        pipeline.connect_input('coreg_ref', flirt, 'reference')
 
+        # Set registration options
+        flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
+        flirt.inputs.cost = pipeline.option('flirt_cost_func')
+        flirt.inputs.cost_func = pipeline.option('flirt_cost_func')
+        flirt.inputs.output_type = 'NIFTI_GZ'
+        # Connect inputs
+        pipeline.connect_input(to_reg, flirt, 'in_file')
+        pipeline.connect_input(ref, flirt, 'reference')
+        # Connect outputs
+        pipeline.connect_output(reg, flirt, 'out_file')
+        pipeline.connect_output(matrix, flirt,
+                                'out_matrix_file')
+        return pipeline
+
+    def _qform_transform_factory(self, name, to_reg, ref, qformed,
+                                 qformed_mat, **kwargs):
+        pipeline = self.create_pipeline(
+            name=name,
+            inputs=[DatasetSpec(to_reg, nifti_gz_format),
+                    DatasetSpec(ref, nifti_gz_format)],
+            outputs=[DatasetSpec(qformed, nifti_gz_format),
+                     DatasetSpec(qformed_mat, text_matrix_format)],
+            desc="Registers a MR scan against a reference image",
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
+                                     requirements=[fsl5_req],
+                                     wall_time=5)
+        flirt.inputs.uses_qform = True
+        flirt.inputs.apply_xfm = True
+        # Connect inputs
+        pipeline.connect_input(to_reg, flirt, 'in_file')
+        pipeline.connect_input(ref, flirt, 'reference')
+        # Connect outputs
+        pipeline.connect_output(qformed, flirt, 'out_file')
+        pipeline.connect_output(qformed_mat, flirt, 'out_matrix_file')
         return pipeline
 
     def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
