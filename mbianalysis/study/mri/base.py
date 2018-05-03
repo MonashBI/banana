@@ -35,7 +35,6 @@ class MRIStudy(Study):
 
     BRAIN_MASK_NAME = 'brain_mask'
     COREGISTER_TO_ATLAS_NAME = 'coregister_to_atlas'
-    LINEAR_REG_NAME = 'linear_reg'
 
     __metaclass__ = StudyMetaClass
 
@@ -47,8 +46,6 @@ class MRIStudy(Study):
                     optional=True),
         DatasetSpec('coreg_matrix', text_matrix_format,
                     'linear_registration_pipeline'),
-        DatasetSpec('primary_nifti', nifti_gz_format,
-                    'dcm2nii_conversion_pipeline'),
         # DatasetSpec('dicom_dwi', dicom_format),
         # DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
@@ -90,7 +87,7 @@ class MRIStudy(Study):
         OptionSpec('bet_method', 'fsl_bet',
                    choices=('fsl_bet', 'optibet')),
         OptionSpec('MNI_template',
-                   os.path.join(atlas_path), 'MNI152_T1_2mm.nii.gz'),
+                   os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         OptionSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         OptionSpec('optibet_gen_report', False),
@@ -122,7 +119,9 @@ class MRIStudy(Study):
         return DatasetSpec(name, nifti_gz_format)
 
     def linear_registration_pipeline(self, **kwargs):
-        tool = self.pre_option('linear_reg_tool', self.LINEAR_REG_NAME)
+        pipeline_name = 'linear_reg'
+        tool = self.pre_option('linear_reg_tool', pipeline_name,
+                               **kwargs)
         if tool == 'flirt':
             inputs = [DatasetSpec('coreg_ref', nifti_gz_format),
                       DatasetSpec('brain', nifti_gz_format)]
@@ -130,7 +129,7 @@ class MRIStudy(Study):
                 DatasetSpec('coreg_brain', nifti_gz_format),
                 DatasetSpec('coreg_matrix', text_matrix_format)]
             pipeline = self._fsl_flirt_factory(
-                inputs, outputs, reg_type=self.LINEAR_REG_NAME,
+                inputs, outputs, reg_type=pipeline_name,
                 **kwargs)
         elif tool == 'spm':
             pipeline = self._spm_coreg_pipeline(**kwargs)
@@ -181,7 +180,7 @@ class MRIStudy(Study):
             flirt.inputs.apply_xfm = True
             pipeline.connect_output('qformed', flirt, 'out_file')
             pipeline.connect_output('qform_mat', flirt, 'out_matrix_file')
-        elif reg_type == self.LINEAR_REG_NAME:
+        elif reg_type == 'linear_reg':
             # Set registration options
             flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
             flirt.inputs.cost = pipeline.option('flirt_cost_func')
@@ -236,7 +235,8 @@ class MRIStudy(Study):
         return pipeline
 
     def brain_mask_pipeline(self, **kwargs):
-        bet_method = self.pre_option('bet_method', self.BRAIN_MASK_NAME)
+        bet_method = self.pre_option('bet_method', self.BRAIN_MASK_NAME,
+                                     **kwargs)
         if bet_method == 'fsl_bet':
             pipeline = self._fsl_bet_brain_mask_pipeline(**kwargs)
         elif bet_method == 'optibet':
@@ -292,7 +292,8 @@ class MRIStudy(Study):
 
         outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if self.pre_option('optibet_gen_report', self.BRAIN_MASK_NAME):
+        if self.pre_option('optibet_gen_report', self.BRAIN_MASK_NAME,
+                           **kwargs):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
@@ -498,7 +499,7 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('primary_nifti', nifti_gz_format)],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Dimensions swapping to ensure that all the images "
                          "have the same orientations."),
@@ -509,7 +510,7 @@ class MRIStudy(Study):
                                     name='fslswapdim',
                                     requirements=[fsl509_req])
         swap.inputs.new_dims = pipeline.option('preproc_new_dims')
-        pipeline.connect_input('primary_nifti', swap, 'in_file')
+        pipeline.connect_input('primary', swap, 'in_file')
         if pipeline.option('preproc_resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample",
                                             requirements=[mrtrix3_req])
@@ -522,6 +523,11 @@ class MRIStudy(Study):
         return pipeline
 
     def header_info_extraction_pipeline(self, **kwargs):
+        if self.input('primary').format != dicom_format:
+            raise NiAnalysisUsageError(
+                "Can only extract header info if 'primary' dataset "
+                "is provided in DICOM format ({})".format(
+                    self.input('primary').format))
         return self.header_info_extraction_pipeline_factory('primary',
                                                             **kwargs)
 

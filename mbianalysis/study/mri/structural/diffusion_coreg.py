@@ -55,7 +55,8 @@ class DWIStudy(MRIStudy):
 
     def dwi_preproc_pipeline_factory(self, method='eddy', main=True, **kwargs):
         dwi_preproc_method = self.pre_option('dwi_preproc_method',
-                                         self.DWI_PREPROC_NAME)
+                                         self.DWI_PREPROC_NAME,
+                                         **kwargs)
         if dwi_preproc_method == 'eddy':
             pipeline = self._eddy_dwipreproc_pipeline(**kwargs)
         elif dwi_preproc_method == 'topup':

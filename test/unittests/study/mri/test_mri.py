@@ -5,15 +5,28 @@ from nianalysis.dataset import DatasetMatch  # @IgnorePep8
 from mbianalysis.data_format import nifti_gz_format  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy  # @IgnorePep8
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.study import (  # @IgnorePep8
+    MultiStudy, MultiStudyMetaClass, SubStudySpec)
+
+
+class TestCoregStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
+
+    add_sub_study_specs = [
+        SubStudySpec('ref', MRIStudy),
+        SubStudySpec('tocoreg', MRIStudy,
+                     {'ref_brain': 'coreg_ref'})]
 
 
 class TestMRI(TestCase):
 
-    def test_brain_mask(self):
+    def test_coreg_and_brain_mask(self):
         study = self.create_study(
-            MRIStudy, 'mask_study', inputs=[
-                DatasetMatch('primary', nifti_gz_format, 'flair'),
-                DatasetMatch('coreg_ref', nifti_gz_format, 'mprage')])
-        coreg_brain = study.data('coreg_brain')[0]
-        self.assertDatasetEqual(coreg_brain,
-                                self.reference('coreg_brain'))
+            TestCoregStudy, 'coreg_and_mask_study', inputs=[
+                DatasetMatch('ref_primary', nifti_gz_format, 'mprage'),
+                DatasetMatch('tocoreg_primary', nifti_gz_format,
+                             'flair')])
+        coreg_brain = study.data('tocoreg_coreg_brain')[0]
+        self.assertDatasetsEqual(coreg_brain,
+                                 self.reference('coreg_brain'))
