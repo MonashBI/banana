@@ -492,14 +492,14 @@ class MRIStudy(Study):
         split.inputs.splits = [1, 1, 1]
         split.inputs.squeeze = True
         pipeline.connect(fast, 'tissue_class_files', split, 'inlist')
-        if pipeline.option('seg_img_type') == 1:
+        if img_type == 1:
             pipeline.connect_output('wm_seg', split, 'out3')
-        elif pipeline.option('seg_img_type') == 2:
+        elif img_type == 2:
             pipeline.connect_output('wm_seg', split, 'out2')
         else:
             raise NiAnalysisUsageError(
-                "'seg_img_type' option can either be 1 or 2 (not {})"
-                .format(pipeline.option('seg_img_type')))
+                "'img_type' option can either be 1 or 2 (not {})"
+                .format(img_type))
 
         return pipeline
 
@@ -632,7 +632,7 @@ class MRIStudy(Study):
             name='motion_mat_calculation',
             inputs=[DatasetSpec('coreg_matrix', text_matrix_format),
                     DatasetSpec('qform_mat', text_matrix_format)],
-            outputs=[DatasetSpec('motion_mats', directory_format)],
+            outputs=[DatasetSpec('motion_mats', motion_mats_format)],
             desc=("Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],

@@ -23,7 +23,7 @@ class EPIStudy(MRIStudy):
                     'motion_alignment_pipeline'),
         DatasetSpec('moco_mat', directory_format,
                     'motion_alignment_pipeline'),
-        DatasetSpec('moco_par', text_format,
+        DatasetSpec('moco_par', par_format,
                     'motion_alignment_pipeline')]
 
     add_option_specs = [
