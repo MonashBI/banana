@@ -1,6 +1,6 @@
 from nianalysis.dataset import DatasetSpec, FieldSpec, Field
 from mbianalysis.data_format import (
-    nifti_gz_format, text_matrix_format, directory_format, text_format,
+    mrconvert_nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format, dicom_format, motion_mats_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
@@ -50,7 +50,7 @@ class MotionReferenceT1Study(T1Study):
     __metaclass__ = StudyMetaClass
 
     add_data_specs = [
-        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
+        DatasetSpec('wm_seg', mrconvert_nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', motion_mats_format,
                     'header_info_extraction_pipeline'),
         FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
@@ -64,7 +64,7 @@ class MotionReferenceT1Study(T1Study):
         FieldSpec('pe_angle', str,
                   pipeline_name='header_info_extraction_pipeline'),
         DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format, 'basic_preproc_pipeline')]
+        DatasetSpec('preproc', mrconvert_nifti_gz_format, 'basic_preproc_pipeline')]
 
     add_option_specs = [
         OptionSpec('preproc_resolution', [1])]
@@ -85,7 +85,7 @@ class MotionReferenceT2Study(T2Study):
     __metaclass__ = StudyMetaClass
 
     add_data_specs = [
-        DatasetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
+        DatasetSpec('wm_seg', mrconvert_nifti_gz_format, 'segmentation_pipeline'),
         DatasetSpec('motion_mats', motion_mats_format,
                     'header_info_extraction_pipeline'),
         FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
@@ -100,7 +100,7 @@ class MotionReferenceT2Study(T2Study):
                   pipeline_name='header_info_extraction_pipeline'),
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', nifti_gz_format,
+        DatasetSpec('preproc', mrconvert_nifti_gz_format,
                     'basic_preproc_pipeline')]
 
     add_option_specs = [
@@ -170,7 +170,7 @@ class MotionDetectionMixin(MultiStudy):
                             template_path, 'moco_template.IMA'))]
 
     def mean_displacement_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
+        inputs = [DatasetSpec('ref_brain', mrconvert_nifti_gz_format)]
         sub_study_names = []
         for sub_study_spec in self.sub_study_specs():
             try:
@@ -375,7 +375,7 @@ class MotionDetectionMixin(MultiStudy):
                   DatasetSpec(ute_qform_mat, text_matrix_format)]
         outputs = [DatasetSpec('frame2reference_mats', directory_format)]
         if umap:
-            inputs.append(DatasetSpec(umap, nifti_gz_format))
+            inputs.append(DatasetSpec(umap, mrconvert_nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
 
         pipeline = self.create_pipeline(
@@ -455,7 +455,7 @@ class MotionDetectionMixin(MultiStudy):
         if timestamps:
             inputs.append(DatasetSpec('timestamps', directory_format))
         if ute is not None:
-            inputs.append(DatasetSpec(ute, nifti_gz_format))
+            inputs.append(DatasetSpec(ute, mrconvert_nifti_gz_format))
 
         pipeline = self.create_pipeline(
             name=name,
