@@ -23,6 +23,9 @@ class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
     qform_mat = File(exists=True, desc='Qform matrix', mandatory=True)
     align_mats = Directory(exists=True, desc='Directory with intra-scan '
                            'alignment matrices', default=None)
+    reference = traits.Bool(desc='If True, the pipeline will save just an '
+                            'identity matrix (motion mats for reference scan)',
+                            default=False)
 
 
 class MotionMatCalculationOutputSpec(TraitedSpec):
@@ -41,23 +44,31 @@ class MotionMatCalculation(BaseInterface):
         reg_mat = np.loadtxt(self.inputs.reg_mat)
         qform_mat = np.loadtxt(self.inputs.qform_mat)
         _, out_name, _ = split_filename(self.inputs.reg_mat)
-        if self.inputs.align_mats:
-            list_mats = sorted(glob.glob(self.inputs.align_mats+'/MAT*'))
-            if not list_mats:
-                list_mats = sorted(glob.glob(self.inputs.align_mats+'/*.mat'))
-                if not list_mats:
-                    raise Exception(
-                        'Folder {} is empty!'.format(self.inputs.align_mats))
-            for mat in list_mats:
-                m = np.loadtxt(mat)
-                concat = np.dot(reg_mat, m)
-                self.gen_motion_mat(concat, qform_mat, mat.split('.')[0])
-            mat_path, _, _ = split_filename(mat)
-            mm = glob.glob(mat_path+'/*motion_mat*.mat')
-        else:
-            concat = reg_mat[:]
-            self.gen_motion_mat(concat, qform_mat, out_name)
+        reference = self.inputs.reference
+        if reference:
+            np.savetxt('reference_motion_mat.mat', np.eye(4))
+            np.savetxt('reference_motion_mat_inv.mat', np.eye(4))
             mm = glob.glob('*motion_mat*.mat')
+        else:
+            if self.inputs.align_mats:
+                list_mats = sorted(glob.glob(self.inputs.align_mats+'/MAT*'))
+                if not list_mats:
+                    list_mats = sorted(glob.glob(
+                        self.inputs.align_mats+'/*.mat'))
+                    if not list_mats:
+                        raise Exception(
+                            'Folder {} is empty!'.format(
+                                self.inputs.align_mats))
+                for mat in list_mats:
+                    m = np.loadtxt(mat)
+                    concat = np.dot(reg_mat, m)
+                    self.gen_motion_mat(concat, qform_mat, mat.split('.')[0])
+                mat_path, _, _ = split_filename(mat)
+                mm = glob.glob(mat_path+'/*motion_mat*.mat')
+            else:
+                concat = reg_mat[:]
+                self.gen_motion_mat(concat, qform_mat, out_name)
+                mm = glob.glob('*motion_mat*.mat')
         os.mkdir(out_name)
 
         for f in mm:

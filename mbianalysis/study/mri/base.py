@@ -7,7 +7,7 @@ from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from mbianalysis.data_format import (nifti_gz_format, dicom_format,
-                                     text_format, directory_format, gif_format)
+                                     text_format, gif_format)
 from mbianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
@@ -254,25 +254,25 @@ class MRIStudy(Study):
         pipeline.connect_output('t2_coreg_t1', coreg, 'coregistered_source')
         return pipeline
 
-    def brain_mask_pipeline(self, **kwargs):
+    def brain_mask_pipeline(self, in_file='preproc', **kwargs):
         bet_method = self.pre_option('bet_method', self.BRAIN_MASK_NAME,
                                      **kwargs)
         if bet_method == 'fsl_bet':
-            pipeline = self._fsl_bet_brain_mask_pipeline(**kwargs)
+            pipeline = self._fsl_bet_brain_mask_pipeline(in_file, **kwargs)
         elif bet_method == 'optibet':
-            pipeline = self._optiBET_brain_mask_pipeline(**kwargs)
+            pipeline = self._optiBET_brain_mask_pipeline(in_file, **kwargs)
         else:
             raise NiAnalysisError("Unrecognised brain extraction tool '{}'"
                                   .format(bet_method))
         return pipeline
 
-    def _fsl_bet_brain_mask_pipeline(self, **kwargs):
+    def _fsl_bet_brain_mask_pipeline(self, in_file, **kwargs):
         """
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
-            inputs=[DatasetSpec('preproc', nifti_gz_format)],
+            inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=[DatasetSpec('brain', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
             desc="Generate brain mask from mr_scan",
@@ -292,12 +292,12 @@ class MRIStudy(Study):
         bet.inputs.vertical_gradient = pipeline.option(
             'bet_g_threshold')
         # Connect inputs/outputs
-        pipeline.connect_input('preproc', bet, 'in_file')
+        pipeline.connect_input(in_file, bet, 'in_file')
         pipeline.connect_output('brain', bet, 'out_file')
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         return pipeline
 
-    def _optiBET_brain_mask_pipeline(self, **kwargs):
+    def _optiBET_brain_mask_pipeline(self, in_file, **kwargs):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
@@ -317,7 +317,7 @@ class MRIStudy(Study):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
-            inputs=[DatasetSpec('preproc', nifti_gz_format)],
+            inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
             desc=("Modified implementation of optiBET.sh"),
             version=1,
@@ -329,7 +329,7 @@ class MRIStudy(Study):
                        out_prefix='T12MNI', num_threads=6), name='T1_reg',
             wall_time=25, requirements=[ants2_req])
         mni_reg.inputs.ref_file = pipeline.option('MNI_template')
-        pipeline.connect_input('preproc', mni_reg, 'input_file')
+        pipeline.connect_input(in_file, mni_reg, 'input_file')
 
         merge_trans = pipeline.create_node(Merge(2), name='merge_transforms',
                                            wall_time=1)
@@ -350,7 +350,7 @@ class MRIStudy(Study):
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
         pipeline.connect(trans_flags, 'out', apply_trans,
                          'invert_transform_flags')
-        pipeline.connect_input('preproc', apply_trans, 'reference_image')
+        pipeline.connect_input(in_file, apply_trans, 'reference_image')
 
         maths1 = pipeline.create_node(
             fsl.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
@@ -359,14 +359,14 @@ class MRIStudy(Study):
         maths2 = pipeline.create_node(
             fsl.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
             name='mask', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect_input('preproc', maths2, 'in_file')
+        pipeline.connect_input(in_file, maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
         if pipeline.option('optibet_gen_report'):
             slices = pipeline.create_node(
                 FSLSlices(), name='slices', wall_time=5,
                 requirements=[fsl5_req])
             slices.inputs.outname = 'optiBET_report'
-            pipeline.connect_input('preproc', slices, 'im1')
+            pipeline.connect_input(in_file, slices, 'im1')
             pipeline.connect(maths2, 'out_file', slices, 'im2')
             pipeline.connect_output('optiBET_report', slices, 'report')
 
@@ -403,17 +403,18 @@ class MRIStudy(Study):
             outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
                      DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
-                         "e.g. MNI-space"),
+                  "e.g. MNI-space"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
         # Get the reference atlas from FSL directory
         ref_atlas = get_atlas_path(pipeline.option('fnirt_atlas'), 'image',
                                    resolution=pipeline.option('resolution'))
-        ref_mask = get_atlas_path(pipeline.option('fnirt_atlas'), 'mask_dilated',
-                                  resolution=pipeline.option('resolution'))
+        ref_mask = get_atlas_path(
+            pipeline.option('fnirt_atlas'), 'mask_dilated',
+            resolution=pipeline.option('resolution'))
         ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
-                                    resolution=pipeline.option('resolution'))
+                                   resolution=pipeline.option('resolution'))
         # Basic reorientation to standard MNI space
         reorient = pipeline.create_node(Reorient2Std(), name='reorient',
                                         requirements=[fsl5_req])
@@ -461,7 +462,7 @@ class MRIStudy(Study):
         pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
         # Set registration options
-        # TODO: Need to work out which options to use
+        # TOD: Need to work out which options to use
         # Connect inputs
         pipeline.connect_input('preproc', reorient, 'in_file')
         pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
@@ -522,7 +523,7 @@ class MRIStudy(Study):
             inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Dimensions swapping to ensure that all the images "
-                         "have the same orientations."),
+                  "have the same orientations."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -569,7 +570,7 @@ class MRIStudy(Study):
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=output_files,
             desc=("Pipeline to extract the most important scan "
-                         "information from the image header"),
+                  "information from the image header"),
             version=1,
             citations=[],
             **kwargs)
@@ -626,12 +627,16 @@ class MRIStudy(Study):
 
         return pipeline
 
-    def motion_mat_pipeline(self, **kwargs):
+    def motion_mat_pipeline(self, ref=False, **kwargs):
 
+        if ref:
+            inputs = []
+        else:
+            inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
+                      DatasetSpec('qform_mat', text_matrix_format)]
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
-            inputs=[DatasetSpec('coreg_matrix', text_matrix_format),
-                    DatasetSpec('qform_mat', text_matrix_format)],
+            inputs=inputs,
             outputs=[DatasetSpec('motion_mats', motion_mats_format)],
             desc=("Motion matrices calculation"),
             version=1,
@@ -640,7 +645,10 @@ class MRIStudy(Study):
 
         mm = pipeline.create_node(
             MotionMatCalculation(), name='motion_mats')
-        pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
-        pipeline.connect_input('qform_mat', mm, 'qform_mat')
+        if ref:
+            mm.inputs.reference = True
+        else:
+            pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
+            pipeline.connect_input('qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline

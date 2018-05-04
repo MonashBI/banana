@@ -15,7 +15,7 @@ from .structural.t1 import T1Study
 from .structural.t2 import T2Study
 from .epi import EPIStudy
 from nipype.interfaces.utility import Merge
-# from .structural.diffusion_coreg import (
+from .structural.diffusion_coreg import DWIStudy
 #     CoregisteredDiffusionStudy,
 #     CoregisteredDiffusionReferenceOppositeStudy,
 #     CoregisteredDiffusionReferenceStudy)
@@ -27,6 +27,7 @@ import logging
 from nianalysis.interfaces.utils import CopyToDir
 import os
 from nianalysis.option import OptionSpec
+import numpy as np
 # from mbianalysis.study.mri.structural.diffusion_coreg import DWIStudy
 
 
@@ -527,9 +528,12 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
 
-    dct['ref_header_info_extraction_pipeline'] = MultiStudy.translate(
-        'ref', 'header_info_extraction_pipeline_factory',
-        dcm_in_name='primary', ref=True, multivol=False)
+#     dct['ref_header_info_extraction_pipeline'] = MultiStudy.translate(
+#         'ref', 'header_info_extraction_pipeline_factory',
+#         dcm_in_name='primary', ref=True, multivol=False)
+
+    dct['ref_motion_mats_pipeline'] = MultiStudy.translate(
+        'ref', 'motion_mats_pipeline', ref=True)
 
 #     if not utes:
 #         logger.info('UTE not provided. The matrices that realign the PET image'
@@ -659,43 +663,50 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
             for i, epi_scan in enumerate(epis))
         run_pipeline = True
-#     if dmris:
-#         dmris_main = [x for x in dmris if x[-1] == '0']
-#         dmris_ref = [x for x in dmris if x[-1] == '1']
-#         dmris_opposite = [x for x in dmris if x[-1] == '-1']
-#         if ((dmris_ref and (not dmris_main or not dmris_opposite)) or
-#                 (dmris_opposite and (not dmris_main or not dmris_ref)) or
-#                 (dmris_ref and dmris_main and not dmris_opposite)):
-#             scan = [x for x in dmris_opposite+dmris_ref]
-#             print ('Only {} b0 image(s) with the same phase encoding direction'
-#                    'provided. No distortion correction can be performed. '
-#                    'This image(s) will be treated as T2 weighted '
-#                    'image(s). If this is not correct please run the motion '
-#                    'detection again without it (them) as input.'
-#                    .format(len(scan)))
-#             study_specs.append(
-#                 SubStudySpec('t2_{}'.format(i), CoregisteredT2Study,
-#                              ref_spec) for i in range(len(t2s),
-#                                                       len(t2s)+len(scan)))
-#             inputs.append(
-#                 DatasetMatch('t2_{}_t2'.format(i), dicom_format, b0_scan)
-#                 for i, b0_scan in enumerate(scan, start=len(t2s)))
-#         if dmris_main and not dmris_opposite:
-#             print ('No opposite phase encoding direction b0 provided. DWI '
-#                    'motion correction will be performed without distortion '
-#                    'correction. THIS IS SUB-OPTIMAL!')
-#             study_specs.extend(
-#                 [SubStudySpec('dwi_{}_main'.format(i),
-#                               DWIStudy,
-#                               ref_spec) for i in range(len(dmris_main))])
-#             inputs.extend(
-#                 DatasetMatch('dwi_{}_main_dwi_in'.format(i),
-#                              dicom_format, dmris_main_scan[0])
-#                 for i, dmris_main_scan in enumerate(dmris_main))
-# 
-#             def dwi_preproc_pipeline_altered(self, **kwargs):
-#                 return self.dwi_preproc_pipeline(distortion_correction=False)
-#             dct['dwi_preproc_pipeline'] = dwi_preproc_pipeline_altered
+    if dmris:
+        dmris_main = [x for x in dmris if x[-1] == '0']
+        dmris_ref = [x for x in dmris if x[-1] == '1']
+        dmris_opposite = [x for x in dmris if x[-1] == '-1']
+        if ((dmris_ref and (not dmris_main or not dmris_opposite)) or
+                (dmris_opposite and (not dmris_main or not dmris_ref)) or
+                (dmris_ref and dmris_main and not dmris_opposite)):
+            scans = [x for x in dmris_opposite+dmris_ref]
+            print ('Only {} b0 image(s) with the same phase encoding direction'
+                   ' provided. No distortion correction can be performed. '
+                   'This image(s) will be treated as T2 weighted '
+                   'image(s). If this is not correct please run the motion '
+                   'detection again without it (them) as input.'
+                   .format(len(scans)))
+            study_specs.append(
+                SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
+                for i in range(len(t2s), len(t2s)+len(scans)))
+            inputs.append(
+                DatasetMatch('t2_{}_primary'.format(i), dicom_format, b0_scan)
+                for i, b0_scan in enumerate(scans, start=len(t2s)))
+        if dmris_main and not dmris_opposite:
+            print ('No opposite phase encoding direction b0 provided. DWI '
+                   'motion correction will be performed without distortion '
+                   'correction. THIS IS SUB-OPTIMAL!')
+            study_specs.extend(
+                [SubStudySpec('dwi_{}_main'.format(i), DWIStudy, ref_spec)
+                 for i in range(len(dmris_main))])
+            inputs.extend(
+                DatasetMatch('dwi_{}_main_dwi_main'.format(i), dicom_format,
+                             dmris_main_scan[0])
+                for i, dmris_main_scan in enumerate(dmris_main))
+
+            def dwi_main_preproc_pipeline_altered(self, **kwargs):
+                return self.dwi_main_preproc_pipeline(
+                    distortion_correction=False)
+            dct['dwi_main_preproc_pipeline'] = (
+                dwi_main_preproc_pipeline_altered)
+        if not dmris_main and (dmris_ref and dmris_opposite):
+            if len(dmris_opposite) != len(dmris_ref):
+                print ('Provided a different number of b0 images with opposite'
+                       'phase encoding direction. Pipeline will discard {} of '
+                       'them to have the same number'
+                       .format(np.abs(len(dmris_opposite) != len(dmris_ref))))
+            max_index = np.max(len(dmris_opposite), len(dmris_ref))
 #         if ((dmris_main and dmris_opposite and not dmris_ref) and
 #                 (len(dmris_main) == len(dmris_opposite))):
 #             study_specs.extend(

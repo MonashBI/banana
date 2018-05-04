@@ -6,6 +6,7 @@ ref = 'reference_dicom'
 t1s = ['t1_1_dicom']
 t2s = ['t2_1_dicom']
 epis = ['epi_dicom']
+dmris = [['b0_plus', '1'], ['dwi_main', '0']]
 
 class A(object):
     pass
