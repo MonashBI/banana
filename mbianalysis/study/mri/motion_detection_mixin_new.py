@@ -481,14 +481,14 @@ class MotionDetectionMixin(MultiStudy):
 
     def gather_outputs_pipeline(self, **kwargs):
         return self.gather_outputs_factory(
-            'gather_md_outputs', pet_corr_fac=False, aligned_umaps=False,
-            timestamps=False, align_mats=False, **kwargs)
+            'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
+            timestamps=True, align_mats=False, **kwargs)
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
-                                  utes=None, t2s=None, dmris=None, epis=None,
-                                  umaps=None, dynamic=False,
-                                  pet_data_dir=None, pet_time_info=None):
+                                  t2s=None, dmris=None, epis=None,
+                                  umaps=None, dynamic=False, umap_ref=None,
+                                  pet_data_dir=None):
 
     inputs = []
     dct = {}
@@ -528,113 +528,14 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
 
-#     dct['ref_header_info_extraction_pipeline'] = MultiStudy.translate(
-#         'ref', 'header_info_extraction_pipeline_factory',
-#         dcm_in_name='primary', ref=True, multivol=False)
-
     dct['ref_motion_mats_pipeline'] = MultiStudy.translate(
         'ref', 'motion_mats_pipeline', ref=True)
 
-#     if not utes:
-#         logger.info('UTE not provided. The matrices that realign the PET image'
-#                     ' in each detected frame to the reference cannot be '
-#                     'generated')
-# 
-#         def gather_md_outputs_pipeline_altered(self, **kwargs):
-#             return self.gather_outputs_factory(
-#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
-#                 timestamps=True, align_mats=False)
-# 
-#         dct['gather_outputs_pipeline'] = (
-#             gather_md_outputs_pipeline_altered)
-# 
-#     elif utes and not umaps:
-#         logger.info('Umap not provided. The umap realignment will not be '
-#                     'performed. Matrices that realign each detected frame to '
-#                     'the reference will be calculated.')
-# 
-#         study_specs.extend(
-#                 [SubStudySpec('ute_{}'.format(i), CoregisteredUTEStudy,
-#                               ref_spec) for i in range(len(utes))])
-#         inputs.extend(DatasetMatch('ute_{}_ute'.format(i), dicom_format,
-#                                    ute_scan)
-#                       for i, ute_scan in enumerate(utes))
-# 
-#         def frame2ref_alignment_pipeline_altered(self, **kwargs):
-#             return self.frame2ref_alignment_pipeline_factory(
-#                 'frame2ref_alignment', 'average_mats',
-#                 'ute_{}_ute_reg_mat'.format(len(utes)-1),
-#                 'ute_{}_ute_qform_mat'.format(len(utes)-1), umap=None,
-#                 pct=False, fixed_binning=False, **kwargs)
-# 
-#         def gather_md_outputs_pipeline_altered(self, **kwargs):
-#             return self.gather_outputs_factory(
-#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
-#                 timestamps=True, align_mats=True)
-# 
-#         dct['gather_outputs_pipeline'] = (
-#             gather_md_outputs_pipeline_altered)
-#         dct['frame2ref_alignment_pipeline'] = (
-#             frame2ref_alignment_pipeline_altered)
-#         data_specs.append(DatasetSpec(
-#             'frame2reference_mats', directory_format,
-#             frame2ref_alignment_pipeline_altered))
-#         run_pipeline = True
-# 
-#     elif utes and umaps:
-#         logger.info('Umap will be realigned to match the head position in '
-#                     'each frame. Matrices that realign each frame to the '
-#                     'reference will be calculated.')
-#         if len(umaps) > 1:
-#             raise Exception('Please provide just one umap.')
-#         ute_spec = ref_spec.copy()
-#         ute_spec.update({'umaps_align2ref': 'umap_aligned_niftis',
-#                          'umaps_align2ref_dicom': 'umap_aligned_dicoms'})
-#         study_specs.extend(
-#                 [SubStudySpec('ute_{}'.format(i), CoregisteredUTEStudy,
-#                               ute_spec) for i in range(len(utes))])
-#         inputs.extend(DatasetMatch('ute_{}_ute'.format(i), dicom_format,
-#                                    ute_scan)
-#                       for i, ute_scan in enumerate(utes))
-# 
-#         def frame2ref_alignment_pipeline_altered(self, **kwargs):
-#             return self.frame2ref_alignment_pipeline_factory(
-#                 'frame2ref_alignment', 'average_mats',
-#                 'ute_{}_ute_reg_mat'.format(len(utes)-1),
-#                 'ute_{}_ute_qform_mat'.format(len(utes)-1),
-#                 umap='ute_{}_umap_nifti'.format(len(utes)-1),
-#                 pct=False, fixed_binning=False, **kwargs)
-# 
-#         def gather_md_outputs_pipeline_altered(self, **kwargs):
-#             return self.gather_outputs_factory(
-#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
-#                 timestamps=True, align_mats=True,
-#                 ute='ute_{}_ute_preproc'.format(len(utes)-1))
-# 
-#         dct['gather_outputs_pipeline'] = (
-#             gather_md_outputs_pipeline_altered)
-#         dct['frame2ref_alignment_pipeline'] = (
-#             frame2ref_alignment_pipeline_altered)
-#         dct['nii2dcm_conversion_pipeline'] = MultiStudy.translate(
-#             'ute_{}'.format(len(utes)-1), CoregisteredUTEStudy.
-#             nifti2dcm_conversion_pipeline)
-#         inputs.append(DatasetMatch('ute_{}_umap'.format(len(utes)-1),
-#                                    dicom_format, umaps[0]))
-#         data_specs.append(
-#             DatasetSpec('frame2reference_mats', directory_format,
-#                         'frame2ref_alignment_pipeline_altered'))
-#         data_specs.append(
-#             DatasetSpec('umaps_align2ref', directory_format,
-#                         'frame2ref_alignment_pipeline_altered'))
-#         data_specs.append(
-#             DatasetSpec('umaps_align2ref_dicom', directory_format,
-#                         dct['nii2dcm_conversion_pipeline']))
-#         run_pipeline = True
-# 
-#     elif not utes and umaps:
-#         logger.warning('Umap provided without corresponding UTE image. '
-#                        'Realignment cannot be performed without UTE. Umap will'
-#                        'be ignored.')
+    if not umap_ref:
+        logger.info('Umap reference not provided. The matrices that realign the PET'
+                    ' image in each detected frame to the reference cannot be '
+                    'generated. See documentation for further information.')
+    
     if t1s:
         study_specs.extend(
                 [SubStudySpec('t1_{}'.format(i), T1Study,
@@ -642,6 +543,12 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         inputs.extend(
             DatasetMatch('t1_{}_primary'.format(i), dicom_format, t1_scan)
             for i, t1_scan in enumerate(t1s))
+        umap_ref_reg_mat = ['t1_{}_reg_mat'.format(i) for i, t1_scan in enumerate(t1s)
+                            if t1_scan == umap_ref]
+        umap_ref_qform_mat = ['t1_{}_qform_mat'.format(i) for i, t1_scan in enumerate(t1s)
+                              if t1_scan == umap_ref]
+        umap_ref_preproc = ['t1_{}_preproc'.format(i) for i, t1_scan in enumerate(t1s)
+                            if t1_scan == umap_ref]
         run_pipeline = True
 
     if t2s:
@@ -651,14 +558,73 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         inputs.extend(DatasetMatch('t2_{}_primary'.format(i), dicom_format,
                                    t2_scan)
                       for i, t2_scan in enumerate(t2s))
+        umap_ref_reg_mat = ['t2_{}_reg_mat'.format(i) for i, t2_scan in enumerate(t2s)
+                            if t2_scan == umap_ref]
+        umap_ref_qform_mat = ['t2_{}_qform_mat'.format(i) for i, t2_scan in enumerate(t2s)
+                              if t2_scan == umap_ref]
+        umap_ref_preproc = ['t2_{}_preproc'.format(i) for i, t2_scan in enumerate(t2s)
+                            if t2_scan == umap_ref]
         run_pipeline = True
+    
+    if umap_ref and not umaps:
+        logger.info('Umap not provided. The umap realignment will not be '
+                    'performed. Matrices that realign each detected frame to '
+                    'the reference will be calculated.')
+ 
+        def frame2ref_alignment_pipeline_altered(self, **kwargs):
+            return self.frame2ref_alignment_pipeline_factory(
+                'frame2ref_alignment', 'average_mats',
+                umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
+                pct=False, fixed_binning=False, **kwargs)
+ 
+        def gather_md_outputs_pipeline_altered(self, **kwargs):
+            return self.gather_outputs_factory(
+                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
+                timestamps=True, align_mats=True, ute=umap_ref_preproc)
+ 
+    elif umap_ref and umaps:
+        logger.info('Umap will be realigned to match the head position in '
+                    'each frame. Matrices that realign each frame to the '
+                    'reference will be calculated.')
+        if len(umaps) > 1:
+            logger.info('More than one umap provided. Only the first one will be'
+                        'used.')
+            umaps = umaps[0]
+
+        umap_spec = {'umaps_align2ref': 'umap_aligned_niftis',
+                     'umaps_align2ref_dicom': 'umap_aligned_dicoms'}
+        study_specs.append(SubStudySpec('umap', MRIStudy, umap_spec))
+        inputs.append(DatasetMatch('umap_umap', dicom_format, umaps))
+ 
+        def frame2ref_alignment_pipeline_altered(self, **kwargs):
+            return self.frame2ref_alignment_pipeline_factory(
+                'frame2ref_alignment', 'average_mats',
+                umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
+                pct=False, fixed_binning=False, **kwargs)
+ 
+        def gather_md_outputs_pipeline_altered(self, **kwargs):
+            return self.gather_outputs_factory(
+                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
+                timestamps=True, align_mats=True,
+                ute=umap_ref_preproc)
+
+        dct['umap_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
+            'umap', 'nifti2dcm_conversion_pipeline')
+
+        run_pipeline = True
+ 
+    elif not umap_ref and umaps:
+        logger.warning('Umap provided without corresponding reference image. '
+                       'Realignment cannot be performed without UTE. Umap will'
+                       'be ignored.')
+
     if epis:
         epi_refspec = ref_spec.copy()
         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                             'ref_preproc': 'coreg_ref_preproc'})
-        study_specs.extend([SubStudySpec('epi_{}'.format(i), EPIStudy,
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), EPIStudy,
                             epi_refspec)
-                            for i in range(len(epis))])
+                            for i in range(len(epis)))
         inputs.extend(
             DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
             for i, epi_scan in enumerate(epis))
@@ -669,9 +635,10 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         dmris_ref = [x for x in dmris if x[-1] == '1']
         dmris_opposite = [x for x in dmris if x[-1] == '-1']
         if dmris_main and not dmris_opposite:
-            print ('No opposite phase encoding direction b0 provided. DWI '
-                   'motion correction will be performed without distortion '
-                   'correction. THIS IS SUB-OPTIMAL!')
+            logger.warning(
+                'No opposite phase encoding direction b0 provided. DWI '
+                'motion correction will be performed without distortion '
+                'correction. THIS IS SUB-OPTIMAL!')
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
                  for i in range(len(dmris_main)))
@@ -746,10 +713,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                 dmris_opposite[:1]+dmris_ref[:1])
         unused_dwi = [x for x in dmris if x not in used_dwi]
         if unused_dwi:
-            print ('The following scans:\n{}\nwere not assigned during the DWI motion '
-                   'detection initialization (probably a different number of main '
-                   'DWI scans and b0 images was provided). They will be processed'
-                   ' os "other" scans.'.format('\n'.join(s[0] for s in unused_dwi)))
+            logger.info(
+                'The following scans:\n{}\nwere not assigned during the DWI motion '
+                'detection initialization (probably a different number of main '
+                'DWI scans and b0 images was provided). They will be processed'
+                ' os "other" scans.'.format('\n'.join(s[0] for s in unused_dwi)))
         study_specs.extend(
             SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
             for i in range(len(t2s), len(t2s)+len(unused_dwi)))

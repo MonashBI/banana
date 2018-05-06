@@ -3,7 +3,7 @@ from nipype.interfaces.spm.preprocess import Coregister
 from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
 from mbianalysis.data_format import nifti_format, motion_mats_format,\
-    mrconvert_nifti_gz_format
+    mrconvert_nifti_gz_format, directory_format
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
@@ -28,6 +28,9 @@ from nianalysis.interfaces.converters import Dcm2niix
 from nianalysis.option import OptionSpec
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
+from nianalysis.interfaces.converters import Nii2Dicom
+from nianalysis.interfaces.utils import (
+    CopyToDir, ListDir, dicom_fname_sort_key)
 
 
 atlas_path = os.path.abspath(
@@ -652,4 +655,39 @@ class MRIStudy(Study):
             pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
             pipeline.connect_input('qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        return pipeline
+
+    def nifti2dcm_conversion_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='conversion_to_dicom',
+            inputs=[DatasetSpec('umap_aligned_niftis', directory_format),
+                    DatasetSpec('umap', dicom_format)],
+            outputs=[DatasetSpec('umap_aligned_dicoms', directory_format)],
+            desc=(
+                "Conversing aligned umap from nifti to dicom format - "
+                "parallel implementation"),
+            version=1,
+            citations=(),
+            **kwargs)
+
+        list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
+        nii2dicom = pipeline.create_map_node(
+            Nii2Dicom(), name='nii2dicom',
+            iterfield=['in_file'], wall_time=20)
+#         nii2dicom.inputs.extension = 'Frame'
+        list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
+        list_dicoms.inputs.sort_key = dicom_fname_sort_key
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        copy2dir.inputs.extension = 'Frame'
+        # Connect nodes
+        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
+        pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
+        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
+        # Connect inputs
+        pipeline.connect_input('umap_aligned_niftis', list_niftis, 'directory')
+        pipeline.connect_input('umap', list_dicoms, 'directory')
+        # Connect outputs
+        pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
+
         return pipeline
