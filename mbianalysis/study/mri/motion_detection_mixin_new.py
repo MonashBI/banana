@@ -668,31 +668,13 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         dmris_main = [x for x in dmris if x[-1] == '0']
         dmris_ref = [x for x in dmris if x[-1] == '1']
         dmris_opposite = [x for x in dmris if x[-1] == '-1']
-#         if ((dmris_ref and (not dmris_main or not dmris_opposite)) or
-#                 (dmris_opposite and (not dmris_main or not dmris_ref)) or
-#                 (dmris_ref and dmris_main and not dmris_opposite)):
-        if ((dmris_ref and not dmris_opposite and not dmris_main) or
-                (dmris_opposite and not dmris_main and not dmris_ref)):
-            scans = [x for x in dmris_opposite+dmris_ref]
-            print ('Only {} b0 image(s) with the same phase encoding direction'
-                   ' provided. No distortion correction can be performed. '
-                   'This image(s) will be treated as T2 weighted '
-                   'image(s). If this is not correct please run the motion '
-                   'detection again without it (them) as input.'
-                   .format(len(scans)))
-            study_specs.extend(
-                SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
-                for i in range(len(t2s), len(t2s)+len(scans)))
-            inputs.extend(
-                DatasetMatch('t2_{}_primary'.format(i), dicom_format, b0_scan[0])
-                for i, b0_scan in enumerate(scans, start=len(t2s)))
         if dmris_main and not dmris_opposite:
             print ('No opposite phase encoding direction b0 provided. DWI '
                    'motion correction will be performed without distortion '
                    'correction. THIS IS SUB-OPTIMAL!')
             study_specs.extend(
-                [SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(len(dmris_main))])
+                SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
+                 for i in range(len(dmris_main)))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
                              dmris_main_scan[0])
@@ -705,15 +687,10 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 dwi_main_preproc_pipeline_altered)
             used_dwi.extend(scan for scan in dmris_main)
         if not dmris_main and (dmris_ref and dmris_opposite):
-            if len(dmris_opposite) != len(dmris_ref):
-                print ('Provided a different number of b0 images with opposite'
-                       'phase encoding direction. Pipeline will discard {} of '
-                       'them to have the same number'
-                       .format(np.abs(len(dmris_opposite) != len(dmris_ref))))
             min_index = min(len(dmris_opposite), len(dmris_ref))
             study_specs.extend(
-                [SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(min_index)])
+                SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
+                 for i in range(min_index))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
                              dmris_ref[i][0]) for i in range(min_index))
@@ -724,8 +701,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                             dmris_opposite[:min_index])
         if dmris_main and dmris_opposite and not dmris_ref:
             study_specs.extend(
-                [SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(len(dmris_main))])
+                SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
+                 for i in range(len(dmris_main)))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
@@ -739,43 +716,46 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 inputs.extend(
                     DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
                                  dmris_opposite[0][0]) for i in range(len(dmris_main)))
-                used_dwi.extend(scan for scan in dmris_main+dmris_opposite[0])
+                used_dwi.extend(scan for scan in dmris_main+dmris_opposite[:1])
             
         if dmris_main and dmris_opposite and dmris_ref:
             study_specs.extend(
-                [SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(len(dmris_main))])
+                SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
+                 for i in range(len(dmris_main)))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
-            if (len(dmris_main) < len(dmris_opposite) or
-                    len(dmris_main) < len(dmris_ref)):
-                print ('Provided {0} main DWI and {1} b0 images. In this case {0}'
-                       ' dwi motion detection pipeline will be created always using '
-                       'the first b0 image provided to perform distortion correction.'
-                       ' The remaining b0(s) will be treated as T2 weighted images'
-                       .format(len(dmris_main), len(dmris_opposite+dmris_ref)))
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
-                                 dmris_opposite[0][0]) for i in range(len(dmris_main)))
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
-                                 dmris_ref[0][0]) for i in range(len(dmris_main)))
-                unused_b0 = [x for x in dmris_opposite[len(dmris_main):]+
-                             dmris_ref[len(dmris_main):]]
-                study_specs.extend(
-                    SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
-                    for i in range(len(t2s), len(t2s)+len(unused_b0)))
-                inputs.extend(
-                    DatasetMatch('t2_{}_primary'.format(i), dicom_format, b0_scan[0])
-                    for i, b0_scan in enumerate(unused_b0, start=len(t2s)))
-            elif len(dmris_main) == len(dmris_opposite) == len(dmris_ref):
+            if (len(dmris_main) <= len(dmris_opposite) and
+                    len(dmris_main) <= len(dmris_ref)):
                 inputs.extend(
                     DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
                                  dmris_opposite[i][0]) for i in range(len(dmris_main)))
                 inputs.extend(
                     DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
                                  dmris_ref[i][0]) for i in range(len(dmris_main)))
+                used_dwi.extend(scan for scan in dmris_main+
+                                dmris_opposite[:len(dmris_main)]+dmris_ref[:len(dmris_main)])
+            else:
+                inputs.extend(
+                    DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
+                                 dmris_opposite[0][0]) for i in range(len(dmris_main)))
+                inputs.extend(
+                    DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
+                                 dmris_ref[0][0]) for i in range(len(dmris_main)))
+                used_dwi.extend(scan for scan in dmris_main+
+                                dmris_opposite[:1]+dmris_ref[:1])
+        unused_dwi = [x for x in dmris if x not in used_dwi]
+        if unused_dwi:
+            print ('The following scans:\n{}\nwere not assigned during the DWI motion '
+                   'detection initialization (probably a different number of main '
+                   'DWI scans and b0 images was provided). They will be processed'
+                   ' os "other" scans.'.format('\n'.join(s[0] for s in unused_dwi)))
+        study_specs.extend(
+            SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
+            for i in range(len(t2s), len(t2s)+len(unused_dwi)))
+        inputs.extend(
+            DatasetMatch('t2_{}_primary'.format(i), dicom_format, scan[0])
+            for i, scan in enumerate(unused_dwi, start=len(t2s)))
         run_pipeline = True
 
     if not run_pipeline:
