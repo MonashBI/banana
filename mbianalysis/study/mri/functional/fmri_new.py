@@ -1,24 +1,19 @@
-from nipype.interfaces.fsl.model import FEAT, MELODIC
+from nipype.interfaces.fsl.model import MELODIC
 from nipype.interfaces.fsl.epi import PrepareFieldmap
-from nipype.interfaces.fsl.preprocess import (
-    BET, FUGUE, FLIRT, FNIRT, ApplyWarp)
+from nipype.interfaces.fsl.preprocess import BET, FUGUE, FLIRT
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
-from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
-                                         ConvertXFM)
+from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from mbianalysis.interfaces.fsl import (
-    MelodicL1FSF, FSLFIX, CheckLabelFile, FSLFixTraining, FSLSlices,
-    SignalRegression)
+    FSLFIX, FSLFixTraining, FSLSlices, SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import StudyMetaClass
-from ..base import MRIStudy
 from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
 from mbianalysis.citation import fsl_cite
 from mbianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
-    text_format, dicom_format, ica_format)
+    text_format)
 from mbianalysis.interfaces.ants import AntsRegSyn
 from mbianalysis.interfaces.afni import Tproject
 from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
@@ -28,11 +23,24 @@ import os
 import subprocess as sp
 from nipype.interfaces.utility.base import IdentityInterface
 from nianalysis.option import OptionSpec
+from nianalysis.study.multi import (
+    SubStudySpec, MultiStudyMetaClass, MultiStudy)
+from mbianalysis.study.mri.structural.t1 import T1Study
+from mbianalysis.study.mri.epi import EPIStudy
+from mbianalysis.study.mri.structural.t2 import T2Study
 
 
-class FunctionalMRIStudy(MRIStudy):
+class FunctionalMRIStudy(MultiStudy):
 
-    __metaclass__ = StudyMetaClass
+    __metaclass__ = MultiStudyMetaClass
+
+    add_sub_study_specs = [
+        SubStudySpec('t1', T1Study),
+        SubStudySpec('epi', EPIStudy, {'t1_brain': 'coreg_ref_brain',
+                                       't1_wm_seg': 'coreg_ref_wmseg',
+                                       't1_preproc': 'coreg_ref_preproc'}),
+        SubStudySpec('fm_mag', T2Study, {'t1_brain': 'coreg_ref_brain'}),
+        SubStudySpec('fm_phase', T2Study)]
 
     add_option_specs = [
         OptionSpec('component_threshold', 20),
@@ -47,117 +55,28 @@ class FunctionalMRIStudy(MRIStudy):
             'MNI152_T1_2mm_brain_mask.nii.gz'))]
 
     add_data_specs = [
-        DatasetSpec('field_map_mag', dicom_format),
-        DatasetSpec('field_map_phase', dicom_format),
-        DatasetSpec('t1', dicom_format),
-        DatasetSpec('rs_fmri', dicom_format),
-#         DatasetSpec('rs_fmri_nifti', nifti_gz_format,
-#                     'rsfmri_dcm2nii_conversion_pipeline'),
-#         DatasetSpec('t1_nifti', nifti_gz_format,
-#                     't1_dcm2nii_conversion_pipeline'),
-#         DatasetSpec('field_map_mag_nifti', nifti_gz_format,
-#                     'fm_mag_dcm2nii_conversion_pipeline'),
-#         DatasetSpec('field_map_phase_nifti', nifti_gz_format,
-#                     'fm_phase_dcm2nii_conversion_pipeline'),
-        DatasetSpec('melodic_dir', zip_format, 'feat_pipeline'),
         DatasetSpec('train_data', rdata_format, 'TrainingFix',
                     frequency='per_project'),
-        DatasetSpec('labelled_components', text_format,
-                    'fix_classification'),
-        DatasetSpec('cleaned_file', nifti_gz_format,
-                    'fix_regression'),
-        DatasetSpec('betted_file', nifti_gz_format, 'optiBET'),
-        DatasetSpec('betted_mask', nifti_gz_format, 'optiBET'),
-        DatasetSpec('optiBET_report', gif_format, 'optiBET'),
+        DatasetSpec('labelled_components', text_format, 'fix_classification'),
+        DatasetSpec('cleaned_file', nifti_gz_format, 'fix_regression'),
         DatasetSpec('epi2T1', nifti_gz_format, 'ANTsRegistration'),
-        DatasetSpec('epi2T1_mat', text_matrix_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_reg', nifti_gz_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_mat', text_matrix_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_warp', nifti_gz_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_invwarp', nifti_gz_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_reg_report', gif_format,
-                    'ANTsRegistration'),
-        DatasetSpec('filtered_data', nifti_gz_format,
-                    'rsfMRI_filtering'),
-        DatasetSpec('hires2example', text_matrix_format,
-                    'rsfMRI_filtering'),
+        DatasetSpec('epi2T1_mat', text_matrix_format, 'ANTsRegistration'),
+        DatasetSpec('T12MNI_reg', nifti_gz_format, 'ANTsRegistration'),
+        DatasetSpec('T12MNI_mat', text_matrix_format, 'ANTsRegistration'),
+        DatasetSpec('T12MNI_warp', nifti_gz_format, 'ANTsRegistration'),
+        DatasetSpec('T12MNI_invwarp', nifti_gz_format, 'ANTsRegistration'),
+        DatasetSpec('T12MNI_reg_report', gif_format, 'ANTsRegistration'),
+        DatasetSpec('filtered_data', nifti_gz_format, 'rsfMRI_filtering'),
+        DatasetSpec('hires2example', text_matrix_format, 'rsfMRI_filtering'),
         DatasetSpec('mc_par', par_format, 'rsfMRI_filtering'),
-        DatasetSpec('rsfmri_mask', nifti_gz_format,
-                    'rsfMRI_filtering'),
-        DatasetSpec('unwarped_file', nifti_gz_format,
-                    'rsfMRI_filtering'),
+        DatasetSpec('rsfmri_mask', nifti_gz_format, 'rsfMRI_filtering'),
+        DatasetSpec('unwarped_file', nifti_gz_format, 'rsfMRI_filtering'),
         DatasetSpec('melodic_ica', zip_format, 'MelodicL1'),
-        DatasetSpec('registered_file', nifti_gz_format,
-                    'applyTransform'),
+        DatasetSpec('registered_file', nifti_gz_format, 'applyTransform'),
         DatasetSpec('fix_dir', targz_format, 'PrepareFix'),
         DatasetSpec('smoothed_file', nifti_gz_format, 'applySmooth'),
         DatasetSpec('group_melodic', directory_format, 'groupMelodic',
-                    frequency='per_visit'),
-        FieldSpec('tr', float, 'header_info_extraction_pipeline')]
-
-    def header_info_extraction_pipeline(self, **kwargs):
-        return (super(FunctionalMRIStudy, self).
-                header_info_extraction_pipeline_factory(
-                    'rs_fmri', **kwargs))
-
-#     def rsfmri_dcm2nii_conversion_pipeline(self, **kwargs):
-#         return (super(FunctionalMRIStudy, self).
-#                 dcm2nii_conversion_pipeline_factory(
-#                     'rsfmri_dcm2nii', 'rs_fmri', converter='dcm2niix',
-#                     **kwargs))
-# 
-#     def t1_dcm2nii_conversion_pipeline(self, **kwargs):
-#         return (super(FunctionalMRIStudy, self).
-#                 dcm2nii_conversion_pipeline_factory(
-#                     't1_dcm2nii', 't1', converter='dcm2niix',
-#                     **kwargs))
-# 
-#     def fm_mag_dcm2nii_conversion_pipeline(self, **kwargs):
-#         return (super(FunctionalMRIStudy, self).
-#                 dcm2nii_conversion_pipeline_factory(
-#                     'fm_mag_dcm2nii', 'field_map_mag', converter='dcm2niix',
-#                     **kwargs))
-# 
-#     def fm_phase_dcm2nii_conversion_pipeline(self, **kwargs):
-#         return (super(FunctionalMRIStudy, self).
-#                 dcm2nii_conversion_pipeline_factory(
-#                     'fm_phase_dcm2nii', 'field_map_phase',
-#                     converter='dcm2niix', **kwargs))
-
-    def fix_all(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='fix',
-            # inputs=['fear_dir', 'train_data'],
-            inputs=[DatasetSpec('train_data', rdata_format,
-                                frequency='per_project'),
-                    DatasetSpec('fix_dir', directory_format)],
-            outputs=[DatasetSpec('cleaned_file', nifti_gz_format),
-                     DatasetSpec('labelled_components', text_format)],
-            desc=("Automatic classification and removal of noisy"
-                         "components from the rsfMRI data"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
-                                   requirements=[fsl509_req, fix_req])
-        pipeline.connect_input("fix_dir", fix, "feat_dir")
-        pipeline.connect_input("train_data", fix, "train_data")
-        fix.inputs.component_threshold = pipeline.option(
-            'component_threshold')
-        fix.inputs.motion_reg = pipeline.option('motion_reg')
-        fix.inputs.all = True
-
-        pipeline.connect_output('cleaned_file', fix, 'output')
-        pipeline.connect_output('labelled_components', fix, 'label_file')
-
-        return pipeline
+                    frequency='per_visit')]
 
     def fix_classification(self, **kwargs):
 
@@ -168,8 +87,8 @@ class FunctionalMRIStudy(MRIStudy):
                                 frequency='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
-            desc=("Automatic classification of noisy"
-                         "components from the rsfMRI data"),
+            desc=("Automatic classification of noisy components from the "
+                  "rsfMRI data"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -195,8 +114,7 @@ class FunctionalMRIStudy(MRIStudy):
             inputs=[DatasetSpec('fix_dir', directory_format),
                     DatasetSpec('labelled_components', text_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
-            desc=("Regression of the noisy"
-                         "components from the rsfMRI data"),
+            desc=("Regression of the noisy components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -214,69 +132,6 @@ class FunctionalMRIStudy(MRIStudy):
 
         return pipeline
 
-    def optiBET(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='optiBET',
-            inputs=[DatasetSpec('t1', nifti_gz_format)],
-            outputs=[DatasetSpec('betted_file', nifti_gz_format),
-                     DatasetSpec('betted_mask', nifti_gz_format),
-                     DatasetSpec('optiBET_report', gif_format)],
-            desc=("python implementation of optiBET.sh"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        bet1 = pipeline.create_node(
-            BET(frac=0.1, reduce_bias=True), name='bet', wall_time=15,
-            requirements=[fsl5_req])
-        pipeline.connect_input('t1_nifti', bet1, 'in_file')
-        flirt = pipeline.create_node(
-            FLIRT(out_matrix_file='linear_mat.mat',
-                  out_file='linear_reg.nii.gz', searchr_x=[-30, 30],
-                  searchr_y=[-30, 30], searchr_z=[-30, 30]), name='flirt',
-            wall_time=5, requirements=[fsl5_req])
-        flirt.inputs.reference = pipeline.option('MNI_template')
-        pipeline.connect(bet1, 'out_file', flirt, 'in_file')
-        fnirt = pipeline.create_node(
-            FNIRT(config_file='T1_2_MNI152_2mm',
-                  fieldcoeff_file='warp_file.nii.gz'), name='fnirt',
-            wall_time=15, requirements=[fsl5_req])
-        fnirt.inputs.ref_file = pipeline.option('MNI_template')
-        pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
-        pipeline.connect_input('t1_nifti', fnirt, 'in_file')
-        invwarp = pipeline.create_node(InvWarp(), name='invwarp', wall_time=10,
-                                       requirements=[fsl5_req])
-        pipeline.connect(fnirt, 'fieldcoeff_file', invwarp, 'warp')
-        pipeline.connect_input('t1_nifti', invwarp, 'reference')
-        applywarp = pipeline.create_node(
-            ApplyWarp(interp='nn', out_file='warped_file.nii.gz'),
-            name='applywarp', wall_time=5, requirements=[fsl5_req])
-        applywarp.inputs.in_file = pipeline.option('MNI_template_mask')
-        pipeline.connect_input('t1_nifti', applywarp, 'ref_file')
-        pipeline.connect(invwarp, 'inverse_warp', applywarp, 'field_file')
-        maths1 = pipeline.create_node(
-            ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
-            name='binarize', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect(applywarp, 'out_file', maths1, 'in_file')
-        maths2 = pipeline.create_node(
-            ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
-            name='mask', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect_input('t1_nifti', maths2, 'in_file')
-        pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
-
-        slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=5,
-                                      requirements=[fsl5_req])
-        slices.inputs.outname = 'optiBET_report'
-        pipeline.connect_input('t1_nifti', slices, 'im1')
-        pipeline.connect(maths2, 'out_file', slices, 'im2')
-
-        pipeline.connect_output('betted_mask', maths1, 'out_file')
-        pipeline.connect_output('betted_file', maths2, 'out_file')
-        pipeline.connect_output('optiBET_report', slices, 'report')
-
-        return pipeline
-
     def ANTsRegistration(self, **kwargs):
 
         try:
@@ -290,7 +145,7 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline = self.create_pipeline(
             name='ANTsReg',
-            inputs=[DatasetSpec('betted_file', nifti_gz_format),
+            inputs=[DatasetSpec('t1_brain', nifti_gz_format),
                     DatasetSpec('unwarped_file', nifti_gz_format)],
             outputs=[DatasetSpec('epi2T1', nifti_gz_format),
                      DatasetSpec('epi2T1_mat', text_matrix_format),
@@ -314,7 +169,7 @@ class FunctionalMRIStudy(MRIStudy):
             AntsRegSyn(num_dimensions=3, transformation='r',
                        out_prefix='epi2T1'), name='ANTsReg', wall_time=10,
             requirements=[ants2_req])
-        pipeline.connect_input('betted_file', epireg, 'ref_file')
+        pipeline.connect_input('t1_brain', epireg, 'ref_file')
         pipeline.connect(bet_rsfmri, 'out_file', epireg, 'input_file')
 
         t1reg = pipeline.create_node(
@@ -322,7 +177,7 @@ class FunctionalMRIStudy(MRIStudy):
                        out_prefix='T12MNI', num_threads=4), name='T1_reg',
             wall_time=25, requirements=[ants2_req])
         t1reg.inputs.ref_file = pipeline.option('MNI_template')
-        pipeline.connect_input('betted_file', t1reg, 'input_file')
+        pipeline.connect_input('t1_brain', t1reg, 'input_file')
 
         slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
                                       requirements=[fsl5_req])
@@ -345,7 +200,7 @@ class FunctionalMRIStudy(MRIStudy):
         pipeline = self.create_pipeline(
             name='MelodicL1',
             inputs=[DatasetSpec('filtered_data', nifti_gz_format),
-                    FieldSpec('tr', float)],
+                    FieldSpec('epi_tr', float)],
             outputs=[DatasetSpec('melodic_ica', directory_format)],
             desc=("python implementation of Melodic"),
             version=1,
@@ -362,7 +217,7 @@ class FunctionalMRIStudy(MRIStudy):
         mel.inputs.mm_thresh = 0.5
         mel.inputs.out_dir = 'melodic_ica'
 #         pipeline.connect(mkdir, 'new_dir', mel, 'out_dir')
-        pipeline.connect_input('tr', mel, 'tr_sec')
+        pipeline.connect_input('epi_tr', mel, 'tr_sec')
         pipeline.connect_input('filtered_data', mel, 'in_files')
 
         pipeline.connect_output('melodic_ica', mel, 'out_dir')
@@ -373,11 +228,11 @@ class FunctionalMRIStudy(MRIStudy):
 
         pipeline = self.create_pipeline(
             name='rsfMRI_filtering',
-            inputs=[DatasetSpec('field_map_mag', nifti_gz_format),
-                    DatasetSpec('field_map_phase', nifti_gz_format),
-                    DatasetSpec('rs_fmri', nifti_gz_format),
-                    DatasetSpec('betted_file', nifti_gz_format),
-                    FieldSpec('tr', float)],
+            inputs=[DatasetSpec('fm_mag_primary', nifti_gz_format),
+                    DatasetSpec('fm_phase_primary', nifti_gz_format),
+                    DatasetSpec('epi_primary', nifti_gz_format),
+                    DatasetSpec('t1_brain', nifti_gz_format),
+                    FieldSpec('epi_tr', float)],
             outputs=[DatasetSpec('filtered_data', nifti_gz_format),
                      DatasetSpec('hires2example', text_matrix_format),
                      DatasetSpec('rsfmri_mask', nifti_gz_format),
@@ -390,21 +245,21 @@ class FunctionalMRIStudy(MRIStudy):
         bet = pipeline.create_node(BET(), name="bet", wall_time=5,
                                    requirements=[fsl5_req])
         bet.inputs.robust = True
-        pipeline.connect_input('field_map_mag_nifti', bet, 'in_file')
+        pipeline.connect_input('fm_mag_primary', bet, 'in_file')
 
         bet_rsfmri = pipeline.create_node(BET(), name="bet_rsfmri",
                                           wall_time=5, requirements=[fsl5_req])
         bet_rsfmri.inputs.robust = True
         bet_rsfmri.inputs.frac = 0.4
         bet_rsfmri.inputs.mask = True
-        pipeline.connect_input('rs_fmri_nifti', bet_rsfmri, 'in_file')
+        pipeline.connect_input('epi_primary', bet_rsfmri, 'in_file')
 
         create_fmap = pipeline.create_node(PrepareFieldmap(), name="prepfmap",
                                            wall_time=5,
                                            requirements=[fsl5_req])
         create_fmap.inputs.delta_TE = 2.46
         pipeline.connect(bet, "out_file", create_fmap, "in_magnitude")
-        pipeline.connect_input('field_map_phase_nifti', create_fmap,
+        pipeline.connect_input('fm_phase_primary', create_fmap,
                                'in_phase')
 
         fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
@@ -413,13 +268,13 @@ class FunctionalMRIStudy(MRIStudy):
         fugue.inputs.dwell_time = 0.000275
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
-        pipeline.connect_input('rs_fmri_nifti', fugue, 'in_file')
+        pipeline.connect_input('epi_primary', fugue, 'in_file')
 
         flirt_t1 = pipeline.create_node(FLIRT(), name='FLIRT_T1', wall_time=5,
                                         requirements=[fsl5_req])
         flirt_t1.inputs.dof = 6
         flirt_t1.inputs.out_matrix_file = 'example2hires.mat'
-        pipeline.connect_input('betted_file', flirt_t1, 'reference')
+        pipeline.connect_input('t1_brain', flirt_t1, 'reference')
         pipeline.connect(bet_rsfmri, 'out_file', flirt_t1, 'in_file')
 
         convxfm = pipeline.create_node(ConvertXFM(), name='convertxfm',
@@ -443,7 +298,7 @@ class FunctionalMRIStudy(MRIStudy):
         filt.inputs.polort = 3
         filt.inputs.blur = 3
         filt.inputs.out_file = 'filtered_func_data.nii.gz'
-        pipeline.connect_input('tr', filt, 'delta_t')
+        pipeline.connect_input('epi_tr', filt, 'delta_t')
         pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
         pipeline.connect(bet_rsfmri, 'mask_file', filt, 'mask')
 
@@ -538,7 +393,7 @@ class FunctionalMRIStudy(MRIStudy):
                     DatasetSpec('rs_fmri_nifti', nifti_gz_format)],
             outputs=[DatasetSpec('fix_dir', directory_format)],
             desc=("Automatic classification and removal of noisy"
-                         "components from the rsfMRI data"),
+                  "components from the rsfMRI data"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -646,8 +501,7 @@ class FunctionalMRIStudy(MRIStudy):
             # inputs=['fear_dir', 'train_data'],
             inputs=[DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('train_data', rdata_format)],
-            desc=("Automatic classification and removal of noisy"
-                         "components from the rsfMRI data"),
+            desc=("FSL_fix training."),
             version=1,
             citations=[fsl_cite],
             **kwargs)

@@ -19,7 +19,9 @@ from nipype.interfaces import fsl
 
 
 class DWIStudy(MRIStudy):
+
     __metaclass__ = StudyMetaClass
+
     add_data_specs = [
         DatasetSpec('dwi_reference', dicom_format, optional=True),
         DatasetSpec('eddy_par', eddy_par_format, 'basic_preproc_pipeline'),

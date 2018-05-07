@@ -3,7 +3,7 @@ from nipype.interfaces.spm.preprocess import Coregister
 from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
 from mbianalysis.data_format import nifti_format, motion_mats_format,\
-    mrconvert_nifti_gz_format, directory_format
+    mrconvert_nifti_gz_format, directory_format, nifti_gz_format
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
@@ -46,7 +46,11 @@ class MRIStudy(Study):
 
     add_data_specs = [
         DatasetSpec('primary', dicom_format),
-        DatasetSpec('coreg_ref_brain', mrconvert_nifti_gz_format,
+        DatasetSpec('umap', dicom_format, optional=True),
+        DatasetSpec('umap_aligned_niftis', directory_format, optional=True),
+        DatasetSpec('umap_aligned_dicoms', directory_format,
+                    'nifti2dcm_conversion_pipeline'),
+        DatasetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
                     optional=True),
@@ -54,26 +58,27 @@ class MRIStudy(Study):
                     'linear_coregistration_pipeline'),
         # DatasetSpec('dicom_dwi', dicom_format),
         # DatasetSpec('dicom_dwi_1', dicom_format),
-        DatasetSpec('preproc', mrconvert_nifti_gz_format,
+        DatasetSpec('preproc', nifti_gz_format,
                     'basic_preproc_pipeline'),
-        DatasetSpec('brain', mrconvert_nifti_gz_format, 'brain_mask_pipeline',
+        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline',
                     desc="The brain masked image"),
-        DatasetSpec('brain_mask', mrconvert_nifti_gz_format,
+        DatasetSpec('brain_mask', nifti_gz_format,
                     'brain_mask_pipeline',
                     desc="Mask of the brain"),
-        DatasetSpec('coreg_brain', mrconvert_nifti_gz_format,
+        DatasetSpec('coreg_brain', nifti_gz_format,
                     'linear_coregistration_pipeline',
                     desc=""),
-        DatasetSpec('coreg_to_atlas', mrconvert_nifti_gz_format,
+        DatasetSpec('coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
-        DatasetSpec('coreg_to_atlas_coeff', mrconvert_nifti_gz_format,
+        DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
-        DatasetSpec('wm_seg', mrconvert_nifti_gz_format, 'segmentation_pipeline'),
+        DatasetSpec('wm_seg', nifti_gz_format,
+                    'segmentation_pipeline'),
         DatasetSpec('dcm_info', text_format,
                     'header_info_extraction_pipeline'),
         DatasetSpec('motion_mats', motion_mats_format,
                     'motion_mat_pipeline'),
-        DatasetSpec('qformed', mrconvert_nifti_gz_format,
+        DatasetSpec('qformed', nifti_gz_format,
                     'qform_transform_pipeline'),
         DatasetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
@@ -129,7 +134,7 @@ class MRIStudy(Study):
             name = 'coreg_brain'
         else:
             name = 'brain'
-        return DatasetSpec(name, mrconvert_nifti_gz_format)
+        return DatasetSpec(name, nifti_gz_format)
 
     def linear_coregistration_pipeline(self, **kwargs):
         pipeline_name = 'linear_coreg'
@@ -171,9 +176,9 @@ class MRIStudy(Study):
 
         pipeline = self.create_pipeline(
             name=name,
-            inputs=[DatasetSpec(to_reg, mrconvert_nifti_gz_format),
-                    DatasetSpec(ref, mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec(reg, mrconvert_nifti_gz_format),
+            inputs=[DatasetSpec(to_reg, nifti_gz_format),
+                    DatasetSpec(ref, nifti_gz_format)],
+            outputs=[DatasetSpec(reg, nifti_gz_format),
                      DatasetSpec(matrix, text_matrix_format)],
             desc="Registers a MR scan against a reference image",
             version=1,
@@ -201,9 +206,9 @@ class MRIStudy(Study):
                                  qformed_mat, **kwargs):
         pipeline = self.create_pipeline(
             name=name,
-            inputs=[DatasetSpec(to_reg, mrconvert_nifti_gz_format),
-                    DatasetSpec(ref, mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec(qformed, mrconvert_nifti_gz_format),
+            inputs=[DatasetSpec(to_reg, nifti_gz_format),
+                    DatasetSpec(ref, nifti_gz_format)],
+            outputs=[DatasetSpec(qformed, nifti_gz_format),
                      DatasetSpec(qformed_mat, text_matrix_format)],
             desc="Registers a MR scan against a reference image",
             version=1,
@@ -276,9 +281,9 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
-            inputs=[DatasetSpec(in_file, mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec('brain', mrconvert_nifti_gz_format),
-                     DatasetSpec('brain_mask', mrconvert_nifti_gz_format)],
+            inputs=[DatasetSpec(in_file, nifti_gz_format)],
+            outputs=[DatasetSpec('brain', nifti_gz_format),
+                     DatasetSpec('brain_mask', nifti_gz_format)],
             desc="Generate brain mask from mr_scan",
             version=1,
             citations=[fsl_cite, bet_cite, bet2_cite],
@@ -314,14 +319,14 @@ class MRIStudy(Study):
 #         except ImportError:
 # print "NO ANTs module found. Please ensure to have it in you PATH."
 
-        outputs = [DatasetSpec('brain', mrconvert_nifti_gz_format),
-                   DatasetSpec('brain_mask', mrconvert_nifti_gz_format)]
+        outputs = [DatasetSpec('brain', nifti_gz_format),
+                   DatasetSpec('brain_mask', nifti_gz_format)]
         if self.pre_option('optibet_gen_report', self.BRAIN_MASK_NAME,
                            **kwargs):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
-            inputs=[DatasetSpec(in_file, mrconvert_nifti_gz_format)],
+            inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
             desc=("Modified implementation of optiBET.sh"),
             version=1,
@@ -401,11 +406,11 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name=self.COREGISTER_TO_ATLAS_NAME,
-            inputs=[DatasetSpec('preproc', mrconvert_nifti_gz_format),
-                    DatasetSpec('brain_mask', mrconvert_nifti_gz_format),
-                    DatasetSpec('brain', mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec('coreg_to_atlas', mrconvert_nifti_gz_format),
-                     DatasetSpec('coreg_to_atlas_coeff', mrconvert_nifti_gz_format)],
+            inputs=[DatasetSpec('preproc', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('brain', nifti_gz_format)],
+            outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
+                     DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
             version=1,
@@ -480,8 +485,8 @@ class MRIStudy(Study):
     def segmentation_pipeline(self, img_type=2, **kwargs):
         pipeline = self.create_pipeline(
             name='FAST_segmentation',
-            inputs=[DatasetSpec('brain', mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec('wm_seg', mrconvert_nifti_gz_format)],
+            inputs=[DatasetSpec('brain', nifti_gz_format)],
+            outputs=[DatasetSpec('wm_seg', nifti_gz_format)],
             desc="White matter segmentation of the reference image",
             version=1,
             citations=[fsl_cite],
@@ -524,8 +529,8 @@ class MRIStudy(Study):
         """
         pipeline = self.create_pipeline(
             name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('primary', mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec('preproc', mrconvert_nifti_gz_format)],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
             version=1,
@@ -608,7 +613,7 @@ class MRIStudy(Study):
             name=name,
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=[DatasetSpec(dcm_in_name + '_nifti',
-                                 mrconvert_nifti_gz_format)],
+                                 nifti_gz_format)],
             desc=("DICOM to NIFTI conversion."),
             version=1,
             citations=[],

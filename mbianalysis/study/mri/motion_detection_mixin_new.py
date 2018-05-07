@@ -1,7 +1,7 @@
-from nianalysis.dataset import DatasetSpec, FieldSpec, Field
+from nianalysis.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (
-    mrconvert_nifti_gz_format, text_matrix_format, directory_format, text_format,
-    png_format, dicom_format, motion_mats_format)
+    mrconvert_nifti_gz_format, text_matrix_format, directory_format,
+    text_format, png_format, dicom_format, motion_mats_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference,
@@ -27,7 +27,6 @@ import logging
 from nianalysis.interfaces.utils import CopyToDir
 import os
 from nianalysis.option import OptionSpec
-import numpy as np
 # from mbianalysis.study.mri.structural.diffusion_coreg import DWIStudy
 
 
@@ -43,78 +42,6 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 template_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../../../mbianalysis',
                  'reference_data'))
-
-
-class MotionReferenceT1Study(T1Study):
-
-    __metaclass__ = StudyMetaClass
-
-    add_data_specs = [
-        DatasetSpec('wm_seg', mrconvert_nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('motion_mats', motion_mats_format,
-                    'header_info_extraction_pipeline'),
-        FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('start_time', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('real_duration', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('tot_duration', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('ped', str, pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('pe_angle', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        DatasetSpec('dcm_info', text_format, 'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', mrconvert_nifti_gz_format, 'basic_preproc_pipeline')]
-
-    add_option_specs = [
-        OptionSpec('preproc_resolution', [1])]
-
-    def header_info_extraction_pipeline(self, **kwargs):
-        return (super(MotionReferenceT1Study, self).
-                header_info_extraction_pipeline_factory(
-                    'primary', ref=True, multivol=False, **kwargs))
-
-    def segmentation_pipeline(self, **kwargs):
-        pipeline = super(MotionReferenceT1Study, self).segmentation_pipeline(
-            img_type=1, **kwargs)
-        return pipeline
-
-
-class MotionReferenceT2Study(T2Study):
-
-    __metaclass__ = StudyMetaClass
-
-    add_data_specs = [
-        DatasetSpec('wm_seg', mrconvert_nifti_gz_format, 'segmentation_pipeline'),
-        DatasetSpec('motion_mats', motion_mats_format,
-                    'header_info_extraction_pipeline'),
-        FieldSpec('tr', dtype=float, pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('start_time', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('real_duration', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('tot_duration', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('ped', str, pipeline_name='header_info_extraction_pipeline'),
-        FieldSpec('pe_angle', str,
-                  pipeline_name='header_info_extraction_pipeline'),
-        DatasetSpec('dcm_info', text_format,
-                    'header_info_extraction_pipeline'),
-        DatasetSpec('preproc', mrconvert_nifti_gz_format,
-                    'basic_preproc_pipeline')]
-
-    add_option_specs = [
-        OptionSpec('preproc_resolution', [1])]
-
-    def header_info_extraction_pipeline(self, **kwargs):
-        return (super(MotionReferenceT2Study, self).
-                header_info_extraction_pipeline_factory(
-                    'primary', ref=True, multivol=False, **kwargs))
-
-    def segmentation_pipeline(self, **kwargs):
-        pipeline = super(MotionReferenceT2Study, self).segmentation_pipeline(
-            img_type=2, **kwargs)
-        return pipeline
 
 
 class MotionDetectionMixin(MultiStudy):
@@ -170,24 +97,35 @@ class MotionDetectionMixin(MultiStudy):
                             template_path, 'moco_template.IMA'))]
 
     def mean_displacement_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('ref_brain', mrconvert_nifti_gz_format)]
-        sub_study_names = []
-        for sub_study_spec in self.sub_study_specs():
-            try:
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map('motion_mats')))
-                inputs.append(self.data_spec(sub_study_spec.inverse_map('tr')))
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map('start_time')))
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map('real_duration')))
-                sub_study_names.append(sub_study_spec.name)
-            except NiAnalysisNameError:
-                continue  # Sub study doesn't have motion mat
+        return self.mean_displacement_pipeline_factory(md_inputs=[], **kwargs)
+
+    def mean_displacement_pipeline_factory(self, md_inputs=[], **kwargs):
+        sub_study_names = [DatasetSpec('ref_brain', mrconvert_nifti_gz_format)]
+        for name in md_inputs:
+            sub_study_names.append(DatasetSpec(name+'_motion_mats',
+                                               motion_mats_format))
+            sub_study_names.append(DatasetSpec(name+'_tr',
+                                               motion_mats_format))
+            sub_study_names.append(DatasetSpec(name+'_start_time',
+                                               motion_mats_format))
+            sub_study_names.append(DatasetSpec(name+'_real_duration',
+                                               motion_mats_format))
+#         for sub_study_spec in self.sub_study_specs():
+#             try:
+#                 inputs.append(
+#                     self.data_spec(sub_study_spec.inverse_map('motion_mats')))
+#                 inputs.append(self.data_spec(sub_study_spec.inverse_map('tr')))
+#                 inputs.append(
+#                     self.data_spec(sub_study_spec.inverse_map('start_time')))
+#                 inputs.append(
+#                     self.data_spec(sub_study_spec.inverse_map('real_duration')))
+#                 sub_study_names.append(sub_study_spec.name)
+#             except NiAnalysisNameError:
+#                 continue  # Sub study doesn't have motion mat
 
         pipeline = self.create_pipeline(
             name='mean_displacement_calculation',
-            inputs=inputs,
+            inputs=sub_study_names,
             outputs=[DatasetSpec('mean_displacement', text_format),
                      DatasetSpec('mean_displacement_rc', text_format),
                      DatasetSpec('mean_displacement_consecutive', text_format),
@@ -197,12 +135,12 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('offset_indexes', text_format),
                      DatasetSpec('mats4average', text_format)],
             desc=("Calculate the mean displacement between each motion"
-                         " matrix and a reference."),
+                  " matrix and a reference."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
 
-        num_motion_mats = len(sub_study_names)
+        num_motion_mats = len(md_inputs)
         merge_motion_mats = pipeline.create_node(Merge(num_motion_mats),
                                                  name='merge_motion_mats')
         merge_tr = pipeline.create_node(Merge(num_motion_mats),
@@ -212,20 +150,28 @@ class MotionDetectionMixin(MultiStudy):
         merge_real_duration = pipeline.create_node(Merge(num_motion_mats),
                                                    name='merge_real_duration')
 
-        for i, sub_study_name in enumerate(sub_study_names, start=1):
-            spec = self.sub_study_spec(sub_study_name)
-            pipeline.connect_input(
-                spec.inverse_map('motion_mats'), merge_motion_mats,
-                'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('tr'), merge_tr,
-                'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('start_time'), merge_start_time,
-                'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('real_duration'), merge_real_duration,
-                'in{}'.format(i))
+        for i, name in enumerate(md_inputs, start=1):
+            pipeline.connect_input(name+'_motion_mats', merge_motion_mats,
+                                   'in{}'.format(i))
+            pipeline.connect_input(name+'_tr', merge_tr, 'in{}'.format(i))
+            pipeline.connect_input(name+'_start_time', merge_start_time,
+                                   'in{}'.format(i))
+            pipeline.connect_input(name+'_real_duration', merge_real_duration,
+                                   'in{}'.format(i))
+#         for i, sub_study_name in enumerate(sub_study_names, start=1):
+#             spec = self.sub_study_spec(sub_study_name)
+#             pipeline.connect_input(
+#                 spec.inverse_map('motion_mats'), merge_motion_mats,
+#                 'in{}'.format(i))
+#             pipeline.connect_input(
+#                 spec.inverse_map('tr'), merge_tr,
+#                 'in{}'.format(i))
+#             pipeline.connect_input(
+#                 spec.inverse_map('start_time'), merge_start_time,
+#                 'in{}'.format(i))
+#             pipeline.connect_input(
+#                 spec.inverse_map('real_duration'), merge_real_duration,
+#                 'in{}'.format(i))
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
@@ -493,6 +439,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     inputs = []
     dct = {}
     data_specs = []
+    md_spec_name = []
     run_pipeline = False
     if pet_data_dir is not None:
         data_specs.append(DatasetSpec('pet_data_dir', directory_format))
@@ -532,10 +479,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         'ref', 'motion_mats_pipeline', ref=True)
 
     if not umap_ref:
-        logger.info('Umap reference not provided. The matrices that realign the PET'
-                    ' image in each detected frame to the reference cannot be '
-                    'generated. See documentation for further information.')
-    
+        logger.info(
+            'Umap reference not provided. The matrices that realign the PET'
+            ' image in each detected frame to the reference cannot be '
+            'generated. See documentation for further information.')
+
     if t1s:
         study_specs.extend(
                 [SubStudySpec('t1_{}'.format(i), T1Study,
@@ -549,6 +497,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                               if t1_scan == umap_ref]
         umap_ref_preproc = ['t1_{}_preproc'.format(i) for i, t1_scan in enumerate(t1s)
                             if t1_scan == umap_ref]
+        md_spec_name.extend('t1_{}'.format(i) for i in range(len(t1s)))
         run_pipeline = True
 
     if t2s:
@@ -564,44 +513,45 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                               if t2_scan == umap_ref]
         umap_ref_preproc = ['t2_{}_preproc'.format(i) for i, t2_scan in enumerate(t2s)
                             if t2_scan == umap_ref]
+        md_spec_name.extend('t2_{}'.format(i) for i in range(len(t2s)))
         run_pipeline = True
-    
+
     if umap_ref and not umaps:
         logger.info('Umap not provided. The umap realignment will not be '
                     'performed. Matrices that realign each detected frame to '
                     'the reference will be calculated.')
- 
+
         def frame2ref_alignment_pipeline_altered(self, **kwargs):
             return self.frame2ref_alignment_pipeline_factory(
                 'frame2ref_alignment', 'average_mats',
                 umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
                 pct=False, fixed_binning=False, **kwargs)
- 
+
         def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(
                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
                 timestamps=True, align_mats=True, ute=umap_ref_preproc)
- 
+
     elif umap_ref and umaps:
         logger.info('Umap will be realigned to match the head position in '
                     'each frame. Matrices that realign each frame to the '
                     'reference will be calculated.')
         if len(umaps) > 1:
-            logger.info('More than one umap provided. Only the first one will be'
-                        'used.')
+            logger.info('More than one umap provided. Only the first one will '
+                        'be used.')
             umaps = umaps[0]
 
         umap_spec = {'umaps_align2ref': 'umap_aligned_niftis',
                      'umaps_align2ref_dicom': 'umap_aligned_dicoms'}
         study_specs.append(SubStudySpec('umap', MRIStudy, umap_spec))
         inputs.append(DatasetMatch('umap_umap', dicom_format, umaps))
- 
+
         def frame2ref_alignment_pipeline_altered(self, **kwargs):
             return self.frame2ref_alignment_pipeline_factory(
                 'frame2ref_alignment', 'average_mats',
                 umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
                 pct=False, fixed_binning=False, **kwargs)
- 
+
         def gather_md_outputs_pipeline_altered(self, **kwargs):
             return self.gather_outputs_factory(
                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
@@ -612,7 +562,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             'umap', 'nifti2dcm_conversion_pipeline')
 
         run_pipeline = True
- 
+
     elif not umap_ref and umaps:
         logger.warning('Umap provided without corresponding reference image. '
                        'Realignment cannot be performed without UTE. Umap will'
@@ -623,11 +573,12 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                             'ref_preproc': 'coreg_ref_preproc'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), EPIStudy,
-                            epi_refspec)
-                            for i in range(len(epis)))
+                                        epi_refspec)
+                           for i in range(len(epis)))
         inputs.extend(
             DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
             for i, epi_scan in enumerate(epis))
+        md_spec_name.extend('epi_{}'.format(i) for i in range(len(epis)))
         run_pipeline = True
     if dmris:
         used_dwi = []
@@ -641,7 +592,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 'correction. THIS IS SUB-OPTIMAL!')
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(len(dmris_main)))
+                for i in range(len(dmris_main)))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
                              dmris_main_scan[0])
@@ -652,72 +603,101 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                     distortion_correction=False)
             dct['dwi_main_preproc_pipeline'] = (
                 dwi_main_preproc_pipeline_altered)
+            md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+                                for i in range(len(dmris_main)))
             used_dwi.extend(scan for scan in dmris_main)
         if not dmris_main and (dmris_ref and dmris_opposite):
             min_index = min(len(dmris_opposite), len(dmris_ref))
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(min_index))
+                for i in range(min_index))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
                              dmris_ref[i][0]) for i in range(min_index))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
                              dmris_opposite[i][0]) for i in range(min_index))
-            used_dwi.extend(scan for scan in dmris_ref[:min_index]+
+            md_spec_name.extend('dwi_{}_dwi_plus'.format(i)
+                                for i in range(len(dmris_ref[:min_index])))
+            md_spec_name.extend(
+                'dwi_{}_dwi_minus'.format(i)
+                for i in range(len(dmris_opposite[:min_index])))
+            used_dwi.extend(scan for scan in dmris_ref[:min_index] +
                             dmris_opposite[:min_index])
         if dmris_main and dmris_opposite and not dmris_ref:
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(len(dmris_main)))
+                for i in range(len(dmris_main)))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
             if len(dmris_main) <= len(dmris_opposite):
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
-                                 dmris_opposite[i][0]) for i in range(len(dmris_main)))
-                used_dwi.extend(scan for scan in dmris_main+
+                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_minus'.format(i),
+                                           dicom_format, dmris_opposite[i][0])
+                              for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+                                    for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_minus'.format(i)
+                                    for i in range(len(dmris_main)))
+                used_dwi.extend(scan for scan in dmris_main +
                                 dmris_opposite[:len(dmris_main)])
             else:
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
-                                 dmris_opposite[0][0]) for i in range(len(dmris_main)))
+                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_minus'.format(i),
+                                           dicom_format, dmris_opposite[0][0])
+                              for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+                                    for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_0_dwi_minus')
                 used_dwi.extend(scan for scan in dmris_main+dmris_opposite[:1])
-            
+
         if dmris_main and dmris_opposite and dmris_ref:
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
-                 for i in range(len(dmris_main)))
+                for i in range(len(dmris_main)))
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
             if (len(dmris_main) <= len(dmris_opposite) and
                     len(dmris_main) <= len(dmris_ref)):
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
-                                 dmris_opposite[i][0]) for i in range(len(dmris_main)))
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
-                                 dmris_ref[i][0]) for i in range(len(dmris_main)))
-                used_dwi.extend(scan for scan in dmris_main+
-                                dmris_opposite[:len(dmris_main)]+dmris_ref[:len(dmris_main)])
+                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_minus'.format(i),
+                                           dicom_format, dmris_opposite[i][0])
+                              for i in range(len(dmris_main)))
+                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_plus'.format(i),
+                                           dicom_format, dmris_ref[i][0])
+                              for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+                                    for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_minus'.format(i)
+                                    for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_plus'.format(i)
+                                    for i in range(len(dmris_main)))
+                used_dwi.extend(scan for scan in dmris_main +
+                                dmris_opposite[:len(dmris_main)] +
+                                dmris_ref[:len(dmris_main)])
             else:
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
-                                 dmris_opposite[0][0]) for i in range(len(dmris_main)))
-                inputs.extend(
-                    DatasetMatch('dwi_{}_dwi_ref_plus'.format(i), dicom_format,
-                                 dmris_ref[0][0]) for i in range(len(dmris_main)))
-                used_dwi.extend(scan for scan in dmris_main+
+                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_minus'.format(i),
+                                           dicom_format, dmris_opposite[0][0])
+                              for i in range(len(dmris_main)))
+                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_plus'.format(i),
+                                           dicom_format, dmris_ref[0][0])
+                              for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+                                    for i in range(len(dmris_main)))
+                md_spec_name.extend('dwi_0_dwi_minus')
+                md_spec_name.extend('dwi_0_dwi_plus')
+                used_dwi.extend(scan for scan in dmris_main +
                                 dmris_opposite[:1]+dmris_ref[:1])
         unused_dwi = [x for x in dmris if x not in used_dwi]
         if unused_dwi:
             logger.info(
-                'The following scans:\n{}\nwere not assigned during the DWI motion '
-                'detection initialization (probably a different number of main '
-                'DWI scans and b0 images was provided). They will be processed'
-                ' os "other" scans.'.format('\n'.join(s[0] for s in unused_dwi)))
+                'The following scans:\n{}\nwere not assigned during the DWI '
+                'motion detection initialization (probably a different number '
+                'of main DWI scans and b0 images was provided). They will be '
+                'processed os "other" scans.'
+                .format('\n'.join(s[0] for s in unused_dwi)))
+            md_spec_name.extend(
+                't2_{}'.format(i)
+                for i in range(len(t2s), len(t2s)+len(unused_dwi)))
         study_specs.extend(
             SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
             for i in range(len(t2s), len(t2s)+len(unused_dwi)))
@@ -729,6 +709,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if not run_pipeline:
         raise Exception('At least one scan, other than the reference, must be '
                         'provided!')
+    else:
+        def mean_displacement_pipeline_altered(self, **kwargs):
+            return self.mean_displacement_pipeline_factory(
+                md_inputs=md_spec_name, **kwargs)
+        dct['mean_displacement_pipeline'] = mean_displacement_pipeline_altered
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
