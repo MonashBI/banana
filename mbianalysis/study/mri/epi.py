@@ -1,7 +1,7 @@
 from base import MRIStudy
 from nianalysis.dataset import DatasetSpec
-from mbianalysis.data_format import (mrconvert_nifti_gz_format, text_matrix_format,
-                                     text_format, directory_format, par_format,
+from mbianalysis.data_format import (nifti_gz_format, text_matrix_format,
+                                     directory_format, par_format,
                                      motion_mats_format)
 from mbianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
@@ -17,9 +17,9 @@ class EPIStudy(MRIStudy):
     __metaclass__ = StudyMetaClass
 
     add_data_specs = [
-        DatasetSpec('coreg_ref_preproc', mrconvert_nifti_gz_format),
-        DatasetSpec('coreg_ref_wmseg', mrconvert_nifti_gz_format),
-        DatasetSpec('moco', mrconvert_nifti_gz_format,
+        DatasetSpec('coreg_ref_preproc', nifti_gz_format),
+        DatasetSpec('coreg_ref_wmseg', nifti_gz_format),
+        DatasetSpec('moco', nifti_gz_format,
                     'motion_alignment_pipeline'),
         DatasetSpec('moco_mat', directory_format,
                     'motion_alignment_pipeline'),
@@ -40,11 +40,11 @@ class EPIStudy(MRIStudy):
 
         pipeline = self.create_pipeline(
             name='EPIREG_pipeline',
-            inputs=[DatasetSpec('brain', mrconvert_nifti_gz_format),
-                    DatasetSpec('coreg_ref_brain', mrconvert_nifti_gz_format),
-                    DatasetSpec('coreg_ref_preproc', mrconvert_nifti_gz_format),
-                    DatasetSpec('coreg_ref_wmseg', mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec('coreg_brain', mrconvert_nifti_gz_format),
+            inputs=[DatasetSpec('brain', nifti_gz_format),
+                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
+                    DatasetSpec('coreg_ref_preproc', nifti_gz_format),
+                    DatasetSpec('coreg_ref_wmseg', nifti_gz_format)],
+            outputs=[DatasetSpec('coreg_brain', nifti_gz_format),
                      DatasetSpec('coreg_matrix', text_matrix_format)],
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
@@ -68,8 +68,8 @@ class EPIStudy(MRIStudy):
 
         pipeline = self.create_pipeline(
             name='MCFLIRT_pipeline',
-            inputs=[DatasetSpec('preproc', mrconvert_nifti_gz_format)],
-            outputs=[DatasetSpec('moco', mrconvert_nifti_gz_format),
+            inputs=[DatasetSpec('preproc', nifti_gz_format)],
+            outputs=[DatasetSpec('moco', nifti_gz_format),
                      DatasetSpec('moco_mat', directory_format),
                      DatasetSpec('moco_par', par_format)],
             desc=("Intra-epi volumes alignment."),

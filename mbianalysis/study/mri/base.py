@@ -3,7 +3,7 @@ from nipype.interfaces.spm.preprocess import Coregister
 from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
 from mbianalysis.data_format import nifti_format, motion_mats_format,\
-    mrconvert_nifti_gz_format, directory_format, nifti_gz_format
+    directory_format, nifti_gz_format
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from nianalysis.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite

@@ -4,7 +4,7 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 from mbianalysis.requirement import freesurfer_req
 from mbianalysis.citation import freesurfer_cites
 from mbianalysis.data_format import (
-    freesurfer_recon_all_format, mrconvert_nifti_gz_format)
+    freesurfer_recon_all_format, nifti_gz_format)
 from nianalysis.dataset import DatasetSpec
 from nianalysis.interfaces.utils import JoinPath
 from ..base import MRIStudy
@@ -19,7 +19,7 @@ class T1Study(MRIStudy):
     add_data_specs = [
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        DatasetSpec('brain', mrconvert_nifti_gz_format, 'brain_mask_pipeline')]
+        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline')]
 
     add_option_specs = [
         OptionSpec('bet_method', 'optibet',
@@ -37,7 +37,7 @@ class T1Study(MRIStudy):
         """
         pipeline = self.create_pipeline(
             name='segmentation',
-            inputs=[DatasetSpec('primary', mrconvert_nifti_gz_format)],
+            inputs=[DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('fs_recon_all',
                                  freesurfer_recon_all_format)],
             desc="Segment white/grey matter and csf",
