@@ -1,4 +1,4 @@
-from copy import copy
+from copy import deepcopy, copy
 from nianalysis.node import Node
 from nianalysis.data_format import DataFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
@@ -108,7 +108,7 @@ for data_format in copy(globals()).itervalues():
 # different between MRConvert and Dcm2niix, these data formats can
 # be used in pipeline input specs that need to use MRConvert instead
 # of Dcm2niix (i.e. motion-detection pipeline)
-mrconvert_nifti_format = copy(nifti_format)
+mrconvert_nifti_format = deepcopy(nifti_format)
 mrconvert_nifti_format._converters['dicom'] = MrtrixConverter
-mrconvert_nifti_gz_format = copy(nifti_gz_format)
+mrconvert_nifti_gz_format = deepcopy(nifti_gz_format)
 mrconvert_nifti_gz_format._converters['dicom'] = MrtrixConverter
