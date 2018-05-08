@@ -639,7 +639,8 @@ class MRIStudy(Study):
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):
-        return self.motion_mat_pipeline_factory(ref=False, align_mats=None)
+        return self.motion_mat_pipeline_factory(ref=False, align_mats=None,
+                                                **kwargs)
 
     def motion_mat_pipeline_factory(self, ref=False, align_mats=None,
                                     **kwargs):

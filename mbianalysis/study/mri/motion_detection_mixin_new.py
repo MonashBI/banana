@@ -476,7 +476,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     md_spec_name.append('ref')
 
     dct['ref_motion_mat_pipeline'] = MultiStudy.translate(
-        'ref', 'motion_mat_pipeline', ref=True)
+        'ref', 'motion_mat_pipeline_factory', ref=True)
 
     if not umap_ref:
         logger.info(
@@ -594,16 +594,19 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
                 for i in range(len(dmris_main)))
             inputs.extend(
-                DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
+                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main_scan[0])
                 for i, dmris_main_scan in enumerate(dmris_main))
 
-            def dwi_main_preproc_pipeline_altered(self, **kwargs):
-                return self.dwi_main_preproc_pipeline(
+#             def basic_preproc_pipeline_altered(self, **kwargs):
+#                 return self._eddy_dwipreproc_pipeline(
+#                     distortion_correction=False)
+            dct['dwi_0_basic_preproc_pipeline'] = MultiStudy.translate(
+                'dwi_0', '_eddy_dwipreproc_pipeline', 
                     distortion_correction=False)
-            dct['dwi_main_preproc_pipeline'] = (
-                dwi_main_preproc_pipeline_altered)
-            md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+#             dct['dwi_0_basic_preproc_pipeline'] = (
+#                 basic_preproc_pipeline_altered)
+            md_spec_name.extend('dwi_{}'.format(i)
                                 for i in range(len(dmris_main)))
             used_dwi.extend(scan for scan in dmris_main)
         if not dmris_main and (dmris_ref and dmris_opposite):

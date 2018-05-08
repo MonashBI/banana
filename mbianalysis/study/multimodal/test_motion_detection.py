@@ -5,7 +5,7 @@ ref = 'ref'
 t1s = []  # ['t1']
 t2s = ['t2']
 epis = []  # ['epi']
-dmris = [['dwi_main', '0'], ['dwi_opposite', '-1']]
+dmris = [['dwi_main', '0']]#, ['dwi_opposite', '-1']]
 
 
 class A(object):
