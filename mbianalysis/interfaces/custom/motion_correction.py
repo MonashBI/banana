@@ -19,8 +19,10 @@ import math
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
 
-    reg_mat = File(exists=True, desc='Registration matrix', mandatory=True)
-    qform_mat = File(exists=True, desc='Qform matrix', mandatory=True)
+    reg_mat = File(exists=True, desc='Registration matrix')
+    qform_mat = File(exists=True, desc='Qform matrix')
+    dummy_input = Directory(desc='Dummy input in order to make the reference '
+                            'motion mat pipeline work')
     align_mats = Directory(exists=True, desc='Directory with intra-scan '
                            'alignment matrices', default=None)
     reference = traits.Bool(desc='If True, the pipeline will save just an '
@@ -41,15 +43,17 @@ class MotionMatCalculation(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        reg_mat = np.loadtxt(self.inputs.reg_mat)
-        qform_mat = np.loadtxt(self.inputs.qform_mat)
-        _, out_name, _ = split_filename(self.inputs.reg_mat)
         reference = self.inputs.reference
+        dummy = self.inputs.dummy_input
         if reference:
             np.savetxt('reference_motion_mat.mat', np.eye(4))
             np.savetxt('reference_motion_mat_inv.mat', np.eye(4))
+            out_name = 'ref_motion_mats'
             mm = glob.glob('*motion_mat*.mat')
         else:
+            reg_mat = np.loadtxt(self.inputs.reg_mat)
+            qform_mat = np.loadtxt(self.inputs.qform_mat)
+            _, out_name, _ = split_filename(self.inputs.reg_mat)
             if self.inputs.align_mats:
                 list_mats = sorted(glob.glob(self.inputs.align_mats+'/MAT*'))
                 if not list_mats:
@@ -89,7 +93,10 @@ class MotionMatCalculation(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
 
-        _, out_name, _ = split_filename(self.inputs.reg_mat)
+        if self.inputs.reference:
+            out_name = 'ref_motion_mats'
+        else:
+            _, out_name, _ = split_filename(self.inputs.reg_mat)
 
         outputs["motion_mats"] = os.path.abspath(out_name)
 

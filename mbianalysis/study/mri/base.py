@@ -108,7 +108,7 @@ class MRIStudy(Study):
         OptionSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         OptionSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
-        OptionSpec('preproc_resolution', None),
+        OptionSpec('preproc_resolution', None, dtype=list),
         OptionSpec('linear_reg_method', 'flirt',
                    choices=('flirt', 'spm')),
         OptionSpec('flirt_degrees_of_freedom', 6, desc=(
@@ -142,7 +142,7 @@ class MRIStudy(Study):
                                  **kwargs)
         if method == 'flirt':
             pipeline = self._flirt_factory(
-                pipeline_name, 'coreg_ref_brain', 'brain',
+                pipeline_name, 'brain', 'coreg_ref_brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
         elif method == 'spm':
             raise NotImplementedError
@@ -275,12 +275,12 @@ class MRIStudy(Study):
                                   .format(bet_method))
         return pipeline
 
-    def _fsl_bet_brain_mask_pipeline(self, in_file, **kwargs):
+    def _fsl_bet_brain_mask_pipeline(self, in_file, name='', **kwargs):
         """
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.create_pipeline(
-            name=self.BRAIN_MASK_NAME,
+            name=name+self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=[DatasetSpec('brain', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
@@ -306,7 +306,7 @@ class MRIStudy(Study):
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         return pipeline
 
-    def _optiBET_brain_mask_pipeline(self, in_file, **kwargs):
+    def _optiBET_brain_mask_pipeline(self, in_file, name='', **kwargs):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
@@ -325,7 +325,7 @@ class MRIStudy(Study):
                            **kwargs):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
-            name=self.BRAIN_MASK_NAME,
+            name=name+self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
             desc=("Modified implementation of optiBET.sh"),
@@ -513,7 +513,7 @@ class MRIStudy(Study):
 
         return pipeline
 
-    def basic_preproc_pipeline(self, **kwargs):
+    def basic_preproc_pipeline(self, in_file_name='primary', **kwargs):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -528,19 +528,19 @@ class MRIStudy(Study):
             performed
         """
         pipeline = self.create_pipeline(
-            name='fslswapdim_pipeline',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
+            name='basic_preproc_pipeline',
+            inputs=[DatasetSpec(in_file_name, nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
-        swap = pipeline.create_node(fsl.utils.SwapDimensions(),
-                                    name='fslswapdim',
+        swap = pipeline.create_node(fsl.utils.Reorient2Std(),
+                                    name='fslreorient2std',
                                     requirements=[fsl509_req])
-        swap.inputs.new_dims = pipeline.option('preproc_new_dims')
-        pipeline.connect_input('primary', swap, 'in_file')
+#         swap.inputs.new_dims = pipeline.option('preproc_new_dims')
+        pipeline.connect_input(in_file_name, swap, 'in_file')
         if pipeline.option('preproc_resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample",
                                             requirements=[mrtrix3_req])
@@ -558,24 +558,30 @@ class MRIStudy(Study):
                 "Can only extract header info if 'primary' dataset "
                 "is provided in DICOM format ({})".format(
                     self.input('primary').format))
-        return self.header_info_extraction_pipeline_factory('primary',
-                                                            **kwargs)
+        return self.header_info_extraction_pipeline_factory(
+            'header_info_extraction', 'primary', **kwargs)
 
-    def header_info_extraction_pipeline_factory(self, dcm_in_name, ref=False,
-                                                multivol=False, **kwargs):
-        output_files = [FieldSpec('tr', dtype=float),
-                        FieldSpec('start_time', dtype=str),
-                        FieldSpec('tot_duration', dtype=str),
-                        FieldSpec('real_duration', dtype=str),
-                        FieldSpec('ped', dtype=str),
-                        FieldSpec('pe_angle', dtype=str),
-                        DatasetSpec('dcm_info', text_format)]
-        if ref:
-            output_files.append(DatasetSpec('motion_mats',
-                                            motion_mats_format))
+    def header_info_extraction_pipeline_factory(
+            self, name, dcm_in_name, multivol=False, output_prefix='',
+            **kwargs):
+
+        tr = output_prefix + 'tr'
+        start_time = output_prefix + 'start_time'
+        tot_duration = output_prefix + 'tot_duration'
+        real_duration = output_prefix + 'real_duration'
+        ped = output_prefix + 'ped'
+        pe_angle = output_prefix + 'pe_angle'
+        dcm_info = output_prefix + 'dcm_info'
+        output_files = [FieldSpec(tr, dtype=float),
+                        FieldSpec(start_time, dtype=str),
+                        FieldSpec(tot_duration, dtype=str),
+                        FieldSpec(real_duration, dtype=str),
+                        FieldSpec(ped, dtype=str),
+                        FieldSpec(pe_angle, dtype=str),
+                        DatasetSpec(dcm_info, text_format)]
 
         pipeline = self.create_pipeline(
-            name='header_info_extraction',
+            name=name,
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
             outputs=output_files,
             desc=("Pipeline to extract the most important scan "
@@ -586,20 +592,16 @@ class MRIStudy(Study):
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
         hd_extraction.inputs.multivol = multivol
-        hd_extraction.inputs.reference = ref
         pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
-        pipeline.connect_output('tr', hd_extraction, 'tr')
-        pipeline.connect_output('start_time', hd_extraction, 'start_time')
+        pipeline.connect_output(tr, hd_extraction, 'tr')
+        pipeline.connect_output(start_time, hd_extraction, 'start_time')
         pipeline.connect_output(
-            'tot_duration', hd_extraction, 'tot_duration')
+            tot_duration, hd_extraction, 'tot_duration')
         pipeline.connect_output(
-            'real_duration', hd_extraction, 'real_duration')
-        pipeline.connect_output('ped', hd_extraction, 'ped')
-        pipeline.connect_output('pe_angle', hd_extraction, 'pe_angle')
-        pipeline.connect_output('dcm_info', hd_extraction, 'dcm_info')
-        if ref:
-            pipeline.connect_output('motion_mats', hd_extraction,
-                                    'ref_motion_mats')
+            real_duration, hd_extraction, 'real_duration')
+        pipeline.connect_output(ped, hd_extraction, 'ped')
+        pipeline.connect_output(pe_angle, hd_extraction, 'pe_angle')
+        pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
         return pipeline
 
     def dcm2nii_conversion_pipeline(self, **kwargs):
@@ -636,10 +638,18 @@ class MRIStudy(Study):
 
         return pipeline
 
-    def motion_mat_pipeline(self, ref=False, **kwargs):
+    def motion_mat_pipeline(self, **kwargs):
+        return self.motion_mat_pipeline_factory(ref=False, align_mats=None)
+
+    def motion_mat_pipeline_factory(self, ref=False, align_mats=None,
+                                    **kwargs):
 
         if ref:
-            inputs = []
+            inputs = [DatasetSpec('primary', dicom_format)]
+        elif align_mats:
+            inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
+                      DatasetSpec('qform_mat', text_matrix_format),
+                      DatasetSpec(align_mats, directory_format)]
         else:
             inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
                       DatasetSpec('qform_mat', text_matrix_format)]
@@ -656,6 +666,11 @@ class MRIStudy(Study):
             MotionMatCalculation(), name='motion_mats')
         if ref:
             mm.inputs.reference = True
+            pipeline.connect_input('primary', mm, 'dummy_input')
+        elif align_mats:
+            pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
+            pipeline.connect_input('qform_mat', mm, 'qform_mat')
+            pipeline.connect_input(align_mats, mm, 'align_mats')
         else:
             pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
             pipeline.connect_input('qform_mat', mm, 'qform_mat')

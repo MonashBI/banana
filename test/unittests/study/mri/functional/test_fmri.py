@@ -19,4 +19,4 @@ class TestFMRI(BaseTestCase):
                 DatasetMatch('epi_primary', dicom_format, 'rs_fmri'),
                 DatasetMatch('train_data', rdata_format, 'train_data')})
         study.data('melodic_ica')
-        self.assertDatasetCreated('melodic_ica', study.name)
+        self.assertDatasetCreated('melodic_ica.zip', study.name)

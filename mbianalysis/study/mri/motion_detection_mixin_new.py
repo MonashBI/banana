@@ -1,6 +1,6 @@
 from nianalysis.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (
-    mrconvert_nifti_gz_format, text_matrix_format, directory_format,
+    nifti_gz_format, text_matrix_format, directory_format,
     text_format, png_format, dicom_format, motion_mats_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
@@ -100,16 +100,13 @@ class MotionDetectionMixin(MultiStudy):
         return self.mean_displacement_pipeline_factory(md_inputs=[], **kwargs)
 
     def mean_displacement_pipeline_factory(self, md_inputs=[], **kwargs):
-        sub_study_names = [DatasetSpec('ref_brain', mrconvert_nifti_gz_format)]
+        sub_study_names = [DatasetSpec('ref_brain', nifti_gz_format)]
         for name in md_inputs:
             sub_study_names.append(DatasetSpec(name+'_motion_mats',
                                                motion_mats_format))
-            sub_study_names.append(DatasetSpec(name+'_tr',
-                                               motion_mats_format))
-            sub_study_names.append(DatasetSpec(name+'_start_time',
-                                               motion_mats_format))
-            sub_study_names.append(DatasetSpec(name+'_real_duration',
-                                               motion_mats_format))
+            sub_study_names.append(FieldSpec(name+'_tr', float))
+            sub_study_names.append(FieldSpec(name+'_start_time', str))
+            sub_study_names.append(FieldSpec(name+'_real_duration', str))
 #         for sub_study_spec in self.sub_study_specs():
 #             try:
 #                 inputs.append(
@@ -321,7 +318,7 @@ class MotionDetectionMixin(MultiStudy):
                   DatasetSpec(ute_qform_mat, text_matrix_format)]
         outputs = [DatasetSpec('frame2reference_mats', directory_format)]
         if umap:
-            inputs.append(DatasetSpec(umap, mrconvert_nifti_gz_format))
+            inputs.append(DatasetSpec(umap, nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
 
         pipeline = self.create_pipeline(
@@ -401,7 +398,7 @@ class MotionDetectionMixin(MultiStudy):
         if timestamps:
             inputs.append(DatasetSpec('timestamps', directory_format))
         if ute is not None:
-            inputs.append(DatasetSpec(ute, mrconvert_nifti_gz_format))
+            inputs.append(DatasetSpec(ute, nifti_gz_format))
 
         pipeline = self.create_pipeline(
             name=name,
@@ -441,6 +438,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     data_specs = []
     md_spec_name = []
     run_pipeline = False
+    option_specs = [OptionSpec('ref_preproc_resolution', [1])]
+
     if pet_data_dir is not None:
         data_specs.append(DatasetSpec('pet_data_dir', directory_format))
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
@@ -474,9 +473,10 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     study_specs = [SubStudySpec('ref', ref_study)]
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
+    md_spec_name.append('ref')
 
-    dct['ref_motion_mats_pipeline'] = MultiStudy.translate(
-        'ref', 'motion_mats_pipeline', ref=True)
+    dct['ref_motion_mat_pipeline'] = MultiStudy.translate(
+        'ref', 'motion_mat_pipeline', ref=True)
 
     if not umap_ref:
         logger.info(
@@ -617,10 +617,10 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             inputs.extend(
                 DatasetMatch('dwi_{}_dwi_ref_minus'.format(i), dicom_format,
                              dmris_opposite[i][0]) for i in range(min_index))
-            md_spec_name.extend('dwi_{}_dwi_plus'.format(i)
+            md_spec_name.extend('dwi_{}_dwi_ref_plus'.format(i)
                                 for i in range(len(dmris_ref[:min_index])))
             md_spec_name.extend(
-                'dwi_{}_dwi_minus'.format(i)
+                'dwi_{}_dwi_ref_minus'.format(i)
                 for i in range(len(dmris_opposite[:min_index])))
             used_dwi.extend(scan for scan in dmris_ref[:min_index] +
                             dmris_opposite[:min_index])
@@ -629,25 +629,25 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
                 for i in range(len(dmris_main)))
             inputs.extend(
-                DatasetMatch('dwi_{}_dwi_main'.format(i), dicom_format,
+                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
             if len(dmris_main) <= len(dmris_opposite):
-                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_minus'.format(i),
+                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
                                            dicom_format, dmris_opposite[i][0])
                               for i in range(len(dmris_main)))
-                md_spec_name.extend('dwi_{}_dwi_main'.format(i)
+                md_spec_name.extend('dwi_{}'.format(i)
                                     for i in range(len(dmris_main)))
-                md_spec_name.extend('dwi_{}_dwi_minus'.format(i)
-                                    for i in range(len(dmris_main)))
+#                 md_spec_name.extend('dwi_{}_dwi_reference'.format(i)
+#                                     for i in range(len(dmris_main)))
                 used_dwi.extend(scan for scan in dmris_main +
                                 dmris_opposite[:len(dmris_main)])
             else:
-                inputs.extend(DatasetMatch('dwi_{}_dwi_ref_minus'.format(i),
+                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
                                            dicom_format, dmris_opposite[0][0])
                               for i in range(len(dmris_main)))
                 md_spec_name.extend('dwi_{}_dwi_main'.format(i)
                                     for i in range(len(dmris_main)))
-                md_spec_name.extend('dwi_0_dwi_minus')
+                md_spec_name.extend('dwi_0_dwi_ref_minus')
                 used_dwi.extend(scan for scan in dmris_main+dmris_opposite[:1])
 
         if dmris_main and dmris_opposite and dmris_ref:
@@ -667,9 +667,9 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                               for i in range(len(dmris_main)))
                 md_spec_name.extend('dwi_{}_dwi_main'.format(i)
                                     for i in range(len(dmris_main)))
-                md_spec_name.extend('dwi_{}_dwi_minus'.format(i)
+                md_spec_name.extend('dwi_{}_dwi_ref_minus'.format(i)
                                     for i in range(len(dmris_main)))
-                md_spec_name.extend('dwi_{}_dwi_plus'.format(i)
+                md_spec_name.extend('dwi_{}_dwi_ref_plus'.format(i)
                                     for i in range(len(dmris_main)))
                 used_dwi.extend(scan for scan in dmris_main +
                                 dmris_opposite[:len(dmris_main)] +
@@ -683,8 +683,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                               for i in range(len(dmris_main)))
                 md_spec_name.extend('dwi_{}_dwi_main'.format(i)
                                     for i in range(len(dmris_main)))
-                md_spec_name.extend('dwi_0_dwi_minus')
-                md_spec_name.extend('dwi_0_dwi_plus')
+                md_spec_name.extend('dwi_0_dwi_ref_minus')
+                md_spec_name.extend('dwi_0_dwi_ref_plus')
                 used_dwi.extend(scan for scan in dmris_main +
                                 dmris_opposite[:1]+dmris_ref[:1])
         unused_dwi = [x for x in dmris if x not in used_dwi]
@@ -717,4 +717,5 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
+    dct['add_option_specs'] = option_specs
     return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs

@@ -30,10 +30,13 @@ class DWIStudy(MRIStudy):
         OptionSpec('bet_robust', True),
         OptionSpec('bet_f_threshold', 0.2),
         OptionSpec('bet_reduce_bias', False)]
+
     def basic_preproc_pipeline(self, **kwargs):
         pipeline = self._eddy_dwipreproc_pipeline(**kwargs)
         return pipeline
+
     def _eddy_dwipreproc_pipeline(self, **kwargs):
+
         if 'dwi_reference' in self.input_names:
             inputs = [DatasetSpec('primary', dicom_format),
                       DatasetSpec('dwi_reference', dicom_format),
@@ -52,6 +55,7 @@ class DWIStudy(MRIStudy):
             version=1,
             citations=[],
             **kwargs)
+
         if distortion_correction:
             converter1 = pipeline.create_node(MRConvert(), name='converter1',
                                               requirements=[mrtrix3_req])
@@ -106,6 +110,7 @@ class DWIStudy(MRIStudy):
         pipeline.connect_output('preproc', swap, 'out_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
         return pipeline
+
     def affine_mats_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='affine_mat_generation',
@@ -126,6 +131,7 @@ class DWIStudy(MRIStudy):
         pipeline.connect_output(
             'align_mats', aff_mat, 'affine_matrices')
         return pipeline
+
 #     def motion_mat_pipeline(self, **kwargs):
 #         return (super(DWIStudy, self).motion_mat_pipeline_factory(
 #             align_mats='affine_mats', **kwargs))
