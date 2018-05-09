@@ -2,8 +2,8 @@ from mbianalysis.study.mri.motion_detection_mixin import (
     create_motion_detection_class)
 import os.path
 import errno
-from nianalysis.archive.local import LocalArchive
-from nianalysis.archive.xnat import XNATArchive
+from arcana.archive.local import LocalArchive
+from arcana.archive.xnat import XNATArchive
 
 
 def run_md(input_dir, dynamic=False, xnat_id=None):

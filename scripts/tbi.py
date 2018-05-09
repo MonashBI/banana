@@ -1,4 +1,4 @@
-from nianalysis.mri import DiffusionStudy
+from arcana.mri import DiffusionStudy
 from argparse import ArgumentParser
 import os
 

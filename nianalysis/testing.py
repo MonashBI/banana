@@ -1,6 +1,6 @@
 import os.path
 import mbianalysis
-from nianalysis.testing import (
+from arcana.testing import (
     BaseTestCase as NianalysisTestCase,
     BaseMultiSubjectTestCase as NianalysisMultiSubjectTestCase)
 

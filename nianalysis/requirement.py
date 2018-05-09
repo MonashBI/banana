@@ -1,12 +1,12 @@
 import re
-from nianalysis.requirement import Requirement, date_split
-from nianalysis.exception import NiAnalysisRequirementVersionException
+from arcana.requirement import Requirement, date_split
+from arcana.exception import ArcanaRequirementVersionException
 
 
 def matlab_version_split(version_str):
     match = re.match(r'(?:r|R)?(\d+)(\w)', version_str)
     if match is None:
-        raise NiAnalysisRequirementVersionException(
+        raise ArcanaRequirementVersionException(
             "Do not understand Matlab version '{}'".format(version_str))
     return int(match.group(1)), match.group(2).lower()
 

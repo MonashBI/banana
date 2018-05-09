@@ -1,4 +1,4 @@
-from nianalysis.citation import Citation
+from arcana.citation import Citation
 
 
 mrtrix_cite = Citation(

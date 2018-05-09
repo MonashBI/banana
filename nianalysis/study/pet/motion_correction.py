@@ -1,13 +1,13 @@
-from nianalysis.dataset import DatasetSpec
+from arcana.dataset import DatasetSpec
 from mbianalysis.data_format import (nifti_gz_format, directory_format)
 from mbianalysis.citation import fsl_cite
-from nianalysis.study.base import StudyMetaClass
+from arcana.study.base import StudyMetaClass
 from mbianalysis.interfaces.custom.pet import (StaticMotionCorrection)
 from nipype.interfaces.fsl import Merge, MCFLIRT, ImageMaths
-from nianalysis.interfaces.utils import ListDir
+from arcana.interfaces.utils import ListDir
 from mbianalysis.study.pet.base import PETStudy
 from mbianalysis.requirement import fsl509_req
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
 class FixedMAFMotionCorrection(PETStudy):

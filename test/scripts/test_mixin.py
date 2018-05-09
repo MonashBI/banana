@@ -2,12 +2,12 @@ from mbianalysis.study.mri.motion_detection_mixin import (
     create_motion_detection_class)
 import os.path
 import errno
-from nianalysis.archive.local import LocalArchive
+from arcana.archive.local import LocalArchive
 import pydicom
 import glob
 import shutil
-# from nianalysis.archive.xnat import XNATArchive
-from nianalysis.dataset import DatasetMatch, Field  # @IgnorePep8
+# from arcana.archive.xnat import XNATArchive
+from arcana.dataset import DatasetMatch, Field  # @IgnorePep8
 from mbianalysis.data_format import nifti_gz_format, dicom_format
 # from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
 

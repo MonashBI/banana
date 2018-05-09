@@ -6,7 +6,7 @@ from nipype.interfaces.mrtrix3.reconst import (
 from nipype.interfaces.mrtrix3.preprocess import (
     ResponseSD as NipypeResponseSD,
     ResponseSDInputSpec as NipypeResponseSDInputSpec)
-from nianalysis.utils import split_extension
+from arcana.utils import split_extension
 
 
 class Fod2FixelInputSpec(MRTrix3BaseInputSpec):

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from nianalysis.dataset import DatasetMatch  # @IgnorePep8
+from arcana.dataset import DatasetMatch  # @IgnorePep8
 from mbianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
 from mbianalysis.data_format import (  # @IgnorePep8

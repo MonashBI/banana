@@ -1,6 +1,6 @@
-from nianalysis.study.base import StudyMetaClass
+from arcana.study.base import StudyMetaClass
 from ..base import MRIStudy
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
 class T2Study(MRIStudy):

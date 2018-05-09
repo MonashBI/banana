@@ -3,7 +3,7 @@ from mbianalysis.study.mri.structural.t1 import CoregisteredT1Study
 from mbianalysis.study.mri.structural.t2 import CoregisteredT2Study
 from mbianalysis.data_format import directory_format, text_format
 config.enable_debug_mode()
-from nianalysis.dataset import DatasetMatch, Field  # @IgnorePep8
+from arcana.dataset import DatasetMatch, Field  # @IgnorePep8
 from mbianalysis.data_format import nifti_gz_format, list_mode_format  # @IgnorePep8
 from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
 from mbianalysis.study.pet.pca_motion_detection import PETPCAMotionDetectionStudy

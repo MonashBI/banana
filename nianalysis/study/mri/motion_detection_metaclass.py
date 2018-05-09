@@ -1,4 +1,4 @@
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format)
@@ -6,8 +6,8 @@ from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
 from mbianalysis.citation import fsl_cite
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.study.multi import (
+from arcana.study.base import StudyMetaClass
+from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study, T1Study
@@ -17,8 +17,8 @@ from .structural.diffusion_coreg import (
     CoregisteredDiffusionStudy, CoregisteredDiffusionReferenceOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
 from mbianalysis.requirement import fsl509_req
-from nianalysis.exception import NiAnalysisNameError
-from nianalysis.option import OptionSpec
+from arcana.exception import ArcanaNameError
+from arcana.option import OptionSpec
 
 
 class MotionReferenceT1Study(T1Study):
@@ -173,7 +173,7 @@ class MotionDetectionStudy(MultiStudy):
                 inputs.append(
                     self.data_spec(sub_study_spec.inverse_map('real_duration')))
                 sub_study_names.append(sub_study_spec.name)
-            except NiAnalysisNameError:
+            except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
 
         pipeline = self.create_pipeline(

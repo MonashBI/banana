@@ -1,5 +1,5 @@
-from nianalysis.study.base import Study
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.study.base import Study
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (nifti_gz_format, text_format,
                                      text_matrix_format, directory_format)
 from mbianalysis.interfaces.sklearn import FastICA
@@ -10,15 +10,15 @@ from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req, mrtrix3_req)
 from mbianalysis.citation import fsl_cite
 from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
-from nianalysis.interfaces.utils import ListDir, CopyToDir  # SelectOne, 
+from arcana.interfaces.utils import ListDir, CopyToDir  # SelectOne, 
 from nipype.interfaces.fsl import Merge, ExtractROI
 from mbianalysis.interfaces.custom.dicom import PetTimeInfo
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__).split('nianalysis')[0],
-                 'nianalysis', 'reference_data'))
+    os.path.join(os.path.dirname(__file__).split('arcana')[0],
+                 'arcana', 'reference_data'))
 
 
 class PETStudy(Study):

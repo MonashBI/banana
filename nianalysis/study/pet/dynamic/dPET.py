@@ -1,18 +1,18 @@
 from ..base import PETStudy
-from nianalysis.dataset import DatasetSpec
-from nianalysis.study.base import StudyMetaClass
+from arcana.dataset import DatasetSpec
+from arcana.study.base import StudyMetaClass
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.interfaces.utils import Merge
+from arcana.interfaces.utils import Merge
 from mbianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
 from mbianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      png_format)
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 import os
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__).split('nianalysis')[0],
-                 'nianalysis', 'reference_data'))
+    os.path.join(os.path.dirname(__file__).split('arcana')[0],
+                 'arcana', 'reference_data'))
 
 
 class DynamicPETStudy(PETStudy):

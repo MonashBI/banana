@@ -9,7 +9,7 @@ from mbianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from .t2 import T2Study
 from mbianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
-from nianalysis.interfaces.utils import MergeTuple, Chain
+from arcana.interfaces.utils import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
 from mbianalysis.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
@@ -19,11 +19,11 @@ from mbianalysis.data_format import (
     nifti_format, text_format)
 from mbianalysis.requirement import (
     fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
-from nianalysis.exception import NiAnalysisError
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.iterators import SelectSession
-from nianalysis.option import OptionSpec
+from arcana.exception import ArcanaError
+from arcana.study.base import StudyMetaClass
+from arcana.dataset import DatasetSpec
+from arcana.interfaces.iterators import SelectSession
+from arcana.option import OptionSpec
 
 
 class DiffusionStudy(T2Study):
@@ -135,7 +135,7 @@ class DiffusionStudy(T2Study):
             requirements=[mrtrix3_req, fsl5_req], wall_time=60)
         dwipreproc.inputs.rpe_pair = True
         if pipeline.option('preproc_pe_dir') is None:
-            raise NiAnalysisError(
+            raise ArcanaError(
                 "Required option 'preproc_pe_dir' was not provided to '{}' "
                 "pipeline in {}".format(pipeline.name, self))
         dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
@@ -214,7 +214,7 @@ class DiffusionStudy(T2Study):
             # Check inputs/outputs are connected
             pipeline.assert_connected()
         else:
-            raise NiAnalysisError(
+            raise ArcanaError(
                 "Unrecognised mask_tool '{}' (valid options 'bet' or "
                 "'mrtrix')".format(mask_tool))
         return pipeline

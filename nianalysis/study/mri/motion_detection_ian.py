@@ -1,12 +1,12 @@
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, dicom_format,
     par_format, text_format, eddy_par_format, png_format)
 from mbianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC)
 from mbianalysis.citation import fsl_cite
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.study.multi import (
+from arcana.study.base import StudyMetaClass
+from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from .epi import CoregisteredEPIStudy
 from .structural.t1 import CoregisteredT1Study

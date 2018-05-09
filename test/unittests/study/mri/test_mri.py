@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from nianalysis.dataset import DatasetMatch  # @IgnorePep8
+from arcana.dataset import DatasetMatch  # @IgnorePep8
 from mbianalysis.data_format import nifti_gz_format  # @IgnorePep8
 from mbianalysis.study.mri.base import MRIStudy  # @IgnorePep8
 from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
-from nianalysis.study import (  # @IgnorePep8
+from arcana.study import (  # @IgnorePep8
     MultiStudy, MultiStudyMetaClass, SubStudySpec)
 
 

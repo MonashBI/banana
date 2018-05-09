@@ -6,7 +6,7 @@ from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from mbianalysis.interfaces.fsl import (
     FSLFIX, FSLFixTraining, FSLSlices, SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
 from mbianalysis.citation import fsl_cite
@@ -16,14 +16,14 @@ from mbianalysis.data_format import (
     text_format)
 from mbianalysis.interfaces.ants import AntsRegSyn
 from mbianalysis.interfaces.afni import Tproject
-from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
-from nianalysis.interfaces.utils import Merge
+from arcana.interfaces.utils import MakeDir, CopyFile, CopyDir
+from arcana.interfaces.utils import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
 from nipype.interfaces.utility.base import IdentityInterface
-from nianalysis.option import OptionSpec
-from nianalysis.study.multi import (
+from arcana.option import OptionSpec
+from arcana.study.multi import (
     SubStudySpec, MultiStudyMetaClass, MultiStudy)
 from mbianalysis.study.mri.structural.t1 import T1Study
 from mbianalysis.study.mri.epi import EPIStudy

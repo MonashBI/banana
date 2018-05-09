@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-from nianalysis.dataset import DatasetMatch
+from arcana.dataset import DatasetMatch
 from mbianalysis.study.mri.phantom import PhantomStudy
-from nianalysis.archive.xnat import XNATArchive
+from arcana.archive.xnat import XNATArchive
 from mbianalysis.data_format import dicom_format
 
 qc_study = PhantomStudy(

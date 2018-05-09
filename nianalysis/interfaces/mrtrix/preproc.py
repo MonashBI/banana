@@ -5,7 +5,7 @@ from nipype.interfaces.base import (
     File, Directory, TraitedSpec, isdefined, traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
     MRTrix3Base, MRTrix3BaseInputSpec)
-from nianalysis.utils import split_extension
+from arcana.utils import split_extension
 
 
 # TODO: Write MRtrixBaseInputSpec with all the generic options included

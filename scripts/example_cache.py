@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import os.path
 import errno
-from nianalysis.dataset import DatasetMatch
+from arcana.dataset import DatasetMatch
 from mbianalysis.study.mri.structural.t2star import T2StarStudy
-from nianalysis.archive.xnat import XNATArchive
+from arcana.archive.xnat import XNATArchive
 from mbianalysis.data_format import zip_format
 import argparse
 import cPickle as pkl

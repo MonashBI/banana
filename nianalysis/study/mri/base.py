@@ -4,32 +4,32 @@ from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
 from mbianalysis.data_format import nifti_format, motion_mats_format,\
     directory_format, nifti_gz_format
-from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import Study, StudyMetaClass
+from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.study.base import Study, StudyMetaClass
 from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from mbianalysis.data_format import (
     dicom_format, text_format, gif_format)
 from mbianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from nianalysis.utils import get_atlas_path
-from nianalysis.exception import (
-    NiAnalysisError, NiAnalysisUsageError)
+from arcana.utils import get_atlas_path
+from arcana.exception import (
+    ArcanaError, ArcanaUsageError)
 from mbianalysis.interfaces.mrtrix.transform import MRResize
 from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
-from nianalysis.interfaces.mrtrix import MRConvert
+from arcana.interfaces.mrtrix import MRConvert
 from mbianalysis.interfaces.fsl import FSLSlices
 from mbianalysis.data_format import text_matrix_format
 import os
 from mbianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.interfaces.converters import Dcm2niix
-from nianalysis.option import OptionSpec
+from arcana.interfaces.converters import Dcm2niix
+from arcana.option import OptionSpec
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from nianalysis.interfaces.converters import Nii2Dicom
-from nianalysis.interfaces.utils import (
+from arcana.interfaces.converters import Nii2Dicom
+from arcana.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)
 
 
@@ -271,7 +271,7 @@ class MRIStudy(Study):
         elif bet_method == 'optibet':
             pipeline = self._optiBET_brain_mask_pipeline(in_file, **kwargs)
         else:
-            raise NiAnalysisError("Unrecognised brain extraction tool '{}'"
+            raise ArcanaError("Unrecognised brain extraction tool '{}'"
                                   .format(bet_method))
         return pipeline
 
@@ -390,7 +390,7 @@ class MRIStudy(Study):
         if atlas_reg_tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
         else:
-            raise NiAnalysisError("Unrecognised coregistration tool '{}'"
+            raise ArcanaError("Unrecognised coregistration tool '{}'"
                                   .format(atlas_reg_tool))
         return pipeline
 
@@ -507,7 +507,7 @@ class MRIStudy(Study):
         elif img_type == 2:
             pipeline.connect_output('wm_seg', split, 'out2')
         else:
-            raise NiAnalysisUsageError(
+            raise ArcanaUsageError(
                 "'img_type' option can either be 1 or 2 (not {})"
                 .format(img_type))
 
@@ -554,7 +554,7 @@ class MRIStudy(Study):
 
     def header_info_extraction_pipeline(self, **kwargs):
         if self.input('primary').format != dicom_format:
-            raise NiAnalysisUsageError(
+            raise ArcanaUsageError(
                 "Can only extract header info if 'primary' dataset "
                 "is provided in DICOM format ({})".format(
                     self.input('primary').format))

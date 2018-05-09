@@ -1,15 +1,15 @@
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
-# from nianalysis.interfaces.utils import DummyReconAll as ReconAll
+# from arcana.interfaces.utils import DummyReconAll as ReconAll
 from mbianalysis.requirement import freesurfer_req
 from mbianalysis.citation import freesurfer_cites
 from mbianalysis.data_format import (
     freesurfer_recon_all_format, nifti_gz_format)
-from nianalysis.dataset import DatasetSpec
-from nianalysis.interfaces.utils import JoinPath
+from arcana.dataset import DatasetSpec
+from arcana.interfaces.utils import JoinPath
 from ..base import MRIStudy
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.option import OptionSpec
+from arcana.study.base import StudyMetaClass
+from arcana.option import OptionSpec
 
 
 class T1Study(MRIStudy):

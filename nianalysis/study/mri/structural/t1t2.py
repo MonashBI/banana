@@ -1,8 +1,8 @@
 from nipype.interfaces.fsl import ApplyMask
 from mbianalysis.data_format import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
-from nianalysis.dataset import DatasetSpec
-from nianalysis.study.multi import (
+from arcana.dataset import DatasetSpec
+from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from ..coregistered import CoregisteredStudy, CoregisteredToMatrixStudy
 from .t1 import T1Study

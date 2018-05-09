@@ -6,9 +6,9 @@ from mbianalysis.requirement import spm12_req
 from mbianalysis.citation import spm_cite
 from mbianalysis.data_format import (
     nifti_gz_format, nifti_format, text_matrix_format)
-from nianalysis.study.base import StudyMetaClass, Study
-from nianalysis.dataset import DatasetSpec
-from nianalysis.option import OptionSpec
+from arcana.study.base import StudyMetaClass, Study
+from arcana.dataset import DatasetSpec
+from arcana.option import OptionSpec
 
 # class CoregisteredToMatrixStudy(CoregisteredStudy):
 #     """
@@ -61,7 +61,7 @@ from nianalysis.option import OptionSpec
 #     def _spm_coreg_pipeline(self, **kwargs):
 #         raise NotImplementedError(
 #             "SPM pipeline doesn't have (or at least it isn't implemented in "
-#             "NiAnalysis) a registration pipeline")
+#             "Arcana) a registration pipeline")
 # 
 #     def _connect_matrix(self, pipeline, flirt):
 #         pipeline.connect_input('matrix', flirt, 'in_matrix_file')

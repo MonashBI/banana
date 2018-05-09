@@ -1,4 +1,4 @@
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     text_format, png_format, dicom_format)
@@ -7,7 +7,7 @@ from mbianalysis.interfaces.custom.motion_correction import (
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference,
     CreateMocoSeries)
 from mbianalysis.citation import fsl_cite
-from nianalysis.study.multi import (
+from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from .base import MRIStudy
 from .structural.t1 import T1Study
@@ -16,15 +16,15 @@ from .epi import EPIStudy
 from nipype.interfaces.utility import Merge
 from .structural.diffusion_coreg import DWIStudy
 from mbianalysis.requirement import fsl509_req
-from nianalysis.exception import NiAnalysisNameError
-from nianalysis.dataset import DatasetMatch
+from arcana.exception import ArcanaNameError
+from arcana.dataset import DatasetMatch
 import logging
-from nianalysis.interfaces.utils import CopyToDir
+from arcana.interfaces.utils import CopyToDir
 import os
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
-logger = logging.getLogger('NiAnalysis')
+logger = logging.getLogger('Arcana')
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
@@ -104,7 +104,7 @@ class MotionDetectionMixin(MultiStudy):
                     self.data_spec(sub_study_spec.inverse_map(
                         'real_duration')))
                 sub_study_names.append(sub_study_spec.name)
-            except NiAnalysisNameError:
+            except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
 
         pipeline = self.create_pipeline(

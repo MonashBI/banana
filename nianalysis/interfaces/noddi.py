@@ -3,8 +3,8 @@ from nipype.interfaces.base import (
     BaseInterface, File, TraitedSpec, traits, isdefined,
     BaseInterfaceInputSpec)
 from nipype.interfaces.matlab import MatlabCommand
-from nianalysis.exception import NiAnalysisError
-from nianalysis.utils import split_extension
+from arcana.exception import ArcanaError
+from arcana.utils import split_extension
 
 
 class CreateROIInputSpec(BaseInterfaceInputSpec):
@@ -55,7 +55,7 @@ class CreateROI(BaseInterface):
     def _gen_outfilename(self):
         if isdefined(self.inputs.out_file):
             if not self.inputs.out_file.endswith('.mat'):
-                raise NiAnalysisError(
+                raise ArcanaError(
                     "Output NODDI ROI should be saved with '.mat' extension "
                     "(provided '{}')".format(self.inputs.out_file))
             out_name = self.inputs.out_file

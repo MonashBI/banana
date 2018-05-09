@@ -9,8 +9,8 @@ from mbianalysis.interfaces.fsl import (
     MelodicL1FSF, FSLFIX, CheckLabelFile, FSLFixTraining, FSLSlices,
     SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.dataset import DatasetSpec, FieldSpec
-from nianalysis.study.base import StudyMetaClass
+from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.study.base import StudyMetaClass
 from ..base import MRIStudy
 from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
@@ -21,13 +21,13 @@ from mbianalysis.data_format import (
     text_format, dicom_format, ica_format)
 from mbianalysis.interfaces.ants import AntsRegSyn
 from mbianalysis.interfaces.afni import Tproject
-from nianalysis.interfaces.utils import MakeDir, CopyFile, CopyDir
-from nianalysis.interfaces.utils import Merge
+from arcana.interfaces.utils import MakeDir, CopyFile, CopyDir
+from arcana.interfaces.utils import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import subprocess as sp
 from nipype.interfaces.utility.base import IdentityInterface
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
 class FunctionalMRIStudy(MRIStudy):

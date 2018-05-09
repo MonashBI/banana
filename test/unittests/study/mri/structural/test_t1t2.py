@@ -1,6 +1,6 @@
 from nipype import config
 config.enable_debug_mode()
-from nianalysis.dataset import DatasetMatch  # @IgnorePep8
+from arcana.dataset import DatasetMatch  # @IgnorePep8
 from mbianalysis.study.mri.structural.t1t2 import T1T2Study # @IgnorePep8
 from mbianalysis.data_format import (  # @IgnorePep8
     nifti_gz_format)

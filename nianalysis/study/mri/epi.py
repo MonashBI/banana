@@ -2,17 +2,17 @@ from base import MRIStudy
 from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
 from mbianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      directory_format, par_format,
                                      motion_mats_format)
 from mbianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from mbianalysis.requirement import fsl509_req
-from nianalysis.study.base import StudyMetaClass
+from arcana.study.base import StudyMetaClass
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation, MergeListMotionMat)
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap

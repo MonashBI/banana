@@ -1,6 +1,6 @@
 from ..base import MRIStudy
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.study.base import StudyMetaClass
+from arcana.dataset import DatasetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
 from nipype.interfaces.fsl.utils import ConvertXFM, Smooth
 from nipype.interfaces.fsl.maths import (
@@ -8,11 +8,11 @@ from nipype.interfaces.fsl.maths import (
 from nipype.interfaces.spm.preprocess import NewSegment
 from nipype.interfaces.utility.base import Select
 from mbianalysis.interfaces.umap_calc import CoreUmapCalc
-from nianalysis.interfaces.converters import Nii2Dicom
+from arcana.interfaces.converters import Nii2Dicom
 from mbianalysis.interfaces.mrtrix.utils import MRConvert
-from nianalysis.interfaces.utils import (
+from arcana.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)
-from nianalysis.study.multi import (
+from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from ..coregistered import CoregisteredStudy
 from mbianalysis.citation import (
@@ -24,7 +24,7 @@ from mbianalysis.requirement import (
     fsl5_req, spm12_req, matlab2015_req)
 from mbianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
 class UTEStudy(MRIStudy):

@@ -11,7 +11,7 @@ import os
 import datetime as dt
 import os.path
 import nibabel as nib
-from nianalysis.utils import split_extension
+from arcana.utils import split_extension
 
 
 class DicomHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):

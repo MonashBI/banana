@@ -1,5 +1,5 @@
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.dataset import DatasetSpec, FieldSpec
+from arcana.study.base import StudyMetaClass
+from arcana.dataset import DatasetSpec, FieldSpec
 from mbianalysis.data_format import (list_mode_format, directory_format)
 from mbianalysis.study.pet.base import PETStudy
 from mbianalysis.interfaces.custom.pet import (

@@ -2,12 +2,12 @@ from mbianalysis.requirement import fsl5_req, matlab2015_req
 from mbianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from mbianalysis.data_format import directory_format, nifti_gz_format
-from nianalysis.study.base import StudyMetaClass
-from nianalysis.dataset import DatasetSpec
+from arcana.study.base import StudyMetaClass
+from arcana.dataset import DatasetSpec
 from mbianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
 from nipype.interfaces import fsl
-from nianalysis.option import OptionSpec
+from arcana.option import OptionSpec
 
 
 class T2StarStudy(MRIStudy):
