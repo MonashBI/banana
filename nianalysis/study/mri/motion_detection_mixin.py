@@ -1,12 +1,12 @@
 from arcana.dataset import DatasetSpec, FieldSpec, Field
-from mbianalysis.data_format import (
+from nianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format, dicom_format)
-from mbianalysis.interfaces.custom.motion_correction import (
+from nianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference,
     CreateMocoSeries)
-from mbianalysis.citation import fsl_cite
+from nianalysis.citation import fsl_cite
 from arcana.study.base import StudyMetaClass
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
@@ -19,11 +19,11 @@ from .structural.diffusion_coreg import (
     CoregisteredDiffusionStudy,
     CoregisteredDiffusionReferenceOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
-from mbianalysis.requirement import fsl509_req
+from nianalysis.requirement import fsl509_req
 from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
-from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
+from nianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 from arcana.interfaces.utils import CopyToDir
 import os
 from arcana.option import OptionSpec
@@ -39,7 +39,7 @@ logger.addHandler(handler)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../../../mbianalysis',
+    os.path.join(os.path.dirname(__file__), '../../../nianalysis',
                  'reference_data'))
 
 

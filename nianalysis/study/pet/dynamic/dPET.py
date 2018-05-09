@@ -4,8 +4,8 @@ from arcana.study.base import StudyMetaClass
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.interfaces.utils import Merge
-from mbianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
-from mbianalysis.data_format import (nifti_gz_format, text_matrix_format,
+from nianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
+from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      png_format)
 from arcana.option import OptionSpec
 import os

@@ -3,19 +3,19 @@ from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE, FLIRT
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
-from mbianalysis.interfaces.fsl import (
+from nianalysis.interfaces.fsl import (
     FSLFIX, FSLFixTraining, FSLSlices, SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.dataset import DatasetSpec, FieldSpec
-from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
+from nianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
-from mbianalysis.citation import fsl_cite
-from mbianalysis.data_format import (
+from nianalysis.citation import fsl_cite
+from nianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
     text_format)
-from mbianalysis.interfaces.ants import AntsRegSyn
-from mbianalysis.interfaces.afni import Tproject
+from nianalysis.interfaces.ants import AntsRegSyn
+from nianalysis.interfaces.afni import Tproject
 from arcana.interfaces.utils import MakeDir, CopyFile, CopyDir
 from arcana.interfaces.utils import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge
@@ -25,9 +25,9 @@ from nipype.interfaces.utility.base import IdentityInterface
 from arcana.option import OptionSpec
 from arcana.study.multi import (
     SubStudySpec, MultiStudyMetaClass, MultiStudy)
-from mbianalysis.study.mri.structural.t1 import T1Study
-from mbianalysis.study.mri.epi import EPIStudy
-from mbianalysis.study.mri.structural.t2 import T2Study
+from nianalysis.study.mri.structural.t1 import T1Study
+from nianalysis.study.mri.epi import EPIStudy
+from nianalysis.study.mri.structural.t2 import T2Study
 
 
 class FunctionalMRIStudy(MultiStudy):

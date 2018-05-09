@@ -2,9 +2,9 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
-from mbianalysis.data_format import (nifti_gz_format) # @IgnorePep8
-from mbianalysis.study.pet.static.sPET import StaticPETStudy  # @IgnorePep8
-from mbianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
+from nianalysis.data_format import (nifti_gz_format) # @IgnorePep8
+from nianalysis.study.pet.static.sPET import StaticPETStudy  # @IgnorePep8
+from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 
 
 class TestsPET(BaseTestCase):

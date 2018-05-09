@@ -2,7 +2,7 @@ from copy import deepcopy, copy
 from arcana.node import Node
 from arcana.data_format import DataFormat, Converter
 from arcana.interfaces.mrtrix import MRConvert
-from mbianalysis.requirement import (
+from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
 from arcana.interfaces.converters import Dcm2niix
 from arcana.data_format import (

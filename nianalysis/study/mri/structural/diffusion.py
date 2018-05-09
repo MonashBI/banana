@@ -1,23 +1,23 @@
 from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor
-from mbianalysis.interfaces.mrtrix import (
+from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, EstimateFOD, ResponseSD, DWIIntensityNorm, AverageResponse)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
-from mbianalysis.interfaces.noddi import (
+from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from .t2 import T2Study
-from mbianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
+from nianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from arcana.interfaces.utils import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
-from mbianalysis.citation import (
+from nianalysis.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
-from mbianalysis.data_format import (
+from nianalysis.data_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format)
-from mbianalysis.requirement import (
+from nianalysis.requirement import (
     fsl5_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
 from arcana.exception import ArcanaError
 from arcana.study.base import StudyMetaClass

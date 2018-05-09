@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from nipype import config
-from mbianalysis.data_format import rdata_format, dicom_format
+from nianalysis.data_format import rdata_format, dicom_format
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
-from mbianalysis.study.mri.functional.fmri_new import FunctionalMRIStudy  # @IgnorePep8
-from mbianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
+from nianalysis.study.mri.functional.fmri_new import FunctionalMRIStudy  # @IgnorePep8
+from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 
 
 class TestFMRI(BaseTestCase):

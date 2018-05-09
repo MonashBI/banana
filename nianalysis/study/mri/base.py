@@ -1,32 +1,32 @@
 from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
-from mbianalysis.requirement import spm12_req
-from mbianalysis.citation import spm_cite
-from mbianalysis.data_format import nifti_format, motion_mats_format,\
+from nianalysis.requirement import spm12_req
+from nianalysis.citation import spm_cite
+from nianalysis.data_format import nifti_format, motion_mats_format,\
     directory_format, nifti_gz_format
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.study.base import Study, StudyMetaClass
-from mbianalysis.citation import fsl_cite, bet_cite, bet2_cite
-from mbianalysis.data_format import (
+from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
+from nianalysis.data_format import (
     dicom_format, text_format, gif_format)
-from mbianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
+from nianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
                                      ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.utils import get_atlas_path
 from arcana.exception import (
     ArcanaError, ArcanaUsageError)
-from mbianalysis.interfaces.mrtrix.transform import MRResize
-from mbianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
+from nianalysis.interfaces.mrtrix.transform import MRResize
+from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
 from arcana.interfaces.mrtrix import MRConvert
-from mbianalysis.interfaces.fsl import FSLSlices
-from mbianalysis.data_format import text_matrix_format
+from nianalysis.interfaces.fsl import FSLSlices
+from nianalysis.data_format import text_matrix_format
 import os
-from mbianalysis.interfaces.ants import AntsRegSyn
+from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.interfaces.converters import Dcm2niix
 from arcana.option import OptionSpec
-from mbianalysis.interfaces.custom.motion_correction import (
+from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from arcana.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import (

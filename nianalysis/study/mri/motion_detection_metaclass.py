@@ -1,11 +1,11 @@
 from arcana.dataset import DatasetSpec, FieldSpec
-from mbianalysis.data_format import (
+from nianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format)
-from mbianalysis.interfaces.custom.motion_correction import (
+from nianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference)
-from mbianalysis.citation import fsl_cite
+from nianalysis.citation import fsl_cite
 from arcana.study.base import StudyMetaClass
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
@@ -16,7 +16,7 @@ from nipype.interfaces.utility import Merge
 from .structural.diffusion_coreg import (
     CoregisteredDiffusionStudy, CoregisteredDiffusionReferenceOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
-from mbianalysis.requirement import fsl509_req
+from nianalysis.requirement import fsl509_req
 from arcana.exception import ArcanaNameError
 from arcana.option import OptionSpec
 

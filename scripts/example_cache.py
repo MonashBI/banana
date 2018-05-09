@@ -2,9 +2,9 @@
 import os.path
 import errno
 from arcana.dataset import DatasetMatch
-from mbianalysis.study.mri.structural.t2star import T2StarStudy
+from nianalysis.study.mri.structural.t2star import T2StarStudy
 from arcana.archive.xnat import XNATArchive
-from mbianalysis.data_format import zip_format
+from nianalysis.data_format import zip_format
 import argparse
 import cPickle as pkl
 

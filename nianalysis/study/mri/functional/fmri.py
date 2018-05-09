@@ -5,22 +5,22 @@ from nipype.interfaces.fsl.preprocess import (
 from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
 from nipype.interfaces.fsl.utils import (SwapDimensions, InvWarp, ImageMaths,
                                          ConvertXFM)
-from mbianalysis.interfaces.fsl import (
+from nianalysis.interfaces.fsl import (
     MelodicL1FSF, FSLFIX, CheckLabelFile, FSLFixTraining, FSLSlices,
     SignalRegression)
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
 from ..base import MRIStudy
-from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
+from nianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req)
-from mbianalysis.citation import fsl_cite
-from mbianalysis.data_format import (
+from nianalysis.citation import fsl_cite
+from nianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
     zip_format, text_matrix_format, par_format, gif_format, targz_format,
     text_format, dicom_format, ica_format)
-from mbianalysis.interfaces.ants import AntsRegSyn
-from mbianalysis.interfaces.afni import Tproject
+from nianalysis.interfaces.ants import AntsRegSyn
+from nianalysis.interfaces.afni import Tproject
 from arcana.interfaces.utils import MakeDir, CopyFile, CopyDir
 from arcana.interfaces.utils import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge

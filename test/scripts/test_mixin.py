@@ -1,4 +1,4 @@
-from mbianalysis.study.mri.motion_detection_mixin import (
+from nianalysis.study.mri.motion_detection_mixin import (
     create_motion_detection_class)
 import os.path
 import errno
@@ -8,8 +8,8 @@ import glob
 import shutil
 # from arcana.archive.xnat import XNATArchive
 from arcana.dataset import DatasetMatch, Field  # @IgnorePep8
-from mbianalysis.data_format import nifti_gz_format, dicom_format
-# from mbianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
+from nianalysis.data_format import nifti_gz_format, dicom_format
+# from nianalysis.study.mri.motion_detection_metaclass import MotionDetectionStudy
 
 
 def prepare_mc_detection(input_dir):

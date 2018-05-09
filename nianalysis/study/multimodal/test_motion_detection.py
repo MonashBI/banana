@@ -1,4 +1,4 @@
-from mbianalysis.study.mri.motion_detection_mixin_new import (
+from nianalysis.study.mri.motion_detection_mixin_new import (
     create_motion_detection_class)
 
 ref = 'ref'

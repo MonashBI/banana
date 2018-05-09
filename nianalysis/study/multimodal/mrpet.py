@@ -1,29 +1,29 @@
 from arcana.dataset import DatasetSpec, FieldSpec, Field
-from mbianalysis.data_format import (
+from nianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format, text_format,
     png_format, dicom_format)
-from mbianalysis.interfaces.custom.motion_correction import (
+from nianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference, FixedBinning)
-from mbianalysis.citation import fsl_cite
+from nianalysis.citation import fsl_cite
 from arcana.study.base import StudyMetaClass
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from mbianalysis.study.mri.epi import CoregisteredEPIStudy
-from mbianalysis.study.mri.structural.t1 import CoregisteredT1Study, T1Study
-from mbianalysis.study.mri.structural.t2 import CoregisteredT2Study, T2Study
+from nianalysis.study.mri.epi import CoregisteredEPIStudy
+from nianalysis.study.mri.structural.t1 import CoregisteredT1Study, T1Study
+from nianalysis.study.mri.structural.t2 import CoregisteredT2Study, T2Study
 from nipype.interfaces.utility import Merge
-from mbianalysis.study.mri.structural.diffusion_coreg import (
+from nianalysis.study.mri.structural.diffusion_coreg import (
     CoregisteredDiffusionStudy, CoregisteredDiffusionReferenceOppositeStudy,
     CoregisteredDiffusionReferenceStudy)
-from mbianalysis.requirement import fsl509_req
+from nianalysis.requirement import fsl509_req
 from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
-from mbianalysis.study.mri.structural.ute import CoregisteredUTEStudy
+from nianalysis.study.mri.structural.ute import CoregisteredUTEStudy
 from arcana.interfaces.utils import CopyToDir
-from mbianalysis.study.pet.base import PETStudy
-from mbianalysis.interfaces.custom.pet import StaticMotionCorrection
+from nianalysis.study.pet.base import PETStudy
+from nianalysis.interfaces.custom.pet import StaticMotionCorrection
 from arcana.option import OptionSpec
 
 

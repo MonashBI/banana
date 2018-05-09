@@ -2,10 +2,10 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
-from mbianalysis.data_format import nifti_gz_format, text_matrix_format  # @IgnorePep8
-from mbianalysis.study.mri.coregistered import (  # @IgnorePep8
+from nianalysis.data_format import nifti_gz_format, text_matrix_format  # @IgnorePep8
+from nianalysis.study.mri.coregistered import (  # @IgnorePep8
     CoregisteredStudy, CoregisteredToMatrixStudy)
-from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 
 class TestCoregistered(TestCase):

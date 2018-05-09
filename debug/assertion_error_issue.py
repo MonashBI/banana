@@ -1,4 +1,4 @@
-from mbianalysis.study.mri.motion_detection_mixin import (
+from nianalysis.study.mri.motion_detection_mixin import (
     create_motion_detection_class)
 import os.path
 import errno

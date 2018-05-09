@@ -1,18 +1,18 @@
 from arcana.study.base import Study
 from arcana.dataset import DatasetSpec, FieldSpec
-from mbianalysis.data_format import (nifti_gz_format, text_format,
+from nianalysis.data_format import (nifti_gz_format, text_format,
                                      text_matrix_format, directory_format)
-from mbianalysis.interfaces.sklearn import FastICA
-from mbianalysis.interfaces.ants import AntsRegSyn
+from nianalysis.interfaces.sklearn import FastICA
+from nianalysis.interfaces.ants import AntsRegSyn
 import os
 from abc import abstractmethod
-from mbianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
+from nianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
                                      fsl509_req, fsl510_req, mrtrix3_req)
-from mbianalysis.citation import fsl_cite
-from mbianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
+from nianalysis.citation import fsl_cite
+from nianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
 from arcana.interfaces.utils import ListDir, CopyToDir  # SelectOne, 
 from nipype.interfaces.fsl import Merge, ExtractROI
-from mbianalysis.interfaces.custom.dicom import PetTimeInfo
+from nianalysis.interfaces.custom.dicom import PetTimeInfo
 from arcana.option import OptionSpec
 
 

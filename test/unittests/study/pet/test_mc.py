@@ -1,15 +1,15 @@
 from nipype import config
-from mbianalysis.study.mri.structural.t1 import CoregisteredT1Study
-from mbianalysis.study.mri.structural.t2 import CoregisteredT2Study
-from mbianalysis.data_format import directory_format, text_format
+from nianalysis.study.mri.structural.t1 import CoregisteredT1Study
+from nianalysis.study.mri.structural.t2 import CoregisteredT2Study
+from nianalysis.data_format import directory_format, text_format
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch, Field  # @IgnorePep8
-from mbianalysis.data_format import nifti_gz_format, list_mode_format  # @IgnorePep8
-from mbianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
-from mbianalysis.study.pet.pca_motion_detection import PETPCAMotionDetectionStudy
-from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
-from mbianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionStudy  # @IgnorePep8
-from mbianalysis.study.mri.motion_detection_ian_2 import MotionDetectionStudy
+from nianalysis.data_format import nifti_gz_format, list_mode_format  # @IgnorePep8
+from nianalysis.study.mri.epi import CoregisteredEPIStudy  # @IgnorePep8
+from nianalysis.study.pet.pca_motion_detection import PETPCAMotionDetectionStudy
+from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from nianalysis.study.mri.structural.diffusion_coreg import CoregisteredDiffusionStudy  # @IgnorePep8
+from nianalysis.study.mri.motion_detection_ian_2 import MotionDetectionStudy
 
 class TestMC(TestCase):
 

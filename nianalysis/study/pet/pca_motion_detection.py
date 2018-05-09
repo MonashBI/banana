@@ -1,10 +1,10 @@
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
-from mbianalysis.data_format import (list_mode_format, directory_format)
-from mbianalysis.study.pet.base import PETStudy
-from mbianalysis.interfaces.custom.pet import (
+from nianalysis.data_format import (list_mode_format, directory_format)
+from nianalysis.study.pet.base import PETStudy
+from nianalysis.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
-from mbianalysis.requirement import stir_req
+from nianalysis.requirement import stir_req
 
 
 class PETPCAMotionDetectionStudy(PETStudy):

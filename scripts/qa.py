@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 from arcana.dataset import DatasetMatch
-from mbianalysis.study.mri.phantom import PhantomStudy
+from nianalysis.study.mri.phantom import PhantomStudy
 from arcana.archive.xnat import XNATArchive
-from mbianalysis.data_format import dicom_format
+from nianalysis.data_format import dicom_format
 
 qc_study = PhantomStudy(
     name='qc',

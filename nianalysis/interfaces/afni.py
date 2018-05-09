@@ -49,7 +49,7 @@ class Tproject(AFNICommand):
 
     Examples
     ========
-    >>> mbianalysis.interfaces.afni import Tproject
+    >>> nianalysis.interfaces.afni import Tproject
     >>> TP = Tproject()
     >>> TP.inputs.in_file = 'functional.nii'
     >>> TP.inputs.passband = (0.01, 0.08)

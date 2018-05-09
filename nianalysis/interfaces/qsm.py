@@ -1,5 +1,5 @@
 from nipype.interfaces.matlab import MatlabCommand
-import mbianalysis.interfaces
+import nianalysis.interfaces
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File, Directory)
 import os
@@ -34,7 +34,7 @@ class Prepare(BaseInterface):
                 echo_times=self.inputs.echo_times,
                 num_channels=self.inputs.num_channels,
                 matlab_dir=os.path.abspath(os.path.join(
-                    os.path.dirname(mbianalysis.interfaces.__file__),
+                    os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
         mlab = MatlabCommand(script=script, mfile=True)
         result = mlab.run()
@@ -87,7 +87,7 @@ class FillHoles(BaseInterface):
                 out_file=os.path.join(os.getcwd(),
                                          self._gen_filename('out_file')),
                 matlab_dir=os.path.abspath(os.path.join(
-                    os.path.dirname(mbianalysis.interfaces.__file__),
+                    os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
         mlab = MatlabCommand(script=script, mfile=True)
         result = mlab.run()
@@ -129,7 +129,7 @@ class FitMask(BaseInterface):
                 out_file=os.path.join(os.getcwd(),
                                          self._gen_filename('out_file')),
                 matlab_dir=os.path.abspath(os.path.join(
-                    os.path.dirname(mbianalysis.interfaces.__file__),
+                    os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
         mlab = MatlabCommand(script=script, mfile=True)
         result = mlab.run()
@@ -218,7 +218,7 @@ class STI(BaseInterface):
                 echo_times=self.inputs.echo_times,
                 num_channels=self.inputs.num_channels,
                 matlab_dir=os.path.abspath(os.path.join(
-                    os.path.dirname(mbianalysis.interfaces.__file__),
+                    os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
         mlab = MatlabCommand(script=script, mfile=True)
         result = mlab.run()
@@ -252,7 +252,7 @@ class STI_SE(BaseInterface):
                 mask_file=self.inputs.mask_file,
                 out_dir=self.working_dir,
                 matlab_dir=os.path.abspath(os.path.join(
-                    os.path.dirname(mbianalysis.interfaces.__file__),
+                    os.path.dirname(nianalysis.interfaces.__file__),
                     'resources', 'matlab', 'qsm')))
         mlab = MatlabCommand(script=script, mfile=True)
         result = mlab.run()

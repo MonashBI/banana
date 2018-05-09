@@ -1,11 +1,11 @@
 import os.path
-import mbianalysis
+import nianalysis
 from arcana.testing import (
     BaseTestCase as NianalysisTestCase,
     BaseMultiSubjectTestCase as NianalysisMultiSubjectTestCase)
 
 MBIANALSYSIS_BASE_TEST_DIR = os.path.abspath(os.path.join(
-    os.path.dirname(mbianalysis.__file__), '..', 'test'))
+    os.path.dirname(nianalysis.__file__), '..', 'test'))
 
 
 class BaseTestCase(NianalysisTestCase):

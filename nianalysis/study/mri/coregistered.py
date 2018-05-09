@@ -1,10 +1,10 @@
 from nipype.interfaces.fsl import FLIRT
 from nipype.interfaces.spm.preprocess import Coregister
-from mbianalysis.requirement import fsl5_req
-from mbianalysis.citation import fsl_cite
-from mbianalysis.requirement import spm12_req
-from mbianalysis.citation import spm_cite
-from mbianalysis.data_format import (
+from nianalysis.requirement import fsl5_req
+from nianalysis.citation import fsl_cite
+from nianalysis.requirement import spm12_req
+from nianalysis.citation import spm_cite
+from nianalysis.data_format import (
     nifti_gz_format, nifti_format, text_matrix_format)
 from arcana.study.base import StudyMetaClass, Study
 from arcana.dataset import DatasetSpec

@@ -2,9 +2,9 @@
 import os.path
 import shutil
 from arcana.dataset import DatasetMatch
-from mbianalysis.study.mri.diffusion import DiffusionStudy
+from nianalysis.study.mri.diffusion import DiffusionStudy
 from arcana.archive.local import LocalArchive
-from mbianalysis.data_format import mrtrix_format
+from nianalysis.data_format import mrtrix_format
 
 archive_path = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'tbi', ))

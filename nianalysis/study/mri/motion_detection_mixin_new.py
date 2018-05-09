@@ -1,12 +1,12 @@
 from arcana.dataset import DatasetSpec, FieldSpec
-from mbianalysis.data_format import (
+from nianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     text_format, png_format, dicom_format)
-from mbianalysis.interfaces.custom.motion_correction import (
+from nianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, FrameAlign2Reference,
     CreateMocoSeries)
-from mbianalysis.citation import fsl_cite
+from nianalysis.citation import fsl_cite
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from .base import MRIStudy
@@ -15,7 +15,7 @@ from .structural.t2 import T2Study
 from .epi import EPIStudy
 from nipype.interfaces.utility import Merge
 from .structural.diffusion_coreg import DWIStudy
-from mbianalysis.requirement import fsl509_req
+from nianalysis.requirement import fsl509_req
 from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
@@ -34,7 +34,7 @@ logger.addHandler(handler)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../../../mbianalysis',
+    os.path.join(os.path.dirname(__file__), '../../../nianalysis',
                  'reference_data'))
 
 

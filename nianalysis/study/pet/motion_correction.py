@@ -1,12 +1,12 @@
 from arcana.dataset import DatasetSpec
-from mbianalysis.data_format import (nifti_gz_format, directory_format)
-from mbianalysis.citation import fsl_cite
+from nianalysis.data_format import (nifti_gz_format, directory_format)
+from nianalysis.citation import fsl_cite
 from arcana.study.base import StudyMetaClass
-from mbianalysis.interfaces.custom.pet import (StaticMotionCorrection)
+from nianalysis.interfaces.custom.pet import (StaticMotionCorrection)
 from nipype.interfaces.fsl import Merge, MCFLIRT, ImageMaths
 from arcana.interfaces.utils import ListDir
-from mbianalysis.study.pet.base import PETStudy
-from mbianalysis.requirement import fsl509_req
+from nianalysis.study.pet.base import PETStudy
+from nianalysis.requirement import fsl509_req
 from arcana.option import OptionSpec
 
 
