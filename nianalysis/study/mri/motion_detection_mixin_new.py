@@ -45,6 +45,7 @@ class MotionDetectionMixin(MultiStudy):
     add_sub_study_specs = []
 
     add_data_specs = [
+        DatasetSpec('umaps_align2ref', directory_format, optional=True),
         DatasetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_rc', text_format,
@@ -293,16 +294,17 @@ class MotionDetectionMixin(MultiStudy):
     def frame2ref_alignment_pipeline(self, **kwargs):
         inputs = [DatasetSpec('average_mats', directory_format)]
         outputs = [DatasetSpec('frame2reference_mats', directory_format)]
-        if 'umap_ref' in self.sub_study_names and 'umap' in self.input_names:
+        if ('umap_ref' in self.sub_study_names and
+                'umap_ref_umap' in self.input_names):
             inputs.append(DatasetSpec('umap_ref_coreg_matrix',
                                       text_matrix_format))
             inputs.append(DatasetSpec('umap_ref_qform_mat',
                                       text_matrix_format))
-            inputs.append(DatasetSpec('umap', nifti_gz_format))
+            inputs.append(DatasetSpec('umap_ref_umap', nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
             umap = True
         elif ('umap_ref' in self.sub_study_names and
-                'umap' not in self.input_names):
+                'umap_ref_umap' not in self.input_names):
             inputs.append(DatasetSpec('umap_ref_coreg_matrix',
                                       text_matrix_format))
             inputs.append(DatasetSpec('umap_ref_qform_mat',
@@ -334,7 +336,7 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_input('umap_ref_qform_mat', frame_align,
                                'ute_qform_mat')
         if umap:
-            pipeline.connect_input('umap', frame_align, 'umap')
+            pipeline.connect_input('umap_ref_umap', frame_align, 'umap')
             pipeline.connect_output('umaps_align2ref', frame_align,
                                     'umaps_align2ref')
         pipeline.connect_output('frame2reference_mats', frame_align,
@@ -536,12 +538,16 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         if len(umaps) > 1:
             logger.info('More than one umap provided. Only the first one will '
                         'be used.')
-            umaps = umaps[0]
+        umaps = umaps[0]
+        umap_spec = ref_spec.copy()
+        umap_spec.update({'umaps_align2ref': 'umap_aligned_niftis',
+                          'umaps_align2ref_dicom': 'umap_aligned_dicoms'})
+        study_specs.append(SubStudySpec('umap_ref', umap_ref_study, umap_spec))
+        inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
+        inputs.append(DatasetMatch('umap_ref_umap', dicom_format, umaps))
 
-        umap_spec = {'umaps_align2ref': 'umap_aligned_niftis',
-                     'umaps_align2ref_dicom': 'umap_aligned_dicoms'}
-        study_specs.append(SubStudySpec('umap', MRIStudy, umap_spec))
-        inputs.append(DatasetMatch('umap_umap', dicom_format, umaps))
+        dct['umap_ref_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
+            'umap_ref', 'nifti2dcm_conversion_pipeline')
 
 #         def frame2ref_alignment_pipeline_altered(self, **kwargs):
 #             return self.frame2ref_alignment_pipeline_factory(
