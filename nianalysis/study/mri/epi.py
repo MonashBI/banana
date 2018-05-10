@@ -1,17 +1,16 @@
 from base import MRIStudy
-from nipype.interfaces.fsl import (ExtractROI, TOPUP, ApplyTOPUP)
+from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
-    PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
+    PrepareDWI, GenTopupConfigFiles)
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
-                                     directory_format, par_format,
-                                     motion_mats_format)
+                                     directory_format, par_format)
 from nianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
-    MotionMatCalculation, MergeListMotionMat)
+    MergeListMotionMat)
 from arcana.option import OptionSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
@@ -40,11 +39,6 @@ class EPIStudy(MRIStudy):
         OptionSpec('bet_robust', True),
         OptionSpec('bet_f_threshold', 0.2),
         OptionSpec('bet_reduce_bias', False)]
-
-#     def header_info_extraction_pipeline(self, **kwargs):
-#         return (super(EPIStudy, self).
-#                 header_info_extraction_pipeline_factory(
-#                     'epi_info_extraction', 'primary', **kwargs))
 
     def linear_coregistration_pipeline(self, **kwargs):
 

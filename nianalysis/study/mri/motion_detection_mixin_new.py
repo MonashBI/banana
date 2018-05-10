@@ -9,7 +9,6 @@ from nianalysis.interfaces.custom.motion_correction import (
 from nianalysis.citation import fsl_cite
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from .base import MRIStudy
 from .structural.t1 import T1Study
 from .structural.t2 import T2Study
 from .epi import EPIStudy
@@ -44,8 +43,6 @@ class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
-#     add_sub_study_specs = [SubStudySpec('umap', MRIStudy, {
-#         'umap_align2ref': 'umap_aligned_niftis'})]
     add_sub_study_specs = []
 
     add_data_specs = [
@@ -384,14 +381,6 @@ class MotionDetectionMixin(MultiStudy):
 
         return pipeline
 
-#     nii2dcm_pipeline = MultiStudy.translate(
-#         'umap', 'nifti2dcm_conversion_pipeline')
-#     def frame2ref_alignment_pipeline(self, **kwargs):
-#         return self.frame2ref_alignment_pipeline_factory(
-#             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
-#             'ute_qform_mat', umap='umap_nifti',
-#             pct=False, fixed_binning=False, **kwargs)
-
     def create_moco_series_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
@@ -455,11 +444,6 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
         return pipeline
 
-#     def gather_outputs_pipeline(self, **kwargs):
-#         return self.gather_outputs_factory(
-#             'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
-#             timestamps=True, align_mats=False, **kwargs)
-
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                   t2s=None, dmris=None, epis=None,
@@ -518,21 +502,9 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         if umap_ref in t1s:
             umap_ref_study = T1Study
             t1s.remove(umap_ref)
-#             umap_ref_reg_mat = ['t1_{}_reg_mat'.format(i) for i, t1_scan in
-#                                 enumerate(t1s) if t1_scan == umap_ref]
-#             umap_ref_qform_mat = ['t1_{}_qform_mat'.format(i) for i, t1_scan in
-#                                   enumerate(t1s) if t1_scan == umap_ref]
-#             umap_ref_preproc = ['t1_{}_preproc'.format(i) for i, t1_scan in
-#                                 enumerate(t1s) if t1_scan == umap_ref]
         elif umap_ref in t2s:
             umap_ref_study = T2Study
             t2s.remove(umap_ref)
-#             umap_ref_reg_mat = ['t2_{}_reg_mat'.format(i) for i, t2_scan in
-#                                 enumerate(t2s) if t2_scan == umap_ref]
-#             umap_ref_qform_mat = ['t2_{}_qform_mat'.format(i) for i, t2_scan in
-#                                   enumerate(t2s) if t2_scan == umap_ref]
-#             umap_ref_preproc = ['t2_{}_preproc'.format(i) for i, t2_scan in
-#                                 enumerate(t2s) if t2_scan == umap_ref]
         else:
             umap_ref = None
 
@@ -560,19 +532,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                     'the reference will be calculated.')
         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-#         umap_ref_spec = {'umap_ref_brain': 'coreg_ref_brain',
-#                          'umap_ref_preproc': 'preproc'}
-#         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-#         def frame2ref_alignment_pipeline_altered(self, **kwargs):
-#             return self.frame2ref_alignment_pipeline_factory(
-#                 'frame2ref_alignment', 'average_mats',
-#                 umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
-#                 pct=False, fixed_binning=False, **kwargs)
-
-#         def gather_md_outputs_pipeline_altered(self, **kwargs):
-#             return self.gather_outputs_factory(
-#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
-#                 timestamps=True, align_mats=True, ute=umap_ref_preproc)
 
     elif umap_ref and umaps:
         logger.info('Umap will be realigned to match the head position in '
@@ -582,36 +541,9 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             logger.info('More than one umap provided. Only the first one will '
                         'be used.')
         umaps = umaps[0]
-        umap_spec = ref_spec.copy()
-#         'umap_ref_uma'
-#         umap_spec.update({'umaps_align2ref': 'umap_aligned_niftis',
-#                           'umaps_align2ref_dicom': 'umap_aligned_dicoms'})
         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-
-#         inputs.append(DatasetMatch('umap', dicom_format, umap_ref))
         inputs.append(DatasetMatch('umap', dicom_format, umaps))
-#         data_specs.append(DatasetSpec('umaps_align2ref_dicom', directory_format,
-#                                       'umap_ref_nifti2dcm_conversion_pipeline'))
-#         data_specs.append(DatasetSpec('umaps_align2ref_dicom', directory_format,
-#                                       'umap_ref_nifti2dcm_conversion_pipeline'))
-#         dct['umap_ref_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
-#             'umap_ref', 'nifti2dcm_conversion_pipeline')
-
-#         def frame2ref_alignment_pipeline_altered(self, **kwargs):
-#             return self.frame2ref_alignment_pipeline_factory(
-#                 'frame2ref_alignment', 'average_mats',
-#                 umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
-#                 pct=False, fixed_binning=False, **kwargs)
-# 
-#         def gather_md_outputs_pipeline_altered(self, **kwargs):
-#             return self.gather_outputs_factory(
-#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
-#                 timestamps=True, align_mats=True,
-#                 ute=umap_ref_preproc)
-# 
-#         dct['umap_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
-#             'umap', 'nifti2dcm_conversion_pipeline')
 
         run_pipeline = True
 

@@ -28,9 +28,6 @@ from arcana.interfaces.converters import Dcm2niix
 from arcana.option import OptionSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from arcana.interfaces.converters import Nii2Dicom
-from arcana.interfaces.utils import (
-    CopyToDir, ListDir, dicom_fname_sort_key)
 
 
 atlas_path = os.path.abspath(
@@ -46,18 +43,12 @@ class MRIStudy(Study):
 
     add_data_specs = [
         DatasetSpec('primary', dicom_format),
-        DatasetSpec('umap', dicom_format, optional=True),
-        DatasetSpec('umap_aligned_niftis', directory_format, optional=True),
-        DatasetSpec('umap_aligned_dicoms', directory_format,
-                    'nifti2dcm_conversion_pipeline'),
         DatasetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
                     optional=True),
         DatasetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
-        # DatasetSpec('dicom_dwi', dicom_format),
-        # DatasetSpec('dicom_dwi_1', dicom_format),
         DatasetSpec('preproc', nifti_gz_format,
                     'basic_preproc_pipeline'),
         DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline',
@@ -82,7 +73,6 @@ class MRIStudy(Study):
                     'qform_transform_pipeline'),
         DatasetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
-        # DatasetSpec('dicom_file', dicom_format),
         FieldSpec('tr', float, 'header_info_extraction_pipeline'),
         FieldSpec('start_time', str, 'header_info_extraction_pipeline'),
         FieldSpec('real_duration', str, 'header_info_extraction_pipeline'),
@@ -146,7 +136,6 @@ class MRIStudy(Study):
                 'coreg_brain', 'coreg_matrix', **kwargs)
         elif method == 'spm':
             raise NotImplementedError
-#             pipeline = self._spm_coreg_pipeline(**kwargs)
         else:
             assert False
         return pipeline
@@ -676,39 +665,4 @@ class MRIStudy(Study):
             pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
             pipeline.connect_input('qform_mat', mm, 'qform_mat')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        return pipeline
-
-    def nifti2dcm_conversion_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='conversion_to_dicom',
-            inputs=[DatasetSpec('umap_aligned_niftis', directory_format),
-                    DatasetSpec('umap', dicom_format)],
-            outputs=[DatasetSpec('umap_aligned_dicoms', directory_format)],
-            desc=(
-                "Conversing aligned umap from nifti to dicom format - "
-                "parallel implementation"),
-            version=1,
-            citations=(),
-            **kwargs)
-
-        list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
-        nii2dicom = pipeline.create_map_node(
-            Nii2Dicom(), name='nii2dicom',
-            iterfield=['in_file'], wall_time=20)
-#         nii2dicom.inputs.extension = 'Frame'
-        list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
-        list_dicoms.inputs.sort_key = dicom_fname_sort_key
-        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
-        copy2dir.inputs.extension = 'Frame'
-        # Connect nodes
-        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
-        pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
-        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
-        # Connect inputs
-        pipeline.connect_input('umap_aligned_niftis', list_niftis, 'directory')
-        pipeline.connect_input('umap', list_dicoms, 'directory')
-        # Connect outputs
-        pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
-
         return pipeline
