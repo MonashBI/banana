@@ -19,9 +19,11 @@ from nianalysis.requirement import fsl509_req
 from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
-from arcana.interfaces.utils import CopyToDir
 import os
 from arcana.option import OptionSpec
+from arcana.interfaces.converters import Nii2Dicom
+from arcana.interfaces.utils import (
+    CopyToDir, ListDir, dicom_fname_sort_key)
 
 
 logger = logging.getLogger('Arcana')
@@ -42,10 +44,12 @@ class MotionDetectionMixin(MultiStudy):
 
     __metaclass__ = MultiStudyMetaClass
 
+#     add_sub_study_specs = [SubStudySpec('umap', MRIStudy, {
+#         'umap_align2ref': 'umap_aligned_niftis'})]
     add_sub_study_specs = []
 
     add_data_specs = [
-        DatasetSpec('umaps_align2ref', directory_format, optional=True),
+        DatasetSpec('umap', dicom_format, optional=True),
         DatasetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('mean_displacement_rc', text_format,
@@ -76,6 +80,8 @@ class MotionDetectionMixin(MultiStudy):
                     'pet_correction_factors_pipeline'),
         DatasetSpec('umaps_align2ref', directory_format,
                     'frame2ref_alignment_pipeline'),
+        DatasetSpec('umap_aligned_dicoms', directory_format,
+                    'nifti2dcm_conversion_pipeline'),
         DatasetSpec('frame2reference_mats', directory_format,
                     'frame2ref_alignment_pipeline'),
         DatasetSpec('motion_detection_output', directory_format,
@@ -295,16 +301,16 @@ class MotionDetectionMixin(MultiStudy):
         inputs = [DatasetSpec('average_mats', directory_format)]
         outputs = [DatasetSpec('frame2reference_mats', directory_format)]
         if ('umap_ref' in self.sub_study_names and
-                'umap_ref_umap' in self.input_names):
+                'umap' in self.input_names):
             inputs.append(DatasetSpec('umap_ref_coreg_matrix',
                                       text_matrix_format))
             inputs.append(DatasetSpec('umap_ref_qform_mat',
                                       text_matrix_format))
-            inputs.append(DatasetSpec('umap_ref_umap', nifti_gz_format))
+            inputs.append(DatasetSpec('umap', nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
             umap = True
         elif ('umap_ref' in self.sub_study_names and
-                'umap_ref_umap' not in self.input_names):
+                'umap' not in self.input_names):
             inputs.append(DatasetSpec('umap_ref_coreg_matrix',
                                       text_matrix_format))
             inputs.append(DatasetSpec('umap_ref_qform_mat',
@@ -336,13 +342,50 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_input('umap_ref_qform_mat', frame_align,
                                'ute_qform_mat')
         if umap:
-            pipeline.connect_input('umap_ref_umap', frame_align, 'umap')
+            pipeline.connect_input('umap', frame_align, 'umap')
             pipeline.connect_output('umaps_align2ref', frame_align,
                                     'umaps_align2ref')
         pipeline.connect_output('frame2reference_mats', frame_align,
                                 'frame2reference_mats')
         return pipeline
+    
+    def nifti2dcm_conversion_pipeline(self, **kwargs):
 
+        pipeline = self.create_pipeline(
+            name='conversion_to_dicom',
+            inputs=[DatasetSpec('umaps_align2ref', directory_format),
+                    DatasetSpec('umap', dicom_format)],
+            outputs=[DatasetSpec('umap_aligned_dicoms', directory_format)],
+            desc=(
+                "Conversing aligned umap from nifti to dicom format - "
+                "parallel implementation"),
+            version=1,
+            citations=(),
+            **kwargs)
+
+        list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
+        nii2dicom = pipeline.create_map_node(
+            Nii2Dicom(), name='nii2dicom',
+            iterfield=['in_file'], wall_time=20)
+#         nii2dicom.inputs.extension = 'Frame'
+        list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
+        list_dicoms.inputs.sort_key = dicom_fname_sort_key
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        copy2dir.inputs.extension = 'Frame'
+        # Connect nodes
+        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
+        pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
+        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
+        # Connect inputs
+        pipeline.connect_input('umaps_align2ref', list_niftis, 'directory')
+        pipeline.connect_input('umap', list_dicoms, 'directory')
+        # Connect outputs
+        pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
+
+        return pipeline
+
+#     nii2dcm_pipeline = MultiStudy.translate(
+#         'umap', 'nifti2dcm_conversion_pipeline')
 #     def frame2ref_alignment_pipeline(self, **kwargs):
 #         return self.frame2ref_alignment_pipeline_factory(
 #             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
@@ -378,14 +421,14 @@ class MotionDetectionMixin(MultiStudy):
                   DatasetSpec('correction_factors', text_format),
                   DatasetSpec('timestamps', directory_format)]
         if ('umap_ref' in self.sub_study_names and
-                'umap_ref_umap' in self.input_names):
+                'umap' in self.input_names):
             inputs.append(
                 DatasetSpec('frame2reference_mats', directory_format))
             inputs.append(DatasetSpec('umap_ref_preproc', nifti_gz_format))
             inputs.append(
-                DatasetSpec('umaps_align2ref_dicom', directory_format))
+                DatasetSpec('umap_aligned_dicoms', directory_format))
         if ('umap_ref' in self.sub_study_names and
-                'umap_ref_umap' not in self.input_names):
+                'umap' not in self.input_names):
             inputs.append(
                 DatasetSpec('frame2reference_mats', directory_format))
             inputs.append(DatasetSpec('umap_ref_preproc', nifti_gz_format))
@@ -540,14 +583,20 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                         'be used.')
         umaps = umaps[0]
         umap_spec = ref_spec.copy()
-        umap_spec.update({'umaps_align2ref': 'umap_aligned_niftis',
-                          'umaps_align2ref_dicom': 'umap_aligned_dicoms'})
-        study_specs.append(SubStudySpec('umap_ref', umap_ref_study, umap_spec))
+#         'umap_ref_uma'
+#         umap_spec.update({'umaps_align2ref': 'umap_aligned_niftis',
+#                           'umaps_align2ref_dicom': 'umap_aligned_dicoms'})
+        study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-        inputs.append(DatasetMatch('umap_ref_umap', dicom_format, umaps))
 
-        dct['umap_ref_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
-            'umap_ref', 'nifti2dcm_conversion_pipeline')
+#         inputs.append(DatasetMatch('umap', dicom_format, umap_ref))
+        inputs.append(DatasetMatch('umap', dicom_format, umaps))
+#         data_specs.append(DatasetSpec('umaps_align2ref_dicom', directory_format,
+#                                       'umap_ref_nifti2dcm_conversion_pipeline'))
+#         data_specs.append(DatasetSpec('umaps_align2ref_dicom', directory_format,
+#                                       'umap_ref_nifti2dcm_conversion_pipeline'))
+#         dct['umap_ref_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
+#             'umap_ref', 'nifti2dcm_conversion_pipeline')
 
 #         def frame2ref_alignment_pipeline_altered(self, **kwargs):
 #             return self.frame2ref_alignment_pipeline_factory(
