@@ -290,19 +290,27 @@ class MotionDetectionMixin(MultiStudy):
                                 'corr_factors')
         return pipeline
 
-    def frame2ref_alignment_pipeline_factory(
-            self, name, average_mats, ute_regmat, ute_qform_mat,
-            umap=None, **kwargs):
-        inputs = [DatasetSpec(average_mats, directory_format),
-                  DatasetSpec(ute_regmat, text_matrix_format),
-                  DatasetSpec(ute_qform_mat, text_matrix_format)]
+    def frame2ref_alignment_pipeline(self, **kwargs):
+        inputs = [DatasetSpec('average_mats', directory_format)]
         outputs = [DatasetSpec('frame2reference_mats', directory_format)]
-        if umap:
-            inputs.append(DatasetSpec(umap, nifti_gz_format))
+        if 'umap_ref' in self.sub_study_names and 'umap' in self.input_names:
+            inputs.append(DatasetSpec('umap_ref_coreg_matrix',
+                                      text_matrix_format))
+            inputs.append(DatasetSpec('umap_ref_qform_mat',
+                                      text_matrix_format))
+            inputs.append(DatasetSpec('umap', nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
+            umap = True
+        elif ('umap_ref' in self.sub_study_names and
+                'umap' not in self.input_names):
+            inputs.append(DatasetSpec('umap_ref_coreg_matrix',
+                                      text_matrix_format))
+            inputs.append(DatasetSpec('umap_ref_qform_mat',
+                                      text_matrix_format))
+            umap = False
 
         pipeline = self.create_pipeline(
-            name=name,
+            name='frame2ref_alignment',
             inputs=inputs,
             outputs=outputs,
             desc=("Pipeline to create an affine mat to align each "
@@ -320,25 +328,24 @@ class MotionDetectionMixin(MultiStudy):
         frame_align.inputs.pct = pipeline.option('align_pct')
         frame_align.inputs.fixed_binning = pipeline.option(
             'align_fixed_binning')
-        pipeline.connect_input(average_mats, frame_align,
-                               'average_mats')
-        pipeline.connect_input(ute_regmat, frame_align,
+        pipeline.connect_input('average_mats', frame_align, 'average_mats')
+        pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
                                'ute_regmat')
-        pipeline.connect_input(ute_qform_mat, frame_align,
+        pipeline.connect_input('umap_ref_qform_mat', frame_align,
                                'ute_qform_mat')
         if umap:
-            pipeline.connect_input(umap, frame_align, 'umap')
+            pipeline.connect_input('umap', frame_align, 'umap')
             pipeline.connect_output('umaps_align2ref', frame_align,
                                     'umaps_align2ref')
         pipeline.connect_output('frame2reference_mats', frame_align,
                                 'frame2reference_mats')
         return pipeline
 
-    def frame2ref_alignment_pipeline(self, **kwargs):
-        return self.frame2ref_alignment_pipeline_factory(
-            'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
-            'ute_qform_mat', umap='umap_nifti',
-            pct=False, fixed_binning=False, **kwargs)
+#     def frame2ref_alignment_pipeline(self, **kwargs):
+#         return self.frame2ref_alignment_pipeline_factory(
+#             'frame2ref_alignment', 'average_mats', 'ute_reg_mat',
+#             'ute_qform_mat', umap='umap_nifti',
+#             pct=False, fixed_binning=False, **kwargs)
 
     def create_moco_series_pipeline(self, **kwargs):
 
@@ -363,24 +370,26 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('moco_series', moco, 'modified_moco')
         return pipeline
 
-    def gather_outputs_factory(self, name, align_mats=False,
-                               aligned_umaps=False, timestamps=False, ute=None,
-                               **kwargs):
+    def gather_outputs_pipeline(self, **kwargs):
         inputs = [DatasetSpec('mean_displacement_plot', png_format),
                   DatasetSpec('motion_par', text_format),
                   DatasetSpec('correction_factors', text_format),
                   DatasetSpec('timestamps', directory_format)]
-        if 'ute_regmat' in self.input_names:
+        if ('umap_ref' in self.sub_study_names and
+                'umap_ref_umap' in self.input_names):
             inputs.append(
                 DatasetSpec('frame2reference_mats', directory_format))
-        if aligned_umaps:
+            inputs.append(DatasetSpec('umap_ref_preproc', nifti_gz_format))
             inputs.append(
                 DatasetSpec('umaps_align2ref_dicom', directory_format))
-        if ute is not None:
-            inputs.append(DatasetSpec(ute, nifti_gz_format))
+        if ('umap_ref' in self.sub_study_names and
+                'umap_ref_umap' not in self.input_names):
+            inputs.append(
+                DatasetSpec('frame2reference_mats', directory_format))
+            inputs.append(DatasetSpec('umap_ref_preproc', nifti_gz_format))
 
         pipeline = self.create_pipeline(
-            name=name,
+            name='gather_motion_detection_outputs',
             inputs=inputs,
             outputs=[DatasetSpec('motion_detection_output', directory_format)],
             desc=("Pipeline to gather together all the outputs from "
@@ -401,10 +410,10 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
         return pipeline
 
-    def gather_outputs_pipeline(self, **kwargs):
-        return self.gather_outputs_factory(
-            'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
-            timestamps=True, align_mats=False, **kwargs)
+#     def gather_outputs_pipeline(self, **kwargs):
+#         return self.gather_outputs_factory(
+#             'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
+#             timestamps=True, align_mats=False, **kwargs)
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
@@ -462,19 +471,23 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             'generated. See documentation for further information.')
     else:
         if umap_ref in t1s:
-            umap_ref_reg_mat = ['t1_{}_reg_mat'.format(i) for i, t1_scan in
-                                enumerate(t1s) if t1_scan == umap_ref]
-            umap_ref_qform_mat = ['t1_{}_qform_mat'.format(i) for i, t1_scan in
-                                  enumerate(t1s) if t1_scan == umap_ref]
-            umap_ref_preproc = ['t1_{}_preproc'.format(i) for i, t1_scan in
-                                enumerate(t1s) if t1_scan == umap_ref]
+            umap_ref_study = T1Study
+            t1s.remove(umap_ref)
+#             umap_ref_reg_mat = ['t1_{}_reg_mat'.format(i) for i, t1_scan in
+#                                 enumerate(t1s) if t1_scan == umap_ref]
+#             umap_ref_qform_mat = ['t1_{}_qform_mat'.format(i) for i, t1_scan in
+#                                   enumerate(t1s) if t1_scan == umap_ref]
+#             umap_ref_preproc = ['t1_{}_preproc'.format(i) for i, t1_scan in
+#                                 enumerate(t1s) if t1_scan == umap_ref]
         elif umap_ref in t2s:
-            umap_ref_reg_mat = ['t2_{}_reg_mat'.format(i) for i, t2_scan in
-                                enumerate(t2s) if t2_scan == umap_ref]
-            umap_ref_qform_mat = ['t2_{}_qform_mat'.format(i) for i, t2_scan in
-                                  enumerate(t2s) if t2_scan == umap_ref]
-            umap_ref_preproc = ['t2_{}_preproc'.format(i) for i, t2_scan in
-                                enumerate(t2s) if t2_scan == umap_ref]
+            umap_ref_study = T2Study
+            t2s.remove(umap_ref)
+#             umap_ref_reg_mat = ['t2_{}_reg_mat'.format(i) for i, t2_scan in
+#                                 enumerate(t2s) if t2_scan == umap_ref]
+#             umap_ref_qform_mat = ['t2_{}_qform_mat'.format(i) for i, t2_scan in
+#                                   enumerate(t2s) if t2_scan == umap_ref]
+#             umap_ref_preproc = ['t2_{}_preproc'.format(i) for i, t2_scan in
+#                                 enumerate(t2s) if t2_scan == umap_ref]
         else:
             umap_ref = None
 
@@ -500,20 +513,21 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         logger.info('Umap not provided. The umap realignment will not be '
                     'performed. Matrices that realign each detected frame to '
                     'the reference will be calculated.')
-#         study_specs = [SubStudySpec('umap_ref', umap_ref_study)]
+        study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
+        inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
 #         umap_ref_spec = {'umap_ref_brain': 'coreg_ref_brain',
 #                          'umap_ref_preproc': 'preproc'}
 #         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-        def frame2ref_alignment_pipeline_altered(self, **kwargs):
-            return self.frame2ref_alignment_pipeline_factory(
-                'frame2ref_alignment', 'average_mats',
-                umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
-                pct=False, fixed_binning=False, **kwargs)
+#         def frame2ref_alignment_pipeline_altered(self, **kwargs):
+#             return self.frame2ref_alignment_pipeline_factory(
+#                 'frame2ref_alignment', 'average_mats',
+#                 umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
+#                 pct=False, fixed_binning=False, **kwargs)
 
-        def gather_md_outputs_pipeline_altered(self, **kwargs):
-            return self.gather_outputs_factory(
-                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
-                timestamps=True, align_mats=True, ute=umap_ref_preproc)
+#         def gather_md_outputs_pipeline_altered(self, **kwargs):
+#             return self.gather_outputs_factory(
+#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=False,
+#                 timestamps=True, align_mats=True, ute=umap_ref_preproc)
 
     elif umap_ref and umaps:
         logger.info('Umap will be realigned to match the head position in '
@@ -529,20 +543,20 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         study_specs.append(SubStudySpec('umap', MRIStudy, umap_spec))
         inputs.append(DatasetMatch('umap_umap', dicom_format, umaps))
 
-        def frame2ref_alignment_pipeline_altered(self, **kwargs):
-            return self.frame2ref_alignment_pipeline_factory(
-                'frame2ref_alignment', 'average_mats',
-                umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
-                pct=False, fixed_binning=False, **kwargs)
-
-        def gather_md_outputs_pipeline_altered(self, **kwargs):
-            return self.gather_outputs_factory(
-                'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
-                timestamps=True, align_mats=True,
-                ute=umap_ref_preproc)
-
-        dct['umap_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
-            'umap', 'nifti2dcm_conversion_pipeline')
+#         def frame2ref_alignment_pipeline_altered(self, **kwargs):
+#             return self.frame2ref_alignment_pipeline_factory(
+#                 'frame2ref_alignment', 'average_mats',
+#                 umap_ref_reg_mat[0], umap_ref_qform_mat[0], umap=None,
+#                 pct=False, fixed_binning=False, **kwargs)
+# 
+#         def gather_md_outputs_pipeline_altered(self, **kwargs):
+#             return self.gather_outputs_factory(
+#                 'gather_md_outputs', pet_corr_fac=True, aligned_umaps=True,
+#                 timestamps=True, align_mats=True,
+#                 ute=umap_ref_preproc)
+# 
+#         dct['umap_nifti2dcm_conversion_pipeline'] = MultiStudy.translate(
+#             'umap', 'nifti2dcm_conversion_pipeline')
 
         run_pipeline = True
 
