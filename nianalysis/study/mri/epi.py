@@ -111,9 +111,9 @@ class EPIStudy(MRIStudy):
 
         if ('field_map_phase' in self.input_names and
                 'field_map_mag' in self.input_names):
-            return self._fugue_pipeline()
+            return self._fugue_pipeline(**kwargs)
         elif 'reverse_phase' in self.input_names:
-            return self._topup_pipeline()
+            return self._topup_pipeline(**kwargs)
         else:
             return super(EPIStudy, self).basic_preproc_pipeline(**kwargs)
 
