@@ -10,7 +10,7 @@ from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_format import (
     dicom_format, text_format, gif_format)
 from nianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
-                                     ants2_req, dcm2niix1_req)
+                                    ants2_req, dcm2niix1_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.utils import get_atlas_path
 from arcana.exception import (
@@ -261,7 +261,7 @@ class MRIStudy(Study):
             pipeline = self._optiBET_brain_mask_pipeline(in_file, **kwargs)
         else:
             raise ArcanaError("Unrecognised brain extraction tool '{}'"
-                                  .format(bet_method))
+                              .format(bet_method))
         return pipeline
 
     def _fsl_bet_brain_mask_pipeline(self, in_file, name='', **kwargs):
@@ -380,7 +380,7 @@ class MRIStudy(Study):
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
         else:
             raise ArcanaError("Unrecognised coregistration tool '{}'"
-                                  .format(atlas_reg_tool))
+                              .format(atlas_reg_tool))
         return pipeline
 
     # @UnusedVariable @IgnorePep8

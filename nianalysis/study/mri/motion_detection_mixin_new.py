@@ -345,7 +345,7 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('frame2reference_mats', frame_align,
                                 'frame2reference_mats')
         return pipeline
-    
+
     def nifti2dcm_conversion_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(

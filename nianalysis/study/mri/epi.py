@@ -4,7 +4,7 @@ from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
-                                     directory_format, par_format)
+                                    directory_format, par_format)
 from nianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirement import fsl509_req

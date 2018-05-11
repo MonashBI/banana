@@ -24,9 +24,10 @@ from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec
 from arcana.interfaces.iterators import SelectSession
 from arcana.option import OptionSpec
+from nianalysis.study.mri.epi import EPIStudy
 
 
-class DiffusionStudy(T2Study):
+class DiffusionStudy(EPIStudy):
 
     __metaclass__ = StudyMetaClass
 
@@ -581,7 +582,7 @@ class DiffusionStudy(T2Study):
             outputs=[DatasetSpec('primary', nifti_gz_format)],
             desc="Extract b0 image from a DWI study",
             version=1,
-            citations=[mrtrix_cite], options=options)
+            citations=[mrtrix_cite])
         return pipeline
 
 
