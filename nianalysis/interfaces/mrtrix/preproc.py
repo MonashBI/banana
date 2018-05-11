@@ -75,8 +75,7 @@ class DWIPreproc(MRTrix3Base):
         if name == 'out_file':
             gen_name = self._gen_outfilename()
         elif name == 'temp_dir':
-            dirname = self.inputs.temp_dir
-            gen_name = os.path.join(os.getcwd(), dirname)
+            gen_name = self._gen_tempdir()
         else:
             assert False
         return gen_name
@@ -94,6 +93,16 @@ class DWIPreproc(MRTrix3Base):
             out_name = os.path.join(
                 os.getcwd(), "{}_preproc{}".format(base, extension))
         return out_name
+
+    def _gen_tempdir(self):
+        if isdefined(self.inputs.temp_dir):
+            temp_dir = self.inputs.out_file
+        else:
+            base, _ = split_extension(
+                os.path.basename(self.inputs.in_file))
+            temp_dir = os.path.join(
+                os.getcwd(), "{}_tempdir".format(base))
+        return temp_dir
 
 
 class DWI2MaskInputSpec(MRTrix3BaseInputSpec):
