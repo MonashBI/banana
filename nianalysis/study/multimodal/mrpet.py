@@ -19,11 +19,14 @@ from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
 from nianalysis.study.pet.base import PETStudy
-from nianalysis.interfaces.custom.pet import StaticMotionCorrection
+from nianalysis.interfaces.custom.pet import (
+    CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
+    PETFovCropping)
 from arcana.option import OptionSpec
 import os
 from arcana.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
+from nipype.interfaces.fsl.preprocess import FLIRT
 
 
 logger = logging.getLogger('Arcana')
@@ -48,17 +51,19 @@ class MotionDetectionMixin(MultiStudy):
         SubStudySpec('pet_mc', PETStudy, {
             'pet_data_dir': 'pet_data_dir',
             'pet_data_reconstructed': 'pet_recon_dir',
-            'pet_data_prepared': 'pet_recon_dir_prepared',
-            'pet_data_cropped': 'pet_data_cropped',
-            'static_pet_mc2crop': 'pet2crop'})]
+            'pet_data_prepared': 'pet_recon_dir_prepared'})]
 
     add_data_specs = [
         DatasetSpec('pet_data_dir', directory_format, optional=True),
         DatasetSpec('pet_data_reconstructed', directory_format, optional=True),
         DatasetSpec('pet_data_prepared', directory_format,
                     'prepare_pet_pipeline'),
-        DatasetSpec('pet_data_cropped', directory_format,
-                    'pet_fov_cropping_pipeline'),
+        DatasetSpec('static_pet_mc', nifti_gz_format,
+                    'static_motion_correction_pipeline'),
+        DatasetSpec('static_pet_mc_ps', nifti_gz_format,
+                    'static_motion_correction_pipeline'),
+        DatasetSpec('static_pet_no_mc', nifti_gz_format,
+                    'static_motion_correction_pipeline'),
         DatasetSpec('umap', dicom_format, optional=True),
         DatasetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
@@ -100,10 +105,6 @@ class MotionDetectionMixin(MultiStudy):
                     'gather_outputs_pipeline'),
         DatasetSpec('moco_series', directory_format,
                     'create_moco_series_pipeline'),
-        DatasetSpec('static_pet_mc', directory_format,
-                    'static_motion_correction_pipeline'),
-        DatasetSpec('static_pet_mc2crop', directory_format,
-                    'static_motion_correction_pipeline'),
         DatasetSpec('fixed_binning_mats', directory_format,
                     'fixed_binning_pipeline'),
         FieldSpec('pet_duration', dtype=int,
@@ -325,7 +326,8 @@ class MotionDetectionMixin(MultiStudy):
         return pipeline
 
     def frame2ref_alignment_pipeline(self, method='static', **kwargs):
-        return self.frame2ref_alignment_pipeline_factory(method=method)
+        return self.frame2ref_alignment_pipeline_factory(method=method,
+                                                         **kwargs)
 
     def frame2ref_alignment_pipeline_factory(self, method='static', **kwargs):
         if method == 'static':
@@ -489,63 +491,24 @@ class MotionDetectionMixin(MultiStudy):
     prepare_pet_pipeline = MultiStudy.translate(
         'pet_mc', 'pet_data_preparation_pipeline')
 
-    pet_fov_cropping_pipeline = MultiStudy.translate(
-        'pet_mc', 'pet_fov_cropping_pipeline')
-
     pet_time_info_extraction_pipeline = MultiStudy.translate(
         'pet_mc', 'pet_time_info_extraction_pipeline')
 
-    def static_motion_correction_pipeline_factory(self, StructAlignment=None,
-                                                  **kwargs):
-        inputs = [DatasetSpec('pet_data_prepared', directory_format),
-                  DatasetSpec('motion_detection_output', directory_format)]
-        if StructAlignment is not None:
-            inputs.append(DatasetSpec(StructAlignment, nifti_gz_format))
-
-        pipeline = self.create_pipeline(
-            name='static_mc',
-            inputs=inputs,
-            outputs=[DatasetSpec('static_pet_mc', directory_format),
-                     DatasetSpec('static_pet_mc2crop', directory_format)],
-            desc=("Given a folder with reconstructed PET data, this "
-                  "pipeline will generate a motion corrected static PET"
-                  "image using information extracted from the MR-based "
-                  "motion detection pipeline"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        static_mc = pipeline.create_node(
-            StaticMotionCorrection(), name='static_mc',
-            requirements=[fsl509_req])
-        pipeline.connect_input('pet_data_prepared', static_mc, 'pet_cropped')
-        pipeline.connect_input('motion_detection_output', static_mc, 'md_dir')
-        if StructAlignment is not None:
-            pipeline.connect_input(StructAlignment, static_mc,
-                                   'structural_image')
-        pipeline.connect_output('static_pet_mc', static_mc, 'pet_mc_results')
-        pipeline.connect_output('static_pet_mc2crop', static_mc,
-                                'pet_mc_results_to_crop')
-        return pipeline
-
-    def static_motion_correction_pipeline(self, **kwargs):
-        return self.static_motion_correction_pipeline_factory(
-            StructAlignment=None, **kwargs)
-
-    def static_motion_correction_pipeline_new(self, StructAlignment=None,
-                                                  **kwargs):
+    def static_motion_correction_pipeline(self, StructAlignment=None,
+                                          **kwargs):
         inputs = [DatasetSpec('pet_data_prepared', directory_format),
                   DatasetSpec('static_frame2reference_mats', directory_format),
                   DatasetSpec('correction_factors', text_format),
-                  DatasetSpec('umap_ref_preproc', nifti_gz_format)]
+                  DatasetSpec('umap_ref_preproc', nifti_gz_format),]
         if StructAlignment is not None:
             inputs.append(DatasetSpec(StructAlignment, nifti_gz_format))
 
         pipeline = self.create_pipeline(
             name='static_mc',
             inputs=inputs,
-            outputs=[DatasetSpec('static_pet_mc', directory_format),
-                     DatasetSpec('static_pet_mc2crop', directory_format)],
+            outputs=[DatasetSpec('static_pet_mc', nifti_gz_format),
+                     DatasetSpec('static_pet_mc_ps', nifti_gz_format),
+                     DatasetSpec('static_pet_no_mc', nifti_gz_format)],
             desc=("Given a folder with reconstructed PET data, this "
                   "pipeline will generate a motion corrected static PET"
                   "image using information extracted from the MR-based "
@@ -553,6 +516,60 @@ class MotionDetectionMixin(MultiStudy):
             version=1,
             citations=[fsl_cite],
             **kwargs)
+        check_pet = pipeline.create_node(CheckPetMCInputs(),
+                                         name='check_pet_data')
+        pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
+        pipeline.connect_input('static_frame2reference_mats', check_pet,
+                               'motion_mats')
+        pipeline.connect_input('correction_factors', check_pet, 'corr_factors')
+        pet_mc = pipeline.create_map_node(
+            PetImageMotionCorrection(), name='pet_mc',
+            iterfield=['pet_image', 'motion_mat', 'corr_factor'])
+        pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
+        pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
+        pipeline.connect(check_pet, 'corr_factors', pet_mc, 'corr_factor')
+        pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
+        if StructAlignment is not None:
+            struct_reg = pipeline.create_node(FLIRT(), name='ute2structural_reg')
+            pipeline.connect_input('umap_ref_preproc', struct_reg, 'in_file')
+            pipeline.connect_input(StructAlignment, struct_reg, 'reference')
+            struct_reg.inputs.dof = 6
+            struct_reg.inputs.cost_func = 'normmi'
+            struct_reg.inputs.cost = 'normmi'           
+            pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
+                             'ute2structural_regmat')
+            struct_qform = pipeline.create_node(FLIRT(), name='ute2structural_reg')
+            pipeline.connect_input('umap_ref_preproc', struct_qform, 'in_file')
+            pipeline.connect_input(StructAlignment, struct_qform, 'reference')
+            struct_qform.inputs.uses_qform = True
+            struct_qform.inputs.apply_xfm = True          
+            pipeline.connect(struct_qform, 'out_matrix_file', pet_mc,
+                             'ute2structural_qform')
+            pipeline.connect_input(StructAlignment, pet_mc,
+                                   'structural_image')
+        static_im_gen = pipeline.create_node(StaticPETImageGeneration(),
+                                             name='static_mc_generation')
+        pipeline.connect(pet_mc, 'pet_mc_images', static_im_gen,
+                         'pet_mc_images')
+        pipeline.connect(pet_mc, 'pet_mc_ps_images', static_im_gen,
+                         'pet_mc_ps_images')
+        pipeline.connect(pet_mc, 'pet_no_mc_images', static_im_gen,
+                         'pet_no_mc_images')
+        cropping = pipeline.create_node(PETFovCropping(), name='pet_cropping')
+        cropping.inputs.x_min = pipeline.option('crop_xmin')
+        cropping.inputs.x_size = pipeline.option('crop_xsize')
+        cropping.inputs.y_min = pipeline.option('crop_ymin')
+        cropping.inputs.y_size = pipeline.option('crop_ysize')
+        cropping.inputs.z_min = pipeline.option('crop_zmin')
+        cropping.inputs.z_size = pipeline.option('crop_zsize')
+        pipeline.connect(static_im_gen, 'static_mc_ps', cropping, 'pet_image')
+        
+        pipeline.connect_output('static_pet_mc', static_im_gen, 'static_mc')
+        pipeline.connect_output('static_pet_no_mc', static_im_gen,
+                                'static_no_mc')
+        pipeline.connect_output('static_pet_mc_ps', cropping, 'pet_cropped')
+        
+        return pipeline
 
     def fixed_binning_pipeline(self, **options):
 
