@@ -65,9 +65,9 @@ class DWIPreproc(MRTrix3Base):
     def _list_outputs(self):
 
         outputs = self.output_spec().get()
-        outputs['out_file'] = self._gen_outfilename()
-        outputs['eddy_parameters'] = os.path.join(
-            self._gen_tempdir(), 'dwi_post_eddy.eddy_parameters')
+        outputs['out_file'] = os.path.abspath(self._gen_outfilename())
+        outputs['eddy_parameters'] = os.path.abspath(os.path.join(
+            self._gen_tempdir(), 'dwi_post_eddy.eddy_parameters'))
         return outputs
 
     def _gen_filename(self, name):
@@ -89,8 +89,7 @@ class DWIPreproc(MRTrix3Base):
                 extension = self.inputs.out_file_ext
             else:
                 extension = ext
-            out_name = os.path.join(
-                os.getcwd(), "{}_preproc{}".format(base, extension))
+            out_name = "{}_preproc{}".format(base, extension)
         return out_name
 
     def _gen_tempdir(self):
@@ -99,8 +98,7 @@ class DWIPreproc(MRTrix3Base):
         else:
             base, _ = split_extension(
                 os.path.basename(self.inputs.in_file))
-            temp_dir = os.path.join(
-                os.getcwd(), "{}_tempdir".format(base))
+            temp_dir = "{}_tempdir".format(base)
         return temp_dir
 
 
