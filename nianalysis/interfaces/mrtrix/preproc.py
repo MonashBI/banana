@@ -45,7 +45,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
         position=3)
     eddy_options = traits.Str(
         argstr='-eddy_options "%s"', desc='options to be passed to eddy')
-    no_clean_up = traits.Bool(argstr='-nocleanup',
+    no_clean_up = traits.Bool(True, argstr='-nocleanup',
                               desc='Do not delete the temporary folder')
     temp_dir = Directory(genfile=True, argstr='-tempdir %s',
                          desc="Specify the temporay directory")
@@ -53,7 +53,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
 
 class DWIPreprocOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Pre-processed DWI dataset')
-    eddy_parameters = File(exists=True, desc='File with eddy parameters')
+    eddy_parameters = File(desc='File with eddy parameters')
 
 
 class DWIPreproc(MRTrix3Base):
