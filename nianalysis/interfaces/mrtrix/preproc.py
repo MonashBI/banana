@@ -64,11 +64,10 @@ class DWIPreproc(MRTrix3Base):
 
     def _list_outputs(self):
 
-        dirname = self.inputs.temp_dir
         outputs = self.output_spec().get()
         outputs['out_file'] = self._gen_outfilename()
         outputs['eddy_parameters'] = os.path.join(
-            os.getcwd(), dirname, 'dwi_post_eddy.eddy_parameters')
+            self._gen_tempdir(), 'dwi_post_eddy.eddy_parameters')
         return outputs
 
     def _gen_filename(self, name):
