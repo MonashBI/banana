@@ -74,7 +74,7 @@ class FunctionalMRIStudy(EPIStudy):
         DatasetSpec('melodic_ica', zip_format, 'MelodicL1'),
         DatasetSpec('registered_file', nifti_gz_format,
                     'applyTransform'),
-        DatasetSpec('fix_dir', targz_format, 'PrepareFix'),
+        DatasetSpec('fix_dir', directory_format, 'PrepareFix'),
         DatasetSpec('smoothed_file', nifti_gz_format, 'applySmooth'),
         DatasetSpec('group_melodic', directory_format, 'groupMelodic',
                     frequency='per_visit')]
@@ -358,7 +358,7 @@ class FunctionalMRIStudy(EPIStudy):
                     DatasetSpec('filtered_data', nifti_gz_format),
                     DatasetSpec('hires2example', text_matrix_format),
                     DatasetSpec('preproc', nifti_gz_format),
-                    DatasetSpec('coreg_reg_brain', nifti_gz_format),
+                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
                     DatasetSpec('mc_par', par_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('primary', nifti_gz_format)],
@@ -534,7 +534,8 @@ class FunctionalMRIStudy(EPIStudy):
         return pipeline
 
 
-def create_fmri_study_class(name, t1, epis, fm_mag=None, fm_phase=None):
+def create_fmri_study_class(name, t1, epis, fm_mag=None, fm_phase=None,
+                            training_set=None):
 
     inputs = []
     dct = {}
@@ -572,9 +573,16 @@ def create_fmri_study_class(name, t1, epis, fm_mag=None, fm_phase=None):
         inputs.extend(DatasetMatch('epi_{}_field_map_phase'.format(i),
                                    dicom_format, fm_phase)
                       for i in range(len(epis)))
+    if training_set is not None:
+        inputs.extend(DatasetMatch('epi_{}_train_data'.format(i),
+                                   rdata_format, training_set)
+                      for i in range(len(epis)))
+        output_file = 'smoothed_file'
+    else:
+        output_file = 'melodic_ica'
 
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_option_specs'] = option_specs
-    return MultiStudyMetaClass(name, (MultiStudy,), dct), inputs
+    return MultiStudyMetaClass(name, (MultiStudy,), dct), inputs, output_file
