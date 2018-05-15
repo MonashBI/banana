@@ -147,17 +147,6 @@ class Warp2Metric(MRTrix3Base):
         return outputs
 
 
-class ResponseSDInputSpec(NipypeResponseSDInputSpec):
-
-    algorithm = traits.Str(mandatory=True, argstr='%s', position=0,
-                           desc="The algorithm used to estimate the response")
-
-
-class ResponseSD(NipypeResponseSD):
-
-    input_spec = ResponseSDInputSpec
-
-
 class AverageReponseInputSpec(MRTrix3BaseInputSpec):
 
     in_files = InputMultiPath(

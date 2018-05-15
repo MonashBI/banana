@@ -69,17 +69,19 @@ class DiffusionStudy(EPIStudy):
                     'intensity_normalisation_pipeline',
                     frequency='per_project')]
 
-    add_option_specs = [OptionSpec('preproc_pe_dir', None, dtype=str),
-                        OptionSpec('preproc_denoise', True),
-                        OptionSpec('brain_extract_method', 'mrtrix'),
-                        OptionSpec('bias_correct_method', 'ants',
-                                   choices=('ants', 'fsl')),
-                        OptionSpec('fod_response_algorithm', 'tax'),
-                        OptionSpec('tbss_skel_thresh', 0.2),
-                        OptionSpec('fsl_mask_f', 0.25),
-                        OptionSpec('bet_robust', True),
-                        OptionSpec('bet_f_threshold', 0.2),
-                        OptionSpec('bet_reduce_bias', False)]
+    add_option_specs = [
+        OptionSpec('multi_tissue', True),
+        OptionSpec('preproc_pe_dir', None, dtype=str),
+        OptionSpec('preproc_denoise', True),
+        OptionSpec('brain_extract_method', 'mrtrix'),
+        OptionSpec('bias_correct_method', 'ants',
+                   choices=('ants', 'fsl')),
+        OptionSpec('fod_response_algorithm', 'tax'),
+        OptionSpec('tbss_skel_thresh', 0.2),
+        OptionSpec('fsl_mask_f', 0.25),
+        OptionSpec('bet_robust', True),
+        OptionSpec('bet_f_threshold', 0.2),
+        OptionSpec('bet_reduce_bias', False)]
 
     def preprocess_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
