@@ -10,7 +10,7 @@ from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_format import (
     dicom_format, text_format, gif_format)
 from nianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
-                                    ants2_req, dcm2niix1_req)
+                                    ants2_req, dcm2niix_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.utils import get_atlas_path
 from arcana.exception import (
@@ -619,7 +619,7 @@ class MRIStudy(Study):
                 dcm_in_name + '_nifti', conv, 'out_file')
         elif converter == 'dcm2niix':
             conv = pipeline.create_node(Dcm2niix(), name='converter',
-                                        requirements=[dcm2niix1_req])
+                                        requirements=[dcm2niix_req])
             conv.inputs.compression = 'y'
             pipeline.connect_input(dcm_in_name, conv, 'input_dir')
             pipeline.connect_output(
