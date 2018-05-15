@@ -1,22 +1,17 @@
 #!/usr/bin/env python
 from nipype import config
-from nianalysis.data_format import rdata_format, dicom_format
-config.enable_debug_mode()
-from arcana.dataset import DatasetMatch  # @IgnorePep8
-from nianalysis.study.mri.functional.fmri_new import FunctionalMRIStudy  # @IgnorePep8
-from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
+config.enable_debug_mode() # @IgnorePep8
+from nianalysis.study.multimodal.test_rsfmri import (  # @IgnorePep8 @Reimport
+    fMRI, inputs)  # @IgnorePep8
+from nianalysis.testing import BaseTestCase as TestCase # @IgnorePep8 @Reimport
 
 
-class TestFMRI(BaseTestCase):
+class TestFMRI(TestCase):
 
-    def test_fix(self):
+    def test_fmri(self):
+
         study = self.create_study(
-            FunctionalMRIStudy, 'fix', inputs={
-                DatasetMatch('t1_primary', dicom_format, 'mprage'),
-                DatasetMatch('fm_mag_primary', dicom_format, 'field_map_mag'),
-                DatasetMatch('fm_phase_primary', dicom_format,
-                             'field_map_phase'),
-                DatasetMatch('epi_primary', dicom_format, 'rs_fmri'),
-                DatasetMatch('train_data', rdata_format, 'train_data')})
-        study.data('melodic_ica')
-        self.assertDatasetCreated('melodic_ica.zip', study.name)
+            fMRI, 'fMRI', inputs=inputs,
+            enforce_inputs=False)
+        study.data('epi_0_melodic_ica')
+        self.assertDatasetCreated('epi_0_melodic_ica.zip', study.name)
