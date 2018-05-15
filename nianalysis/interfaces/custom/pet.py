@@ -566,8 +566,8 @@ class PETFovCropping(BaseInterface):
 class CheckPetMCInputsInputSpec(BaseInterfaceInputSpec):
 
     pet_data = Directory(desc='Directory with the fov cropped PET images.')
-    motion_mats = Directory(desc='Directory with the outputs from the MR-based '
-                            'motion detection pipeline.')
+    motion_mats = Directory(desc='Directory with the outputs from the MR-based'
+                            ' motion detection pipeline.')
     corr_factors = File()
 
 
@@ -593,13 +593,13 @@ class CheckPetMCInputs(BaseInterface):
             raise Exception('No images found in {}!'
                             .format(self.inputs.pet_cropped))
         elif (pet_data and (len(pet_data) != len(motion_mats) or
-                len(pet_data) != len(corr_factors))):
+                            len(pet_data) != len(corr_factors))):
             raise Exception("The number of the PET images found in {0} is "
                             "different from that of the motion matrices found "
                             "in {1}. Please check."
                             .format(self.inputs.pet_data,
                                     self.inputs.motion_mats))
-        
+
         return runtime
 
 
@@ -607,7 +607,7 @@ class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 
     pet_image = File(desc='Directory with the fov cropped PET images.')
     motion_mat = File(desc='Directory with the outputs from the MR-based '
-                       'motion detection pipeline.')
+                      'motion detection pipeline.')
     structural_image = File(desc='If provided, the final PET mc image will be '
                             'aligned to this image.', default=None)
     corr_factor = traits.Float()
@@ -619,8 +619,8 @@ class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 class PetImageMotionCorrectionOutputSpec(TraitedSpec):
 
     pet_mc_images = traits.List(desc='Motin corrected static PET results.')
-    pet_mc_ps_images = traits.List(desc='Motin corrected static PET results to crop (those '
-        'in PET space).')
+    pet_mc_ps_images = traits.List(
+        desc='Motin corrected static PET results to crop (those in PET space)')
     pet_no_mc_images = traits.List(desc='Motin corrected static PET results.')
 
 
@@ -721,14 +721,14 @@ class PetImageMotionCorrection(BaseInterface):
 
 
 class StaticPETImageGenerationInputSpec(BaseInterfaceInputSpec):
-    
+
     pet_mc_images = traits.List()
     pet_mc_ps_images = traits.List()
     pet_no_mc_images = traits.List()
 
 
 class StaticPETImageGenerationOutputSpec(TraitedSpec):
-    
+
     static_mc = File()
     static_mc_ps = File()
     static_no_mc = File()
@@ -740,12 +740,12 @@ class StaticPETImageGeneration(BaseInterface):
     output_spec = StaticPETImageGenerationOutputSpec
 
     def _run_interface(self, runtime):
-        
+
         pet_mc_images = self.inputs.pet_mc_images
         pet_mc_ps_images = self.inputs.pet_mc_ps_images
         pet_no_mc_images = self.inputs.pet_no_mc_images
         images = [pet_mc_images, pet_mc_ps_images, pet_no_mc_images]
-        
+
         corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_corr']
         for i, tps in enumerate(corr_types):
             self.frames_sum(tps, images[i])
