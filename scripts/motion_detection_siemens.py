@@ -26,7 +26,7 @@ class create_motion_detection:
 
         input_dir = self.input_dir
         cached_inputs = False
-        cache_input_path = os.path.join(input_dir, 'inputs.pickle')
+        cache_input_path = os.path.join(input_dir, 'inputs.pickled')
         if os.path.isdir(input_dir):
             try:
                 with open(cache_input_path, 'r') as f:
@@ -41,7 +41,7 @@ class create_motion_detection:
             list_inputs = guess_scan_type(scans, input_dir)
             if not list_inputs:
                 ref, ref_type, t1s, epis, t2s, dmris = inputs_generation(
-                    scans, siemens=True)
+                    scans, input_dir, siemens=True)
                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
             else:
                 print list_inputs
@@ -49,41 +49,42 @@ class create_motion_detection:
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)
 
-        cached_inputs = False
-        cache_input_path = os.path.join(input_dir, 'inputs.pickle')
-        if os.path.isdir(input_dir):
-            try:
-                with open(cache_input_path, 'r') as f:
-                    ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
-                cached_inputs = True
-            except IOError, e:
-                if e.errno == errno.ENOENT:
-                    print ('No inputs.pickle files found in {}. Running inputs'
-                           ' generation'.format(input_dir))
-        if not cached_inputs:
-            scans = local_motion_detection(input_dir, pet_dir=pet_dir)
-            list_inputs = guess_scan_type(scans, input_dir)
-            if not list_inputs:
-                ref, ref_type, t1s, epis, t2s, dmris = inputs_generation(
-                    scans, siemens=True)
-                list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
-            else:
-                print list_inputs
-                ref, ref_type, t1s, epis, t2s, dmris = list_inputs
-            with open(cache_input_path, 'w') as f:
-                pkl.dump(list_inputs, f)
+#         cached_inputs = False
+#         cache_input_path = os.path.join(input_dir, 'inputs.pickle')
+#         if os.path.isdir(input_dir):
+#             try:
+#                 with open(cache_input_path, 'r') as f:
+#                     ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
+#                 cached_inputs = True
+#             except IOError, e:
+#                 if e.errno == errno.ENOENT:
+#                     print ('No inputs.pickle files found in {}. Running inputs'
+#                            ' generation'.format(input_dir))
+#         if not cached_inputs:
+#             scans = local_motion_detection(input_dir, pet_dir=pet_dir)
+#             list_inputs = guess_scan_type(scans, input_dir)
+#             if not list_inputs:
+#                 ref, ref_type, t1s, epis, t2s, dmris = inputs_generation(
+#                     scans, input_dir, siemens=True)
+#                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
+#             else:
+#                 print list_inputs
+#                 ref, ref_type, t1s, epis, t2s, dmris = list_inputs
+#             with open(cache_input_path, 'w') as f:
+#                 pkl.dump(list_inputs, f)
 
         return ref, ref_type, t1s, epis, t2s, dmris
 
 
 if __name__ == "__main__":
+
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_dir', '-i', type=str,
                         help=("Path to an existing directory"))
     args = parser.parse_args()
-#     input_dir = '/mnt/md0/project/pet/sforazz/MMH008_HD012_MRPT01/'
-    input_dir = args.input_dir
+    input_dir = '/Volumes/Project/pet/sforazz/MMH008_HD012_MRPT01/'
+#     input_dir = args.input_dir
     md = create_motion_detection(input_dir)
     ref, ref_type, t1s, epis, t2s, dmris = md.create_md()
 
@@ -108,5 +109,5 @@ if __name__ == "__main__":
                             runner=LinearRunner(WORK_PATH), archive=archive,
                             inputs=inputs, subject_ids=[sub_id],
                             visit_ids=[session_id])
-    study.data('moco_series')
+    study.data('motion_detection_output')
 print 'Done!'
