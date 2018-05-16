@@ -29,11 +29,11 @@ class EPIStudy(MRIStudy):
         DatasetSpec('field_map_mag', nifti_gz_format, optional=True),
         DatasetSpec('field_map_phase', nifti_gz_format, optional=True),
         DatasetSpec('moco', nifti_gz_format,
-                    'motion_alignment_pipeline'),
+                    'intrascan_alignment_pipeline'),
         DatasetSpec('moco_mat', directory_format,
-                    'motion_alignment_pipeline'),
+                    'intrascan_alignment_pipeline'),
         DatasetSpec('moco_par', par_format,
-                    'motion_alignment_pipeline')]
+                    'intrascan_alignment_pipeline')]
 
     add_option_specs = [
         OptionSpec('bet_robust', True),
@@ -68,7 +68,7 @@ class EPIStudy(MRIStudy):
         pipeline.connect_output('coreg_matrix', epireg, 'epi2str_mat')
         return pipeline
 
-    def motion_alignment_pipeline(self, **kwargs):
+    def intrascan_alignment_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='MCFLIRT_pipeline',

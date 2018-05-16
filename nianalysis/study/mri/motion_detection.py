@@ -26,7 +26,7 @@ class MotionDetectionStudy(MultiStudy):
     ref_dcm_info_pipeline = MultiStudy.translate(
         'ref', 'header_info_extraction_pipeline')
 
-    t1_motion_alignment_pipeline = MultiStudy.translate(
+    t1_intrascan_alignment_pipeline = MultiStudy.translate(
         't1_1', 't1_motion_mat_pipeline')
 
     t1_dcm2nii_pipeline = MultiStudy.translate(
@@ -56,7 +56,7 @@ class MotionDetectionStudy(MultiStudy):
     t1_rigid_registration_pipeline = MultiStudy.translate(
         't1_1', 't1_rigid_registration_pipeline')
 
-    ute_motion_alignment_pipeline = MultiStudy.translate(
+    ute_intrascan_alignment_pipeline = MultiStudy.translate(
         'ute', 't1_motion_mat_pipeline')
 
     ute_dcm2nii_pipeline = MultiStudy.translate(
@@ -86,7 +86,7 @@ class MotionDetectionStudy(MultiStudy):
     ute_rigid_registration_pipeline = MultiStudy.translate(
         'ute', 't1_rigid_registration_pipeline')
 
-    fm_motion_alignment_pipeline = MultiStudy.translate(
+    fm_intrascan_alignment_pipeline = MultiStudy.translate(
         'fm', 't2_motion_mat_pipeline')
 
     fm_dcm2nii_pipeline = MultiStudy.translate(
@@ -116,8 +116,8 @@ class MotionDetectionStudy(MultiStudy):
     fm_rigid_registration_pipeline = MultiStudy.translate(
         'fm', 't2_rigid_registration_pipeline')
 
-    epi1_motion_alignment_pipeline = MultiStudy.translate(
-        'epi1', 'epi_motion_alignment_pipeline')
+    epi1_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi1', 'epi_intrascan_alignment_pipeline')
 
     epi1_dcm2nii_pipeline = MultiStudy.translate(
         'epi1', 'epi_dcm2nii_pipeline')
@@ -152,8 +152,8 @@ class MotionDetectionStudy(MultiStudy):
     epi1_ref_nifti_pipeline = MultiStudy.translate(
         'epi1', 'ref_dcm2nii_pipeline')
 
-    epi2_motion_alignment_pipeline = MultiStudy.translate(
-        'epi2', 'epi_motion_alignment_pipeline')
+    epi2_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi2', 'epi_intrascan_alignment_pipeline')
 
     epi2_dcm_info_pipeline = MultiStudy.translate(
         'epi2', 'epi_dcm_info_pipeline')
@@ -188,8 +188,8 @@ class MotionDetectionStudy(MultiStudy):
     epi2_dcm2nii_pipeline = MultiStudy.translate(
         'epi2', 'epi_dcm2nii_pipeline')
 
-    epi3_motion_alignment_pipeline = MultiStudy.translate(
-        'epi3', 'epi_motion_alignment_pipeline')
+    epi3_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi3', 'epi_intrascan_alignment_pipeline')
 
     epi3_dcm2nii_pipeline = MultiStudy.translate(
         'epi3', 'epi_dcm2nii_pipeline')
@@ -224,8 +224,8 @@ class MotionDetectionStudy(MultiStudy):
     epi3_ref_nifti_pipeline = MultiStudy.translate(
         'epi3', 'ref_dcm2nii_pipeline')
 
-    epi4_motion_alignment_pipeline = MultiStudy.translate(
-        'epi4', 'epi_motion_alignment_pipeline')
+    epi4_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi4', 'epi_intrascan_alignment_pipeline')
 
     epi4_dcm2nii_pipeline = MultiStudy.translate(
         'epi4', 'epi_dcm2nii_pipeline')
@@ -260,8 +260,8 @@ class MotionDetectionStudy(MultiStudy):
     epi4_ref_nifti_pipeline = MultiStudy.translate(
         'epi4', 'ref_dcm2nii_pipeline')
 
-    epi5_motion_alignment_pipeline = MultiStudy.translate(
-        'epi5', 'epi_motion_alignment_pipeline')
+    epi5_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi5', 'epi_intrascan_alignment_pipeline')
 
     epi5_dcm2nii_pipeline = MultiStudy.translate(
         'epi5', 'epi_dcm2nii_pipeline')
@@ -296,8 +296,8 @@ class MotionDetectionStudy(MultiStudy):
     epi5_ref_nifti_pipeline = MultiStudy.translate(
         'epi5', 'ref_dcm2nii_pipeline')
 
-    epi6_motion_alignment_pipeline = MultiStudy.translate(
-        'epi6', 'epi_motion_alignment_pipeline')
+    epi6_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi6', 'epi_intrascan_alignment_pipeline')
 
     epi6_dcm2nii_pipeline = MultiStudy.translate(
         'epi6', 'epi_dcm2nii_pipeline')
@@ -332,8 +332,8 @@ class MotionDetectionStudy(MultiStudy):
     epi6_ref_nifti_pipeline = MultiStudy.translate(
         'epi6', 'ref_dcm2nii_pipeline')
 
-    epi7_motion_alignment_pipeline = MultiStudy.translate(
-        'epi7', 'epi_motion_alignment_pipeline')
+    epi7_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi7', 'epi_intrascan_alignment_pipeline')
 
     epi7_dcm2nii_pipeline = MultiStudy.translate(
         'epi7', 'epi_dcm2nii_pipeline')
@@ -368,8 +368,8 @@ class MotionDetectionStudy(MultiStudy):
     epi7_ref_nifti_pipeline = MultiStudy.translate(
         'epi7', 'ref_dcm2nii_pipeline')
 
-    epi8_motion_alignment_pipeline = MultiStudy.translate(
-        'epi8', 'epi_motion_alignment_pipeline')
+    epi8_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi8', 'epi_intrascan_alignment_pipeline')
 
     epi8_dcm2nii_pipeline = MultiStudy.translate(
         'epi8', 'epi_dcm2nii_pipeline')
@@ -404,8 +404,8 @@ class MotionDetectionStudy(MultiStudy):
     epi8_ref_nifti_pipeline = MultiStudy.translate(
         'epi8', 'ref_dcm2nii_pipeline')
 
-    asl_motion_alignment_pipeline = MultiStudy.translate(
-        'asl', 'epi_motion_alignment_pipeline')
+    asl_intrascan_alignment_pipeline = MultiStudy.translate(
+        'asl', 'epi_intrascan_alignment_pipeline')
 
     asl_dcm2nii_pipeline = MultiStudy.translate(
         'asl', 'epi_dcm2nii_pipeline')
@@ -1077,11 +1077,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi1_motion_mats', directory_format,
                     'epi1_motion_mat_pipeline'),
         DatasetSpec('epi1_moco', nifti_gz_format,
-                    'epi1_motion_alignment_pipeline'),
+                    'epi1_intrascan_alignment_pipeline'),
         DatasetSpec('epi1_moco_mat', directory_format,
-                    'epi1_motion_alignment_pipeline'),
+                    'epi1_intrascan_alignment_pipeline'),
         DatasetSpec('epi1_moco_par', par_format,
-                    'epi1_motion_alignment_pipeline'),
+                    'epi1_intrascan_alignment_pipeline'),
         DatasetSpec('epi1_ref_preproc', nifti_gz_format,
                     'epi1_ref_basic_preproc_pipeline'),
         DatasetSpec('epi1_ref_brain', nifti_gz_format, 'epi1_ref_bet_pipeline'),
@@ -1112,11 +1112,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi2_motion_mats', directory_format,
                     'epi2_motion_mat_pipeline'),
         DatasetSpec('epi2_moco', nifti_gz_format,
-                    'epi2_motion_alignment_pipeline'),
+                    'epi2_intrascan_alignment_pipeline'),
         DatasetSpec('epi2_moco_mat', directory_format,
-                    'epi2_motion_alignment_pipeline'),
+                    'epi2_intrascan_alignment_pipeline'),
         DatasetSpec('epi2_moco_par', par_format,
-                    'epi2_motion_alignment_pipeline'),
+                    'epi2_intrascan_alignment_pipeline'),
         DatasetSpec('epi2_brain', nifti_gz_format,
                     'epi2_bet_pipeline'),
         DatasetSpec('epi2_brain_mask', nifti_gz_format,
@@ -1151,11 +1151,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi3_motion_mats', directory_format,
                     'epi3_motion_mat_pipeline'),
         DatasetSpec('epi3_moco', nifti_gz_format,
-                    'epi3_motion_alignment_pipeline'),
+                    'epi3_intrascan_alignment_pipeline'),
         DatasetSpec('epi3_moco_mat', directory_format,
-                    'epi3_motion_alignment_pipeline'),
+                    'epi3_intrascan_alignment_pipeline'),
         DatasetSpec('epi3_moco_par', par_format,
-                    'epi3_motion_alignment_pipeline'),
+                    'epi3_intrascan_alignment_pipeline'),
         DatasetSpec('epi3_brain', nifti_gz_format,
                     'epi3_bet_pipeline'),
         DatasetSpec('epi3_brain_mask', nifti_gz_format,
@@ -1190,11 +1190,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi4_motion_mats', directory_format,
                     'epi4_motion_mat_pipeline'),
         DatasetSpec('epi4_moco', nifti_gz_format,
-                    'epi4_motion_alignment_pipeline'),
+                    'epi4_intrascan_alignment_pipeline'),
         DatasetSpec('epi4_moco_mat', directory_format,
-                    'epi4_motion_alignment_pipeline'),
+                    'epi4_intrascan_alignment_pipeline'),
         DatasetSpec('epi4_moco_par', par_format,
-                    'epi4_motion_alignment_pipeline'),
+                    'epi4_intrascan_alignment_pipeline'),
         DatasetSpec('epi4_brain', nifti_gz_format,
                     'epi4_bet_pipeline'),
         DatasetSpec('epi4_brain_mask', nifti_gz_format,
@@ -1229,11 +1229,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi5_motion_mats', directory_format,
                     'epi5_motion_mat_pipeline'),
         DatasetSpec('epi5_moco', nifti_gz_format,
-                    'epi5_motion_alignment_pipeline'),
+                    'epi5_intrascan_alignment_pipeline'),
         DatasetSpec('epi5_moco_mat', directory_format,
-                    'epi5_motion_alignment_pipeline'),
+                    'epi5_intrascan_alignment_pipeline'),
         DatasetSpec('epi5_moco_par', par_format,
-                    'epi5_motion_alignment_pipeline'),
+                    'epi5_intrascan_alignment_pipeline'),
         DatasetSpec('epi5_brain', nifti_gz_format,
                     'epi5_bet_pipeline'),
         DatasetSpec('epi5_brain_mask', nifti_gz_format,
@@ -1268,11 +1268,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi6_motion_mats', directory_format,
                     'epi6_motion_mat_pipeline'),
         DatasetSpec('epi6_moco', nifti_gz_format,
-                    'epi6_motion_alignment_pipeline'),
+                    'epi6_intrascan_alignment_pipeline'),
         DatasetSpec('epi6_moco_mat', directory_format,
-                    'epi6_motion_alignment_pipeline'),
+                    'epi6_intrascan_alignment_pipeline'),
         DatasetSpec('epi6_moco_par', par_format,
-                    'epi6_motion_alignment_pipeline'),
+                    'epi6_intrascan_alignment_pipeline'),
         DatasetSpec('epi6_brain', nifti_gz_format,
                     'epi6_bet_pipeline'),
         DatasetSpec('epi6_brain_mask', nifti_gz_format,
@@ -1307,11 +1307,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi7_motion_mats', directory_format,
                     'epi7_motion_mat_pipeline'),
         DatasetSpec('epi7_moco', nifti_gz_format,
-                    'epi7_motion_alignment_pipeline'),
+                    'epi7_intrascan_alignment_pipeline'),
         DatasetSpec('epi7_moco_mat', directory_format,
-                    'epi7_motion_alignment_pipeline'),
+                    'epi7_intrascan_alignment_pipeline'),
         DatasetSpec('epi7_moco_par', par_format,
-                    'epi7_motion_alignment_pipeline'),
+                    'epi7_intrascan_alignment_pipeline'),
         DatasetSpec('epi7_brain', nifti_gz_format,
                     'epi7_bet_pipeline'),
         DatasetSpec('epi7_brain_mask', nifti_gz_format,
@@ -1346,11 +1346,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi8_motion_mats', directory_format,
                     'epi8_motion_mat_pipeline'),
         DatasetSpec('epi8_moco', nifti_gz_format,
-                    'epi8_motion_alignment_pipeline'),
+                    'epi8_intrascan_alignment_pipeline'),
         DatasetSpec('epi8_moco_mat', directory_format,
-                    'epi8_motion_alignment_pipeline'),
+                    'epi8_intrascan_alignment_pipeline'),
         DatasetSpec('epi8_moco_par', par_format,
-                    'epi8_motion_alignment_pipeline'),
+                    'epi8_intrascan_alignment_pipeline'),
         DatasetSpec('epi8_brain', nifti_gz_format,
                     'epi8_bet_pipeline'),
         DatasetSpec('epi8_brain_mask', nifti_gz_format,
@@ -1385,11 +1385,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('asl_motion_mats', directory_format,
                     'asl_motion_mat_pipeline'),
         DatasetSpec('asl_moco', nifti_gz_format,
-                    'asl_motion_alignment_pipeline'),
+                    'asl_intrascan_alignment_pipeline'),
         DatasetSpec('asl_moco_mat', directory_format,
-                    'asl_motion_alignment_pipeline'),
+                    'asl_intrascan_alignment_pipeline'),
         DatasetSpec('asl_moco_par', par_format,
-                    'asl_motion_alignment_pipeline'),
+                    'asl_intrascan_alignment_pipeline'),
         DatasetSpec('asl_brain', nifti_gz_format,
                     'asl_bet_pipeline'),
         DatasetSpec('asl_brain_mask', nifti_gz_format,

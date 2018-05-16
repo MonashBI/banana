@@ -408,7 +408,7 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('dwi_1_main_affine_mats', directory_format,
                     'dwi_1_main_aff_mat_pipeline'),
         DatasetSpec('dwi_1_main_motion_mats', directory_format,
-                    'dwi_1_main_motion_alignment_pipeline'),
+                    'dwi_1_main_intrascan_alignment_pipeline'),
         DatasetSpec('dwi_1_main_reg_mat', text_matrix_format,
                     'dwi_1_main_rigid_registration_pipeline'),
         DatasetSpec('dwi_1_main_reg', nifti_gz_format,
@@ -450,7 +450,7 @@ class MotionDetectionStudy(MultiStudy):
         FieldSpec('dwi2ref_1_opposite_start_time', str,
                   'dwi2ref_1_opposite_dcm_info_pipeline'),
         DatasetSpec('dwi2ref_1_opposite_motion_mats', directory_format,
-                    'dwi2ref_1_opposite_motion_alignment_pipeline'),
+                    'dwi2ref_1_opposite_intrascan_alignment_pipeline'),
         DatasetSpec('dwi2ref_1_opposite_reg_mat', text_matrix_format,
                     'dwi2ref_1_opposite_rigid_registration_pipeline'),
         DatasetSpec('dwi2ref_1_opposite_reg', nifti_gz_format,
@@ -485,7 +485,7 @@ class MotionDetectionStudy(MultiStudy):
         FieldSpec('dwi2ref_1_start_time', str,
                   'dwi2ref_1_dcm_info_pipeline'),
         DatasetSpec('dwi2ref_1_motion_mats', directory_format,
-                    'dwi2ref_1_motion_alignment_pipeline'),
+                    'dwi2ref_1_intrascan_alignment_pipeline'),
         DatasetSpec('dwi2ref_1_reg_mat', text_matrix_format,
                     'dwi2ref_1_rigid_registration_pipeline'),
         DatasetSpec('dwi2ref_1_reg', nifti_gz_format,
@@ -767,11 +767,11 @@ class MotionDetectionStudy(MultiStudy):
         DatasetSpec('epi1_motion_mats', directory_format,
                     'epi1_motion_mat_pipeline'),
         DatasetSpec('epi1_moco', nifti_gz_format,
-                    'epi1_motion_alignment_pipeline'),
+                    'epi1_intrascan_alignment_pipeline'),
         DatasetSpec('epi1_moco_mat', directory_format,
-                    'epi1_motion_alignment_pipeline'),
+                    'epi1_intrascan_alignment_pipeline'),
         DatasetSpec('epi1_moco_par', par_format,
-                    'epi1_motion_alignment_pipeline'),
+                    'epi1_intrascan_alignment_pipeline'),
         DatasetSpec('epi1_ref_preproc', nifti_gz_format,
                     'epi1_ref_basic_preproc_pipeline'),
         DatasetSpec('epi1_ref_brain', nifti_gz_format, 'epi1_ref_bet_pipeline'),
@@ -826,7 +826,7 @@ class MotionDetectionStudy(MultiStudy):
     dwi_1_main_bet_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi_main_bet_pipeline')
 
-    dwi_1_main_motion_alignment_pipeline = MultiStudy.translate(
+    dwi_1_main_intrascan_alignment_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi_main_motion_mat_pipeline')
 
     dwi_1_main_aff_mat_pipeline = MultiStudy.translate(
@@ -854,7 +854,7 @@ class MotionDetectionStudy(MultiStudy):
     dwi2ref_1_opposite_bet_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi2ref_opposite_bet_pipeline')
 
-    dwi2ref_1_opposite_motion_alignment_pipeline = MultiStudy.translate(
+    dwi2ref_1_opposite_intrascan_alignment_pipeline = MultiStudy.translate(
         'dwi_1', CoregisteredDiffusionStudy.
         dwi2ref_opposite_motion_mat_pipeline)
 
@@ -891,7 +891,7 @@ class MotionDetectionStudy(MultiStudy):
     dwi2ref_1_bet_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi2ref_bet_pipeline')
 
-    dwi2ref_1_motion_alignment_pipeline = MultiStudy.translate(
+    dwi2ref_1_intrascan_alignment_pipeline = MultiStudy.translate(
         'dwi_1', 'dwi2ref_motion_mat_pipeline')
 
     dwi2ref_1_qform_transform_pipeline = MultiStudy.translate(
@@ -918,7 +918,7 @@ class MotionDetectionStudy(MultiStudy):
     ref_dcm_info_pipeline = MultiStudy.translate(
         'ref', 'header_info_extraction_pipeline')
 
-    t1_motion_alignment_pipeline = MultiStudy.translate(
+    t1_intrascan_alignment_pipeline = MultiStudy.translate(
         't1_1', 't1_motion_mat_pipeline')
 
     t1_dcm2nii_pipeline = MultiStudy.translate(
@@ -950,7 +950,7 @@ class MotionDetectionStudy(MultiStudy):
     t1_rigid_registration_pipeline = MultiStudy.translate(
         't1_1', 't1_rigid_registration_pipeline')
 
-    ute_motion_alignment_pipeline = MultiStudy.translate(
+    ute_intrascan_alignment_pipeline = MultiStudy.translate(
         'ute', 't1_motion_mat_pipeline')
 
     ute_dcm2nii_pipeline = MultiStudy.translate(
@@ -982,7 +982,7 @@ class MotionDetectionStudy(MultiStudy):
     ute_rigid_registration_pipeline = MultiStudy.translate(
         'ute', 't1_rigid_registration_pipeline')
 
-    fm_motion_alignment_pipeline = MultiStudy.translate(
+    fm_intrascan_alignment_pipeline = MultiStudy.translate(
         'fm', 't2_motion_mat_pipeline')
 
     fm_dcm2nii_pipeline = MultiStudy.translate(
@@ -1013,7 +1013,7 @@ class MotionDetectionStudy(MultiStudy):
     fm_rigid_registration_pipeline = MultiStudy.translate(
         'fm', 't2_rigid_registration_pipeline')
 
-    t2_1_motion_alignment_pipeline = MultiStudy.translate(
+    t2_1_intrascan_alignment_pipeline = MultiStudy.translate(
         't2_1', 't2_motion_mat_pipeline')
 
     t2_1_dcm2nii_pipeline = MultiStudy.translate(
@@ -1044,7 +1044,7 @@ class MotionDetectionStudy(MultiStudy):
     t2_1_rigid_registration_pipeline = MultiStudy.translate(
         't2_1', 't2_rigid_registration_pipeline')
 
-    t2_2_motion_alignment_pipeline = MultiStudy.translate(
+    t2_2_intrascan_alignment_pipeline = MultiStudy.translate(
         't2_2', 't2_motion_mat_pipeline')
 
     t2_2_dcm2nii_pipeline = MultiStudy.translate(
@@ -1075,7 +1075,7 @@ class MotionDetectionStudy(MultiStudy):
     t2_2_rigid_registration_pipeline = MultiStudy.translate(
         't2_2', 't2_rigid_registration_pipeline')
 
-    t2_3_motion_alignment_pipeline = MultiStudy.translate(
+    t2_3_intrascan_alignment_pipeline = MultiStudy.translate(
         't2_3', 't2_motion_mat_pipeline')
 
     t2_3_dcm2nii_pipeline = MultiStudy.translate(
@@ -1106,7 +1106,7 @@ class MotionDetectionStudy(MultiStudy):
     t2_3_rigid_registration_pipeline = MultiStudy.translate(
         't2_3', 't2_rigid_registration_pipeline')
 
-    t2_4_motion_alignment_pipeline = MultiStudy.translate(
+    t2_4_intrascan_alignment_pipeline = MultiStudy.translate(
         't2_4', 't2_motion_mat_pipeline')
 
     t2_4_dcm2nii_pipeline = MultiStudy.translate(
@@ -1137,7 +1137,7 @@ class MotionDetectionStudy(MultiStudy):
     t2_4_rigid_registration_pipeline = MultiStudy.translate(
         't2_4', 't2_rigid_registration_pipeline')
 
-    t2_5_motion_alignment_pipeline = MultiStudy.translate(
+    t2_5_intrascan_alignment_pipeline = MultiStudy.translate(
         't2_5', 't2_motion_mat_pipeline')
 
     t2_5_dcm2nii_pipeline = MultiStudy.translate(
@@ -1168,8 +1168,8 @@ class MotionDetectionStudy(MultiStudy):
     t2_5_rigid_registration_pipeline = MultiStudy.translate(
         't2_5', 't2_rigid_registration_pipeline')
 
-    epi1_motion_alignment_pipeline = MultiStudy.translate(
-        'epi1', 'epi_motion_alignment_pipeline')
+    epi1_intrascan_alignment_pipeline = MultiStudy.translate(
+        'epi1', 'epi_intrascan_alignment_pipeline')
 
     epi1_dcm2nii_pipeline = MultiStudy.translate(
         'epi1', 'epi_dcm2nii_pipeline')
