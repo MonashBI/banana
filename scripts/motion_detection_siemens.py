@@ -49,30 +49,6 @@ class create_motion_detection:
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)
 
-#         cached_inputs = False
-#         cache_input_path = os.path.join(input_dir, 'inputs.pickle')
-#         if os.path.isdir(input_dir):
-#             try:
-#                 with open(cache_input_path, 'r') as f:
-#                     ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
-#                 cached_inputs = True
-#             except IOError, e:
-#                 if e.errno == errno.ENOENT:
-#                     print ('No inputs.pickle files found in {}. Running inputs'
-#                            ' generation'.format(input_dir))
-#         if not cached_inputs:
-#             scans = local_motion_detection(input_dir, pet_dir=pet_dir)
-#             list_inputs = guess_scan_type(scans, input_dir)
-#             if not list_inputs:
-#                 ref, ref_type, t1s, epis, t2s, dmris = inputs_generation(
-#                     scans, input_dir, siemens=True)
-#                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
-#             else:
-#                 print list_inputs
-#                 ref, ref_type, t1s, epis, t2s, dmris = list_inputs
-#             with open(cache_input_path, 'w') as f:
-#                 pkl.dump(list_inputs, f)
-
         return ref, ref_type, t1s, epis, t2s, dmris
 
 
