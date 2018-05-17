@@ -194,9 +194,9 @@ class PrepareDWI(BaseInterface):
 #             else:
 #                 self.dict_output['pe'] = 'PA'
 #         else:
-#             raise Exception('Phase encoding direction cannot be establish by '
-#                             'looking at the header. DWI pre-processing will '
-#                             'not be performed.')
+#             raise Exception('Phase encoding direction cannot be establish by'
+#                             ' looking at the header. DWI pre-processing will'
+#                             ' not be performed.')
         self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
 
         if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
@@ -548,7 +548,15 @@ class MeanDisplacementCalculation(BaseInterface):
 
         corrupted_volumes = self.check_max_motion(motion_par)
         if corrupted_volumes:
-            corrupted_volume_names = volume_names[corrupted_volumes]
+            corrupted_volume_names = [
+                'The following volumes showed an unusual severe motion (i.e. '
+                'rotation greater than 8 degrees and/or translation greater '
+                'than 20mm). \nThis is suspiciuos and can be potentially due '
+                'to errors in the registration process. Please check the '
+                'specified images before moving farward.\n']
+            corrupted_volume_names = (
+                corrupted_volume_names+[volume_names[x]
+                                        for x in corrupted_volumes])
         offset_indexes = np.where(mean_displacement_rc == -1)
         for i in range(len(mean_displacement_rc)):
             if (mean_displacement_rc[i] == -1 and
@@ -643,8 +651,10 @@ class MeanDisplacementCalculation(BaseInterface):
 
     def check_max_motion(self, motion_par):
 
-        corrupted_vol_rot = np.where(np.asarray(motion_par)[:, :3] >= 0.14)[0]
-        corrupted_vol_trans = np.where(np.asarray(motion_par)[:, 3:] >= 20)[0]
+        corrupted_vol_rot = np.where(np.abs(
+            np.asarray(motion_par)[:, :3]) >= 0.14)[0]
+        corrupted_vol_trans = np.where(np.abs(
+            np.asarray(motion_par)[:, 3:]) >= 20)[0]
         corrupted_vol = list(set(corrupted_vol_rot.tolist() +
                                  corrupted_vol_trans.tolist()))
 
