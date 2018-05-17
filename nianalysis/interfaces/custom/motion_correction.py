@@ -173,20 +173,30 @@ class PrepareDWI(BaseInterface):
         dwi = dwi.get_data()
         dwi1 = nib.load(self.inputs.dwi1)
         dwi1 = dwi1.get_data()
-        if pe_dir == 'ROW':
-            if np.sign(phase_offset) == 1:
+        if np.sign(phase_offset) == 1:
+            if pe_dir == 'ROW':
                 self.dict_output['pe'] = 'RL'
-            else:
-                self.dict_output['pe'] = 'LR'
-        elif pe_dir == 'COL':
-            if phase_offset < 1:
+            elif pe_dir == 'COL':
                 self.dict_output['pe'] = 'AP'
-            else:
+        elif np.sign(phase_offset) == -1:
+            if pe_dir == 'ROW':
+                self.dict_output['pe'] = 'LR'
+            elif pe_dir == 'COL':
                 self.dict_output['pe'] = 'PA'
-        else:
-            raise Exception('Phase encoding direction cannot be establish by '
-                            'looking at the header. DWI pre-processing will '
-                            'not be performed.')
+#         if pe_dir == 'ROW':
+#             if np.sign(phase_offset) == 1:
+#                 self.dict_output['pe'] = 'RL'
+#             else:
+#                 self.dict_output['pe'] = 'LR'
+#         elif pe_dir == 'COL':
+#             if phase_offset < 1:
+#                 self.dict_output['pe'] = 'AP'
+#             else:
+#                 self.dict_output['pe'] = 'PA'
+#         else:
+#             raise Exception('Phase encoding direction cannot be establish by '
+#                             'looking at the header. DWI pre-processing will '
+#                             'not be performed.')
         self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
 
         if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
