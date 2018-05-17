@@ -892,6 +892,7 @@ class PlotMeanDisplacementRC(BaseInterface):
         frame_start_times = np.loadtxt(self.inputs.frame_start_times)
         false_indexes = np.loadtxt(self.inputs.false_indexes, dtype=int)
         framing = self.inputs.framing
+        plot_offset = True
         dates = np.arange(0, len(mean_disp_rc), 1)
         indxs = np.zeros(len(mean_disp_rc), int)+1
         indxs[false_indexes] = 0
@@ -903,6 +904,12 @@ class PlotMeanDisplacementRC(BaseInterface):
         end_true_period.append(len(dates))
         start_true_period = sorted(start_true_period)
         end_true_period = sorted(end_true_period)
+        if len(start_true_period) == len(end_true_period)-1:
+            end_true_period.remove(end_true_period[-1])
+        elif len(start_true_period) != len(end_true_period):
+            print ('Something went wrong in the indentification of the MR '
+                   'idling time. It will not be plotted.')
+            plot_offset = False
 #         true_indexes = dates[indxs == 1]
 #         true_indexes = [x for x in dates if x not in false_indexes]
 
@@ -912,15 +919,18 @@ class PlotMeanDisplacementRC(BaseInterface):
         matplotlib.rc('font', **font)
         ax.set_xlim(0, dates[-1])
         ax.set_ylim(-0.3, np.max(mean_disp_rc) + 1)
-        for i in range(0, len(start_true_period)):
-            ax.plot(dates[start_true_period[i]-1:end_true_period[i]+1],
-                    mean_disp_rc[start_true_period[i]-1:end_true_period[i]+1],
-                    c='b', linewidth=2)
-        for i in range(0, len(end_true_period)-1):
-            ax.plot(
-                dates[end_true_period[i]-1:start_true_period[i+1]+1],
-                mean_disp_rc[end_true_period[i]-1:start_true_period[i+1]+1],
-                c='b', linewidth=2, ls='--', dashes=(2, 3))
+        if plot_offset:
+            for i in range(0, len(start_true_period)):
+                ax.plot(dates[start_true_period[i]-1:end_true_period[i]+1],
+                        mean_disp_rc[start_true_period[i]-1:
+                                     end_true_period[i]+1],
+                        c='b', linewidth=2)
+            for i in range(0, len(end_true_period)-1):
+                ax.plot(
+                    dates[end_true_period[i]-1:start_true_period[i+1]+1],
+                    mean_disp_rc[end_true_period[i]-1:
+                                 start_true_period[i+1]+1],
+                    c='b', linewidth=2, ls='--', dashes=(2, 3))
 
         if framing:
             cl = 'yellow'
