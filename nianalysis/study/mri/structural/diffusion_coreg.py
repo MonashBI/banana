@@ -23,7 +23,7 @@ class DWIStudy(MRIStudy):
     __metaclass__ = StudyMetaClass
 
     add_data_specs = [
-        DatasetSpec('dwi_reference', dicom_format),
+        DatasetSpec('dwi_reference', dicom_format, optional=True),
         DatasetSpec('eddy_par', eddy_par_format, 'basic_preproc_pipeline'),
         DatasetSpec('affine_mats', directory_format, 'affine_mats_pipeline')]
 

@@ -59,8 +59,8 @@ if __name__ == "__main__":
     parser.add_argument('--input_dir', '-i', type=str,
                         help=("Path to an existing directory"))
     args = parser.parse_args()
-    input_dir = '/Volumes/Project/pet/sforazz/test_mc_nianalysis/MRH017_006/MR01/'
-#     input_dir = args.input_dir
+#     input_dir = '/Volumes/Project/pet/sforazz/test_mc_nianalysis/MRH017_006/MR01/'
+    input_dir = args.input_dir
     md = create_motion_detection(input_dir)
     ref, ref_type, t1s, epis, t2s, dmris = md.create_md()
 
