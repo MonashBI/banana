@@ -97,6 +97,7 @@ class MotionDetectionMixin(MultiStudy):
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
         sub_study_names = []
+        input_names = []
         for sub_study_spec in self.sub_study_specs():
             try:
                 inputs.append(
@@ -107,6 +108,9 @@ class MotionDetectionMixin(MultiStudy):
                 inputs.append(
                     self.data_spec(sub_study_spec.inverse_map(
                         'real_duration')))
+                input_names.append(
+                    self.bound_data_spec(sub_study_spec.inverse_map(
+                        'primary')).pattern)
                 sub_study_names.append(sub_study_spec.name)
             except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
@@ -155,6 +159,7 @@ class MotionDetectionMixin(MultiStudy):
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
+        md.inputs.input_names = input_names
         pipeline.connect(merge_motion_mats, 'out', md, 'motion_mats')
         pipeline.connect(merge_tr, 'out', md, 'trs')
         pipeline.connect(merge_start_time, 'out', md, 'start_times')

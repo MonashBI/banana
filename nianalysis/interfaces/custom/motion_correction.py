@@ -441,6 +441,8 @@ class MeanDisplacementCalculationInputSpec(BaseInterfaceInputSpec):
     start_times = traits.List(desc='List of start times.')
     real_durations = traits.List(desc='List of real durations.')
     reference = File(desc='Reference image.')
+    input_names = traits.List(desc='List with the name of the inputs provided'
+                              'by the user.')
 
 
 class MeanDisplacementCalculationOutputSpec(TraitedSpec):
@@ -453,6 +455,7 @@ class MeanDisplacementCalculationOutputSpec(TraitedSpec):
     motion_parameters = File(exists=True)
     offset_indexes = File(exists=True)
     mats4average = File(exists=True)
+    corrupted_volumes = File(exists=True)
 
 
 class MeanDisplacementCalculation(BaseInterface):
@@ -463,7 +466,8 @@ class MeanDisplacementCalculation(BaseInterface):
     def _run_interface(self, runtime):
 
         list_inputs = zip(self.inputs.motion_mats, self.inputs.start_times,
-                          self.inputs.real_durations, self.inputs.trs)
+                          self.inputs.real_durations, self.inputs.trs,
+                          self.inputs.input_names)
         ref = nib.load(self.inputs.reference)
         ref_data = ref.get_data()
         # centre of gravity
@@ -473,7 +477,7 @@ class MeanDisplacementCalculation(BaseInterface):
         list_inputs = [
             (x[0], (dt.datetime.strptime(x[1], '%H%M%S.%f') -
                     dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
-             .total_seconds(), x[2], x[3]) for x in list_inputs]
+             .total_seconds(), x[2], x[3], x[4]) for x in list_inputs]
         study_len = int((list_inputs[-1][1]+float(list_inputs[-1][2]))*1000)
         mean_displacement_rc = np.zeros(study_len)-1
         motion_par_rc = np.zeros((6, study_len))
@@ -483,6 +487,8 @@ class MeanDisplacementCalculation(BaseInterface):
         all_mats = []
         all_mats4average = []
         start_times = []
+        volume_names = []
+        corrupted_volume_names = ['No unusual motion detected.']
         for f in list_inputs:
             mats = sorted(glob.glob(f[0]+'/*inv.mat'))
             mats4averge = sorted(glob.glob(f[0]+'/*mat.mat'))
@@ -492,6 +498,8 @@ class MeanDisplacementCalculation(BaseInterface):
             tr = f[3]
             if len(mats) > 1:
                 for i, mat in enumerate(mats):
+                    volume_names.append(f[-1]+'_vol_{}'
+                                        .format(str(i+1).zfill(4)))
                     start_times.append((
                         dt.datetime.strptime(
                             study_start_time, '%H%M%S.%f') +
@@ -511,6 +519,7 @@ class MeanDisplacementCalculation(BaseInterface):
                                       [mp, ]*duration).T
                     start_scan = end_scan
             elif len(mats) == 1:
+                volume_names.append(f[-1])
                 start_times.append((
                     dt.datetime.strptime(study_start_time,
                                          '%H%M%S.%f') +
@@ -537,6 +546,9 @@ class MeanDisplacementCalculation(BaseInterface):
             md_consecutive = self.rmsdiff(ref_cog, m1, m2)
             mean_displacement_consecutive.append(md_consecutive)
 
+        corrupted_volumes = self.check_max_motion(motion_par)
+        if corrupted_volumes:
+            corrupted_volume_names = volume_names[corrupted_volumes]
         offset_indexes = np.where(mean_displacement_rc == -1)
         for i in range(len(mean_displacement_rc)):
             if (mean_displacement_rc[i] == -1 and
@@ -545,10 +557,12 @@ class MeanDisplacementCalculation(BaseInterface):
 
         to_save = [mean_displacement, mean_displacement_consecutive,
                    mean_displacement_rc, motion_par_rc, start_times,
-                   offset_indexes, all_mats4average, motion_par]
+                   offset_indexes, all_mats4average, motion_par,
+                   corrupted_volume_names]
         to_save_name = ['mean_displacement', 'mean_displacement_consecutive',
                         'mean_displacement_rc', 'motion_par_rc', 'start_times',
-                        'offset_indexes', 'mats4average', 'motion_par']
+                        'offset_indexes', 'mats4average', 'motion_par',
+                        'corrupted_volumes']
         for i in range(len(to_save)):
             np.savetxt(to_save_name[i]+'.txt', np.asarray(to_save[i]),
                        fmt='%s')
@@ -627,6 +641,15 @@ class MeanDisplacementCalculation(BaseInterface):
             z = 0.0
         return np.array([x, y, z])
 
+    def check_max_motion(self, motion_par):
+
+        corrupted_vol_rot = np.where(np.asarray(motion_par)[:, :3] >= 0.14)[0]
+        corrupted_vol_trans = np.where(np.asarray(motion_par)[:, 3:] >= 20)[0]
+        corrupted_vol = list(set(corrupted_vol_rot.tolist() +
+                                 corrupted_vol_trans.tolist()))
+
+        return corrupted_vol
+
     def _list_outputs(self):
         outputs = self._outputs().get()
 
@@ -640,6 +663,7 @@ class MeanDisplacementCalculation(BaseInterface):
         outputs["motion_parameters_rc"] = os.getcwd()+'/motion_par_rc.txt'
         outputs["offset_indexes"] = os.getcwd()+'/offset_indexes.txt'
         outputs["mats4average"] = os.getcwd()+'/mats4average.txt'
+        outputs["corrupted_volumes"] = os.getcwd()+'/corrupted_volumes.txt'
 
         return outputs
 
