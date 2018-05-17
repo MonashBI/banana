@@ -63,6 +63,8 @@ class MotionDetectionMixin(MultiStudy):
                     'mean_displacement_pipeline'),
         DatasetSpec('offset_indexes', text_format,
                     'mean_displacement_pipeline'),
+        DatasetSpec('corrupted_volumes', text_format,
+                    'mean_displacement_pipeline'),
         DatasetSpec('frame_start_times', text_format,
                     'motion_framing_pipeline'),
         DatasetSpec('frame_vol_numbers', text_format,
@@ -125,7 +127,8 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('motion_par_rc', text_format),
                      DatasetSpec('motion_par', text_format),
                      DatasetSpec('offset_indexes', text_format),
-                     DatasetSpec('mats4average', text_format)],
+                     DatasetSpec('mats4average', text_format),
+                     DatasetSpec('corrupted_volumes', text_format)],
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
             version=1,
@@ -176,6 +179,7 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_par', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
         pipeline.connect_output('mats4average', md, 'mats4average')
+        pipeline.connect_output('corrupted_volumes', md, 'corrupted_volumes')
         return pipeline
 
     def motion_framing_pipeline(self, **kwargs):
