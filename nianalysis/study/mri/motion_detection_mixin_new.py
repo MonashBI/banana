@@ -63,7 +63,7 @@ class MotionDetectionMixin(MultiStudy):
                     'mean_displacement_pipeline'),
         DatasetSpec('offset_indexes', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('corrupted_volumes', text_format,
+        DatasetSpec('severe_motion_detection_report', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('frame_start_times', text_format,
                     'motion_framing_pipeline'),
@@ -128,7 +128,8 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('motion_par', text_format),
                      DatasetSpec('offset_indexes', text_format),
                      DatasetSpec('mats4average', text_format),
-                     DatasetSpec('corrupted_volumes', text_format)],
+                     DatasetSpec('severe_motion_detection_report',
+                                 text_format)],
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
             version=1,
@@ -179,7 +180,8 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_par', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
         pipeline.connect_output('mats4average', md, 'mats4average')
-        pipeline.connect_output('corrupted_volumes', md, 'corrupted_volumes')
+        pipeline.connect_output('severe_motion_detection_report', md,
+                                'corrupted_volumes')
         return pipeline
 
     def motion_framing_pipeline(self, **kwargs):
@@ -417,6 +419,7 @@ class MotionDetectionMixin(MultiStudy):
         inputs = [DatasetSpec('mean_displacement_plot', png_format),
                   DatasetSpec('motion_par', text_format),
                   DatasetSpec('correction_factors', text_format),
+                  DatasetSpec('severe_motion_detection_report', text_format),
                   DatasetSpec('timestamps', directory_format)]
         if ('umap_ref' in self.sub_study_names and
                 'umap' in self.input_names):
@@ -466,24 +469,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     option_specs = [OptionSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
-        data_specs.append(DatasetSpec('pet_data_dir', directory_format))
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
                                    pet_data_dir))
-
-        def motion_framing_pipeline_altered(self, **kwargs):
-            return self.motion_framing_pipeline_factory(
-                pet_data_dir='pet_data_dir', **kwargs)
-
-        dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
-        data_specs.append(
-            DatasetSpec('frame_start_times', text_format,
-                        'motion_framing_pipeline_altered'))
-        data_specs.append(
-            DatasetSpec('frame_vol_numbers', text_format,
-                        'motion_framing_pipeline_altered'))
-        data_specs.append(
-            DatasetSpec('timestamps', directory_format,
-                        'motion_framing_pipeline_altered'))
 
     if not ref:
         raise Exception('A reference image must be provided!')
@@ -499,8 +486,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
 
-    dct['ref_motion_mat_pipeline'] = MultiStudy.translate(
-        'ref', 'motion_mat_pipeline_factory', ref=True)
+#     dct['ref_motion_mat_pipeline'] = MultiStudy.translate(
+#         'ref', 'motion_mat_pipeline_factory', ref=True)
 
     if not umap_ref:
         logger.info(
@@ -592,12 +579,12 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main_scan[0])
                 for i, dmris_main_scan in enumerate(dmris_main))
-            dct.update(
-                {'dwi_{}_basic_preproc_pipeline'.format(i):
-                 MultiStudy.translate(
-                     'dwi_{}'.format(i), '_eddy_dwipreproc_pipeline',
-                     distortion_correction=False)
-                 for i in range(len(dmris_main))})
+#             dct.update(
+#                 {'dwi_{}_basic_preproc_pipeline'.format(i):
+#                  MultiStudy.translate(
+#                      'dwi_{}'.format(i), '_eddy_dwipreproc_pipeline',
+#                      distortion_correction=False)
+#                  for i in range(len(dmris_main))})
         if dmris_main and dmris_opposite:
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
@@ -620,11 +607,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             inputs.extend(DatasetMatch('b0_{}_primary'.format(i),
                                        dicom_format, dmris_opposite[i][0])
                           for i in range(len(dmris_opposite)))
-            dct.update(
-                    {'b0_{}_motion_mat_pipeline'.format(i):
-                     MultiStudy.translate(
-                         'b0_{}'.format(i), 'motion_mat_pipeline_factory',
-                         align_mats=None) for i in range(len(dmris_opposite))})
+#             dct.update(
+#                     {'b0_{}_motion_mat_pipeline'.format(i):
+#                      MultiStudy.translate(
+#                          'b0_{}'.format(i), 'motion_mat_pipeline_factory',
+#                          align_mats=None) for i in range(len(dmris_opposite))})
             if len(dmris_opposite) <= len(dmris_main):
                 inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[i][0])
@@ -638,11 +625,11 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
                 for i in range(min_index*2))
-            dct.update(
-                {'b0_{}_motion_mat_pipeline'.format(i):
-                 MultiStudy.translate(
-                     'b0_{}'.format(i), 'motion_mat_pipeline_factory',
-                     align_mats=None) for i in range(min_index*2)})
+#             dct.update(
+#                 {'b0_{}_motion_mat_pipeline'.format(i):
+#                  MultiStudy.translate(
+#                      'b0_{}'.format(i), 'motion_mat_pipeline_factory',
+#                      align_mats=None) for i in range(min_index*2)})
             inputs.extend(
                 DatasetMatch('b0_{}_primary'.format(i), dicom_format,
                              scan[0])

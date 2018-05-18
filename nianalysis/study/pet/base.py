@@ -1,4 +1,4 @@
-from arcana.study.base import Study
+from arcana.study.base import Study, StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_format import (nifti_gz_format, text_format,
                                      text_matrix_format, directory_format)
@@ -26,6 +26,8 @@ class PETStudy(Study):
 #     @abstractmethod
 #     def _ica_inputs(self):
 #         pass
+
+    __metaclass__ = StudyMetaClass
 
     add_option_specs = [OptionSpec('ica_n_components', 2),
                         OptionSpec('ica_type', 'spatial'),

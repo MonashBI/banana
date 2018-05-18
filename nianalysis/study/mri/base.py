@@ -22,6 +22,7 @@ from arcana.interfaces.mrtrix import MRConvert
 from nianalysis.interfaces.fsl import FSLSlices
 from nianalysis.data_format import text_matrix_format
 import os
+import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.interfaces.converters import Dcm2niix
@@ -29,6 +30,7 @@ from arcana.option import OptionSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
+logger = logging.getLogger('Arcana')
 
 atlas_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))
@@ -628,21 +630,18 @@ class MRIStudy(Study):
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):
-        return self.motion_mat_pipeline_factory(ref=False, align_mats=None,
-                                                **kwargs)
-
-    def motion_mat_pipeline_factory(self, ref=False, align_mats=None,
-                                    **kwargs):
-
-        if ref:
+        if not self.bound_data_spec('coreg_matrix').derivable:
+            logger.info("Cannot derive 'coreg_matrix' for {} required for "
+                        "motion matrix calculation, assuming that it "
+                        "is the reference study".format(self))
             inputs = [DatasetSpec('primary', dicom_format)]
-        elif align_mats:
-            inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
-                      DatasetSpec('qform_mat', text_matrix_format),
-                      DatasetSpec(align_mats, directory_format)]
+            ref = True
         else:
             inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
                       DatasetSpec('qform_mat', text_matrix_format)]
+            if 'align_mats' in self.data_spec_names():
+                inputs += DatasetSpec('align_mats', directory_format)
+            ref = False
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
@@ -657,12 +656,10 @@ class MRIStudy(Study):
         if ref:
             mm.inputs.reference = True
             pipeline.connect_input('primary', mm, 'dummy_input')
-        elif align_mats:
-            pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
-            pipeline.connect_input('qform_mat', mm, 'qform_mat')
-            pipeline.connect_input(align_mats, mm, 'align_mats')
         else:
             pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
             pipeline.connect_input('qform_mat', mm, 'qform_mat')
+            if 'align_mats' in self.data_spec_names():
+                pipeline.connect_input('align_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline

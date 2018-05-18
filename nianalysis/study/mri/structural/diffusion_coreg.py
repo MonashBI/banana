@@ -25,28 +25,29 @@ class DWIStudy(MRIStudy):
     add_data_specs = [
         DatasetSpec('dwi_reference', dicom_format, optional=True),
         DatasetSpec('eddy_par', eddy_par_format, 'basic_preproc_pipeline'),
-        DatasetSpec('affine_mats', directory_format, 'affine_mats_pipeline')]
+        DatasetSpec('align_mats', directory_format, 'affine_mats_pipeline')]
 
     add_option_specs = [
         OptionSpec('bet_robust', True),
         OptionSpec('bet_f_threshold', 0.2),
         OptionSpec('bet_reduce_bias', False)]
 
-    def basic_preproc_pipeline(self, distortion_correction=True, **kwargs):
+    def basic_preproc_pipeline(self, **kwargs):
 
-        pipeline = self._eddy_dwipreproc_pipeline(
-            distortion_correction=distortion_correction, **kwargs)
+        pipeline = self._eddy_dwipreproc_pipeline(**kwargs)
         return pipeline
 
-    def _eddy_dwipreproc_pipeline(self, distortion_correction=True, **kwargs):
+    def _eddy_dwipreproc_pipeline(self, **kwargs):
 
-        if distortion_correction:
+        if 'dwi_reference' in self.input_names:
             inputs = [DatasetSpec('primary', dicom_format),
                       DatasetSpec('dwi_reference', dicom_format),
                       FieldSpec('ped', dtype=str),
                       FieldSpec('pe_angle', dtype=str)]
+            distortion_correction = True
         else:
             inputs = [DatasetSpec('primary', dicom_format)]
+            distortion_correction = False
 
         pipeline = self.create_pipeline(
             name='eddy_preproc',
@@ -124,7 +125,7 @@ class DWIStudy(MRIStudy):
             inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('eddy_par', eddy_par_format)],
             outputs=[
-                DatasetSpec('affine_mats', directory_format)],
+                DatasetSpec('align_mats', directory_format)],
             desc=("Generation of the affine matrices for the main dwi "
                   "sequence starting from eddy motion parameters"),
             version=1,
@@ -137,9 +138,9 @@ class DWIStudy(MRIStudy):
         pipeline.connect_input(
             'eddy_par', aff_mat, 'motion_parameters')
         pipeline.connect_output(
-            'affine_mats', aff_mat, 'affine_matrices')
+            'align_mats', aff_mat, 'affine_matrices')
         return pipeline
 
-    def motion_mat_pipeline(self, **kwargs):
-        return (super(DWIStudy, self).motion_mat_pipeline_factory(
-            align_mats='affine_mats', **kwargs))
+#     def motion_mat_pipeline(self, **kwargs):
+#         return (super(DWIStudy, self).motion_mat_pipeline_factory(
+#             align_mats='affine_mats', **kwargs))

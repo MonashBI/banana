@@ -30,7 +30,7 @@ class EPIStudy(MRIStudy):
         DatasetSpec('field_map_phase', nifti_gz_format, optional=True),
         DatasetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
-        DatasetSpec('moco_mat', directory_format,
+        DatasetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
         DatasetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline')]
@@ -74,7 +74,7 @@ class EPIStudy(MRIStudy):
             name='MCFLIRT_pipeline',
             inputs=[DatasetSpec('preproc', nifti_gz_format)],
             outputs=[DatasetSpec('moco', nifti_gz_format),
-                     DatasetSpec('moco_mat', directory_format),
+                     DatasetSpec('align_mats', directory_format),
                      DatasetSpec('moco_par', par_format)],
             desc=("Intra-epi volumes alignment."),
             version=1,
@@ -93,13 +93,17 @@ class EPIStudy(MRIStudy):
 
         merge = pipeline.create_node(MergeListMotionMat(), name='merge')
         pipeline.connect(mcflirt, 'mat_file', merge, 'file_list')
-        pipeline.connect_output('moco_mat', merge, 'out_dir')
+        pipeline.connect_output('align_mats', merge, 'out_dir')
 
         return pipeline
 
-    def motion_mat_pipeline(self, **kwargs):
-        return (super(EPIStudy, self).motion_mat_pipeline_factory(
-            align_mats='moco_mat', **kwargs))
+#     def motion_mat_pipeline(self, **kwargs):
+#         if 'reverse_phase' in self.input_names:
+#             return (super(EPIStudy, self).motion_mat_pipeline_factory(
+#                 align_mats=None, **kwargs))
+#         else:
+#             return (super(EPIStudy, self).motion_mat_pipeline_factory(
+#                 align_mats='moco_mat', **kwargs))
 
     def basic_preproc_pipeline(self, **kwargs):
 

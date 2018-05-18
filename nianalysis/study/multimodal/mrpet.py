@@ -49,14 +49,14 @@ class MotionDetectionMixin(MultiStudy):
 
     add_sub_study_specs = [
         SubStudySpec('pet_mc', PETStudy, {
-            'pet_data_dir': 'pet_data_dir',
-            'pet_data_reconstructed': 'pet_recon_dir',
-            'pet_data_prepared': 'pet_recon_dir_prepared'})]
+            'pet_mc_pet_data_dir': 'pet_data_dir',
+            'pet_mc_pet_data_reconstructed': 'pet_recon_dir',
+            'pet_mc_pet_data_prepared': 'pet_recon_dir_prepared'})]
 
     add_data_specs = [
-        DatasetSpec('pet_data_dir', directory_format, optional=True),
-        DatasetSpec('pet_data_reconstructed', directory_format, optional=True),
-        DatasetSpec('pet_data_prepared', directory_format,
+        DatasetSpec('pet_mc_pet_data_dir', directory_format, optional=True),
+        DatasetSpec('pet_mc_pet_data_reconstructed', directory_format, optional=True),
+        DatasetSpec('pet_mc_pet_data_prepared', directory_format,
                     'prepare_pet_pipeline'),
         DatasetSpec('static_pet_mc', nifti_gz_format,
                     'static_motion_correction_pipeline'),
@@ -80,6 +80,8 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('motion_par', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('offset_indexes', text_format,
+                    'mean_displacement_pipeline'),
+        DatasetSpec('severe_motion_detection_report', text_format,
                     'mean_displacement_pipeline'),
         DatasetSpec('frame_start_times', text_format,
                     'motion_framing_pipeline'),
@@ -128,6 +130,7 @@ class MotionDetectionMixin(MultiStudy):
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
         sub_study_names = []
+        input_names = []
         for sub_study_spec in self.sub_study_specs():
             try:
                 inputs.append(
@@ -138,6 +141,9 @@ class MotionDetectionMixin(MultiStudy):
                 inputs.append(
                     self.data_spec(sub_study_spec.inverse_map(
                         'real_duration')))
+                input_names.append(
+                    self.bound_data_spec(sub_study_spec.inverse_map(
+                        'primary')).pattern)
                 sub_study_names.append(sub_study_spec.name)
             except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
@@ -152,7 +158,9 @@ class MotionDetectionMixin(MultiStudy):
                      DatasetSpec('motion_par_rc', text_format),
                      DatasetSpec('motion_par', text_format),
                      DatasetSpec('offset_indexes', text_format),
-                     DatasetSpec('mats4average', text_format)],
+                     DatasetSpec('mats4average', text_format),
+                     DatasetSpec('severe_motion_detection_report',
+                                 text_format)],
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
             version=1,
@@ -186,6 +194,7 @@ class MotionDetectionMixin(MultiStudy):
 
         md = pipeline.create_node(MeanDisplacementCalculation(),
                                   name='scan_time_info')
+        md.inputs.input_names = input_names
         pipeline.connect(merge_motion_mats, 'out', md, 'motion_mats')
         pipeline.connect(merge_tr, 'out', md, 'trs')
         pipeline.connect(merge_start_time, 'out', md, 'start_times')
@@ -202,24 +211,23 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_par', md, 'motion_parameters')
         pipeline.connect_output('offset_indexes', md, 'offset_indexes')
         pipeline.connect_output('mats4average', md, 'mats4average')
+        pipeline.connect_output('severe_motion_detection_report', md,
+                                'corrupted_volumes')
         return pipeline
 
-    def motion_framing_pipeline(self, **kwargs):
-        return self.motion_framing_pipeline_factory(
-            pet_data_dir=None, pet_start_time=None, pet_duration=None,
-            **kwargs)
+#     def motion_framing_pipeline(self, **kwargs):
+#         return self.motion_framing_pipeline_factory(
+#             pet_data_dir=None, pet_start_time=None, pet_duration=None,
+#             **kwargs)
 
-    def motion_framing_pipeline_factory(
-            self, pet_data_dir=None, pet_start_time=None, pet_duration=None,
-            **kwargs):
+    def motion_framing_pipeline(self, **kwargs):
+
         inputs = [DatasetSpec('mean_displacement', text_format),
                   DatasetSpec('mean_displacement_consecutive', text_format),
                   DatasetSpec('start_times', text_format)]
-        if pet_data_dir is not None:
-            inputs.append(DatasetSpec(pet_data_dir, directory_format))
-        elif pet_start_time is not None and pet_duration is not None:
-            inputs.append(FieldSpec(pet_start_time, str))
-            inputs.append(FieldSpec(pet_duration, str))
+        if 'pet_mc_pet_data_dir' in self.input_names:
+            inputs.append(FieldSpec('pet_start_time', str))
+            inputs.append(FieldSpec('pet_end_time', str))
         pipeline = self.create_pipeline(
             name='motion_framing',
             inputs=inputs,
@@ -241,13 +249,9 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_input('mean_displacement_consecutive', framing,
                                'mean_displacement_consec')
         pipeline.connect_input('start_times', framing, 'start_times')
-        if pet_data_dir is not None:
-            pipeline.connect_input('pet_data_dir', framing, 'pet_data_dir')
-        elif pet_start_time is not None and pet_duration is not None:
+        if 'pet_mc_pet_data_dir' in self.input_names:
             pipeline.connect_input('pet_start_time', framing, 'pet_start_time')
-            pipeline.connect_input('pet_duration', framing, 'pet_duration')
-#         else:
-#             framing.inputs.pet_data_dir = None
+            pipeline.connect_input('pet_end_time', framing, 'pet_end_time')
         pipeline.connect_output('frame_start_times', framing,
                                 'frame_start_times')
         pipeline.connect_output('frame_vol_numbers', framing,
@@ -336,7 +340,7 @@ class MotionDetectionMixin(MultiStudy):
                                    directory_format)]
             fixed_binning = False
         elif method == 'dynamic':
-            inputs = [DatasetSpec('fixed_bin_mats', directory_format)]
+            inputs = [DatasetSpec('fixed_binning_mats', directory_format)]
             outputs = [DatasetSpec('dynamic_frame2reference_mats',
                                    directory_format)]
             fixed_binning = True
@@ -383,7 +387,7 @@ class MotionDetectionMixin(MultiStudy):
             pipeline.connect_output('umaps_align2ref', frame_align,
                                     'umaps_align2ref')
         elif method == 'dynamic':
-            pipeline.connect_input('fixed_bin_mats', frame_align,
+            pipeline.connect_input('fixed_binning_mats', frame_align,
                                    'average_mats')
             pipeline.connect_output('dynamic_frame2reference_mats',
                                     frame_align, 'frame2reference_mats')
@@ -452,6 +456,7 @@ class MotionDetectionMixin(MultiStudy):
         inputs = [DatasetSpec('mean_displacement_plot', png_format),
                   DatasetSpec('motion_par', text_format),
                   DatasetSpec('correction_factors', text_format),
+                  DatasetSpec('severe_motion_detection_report', text_format),
                   DatasetSpec('timestamps', directory_format)]
         if ('umap_ref' in self.sub_study_names and
                 'umap' in self.input_names):
@@ -496,10 +501,10 @@ class MotionDetectionMixin(MultiStudy):
 
     def static_motion_correction_pipeline(self, StructAlignment=None,
                                           **kwargs):
-        inputs = [DatasetSpec('pet_data_prepared', directory_format),
+        inputs = [DatasetSpec('pet_mc_pet_data_prepared', directory_format),
                   DatasetSpec('static_frame2reference_mats', directory_format),
                   DatasetSpec('correction_factors', text_format),
-                  DatasetSpec('umap_ref_preproc', nifti_gz_format),]
+                  DatasetSpec('umap_ref_preproc', nifti_gz_format)]
         if StructAlignment is not None:
             inputs.append(DatasetSpec(StructAlignment, nifti_gz_format))
 
@@ -530,19 +535,21 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect(check_pet, 'corr_factors', pet_mc, 'corr_factor')
         pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
         if StructAlignment is not None:
-            struct_reg = pipeline.create_node(FLIRT(), name='ute2structural_reg')
+            struct_reg = pipeline.create_node(FLIRT(),
+                                              name='ute2structural_reg')
             pipeline.connect_input('umap_ref_preproc', struct_reg, 'in_file')
             pipeline.connect_input(StructAlignment, struct_reg, 'reference')
             struct_reg.inputs.dof = 6
             struct_reg.inputs.cost_func = 'normmi'
-            struct_reg.inputs.cost = 'normmi'           
+            struct_reg.inputs.cost = 'normmi'
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'ute2structural_regmat')
-            struct_qform = pipeline.create_node(FLIRT(), name='ute2structural_reg')
+            struct_qform = pipeline.create_node(FLIRT(),
+                                                name='ute2structural_reg')
             pipeline.connect_input('umap_ref_preproc', struct_qform, 'in_file')
             pipeline.connect_input(StructAlignment, struct_qform, 'reference')
             struct_qform.inputs.uses_qform = True
-            struct_qform.inputs.apply_xfm = True          
+            struct_qform.inputs.apply_xfm = True
             pipeline.connect(struct_qform, 'out_matrix_file', pet_mc,
                              'ute2structural_qform')
             pipeline.connect_input(StructAlignment, pet_mc,
@@ -563,15 +570,15 @@ class MotionDetectionMixin(MultiStudy):
         cropping.inputs.z_min = pipeline.option('crop_zmin')
         cropping.inputs.z_size = pipeline.option('crop_zsize')
         pipeline.connect(static_im_gen, 'static_mc_ps', cropping, 'pet_image')
-        
+
         pipeline.connect_output('static_pet_mc', static_im_gen, 'static_mc')
         pipeline.connect_output('static_pet_no_mc', static_im_gen,
                                 'static_no_mc')
         pipeline.connect_output('static_pet_mc_ps', cropping, 'pet_cropped')
-        
+
         return pipeline
 
-    def fixed_binning_pipeline(self, **options):
+    def fixed_binning_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='fixed_binning',
@@ -579,14 +586,12 @@ class MotionDetectionMixin(MultiStudy):
                     FieldSpec('pet_start_time', str),
                     FieldSpec('pet_duration', int),
                     DatasetSpec('mats4average', text_format)],
-            outputs=[DatasetSpec('fixed_bin_mats', directory_format)],
-            description=("Pipeline to generate average motion matrices for "
-                         "each bin in a dynamic PET reconstruction experiment."
-                         "This will be the input for the dynamic motion "
-                         "correction."),
+            outputs=[DatasetSpec('fixed_binning_mats', directory_format)],
+            desc=("Pipeline to generate average motion matrices for "
+                  "each bin in a dynamic PET reconstruction experiment."
+                  "This will be the input for the dynamic motion correction."),
             version=1,
-            citations=[fsl_cite],
-            options=options)
+            citations=[fsl_cite])
 
         binning = pipeline.create_node(FixedBinning(), name='fixed_binning')
         pipeline.connect_input('start_times', binning, 'start_times')
@@ -597,7 +602,8 @@ class MotionDetectionMixin(MultiStudy):
         binning.inputs.pet_offset = pipeline.option('fixed_binning_pet_offset')
         binning.inputs.bin_len = pipeline.option('fixed_binning_bin_len')
 
-        pipeline.connect_output('fixed_bin_mats', binning, 'average_bin_mats')
+        pipeline.connect_output('fixed_binning_mats', binning,
+                                'average_bin_mats')
 
         pipeline.assert_connected()
         return pipeline
@@ -615,24 +621,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     option_specs = [OptionSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
-        data_specs.append(DatasetSpec('pet_data_dir', directory_format))
-        inputs.append(DatasetMatch('pet_data_dir', directory_format,
+        inputs.append(DatasetMatch('pet_mc_pet_data_dir', directory_format,
                                    pet_data_dir))
-
-        def motion_framing_pipeline_altered(self, **kwargs):
-            return self.motion_framing_pipeline_factory(
-                pet_data_dir='pet_data_dir', **kwargs)
-
-        dct['motion_framing_pipeline'] = motion_framing_pipeline_altered
-        data_specs.append(
-            DatasetSpec('frame_start_times', text_format,
-                        'motion_framing_pipeline_altered'))
-        data_specs.append(
-            DatasetSpec('frame_vol_numbers', text_format,
-                        'motion_framing_pipeline_altered'))
-        data_specs.append(
-            DatasetSpec('timestamps', directory_format,
-                        'motion_framing_pipeline_altered'))
 
     if not ref:
         raise Exception('A reference image must be provided!')
@@ -647,9 +637,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     study_specs = [SubStudySpec('ref', ref_study)]
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
-
-    dct['ref_motion_mat_pipeline'] = MultiStudy.translate(
-        'ref', 'motion_mat_pipeline_factory', ref=True)
 
     if not umap_ref:
         logger.info(
@@ -741,12 +728,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main_scan[0])
                 for i, dmris_main_scan in enumerate(dmris_main))
-            dct.update(
-                {'dwi_{}_basic_preproc_pipeline'.format(i):
-                 MultiStudy.translate(
-                     'dwi_{}'.format(i), '_eddy_dwipreproc_pipeline',
-                     distortion_correction=False)
-                 for i in range(len(dmris_main))})
         if dmris_main and dmris_opposite:
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
@@ -769,11 +750,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             inputs.extend(DatasetMatch('b0_{}_primary'.format(i),
                                        dicom_format, dmris_opposite[i][0])
                           for i in range(len(dmris_opposite)))
-            dct.update(
-                    {'b0_{}_motion_mat_pipeline'.format(i):
-                     MultiStudy.translate(
-                         'b0_{}'.format(i), 'motion_mat_pipeline_factory',
-                         align_mats=None) for i in range(len(dmris_opposite))})
             if len(dmris_opposite) <= len(dmris_main):
                 inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[i][0])
@@ -787,11 +763,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
                 for i in range(min_index*2))
-            dct.update(
-                {'b0_{}_motion_mat_pipeline'.format(i):
-                 MultiStudy.translate(
-                     'b0_{}'.format(i), 'motion_mat_pipeline_factory',
-                     align_mats=None) for i in range(min_index*2)})
             inputs.extend(
                 DatasetMatch('b0_{}_primary'.format(i), dicom_format,
                              scan[0])

@@ -488,7 +488,10 @@ class MeanDisplacementCalculation(BaseInterface):
         all_mats4average = []
         start_times = []
         volume_names = []
-        corrupted_volume_names = ['No unusual motion detected.']
+        corrupted_volume_names = [
+            'No unusual severe motion detected (i.e. no volume showed '
+            'rotation greater than 8 degrees and/or translation greater '
+            'than 20mm respect to the reference).']
         for f in list_inputs:
             mats = sorted(glob.glob(f[0]+'/*inv.mat'))
             mats4averge = sorted(glob.glob(f[0]+'/*mat.mat'))
@@ -570,7 +573,7 @@ class MeanDisplacementCalculation(BaseInterface):
         to_save_name = ['mean_displacement', 'mean_displacement_consecutive',
                         'mean_displacement_rc', 'motion_par_rc', 'start_times',
                         'offset_indexes', 'mats4average', 'motion_par',
-                        'corrupted_volumes']
+                        'severe_motion_detection_report']
         for i in range(len(to_save)):
             np.savetxt(to_save_name[i]+'.txt', np.asarray(to_save[i]),
                        fmt='%s')
@@ -673,7 +676,8 @@ class MeanDisplacementCalculation(BaseInterface):
         outputs["motion_parameters_rc"] = os.getcwd()+'/motion_par_rc.txt'
         outputs["offset_indexes"] = os.getcwd()+'/offset_indexes.txt'
         outputs["mats4average"] = os.getcwd()+'/mats4average.txt'
-        outputs["corrupted_volumes"] = os.getcwd()+'/corrupted_volumes.txt'
+        outputs["corrupted_volumes"] = (
+            os.getcwd()+'/severe_motion_detection_report.txt')
 
         return outputs
 

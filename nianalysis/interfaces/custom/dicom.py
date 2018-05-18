@@ -202,17 +202,21 @@ class ScanTimesInfo(BaseInterface):
 
 
 class PetTimeInfoInputSpec(BaseInterfaceInputSpec):
-    pet_data_dir = Directory(exists=True, desc='Directory the the list-mode data.')
+    pet_data_dir = Directory(exists=True,
+                             desc='Directory the the list-mode data.')
 
 
 class PetTimeInfoOutputSpec(TraitedSpec):
-    
+
     pet_end_time = traits.Str(desc='PET end time.')
     pet_start_time = traits.Str(desc='PET start time.')
     pet_duration = traits.Int(desc='PET temporal duration in seconds.')
 
 
 class PetTimeInfo(BaseInterface):
+
+    input_spec = PetTimeInfoInputSpec
+    output_spec = PetTimeInfoOutputSpec
 
     def _run_interface(self, runtime):
         pet_data_dir = self.inputs.pet_data_dir
@@ -221,7 +225,7 @@ class PetTimeInfo(BaseInterface):
         for root, dirs, files in os.walk(pet_data_dir):
             bf_files = [f for f in files if not f[0] == '.' and '.bf' in f]
             dirs[:] = [d for d in dirs if not d[0] == '.']
-    
+
     #         bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
         if not bf_files:
             pet_start_time = None
@@ -235,7 +239,7 @@ class PetTimeInfo(BaseInterface):
                 if size > max_size:
                     max_size = size
                     list_mode_file = os.path.join(root, bf)
-    
+
             pet_image = list_mode_file.split('.bf')[0] + '.dcm'
             try:
                 hd = pydicom.read_file(pet_image)
@@ -269,7 +273,7 @@ class PetTimeInfo(BaseInterface):
         outputs["pet_duration"] = self.dict_output['pet_duration']
 
         return outputs
-    
+
 
 class Nii2DicomInputSpec(TraitedSpec):
     in_file = File(mandatory=True, desc='input nifti file')
