@@ -301,14 +301,6 @@ class MRIStudy(Study):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
-#         try:
-#             cmd = 'which ANTS'
-#             antspath = sp.check_output(cmd, shell=True)
-#             antspath = '/'.join(antspath.split('/')[0:-1])
-#             os.environ['ANTSPATH'] = antspath
-# #             print antspath
-#         except ImportError:
-# print "NO ANTs module found. Please ensure to have it in you PATH."
 
         outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
@@ -593,40 +585,6 @@ class MRIStudy(Study):
         pipeline.connect_output(ped, hd_extraction, 'ped')
         pipeline.connect_output(pe_angle, hd_extraction, 'pe_angle')
         pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
-        return pipeline
-
-    def dcm2nii_conversion_pipeline(self, **kwargs):
-        return self.dcm2nii_conversion_pipeline_factory(
-            'dcm2nii_conversion', 'primary', **kwargs)
-
-    def dcm2nii_conversion_pipeline_factory(self, name, dcm_in_name,
-                                            converter='mrtrix',
-                                            **kwargs):
-        pipeline = self.create_pipeline(
-            name=name,
-            inputs=[DatasetSpec(dcm_in_name, dicom_format)],
-            outputs=[DatasetSpec(dcm_in_name + '_nifti',
-                                 nifti_gz_format)],
-            desc=("DICOM to NIFTI conversion."),
-            version=1,
-            citations=[],
-            **kwargs)
-
-        if converter == 'mrtrix':
-            conv = pipeline.create_node(MRConvert(), name='converter',
-                                        requirements=[mrtrix3_req])
-            conv.inputs.out_ext = '.nii.gz'
-            pipeline.connect_input(dcm_in_name, conv, 'in_file')
-            pipeline.connect_output(
-                dcm_in_name + '_nifti', conv, 'out_file')
-        elif converter == 'dcm2niix':
-            conv = pipeline.create_node(Dcm2niix(), name='converter',
-                                        requirements=[dcm2niix_req])
-            conv.inputs.compression = 'y'
-            pipeline.connect_input(dcm_in_name, conv, 'input_dir')
-            pipeline.connect_output(
-                dcm_in_name + '_nifti', conv, 'converted')
-
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):

@@ -49,15 +49,16 @@ class MotionDetectionMixin(MultiStudy):
 
     add_sub_study_specs = [
         SubStudySpec('pet_mc', PETStudy, {
-            'pet_mc_pet_data_dir': 'pet_data_dir',
-            'pet_mc_pet_data_reconstructed': 'pet_recon_dir',
-            'pet_mc_pet_data_prepared': 'pet_recon_dir_prepared'})]
+            'pet_data_dir': 'pet_data_dir',
+            'pet_data_reconstructed': 'pet_recon_dir',
+            'pet_data_prepared': 'pet_recon_dir_prepared',
+            'pet_start_time': 'pet_start_time',
+            'pet_end_time': 'pet_end_time',
+            'pet_duration': 'pet_duration'})]
 
     add_data_specs = [
-        DatasetSpec('pet_mc_pet_data_dir', directory_format, optional=True),
-        DatasetSpec('pet_mc_pet_data_reconstructed', directory_format, optional=True),
-        DatasetSpec('pet_mc_pet_data_prepared', directory_format,
-                    'prepare_pet_pipeline'),
+        DatasetSpec('pet_data_dir', directory_format, optional=True),
+        DatasetSpec('pet_data_reconstructed', directory_format, optional=True),
         DatasetSpec('static_pet_mc', nifti_gz_format,
                     'static_motion_correction_pipeline'),
         DatasetSpec('static_pet_mc_ps', nifti_gz_format,
@@ -108,13 +109,7 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('moco_series', directory_format,
                     'create_moco_series_pipeline'),
         DatasetSpec('fixed_binning_mats', directory_format,
-                    'fixed_binning_pipeline'),
-        FieldSpec('pet_duration', dtype=int,
-                  pipeline_name='pet_time_info_extraction_pipeline'),
-        FieldSpec('pet_end_time', dtype=str,
-                  pipeline_name='pet_time_info_extraction_pipeline'),
-        FieldSpec('pet_start_time', dtype=str,
-                  pipeline_name='pet_time_info_extraction_pipeline')]
+                    'fixed_binning_pipeline')]
 
     add_option_specs = [OptionSpec('framing_th', 2.0),
                         OptionSpec('framing_temporal_th', 30.0),
@@ -225,7 +220,7 @@ class MotionDetectionMixin(MultiStudy):
         inputs = [DatasetSpec('mean_displacement', text_format),
                   DatasetSpec('mean_displacement_consecutive', text_format),
                   DatasetSpec('start_times', text_format)]
-        if 'pet_mc_pet_data_dir' in self.input_names:
+        if 'pet_data_dir' in self.input_names:
             inputs.append(FieldSpec('pet_start_time', str))
             inputs.append(FieldSpec('pet_end_time', str))
         pipeline = self.create_pipeline(
@@ -249,7 +244,7 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_input('mean_displacement_consecutive', framing,
                                'mean_displacement_consec')
         pipeline.connect_input('start_times', framing, 'start_times')
-        if 'pet_mc_pet_data_dir' in self.input_names:
+        if 'pet_data_dir' in self.input_names:
             pipeline.connect_input('pet_start_time', framing, 'pet_start_time')
             pipeline.connect_input('pet_end_time', framing, 'pet_end_time')
         pipeline.connect_output('frame_start_times', framing,
@@ -493,15 +488,12 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
         return pipeline
 
-    prepare_pet_pipeline = MultiStudy.translate(
-        'pet_mc', 'pet_data_preparation_pipeline')
-
-    pet_time_info_extraction_pipeline = MultiStudy.translate(
-        'pet_mc', 'pet_time_info_extraction_pipeline')
+#     prepare_pet_pipeline = MultiStudy.translate(
+#         'pet_mc', 'pet_data_preparation_pipeline')
 
     def static_motion_correction_pipeline(self, StructAlignment=None,
                                           **kwargs):
-        inputs = [DatasetSpec('pet_mc_pet_data_prepared', directory_format),
+        inputs = [DatasetSpec('pet_data_prepared', directory_format),
                   DatasetSpec('static_frame2reference_mats', directory_format),
                   DatasetSpec('correction_factors', text_format),
                   DatasetSpec('umap_ref_preproc', nifti_gz_format)]
@@ -621,7 +613,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     option_specs = [OptionSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
-        inputs.append(DatasetMatch('pet_mc_pet_data_dir', directory_format,
+        inputs.append(DatasetMatch('pet_data_dir', directory_format,
                                    pet_data_dir))
 
     if not ref:
