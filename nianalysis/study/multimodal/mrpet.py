@@ -27,6 +27,7 @@ import os
 from arcana.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
 from nipype.interfaces.fsl.preprocess import FLIRT
+from arcana.study.base import StudyMetaClass
 
 
 logger = logging.getLogger('Arcana')
@@ -41,6 +42,24 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 template_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../../../nianalysis',
                  'reference_data'))
+
+
+class MotionReferenceT1Study(T1Study):
+
+    __metaclass__ = StudyMetaClass
+
+    def motion_mat_pipeline(self, **kwargs):
+        pipeline = super(T1Study, self).motion_mat_pipeline(ref=True, **kwargs)
+        return pipeline
+
+
+class MotionReferenceT2Study(T2Study):
+
+    __metaclass__ = StudyMetaClass
+
+    def motion_mat_pipeline(self, **kwargs):
+        pipeline = super(T2Study, self).motion_mat_pipeline(ref=True, **kwargs)
+        return pipeline
 
 
 class MotionDetectionMixin(MultiStudy):
@@ -59,6 +78,8 @@ class MotionDetectionMixin(MultiStudy):
     add_data_specs = [
         DatasetSpec('pet_data_dir', directory_format, optional=True),
         DatasetSpec('pet_data_reconstructed', directory_format, optional=True),
+        DatasetSpec('pet_data_prepared', directory_format,
+                    'prepare_pet_pipeline'),
         DatasetSpec('static_pet_mc', nifti_gz_format,
                     'static_motion_correction_pipeline'),
         DatasetSpec('static_pet_mc_ps', nifti_gz_format,
@@ -109,7 +130,13 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('moco_series', directory_format,
                     'create_moco_series_pipeline'),
         DatasetSpec('fixed_binning_mats', directory_format,
-                    'fixed_binning_pipeline')]
+                    'fixed_binning_pipeline'),
+        FieldSpec('pet_duration', dtype=int,
+                  pipeline_name='pet_header_info_extraction_pipeline'),
+        FieldSpec('pet_end_time', dtype=str,
+                  pipeline_name='pet_header_info_extraction_pipeline'),
+        FieldSpec('pet_start_time', dtype=str,
+                  pipeline_name='pet_header_info_extraction_pipeline')]
 
     add_option_specs = [OptionSpec('framing_th', 2.0),
                         OptionSpec('framing_temporal_th', 30.0),
@@ -488,8 +515,11 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
         return pipeline
 
-#     prepare_pet_pipeline = MultiStudy.translate(
-#         'pet_mc', 'pet_data_preparation_pipeline')
+    prepare_pet_pipeline = MultiStudy.translate(
+        'pet_mc', 'pet_data_preparation_pipeline')
+
+    pet_header_info_extraction_pipeline = MultiStudy.translate(
+        'pet_mc', 'pet_time_info_extraction_pipeline')
 
     def static_motion_correction_pipeline(self, StructAlignment=None,
                                           **kwargs):
@@ -601,10 +631,10 @@ class MotionDetectionMixin(MultiStudy):
         return pipeline
 
 
-def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
-                                  t2s=None, dmris=None, epis=None,
-                                  umaps=None, dynamic=False, umap_ref=None,
-                                  pet_data_dir=None):
+def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
+                                   t2s=None, dmris=None, epis=None,
+                                   umaps=None, dynamic=False, umap_ref=None,
+                                   pet_data_dir=None, pet_recon_dir=None):
 
     inputs = []
     dct = {}
@@ -615,13 +645,15 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if pet_data_dir is not None:
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
                                    pet_data_dir))
-
+    if pet_recon_dir is not None:
+        inputs.append(DatasetMatch('pet_data_reconstructed', directory_format,
+                                   pet_recon_dir))
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
-        ref_study = T1Study
+        ref_study = MotionReferenceT1Study
     elif ref_type == 't2':
-        ref_study = T2Study
+        ref_study = MotionReferenceT2Study
     else:
         raise Exception('{} is not a recognized ref_type!The available '
                         'ref_types are t1 or t2.'.format(ref_type))

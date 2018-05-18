@@ -1385,10 +1385,10 @@ class FixedBinning(BaseInterface):
         n_frames = self.inputs.n_frames
         pet_offset = self.inputs.pet_offset
         bin_len = self.inputs.bin_len
-        start_times = self.inputs.start_times
+        start_times = np.loadtxt(self.inputs.start_times, dtype=str)
         pet_duration = self.inputs.pet_duration
         pet_start_time = self.inputs.pet_start_time
-        motion_mats = np.loadtxt(self.inputs.all_mats4average, dtype=str)
+        motion_mats = np.loadtxt(self.inputs.motion_mats, dtype=str)
         if n_frames == 'all' and pet_offset == 0:
             pet_len = pet_duration
         elif n_frames == 'all' and pet_offset != 0:
@@ -1396,7 +1396,7 @@ class FixedBinning(BaseInterface):
         elif n_frames != 'all':
             pet_len = bin_len*n_frames
 
-        MR_start_time = str(start_times[0])
+        MR_start_time = dt.datetime.strptime(str(start_times[0]), '%H%M%S.%f')
         start_times_diff = [
             (dt.datetime.strptime(str(start_times[i+1]), '%H%M%S.%f') -
              dt.datetime.strptime(

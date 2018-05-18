@@ -587,19 +587,19 @@ class MRIStudy(Study):
         pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
         return pipeline
 
-    def motion_mat_pipeline(self, **kwargs):
-        if not self.bound_data_spec('coreg_matrix').derivable:
-            logger.info("Cannot derive 'coreg_matrix' for {} required for "
-                        "motion matrix calculation, assuming that it "
-                        "is the reference study".format(self))
+    def motion_mat_pipeline(self, ref=False, **kwargs):
+        if ref:
+#             logger.info("Cannot derive 'coreg_matrix' for {} required for "
+#                         "motion matrix calculation, assuming that it "
+#                         "is the reference study".format(self))
             inputs = [DatasetSpec('primary', dicom_format)]
-            ref = True
+
         else:
             inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
                       DatasetSpec('qform_mat', text_matrix_format)]
             if 'align_mats' in self.data_spec_names():
                 inputs += DatasetSpec('align_mats', directory_format)
-            ref = False
+
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
