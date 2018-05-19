@@ -111,7 +111,7 @@ class MotionDetectionMixin(MultiStudy):
                     self.data_spec(sub_study_spec.inverse_map(
                         'real_duration')))
                 input_names.append(
-                    self.bound_data_spec(sub_study_spec.inverse_map(
+                    self.spec(sub_study_spec.inverse_map(
                         'primary')).pattern)
                 sub_study_names.append(sub_study_spec.name)
             except ArcanaNameError:

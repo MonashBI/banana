@@ -555,18 +555,18 @@ class MRIStudy(Study):
         ped = output_prefix + 'ped'
         pe_angle = output_prefix + 'pe_angle'
         dcm_info = output_prefix + 'dcm_info'
-        output_files = [FieldSpec(tr, dtype=float),
-                        FieldSpec(start_time, dtype=str),
-                        FieldSpec(tot_duration, dtype=str),
-                        FieldSpec(real_duration, dtype=str),
-                        FieldSpec(ped, dtype=str),
-                        FieldSpec(pe_angle, dtype=str),
-                        DatasetSpec(dcm_info, text_format)]
+        outputs = [FieldSpec(tr, dtype=float),
+                   FieldSpec(start_time, dtype=str),
+                   FieldSpec(tot_duration, dtype=str),
+                   FieldSpec(real_duration, dtype=str),
+                   FieldSpec(ped, dtype=str),
+                   FieldSpec(pe_angle, dtype=str),
+                   DatasetSpec(dcm_info, text_format)]
 
         pipeline = self.create_pipeline(
             name=name,
             inputs=[DatasetSpec(dcm_in_name, dicom_format)],
-            outputs=output_files,
+            outputs=outputs,
             desc=("Pipeline to extract the most important scan "
                   "information from the image header"),
             version=1,
@@ -587,11 +587,19 @@ class MRIStudy(Study):
         pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
         return pipeline
 
+<<<<<<< Upstream, based on mbi/master
     def motion_mat_pipeline(self, ref=False, **kwargs):
         if ref:
 #             logger.info("Cannot derive 'coreg_matrix' for {} required for "
 #                         "motion matrix calculation, assuming that it "
 #                         "is the reference study".format(self))
+=======
+    def motion_mat_pipeline(self, **kwargs):
+        if not self.spec('coreg_matrix').derivable:
+            logger.info("Cannot derive 'coreg_matrix' for {} required for "
+                        "motion matrix calculation, assuming that it "
+                        "is the reference study".format(self))
+>>>>>>> ba8f869 renamed bound_data_spec to spec to match change in arcana
             inputs = [DatasetSpec('primary', dicom_format)]
 
         else:

@@ -1,4 +1,4 @@
-from .fibre_est import ResponseSD, EstimateFOD, AverageResponse
+from .fibre_est import EstimateFOD, AverageResponse
 from .preproc import (
     DWIPreproc, DWI2Mask, DWIBiasCorrect, DWIDenoise,
     DWIIntensityNorm)
