@@ -3,7 +3,6 @@ import os.path
 import errno
 from arcana.runner import MultiProcRunner
 from arcana.archive.local import LocalArchive
-# from nianalysis.archive.xnat import XNATArchive
 from mc_pipeline.utils import (guess_scan_type, local_motion_detection,
                                inputs_generation)
 import argparse
@@ -14,11 +13,14 @@ from arcana.runner.linear import LinearRunner
 class RunMotionCorrection:
 
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
-                 pet_offset=0, frames='all'):
+                 pet_offset=0, frames='all', struct2align=None,
+                 pet_recon=None):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
         self.dynamic = dynamic
+        self.struct2align = struct2align
+        self.pet_recon = pet_recon
         self.options = {'fixed_binning_n_frames': frames,
                         'fixed_binning_pet_offset': pet_offset,
                         'fixed_binning_bin_len': bin_len}
@@ -27,6 +29,8 @@ class RunMotionCorrection:
 
         input_dir = self.input_dir
         pet_dir = self.pet_dir
+        pet_recon = self.pet_recon
+        struct2align = self.struct2align
         cached_inputs = False
         cache_input_path = os.path.join(input_dir, 'inputs.pickle')
         if os.path.isdir(input_dir):
@@ -39,7 +43,9 @@ class RunMotionCorrection:
                     print ('No inputs.pickle files found in {}. Running inputs'
                            ' generation'.format(input_dir))
         if not cached_inputs:
-            scans = local_motion_detection(input_dir, pet_dir=pet_dir)
+            scans = local_motion_detection(input_dir, pet_dir=pet_dir,
+                                           pet_recon=pet_recon,
+                                           struct2align=struct2align)
             list_inputs = guess_scan_type(scans, input_dir)
             if not list_inputs:
                 ref, ref_type, t1s, epis, t2s, dmris, utes, umap = (
@@ -59,7 +65,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--input_dir', '-i', type=str,
+    parser.add_argument('--input_dir', '-i', type=str, required=True,
                         help=("Path to an existing directory"))
     parser.add_argument('--pet_list_mode_dir', '-ls', type=str,
                         help=("Path to an existing directory with the PET list"
@@ -84,13 +90,22 @@ if __name__ == "__main__":
                               "corrected for motion. Default is equal to the "
                               "total PET acquisition length divided by the bin"
                               " temporal length."))
+    parser.add_argument('--dynamic', '-d', action='store_true',
+                        help=("If provided, dynamic motion correction will be "
+                              "performed. Otherwise static. Default is static."
+                              ""), default=False)
+    parser.add_argument('--struct2align', '-s', type=str,
+                        help=("Existing nifti file to register the final "
+                              "motion correction PET image to. Default is None"
+                              "."), default=None)
     args = parser.parse_args()
 #     input_dir = '/Volumes/Project/pet/sforazz/test_mc_nianalysis/MRH017_006/MR01/'
 #     input_dir = args.input_dir
     mc = RunMotionCorrection(
         args.input_dir, pet_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         bin_len=args.bin_legth, pet_offset=args.recon_offset,
-        frames=args.frames)
+        frames=args.frames, pet_recon=args.pet_reconstructed_dir,
+        struct2align=args.struct2align)
 
     ref, ref_type, t1s, epis, t2s, dmris, utes, umap = (
         mc.create_motion_correction_inputs())
@@ -98,7 +113,8 @@ if __name__ == "__main__":
     MotionCorrection, inputs = create_motion_correction_class(
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
         epis=epis, utes=utes, umaps=umap, pet_data_dir=args.pet_list_mode_dir,
-        pet_recon_dir=args.pet_reconstructed_dir)
+        pet_recon_dir=args.pet_reconstructed_dir, dynamic=args.dynamic,
+        struct2align=args.struct2align)
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'

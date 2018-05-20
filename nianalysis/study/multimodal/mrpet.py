@@ -743,27 +743,36 @@ class MotionDetectionMixin(MultiStudy):
 def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                                    t2s=None, dmris=None, epis=None,
                                    umaps=None, dynamic=False, umap_ref=None,
-                                   pet_data_dir=None, pet_recon_dir=None):
+                                   pet_data_dir=None, pet_recon_dir=None,
+                                   struct2align=None):
 
     inputs = []
     dct = {}
     data_specs = []
     run_pipeline = False
     option_specs = [OptionSpec('ref_preproc_resolution', [1])]
+    struct_image = struct2align.split('/')[-1]
 
     if pet_data_dir is not None:
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
-                                   pet_data_dir))
+                                   'pet_data_dir'))
     if pet_recon_dir is not None:
         inputs.append(DatasetMatch('pet_data_reconstructed', directory_format,
-                                   pet_recon_dir))
+                                   'pet_data_reconstructed'))
+        if struct2align is not None:
+            inputs.append(
+                DatasetMatch('struct2align', nifti_gz_format, struct_image))
     if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
         output_data = 'dynamic_motion_correction_results'
-    elif pet_data_dir is not None and pet_recon_dir is not None and not dynamic:
+        if struct2align is not None:
+            inputs.append(
+                DatasetMatch('struct2align', nifti_gz_format, struct_image))
+    elif (pet_data_dir is not None and pet_recon_dir is not None
+            and not dynamic):
         output_data = 'static_motion_correction_results'
     else:
         output_data = 'motion_detection_output'
-            
+
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
