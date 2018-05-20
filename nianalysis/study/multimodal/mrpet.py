@@ -742,7 +742,7 @@ class MotionDetectionMixin(MultiStudy):
 
 def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                                    t2s=None, dmris=None, epis=None,
-                                   umaps=None, dynamic=False, umap_ref=None,
+                                   umap=None, dynamic=False, umap_ref=None,
                                    pet_data_dir=None, pet_recon_dir=None,
                                    struct2align=None):
 
@@ -820,21 +820,21 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                       for i, t2_scan in enumerate(t2s))
         run_pipeline = True
 
-    if umap_ref and not umaps:
+    if umap_ref and not umap:
         logger.info('Umap not provided. The umap realignment will not be '
                     'performed. Matrices that realign each detected frame to '
                     'the reference will be calculated.')
         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
 
-    elif umap_ref and umaps:
+    elif umap_ref and umap:
         logger.info('Umap will be realigned to match the head position in '
                     'each frame. Matrices that realign each frame to the '
                     'reference will be calculated.')
-        if len(umaps) > 1:
+        if len(umap) > 1:
             logger.info('More than one umap provided. Only the first one will '
                         'be used.')
-        umaps = umaps[0]
+        umaps = umap[0]
         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
         inputs.append(DatasetMatch('umap', dicom_format, umaps))
