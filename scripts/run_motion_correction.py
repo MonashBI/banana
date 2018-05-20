@@ -121,8 +121,7 @@ if __name__ == "__main__":
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
         struct2align=args.struct2align)
 
-    ref, ref_type, t1s, epis, t2s, dmris, utes, umap = (
-        mc.create_motion_correction_inputs())
+    ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
     MotionCorrection, inputs = create_motion_correction_class(
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
