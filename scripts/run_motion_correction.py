@@ -48,17 +48,16 @@ class RunMotionCorrection:
                                            struct2align=struct2align)
             list_inputs = guess_scan_type(scans, input_dir)
             if not list_inputs:
-                ref, ref_type, t1s, epis, t2s, dmris, utes, umap = (
-                    inputs_generation(scans, input_dir, siemens=False))
-                list_inputs = [ref, ref_type, t1s, epis, t2s, dmris, utes,
-                               umap]
+                ref, ref_type, t1s, epis, t2s, dmris = (
+                    inputs_generation(scans, input_dir, siemens=True))
+                list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
             else:
                 print list_inputs
-                ref, ref_type, t1s, epis, t2s, dmris, utes, umap = list_inputs
+                ref, ref_type, t1s, epis, t2s, dmris = list_inputs
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)
 
-        return ref, ref_type, t1s, epis, t2s, dmris, utes, umap
+        return ref, ref_type, t1s, epis, t2s, dmris
 
 
 if __name__ == "__main__":
@@ -67,6 +66,21 @@ if __name__ == "__main__":
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_dir', '-i', type=str, required=True,
                         help=("Path to an existing directory"))
+    parser.add_argument('--umap_ref', type=str,
+                        help=("Existing file that will be used to calculate "
+                              "the motion matrices and that links the MR "
+                              "scan used as reference in the motion detection "
+                              "and the PET image in PET space. This is usually"
+                              "the UTE image acquired at the beginnig of a "
+                              "MR-PET study. Please see documentation for "
+                              "futher explanation."), default=None)
+    parser.add_argument('--umap', '-s', type=str,
+                        help=("Existing file with the attenuation correction "
+                              "umap. This file will be realigned to match the "
+                              "head position in each detected frame during the"
+                              "static motion correction pipeline. In order to "
+                              "work, this file must be provided together with"
+                              "--umap_ref."), default=None)
     parser.add_argument('--pet_list_mode_dir', '-ls', type=str,
                         help=("Path to an existing directory with the PET list"
                               "-mode data (both binary and header files)."))
@@ -112,8 +126,9 @@ if __name__ == "__main__":
 
     MotionCorrection, inputs = create_motion_correction_class(
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
-        epis=epis, utes=utes, umaps=umap, pet_data_dir=args.pet_list_mode_dir,
-        pet_recon_dir=args.pet_reconstructed_dir, dynamic=args.dynamic,
+        epis=epis, umap_ref=args.umap_ref, umap=args.umap,
+        pet_data_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
+        pet_recon_dir=args.pet_reconstructed_dir,
         struct2align=args.struct2align)
 
     sub_id = 'work_sub_dir'
