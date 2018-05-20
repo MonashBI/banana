@@ -587,7 +587,7 @@ class MRIStudy(Study):
         pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
         return pipeline
 
-    def motion_mat_pipeline(self, ref=False, **kwargs):
+    def motion_mat_pipeline(self, **kwargs):
         if not self.spec('coreg_matrix').derivable:
             logger.info("Cannot derive 'coreg_matrix' for {} required for "
                         "motion matrix calculation, assuming that it "

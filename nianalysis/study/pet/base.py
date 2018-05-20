@@ -150,7 +150,7 @@ class PETStudy(Study):
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
 
         pipeline.connect_output('pet_recon_dir_prepared', prep_dir,
-                                'pet_recon_dir_prepared')
+                                'pet_dir_prepared')
         return pipeline
 
     def pet_time_info_extraction_pipeline(self, **kwargs):

@@ -22,5 +22,5 @@ class TestMC(TestCase):
         study = self.create_study(
             MotionCorrection, 'MotionCorrection', inputs=inputs,
             enforce_inputs=False)
-        study.data('fixed_binning_mats')
-        self.assertDatasetCreated('fixed_binning_mats', study.name)
+        study.data(out_data)
+        self.assertDatasetCreated(out_data, study.name)

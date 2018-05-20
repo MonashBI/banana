@@ -479,7 +479,7 @@ class PreparePetDir(BaseInterface):
                 raise Exception("No PET images found in {0}!".format(pet_dir))
         if not image_orientation_check:
             raise Exception(
-                "Could not find any e7tools version information and the PET "
+                "Could not find any e7tools version information in the PET "
                 "header. If you are sure that the reconstructed PET images "
                 "have correct orientation then specify image_orientation_check"
                 "=True. Otherwise reconstruct your images with the new version"

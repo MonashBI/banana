@@ -145,7 +145,13 @@ class MotionDetectionMixin(MultiStudy):
                             template_path, 'moco_template.IMA')),
                         OptionSpec('fixed_binning_n_frames', 'all'),
                         OptionSpec('fixed_binning_pet_offset', 0),
-                        OptionSpec('fixed_binning_bin_len', 60)]
+                        OptionSpec('fixed_binning_bin_len', 60),
+                        OptionSpec('crop_xmin', 100),
+                        OptionSpec('crop_xsize', 130),
+                        OptionSpec('crop_ymin', 100),
+                        OptionSpec('crop_ysize', 130),
+                        OptionSpec('crop_zmin', 20),
+                        OptionSpec('crop_zsize', 100)]
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
@@ -542,6 +548,8 @@ class MotionDetectionMixin(MultiStudy):
         if 'Struct2Align' in self.input_names:
             inputs.append(DatasetSpec('Struct2Align', nifti_gz_format))
             StructAlignment = True
+        else:
+            StructAlignment = False
 
         pipeline = self.create_pipeline(
             name='static_mc',
@@ -625,7 +633,8 @@ class MotionDetectionMixin(MultiStudy):
         if 'Struct2Align' in self.input_names:
             inputs.append(DatasetSpec('Struct2Align', nifti_gz_format))
             StructAlignment = True
-
+        else:
+            StructAlignment = False
         pipeline = self.create_pipeline(
             name='dynamic_mc',
             inputs=inputs,
@@ -758,9 +767,9 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
-        ref_study = MotionReferenceT1Study
+        ref_study = T1Study
     elif ref_type == 't2':
-        ref_study = MotionReferenceT2Study
+        ref_study = T2Study
     else:
         raise Exception('{} is not a recognized ref_type!The available '
                         'ref_types are t1 or t2.'.format(ref_type))
