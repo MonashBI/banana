@@ -74,7 +74,7 @@ if __name__ == "__main__":
                               "the UTE image acquired at the beginnig of a "
                               "MR-PET study. Please see documentation for "
                               "futher explanation."), default=None)
-    parser.add_argument('--umap', '-s', type=str,
+    parser.add_argument('--umap', type=str,
                         help=("Existing file with the attenuation correction "
                               "umap. This file will be realigned to match the "
                               "head position in each detected frame during the"
