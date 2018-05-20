@@ -103,7 +103,7 @@ if __name__ == "__main__":
 #     input_dir = args.input_dir
     mc = RunMotionCorrection(
         args.input_dir, pet_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
-        bin_len=args.bin_legth, pet_offset=args.recon_offset,
+        bin_len=args.bin_length, pet_offset=args.recon_offset,
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
         struct2align=args.struct2align)
 
