@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plot
 from sklearn.decomposition import PCA
 import subprocess as sp
-from nipype.interfaces.base.traits_extension import Directory
+from nipype.interfaces.base.traits_extension import Directory, isdefined
 import shutil
 import glob
 import pydicom
@@ -565,17 +565,19 @@ class PETFovCropping(BaseInterface):
 
 class CheckPetMCInputsInputSpec(BaseInterfaceInputSpec):
 
-    pet_data = Directory(desc='Directory with the fov cropped PET images.')
-    motion_mats = Directory(desc='Directory with the outputs from the MR-based'
-                            ' motion detection pipeline.')
-    corr_factors = File()
+    pet_data = Directory(desc='Directory with the reconstructed PET images.')
+    motion_mats = Directory(desc='Directory with the motion matrices calculated '
+                            'by the frame2reference pipeline')
+    corr_factors = File(desc='Text file with the PET temporal correction factors '
+                        'used to generate the static PET motion corrected image.')
 
 
 class CheckPetMCInputsOutputSpec(TraitedSpec):
 
-    pet_images = traits.List()
-    motion_mats = traits.List()
-    corr_factors = traits.List()
+    pet_images = traits.List(desc='List of PET images found in the PET recon'
+                             ' directory.')
+    motion_mats = traits.List(desc='List of motion matrices.')
+    corr_factors = traits.List(desc='List of PET temporal correction factors.')
 
 
 class CheckPetMCInputs(BaseInterface):
@@ -585,23 +587,49 @@ class CheckPetMCInputs(BaseInterface):
 
     def _run_interface(self, runtime):
 
+        dct = {}
         pet_data = sorted(glob.glob(self.inputs.pet_data+'/*.nii.gz'))
         motion_mats = sorted(glob.glob(
             self.inputs.motion_mats+'/Frame*_inv.mat'))
-        corr_factors = np.loadtxt(self.inputs.corr_factors).tolist()
+        if isdefined(self.inputs.corr_factors):
+            corr_factors = np.loadtxt(self.inputs.corr_factors).tolist()
         if not pet_data:
             raise Exception('No images found in {}!'
                             .format(self.inputs.pet_cropped))
-        elif (pet_data and (len(pet_data) != len(motion_mats) or
-                            len(pet_data) != len(corr_factors))):
+        elif (pet_data and (len(pet_data) != len(motion_mats))):
             raise Exception("The number of the PET images found in {0} is "
                             "different from that of the motion matrices found "
                             "in {1}. Please check."
                             .format(self.inputs.pet_data,
                                     self.inputs.motion_mats))
+        else:
+            dct['pet_data'] = pet_data
+            dct['motion_mats'] = motion_mats
+            if (isdefined(corr_factors) and
+                    (len(pet_data) == len(corr_factors))):
+                dct['corr_factors'] = corr_factors
+            elif not isdefined(corr_factors):
+                dct['corr_factors'] = []
+            if (isdefined(corr_factors) and
+                    (len(pet_data) != len(corr_factors))):
+                raise Exception(
+                    "The number of the PET images found in {0} is {1} and it "
+                    "is different from that of the PET correction factors"
+                    "which is {2}. Please check."
+                    .format(self.inputs.pet_data, len(pet_data),
+                            len(corr_factors)))
+            self.dct = dct
 
         return runtime
 
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["pet_data"] = self.dct['pet_data']
+        outputs["motion_mats"] = self.dct['motion_mats']
+        outputs["corr_factors"] = self.dct['corr_factors']
+
+        return outputs
 
 class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 
@@ -637,7 +665,10 @@ class PetImageMotionCorrection(BaseInterface):
         ute2structural_qform = self.inputs.ute2structural_qform
         ute_image = self.inputs.ute_image
         pet_image = self.inputs.pet_image
-        corr_factor = self.inputs.corr_factor
+        if isdefined(self.inputs.corr_factor):
+            corr_factor = self.inputs.corr_factor
+        else:
+            corr_factor = 1
 
         ute_qform = self.extract_qform(ute_image)
         pet_qform = self.extract_qform(pet_image)
@@ -669,7 +700,7 @@ class PetImageMotionCorrection(BaseInterface):
         self.applyxfm(pet_image, ref, 'transformation.mat', outname+'_mc')
         self.applyxfm(pet_image, pet_image, 'transformation_ps.mat',
                       outname+'_mc_ps')
-        corr_types = ['_mc', '_mc_ps', '_no_mc']
+        corr_types = ['_mc', '_mc_ps', '_no_mc'] 
         for tps in corr_types:
             self.apply_temporal_correction(outname, corr_factor, tps)
 

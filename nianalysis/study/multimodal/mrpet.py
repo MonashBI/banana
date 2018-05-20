@@ -80,12 +80,10 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('pet_data_reconstructed', directory_format, optional=True),
         DatasetSpec('pet_data_prepared', directory_format,
                     'prepare_pet_pipeline'),
-        DatasetSpec('static_pet_mc', nifti_gz_format,
+        DatasetSpec('static_motion_correction_results', directory_format,
                     'static_motion_correction_pipeline'),
-        DatasetSpec('static_pet_mc_ps', nifti_gz_format,
-                    'static_motion_correction_pipeline'),
-        DatasetSpec('static_pet_no_mc', nifti_gz_format,
-                    'static_motion_correction_pipeline'),
+        DatasetSpec('dynamic_motion_correction_results', directory_format,
+                    'dynamic_motion_correction_pipeline'),
         DatasetSpec('umap', dicom_format, optional=True),
         DatasetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
@@ -118,13 +116,13 @@ class MotionDetectionMixin(MultiStudy):
         DatasetSpec('correction_factors', text_format,
                     'pet_correction_factors_pipeline'),
         DatasetSpec('umaps_align2ref', directory_format,
-                    'frame2ref_alignment_pipeline'),
+                    'static_frame2ref_alignment_pipeline'),
         DatasetSpec('umap_aligned_dicoms', directory_format,
                     'nifti2dcm_conversion_pipeline'),
         DatasetSpec('static_frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline'),
+                    'static_frame2ref_alignment_pipeline'),
         DatasetSpec('dynamic_frame2reference_mats', directory_format,
-                    'frame2ref_alignment_pipeline'),
+                    'dynamic_frame2ref_alignment_pipeline'),
         DatasetSpec('motion_detection_output', directory_format,
                     'gather_outputs_pipeline'),
         DatasetSpec('moco_series', directory_format,
@@ -351,23 +349,13 @@ class MotionDetectionMixin(MultiStudy):
                                 'corr_factors')
         return pipeline
 
-    def frame2ref_alignment_pipeline(self, method='static', **kwargs):
-        return self.frame2ref_alignment_pipeline_factory(method=method,
-                                                         **kwargs)
+    def static_frame2ref_alignment_pipeline(self, **kwargs):
 
-    def frame2ref_alignment_pipeline_factory(self, method='static', **kwargs):
-        if method == 'static':
-            inputs = [DatasetSpec('average_mats', directory_format)]
-            outputs = [DatasetSpec('static_frame2reference_mats',
-                                   directory_format)]
-            fixed_binning = False
-        elif method == 'dynamic':
-            inputs = [DatasetSpec('fixed_binning_mats', directory_format)]
-            outputs = [DatasetSpec('dynamic_frame2reference_mats',
-                                   directory_format)]
-            fixed_binning = True
-        inputs.append(DatasetSpec('umap_ref_coreg_matrix', text_matrix_format))
-        inputs.append(DatasetSpec('umap_ref_qform_mat', text_matrix_format))
+        inputs = [DatasetSpec('average_mats', directory_format),
+                  DatasetSpec('umap_ref_coreg_matrix', text_matrix_format),
+                  DatasetSpec('umap_ref_qform_mat', text_matrix_format)]
+        outputs = [DatasetSpec('static_frame2reference_mats',
+                               directory_format)]
         umap = False
         if ('umap_ref' in self.sub_study_names and
                 'umap' in self.input_names):
@@ -376,7 +364,7 @@ class MotionDetectionMixin(MultiStudy):
             umap = True
 
         pipeline = self.create_pipeline(
-            name='frame2ref_alignment',
+            name='static_frame2ref_alignment',
             inputs=inputs,
             outputs=outputs,
             desc=("Pipeline to create an affine mat to align each "
@@ -389,30 +377,55 @@ class MotionDetectionMixin(MultiStudy):
             **kwargs)
 
         frame_align = pipeline.create_node(
-            FrameAlign2Reference(), name='frame2ref_alignment',
+            FrameAlign2Reference(), name='static_frame2ref_alignment',
             requirements=[fsl509_req])
         frame_align.inputs.pct = pipeline.option('align_pct')
-        frame_align.inputs.fixed_binning = fixed_binning
+        frame_align.inputs.fixed_binning = False
         pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
                                'ute_regmat')
         pipeline.connect_input('umap_ref_qform_mat', frame_align,
                                'ute_qform_mat')
-        if method == 'static' and not umap:
+        if not umap:
             pipeline.connect_input('average_mats', frame_align, 'average_mats')
             pipeline.connect_output('staitc_frame2reference_mats', frame_align,
                                     'frame2reference_mats')
-        elif method == 'static' and umap:
+        else:
             pipeline.connect_input('average_mats', frame_align, 'average_mats')
             pipeline.connect_output('staitc_frame2reference_mats', frame_align,
                                     'frame2reference_mats')
             pipeline.connect_input('umap', frame_align, 'umap')
             pipeline.connect_output('umaps_align2ref', frame_align,
                                     'umaps_align2ref')
-        elif method == 'dynamic':
-            pipeline.connect_input('fixed_binning_mats', frame_align,
-                                   'average_mats')
-            pipeline.connect_output('dynamic_frame2reference_mats',
-                                    frame_align, 'frame2reference_mats')
+
+        return pipeline
+
+    def dynamic_frame2ref_alignment_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='dynamic_frame2ref_alignment',
+            inputs=[DatasetSpec('fixed_binning_mats', directory_format),
+                    DatasetSpec('umap_ref_coreg_matrix', text_matrix_format),
+                    DatasetSpec('umap_ref_qform_mat', text_matrix_format)],
+            outputs=[DatasetSpec('dynamic_frame2reference_mats',
+                                 directory_format)],
+            desc=("Pipeline to create an affine mat to align each "
+                  "reconstructed bin to the reference."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        frame_align = pipeline.create_node(
+            FrameAlign2Reference(), name='dynamic_frame2ref_alignment',
+            requirements=[fsl509_req])
+        frame_align.inputs.fixed_binning = True
+        pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
+                               'ute_regmat')
+        pipeline.connect_input('umap_ref_qform_mat', frame_align,
+                               'ute_qform_mat')
+        pipeline.connect_input('fixed_binning_mats', frame_align,
+                               'average_mats')
+        pipeline.connect_output('dynamic_frame2reference_mats',
+                                frame_align, 'frame2reference_mats')
 
         return pipeline
 
@@ -521,21 +534,20 @@ class MotionDetectionMixin(MultiStudy):
     pet_header_info_extraction_pipeline = MultiStudy.translate(
         'pet_mc', 'pet_time_info_extraction_pipeline')
 
-    def static_motion_correction_pipeline(self, StructAlignment=None,
-                                          **kwargs):
+    def static_motion_correction_pipeline(self, **kwargs):
         inputs = [DatasetSpec('pet_data_prepared', directory_format),
                   DatasetSpec('static_frame2reference_mats', directory_format),
                   DatasetSpec('correction_factors', text_format),
                   DatasetSpec('umap_ref_preproc', nifti_gz_format)]
-        if StructAlignment is not None:
-            inputs.append(DatasetSpec(StructAlignment, nifti_gz_format))
+        if 'Struct2Align' in self.input_names:
+            inputs.append(DatasetSpec('Struct2Align', nifti_gz_format))
+            StructAlignment = True
 
         pipeline = self.create_pipeline(
             name='static_mc',
             inputs=inputs,
-            outputs=[DatasetSpec('static_pet_mc', nifti_gz_format),
-                     DatasetSpec('static_pet_mc_ps', nifti_gz_format),
-                     DatasetSpec('static_pet_no_mc', nifti_gz_format)],
+            outputs=[DatasetSpec('static_motion_correction_results',
+                                 directory_format)],
             desc=("Given a folder with reconstructed PET data, this "
                   "pipeline will generate a motion corrected static PET"
                   "image using information extracted from the MR-based "
@@ -556,11 +568,11 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
         pipeline.connect(check_pet, 'corr_factors', pet_mc, 'corr_factor')
         pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
-        if StructAlignment is not None:
+        if StructAlignment:
             struct_reg = pipeline.create_node(FLIRT(),
                                               name='ute2structural_reg')
             pipeline.connect_input('umap_ref_preproc', struct_reg, 'in_file')
-            pipeline.connect_input(StructAlignment, struct_reg, 'reference')
+            pipeline.connect_input('Struct2Align', struct_reg, 'reference')
             struct_reg.inputs.dof = 6
             struct_reg.inputs.cost_func = 'normmi'
             struct_reg.inputs.cost = 'normmi'
@@ -569,12 +581,12 @@ class MotionDetectionMixin(MultiStudy):
             struct_qform = pipeline.create_node(FLIRT(),
                                                 name='ute2structural_reg')
             pipeline.connect_input('umap_ref_preproc', struct_qform, 'in_file')
-            pipeline.connect_input(StructAlignment, struct_qform, 'reference')
+            pipeline.connect_input('Struct2Align', struct_qform, 'reference')
             struct_qform.inputs.uses_qform = True
             struct_qform.inputs.apply_xfm = True
             pipeline.connect(struct_qform, 'out_matrix_file', pet_mc,
                              'ute2structural_qform')
-            pipeline.connect_input(StructAlignment, pet_mc,
+            pipeline.connect_input('Struct2Align', pet_mc,
                                    'structural_image')
         static_im_gen = pipeline.create_node(StaticPETImageGeneration(),
                                              name='static_mc_generation')
@@ -593,10 +605,98 @@ class MotionDetectionMixin(MultiStudy):
         cropping.inputs.z_size = pipeline.option('crop_zsize')
         pipeline.connect(static_im_gen, 'static_mc_ps', cropping, 'pet_image')
 
-        pipeline.connect_output('static_pet_mc', static_im_gen, 'static_mc')
-        pipeline.connect_output('static_pet_no_mc', static_im_gen,
-                                'static_no_mc')
-        pipeline.connect_output('static_pet_mc_ps', cropping, 'pet_cropped')
+        merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
+        pipeline.connect(static_im_gen, 'static_mc', merge_outputs, 'in1')
+        pipeline.connect(static_im_gen, 'static_no_mc', merge_outputs, 'in2')
+        pipeline.connect(cropping, 'pet_cropped', merge_outputs, 'in3')
+
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        pipeline.connect(merge_outputs, 'out', copy2dir, 'in_files')
+
+        pipeline.connect_output('static_motion_correction_results', copy2dir,
+                                'out_dir')
+
+        return pipeline
+
+    def dynamic_motion_correction_pipeline(self, **kwargs):
+        inputs = [DatasetSpec('pet_data_prepared', directory_format),
+                  DatasetSpec('dynamic_frame2reference_mats', directory_format),
+                  DatasetSpec('umap_ref_preproc', nifti_gz_format)]
+        if 'Struct2Align' in self.input_names:
+            inputs.append(DatasetSpec('Struct2Align', nifti_gz_format))
+            StructAlignment = True
+
+        pipeline = self.create_pipeline(
+            name='dynamic_mc',
+            inputs=inputs,
+            outputs=[DatasetSpec('dynamic_motion_correction_results',
+                                 directory_format)],
+            desc=("Given a folder with reconstructed PET data, this "
+                  "pipeline will generate a motion corrected static PET"
+                  "image using information extracted from the MR-based "
+                  "motion detection pipeline"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+        check_pet = pipeline.create_node(CheckPetMCInputs(),
+                                         name='check_pet_data')
+        pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
+        pipeline.connect_input('dynamic_frame2reference_mats', check_pet,
+                               'motion_mats')
+        pet_mc = pipeline.create_map_node(
+            PetImageMotionCorrection(), name='pet_mc',
+            iterfield=['pet_image', 'motion_mat'])
+        pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
+        pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
+        pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
+        if StructAlignment:
+            struct_reg = pipeline.create_node(FLIRT(),
+                                              name='ute2structural_reg')
+            pipeline.connect_input('umap_ref_preproc', struct_reg, 'in_file')
+            pipeline.connect_input('Struct2Align', struct_reg, 'reference')
+            struct_reg.inputs.dof = 6
+            struct_reg.inputs.cost_func = 'normmi'
+            struct_reg.inputs.cost = 'normmi'
+            pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
+                             'ute2structural_regmat')
+            struct_qform = pipeline.create_node(FLIRT(),
+                                                name='ute2structural_reg')
+            pipeline.connect_input('umap_ref_preproc', struct_qform, 'in_file')
+            pipeline.connect_input('Struct2Align', struct_qform, 'reference')
+            struct_qform.inputs.uses_qform = True
+            struct_qform.inputs.apply_xfm = True
+            pipeline.connect(struct_qform, 'out_matrix_file', pet_mc,
+                             'ute2structural_qform')
+            pipeline.connect_input('Struct2Align', pet_mc,
+                                   'structural_image')
+        merge_mc = pipeline.create_node(Merge(), name='merge_pet_mc')
+        pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
+        merge_mc.inputs.dimension = 't'
+        merge_no_mc = pipeline.create_node(Merge(), name='merge_pet_no_mc')
+        pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc, 'in_files')
+        merge_no_mc.inputs.dimension = 't'
+        cropping = pipeline.create_map_node(
+            PETFovCropping(), name='pet_cropping', iterfield=['pet_image'])
+        cropping.inputs.x_min = pipeline.option('crop_xmin')
+        cropping.inputs.x_size = pipeline.option('crop_xsize')
+        cropping.inputs.y_min = pipeline.option('crop_ymin')
+        cropping.inputs.y_size = pipeline.option('crop_ysize')
+        cropping.inputs.z_min = pipeline.option('crop_zmin')
+        cropping.inputs.z_size = pipeline.option('crop_zsize')
+        pipeline.connect(pet_mc, 'pet_mc_ps_images', cropping, 'pet_image')
+        merge_mc_ps = pipeline.create_node(Merge(), name='merge_pet_mc_ps')
+        pipeline.connect(cropping, 'pet_cropped', merge_mc_ps, 'in_files')
+        merge_mc_ps.inputs.dimension = 't'
+        merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
+        pipeline.connect(merge_mc, 'merged_file', merge_outputs, 'in1')
+        pipeline.connect(merge_no_mc, 'merged_file', merge_outputs, 'in2')
+        pipeline.connect(merge_mc_ps, 'merged_file', merge_outputs, 'in3')
+
+        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
+        pipeline.connect(merge_outputs, 'out', copy2dir, 'in_files')
+
+        pipeline.connect_output('dynamic_motion_correction_results', copy2dir,
+                                'out_dir')
 
         return pipeline
 
@@ -613,7 +713,7 @@ class MotionDetectionMixin(MultiStudy):
                   "each bin in a dynamic PET reconstruction experiment."
                   "This will be the input for the dynamic motion correction."),
             version=1,
-            citations=[fsl_cite])
+            citations=[fsl_cite], **kwargs)
 
         binning = pipeline.create_node(FixedBinning(), name='fixed_binning')
         pipeline.connect_input('start_times', binning, 'start_times')
@@ -648,6 +748,13 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     if pet_recon_dir is not None:
         inputs.append(DatasetMatch('pet_data_reconstructed', directory_format,
                                    pet_recon_dir))
+    if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
+        output_data = 'dynamic_motion_correction_results'
+    elif pet_data_dir is not None and pet_recon_dir is not None and not dynamic:
+        output_data = 'static_motion_correction_results'
+    else:
+        output_data = 'motion_detection_output'
+            
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
@@ -824,4 +931,5 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_option_specs'] = option_specs
-    return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
+    return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
+            output_data)

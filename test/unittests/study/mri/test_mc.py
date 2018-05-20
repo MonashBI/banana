@@ -4,7 +4,7 @@ from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 # from nianalysis.study.multimodal.test_motion_detection import (  # @IgnorePep8 @Reimport
 #     MotionDetection, inputs)
 from nianalysis.study.multimodal.test_motion_correction import (  # @IgnorePep8 @Reimport
-    MotionCorrection, inputs)
+    MotionCorrection, inputs, out_data)
 
 
 class TestMC(TestCase):

@@ -1,5 +1,5 @@
 from nianalysis.study.multimodal.mrpet import (
-    create_motion_detection_class)
+    create_motion_correction_class)
 
 ref = 'ref'
 t1s = ['ute']  # ['t1']
@@ -15,7 +15,7 @@ class A(object):
     pass
 
 
-MotionCorrection, inputs = create_motion_detection_class(
+MotionCorrection, inputs, out_data = create_motion_correction_class(
     'MotionCorrection', ref, 't1', t1s=t1s, t2s=t2s, epis=epis, dmris=dmris,
     umap_ref=umap_ref, umaps=umap, pet_data_dir=pet_data_dir)
 
