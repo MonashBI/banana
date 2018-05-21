@@ -638,8 +638,8 @@ class CheckPetMCInputs(BaseInterface):
 
 class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 
-    pet_image = File(desc='Directory with the fov cropped PET images.')
-    motion_mat = File(desc='Directory with the outputs from the MR-based '
+    pet_image = traits.List(desc='Directory with the fov cropped PET images.')
+    motion_mat = traits.List(desc='Directory with the outputs from the MR-based '
                       'motion detection pipeline.')
     structural_image = File(desc='If provided, the final PET mc image will be '
                             'aligned to this image.', default=None)
@@ -664,50 +664,52 @@ class PetImageMotionCorrection(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        motion_mat = self.inputs.motion_mat
+        motion_mats = self.inputs.motion_mat
         structural_image = self.inputs.structural_image
         ute2structural_regmat = self.inputs.ute2structural_regmat
         ute2structural_qform = self.inputs.ute2structural_qform
         ute_image = self.inputs.ute_image
-        pet_image = self.inputs.pet_image
+        pet_images = self.inputs.pet_image
         if isdefined(self.inputs.corr_factor):
             corr_factor = self.inputs.corr_factor
         else:
             corr_factor = 1
 
         ute_qform = self.extract_qform(ute_image)
-        pet_qform = self.extract_qform(pet_image)
+        pet_qform = self.extract_qform(pet_images[0])
         fixed_MRPET_transformation = np.dot(ute_qform,
                                             np.linalg.inv(pet_qform))
         fixed_MRPET_transformation_inv = np.linalg.inv(
             fixed_MRPET_transformation)
         np.savetxt('MRPET_transformation.mat', fixed_MRPET_transformation)
-        basename = pet_image.split('/')[-1].split('.')[0]
-        transformation_mat = (
-            np.dot(motion_mat, fixed_MRPET_transformation))
-        transformation_mat_petspace = (
-            np.dot(fixed_MRPET_transformation_inv, transformation_mat))
-        if structural_image:
-            transformation_mat = (np.dot(ute2structural_regmat,
-                                         transformation_mat))
-            ref = structural_image
-            out_basename = 'al2Struct'
-            self.applyxfm(pet_image, ref, ute2structural_qform,
-                          '{0}_{1}_no_mc'.format(basename, out_basename))
-        else:
-            ref = ute_image
-            out_basename = 'al2UTE'
-            self.applyxfm(pet_image, ref, 'MRPET_transformation.mat',
-                          '{0}_{1}_no_mc'.format(basename, out_basename))
-        outname = '{0}_{1}'.format(basename, out_basename)
-        np.savetxt('transformation.mat', transformation_mat)
-        np.savetxt('transformation_ps.mat', transformation_mat_petspace)
-        self.applyxfm(pet_image, ref, 'transformation.mat', outname+'_mc')
-        self.applyxfm(pet_image, pet_image, 'transformation_ps.mat',
-                      outname+'_mc_ps')
-        corr_types = ['_mc', '_mc_ps', '_no_mc']
-        for tps in corr_types:
-            self.apply_temporal_correction(outname, corr_factor, tps)
+        for i, pet_image in enumerate(pet_images):
+            basename = pet_image.split('/')[-1].split('.')[0]
+            transformation_mat = (
+                np.dot(np.loadtxt(motion_mats[i]), fixed_MRPET_transformation))
+            transformation_mat_petspace = (
+                np.dot(fixed_MRPET_transformation_inv, transformation_mat))
+            if structural_image:
+                transformation_mat = (np.dot(ute2structural_regmat,
+                                             transformation_mat))
+                ref = structural_image
+                out_basename = 'al2Struct'
+                self.applyxfm(pet_image, ref, ute2structural_qform,
+                              '{0}_{1}_no_mc'.format(basename, out_basename))
+            else:
+                ref = ute_image
+                out_basename = 'al2UTE'
+                self.applyxfm(pet_image, ref, 'MRPET_transformation.mat',
+                              '{0}_{1}_no_mc'.format(basename, out_basename))
+            outname = '{0}_{1}'.format(basename, out_basename)
+            np.savetxt('transformation.mat', transformation_mat)
+            np.savetxt('transformation_ps.mat', transformation_mat_petspace)
+            self.applyxfm(pet_image, ref, 'transformation.mat', outname+'_mc')
+            self.applyxfm(pet_image, pet_image, 'transformation_ps.mat',
+                          outname+'_mc_ps')
+            corr_types = ['_mc', '_mc_ps', '_no_mc']
+            for tps in corr_types:
+                self.apply_temporal_correction(outname, corr_factor, tps)
+        self.out_basename = out_basename
 
         return runtime
 
@@ -748,11 +750,12 @@ class PetImageMotionCorrection(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
 
-        outputs["pet_mc_images"] = glob.glob(os.getcwd()+'/*mc_corr.nii.gz')
-        outputs["pet_mc_ps_images"] = glob.glob(
-            os.getcwd()+'/*mc_ps_corr.nii.gz')
-        outputs["pet_no_mc_images"] = glob.glob(
-            os.getcwd()+'/*no_mc_corr.nii.gz')
+        outputs["pet_mc_images"] = sorted(glob.glob(os.getcwd()+'/*{}_mc_corr.nii.gz'
+                                             .format(self.out_basename)))
+        outputs["pet_mc_ps_images"] = sorted(glob.glob(
+            os.getcwd()+'/*mc_ps_corr.nii.gz'))
+        outputs["pet_no_mc_images"] = sorted(glob.glob(
+            os.getcwd()+'/*no_mc_corr.nii.gz'))
         return outputs
 
 
