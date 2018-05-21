@@ -598,7 +598,7 @@ class MRIStudy(Study):
             inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
                       DatasetSpec('qform_mat', text_matrix_format)]
             if 'align_mats' in self.data_spec_names():
-                inputs += DatasetSpec('align_mats', directory_format)
+                inputs.append(DatasetSpec('align_mats', directory_format))
             ref = False
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
