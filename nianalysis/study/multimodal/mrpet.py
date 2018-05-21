@@ -751,7 +751,8 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     data_specs = []
     run_pipeline = False
     option_specs = [OptionSpec('ref_preproc_resolution', [1])]
-    struct_image = struct2align.split('/')[-1]
+    if struct2align is not None:
+        struct_image = struct2align.split('/')[-1]
 
     if pet_data_dir is not None:
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
