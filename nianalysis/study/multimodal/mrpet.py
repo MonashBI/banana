@@ -143,7 +143,7 @@ class MotionDetectionMixin(MultiStudy):
                         OptionSpec('align_fixed_binning', False),
                         OptionSpec('moco_template', os.path.join(
                             template_path, 'moco_template.IMA')),
-                        OptionSpec('fixed_binning_n_frames', 'all'),
+                        OptionSpec('fixed_binning_n_frames', 0),
                         OptionSpec('fixed_binning_pet_offset', 0),
                         OptionSpec('fixed_binning_bin_len', 60),
                         OptionSpec('crop_xmin', 100),

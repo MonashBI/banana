@@ -1327,7 +1327,7 @@ class CreateMocoSeries(BaseInterface):
 
 class FixedBinningInputSpec(BaseInterfaceInputSpec):
 
-    n_frames = traits.Str(desc='Number of frames you want to have '
+    n_frames = traits.Int(desc='Number of frames you want to have '
                           'realignment matrices for.')
     pet_offset = traits.Int(desc='seconds from the start of the PET you want '
                             'to discard before starting the data binning.')
@@ -1389,11 +1389,11 @@ class FixedBinning(BaseInterface):
         pet_duration = self.inputs.pet_duration
         pet_start_time = self.inputs.pet_start_time
         motion_mats = np.loadtxt(self.inputs.motion_mats, dtype=str)
-        if n_frames == 'all' and pet_offset == 0:
+        if n_frames == 0 and pet_offset == 0:
             pet_len = pet_duration
-        elif n_frames == 'all' and pet_offset != 0:
+        elif n_frames == 0 and pet_offset != 0:
             pet_len = pet_duration-pet_offset
-        elif n_frames != 'all':
+        elif n_frames != 0:
             pet_len = bin_len*n_frames
 
         MR_start_time = dt.datetime.strptime(str(start_times[0]), '%H%M%S.%f')
