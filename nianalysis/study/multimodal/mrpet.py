@@ -832,17 +832,17 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         logger.info('Umap will be realigned to match the head position in '
                     'each frame. Matrices that realign each frame to the '
                     'reference will be calculated.')
-        if len(umap) > 1:
+        if type(umap) == list and len(umap) > 1:
             logger.info('More than one umap provided. Only the first one will '
                         'be used.')
-        umaps = umap[0]
+            umap = umap[0]
         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
         inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-        inputs.append(DatasetMatch('umap', dicom_format, umaps))
+        inputs.append(DatasetMatch('umap', dicom_format, umap))
 
         run_pipeline = True
 
-    elif not umap_ref and umaps:
+    elif not umap_ref and umap:
         logger.warning('Umap provided without corresponding reference image. '
                        'Realignment cannot be performed without UTE. Umap will'
                        'be ignored.')
