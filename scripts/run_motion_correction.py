@@ -142,7 +142,8 @@ if __name__ == "__main__":
             raise
 
     study = MotionCorrection(name='MotionCorrection',
-                             runner=MultiProcRunner(WORK_PATH),
+                             runner=MultiProcRunner(WORK_PATH,
+                                                    num_processes=10),
                              archive=archive, inputs=inputs,
                              subject_ids=[sub_id], options=mc.options,
                              visit_ids=[session_id])
