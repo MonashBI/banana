@@ -145,12 +145,8 @@ if __name__ == "__main__":
             raise
 
     study = MotionCorrection(name='MotionCorrection',
-                             runner=MultiProcRunner(WORK_PATH,
-                                                    num_processes=5),
-                             archive=archive, inputs=inputs+[
-                    DatasetMatch('pet_data_prepared', directory_format, 'MotionCorrection_pet_data_prepared'),
-                    DatasetMatch('dynamic_frame2reference_mats', directory_format, 'MotionCorrection_dynamic_frame2reference_mats'),
-                    DatasetMatch('umap_ref_preproc', nifti_gz_format, 'MotionCorrection_umap_ref_preproc')],
+                             runner=LinearRunner(WORK_PATH),
+                             archive=archive, inputs=inputs,
                              subject_ids=[sub_id], options=mc.options,
                              visit_ids=[session_id])
     study.data(out_data)
