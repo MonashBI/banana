@@ -794,6 +794,10 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
             ' image in each detected frame to the reference cannot be '
             'generated. See documentation for further information.')
     else:
+        if umap_ref.endswith('/'):
+            umap_ref = umap_ref.split('/')[-2]
+        else:
+            umap_ref = umap_ref.split('/')[-1]
         if umap_ref in t1s:
             umap_ref_study = T1Study
             t1s.remove(umap_ref)
