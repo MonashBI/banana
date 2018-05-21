@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
-    MotionCorrection, inputs = create_motion_correction_class(
+    MotionCorrection, inputs, out_data = create_motion_correction_class(
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
         epis=epis, umap_ref=args.umap_ref, umap=args.umap,
         pet_data_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
