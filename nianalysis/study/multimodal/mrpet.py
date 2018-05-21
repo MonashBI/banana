@@ -28,6 +28,7 @@ from arcana.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
 from nipype.interfaces.fsl.preprocess import FLIRT
 from arcana.study.base import StudyMetaClass
+import nipype.interfaces.fsl as fsl
 
 
 logger = logging.getLogger('Arcana')
@@ -648,20 +649,21 @@ class MotionDetectionMixin(MultiStudy):
             version=1,
             citations=[fsl_cite],
             **kwargs)
-        check_pet = pipeline.create_node(CheckPetMCInputs(),
-                                         name='check_pet_data')
+        check_pet = pipeline.create_node(
+            CheckPetMCInputs(), requirements=[fsl509_req],
+            name='check_pet_data')
         pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
         pipeline.connect_input('dynamic_frame2reference_mats', check_pet,
                                'motion_mats')
         pet_mc = pipeline.create_map_node(
             PetImageMotionCorrection(), name='pet_mc',
-            iterfield=['pet_image', 'motion_mat'])
+            iterfield=['pet_image', 'motion_mat'], requirements=[fsl509_req])
         pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
         pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
         if StructAlignment:
-            struct_reg = pipeline.create_node(FLIRT(),
-                                              name='ute2structural_reg')
+            struct_reg = pipeline.create_node(
+                FLIRT(), requirements=[fsl509_req], name='ute2structural_reg')
             pipeline.connect_input('umap_ref_preproc', struct_reg, 'in_file')
             pipeline.connect_input('Struct2Align', struct_reg, 'reference')
             struct_reg.inputs.dof = 6
@@ -669,8 +671,8 @@ class MotionDetectionMixin(MultiStudy):
             struct_reg.inputs.cost = 'normmi'
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'ute2structural_regmat')
-            struct_qform = pipeline.create_node(FLIRT(),
-                                                name='ute2structural_reg')
+            struct_qform = pipeline.create_node(
+                FLIRT(), requirements=[fsl509_req], name='ute2structural_qfor')
             pipeline.connect_input('umap_ref_preproc', struct_qform, 'in_file')
             pipeline.connect_input('Struct2Align', struct_qform, 'reference')
             struct_qform.inputs.uses_qform = True
@@ -679,10 +681,12 @@ class MotionDetectionMixin(MultiStudy):
                              'ute2structural_qform')
             pipeline.connect_input('Struct2Align', pet_mc,
                                    'structural_image')
-        merge_mc = pipeline.create_node(Merge(), name='merge_pet_mc')
+        merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
+                                        requirements=[fsl509_req])
         pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
         merge_mc.inputs.dimension = 't'
-        merge_no_mc = pipeline.create_node(Merge(), name='merge_pet_no_mc')
+        merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
+                                           requirements=[fsl509_req])
         pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc, 'in_files')
         merge_no_mc.inputs.dimension = 't'
         cropping = pipeline.create_map_node(
@@ -694,7 +698,8 @@ class MotionDetectionMixin(MultiStudy):
         cropping.inputs.z_min = pipeline.option('crop_zmin')
         cropping.inputs.z_size = pipeline.option('crop_zsize')
         pipeline.connect(pet_mc, 'pet_mc_ps_images', cropping, 'pet_image')
-        merge_mc_ps = pipeline.create_node(Merge(), name='merge_pet_mc_ps')
+        merge_mc_ps = pipeline.create_node(fsl.Merge(), name='merge_pet_mc_ps',
+                                           requirements=[fsl509_req])
         pipeline.connect(cropping, 'pet_cropped', merge_mc_ps, 'in_files')
         merge_mc_ps.inputs.dimension = 't'
         merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')

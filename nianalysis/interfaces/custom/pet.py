@@ -595,6 +595,8 @@ class CheckPetMCInputs(BaseInterface):
             self.inputs.motion_mats+'/*_inv.mat'))
         if isdefined(self.inputs.corr_factors):
             corr_factors = np.loadtxt(self.inputs.corr_factors).tolist()
+        else:
+            corr_factors = None
         if not pet_data:
             raise Exception('No images found in {}!'
                             .format(self.inputs.pet_cropped))
@@ -607,12 +609,12 @@ class CheckPetMCInputs(BaseInterface):
         else:
             dct['pet_data'] = pet_data
             dct['motion_mats'] = motion_mats
-            if (isdefined(corr_factors) and
+            if (corr_factors is not None and
                     (len(pet_data) == len(corr_factors))):
                 dct['corr_factors'] = corr_factors
-            elif not isdefined(corr_factors):
+            elif corr_factors is None:
                 dct['corr_factors'] = []
-            if (isdefined(corr_factors) and
+            if (corr_factors is not None and
                     (len(pet_data) != len(corr_factors))):
                 raise Exception(
                     "The number of the PET images found in {0} is {1} and it "
@@ -627,7 +629,7 @@ class CheckPetMCInputs(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
 
-        outputs["pet_data"] = self.dct['pet_data']
+        outputs["pet_images"] = self.dct['pet_data']
         outputs["motion_mats"] = self.dct['motion_mats']
         outputs["corr_factors"] = self.dct['corr_factors']
 
