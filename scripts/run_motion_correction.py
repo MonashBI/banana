@@ -146,5 +146,5 @@ if __name__ == "__main__":
                              archive=archive, inputs=inputs,
                              subject_ids=[sub_id], options=mc.options,
                              visit_ids=[session_id])
-    study.data('motion_detection_output')
+    study.data(out_data)
 print 'Done!'
