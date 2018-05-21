@@ -628,7 +628,8 @@ class MotionDetectionMixin(MultiStudy):
 
     def dynamic_motion_correction_pipeline(self, **kwargs):
         inputs = [DatasetSpec('pet_data_prepared', directory_format),
-                  DatasetSpec('dynamic_frame2reference_mats', directory_format),
+                  DatasetSpec('dynamic_frame2reference_mats',
+                              directory_format),
                   DatasetSpec('umap_ref_preproc', nifti_gz_format)]
         if 'Struct2Align' in self.input_names:
             inputs.append(DatasetSpec('Struct2Align', nifti_gz_format))

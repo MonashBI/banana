@@ -566,10 +566,12 @@ class PETFovCropping(BaseInterface):
 class CheckPetMCInputsInputSpec(BaseInterfaceInputSpec):
 
     pet_data = Directory(desc='Directory with the reconstructed PET images.')
-    motion_mats = Directory(desc='Directory with the motion matrices calculated '
-                            'by the frame2reference pipeline')
-    corr_factors = File(desc='Text file with the PET temporal correction factors '
-                        'used to generate the static PET motion corrected image.')
+    motion_mats = Directory(
+        desc='Directory with the motion matrices calculated by the '
+        'frame2reference pipeline')
+    corr_factors = File(
+        desc='Text file with the PET temporal correction factors used to '
+        'generate the static PET motion corrected image.')
 
 
 class CheckPetMCInputsOutputSpec(TraitedSpec):
@@ -590,7 +592,7 @@ class CheckPetMCInputs(BaseInterface):
         dct = {}
         pet_data = sorted(glob.glob(self.inputs.pet_data+'/*.nii.gz'))
         motion_mats = sorted(glob.glob(
-            self.inputs.motion_mats+'/Frame*_inv.mat'))
+            self.inputs.motion_mats+'/*_inv.mat'))
         if isdefined(self.inputs.corr_factors):
             corr_factors = np.loadtxt(self.inputs.corr_factors).tolist()
         if not pet_data:
@@ -630,6 +632,7 @@ class CheckPetMCInputs(BaseInterface):
         outputs["corr_factors"] = self.dct['corr_factors']
 
         return outputs
+
 
 class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 
@@ -700,7 +703,7 @@ class PetImageMotionCorrection(BaseInterface):
         self.applyxfm(pet_image, ref, 'transformation.mat', outname+'_mc')
         self.applyxfm(pet_image, pet_image, 'transformation_ps.mat',
                       outname+'_mc_ps')
-        corr_types = ['_mc', '_mc_ps', '_no_mc'] 
+        corr_types = ['_mc', '_mc_ps', '_no_mc']
         for tps in corr_types:
             self.apply_temporal_correction(outname, corr_factor, tps)
 

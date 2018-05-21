@@ -80,7 +80,7 @@ if __name__ == "__main__":
             raise
 
     study = MotionDetection(name='MotionDetection',
-                            runner=MultiProcRunner(WORK_PATH, num_processes=5),
+                            runner=MultiProcRunner(WORK_PATH, num_processes=1),
                             archive=archive, inputs=inputs,
                             subject_ids=[sub_id], visit_ids=[session_id])
     study.data('motion_detection_output')

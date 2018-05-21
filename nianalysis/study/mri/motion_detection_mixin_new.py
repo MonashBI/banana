@@ -460,7 +460,7 @@ class MotionDetectionMixin(MultiStudy):
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                   t2s=None, dmris=None, epis=None,
                                   umaps=None, dynamic=False, umap_ref=None,
-                                  pet_data_dir=None):
+                                  pet_data_dir=None, siemens=True):
 
     inputs = []
     dct = {}
@@ -470,7 +470,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
     if pet_data_dir is not None:
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
-                                   pet_data_dir))
+                                   'pet_data_dir'))
 
     if not ref:
         raise Exception('A reference image must be provided!')
@@ -486,10 +486,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
     inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
 
-#     dct['ref_motion_mat_pipeline'] = MultiStudy.translate(
-#         'ref', 'motion_mat_pipeline_factory', ref=True)
-
-    if not umap_ref:
+    if not umap_ref and not siemens:
         logger.info(
             'Umap reference not provided. The matrices that realign the PET'
             ' image in each detected frame to the reference cannot be '
@@ -579,12 +576,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main_scan[0])
                 for i, dmris_main_scan in enumerate(dmris_main))
-#             dct.update(
-#                 {'dwi_{}_basic_preproc_pipeline'.format(i):
-#                  MultiStudy.translate(
-#                      'dwi_{}'.format(i), '_eddy_dwipreproc_pipeline',
-#                      distortion_correction=False)
-#                  for i in range(len(dmris_main))})
         if dmris_main and dmris_opposite:
             study_specs.extend(
                 SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
@@ -607,11 +598,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             inputs.extend(DatasetMatch('b0_{}_primary'.format(i),
                                        dicom_format, dmris_opposite[i][0])
                           for i in range(len(dmris_opposite)))
-#             dct.update(
-#                     {'b0_{}_motion_mat_pipeline'.format(i):
-#                      MultiStudy.translate(
-#                          'b0_{}'.format(i), 'motion_mat_pipeline_factory',
-#                          align_mats=None) for i in range(len(dmris_opposite))})
             if len(dmris_opposite) <= len(dmris_main):
                 inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[i][0])
@@ -625,11 +611,6 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
                 for i in range(min_index*2))
-#             dct.update(
-#                 {'b0_{}_motion_mat_pipeline'.format(i):
-#                  MultiStudy.translate(
-#                      'b0_{}'.format(i), 'motion_mat_pipeline_factory',
-#                      align_mats=None) for i in range(min_index*2)})
             inputs.extend(
                 DatasetMatch('b0_{}_primary'.format(i), dicom_format,
                              scan[0])
