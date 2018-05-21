@@ -46,7 +46,7 @@ class PETStudy(Study):
 
     add_data_specs = [
         DatasetSpec('registered_volumes', nifti_gz_format),
-        DatasetSpec('pet_image', nifti_gz_format),
+        DatasetSpec('pet_image', nifti_gz_format, optional=True),
         DatasetSpec('pet_data_dir', directory_format),
         DatasetSpec('pet_recon_dir', directory_format),
         DatasetSpec('pet2crop', directory_format),
