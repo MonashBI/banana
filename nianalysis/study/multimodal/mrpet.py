@@ -655,9 +655,9 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
         pipeline.connect_input('dynamic_frame2reference_mats', check_pet,
                                'motion_mats')
-        pet_mc = pipeline.create_map_node(
+        pet_mc = pipeline.create_node(
             PetImageMotionCorrection(), name='pet_mc',
-            iterfield=['pet_image', 'motion_mat'], requirements=[fsl509_req])
+            requirements=[fsl509_req])
         pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
         pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
