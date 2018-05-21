@@ -68,8 +68,6 @@ if __name__ == "__main__":
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
         epis=epis)
 
-#     MotionDetection.__module__ = A.__module__
-
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
     archive = LocalArchive(input_dir+'/work_dir')
@@ -82,8 +80,8 @@ if __name__ == "__main__":
             raise
 
     study = MotionDetection(name='MotionDetection',
-                            runner=MultiProcRunner(WORK_PATH), archive=archive,
-                            inputs=inputs, subject_ids=[sub_id],
-                            visit_ids=[session_id])
+                            runner=MultiProcRunner(WORK_PATH, num_processes=5),
+                            archive=archive, inputs=inputs,
+                            subject_ids=[sub_id], visit_ids=[session_id])
     study.data('motion_detection_output')
 print 'Done!'
