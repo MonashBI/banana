@@ -13,6 +13,7 @@ import shutil
 import glob
 import pydicom
 from nipype.interfaces import fsl
+from scripts.calculate_SUVR import pet_im
 
 
 list_mode_framing_path = os.path.abspath(
@@ -449,6 +450,11 @@ class PreparePetDir(BaseInterface):
             if 'New_e7tools' in hd['db_name']:
                 image_orientation_check = True
                 print ('New e7tool version detected.')
+            pet_dicoms = sorted(glob.glob(pet_dir + '/Frame*'))
+            if pet_dicoms and len(pet_images) != len(pet_dicoms):
+                for f in pet_images:
+                    os.remove(f)
+                pet_images = []
         if not pet_images:
             pet_dicoms = sorted(glob.glob(pet_dir + '/Frame*'))
             if pet_dicoms:
