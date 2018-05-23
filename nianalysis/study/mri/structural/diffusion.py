@@ -1,9 +1,10 @@
 from nipype.interfaces.utility import Merge
+from nipype.interfaces.mrtrix3 import ResponseSD
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor
 from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, EstimateFOD, ResponseSD, DWIIntensityNorm, AverageResponse)
+    MRCalc, EstimateFOD, DWIIntensityNorm, AverageResponse)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
