@@ -10,3 +10,4 @@
 *.swp 
 .settings/
 /nianalysis.egg-info/
+/nianalysis/atlases
