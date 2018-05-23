@@ -23,7 +23,7 @@ class EPIStudy(MRIStudy):
     __metaclass__ = StudyMetaClass
 
     add_data_specs = [
-        DatasetSpec('coreg_ref_preproc', nifti_gz_format),
+        DatasetSpec('coreg_ref_preproc', nifti_gz_format, optional=True),
         DatasetSpec('coreg_ref_wmseg', nifti_gz_format, optional=True),
         DatasetSpec('reverse_phase', nifti_gz_format, optional=True),
         DatasetSpec('field_map_mag', nifti_gz_format, optional=True),
