@@ -318,7 +318,7 @@ class MRIStudy(Study):
 
         mni_reg = pipeline.create_node(
             AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI', num_threads=6), name='T1_reg',
+                       out_prefix='T12MNI', num_threads=1), name='T1_reg',
             wall_time=25, requirements=[ants2_req])
         mni_reg.inputs.ref_file = pipeline.option('MNI_template')
         pipeline.connect_input(in_file, mni_reg, 'input_file')
