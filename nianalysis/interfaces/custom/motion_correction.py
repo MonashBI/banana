@@ -1483,6 +1483,7 @@ class FixedBinning(BaseInterface):
                 np.savetxt(
                     'average_motion_mat_bin_{0}.txt'
                     .format(str(z).zfill(3)), mean_mat)
+                z = z+1
         os.mkdir('average_bin_mats')
         files = glob.glob('*bin*.txt')
         for f in files:
