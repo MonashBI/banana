@@ -1,14 +1,4 @@
-import re
-from arcana.requirement import Requirement, date_split
-from arcana.exception import ArcanaRequirementVersionException
-
-
-def matlab_version_split(version_str):
-    match = re.match(r'(?:r|R)?(\d+)(\w)', version_str)
-    if match is None:
-        raise ArcanaRequirementVersionException(
-            "Do not understand Matlab version '{}'".format(version_str))
-    return int(match.group(1)), match.group(2).lower()
+from arcana.requirement import Requirement, matlab_version_split
 
 
 mrtrix0_3_req = Requirement('mrtrix', min_version=(0, 3, 12),
