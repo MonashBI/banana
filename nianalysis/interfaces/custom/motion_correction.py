@@ -1408,7 +1408,7 @@ class FixedBinning(BaseInterface):
                   dt.timedelta(seconds=pet_offset))
         PetBins = [pet_st+dt.timedelta(seconds=x) for x in
                    range(0, pet_len, bin_len)]
-        MrBins = [MR_start_time+dt.timedelta(milliseconds=x)
+        MrBins = [MR_start_time+dt.timedelta(seconds=x)
                   for x in scan_duration]
         MrStartPoints = [MrBins[i]+dt.timedelta(
             seconds=(MrBins[i+1]-MrBins[i]).total_seconds()/2) for i in
