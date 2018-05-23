@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import os.path
 import errno
-from nianalysis.dataset import Dataset
-from mbianalysis.study.mri.structural.t2star import T2StarStudy
-from nianalysis.archive.xnat import XNATArchive
-from nianalysis.data_formats import zip_format
+from arcana.dataset import DatasetMatch
+from nianalysis.study.mri.structural.t2star import T2StarStudy
+from arcana.archive.xnat import XNATArchive
+from nianalysis.data_format import zip_format
 import argparse
 import cPickle as pkl
 
@@ -28,7 +28,7 @@ with open(session_ids_path) as f:
     ids = f.read().split()
 
 PROJECT_ID = 'MRH017'
-datasets = {'coils': Dataset('swi_coils', zip_format)}
+datasets = {DatasetMatch('coils', zip_format, 'swi_coils')}
 visit_ids = visit_ids['MR01']
 
 archive = XNATArchive(cache_dir='/scratch/dq13/xnat_cache3')

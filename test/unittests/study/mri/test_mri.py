@@ -1,17 +1,32 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from nianalysis.dataset import Dataset  # @IgnorePep8
-from nianalysis.data_formats import nifti_gz_format  # @IgnorePep8
-from mbianalysis.study.mri.base import MRIStudy  # @IgnorePep8
-from mbianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from arcana.dataset import DatasetMatch  # @IgnorePep8
+from nianalysis.data_format import nifti_gz_format  # @IgnorePep8
+from nianalysis.study.mri.base import MRIStudy  # @IgnorePep8
+from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from arcana.study import (  # @IgnorePep8
+    MultiStudy, MultiStudyMetaClass, SubStudySpec)
+
+
+class TestCoregStudy(MultiStudy):
+
+    __metaclass__ = MultiStudyMetaClass
+
+    add_sub_study_specs = [
+        SubStudySpec('ref', MRIStudy),
+        SubStudySpec('tocoreg', MRIStudy,
+                     {'ref_brain': 'coreg_ref'})]
 
 
 class TestMRI(TestCase):
 
-    def test_brain_mask(self):
+    def test_coreg_and_brain_mask(self):
         study = self.create_study(
-            MRIStudy, 'mask_study', inputs={
-                'primary': Dataset('flair', nifti_gz_format)})
-        study.brain_mask_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('brain_mask.nii.gz', study.name)
+            TestCoregStudy, 'coreg_and_mask_study', inputs=[
+                DatasetMatch('ref_primary', nifti_gz_format, 'mprage'),
+                DatasetMatch('tocoreg_primary', nifti_gz_format,
+                             'flair')])
+        coreg_brain = study.data('tocoreg_coreg_brain')[0]
+        self.assertDatasetsEqual(coreg_brain,
+                                 self.reference('coreg_brain'))

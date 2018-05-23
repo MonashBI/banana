@@ -7,7 +7,7 @@ import os
 from argparse import ArgumentParser
 import matplotlib.image as img
 import matplotlib.pyplot as plt
-from mbianalysis.study.mri.structural.diffusion import DiffusionStudy
+from nianalysis.study.mri.structural.diffusion import DiffusionStudy
 
 parser = ArgumentParser()
 parser.add_argument('workflow', type=str,

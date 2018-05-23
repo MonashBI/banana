@@ -1,6 +1,6 @@
-from nianalysis.data_formats import dicom_format
-from nianalysis.dataset import Dataset
-from nianalysis.archive.xnat import XNATArchive
+from nianalysis.data_format import dicom_format
+from arcana.dataset import DatasetMatch
+from arcana.archive.xnat import XNATArchive
 
 
 archive = XNATArchive()

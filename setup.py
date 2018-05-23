@@ -2,7 +2,7 @@ import sys
 import os.path
 from setuptools import setup, find_packages
 
-PACKAGE_NAME = 'mbianalysis'
+PACKAGE_NAME = 'nianalysis'
 
 # Get version from module inside package
 sys.path.insert(0, os.path.join(os.path.dirname(__file__),
@@ -17,18 +17,18 @@ setup(
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
     packages=find_packages(),
-    url='https://github.com/mbi-image/nianalysis',
+    url='https://github.com/mbi-image/arcana',
     license='The MIT License (MIT)',
     description=(
         'A data-centric NeuroImaging analysis package based on '
         'NiPype with archive backends for XNAT and local storage'),
     long_description=open('README.rst').read(),
-    install_requires=['nianalysis>=0.1',
+    install_requires=['arcana>=0.1',
                       'xnat>=0.3.4',
                       'nipype>=1.0',
                       'pydicom>=1.0'],
     dependency_links=[
-        'git+https://github.com/mbi-image/nianalysis.git'],
+        'git+https://github.com/mbi-image/arcana.git'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
