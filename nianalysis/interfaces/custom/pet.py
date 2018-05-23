@@ -13,7 +13,6 @@ import shutil
 import glob
 import pydicom
 from nipype.interfaces import fsl
-from scripts.calculate_SUVR import pet_im
 
 
 list_mode_framing_path = os.path.abspath(
