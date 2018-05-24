@@ -26,7 +26,7 @@ from arcana.option import OptionSpec
 import os
 from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
-from nipype.interfaces.fsl.preprocess import FLIRT
+from nipype.interfaces.fsl.preprocess import FLIRT, MCFLIRT
 from arcana.study.base import StudyMetaClass
 import nipype.interfaces.fsl as fsl
 
@@ -629,9 +629,10 @@ class MotionDetectionMixin(MultiStudy):
 
     def dynamic_motion_correction_pipeline(self, **kwargs):
         inputs = [DatasetSpec('pet_data_prepared', directory_format),
-                  DatasetSpec('dynamic_frame2reference_mats',
+                  DatasetSpec('fixed_binning_mats',
                               directory_format),
-                  DatasetSpec('umap_ref_preproc', nifti_gz_format)]
+                  DatasetSpec('ref_brain', nifti_gz_format),
+                  DatasetSpec('mean_displacement_plot', png_format)]
         if 'Struct2Align' in self.input_names:
             inputs.append(DatasetSpec('Struct2Align', nifti_gz_format))
             StructAlignment = True
@@ -653,14 +654,17 @@ class MotionDetectionMixin(MultiStudy):
             CheckPetMCInputs(), requirements=[fsl509_req],
             name='check_pet_data')
         pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
-        pipeline.connect_input('dynamic_frame2reference_mats', check_pet,
+        pipeline.connect_input('fixed_binning_mats', check_pet,
                                'motion_mats')
-        pet_mc = pipeline.create_node(
+        pipeline.connect_input('ref_brain', check_pet,
+                               'reference')
+        pet_mc = pipeline.create_map_node(
             PetImageMotionCorrection(), name='pet_mc',
-            requirements=[fsl509_req])
+            requirements=[fsl509_req], iterfield=['pet_image', 'motion_mat'])
         pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
-        pipeline.connect_input('umap_ref_preproc', pet_mc, 'ute_image')
+        pipeline.connect(check_pet, 'pet2ref_mat', pet_mc, 'pet2ref_mat')
+        pipeline.connect_input('ref_brain', pet_mc, 'ref_image')
         if StructAlignment:
             struct_reg = pipeline.create_node(
                 FLIRT(), requirements=[fsl509_req], name='ute2structural_reg')
@@ -681,14 +685,14 @@ class MotionDetectionMixin(MultiStudy):
                              'ute2structural_qform')
             pipeline.connect_input('Struct2Align', pet_mc,
                                    'structural_image')
-        merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
-                                        requirements=[fsl509_req])
-        pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
-        merge_mc.inputs.dimension = 't'
-        merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
-                                           requirements=[fsl509_req])
-        pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc, 'in_files')
-        merge_no_mc.inputs.dimension = 't'
+#         merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
+#                                         requirements=[fsl509_req])
+#         pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
+#         merge_mc.inputs.dimension = 't'
+#         merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
+#                                            requirements=[fsl509_req])
+#         pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc, 'in_files')
+#         merge_no_mc.inputs.dimension = 't'
         cropping = pipeline.create_map_node(
             PETFovCropping(), name='pet_cropping', iterfield=['pet_image'])
         cropping.inputs.x_min = pipeline.option('crop_xmin')
@@ -697,15 +701,34 @@ class MotionDetectionMixin(MultiStudy):
         cropping.inputs.y_size = pipeline.option('crop_ysize')
         cropping.inputs.z_min = pipeline.option('crop_zmin')
         cropping.inputs.z_size = pipeline.option('crop_zsize')
-        pipeline.connect(pet_mc, 'pet_mc_ps_images', cropping, 'pet_image')
-        merge_mc_ps = pipeline.create_node(fsl.Merge(), name='merge_pet_mc_ps',
+        pipeline.connect(pet_mc, 'pet_mc_images', cropping, 'pet_image')
+        merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
+                                        requirements=[fsl509_req])
+        pipeline.connect(cropping, 'pet_cropped', merge_mc, 'in_files')
+        merge_mc.inputs.dimension = 't'
+        cropping_no_mc = pipeline.create_map_node(
+            PETFovCropping(), name='pet_no_mc_cropping',
+            iterfield=['pet_image'])
+        cropping_no_mc.inputs.x_min = pipeline.option('crop_xmin')
+        cropping_no_mc.inputs.x_size = pipeline.option('crop_xsize')
+        cropping_no_mc.inputs.y_min = pipeline.option('crop_ymin')
+        cropping_no_mc.inputs.y_size = pipeline.option('crop_ysize')
+        cropping_no_mc.inputs.z_min = pipeline.option('crop_zmin')
+        cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
+        pipeline.connect(pet_mc, 'pet_no_mc_images', cropping_no_mc,
+                         'pet_image')
+        merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
                                            requirements=[fsl509_req])
-        pipeline.connect(cropping, 'pet_cropped', merge_mc_ps, 'in_files')
-        merge_mc_ps.inputs.dimension = 't'
+        pipeline.connect(cropping_no_mc, 'pet_cropped', merge_no_mc,
+                         'in_files')
+        merge_mc.inputs.dimension = 't'
+#         mcflirt = pipeline.create_node(MCFLIRT(), name='mcflirt')
+#         pipeline.connect(merge_mc_ps, 'merged_file', mcflirt, 'in_file')
+#         mcflirt.inputs.cost = 'normmi'
         merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
         pipeline.connect(merge_mc, 'merged_file', merge_outputs, 'in1')
-        pipeline.connect(merge_no_mc, 'merged_file', merge_outputs, 'in2')
-        pipeline.connect(merge_mc_ps, 'merged_file', merge_outputs, 'in3')
+        pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in2')
+        pipeline.connect(merge_no_mc, 'merged_file', merge_outputs, 'in3')
 
         copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
         pipeline.connect(merge_outputs, 'out', copy2dir, 'in_files')
