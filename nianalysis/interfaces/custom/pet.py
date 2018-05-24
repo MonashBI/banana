@@ -470,6 +470,9 @@ class PreparePetDir(BaseInterface):
                            .format(dcm, pet_dir, basename,
                                    str(frame_num).zfill(3)))
                     sp.check_output(cmd, shell=True)
+                    cmd = ('fslreorient2std {0}/{1}{2}.nii.gz {0}/{1}{2}'
+                           .format(pet_dir, basename, str(frame_num).zfill(3)))
+                    sp.check_output(cmd, shell=True)
                     if frame_num == '0' and image_orientation_check:
                         im = nib.load('{0}/{1}{2}.nii.gz'.format(
                                 pet_dir, basename, str(frame_num).zfill(3)))
@@ -478,9 +481,6 @@ class PreparePetDir(BaseInterface):
                         nib.save(
                             im, '{0}/{1}{2}.nii.gz'.format(
                                 pet_dir, basename, str(frame_num).zfill(3)))
-                    cmd = ('fslreorient2std {0}/{1}{2}.nii.gz {0}/{1}{2}'
-                           .format(pet_dir, basename, str(frame_num).zfill(3)))
-                    sp.check_output(cmd, shell=True)
                 pet_images = sorted(glob.glob(
                     pet_dir+'/{0}*.nii.gz'.format(basename)))
             else:
