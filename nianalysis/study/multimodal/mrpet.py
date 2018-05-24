@@ -703,7 +703,7 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc,
                          'in_files')
         merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
-        pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in2')
+        pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in1')
         if not StructAlignment:
             cropping = pipeline.create_node(
                 PETFovCropping(), name='pet_cropping')
