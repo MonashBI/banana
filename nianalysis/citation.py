@@ -48,7 +48,7 @@ fsl_cite = Citation(
         "Advances in functional and structural MR image "
         "analysis and implementation as FSL"),
     journal="NeuroImage", year=2004, volume=23,
-    pages=("S208", "S219")),
+    pages=("S208", "S219"))
 
 distort_correct_cite = Citation(
     short_name="skare_distort_correct",
@@ -57,7 +57,7 @@ distort_correct_cite = Citation(
         "Jacobian weighting of distortion corrected EPI data"),
     journal=(
         "Proceedings of the International Society for Magnetic"
-        " Resonance in Medicine"), year=2010, pages=(5063,)),
+        " Resonance in Medicine"), year=2010, pages=(5063,))
 
 topup_cite = Citation(
     short_name="Topup",

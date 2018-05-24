@@ -18,17 +18,13 @@ setup(
     author_email='tom.g.close@gmail.com',
     packages=find_packages(),
     url='https://github.com/mbi-image/arcana',
-    license='The MIT License (MIT)',
+    license='The Apache Software Licence 2.0',
     description=(
         'A data-centric NeuroImaging analysis package based on '
         'NiPype with archive backends for XNAT and local storage'),
     long_description=open('README.rst').read(),
-    install_requires=['arcana>=0.1',
-                      'xnat>=0.3.4',
-                      'nipype>=1.0',
+    install_requires=['arcana>=0.2',
                       'pydicom>=1.0'],
-    dependency_links=[
-        'git+https://github.com/mbi-image/arcana.git'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
