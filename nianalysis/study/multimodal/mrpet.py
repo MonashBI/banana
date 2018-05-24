@@ -14,7 +14,7 @@ from nianalysis.study.mri.structural.t1 import T1Study
 from nianalysis.study.mri.structural.t2 import T2Study
 from nipype.interfaces.utility import Merge
 from nianalysis.study.mri.structural.diffusion_coreg import DWIStudy
-from nianalysis.requirement import fsl509_req
+from nianalysis.requirement import fsl509_req, mrtrix3_req
 from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
@@ -651,7 +651,7 @@ class MotionDetectionMixin(MultiStudy):
             citations=[fsl_cite],
             **kwargs)
         check_pet = pipeline.create_node(
-            CheckPetMCInputs(), requirements=[fsl509_req],
+            CheckPetMCInputs(), requirements=[fsl509_req, mrtrix3_req],
             name='check_pet_data')
         pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
         pipeline.connect_input('fixed_binning_mats', check_pet,
