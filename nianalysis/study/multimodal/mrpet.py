@@ -664,27 +664,27 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
         pipeline.connect(check_pet, 'pet2ref_mat', pet_mc, 'pet2ref_mat')
-        pipeline.connect_input('ref_brain', pet_mc, 'ref_image')
+#         pipeline.connect_input('ref_brain', pet_mc, 'ref_image')
         if StructAlignment:
             struct_reg = pipeline.create_node(
-                FLIRT(), requirements=[fsl509_req], name='ute2structural_reg')
-            pipeline.connect_input('umap_ref_preproc', struct_reg, 'in_file')
+                FLIRT(), requirements=[fsl509_req], name='ref2structural_reg')
+            pipeline.connect_input('ref_brain', struct_reg, 'in_file')
             pipeline.connect_input('Struct2Align', struct_reg, 'reference')
             struct_reg.inputs.dof = 6
             struct_reg.inputs.cost_func = 'normmi'
             struct_reg.inputs.cost = 'normmi'
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
-                             'ute2structural_regmat')
-            struct_qform = pipeline.create_node(
-                FLIRT(), requirements=[fsl509_req], name='ute2structural_qfor')
-            pipeline.connect_input('umap_ref_preproc', struct_qform, 'in_file')
-            pipeline.connect_input('Struct2Align', struct_qform, 'reference')
-            struct_qform.inputs.uses_qform = True
-            struct_qform.inputs.apply_xfm = True
-            pipeline.connect(struct_qform, 'out_matrix_file', pet_mc,
-                             'ute2structural_qform')
-            pipeline.connect_input('Struct2Align', pet_mc,
-                                   'structural_image')
+                             'ref2structural_regmat')
+#             struct_qform = pipeline.create_node(
+#                 FLIRT(), requirements=[fsl509_req], name='ref2structural_qfor')
+#             pipeline.connect_input('ref_brain', struct_qform, 'in_file')
+#             pipeline.connect_input('Struct2Align', struct_qform, 'reference')
+#             struct_qform.inputs.uses_qform = True
+#             struct_qform.inputs.apply_xfm = True
+#             pipeline.connect(struct_qform, 'out_matrix_file', pet_mc,
+#                              'ref2structural_qform')
+#             pipeline.connect_input('Struct2Align', pet_mc,
+#                                    'structural_image')
 #         merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
 #                                         requirements=[fsl509_req])
 #         pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
@@ -693,35 +693,42 @@ class MotionDetectionMixin(MultiStudy):
 #                                            requirements=[fsl509_req])
 #         pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc, 'in_files')
 #         merge_no_mc.inputs.dimension = 't'
-        cropping = pipeline.create_map_node(
-            PETFovCropping(), name='pet_cropping', iterfield=['pet_image'])
-        cropping.inputs.x_min = pipeline.option('crop_xmin')
-        cropping.inputs.x_size = pipeline.option('crop_xsize')
-        cropping.inputs.y_min = pipeline.option('crop_ymin')
-        cropping.inputs.y_size = pipeline.option('crop_ysize')
-        cropping.inputs.z_min = pipeline.option('crop_zmin')
-        cropping.inputs.z_size = pipeline.option('crop_zsize')
-        pipeline.connect(pet_mc, 'pet_mc_images', cropping, 'pet_image')
+        else:
+            cropping = pipeline.create_map_node(
+                PETFovCropping(), name='pet_cropping', iterfield=['pet_image'])
+            cropping.inputs.x_min = pipeline.option('crop_xmin')
+            cropping.inputs.x_size = pipeline.option('crop_xsize')
+            cropping.inputs.y_min = pipeline.option('crop_ymin')
+            cropping.inputs.y_size = pipeline.option('crop_ysize')
+            cropping.inputs.z_min = pipeline.option('crop_zmin')
+            cropping.inputs.z_size = pipeline.option('crop_zsize')
+            pipeline.connect(pet_mc, 'pet_mc_images', cropping, 'pet_image')
+
+            cropping_no_mc = pipeline.create_map_node(
+                PETFovCropping(), name='pet_no_mc_cropping',
+                iterfield=['pet_image'])
+            cropping_no_mc.inputs.x_min = pipeline.option('crop_xmin')
+            cropping_no_mc.inputs.x_size = pipeline.option('crop_xsize')
+            cropping_no_mc.inputs.y_min = pipeline.option('crop_ymin')
+            cropping_no_mc.inputs.y_size = pipeline.option('crop_ysize')
+            cropping_no_mc.inputs.z_min = pipeline.option('crop_zmin')
+            cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
+            pipeline.connect(pet_mc, 'pet_no_mc_images', cropping_no_mc,
+                             'pet_image')
         merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
                                         requirements=[fsl509_req])
-        pipeline.connect(cropping, 'pet_cropped', merge_mc, 'in_files')
         merge_mc.inputs.dimension = 't'
-        cropping_no_mc = pipeline.create_map_node(
-            PETFovCropping(), name='pet_no_mc_cropping',
-            iterfield=['pet_image'])
-        cropping_no_mc.inputs.x_min = pipeline.option('crop_xmin')
-        cropping_no_mc.inputs.x_size = pipeline.option('crop_xsize')
-        cropping_no_mc.inputs.y_min = pipeline.option('crop_ymin')
-        cropping_no_mc.inputs.y_size = pipeline.option('crop_ysize')
-        cropping_no_mc.inputs.z_min = pipeline.option('crop_zmin')
-        cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
-        pipeline.connect(pet_mc, 'pet_no_mc_images', cropping_no_mc,
-                         'pet_image')
         merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
                                            requirements=[fsl509_req])
-        pipeline.connect(cropping_no_mc, 'pet_cropped', merge_no_mc,
-                         'in_files')
-        merge_mc.inputs.dimension = 't'
+        merge_no_mc.inputs.dimension = 't'
+        if StructAlignment:
+            pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
+            pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc,
+                             'in_files')
+        else:
+            pipeline.connect(cropping, 'pet_cropped', merge_mc, 'in_files')
+            pipeline.connect(cropping_no_mc, 'pet_cropped', merge_no_mc,
+                             'in_files')
 #         mcflirt = pipeline.create_node(MCFLIRT(), name='mcflirt')
 #         pipeline.connect(merge_mc_ps, 'merged_file', mcflirt, 'in_file')
 #         mcflirt.inputs.cost = 'normmi'

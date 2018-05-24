@@ -676,10 +676,8 @@ class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
     structural_image = File(desc='If provided, the final PET mc image will be '
                             'aligned to this image.', default=None)
     corr_factor = traits.Float()
-    ref_image = File(exists=True)
     pet2ref_mat = File(exists=True)
-    ute2structural_regmat = File(default=None)
-    ute2structural_qform = File(default=None)
+    ref2structural_regmat = File(default=None)
 
 
 class PetImageMotionCorrectionOutputSpec(TraitedSpec):
@@ -697,9 +695,7 @@ class PetImageMotionCorrection(BaseInterface):
 
         motion_mat = np.loadtxt(self.inputs.motion_mat)
         structural_image = self.inputs.structural_image
-        ute2structural_regmat = self.inputs.ute2structural_regmat
-        ute2structural_qform = self.inputs.ute2structural_qform
-        ref_image = self.inputs.ref_image
+        ref2structural_regmat = self.inputs.ref2structural_regmat
         pet2ref_mat = np.loadtxt(self.inputs.pet2ref_mat)
         pet_image = self.inputs.pet_image
         if isdefined(self.inputs.corr_factor):
@@ -709,8 +705,6 @@ class PetImageMotionCorrection(BaseInterface):
 
         ref2pet_mat = np.linalg.inv(pet2ref_mat)
         motion_mat_inv = np.linalg.inv(motion_mat)
-        transformation_mat = np.dot(ref2pet_mat,
-                                    np.dot(motion_mat_inv, pet2ref_mat))
 #         ute_qform = self.extract_qform(ref_image)
 #         pet_qform = self.extract_qform(pet_image)
 #         fixed_MRPET_transformation = np.dot(ute_qform,
@@ -724,15 +718,15 @@ class PetImageMotionCorrection(BaseInterface):
 #         transformation_mat_petspace = (
 #             np.dot(fixed_MRPET_transformation_inv, transformation_mat))
         if structural_image:
-            transformation_mat = (np.dot(ute2structural_regmat,
-                                         transformation_mat))
-            ref = structural_image
+            transformation_mat = np.dot(ref2structural_regmat,
+                                        np.dot(motion_mat_inv, pet2ref_mat))
             out_basename = 'al2Struct'
-            self.applyxfm(pet_image, ref, ute2structural_qform,
-                          '{0}_{1}_no_mc'.format(basename, out_basename))
+#             self.applyxfm(pet_image, ref, ref2structural_qform,
+#                           '{0}_{1}_no_mc'.format(basename, out_basename))
         else:
-            ref = ref_image
             out_basename = 'al2Ref'
+            transformation_mat = np.dot(ref2pet_mat,
+                                        np.dot(motion_mat_inv, pet2ref_mat))
 #             self.applyxfm(pet_image, ref, self.inputs.pet2ref_mat,
 #                           '{0}_{1}_no_mc'.format(basename, out_basename))
         outname = '{0}_{1}'.format(basename, out_basename)
