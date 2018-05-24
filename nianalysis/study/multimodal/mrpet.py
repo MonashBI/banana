@@ -693,49 +693,46 @@ class MotionDetectionMixin(MultiStudy):
 #                                            requirements=[fsl509_req])
 #         pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc, 'in_files')
 #         merge_no_mc.inputs.dimension = 't'
-        else:
-            cropping = pipeline.create_map_node(
-                PETFovCropping(), name='pet_cropping', iterfield=['pet_image'])
-            cropping.inputs.x_min = pipeline.option('crop_xmin')
-            cropping.inputs.x_size = pipeline.option('crop_xsize')
-            cropping.inputs.y_min = pipeline.option('crop_ymin')
-            cropping.inputs.y_size = pipeline.option('crop_ysize')
-            cropping.inputs.z_min = pipeline.option('crop_zmin')
-            cropping.inputs.z_size = pipeline.option('crop_zsize')
-            pipeline.connect(pet_mc, 'pet_mc_images', cropping, 'pet_image')
-
-            cropping_no_mc = pipeline.create_map_node(
-                PETFovCropping(), name='pet_no_mc_cropping',
-                iterfield=['pet_image'])
-            cropping_no_mc.inputs.x_min = pipeline.option('crop_xmin')
-            cropping_no_mc.inputs.x_size = pipeline.option('crop_xsize')
-            cropping_no_mc.inputs.y_min = pipeline.option('crop_ymin')
-            cropping_no_mc.inputs.y_size = pipeline.option('crop_ysize')
-            cropping_no_mc.inputs.z_min = pipeline.option('crop_zmin')
-            cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
-            pipeline.connect(pet_mc, 'pet_no_mc_images', cropping_no_mc,
-                             'pet_image')
         merge_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_mc',
                                         requirements=[fsl509_req])
         merge_mc.inputs.dimension = 't'
         merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
                                            requirements=[fsl509_req])
         merge_no_mc.inputs.dimension = 't'
-        if StructAlignment:
-            pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
-            pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc,
-                             'in_files')
+        pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
+        pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc,
+                         'in_files')
+        merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
+        pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in2')
+        if not StructAlignment:
+            cropping = pipeline.create_node(
+                PETFovCropping(), name='pet_cropping')
+            cropping.inputs.x_min = pipeline.option('crop_xmin')
+            cropping.inputs.x_size = pipeline.option('crop_xsize')
+            cropping.inputs.y_min = pipeline.option('crop_ymin')
+            cropping.inputs.y_size = pipeline.option('crop_ysize')
+            cropping.inputs.z_min = pipeline.option('crop_zmin')
+            cropping.inputs.z_size = pipeline.option('crop_zsize')
+            pipeline.connect(merge_mc, 'merged_file', cropping, 'pet_image')
+
+            cropping_no_mc = pipeline.create_node(
+                PETFovCropping(), name='pet_no_mc_cropping')
+            cropping_no_mc.inputs.x_min = pipeline.option('crop_xmin')
+            cropping_no_mc.inputs.x_size = pipeline.option('crop_xsize')
+            cropping_no_mc.inputs.y_min = pipeline.option('crop_ymin')
+            cropping_no_mc.inputs.y_size = pipeline.option('crop_ysize')
+            cropping_no_mc.inputs.z_min = pipeline.option('crop_zmin')
+            cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
+            pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
+                             'pet_image')
+            pipeline.connect(cropping, 'pet_cropped', merge_outputs, 'in2')
+            pipeline.connect(cropping_no_mc, 'pet_cropped', merge_outputs, 'in3')
         else:
-            pipeline.connect(cropping, 'pet_cropped', merge_mc, 'in_files')
-            pipeline.connect(cropping_no_mc, 'pet_cropped', merge_no_mc,
-                             'in_files')
+            pipeline.connect(merge_mc, 'merged_file', merge_outputs, 'in2')
+            pipeline.connect(merge_no_mc, 'merged_file', merge_outputs, 'in3')
 #         mcflirt = pipeline.create_node(MCFLIRT(), name='mcflirt')
 #         pipeline.connect(merge_mc_ps, 'merged_file', mcflirt, 'in_file')
 #         mcflirt.inputs.cost = 'normmi'
-        merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
-        pipeline.connect(merge_mc, 'merged_file', merge_outputs, 'in1')
-        pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in2')
-        pipeline.connect(merge_no_mc, 'merged_file', merge_outputs, 'in3')
 
         copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
         pipeline.connect(merge_outputs, 'out', copy2dir, 'in_files')

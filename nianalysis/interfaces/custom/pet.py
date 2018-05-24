@@ -549,7 +549,7 @@ class PETFovCropping(BaseInterface):
             np.sign(pet.affine[:3, -1]))
         pet = pet.get_data()
         pet_cropped = pet[x_min:x_min+x_size, y_min:y_min+y_size,
-                          z_min:z_min+z_size]
+                          z_min:z_min+z_size, :]
 #         cmd = 'fslroi {} ref_roi 100 130 100 130 20 100'.format(im)
 #         sp.check_output(cmd, shell=True)
 #         ref = nib.load(ref)
