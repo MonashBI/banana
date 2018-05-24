@@ -682,8 +682,8 @@ class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
 
 class PetImageMotionCorrectionOutputSpec(TraitedSpec):
 
-    pet_mc_images = traits.List(desc='Motin corrected static PET results.')
-    pet_no_mc_images = traits.List(desc='Motin corrected static PET results.')
+    pet_mc_image = File(desc='Motin corrected static PET results.')
+    pet_no_mc_image = File(desc='Motin corrected static PET results.')
 
 
 class PetImageMotionCorrection(BaseInterface):
@@ -780,11 +780,11 @@ class PetImageMotionCorrection(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
 
-        outputs["pet_mc_images"] = sorted(
-            glob.glob(os.getcwd()+'/*{}_mc_corr.nii.gz'
-                      .format(self.out_basename)))
-        outputs["pet_no_mc_images"] = sorted(glob.glob(
-            os.getcwd()+'/*no_mc_corr.nii.gz'))
+        outputs["pet_mc_image"] = glob.glob(
+            os.getcwd()+'/*{}_mc_corr.nii.gz'
+            .format(self.out_basename))[0]
+        outputs["pet_no_mc_image"] = glob.glob(
+            os.getcwd()+'/*no_mc_corr.nii.gz')[0]
         return outputs
 
 

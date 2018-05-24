@@ -699,8 +699,8 @@ class MotionDetectionMixin(MultiStudy):
         merge_no_mc = pipeline.create_node(fsl.Merge(), name='merge_pet_no_mc',
                                            requirements=[fsl509_req])
         merge_no_mc.inputs.dimension = 't'
-        pipeline.connect(pet_mc, 'pet_mc_images', merge_mc, 'in_files')
-        pipeline.connect(pet_mc, 'pet_no_mc_images', merge_no_mc,
+        pipeline.connect(pet_mc, 'pet_mc_image', merge_mc, 'in_files')
+        pipeline.connect(pet_mc, 'pet_no_mc_image', merge_no_mc,
                          'in_files')
         merge_outputs = pipeline.create_node(Merge(3), name='merge_outputs')
         pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in1')
