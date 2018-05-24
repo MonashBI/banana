@@ -24,7 +24,7 @@ from nianalysis.interfaces.custom.pet import (
     PETFovCropping)
 from arcana.option import OptionSpec
 import os
-from arcana.interfaces.converters import Nii2Dicom
+from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
 from nipype.interfaces.fsl.preprocess import FLIRT
 from arcana.study.base import StudyMetaClass

@@ -8,7 +8,7 @@ from nipype.interfaces.fsl.maths import (
 from nipype.interfaces.spm.preprocess import NewSegment
 from nipype.interfaces.utility.base import Select
 from nianalysis.interfaces.umap_calc import CoreUmapCalc
-from arcana.interfaces.converters import Nii2Dicom
+from nianalysis.interfaces.converters import Nii2Dicom
 from nianalysis.interfaces.mrtrix.utils import MRConvert
 from arcana.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)

@@ -20,7 +20,7 @@ from arcana.dataset import DatasetMatch
 import logging
 import os
 from arcana.option import OptionSpec
-from arcana.interfaces.converters import Nii2Dicom
+from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)
 

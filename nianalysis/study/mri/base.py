@@ -12,20 +12,18 @@ from nianalysis.data_format import (
 from nianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
                                     ants2_req, dcm2niix_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from arcana.utils import get_atlas_path
+from nianalysis.utils import get_atlas_path
 from arcana.exception import (
     ArcanaError, ArcanaUsageError)
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
-from arcana.interfaces.mrtrix import MRConvert
 from nianalysis.interfaces.fsl import FSLSlices
 from nianalysis.data_format import text_matrix_format
 import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.interfaces.converters import Dcm2niix
 from arcana.option import OptionSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)

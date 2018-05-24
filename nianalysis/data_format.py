@@ -4,7 +4,7 @@ from arcana.data_format import DataFormat, Converter
 from arcana.interfaces.mrtrix import MRConvert
 from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
-from arcana.interfaces.converters import Dcm2niix
+from nianalysis.interfaces.converters import Dcm2niix
 from arcana.data_format import (
     text_format, directory_format, zip_format, targz_format)  # @UnusedImport
 
