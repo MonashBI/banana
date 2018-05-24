@@ -4,8 +4,8 @@ import os.path
 import errno
 from arcana.runner import MultiProcRunner
 from arcana.archive.local import LocalArchive
-from mc_pipeline.utils import (guess_scan_type, local_motion_detection,
-                               inputs_generation)
+from nianalysis.motion_correction_utils import (
+    guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import cPickle as pkl
 from arcana.runner.linear import LinearRunner
@@ -117,8 +117,7 @@ if __name__ == "__main__":
                               "motion correction PET image to. Default is None"
                               "."), default=None)
     args = parser.parse_args()
-#     input_dir = '/Volumes/Project/pet/sforazz/test_mc_nianalysis/MRH017_006/MR01/'
-#     input_dir = args.input_dir
+
     mc = RunMotionCorrection(
         args.input_dir, pet_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         bin_len=args.bin_length, pet_offset=args.recon_offset,

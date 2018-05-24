@@ -26,8 +26,7 @@ from arcana.option import OptionSpec
 import os
 from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
-from nipype.interfaces.fsl.preprocess import FLIRT, MCFLIRT
-from arcana.study.base import StudyMetaClass
+from nipype.interfaces.fsl.preprocess import FLIRT
 import nipype.interfaces.fsl as fsl
 
 
@@ -43,24 +42,6 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 template_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../../../nianalysis',
                  'reference_data'))
-
-
-class MotionReferenceT1Study(T1Study):
-
-    __metaclass__ = StudyMetaClass
-
-    def motion_mat_pipeline(self, **kwargs):
-        pipeline = super(T1Study, self).motion_mat_pipeline(ref=True, **kwargs)
-        return pipeline
-
-
-class MotionReferenceT2Study(T2Study):
-
-    __metaclass__ = StudyMetaClass
-
-    def motion_mat_pipeline(self, **kwargs):
-        pipeline = super(T2Study, self).motion_mat_pipeline(ref=True, **kwargs)
-        return pipeline
 
 
 class MotionDetectionMixin(MultiStudy):
@@ -989,3 +970,155 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_option_specs'] = option_specs
     return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
             output_data)
+
+
+def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
+                                  t2s=None, dmris=None, epis=None,
+                                  pet_data_dir=None):
+
+    inputs = []
+    dct = {}
+    data_specs = []
+    run_pipeline = False
+    option_specs = [OptionSpec('ref_preproc_resolution', [1])]
+
+    if pet_data_dir is not None:
+        inputs.append(DatasetMatch('pet_data_dir', directory_format,
+                                   'pet_data_dir'))
+
+    if not ref:
+        raise Exception('A reference image must be provided!')
+    if ref_type == 't1':
+        ref_study = T1Study
+    elif ref_type == 't2':
+        ref_study = T2Study
+    else:
+        raise Exception('{} is not a recognized ref_type!The available '
+                        'ref_types are t1 or t2.'.format(ref_type))
+
+    study_specs = [SubStudySpec('ref', ref_study)]
+    ref_spec = {'ref_brain': 'coreg_ref_brain'}
+    inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
+
+    if t1s:
+        study_specs.extend(
+                [SubStudySpec('t1_{}'.format(i), T1Study,
+                              ref_spec) for i in range(len(t1s))])
+        inputs.extend(
+            DatasetMatch('t1_{}_primary'.format(i), dicom_format, t1_scan)
+            for i, t1_scan in enumerate(t1s))
+        run_pipeline = True
+
+    if t2s:
+        study_specs.extend(
+                [SubStudySpec('t2_{}'.format(i), T2Study,
+                              ref_spec) for i in range(len(t2s))])
+        inputs.extend(DatasetMatch('t2_{}_primary'.format(i), dicom_format,
+                                   t2_scan)
+                      for i, t2_scan in enumerate(t2s))
+        run_pipeline = True
+
+    if epis:
+        epi_refspec = ref_spec.copy()
+        epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
+                            'ref_preproc': 'coreg_ref_preproc'})
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), EPIStudy,
+                                        epi_refspec)
+                           for i in range(len(epis)))
+        inputs.extend(
+            DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
+            for i, epi_scan in enumerate(epis))
+        run_pipeline = True
+    if dmris:
+        unused_dwi = []
+        dmris_main = [x for x in dmris if x[-1] == '0']
+        dmris_ref = [x for x in dmris if x[-1] == '1']
+        dmris_opposite = [x for x in dmris if x[-1] == '-1']
+        b0_refspec = ref_spec.copy()
+        b0_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
+                           'ref_preproc': 'coreg_ref_preproc'})
+        if dmris_main and not dmris_opposite:
+            logger.warning(
+                'No opposite phase encoding direction b0 provided. DWI '
+                'motion correction will be performed without distortion '
+                'correction. THIS IS SUB-OPTIMAL!')
+            study_specs.extend(
+                SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
+                for i in range(len(dmris_main)))
+            inputs.extend(
+                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
+                             dmris_main_scan[0])
+                for i, dmris_main_scan in enumerate(dmris_main))
+        if dmris_main and dmris_opposite:
+            study_specs.extend(
+                SubStudySpec('dwi_{}'.format(i), DWIStudy, ref_spec)
+                for i in range(len(dmris_main)))
+            inputs.extend(
+                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
+                             dmris_main[i][0]) for i in range(len(dmris_main)))
+            if len(dmris_main) <= len(dmris_opposite):
+                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
+                                           dicom_format, dmris_opposite[i][0])
+                              for i in range(len(dmris_main)))
+            else:
+                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
+                                           dicom_format, dmris_opposite[0][0])
+                              for i in range(len(dmris_main)))
+        if dmris_opposite and dmris_main and not dmris_ref:
+            study_specs.extend(
+                SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
+                for i in range(len(dmris_opposite)))
+            inputs.extend(DatasetMatch('b0_{}_primary'.format(i),
+                                       dicom_format, dmris_opposite[i][0])
+                          for i in range(len(dmris_opposite)))
+            if len(dmris_opposite) <= len(dmris_main):
+                inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
+                                           dicom_format, dmris_main[i][0])
+                              for i in range(len(dmris_opposite)))
+            else:
+                inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
+                                           dicom_format, dmris_main[0][0])
+                              for i in range(len(dmris_opposite)))
+        elif dmris_opposite and dmris_ref:
+            min_index = min(len(dmris_opposite), len(dmris_ref))
+            study_specs.extend(
+                SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
+                for i in range(min_index*2))
+            inputs.extend(
+                DatasetMatch('b0_{}_primary'.format(i), dicom_format,
+                             scan[0])
+                for i, scan in enumerate(dmris_opposite[:min_index] +
+                                         dmris_ref[:min_index]))
+            inputs.extend(
+                DatasetMatch('b0_{}_reverse_phase'.format(i), dicom_format,
+                             scan[0])
+                for i, scan in enumerate(dmris_ref[:min_index] +
+                                         dmris_opposite[:min_index]))
+            unused_dwi = [scan for scan in dmris_ref[min_index:] +
+                          dmris_opposite[min_index:]]
+        elif dmris_opposite or dmris_ref:
+            unused_dwi = [scan for scan in dmris_ref + dmris_opposite]
+        if unused_dwi:
+            logger.info(
+                'The following scans:\n{}\nwere not assigned during the DWI '
+                'motion detection initialization (probably a different number '
+                'of main DWI scans and b0 images was provided). They will be '
+                'processed os "other" scans.'
+                .format('\n'.join(s[0] for s in unused_dwi)))
+            study_specs.extend(
+                SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
+                for i in range(len(t2s), len(t2s)+len(unused_dwi)))
+            inputs.extend(
+                DatasetMatch('t2_{}_primary'.format(i), dicom_format, scan[0])
+                for i, scan in enumerate(unused_dwi, start=len(t2s)))
+        run_pipeline = True
+
+    if not run_pipeline:
+        raise Exception('At least one scan, other than the reference, must be '
+                        'provided!')
+
+    dct['add_sub_study_specs'] = study_specs
+    dct['add_data_specs'] = data_specs
+    dct['__metaclass__'] = MultiStudyMetaClass
+    dct['add_option_specs'] = option_specs
+    return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
