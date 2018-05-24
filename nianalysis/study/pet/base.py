@@ -144,7 +144,7 @@ class PETStudy(Study):
             **kwargs)
 
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
-                                        requirements=[mrtrix3_req])
+                                        requirements=[mrtrix3_req, fsl509_req])
         prep_dir.inputs.image_orientation_check = pipeline.option(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
