@@ -19,7 +19,8 @@ class RunMotionCorrection:
 
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
                  pet_offset=0, frames='all', struct2align=None,
-                 pet_recon=None, crop_coordinates=None, mni_reg=False):
+                 pet_recon=None, crop_coordinates=None, mni_reg=False,
+                 crop_size=None):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
@@ -34,6 +35,10 @@ class RunMotionCorrection:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):
                 self.options['crop_{}min'.format(crop_axes[i])] = c
+        if crop_size is not None:
+            crop_axes = ['x', 'y', 'z']
+            for i, c in enumerate(crop_size):
+                self.options['crop_{}size'.format(crop_axes[i])] = c
 
     def create_motion_correction_inputs(self):
 
@@ -125,7 +130,11 @@ if __name__ == "__main__":
     parser.add_argument('--cropping_coordinates', '-cc', type=int, nargs='+',
                         help=("x, y and z coordinates for cropping "
                               "the motion corrected PET image in the PET "
-                              "space."), default=None)
+                              "space. Default is 100 100 20."), default=None)
+    parser.add_argument('--cropping_size', '-cs', type=int, nargs='+',
+                        help=("x, y and z size for the cropping, i.e. the "
+                              "dimension along each of the axes. Default is "
+                              "130 130 100"), default=None)
     parser.add_argument('--mni_reg', action='store_true',
                         help=("If provided, motion correction results will be "
                               "registered to PET template in MNI space. "
@@ -136,7 +145,7 @@ if __name__ == "__main__":
         args.input_dir, pet_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         bin_len=args.bin_length, pet_offset=args.recon_offset,
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
-        struct2align=args.struct2align,
+        struct2align=args.struct2align, crop_size=args.cropping_size,
         crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
