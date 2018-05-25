@@ -723,8 +723,9 @@ class MotionDetectionMixin(MultiStudy):
             pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
                              'pet_image')
             if mni_reg:
-                t_mean = pipeline.create_node(ImageMaths(),
-                                              name='PET_temporal_mean')
+                t_mean = pipeline.create_node(
+                    ImageMaths(), requirements=[fsl509_req],
+                    name='PET_temporal_mean')
                 t_mean.inputs.op_string = '-Tmean'
                 pipeline.connect(cropping, 'pet_cropped', t_mean, 'in_file')
                 reg_tmean2MNI = pipeline.create_node(
