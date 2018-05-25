@@ -18,12 +18,14 @@ from arcana.exception import (
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
+from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.interfaces.fsl import FSLSlices
 from nianalysis.data_format import text_matrix_format
 import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
+from nianalysis.interfaces.converters import Dcm2niix
 from arcana.option import OptionSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
