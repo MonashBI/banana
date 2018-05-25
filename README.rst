@@ -2,25 +2,24 @@ NiAnalysis
 ==========
 
 A collection of Arcana_ "Study" classes that implement various neuroimaging
-analysis workflows. 
+analysis workflows, which can be 
 
 Dependencies
-------------
+-----------------
 
-Python
-~~~~~~
+Core Python
+~~~~~~~~~~~
 
 * arcana
 * pydicom
 
 Both of these are available on PyPI and can be installed with::
 
-    $ pip install -e .
-    
-from the repository root directory.
+    $ pip install -e <path-to-nianalysis-repo>
 
-Pipeline dependencies
-~~~~~~~~~~~~~~~~~~~~~
+
+Pipeline
+~~~~~~~~
 
 Depending on which pipelines you may need to install some or all of the following.
 Note that MRtrix3 and Dcm2niix are used for implicit format conversions so are
