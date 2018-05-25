@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from nianalysis.study.multimodal.mrpet import create_motion_detection_class
 import os.path
 import errno
