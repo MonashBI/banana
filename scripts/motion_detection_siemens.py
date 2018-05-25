@@ -1,19 +1,13 @@
-from nianalysis.study.mri.motion_detection_mixin_new import (
-    create_motion_detection_class)
+#!/usr/bin/env python
+from mc_pipeline.generate_mc_pipeline import create_motion_detection_class
 import os.path
 import errno
-from arcana.runner import MultiProcRunner
 from arcana.archive.local import LocalArchive
-# from nianalysis.archive.xnat import XNATArchive
-from mc_pipeline.utils import (guess_scan_type, local_motion_detection,
-                               inputs_generation)
+from mc_pipeline.utils import (
+    guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import cPickle as pkl
 from arcana.runner.linear import LinearRunner
-
-
-class A(object):
-    pass
 
 
 class create_motion_detection:
@@ -59,7 +53,6 @@ if __name__ == "__main__":
     parser.add_argument('--input_dir', '-i', type=str,
                         help=("Path to an existing directory"))
     args = parser.parse_args()
-#     input_dir = '/Volumes/Project/pet/sforazz/test_mc_nianalysis/MRH017_006/MR01/'
     input_dir = args.input_dir
     md = create_motion_detection(input_dir)
     ref, ref_type, t1s, epis, t2s, dmris = md.create_md()
@@ -80,8 +73,9 @@ if __name__ == "__main__":
             raise
 
     study = MotionDetection(name='MotionDetection',
-                            runner=MultiProcRunner(WORK_PATH, num_processes=1),
+                            runner=LinearRunner(WORK_PATH),
                             archive=archive, inputs=inputs,
                             subject_ids=[sub_id], visit_ids=[session_id])
     study.data('motion_detection_output')
+
 print 'Done!'

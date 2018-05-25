@@ -1,17 +1,12 @@
 from arcana.study.base import Study, StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_format import (nifti_gz_format, text_format,
-                                     text_matrix_format, directory_format)
+                                    text_matrix_format, directory_format)
 from nianalysis.interfaces.sklearn import FastICA
 from nianalysis.interfaces.ants import AntsRegSyn
 import os
-from abc import abstractmethod
-from nianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
-                                     fsl509_req, fsl510_req, mrtrix3_req)
-from nianalysis.citation import fsl_cite
-from nianalysis.interfaces.custom.pet import PETFovCropping, PreparePetDir
-from arcana.interfaces.utils import ListDir, CopyToDir  # SelectOne, 
-from nipype.interfaces.fsl import Merge, ExtractROI
+from nianalysis.requirement import fsl509_req, mrtrix3_req
+from nianalysis.interfaces.custom.pet import PreparePetDir
 from nianalysis.interfaces.custom.dicom import PetTimeInfo
 from arcana.option import OptionSpec
 
@@ -22,10 +17,6 @@ template_path = os.path.abspath(
 
 
 class PETStudy(Study):
-
-#     @abstractmethod
-#     def _ica_inputs(self):
-#         pass
 
     __metaclass__ = StudyMetaClass
 
@@ -49,11 +40,8 @@ class PETStudy(Study):
         DatasetSpec('pet_image', nifti_gz_format, optional=True),
         DatasetSpec('pet_data_dir', directory_format),
         DatasetSpec('pet_recon_dir', directory_format),
-#         DatasetSpec('pet2crop', directory_format),
         DatasetSpec('pet_recon_dir_prepared', directory_format,
                     'pet_data_preparation_pipeline'),
-#         DatasetSpec('pet_data_cropped', directory_format,
-#                     'pet_fov_cropping_pipeline'),
         DatasetSpec('decomposed_file', nifti_gz_format, 'ICA_pipeline'),
         DatasetSpec('timeseries', nifti_gz_format, 'ICA_pipeline'),
         DatasetSpec('mixing_mat', text_format, 'ICA_pipeline'),
@@ -86,7 +74,7 @@ class PETStudy(Study):
                      DatasetSpec('timeseries', nifti_gz_format),
                      DatasetSpec('mixing_mat', text_format)],
             desc=('Decompose a 4D dataset into a set of independent '
-                         'components using FastICA'),
+                  'components using FastICA'),
             version=1,
             citations=[],
             **kwargs)
@@ -137,14 +125,14 @@ class PETStudy(Study):
             inputs=[DatasetSpec('pet_recon_dir', directory_format)],
             outputs=[DatasetSpec('pet_recon_dir_prepared', directory_format)],
             desc=("Given a folder with reconstructed PET data, this "
-                         "pipeline will prepare the data for the motion "
-                         "correction"),
+                  "pipeline will prepare the data for the motion "
+                  "correction"),
             version=1,
             citations=[],
             **kwargs)
 
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
-                                        requirements=[mrtrix3_req])
+                                        requirements=[mrtrix3_req, fsl509_req])
         prep_dir.inputs.image_orientation_check = pipeline.option(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
@@ -170,48 +158,3 @@ class PETStudy(Study):
         pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')
         pipeline.connect_output('pet_duration', time_info, 'pet_duration')
         return pipeline
-
-#     def pet_fov_cropping_pipeline(self, **kwargs):
-#         return self.pet_fov_cropping_pipeline_factory('pet2crop', **kwargs)
-# 
-#     def pet_fov_cropping_pipeline_factory(self, dir2crop_name, **kwargs):
-# 
-#         pipeline = self.create_pipeline(
-#             name='pet_fov_cropping',
-#             inputs=[DatasetSpec(dir2crop_name, directory_format)],
-#             outputs=[DatasetSpec('pet_data_cropped', directory_format)],
-#             desc=("Given a folder with reconstructed PET data, this "
-#                          "pipeline will crop the PET field of view."),
-#             version=1,
-#             citations=[],
-#             **kwargs)
-# 
-#         list_dir = pipeline.create_node(ListDir(), name='list_pet_dir')
-#         pipeline.connect_input('pet_recon_dir_prepared', list_dir, 'directory')
-# #         select = pipeline.create_node(SelectOne(), name='select_ref')
-# #         pipeline.connect(list_dir, 'files', select, 'inlist')
-# #         select.inputs.index = 0
-# #         crop_ref = pipeline.create_node(ExtractROI(), name='crop_ref',
-# #                                         requirements=[fsl509_req])
-# #         pipeline.connect(select, 'out', crop_ref, 'in_file')
-# #         crop_ref.inputs.x_min = pipeline.option('xmin')
-# #         crop_ref.inputs.x_size = pipeline.option('xsize')
-# #         crop_ref.inputs.y_min = pipeline.option('ymin')
-# #         crop_ref.inputs.y_size = pipeline.option('ysize')
-# #         crop_ref.inputs.z_min = pipeline.option('zmin')
-# #         crop_ref.inputs.z_size = pipeline.option('zsize')
-#         cropping = pipeline.create_map_node(PETFovCropping(), name='cropping',
-#                                             iterfield=['pet_image'])
-#         cropping.inputs.x_min = pipeline.option('crop_xmin')
-#         cropping.inputs.x_size = pipeline.option('crop_xsize')
-#         cropping.inputs.y_min = pipeline.option('crop_ymin')
-#         cropping.inputs.y_size = pipeline.option('crop_ysize')
-#         cropping.inputs.z_min = pipeline.option('crop_zmin')
-#         cropping.inputs.z_size = pipeline.option('crop_zsize')
-# #         pipeline.connect(crop_ref, 'roi_file', cropping, 'ref_pet')
-#         pipeline.connect(list_dir, 'files', cropping, 'pet_image')
-#         cp2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
-#         pipeline.connect(cropping, 'pet_cropped', cp2dir, 'in_files')
-# 
-#         pipeline.connect_output('pet_data_cropped', cp2dir, 'out_dir')
-#         return pipeline

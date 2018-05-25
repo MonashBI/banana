@@ -1,10 +1,12 @@
-from nianalysis.study.multimodal.mrpet import create_motion_correction_class
+#!/usr/bin/env python
+# from nianalysis.study.multimodal.mrpet import create_motion_correction_class
+from mc_pipeline.generate_mc_pipeline import create_motion_correction_class
 import os.path
 import errno
 from arcana.runner import MultiProcRunner
 from arcana.archive.local import LocalArchive
-from mc_pipeline.utils import (guess_scan_type, local_motion_detection,
-                               inputs_generation)
+from mc_pipeline.utils import (
+    guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import cPickle as pkl
 from arcana.runner.linear import LinearRunner
@@ -17,7 +19,8 @@ class RunMotionCorrection:
 
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
                  pet_offset=0, frames='all', struct2align=None,
-                 pet_recon=None):
+                 pet_recon=None, crop_coordinates=None, mni_reg=False,
+                 crop_size=None):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
@@ -26,7 +29,16 @@ class RunMotionCorrection:
         self.pet_recon = pet_recon
         self.options = {'fixed_binning_n_frames': frames,
                         'fixed_binning_pet_offset': pet_offset,
-                        'fixed_binning_bin_len': bin_len}
+                        'fixed_binning_bin_len': bin_len,
+                        'PET2MNI_reg': mni_reg}
+        if crop_coordinates is not None:
+            crop_axes = ['x', 'y', 'z']
+            for i, c in enumerate(crop_coordinates):
+                self.options['crop_{}min'.format(crop_axes[i])] = c
+        if crop_size is not None:
+            crop_axes = ['x', 'y', 'z']
+            for i, c in enumerate(crop_size):
+                self.options['crop_{}size'.format(crop_axes[i])] = c
 
     def create_motion_correction_inputs(self):
 
@@ -115,14 +127,26 @@ if __name__ == "__main__":
                         help=("Existing nifti file to register the final "
                               "motion correction PET image to. Default is None"
                               "."), default=None)
+    parser.add_argument('--cropping_coordinates', '-cc', type=int, nargs='+',
+                        help=("x, y and z coordinates for cropping "
+                              "the motion corrected PET image in the PET "
+                              "space. Default is 100 100 20."), default=None)
+    parser.add_argument('--cropping_size', '-cs', type=int, nargs='+',
+                        help=("x, y and z size for the cropping, i.e. the "
+                              "dimension along each of the axes. Default is "
+                              "130 130 100"), default=None)
+    parser.add_argument('--mni_reg', action='store_true',
+                        help=("If provided, motion correction results will be "
+                              "registered to PET template in MNI space. "
+                              "Default is False."), default=False)
     args = parser.parse_args()
-#     input_dir = '/Volumes/Project/pet/sforazz/test_mc_nianalysis/MRH017_006/MR01/'
-#     input_dir = args.input_dir
+
     mc = RunMotionCorrection(
         args.input_dir, pet_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         bin_len=args.bin_length, pet_offset=args.recon_offset,
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
-        struct2align=args.struct2align)
+        struct2align=args.struct2align, crop_size=args.cropping_size,
+        crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 

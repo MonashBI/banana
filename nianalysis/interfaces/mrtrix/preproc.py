@@ -94,7 +94,7 @@ class DWIPreproc(MRTrix3Base):
 
     def _gen_tempdir(self):
         if isdefined(self.inputs.temp_dir):
-            temp_dir = self.inputs.out_file
+            temp_dir = self.inputs.temp_dir
         else:
             base, _ = split_extension(
                 os.path.basename(self.inputs.in_file))

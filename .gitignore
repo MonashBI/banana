@@ -10,3 +10,5 @@
 *.swp 
 .settings/
 /nianalysis.egg-info/
+/nianalysis/atlases
+/nianalysis/templates
