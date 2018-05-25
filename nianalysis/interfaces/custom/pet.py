@@ -545,11 +545,15 @@ class PETFovCropping(BaseInterface):
         pet = nib.load(pet_image)
         new_affine = np.copy(pet.affine)
         new_affine[:3, -1] = (pet.affine[:3, -1]-np.multiply(
-            pet.header.get_zooms(), (x_min, y_min, z_min)) *
+            pet.header.get_zooms()[:3], (x_min, y_min, z_min)) *
             np.sign(pet.affine[:3, -1]))
         pet = pet.get_data()
-        pet_cropped = pet[x_min:x_min+x_size, y_min:y_min+y_size,
-                          z_min:z_min+z_size, :]
+        if len(pet.shape) == 3:
+            pet_cropped = pet[x_min:x_min+x_size, y_min:y_min+y_size,
+                              z_min:z_min+z_size]
+        elif len(pet.shape) == 4:
+            pet_cropped = pet[x_min:x_min+x_size, y_min:y_min+y_size,
+                              z_min:z_min+z_size, :]
 #         cmd = 'fslroi {} ref_roi 100 130 100 130 20 100'.format(im)
 #         sp.check_output(cmd, shell=True)
 #         ref = nib.load(ref)

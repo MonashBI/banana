@@ -18,7 +18,7 @@ class RunMotionCorrection:
 
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
                  pet_offset=0, frames='all', struct2align=None,
-                 pet_recon=None):
+                 pet_recon=None, crop_coordinates=None, mni_reg=False):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
@@ -27,7 +27,12 @@ class RunMotionCorrection:
         self.pet_recon = pet_recon
         self.options = {'fixed_binning_n_frames': frames,
                         'fixed_binning_pet_offset': pet_offset,
-                        'fixed_binning_bin_len': bin_len}
+                        'fixed_binning_bin_len': bin_len,
+                        'PET2MNI_reg': mni_reg}
+        if crop_coordinates is not None:
+            crop_axes = ['x', 'y', 'z']
+            for i, c in enumerate(crop_coordinates):
+                self.options['crop_{}min'.format(crop_axes[i])] = c
 
     def create_motion_correction_inputs(self):
 
@@ -116,13 +121,22 @@ if __name__ == "__main__":
                         help=("Existing nifti file to register the final "
                               "motion correction PET image to. Default is None"
                               "."), default=None)
+    parser.add_argument('--cropping_coordinates', '-cc', type=int, nargs='+',
+                        help=("x, y and z coordinates for cropping "
+                              "the motion corrected PET image in the PET "
+                              "space."), default=None)
+    parser.add_argument('--mni_reg', action='store_true',
+                        help=("If provided, motion correction results will be "
+                              "registered to PET template in MNI space. "
+                              "Default is False."), default=False)
     args = parser.parse_args()
 
     mc = RunMotionCorrection(
         args.input_dir, pet_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         bin_len=args.bin_length, pet_offset=args.recon_offset,
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
-        struct2align=args.struct2align)
+        struct2align=args.struct2align,
+        crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 

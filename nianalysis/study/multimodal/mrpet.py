@@ -14,7 +14,7 @@ from nianalysis.study.mri.structural.t1 import T1Study
 from nianalysis.study.mri.structural.t2 import T2Study
 from nipype.interfaces.utility import Merge
 from nianalysis.study.mri.structural.diffusion_coreg import DWIStudy
-from nianalysis.requirement import fsl509_req, mrtrix3_req
+from nianalysis.requirement import fsl509_req, mrtrix3_req, ants2_req
 from arcana.exception import ArcanaNameError
 from arcana.dataset import DatasetMatch
 import logging
@@ -28,6 +28,9 @@ from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
 from nipype.interfaces.fsl.preprocess import FLIRT
 import nipype.interfaces.fsl as fsl
+from nipype.interfaces.fsl.utils import ImageMaths
+from nianalysis.interfaces.ants import AntsRegSyn
+from nipype.interfaces.ants.resampling import ApplyTransforms
 
 
 logger = logging.getLogger('Arcana')
@@ -39,9 +42,13 @@ logger.addHandler(handler)
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
-template_path = os.path.abspath(
+reference_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../../../nianalysis',
                  'reference_data'))
+
+template_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '../../../nianalysis',
+                 'templates'))
 
 
 class MotionDetectionMixin(MultiStudy):
@@ -124,7 +131,9 @@ class MotionDetectionMixin(MultiStudy):
                         OptionSpec('align_pct', False),
                         OptionSpec('align_fixed_binning', False),
                         OptionSpec('moco_template', os.path.join(
-                            template_path, 'moco_template.IMA')),
+                            reference_path, 'moco_template.IMA')),
+                        OptionSpec('PET_template_MNI', os.path.join(
+                            template_path, 'PET_template_MNI.nii.gz')),
                         OptionSpec('fixed_binning_n_frames', 0),
                         OptionSpec('fixed_binning_pet_offset', 0),
                         OptionSpec('fixed_binning_bin_len', 60),
@@ -133,7 +142,8 @@ class MotionDetectionMixin(MultiStudy):
                         OptionSpec('crop_ymin', 100),
                         OptionSpec('crop_ysize', 130),
                         OptionSpec('crop_zmin', 20),
-                        OptionSpec('crop_zsize', 100)]
+                        OptionSpec('crop_zsize', 100),
+                        OptionSpec('PET2MNI_reg', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
@@ -646,6 +656,12 @@ class MotionDetectionMixin(MultiStudy):
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
         pipeline.connect(check_pet, 'pet2ref_mat', pet_mc, 'pet2ref_mat')
 #         pipeline.connect_input('ref_brain', pet_mc, 'ref_image')
+        if pipeline.option('PET2MNI_reg'):
+            StructAlignment = False
+            mni_reg = True
+        else:
+            mni_reg = False
+
         if StructAlignment:
             struct_reg = pipeline.create_node(
                 FLIRT(), requirements=[fsl509_req], name='ref2structural_reg')
@@ -706,8 +722,41 @@ class MotionDetectionMixin(MultiStudy):
             cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
             pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
                              'pet_image')
-            pipeline.connect(cropping, 'pet_cropped', merge_outputs, 'in2')
-            pipeline.connect(cropping_no_mc, 'pet_cropped', merge_outputs, 'in3')
+            if mni_reg:
+                t_mean = pipeline.create_node(ImageMaths(),
+                                              name='PET_temporal_mean')
+                t_mean.inputs.op_string = '-Tmean'
+                pipeline.connect(cropping, 'pet_cropped', t_mean, 'in_file')
+                reg_tmean2MNI = pipeline.create_node(
+                    AntsRegSyn(num_dimensions=3, transformation='s',
+                               out_prefix='reg_tmean2MNI', num_threads=4),
+                    name='reg_tmean2MNI', wall_time=25,
+                    requirements=[ants2_req])
+                reg_tmean2MNI.inputs.ref_file = pipeline.option(
+                    'PET_template_MNI')
+                pipeline.connect(t_mean, 'out_file', reg_tmean2MNI,
+                                 'input_file')
+                merge_trans = pipeline.create_node(
+                    Merge(2), name='merge_transforms', wall_time=1)
+                pipeline.connect(reg_tmean2MNI, 'warp_file', merge_trans,
+                                 'in1')
+                pipeline.connect(reg_tmean2MNI, 'regmat', merge_trans, 'in2')
+                apply_trans = pipeline.create_node(
+                    ApplyTransforms(), name='apply_trans', wall_time=7,
+                    memory=24000, requirements=[ants2_req])
+                apply_trans.inputs.reference_image = pipeline.option(
+                    'PET_template_MNI')
+                apply_trans.inputs.interpolation = 'Linear'
+                apply_trans.inputs.input_image_type = 3
+                pipeline.connect(cropping, 'pet_cropped', apply_trans,
+                                 'input_image')
+                pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+                pipeline.connect(apply_trans, 'output_image', merge_outputs,
+                                 'in2')
+            else:
+                pipeline.connect(cropping, 'pet_cropped', merge_outputs, 'in2')
+            pipeline.connect(cropping_no_mc, 'pet_cropped', merge_outputs,
+                             'in3')
         else:
             pipeline.connect(merge_mc, 'merged_file', merge_outputs, 'in2')
             pipeline.connect(merge_no_mc, 'merged_file', merge_outputs, 'in3')
