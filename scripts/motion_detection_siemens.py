@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-from nianalysis.study.multimodal.mrpet import create_motion_detection_class
+from mc_pipeline.generate_mc_pipeline import create_motion_detection_class
 import os.path
 import errno
 from arcana.archive.local import LocalArchive
-from nianalysis.motion_correction_utils import (
+from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import cPickle as pkl
