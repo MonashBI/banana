@@ -2,7 +2,8 @@ NiAnalysis
 ==========
 
 A collection of Arcana_ "Study" classes that implement various neuroimaging
-analysis workflows, which can be 
+analysis workflows, which can be used to process datasets in XNAT or local
+(i.e. directory) repositories.
 
 Dependencies
 -----------------
