@@ -12,3 +12,4 @@
 /nianalysis.egg-info/
 /nianalysis/atlases
 /nianalysis/templates
+/.gitlab-ci.yml
