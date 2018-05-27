@@ -65,15 +65,15 @@ class DicomHeaderInfoExtraction(BaseInterface):
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
                     tr = float(line.split('=')[-1].strip())/1000000
-#                 elif 'SliceArray.asSlice[0].dInPlaneRot' in line:
-#                     if len(line.split('=')) > 1:
-#                         phase_offset = float(line.split('=')[-1].strip())
-#                         if (np.abs(phase_offset) > 1 and
-#                                 np.abs(phase_offset) < 3):
-#                             ped = 'ROW'
-#                         elif (np.abs(phase_offset) < 1 or
-#                                 np.abs(phase_offset) > 3):
-#                             ped = 'COL'
+                elif 'SliceArray.asSlice[0].dInPlaneRot' in line:
+                    if len(line.split('=')) > 1:
+                        phase_offset = float(line.split('=')[-1].strip())
+                        if (np.abs(phase_offset) > 1 and
+                                np.abs(phase_offset) < 3):
+                            ped = 'ROW'
+                        elif (np.abs(phase_offset) < 1 or
+                                np.abs(phase_offset) > 3):
+                            ped = 'COL'
                 elif 'lDiffDirections' in line:
                     dwi_directions = float(line.split('=')[-1].strip())
         if multivol:
@@ -82,11 +82,12 @@ class DicomHeaderInfoExtraction(BaseInterface):
             else:
                 n_vols = len(list_dicom)
             real_duration = n_vols*tr
-        try:
-            phase_offset, ped = self.get_phase_encoding_direction(
-                list_dicom[0])
-        except:
-            pass  # image does not have phase encoding direction info in the header
+        if not phase_offset or not ped:
+            try:
+                phase_offset, ped = self.get_phase_encoding_direction(
+                    list_dicom[0])
+            except:
+                pass  # image does not have phase encoding direction info in the header
         hd = pydicom.read_file(list_dicom[0])
         try:
             start_time = str(hd.AcquisitionTime)
