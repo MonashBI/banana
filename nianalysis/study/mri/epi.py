@@ -233,7 +233,7 @@ class EPIStudy(MRIStudy):
 
         inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
                   DatasetSpec('qform_mat', text_matrix_format)]
-        if not 'reverse_phase' in self.input_names():
+        if not 'reverse_phase' in self.input_names:
             inputs.append(DatasetSpec('align_mats', directory_format))
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -248,7 +248,7 @@ class EPIStudy(MRIStudy):
             MotionMatCalculation(), name='motion_mats')
         pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
         pipeline.connect_input('qform_mat', mm, 'qform_mat')
-        if not 'reverse_phase' in self.input_names():
+        if not 'reverse_phase' in self.input_names:
             pipeline.connect_input('align_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline
