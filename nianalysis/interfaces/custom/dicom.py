@@ -7,7 +7,6 @@ import numpy as np
 import glob
 import pydicom
 from nipype.utils.filemanip import split_filename
-import os
 import datetime as dt
 import os.path
 import nibabel as nib
@@ -57,6 +56,12 @@ class DicomHeaderInfoExtraction(BaseInterface):
         self.dict_output = {}
         dwi_directions = None
 
+        try:
+            phase_offset, ped = self.get_phase_encoding_direction(
+                list_dicom[0])
+        except KeyError:
+            pass  # image does not have ped info in the header
+
         with open(list_dicom[0], 'r') as f:
             for line in f:
                 if 'TotalScan' in line:
@@ -65,15 +70,16 @@ class DicomHeaderInfoExtraction(BaseInterface):
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
                     tr = float(line.split('=')[-1].strip())/1000000
-                elif 'SliceArray.asSlice[0].dInPlaneRot' in line:
-                    if len(line.split('=')) > 1:
-                        phase_offset = float(line.split('=')[-1].strip())
-                        if (np.abs(phase_offset) > 1 and
-                                np.abs(phase_offset) < 3):
-                            ped = 'ROW'
-                        elif (np.abs(phase_offset) < 1 or
-                                np.abs(phase_offset) > 3):
-                            ped = 'COL'
+#                 elif ('SliceArray.asSlice[0].dInPlaneRot' in line and
+#                         (not phase_offset or not ped)):
+#                     if len(line.split('=')) > 1:
+#                         phase_offset = float(line.split('=')[-1].strip())
+#                         if (np.abs(phase_offset) > 1 and
+#                                 np.abs(phase_offset) < 3):
+#                             ped = 'ROW'
+#                         elif (np.abs(phase_offset) < 1 or
+#                                 np.abs(phase_offset) > 3):
+#                             ped = 'COL'
                 elif 'lDiffDirections' in line:
                     dwi_directions = float(line.split('=')[-1].strip())
         if multivol:
@@ -82,12 +88,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
             else:
                 n_vols = len(list_dicom)
             real_duration = n_vols*tr
-        if not phase_offset or not ped:
-            try:
-                phase_offset, ped = self.get_phase_encoding_direction(
-                    list_dicom[0])
-            except:
-                pass  # image does not have phase encoding direction info in the header
+
         hd = pydicom.read_file(list_dicom[0])
         try:
             start_time = str(hd.AcquisitionTime)
@@ -171,9 +172,6 @@ class ScanTimesInfo(BaseInterface):
                 f.close()
             start_times.append((dcm_info[0], dcm_info[1].split()[-1],
                                 dcm_info[4].split()[-1]))
-#         start_times = [(x.keys()[0], x[x.keys()[0]]['start_time'],
-#                         x[x.keys()[0]]['real_duration']) for x in
-#                        self.inputs.dicom_infos]
         start_times = sorted(start_times, key=lambda k: k[1])
         time_info = {}
         for i in range(1, len(start_times)):
@@ -227,7 +225,6 @@ class PetTimeInfo(BaseInterface):
             bf_files = [f for f in files if not f[0] == '.' and '.bf' in f]
             dirs[:] = [d for d in dirs if not d[0] == '.']
 
-    #         bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
         if not bf_files:
             pet_start_time = None
             pet_endtime = None
@@ -305,12 +302,6 @@ class Nii2Dicom(BaseInterface):
         if to_remove:
             for f in to_remove:
                 dcms.remove(f)
-#         dcms = glob.glob(self.inputs.reference_dicom+'/*.dcm')
-#         if not dcms:
-#             dcms = glob.glob(self.inputs.reference_dicom+'/*.IMA')
-#         if not dcms:
-#             raise Exception('No DICOM files found in {}'
-#                             .format(self.inputs.reference_dicom))
         nifti_image = nib.load(self.inputs.in_file)
         nii_data = nifti_image.get_data()
         if len(dcms) != nii_data.shape[2]:

@@ -2,9 +2,9 @@ from ..base import MRIStudy
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_format import (
     nifti_gz_format, directory_format, dicom_format, eddy_par_format)
-from nipype.interfaces.fsl import ExtractROI, TOPUP, ApplyTOPUP
+from nipype.interfaces.fsl import ExtractROI
 from nianalysis.interfaces.custom.motion_correction import (
-    PrepareDWI, CheckDwiNames, GenTopupConfigFiles)
+    PrepareDWI, CheckDwiNames)
 from nianalysis.citation import fsl_cite
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
@@ -13,7 +13,7 @@ from nipype.interfaces.utility import Merge as merge_lists
 from nianalysis.interfaces.mrtrix.preproc import DWIPreproc
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nianalysis.requirement import fsl509_req, mrtrix3_req, fsl510_req
-from arcana.interfaces.mrtrix import MRConvert
+from nianalysis.interfaces.mrtrix import MRConvert
 from arcana.option import OptionSpec
 from nipype.interfaces import fsl
 
@@ -140,7 +140,3 @@ class DWIStudy(MRIStudy):
         pipeline.connect_output(
             'align_mats', aff_mat, 'affine_matrices')
         return pipeline
-
-#     def motion_mat_pipeline(self, **kwargs):
-#         return (super(DWIStudy, self).motion_mat_pipeline_factory(
-#             align_mats='affine_mats', **kwargs))
