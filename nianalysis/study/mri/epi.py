@@ -3,14 +3,15 @@ from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
-                                    directory_format, par_format)
+from nianalysis.data_format import (
+    nifti_gz_format, text_matrix_format, directory_format,
+    par_format, motion_mats_format) 
 from nianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
-    MergeListMotionMat)
+    MergeListMotionMat, MotionMatCalculation)
 from arcana.option import OptionSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
@@ -226,4 +227,28 @@ class EPIStudy(MRIStudy):
                          'fmap_in_file')
         pipeline.connect(reorient_epi_in, 'out_file', fugue, 'in_file')
         pipeline.connect_output('preproc', fugue, 'unwarped_file')
+        return pipeline
+
+    def motion_mat_pipeline(self, **kwargs):
+
+        inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
+                  DatasetSpec('qform_mat', text_matrix_format)]
+        if not 'reverse_phase' in self.input_names():
+            inputs.append(DatasetSpec('align_mats', directory_format))
+        pipeline = self.create_pipeline(
+            name='motion_mat_calculation',
+            inputs=inputs,
+            outputs=[DatasetSpec('motion_mats', motion_mats_format)],
+            desc=("Motion matrices calculation"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        mm = pipeline.create_node(
+            MotionMatCalculation(), name='motion_mats')
+        pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
+        pipeline.connect_input('qform_mat', mm, 'qform_mat')
+        if not 'reverse_phase' in self.input_names():
+            pipeline.connect_input('align_mats', mm, 'align_mats')
+        pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline
