@@ -38,7 +38,6 @@ class create_motion_detection:
                     scans, input_dir, siemens=True)
                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
             else:
-                print list_inputs
                 ref, ref_type, t1s, epis, t2s, dmris = list_inputs
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)

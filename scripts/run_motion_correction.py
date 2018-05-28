@@ -107,18 +107,19 @@ if __name__ == "__main__":
                         help=("If dynamic motion correction, the temporal "
                               "length of each bin has to be provided (in sec)."
                               " Here we assume that each bin has the same "
-                              "temporal duration. Default is 60 seconds."))
+                              "temporal duration. Default is 60 seconds."),
+                        default=60)
     parser.add_argument('--recon_offset', '-po', type=int,
                         help=("If dynamic motion correction, this is the time "
                               "difference, in seconds, between the PET start "
                               "time and the start time of the first "
-                              "reconstructed bin. Default is 0."))
+                              "reconstructed bin. Default is 0."), default=0)
     parser.add_argument('--frames', '-f', type=int,
                         help=("If dynamic motion correction, this is the "
                               "number of reconstructed frames that have to be"
                               "corrected for motion. Default is equal to the "
                               "total PET acquisition length divided by the bin"
-                              " temporal length."))
+                              " temporal length."), default=0)
     parser.add_argument('--dynamic', '-d', action='store_true',
                         help=("If provided, dynamic motion correction will be "
                               "performed. Otherwise static. Default is static."
