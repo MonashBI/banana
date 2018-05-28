@@ -476,11 +476,11 @@ class MeanDisplacementCalculation(BaseInterface):
         volume_names = []
         corrupted_volume_names = [
             'No volume showed rotation greater than 8 degrees and/or '
-            'translation greater than 20mm respect to the reference. However, '
-            'have a look at the mean displacement plot to see whether there'
-            ' are scans with very different mean displacement with respect'
-            'to the others. In that case please check the registration of that'
-            'particular scan.']
+            'translation greater than 20mm respect to the reference.\nHowever,'
+            ' have a look at the mean displacement plot to see whether there'
+            ' are scans with very different mean displacement with respect '
+            'to the others.\nIn that case please check the registration of '
+            'that particular scan.']
         for f in list_inputs:
             mats = sorted(glob.glob(f[0]+'/*inv.mat'))
             mats4averge = sorted(glob.glob(f[0]+'/*mat.mat'))
