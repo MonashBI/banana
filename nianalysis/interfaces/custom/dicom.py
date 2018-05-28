@@ -70,16 +70,20 @@ class DicomHeaderInfoExtraction(BaseInterface):
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
                     tr = float(line.split('=')[-1].strip())/1000000
-#                 elif ('SliceArray.asSlice[0].dInPlaneRot' in line and
-#                         (not phase_offset or not ped)):
-#                     if len(line.split('=')) > 1:
-#                         phase_offset = float(line.split('=')[-1].strip())
-#                         if (np.abs(phase_offset) > 1 and
-#                                 np.abs(phase_offset) < 3):
-#                             ped = 'ROW'
-#                         elif (np.abs(phase_offset) < 1 or
-#                                 np.abs(phase_offset) > 3):
-#                             ped = 'COL'
+                elif ('SliceArray.asSlice[0].dInPlaneRot' in line and
+                        (not phase_offset or not ped)):
+                    if len(line.split('=')) > 1:
+                        phase_offset = float(line.split('=')[-1].strip())
+                        if (np.abs(phase_offset) > 1 and
+                                np.abs(phase_offset) < 3):
+                            ped = 'ROW'
+                        elif (np.abs(phase_offset) < 1 or
+                                np.abs(phase_offset) > 3):
+                            ped = 'COL'
+                            if np.abs(phase_offset) > 3:
+                                phase_offset = -1
+                            else:
+                                phase_offset = 1
                 elif 'lDiffDirections' in line:
                     dwi_directions = float(line.split('=')[-1].strip())
         if multivol:

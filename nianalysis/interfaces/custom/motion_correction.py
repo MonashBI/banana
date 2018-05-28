@@ -183,20 +183,6 @@ class PrepareDWI(BaseInterface):
                 self.dict_output['pe'] = 'LR'
             elif pe_dir == 'COL':
                 self.dict_output['pe'] = 'PA'
-#         if pe_dir == 'ROW':
-#             if np.sign(phase_offset) == 1:
-#                 self.dict_output['pe'] = 'RL'
-#             else:
-#                 self.dict_output['pe'] = 'LR'
-#         elif pe_dir == 'COL':
-#             if phase_offset < 1:
-#                 self.dict_output['pe'] = 'AP'
-#             else:
-#                 self.dict_output['pe'] = 'PA'
-#         else:
-#             raise Exception('Phase encoding direction cannot be establish by'
-#                             ' looking at the header. DWI pre-processing will'
-#                             ' not be performed.')
         self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
 
         if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
@@ -489,9 +475,12 @@ class MeanDisplacementCalculation(BaseInterface):
         start_times = []
         volume_names = []
         corrupted_volume_names = [
-            'No unusual severe motion detected (i.e. no volume showed '
-            'rotation greater than 8 degrees and/or translation greater '
-            'than 20mm respect to the reference).']
+            'No volume showed rotation greater than 8 degrees and/or '
+            'translation greater than 20mm respect to the reference. However, '
+            'have a look at the mean displacement plot to see whether there'
+            ' are scans with very different mean displacement with respect'
+            'to the others. In that case please check the registration of that'
+            'particular scan.']
         for f in list_inputs:
             mats = sorted(glob.glob(f[0]+'/*inv.mat'))
             mats4averge = sorted(glob.glob(f[0]+'/*mat.mat'))
