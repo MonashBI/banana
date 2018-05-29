@@ -80,16 +80,18 @@ if __name__ == "__main__":
                         help=("Path to an existing directory"))
     parser.add_argument('--umap_ref', type=str,
                         help=("Path to the folder (within the input_dir) that "
-                              "that is the umap reference (usually UTE). This "
+                              "is the umap reference (usually UTE). This "
                               "will be used to realign the umap to match the "
-                              "head position in each of the detected frames. "
-                              "Please see documentation for futher "
-                              "explanation."), default=None)
+                              "head position in each of the detected frames "
+                              "This will be used ONLY for static motion "
+                              "correction. Please see documentation for futher"
+                              " explanation."), default=None)
     parser.add_argument('--umap', type=str,
-                        help=("Existing file with the attenuation correction "
-                              "umap. This file will be realigned to match the "
+                        help=("Path to the folder (within the input_dir) that "
+                              "is the attenuation correction umap. This file "
+                              "will be realigned to match the "
                               "head position in each detected frame during the"
-                              "static motion correction pipeline. In order to "
+                              " static motion correction. In order to "
                               "work, this file must be provided together with"
                               "--umap_ref."), default=None)
     parser.add_argument('--pet_list_mode_dir', '-ls', type=str,
@@ -105,7 +107,7 @@ if __name__ == "__main__":
                               " Here we assume that each bin has the same "
                               "temporal duration. Default is 60 seconds."),
                         default=60)
-    parser.add_argument('--recon_offset', '-po', type=int,
+    parser.add_argument('--recon_offset', '-ro', type=int,
                         help=("If dynamic motion correction, this is the time "
                               "difference, in seconds, between the PET start "
                               "time and the start time of the first "
@@ -121,8 +123,10 @@ if __name__ == "__main__":
                               "performed. Otherwise static. Default is static."
                               ""), default=False)
     parser.add_argument('--struct2align', '-s', type=str,
-                        help=("Existing nifti file to register the final "
-                              "motion correction PET image to. Default is None"
+                        help=("Existing nifti file to register ONLY the final "
+                              "motion correction PET image to. This must be in"
+                              " subject space and is highly recommended to be "
+                              "brain extracted. Default is None"
                               "."), default=None)
     parser.add_argument('--cropping_coordinates', '-cc', type=int, nargs='+',
                         help=("x, y and z coordinates for cropping "
