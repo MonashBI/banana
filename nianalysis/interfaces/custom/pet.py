@@ -681,7 +681,7 @@ class PetImageMotionCorrectionInputSpec(BaseInterfaceInputSpec):
                             'aligned to this image.', default=None)
     corr_factor = traits.Float()
     pet2ref_mat = File(exists=True)
-    ref2structural_regmat = File(default=None)
+    structural2ref_regmat = File(default=None)
 
 
 class PetImageMotionCorrectionOutputSpec(TraitedSpec):
@@ -699,7 +699,9 @@ class PetImageMotionCorrection(BaseInterface):
 
         motion_mat = np.loadtxt(self.inputs.motion_mat)
         structural_image = self.inputs.structural_image
-        ref2structural_regmat = np.loadtxt(self.inputs.ref2structural_regmat)
+        if isdefined(self.inputs.ref2structural_regmat):
+            structural2ref_regmat = np.loadtxt(
+                self.inputs.structural2ref_regmat)
         pet2ref_mat = np.loadtxt(self.inputs.pet2ref_mat)
         pet_image = self.inputs.pet_image
         if isdefined(self.inputs.corr_factor):
@@ -709,7 +711,7 @@ class PetImageMotionCorrection(BaseInterface):
 
         ref2pet_mat = np.linalg.inv(pet2ref_mat)
         if structural_image:
-            ref2pet_mat = np.linalg.inv(ref2structural_regmat)
+            ref2pet_mat = np.linalg.inv(structural2ref_regmat)
             out_basename = 'al2Struct'
         else:
             out_basename = 'al2Ref'
