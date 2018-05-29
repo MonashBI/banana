@@ -30,7 +30,8 @@ class RunMotionCorrection:
         self.options = {'fixed_binning_n_frames': frames,
                         'fixed_binning_pet_offset': pet_offset,
                         'fixed_binning_bin_len': bin_len,
-                        'PET2MNI_reg': mni_reg}
+                        'PET2MNI_reg': mni_reg,
+                        'dynamic_pet_mc': dynamic}
         if crop_coordinates is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):

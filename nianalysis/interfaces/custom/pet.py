@@ -795,14 +795,12 @@ class PetImageMotionCorrection(BaseInterface):
 class StaticPETImageGenerationInputSpec(BaseInterfaceInputSpec):
 
     pet_mc_images = traits.List()
-    pet_mc_ps_images = traits.List()
     pet_no_mc_images = traits.List()
 
 
 class StaticPETImageGenerationOutputSpec(TraitedSpec):
 
     static_mc = File()
-    static_mc_ps = File()
     static_no_mc = File()
 
 
@@ -814,32 +812,26 @@ class StaticPETImageGeneration(BaseInterface):
     def _run_interface(self, runtime):
 
         pet_mc_images = self.inputs.pet_mc_images
-        pet_mc_ps_images = self.inputs.pet_mc_ps_images
         pet_no_mc_images = self.inputs.pet_no_mc_images
-        images = [pet_mc_images, pet_mc_ps_images, pet_no_mc_images]
 
-        corr_types = ['mc_corr', 'mc_ps_corr', 'no_mc_corr']
-        for i, tps in enumerate(corr_types):
-            self.frames_sum(tps, images[i])
-        os.mkdir('images2crop')
-        shutil.move('frame_mc_ps_corr.nii.gz', 'images2crop')
+        self.frames_sum('mc_corr', pet_mc_images)
+        self.frames_sum('no_mc_corr', pet_no_mc_images)
 
         return runtime
 
-    def frames_sum(self, tps, images):
+    def frames_sum(self, outname, images):
 
         cmd = 'fslmaths '
         for i, frame in enumerate(images):
             if i != len(images)-1:
                 cmd = cmd + '{0} -add '.format(frame)
             else:
-                cmd = (cmd+'{0} static_PET_{1}'.format(frame, tps))
+                cmd = (cmd+'{0} static_PET_{1}'.format(frame, outname))
         sp.check_output(cmd, shell=True)
 
     def _list_outputs(self):
         outputs = self._outputs().get()
 
         outputs["static_mc"] = os.getcwd()+'/static_PET_mc_corr.nii.gz'
-        outputs["static_mc_ps"] = os.getcwd()+'static_PET_mc_ps_corr.nii.gz'
         outputs["static_no_mc"] = os.getcwd()+'/static_PET_no_mc_corr.nii.gz'
         return outputs
