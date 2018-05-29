@@ -1117,7 +1117,7 @@ class PetCorrectionFactor(BaseInterface):
         return outputs
 
 
-class FrameAlign2ReferenceInputSpec(BaseInterfaceInputSpec):
+class UmapAlign2ReferenceInputSpec(BaseInterfaceInputSpec):
 
     average_mats = Directory(exists=True, desc='directory with all the average'
                              ' transformation matrices for each detected '
@@ -1126,9 +1126,6 @@ class FrameAlign2ReferenceInputSpec(BaseInterfaceInputSpec):
                       'and reference.')
     ute_qform_mat = File(exists=True, desc='qform mat between ute and '
                          'reference.')
-    fixed_binning = traits.Bool(desc='if true, the function will assume that '
-                                'the average matrices have been generated for '
-                                'dynamic motion correction. Default is False.')
     umap = File(exists=True, desc='If a umap is provided, the function will '
                 'align it to the head position in each frame. Default is None',
                 default=None)
@@ -1138,54 +1135,40 @@ class FrameAlign2ReferenceInputSpec(BaseInterfaceInputSpec):
                       'discrete. Default is False.')
 
 
-class FrameAlign2ReferenceOutputSpec(TraitedSpec):
+class UmapAlign2ReferenceOutputSpec(TraitedSpec):
 
-    frame2reference_mats = Directory(exists=True, desc='directory with all the'
-                                     ' matrices which align each frame to the '
-                                     'reference.')
     umaps_align2ref = Directory(desc='directory with all the realigned umaps '
                                 '(if a umaps is provided as input).')
 
 
-class FrameAlign2Reference(BaseInterface):
+class UmapAlign2Reference(BaseInterface):
 
-    input_spec = FrameAlign2ReferenceInputSpec
-    output_spec = FrameAlign2ReferenceOutputSpec
+    input_spec = UmapAlign2ReferenceInputSpec
+    output_spec = UmapAlign2ReferenceOutputSpec
 
     def _run_interface(self, runtime):
 
-        fixed_binning = self.inputs.fixed_binning
         average_mats = sorted(glob.glob(self.inputs.average_mats+'/*.txt'))
         umap = self.inputs.umap
         pct = self.inputs.pct
         ute_regmat = self.inputs.ute_regmat
         ute_qform_mat = self.inputs.ute_qform_mat
-        if not fixed_binning:
-            outname = 'Frame'
-        else:
-            outname = 'Bin'
+        outname = 'Frame'
 
         for i, mat in enumerate(average_mats):
-            self.FrameAlign2Reference_calc(mat, i, ute_regmat, ute_qform_mat,
-                                           outname, umap=umap, pct=pct)
+            self.UmapAlign2Reference_calc(mat, i, ute_regmat, ute_qform_mat,
+                                          outname, umap, pct=pct)
 
-        if os.path.isdir('{}_align2ref_mats'.format(outname)) is False:
-            os.mkdir('{}_align2ref_mats'.format(outname))
-
-        mats = glob.glob('*ref_to_ute*.mat')
-        for m in mats:
-            shutil.move(m, '{}_align2ref_mats'.format(outname))
-        if umap:
-            umaps = glob.glob('Frame_*_umap.nii.gz')
-            if os.path.isdir('umaps_align2ref') is False:
-                os.mkdir('umaps_align2ref')
-            for u in umaps:
-                shutil.move(u, 'umaps_align2ref')
+        umaps = glob.glob('Frame_*_umap.nii.gz')
+        if os.path.isdir('umaps_align2ref') is False:
+            os.mkdir('umaps_align2ref')
+        for u in umaps:
+            shutil.move(u, 'umaps_align2ref')
 
         return runtime
 
-    def FrameAlign2Reference_calc(self, mat, i, ute_regmat, ute_qform_mat,
-                                  outname, umap=None, pct=False):
+    def UmapAlign2Reference_calc(self, mat, i, ute_regmat, ute_qform_mat,
+                                 outname, umap, pct=False):
 
         mat = np.loadtxt(mat)
         utemat = np.loadtxt(ute_regmat)
@@ -1201,35 +1184,26 @@ class FrameAlign2Reference(BaseInterface):
             '{0}_{1}_ref_to_ute_inv.mat'.format(outname, str(i).zfill(3)),
             ute2frame_qform_inv)
 
-        if umap:
-            if pct:
-                interp = 'trilinear'
-            else:
-                interp = 'nearestneighbour'
-            flt = fsl.FLIRT(bins=256, cost_func='corratio')
-            flt.inputs.reference = umap
-            flt.inputs.in_file = umap
-            flt.inputs.interp = interp
-            flt.inputs.in_matrix_file = ('Frame_{0}_ref_to_ute.mat'
-                                         .format(str(i).zfill(3)))
-            flt.inputs.out_file = 'Frame_{0}_umap.nii.gz'.format(
-                str(i).zfill(3))
-            flt.inputs.apply_xfm = True
-            flt.run()
+        if pct:
+            interp = 'trilinear'
+        else:
+            interp = 'nearestneighbour'
+        flt = fsl.FLIRT(bins=256, cost_func='corratio')
+        flt.inputs.reference = umap
+        flt.inputs.in_file = umap
+        flt.inputs.interp = interp
+        flt.inputs.in_matrix_file = ('Frame_{0}_ref_to_ute.mat'
+                                     .format(str(i).zfill(3)))
+        flt.inputs.out_file = 'Frame_{0}_umap.nii.gz'.format(
+            str(i).zfill(3))
+        flt.inputs.apply_xfm = True
+        flt.run()
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        fixed_binning = self.inputs.fixed_binning
-        if not fixed_binning:
-            outname = 'Frame'
-        else:
-            outname = 'Bin'
 
-        outputs["frame2reference_mats"] = (
-            os.getcwd()+'/{}_align2ref_mats'.format(outname))
-        if self.inputs.umap:
-            outputs["umaps_align2ref"] = (
-                os.getcwd()+'/umaps_align2ref')
+        outputs["umaps_align2ref"] = (
+            os.getcwd()+'/umaps_align2ref')
 
         return outputs
 
