@@ -1,18 +1,14 @@
 #!/usr/bin/env python
-# from nianalysis.study.multimodal.mrpet import create_motion_correction_class
 from mc_pipeline.generate_mc_pipeline import create_motion_correction_class
 import os.path
 import errno
-from arcana.runner import MultiProcRunner
+# from arcana.runner import MultiProcRunner
 from arcana.archive.local import LocalArchive
 from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import cPickle as pkl
 from arcana.runner.linear import LinearRunner
-from nianalysis.data_format import (
-    nifti_gz_format, directory_format)
-from arcana.dataset import DatasetMatch
 
 
 class RunMotionCorrection:
@@ -83,13 +79,12 @@ if __name__ == "__main__":
     parser.add_argument('--input_dir', '-i', type=str, required=True,
                         help=("Path to an existing directory"))
     parser.add_argument('--umap_ref', type=str,
-                        help=("Existing file that will be used to calculate "
-                              "the motion matrices and that links the MR "
-                              "scan used as reference in the motion detection "
-                              "and the PET image in PET space. This is usually"
-                              "the UTE image acquired at the beginnig of a "
-                              "MR-PET study. Please see documentation for "
-                              "futher explanation."), default=None)
+                        help=("Path to the folder (within the input_dir) that "
+                              "that is the umap reference (usually UTE). This "
+                              "will be used to realign the umap to match the "
+                              "head position in each of the detected frames. "
+                              "Please see documentation for futher "
+                              "explanation."), default=None)
     parser.add_argument('--umap', type=str,
                         help=("Existing file with the attenuation correction "
                               "umap. This file will be realigned to match the "
