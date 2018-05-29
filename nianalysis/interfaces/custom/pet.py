@@ -699,7 +699,7 @@ class PetImageMotionCorrection(BaseInterface):
 
         motion_mat = np.loadtxt(self.inputs.motion_mat)
         structural_image = self.inputs.structural_image
-        ref2structural_regmat = self.inputs.ref2structural_regmat
+        ref2structural_regmat = np.loadtxt(self.inputs.ref2structural_regmat)
         pet2ref_mat = np.loadtxt(self.inputs.pet2ref_mat)
         pet_image = self.inputs.pet_image
         if isdefined(self.inputs.corr_factor):
@@ -708,38 +708,24 @@ class PetImageMotionCorrection(BaseInterface):
             corr_factor = 1
 
         ref2pet_mat = np.linalg.inv(pet2ref_mat)
-        motion_mat_inv = np.linalg.inv(motion_mat)
-#         ute_qform = self.extract_qform(ref_image)
-#         pet_qform = self.extract_qform(pet_image)
-#         fixed_MRPET_transformation = np.dot(ute_qform,
-#                                             np.linalg.inv(pet_qform))
-#         fixed_MRPET_transformation_inv = np.linalg.inv(
-#             fixed_MRPET_transformation)
-#         np.savetxt('MRPET_transformation.mat', fixed_MRPET_transformation)
-        basename = pet_image.split('/')[-1].split('.')[0]
-#         transformation_mat = (
-#             np.dot(np.loadtxt(motion_mat), fixed_MRPET_transformation))
-#         transformation_mat_petspace = (
-#             np.dot(fixed_MRPET_transformation_inv, transformation_mat))
         if structural_image:
-            transformation_mat = np.dot(ref2structural_regmat,
-                                        np.dot(motion_mat_inv, pet2ref_mat))
+            ref2pet_mat = np.linalg.inv(ref2structural_regmat)
             out_basename = 'al2Struct'
-#             self.applyxfm(pet_image, ref, ref2structural_qform,
-#                           '{0}_{1}_no_mc'.format(basename, out_basename))
         else:
             out_basename = 'al2Ref'
-            transformation_mat = np.dot(ref2pet_mat,
-                                        np.dot(motion_mat_inv, pet2ref_mat))
-#             self.applyxfm(pet_image, ref, self.inputs.pet2ref_mat,
-#                           '{0}_{1}_no_mc'.format(basename, out_basename))
+        basename = pet_image.split('/')[-1].split('.')[0]
         outname = '{0}_{1}'.format(basename, out_basename)
+        motion_mat_inv = np.linalg.inv(motion_mat)
+        transformation_mat = np.dot(ref2pet_mat,
+                                    np.dot(motion_mat_inv, pet2ref_mat))
         np.savetxt('transformation.mat', transformation_mat)
-#         np.savetxt('transformation_ps.mat', transformation_mat_petspace)
-        self.applyxfm(pet_image, pet_image, 'transformation.mat',
-                      outname+'_mc')
-#         self.applyxfm(pet_image, pet_image, 'transformation_ps.mat',
-#                       outname+'_mc_ps')
+
+        if structural_image:
+            self.applyxfm(pet_image, structural_image, 'transformation.mat',
+                          outname+'_mc')
+        else:
+            self.applyxfm(pet_image, pet_image, 'transformation.mat',
+                          outname+'_mc')
         self.apply_temporal_correction(outname+'_mc', corr_factor,
                                        outname+'_mc_corr')
         self.apply_temporal_correction(pet_image, corr_factor,
