@@ -699,7 +699,7 @@ class PetImageMotionCorrection(BaseInterface):
 
         motion_mat = np.loadtxt(self.inputs.motion_mat)
         structural_image = self.inputs.structural_image
-        if isdefined(self.inputs.ref2structural_regmat):
+        if isdefined(self.inputs.structural2ref_regmat):
             structural2ref_regmat = np.loadtxt(
                 self.inputs.structural2ref_regmat)
         pet2ref_mat = np.loadtxt(self.inputs.pet2ref_mat)
