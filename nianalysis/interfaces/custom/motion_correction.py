@@ -149,9 +149,9 @@ class PrepareDWIInputSpec(BaseInterfaceInputSpec):
                         'if ROW or COL.')
     ped_polarity = traits.Str(mandatory=True, desc='phase encoding direction '
                               'polarity, i.e. if + or - ROW for example.')
-    dwi = File(mandatory=True, exists=True, desc='First diffusion image. Can '
+    dwi = File(exists=True, desc='First diffusion image. Can '
                'be with multiple directions or b0.')
-    dwi1 = File(mandatory=True, exists=True, desc='Second diffusion image. Can'
+    dwi1 = File(exists=True, desc='Second diffusion image. Can'
                 ' be with multiple directions or b0.')
     topup = traits.Bool(desc='Specify whether the PrepareDWI output will be'
                         'used for TOPUP distortion correction.')
@@ -179,10 +179,28 @@ class PrepareDWI(BaseInterface):
         pe_dir = self.inputs.pe_dir
         ped_polarity = float(self.inputs.ped_polarity)
         topup = self.inputs.topup
-        dwi = nib.load(self.inputs.dwi)
-        dwi = dwi.get_data()
-        dwi1 = nib.load(self.inputs.dwi1)
-        dwi1 = dwi1.get_data()
+        if isdefined(self.inputs.dwi) and isdefined(self.inputs.dwi1):
+            dwi = nib.load(self.inputs.dwi)
+            dwi = dwi.get_data()
+            dwi1 = nib.load(self.inputs.dwi1)
+            dwi1 = dwi1.get_data()
+            if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
+                self.dict_output['main'] = self.inputs.dwi
+                self.dict_output['secondary'] = self.inputs.dwi1
+            elif len(dwi.shape) == 3 and len(dwi1.shape) == 4 and not topup:
+                self.dict_output['main'] = self.inputs.dwi1
+                self.dict_output['secondary'] = self.inputs.dwi
+            elif len(dwi.shape) == 3 and len(dwi1.shape) == 3:
+                self.dict_output['main'] = self.inputs.dwi
+                self.dict_output['secondary'] = self.inputs.dwi1
+            elif topup and len(dwi1.shape) == 4:
+                ref = nib.load(self.inputs.dwi1)
+                dwi1_b0 = dwi1[:, :, :, 0]
+                im2save = nib.Nifti1Image(dwi1_b0, affine=ref.affine)
+                nib.save(im2save, 'b0.nii.gz')
+                self.dict_output['main'] = self.inputs.dwi
+                self.dict_output['secondary'] = os.getcwd()+'/b0.nii.gz'
+
         if np.sign(ped_polarity) == 1:
             if pe_dir == 'ROW':
                 self.dict_output['pe'] = 'RL'
@@ -195,31 +213,15 @@ class PrepareDWI(BaseInterface):
                 self.dict_output['pe'] = 'PA'
         self.dict_output['pe_1'] = self.dict_output['pe'][::-1]
 
-        if len(dwi.shape) == 4 and len(dwi1.shape) == 3:
-            self.dict_output['main'] = self.inputs.dwi
-            self.dict_output['secondary'] = self.inputs.dwi1
-        elif len(dwi.shape) == 3 and len(dwi1.shape) == 4 and not topup:
-            self.dict_output['main'] = self.inputs.dwi1
-            self.dict_output['secondary'] = self.inputs.dwi
-        elif len(dwi.shape) == 3 and len(dwi1.shape) == 3:
-            self.dict_output['main'] = self.inputs.dwi
-            self.dict_output['secondary'] = self.inputs.dwi1
-        elif topup and len(dwi1.shape) == 4:
-            ref = nib.load(self.inputs.dwi1)
-            dwi1_b0 = dwi1[:, :, :, 0]
-            im2save = nib.Nifti1Image(dwi1_b0, affine=ref.affine)
-            nib.save(im2save, 'b0.nii.gz')
-            self.dict_output['main'] = self.inputs.dwi
-            self.dict_output['secondary'] = os.getcwd()+'/b0.nii.gz'
-
         return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
 
         outputs["pe"] = self.dict_output['pe']
-        outputs["main"] = self.dict_output['main']
-        outputs["secondary"] = self.dict_output['secondary']
+        if isdefined(self.inputs.dwi) and isdefined(self.inputs.dwi1):
+            outputs["main"] = self.dict_output['main']
+            outputs["secondary"] = self.dict_output['secondary']
         if isdefined(self.dict_output['pe_1']):
             outputs["pe_1"] = self.dict_output['pe_1']
 
