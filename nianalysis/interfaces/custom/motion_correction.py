@@ -32,7 +32,7 @@ class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
 
 class MotionMatCalculationOutputSpec(TraitedSpec):
 
-    motion_mats = Directory(exists=True, desc='Directory with resultin motion'
+    motion_mats = Directory(exists=True, desc='Directory with resulting motion'
                             ' matrices')
 
 
@@ -105,16 +105,20 @@ class MotionMatCalculation(BaseInterface):
 
 class MergeListMotionMatInputSpec(BaseInterfaceInputSpec):
 
-    file_list = traits.List(mandatory=True, desc='List of files to merge')
+    file_list = traits.List(mandatory=True, desc='List of files to save into '
+                            'a new directory')
 
 
 class MergeListMotionMatOutputSpec(TraitedSpec):
 
-    out_dir = Directory(desc='Output directory.')
+    out_dir = Directory(desc='Output directory with all the files provided as '
+                        'input.')
 
 
 class MergeListMotionMat(BaseInterface):
-
+    """I created this function just to save all the matrices that are
+    prodocued by MCFLIRT (whose output is a list) into a single directory.
+    """
     input_spec = MergeListMotionMatInputSpec
     output_spec = MergeListMotionMatOutputSpec
 
@@ -141,21 +145,27 @@ class MergeListMotionMat(BaseInterface):
 
 class PrepareDWIInputSpec(BaseInterfaceInputSpec):
 
-    pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction')
-    phase_offset = traits.Str(mandatory=True, desc='phase offset')
-    dwi = File(mandatory=True, exists=True)
-    dwi1 = File(mandatory=True, exists=True)
+    pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction, i.e. '
+                        'if ROW or COL.')
+    ped_polarity = traits.Str(mandatory=True, desc='phase encoding direction '
+                              'polarity, i.e. if + or - ROW for example.')
+    dwi = File(mandatory=True, exists=True, desc='First diffusion image. Can '
+               'be with multiple directions or b0.')
+    dwi1 = File(mandatory=True, exists=True, desc='Second diffusion image. Can'
+                ' be with multiple directions or b0.')
     topup = traits.Bool(desc='Specify whether the PrepareDWI output will be'
-                        'used for TOPUP distortion correction')
+                        'used for TOPUP distortion correction.')
 
 
 class PrepareDWIOutputSpec(TraitedSpec):
 
-    pe = traits.Str(desc='Phase encoding direction.')
-    main = File(desc='4D dwi scan for eddy.')
-    secondary = File(desc='3D dwi scan for distortion correction.')
-    pe_1 = traits.Str(
-        desc='Phase encoding direction second dwi.')
+    pe = traits.Str(desc='Phase encoding direction of "dwi".')
+    main = File(desc='4D dwi scan for eddy or simply dwi if both dwi and dwi1 '
+                'are b0s, i.e. when PrepareDWI is used before TOPUP.')
+    secondary = File(desc='3D dwi scan for distortion correction in eddy or '
+                     'simply dwi1 if both dwi and dwi1 are b0s, i.e. when '
+                     'PrepareDWI is used before TOPUP.')
+    pe_1 = traits.Str(desc='Phase encoding direction "dwi1".')
 
 
 class PrepareDWI(BaseInterface):
@@ -167,18 +177,18 @@ class PrepareDWI(BaseInterface):
 
         self.dict_output = {}
         pe_dir = self.inputs.pe_dir
-        phase_offset = float(self.inputs.phase_offset)
+        ped_polarity = float(self.inputs.ped_polarity)
         topup = self.inputs.topup
         dwi = nib.load(self.inputs.dwi)
         dwi = dwi.get_data()
         dwi1 = nib.load(self.inputs.dwi1)
         dwi1 = dwi1.get_data()
-        if np.sign(phase_offset) == 1:
+        if np.sign(ped_polarity) == 1:
             if pe_dir == 'ROW':
                 self.dict_output['pe'] = 'RL'
             elif pe_dir == 'COL':
                 self.dict_output['pe'] = 'AP'
-        elif np.sign(phase_offset) == -1:
+        elif np.sign(ped_polarity) == -1:
             if pe_dir == 'ROW':
                 self.dict_output['pe'] = 'LR'
             elif pe_dir == 'COL':
@@ -218,9 +228,11 @@ class PrepareDWI(BaseInterface):
 
 class CheckDwiNamesInputSpec(BaseInterfaceInputSpec):
 
-    dicom_dwi = Directory()
-    dicom_dwi1 = Directory()
-    nifti_dwi = File()
+    dicom_dwi = Directory(desc='First diffusion image (in DICOM format), '
+                          'provided as input.')
+    dicom_dwi1 = Directory(desc='Second diffusion image (in DICOM format), '
+                           'provided as input.')
+    nifti_dwi = File(desc='Main dwi image as detected by PrepareDWI.')
 
 
 class CheckDwiNamesOutputSpec(TraitedSpec):
@@ -229,7 +241,12 @@ class CheckDwiNamesOutputSpec(TraitedSpec):
 
 
 class CheckDwiNames(BaseInterface):
-
+    """
+    Since in PrepareDWI I have to use nifti files to get the data shape while
+    in dwipreproc I need to provide DICOM, I created this interface to see
+    which of the dwi DICOM files provided as input are 4D and 3D files and
+    assign them correctly in dwipreproc node.
+    """
     input_spec = CheckDwiNamesInputSpec
     output_spec = CheckDwiNamesOutputSpec
 
@@ -320,17 +337,24 @@ class GenTopupConfigFiles(BaseInterface):
 
 class AffineMatrixGenerationInputSpec(BaseInterfaceInputSpec):
 
-    motion_parameters = File(exists=True)
-    reference_image = File(exists=True)
+    motion_parameters = File(exists=True, desc='File with all the motion '
+                             'paramters calculated by eddy.')
+    reference_image = File(exists=True, desc='Reference used to calculate the '
+                           'motion (usually is the first volume).')
 
 
 class AffineMatrixGenerationOutputSpec(TraitedSpec):
 
-    affine_matrices = Directory(exists=True)
+    affine_matrices = Directory(exists=True, desc='Directory containing all '
+                                'affine matrices calculated by the interface.')
 
 
 class AffineMatrixGeneration(BaseInterface):
-
+    """
+    Given the six motion parameters calculated by eddy, this function creates
+    the 4x4 affine transformations that align each diffusion direction to the
+    first volume (usually a b0).
+    """
     input_spec = AffineMatrixGenerationInputSpec
     output_spec = AffineMatrixGenerationOutputSpec
 
@@ -428,20 +452,41 @@ class MeanDisplacementCalculationInputSpec(BaseInterfaceInputSpec):
     real_durations = traits.List(desc='List of real durations.')
     reference = File(desc='Reference image.')
     input_names = traits.List(desc='List with the name of the inputs provided'
-                              'by the user.')
+                              'by the user. This is used for the severe motion'
+                              'report in order to provide the real names of '
+                              'possibly corrupted images.')
 
 
 class MeanDisplacementCalculationOutputSpec(TraitedSpec):
 
-    mean_displacement = File(exists=True)
-    mean_displacement_rc = File(exists=True)
-    mean_displacement_consecutive = File(exists=True)
-    start_times = File(exists=True)
-    motion_parameters_rc = File(exists=True)
-    motion_parameters = File(exists=True)
-    offset_indexes = File(exists=True)
-    mats4average = File(exists=True)
-    corrupted_volumes = File(exists=True)
+    mean_displacement = File(exists=True, desc='mean displacement between each'
+                             ' scan/volume and the reference.')
+    mean_displacement_rc = File(exists=True, desc='mean displacement values '
+                                'used in the generate the plot. Essentially it'
+                                ' contains one mean displacement value per '
+                                'millisecond. If, for example, a study lasts '
+                                'for 60 minutes, this file will contain '
+                                '3600000 values. I created this file to be '
+                                'able to plot the entire scan time, including '
+                                'both real scan time and MR idling time.')
+    mean_displacement_consecutive = File(exists=True, desc='mean displacement '
+                                         'between each pair of consecutive '
+                                         'scans/volumes.')
+    start_times = File(exists=True, desc='start times for each scan/volume.')
+    motion_parameters_rc = File(
+        exists=True, desc='Same as mean_displacement_rc but for motion '
+        'parameters.')
+    motion_parameters = File(exists=True, desc='6 motion parameters (3 '
+                             'rotation and 3 translation) per scan/volume.')
+    offset_indexes = File(exists=True, desc='indexes where the '
+                          'mean_displacement_rc values reflect MR idling '
+                          'times. Used in the plot.')
+    mats4average = File(exists=True, desc='location of all the motion matrices'
+                        ' used to calculate the mean displacement. This will '
+                        'be used to create an average motion mat per detected '
+                        'frame.')
+    corrupted_volumes = File(exists=True, desc='report of any unusually severe'
+                             ' motion detected.')
 
 
 class MeanDisplacementCalculation(BaseInterface):
@@ -488,7 +533,7 @@ class MeanDisplacementCalculation(BaseInterface):
             all_mats4average = all_mats4average+mats4averge
             start_scan = f[1]
             tr = f[3]
-            if len(mats) > 1:
+            if len(mats) > 1:  # for 4D files
                 for i, mat in enumerate(mats):
                     volume_names.append(f[-1]+'_vol_{}'
                                         .format(str(i+1).zfill(4)))
@@ -510,7 +555,7 @@ class MeanDisplacementCalculation(BaseInterface):
                                   int(end_scan*1000)] = np.array(
                                       [mp, ]*duration).T
                     start_scan = end_scan
-            elif len(mats) == 1:
+            elif len(mats) == 1:  # for 3D files
                 volume_names.append(f[-1])
                 start_times.append((
                     dt.datetime.strptime(study_start_time,
@@ -570,7 +615,7 @@ class MeanDisplacementCalculation(BaseInterface):
         return runtime
 
     def rmsdiff(self, cog, T1, T2):
-
+        """Python implementation of the rmsdiff function in fsl"""
         R = 80
         M = np.dot(T2, np.linalg.inv(T1))-np.identity(4)
         A = M[:3, :3]
@@ -684,19 +729,14 @@ class MotionFramingInputSpec(BaseInterfaceInputSpec):
                                       'shorter than this value (in sec) then '
                                       'the frame will be discarded. Default '
                                       '30sec', default=30)
-#    pet_data_dir = Directory(
-#        exists=True, desc='PET directory with all the acquired data from the '
-#        'scanner. This folder must contain at list the list-mode data and its'
-#        'headerto which will be used to extract the pet start time and end '
-#        'time. This must be provided if motion detection has to be then '
-#        'applied to PET motion correction.', default=None)
     pet_start_time = traits.Str(desc='PET start time', default=None)
     pet_end_time = traits.Str(desc='PET end time', default=None)
 
 
 class MotionFramingOutputSpec(TraitedSpec):
 
-    frame_start_times = File(exists=True)
+    frame_start_times = File(exists=True, desc='start times of each of the '
+                             'detected frame in real clock time.')
     frame_vol_numbers = File(exists=True, desc='Text file with the number of '
                              'volume where the motion occurred.')
     timestamps_dir = Directory(desc='Directory with the timestamps for all'
@@ -838,49 +878,6 @@ class MotionFraming(BaseInterface):
 
         return runtime
 
-    def pet_time_info(self, pet_data_dir):
-
-        pet_duration = None
-        for root, dirs, files in os.walk(pet_data_dir):
-            bf_files = [f for f in files if not f[0] == '.' and '.bf' in f]
-            dirs[:] = [d for d in dirs if not d[0] == '.']
-
-#         bf_files = glob.glob('{}/*.bf'.format(pet_data_dir))
-        if not bf_files:
-            pet_start_time = None
-            pet_endtime = None
-            print ('No .bf file found in {}. If you want to perform motion '
-                   'correction please provide the right pet data. ')
-        else:
-            max_size = 0
-            for bf in bf_files:
-                size = os.path.getsize(os.path.join(root, bf))
-                if size > max_size:
-                    max_size = size
-                    list_mode_file = os.path.join(root, bf)
-
-            pet_image = list_mode_file.split('.bf')[0] + '.dcm'
-            try:
-                hd = pydicom.read_file(pet_image)
-                pet_start_time = hd.AcquisitionTime
-            except AttributeError:
-                pet_start_time = None
-            with open(pet_image, 'r') as f:
-                for line in f:
-                    if 'image duration' in line:
-                        pet_duration = line.strip()
-                        pet_duration = int(pet_duration.split(':=')[-1])
-            if pet_duration:
-                pet_endtime = ((
-                    dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
-                    dt.timedelta(seconds=pet_duration))
-                                    .strftime('%H%M%S.%f'))
-                pet_duration = pet_duration
-            else:
-                pet_endtime = None
-
-        return pet_start_time, pet_endtime
-
     def _list_outputs(self):
         outputs = self._outputs().get()
 
@@ -937,8 +934,6 @@ class PlotMeanDisplacementRC(BaseInterface):
             print ('Something went wrong in the indentification of the MR '
                    'idling time. It will not be plotted.')
             plot_offset = False
-#         true_indexes = dates[indxs == 1]
-#         true_indexes = [x for x in dates if x not in false_indexes]
 
         fig, ax = plot.subplots()
         fig.set_size_inches(21, 9)
@@ -1312,33 +1307,6 @@ class FixedBinningOutputSpec(TraitedSpec):
 
 
 class FixedBinning(BaseInterface):
-    """
-        Function to divide PET list-mode files into a fixed number of bins
-        with specified length.
-        Motion matrices for each bin are then calculated averaging all
-        the matrices within that bin.
-
-        Parameters
-        ----------
-        mc : Boolean
-            If True, motion correction within bins is performed. If bin
-            length is less than 2 minutes, the motion correction cannot be
-            performed.
-        bin_len : Integer
-            Temporal length of each PET bin.
-        pet_offset : Integer
-            Time offset (in seconds) to start the fixed binning from a
-            time point different from the PET start time. Default is zero.
-        n_frames : Integer
-            Number of PET frames you want to correct for motion. By default
-            is the total lenght of the PET acquisition divided by the
-            bin_len.
-
-        Returns
-        -------
-        One motion matrix and one timestamp per bin. If mc=True it will
-        return motion matrices and timestamps for each sub-bin too.
-    """
 
     input_spec = FixedBinningInputSpec
     output_spec = FixedBinningOutputSpec
@@ -1435,7 +1403,6 @@ class FixedBinning(BaseInterface):
                 mat_e1 = np.loadtxt(motion_mats[e1])
                 mat_s2 = np.loadtxt(motion_mats[s2])
                 mat_e2 = np.loadtxt(motion_mats[e2])
-    #                     m1 = start[0][0]*mat_s1 + start[1][0]*mat_e1
                 mat_tot[:, :, 0] = (
                     start[0][0]*mat_s1 + start[1][0]*mat_e1)
                 mat_tot[:, :, -1] = (

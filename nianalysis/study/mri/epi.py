@@ -5,7 +5,7 @@ from nianalysis.interfaces.custom.motion_correction import (
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.data_format import (
     nifti_gz_format, text_matrix_format, directory_format,
-    par_format, motion_mats_format) 
+    par_format, motion_mats_format)
 from nianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirement import fsl509_req
@@ -98,14 +98,6 @@ class EPIStudy(MRIStudy):
 
         return pipeline
 
-#     def motion_mat_pipeline(self, **kwargs):
-#         if 'reverse_phase' in self.input_names:
-#             return (super(EPIStudy, self).motion_mat_pipeline_factory(
-#                 align_mats=None, **kwargs))
-#         else:
-#             return (super(EPIStudy, self).motion_mat_pipeline_factory(
-#                 align_mats='moco_mat', **kwargs))
-
     def basic_preproc_pipeline(self, **kwargs):
 
         if ('field_map_phase' in self.input_names and
@@ -147,35 +139,34 @@ class EPIStudy(MRIStudy):
         pipeline.connect(reorient_epi_in, 'out_file', prep_dwi, 'dwi')
         pipeline.connect(reorient_epi_opposite, 'out_file', prep_dwi,
                          'dwi1')
-        ped1 = pipeline.create_node(GenTopupConfigFiles(),
-                                    name='gen_config1')
-        pipeline.connect(prep_dwi, 'pe', ped1, 'ped')
-        merge_outputs1 = pipeline.create_node(merge_lists(2),
-                                              name='merge_files1')
-        pipeline.connect(prep_dwi, 'main', merge_outputs1, 'in1')
-        pipeline.connect(prep_dwi, 'secondary', merge_outputs1, 'in2')
-        merge1 = pipeline.create_node(fsl_merge(), name='fsl_merge1',
-                                      requirements=[fsl509_req])
-        merge1.inputs.dimension = 't'
-        pipeline.connect(merge_outputs1, 'out', merge1, 'in_files')
-        topup1 = pipeline.create_node(TOPUP(), name='topup1',
-                                      requirements=[fsl509_req])
-        pipeline.connect(merge1, 'merged_file', topup1, 'in_file')
-        pipeline.connect(ped1, 'config_file', topup1, 'encoding_file')
-        in_apply_tp1 = pipeline.create_node(merge_lists(1),
-                                            name='in_apply_tp1')
-        pipeline.connect(reorient_epi_in, 'out_file', in_apply_tp1, 'in1')
+        ped = pipeline.create_node(GenTopupConfigFiles(), name='gen_config')
+        pipeline.connect(prep_dwi, 'pe', ped, 'ped')
+        merge_outputs = pipeline.create_node(merge_lists(2),
+                                             name='merge_files')
+        pipeline.connect(prep_dwi, 'main', merge_outputs, 'in1')
+        pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
+        merge = pipeline.create_node(fsl_merge(), name='fsl_merge',
+                                     requirements=[fsl509_req])
+        merge.inputs.dimension = 't'
+        pipeline.connect(merge_outputs, 'out', merge, 'in_files')
+        topup = pipeline.create_node(TOPUP(), name='topup',
+                                     requirements=[fsl509_req])
+        pipeline.connect(merge, 'merged_file', topup, 'in_file')
+        pipeline.connect(ped, 'config_file', topup, 'encoding_file')
+        in_apply_tp = pipeline.create_node(merge_lists(1),
+                                           name='in_apply_tp')
+        pipeline.connect(reorient_epi_in, 'out_file', in_apply_tp, 'in1')
         apply_topup = pipeline.create_node(
-            ApplyTOPUP(), name='applytopup1', requirements=[fsl509_req])
+            ApplyTOPUP(), name='applytopup', requirements=[fsl509_req])
         apply_topup.inputs.method = 'jac'
         apply_topup.inputs.in_index = [1]
-        pipeline.connect(in_apply_tp1, 'out', apply_topup, 'in_files')
+        pipeline.connect(in_apply_tp, 'out', apply_topup, 'in_files')
         pipeline.connect(
-            ped1, 'apply_topup_config', apply_topup, 'encoding_file')
-        pipeline.connect(topup1, 'out_movpar', apply_topup,
+            ped, 'apply_topup_config', apply_topup, 'encoding_file')
+        pipeline.connect(topup, 'out_movpar', apply_topup,
                          'in_topup_movpar')
         pipeline.connect(
-            topup1, 'out_fieldcoef', apply_topup, 'in_topup_fieldcoef')
+            topup, 'out_fieldcoef', apply_topup, 'in_topup_fieldcoef')
 
         pipeline.connect_output('preproc', apply_topup, 'out_corrected')
         return pipeline
@@ -233,7 +224,7 @@ class EPIStudy(MRIStudy):
 
         inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
                   DatasetSpec('qform_mat', text_matrix_format)]
-        if not 'reverse_phase' in self.input_names:
+        if 'reverse_phase' not in self.input_names:
             inputs.append(DatasetSpec('align_mats', directory_format))
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
@@ -248,7 +239,7 @@ class EPIStudy(MRIStudy):
             MotionMatCalculation(), name='motion_mats')
         pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
         pipeline.connect_input('qform_mat', mm, 'qform_mat')
-        if not 'reverse_phase' in self.input_names:
+        if 'reverse_phase' not in self.input_names:
             pipeline.connect_input('align_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline
