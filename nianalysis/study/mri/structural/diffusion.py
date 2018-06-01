@@ -166,7 +166,7 @@ class DiffusionStudy(EPIStudy):
     #             raise ArcanaError(
     #                 "Required option 'preproc_pe_dir' was not provided to '{}' "
     #                 "pipeline in {}".format(pipeline.name, self))
-            dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
+#             dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
             # Create nodes to gradients to FSL format
             extract_grad = pipeline.create_node(
                 ExtractFSLGradients(), name="extract_grad",
