@@ -10,7 +10,7 @@ from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_format import (
     dicom_format, text_format, gif_format)
 from nianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
-                                    ants2_req, dcm2niix_req)
+                                    ants2_req, dcm2niix_req, afni_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
 from arcana.exception import (
@@ -18,7 +18,7 @@ from arcana.exception import (
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
-from nianalysis.interfaces.mrtrix import MRConvert
+from nipype.interfaces.afni.preprocess import BlurToFWHM
 from nianalysis.interfaces.fsl import FSLSlices
 from nianalysis.data_format import text_matrix_format
 import os
@@ -65,6 +65,12 @@ class MRIStudy(Study):
                     'coregister_to_atlas_pipeline'),
         DatasetSpec('coreg_to_atlas_coeff', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
+        DatasetSpec('coreg_to_atlas_mat', text_matrix_format,
+                    'coregister_to_atlas_pipeline'),
+        DatasetSpec('coreg_to_atlas_warp', nifti_gz_format,
+                    'coregister_to_atlas_pipeline'),
+        DatasetSpec('coreg_to_atlas_report', gif_format,
+                    'coregister_to_atlas_pipeline'),
         DatasetSpec('wm_seg', nifti_gz_format,
                     'segmentation_pipeline'),
         DatasetSpec('dcm_info', text_format,
@@ -94,7 +100,8 @@ class MRIStudy(Study):
         OptionSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         OptionSpec('optibet_gen_report', False),
-        OptionSpec('fnirt_atlas_reg_tool', 'fnirt'),
+        OptionSpec('fnirt_atlas_reg_tool', 'ants',
+                   choices=('fnirt', 'ants')),
         OptionSpec('fnirt_atlas', 'MNI152'),
         OptionSpec('fnirt_resolution', '2mm'),
         OptionSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
@@ -102,7 +109,7 @@ class MRIStudy(Study):
         OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         OptionSpec('preproc_resolution', None, dtype=list),
         OptionSpec('linear_reg_method', 'flirt',
-                   choices=('flirt', 'spm')),
+                   choices=('flirt', 'spm', 'ants')),
         OptionSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
@@ -134,6 +141,10 @@ class MRIStudy(Study):
                                  **kwargs)
         if method == 'flirt':
             pipeline = self._flirt_factory(
+                pipeline_name, 'brain', 'coreg_ref_brain',
+                'coreg_brain', 'coreg_matrix', **kwargs)
+        elif method == 'ants':
+            pipeline = self._ants_linear_coreg_pipeline(
                 pipeline_name, 'brain', 'coreg_ref_brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
         elif method == 'spm':
@@ -171,7 +182,7 @@ class MRIStudy(Study):
                     DatasetSpec(ref, nifti_gz_format)],
             outputs=[DatasetSpec(reg, nifti_gz_format),
                      DatasetSpec(matrix, text_matrix_format)],
-            desc="Registers a MR scan against a reference image",
+            desc="Registers a MR scan against a reference image using FLIRT",
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -252,6 +263,32 @@ class MRIStudy(Study):
         pipeline.connect_input('t2', coreg, 'source')
         # Connect outputs
         pipeline.connect_output('t2_coreg_t1', coreg, 'coregistered_source')
+        return pipeline
+
+    def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
+                                    **kwargs):
+
+        pipeline = self.create_pipeline(
+            name=name,
+            inputs=[DatasetSpec(to_reg, nifti_gz_format),
+                    DatasetSpec(ref, nifti_gz_format)],
+            outputs=[DatasetSpec(reg, nifti_gz_format),
+                     DatasetSpec(matrix, text_matrix_format)],
+            desc="Registers a MR scan against a reference image using ANTs",
+            version=1,
+            citations=[],
+            **kwargs)
+
+        ants_linear = pipeline.create_node(
+            AntsRegSyn(num_dimensions=3, transformation='r',
+                       out_prefix='reg2hires'), name='ANTs_linear_Reg',
+            wall_time=10, requirements=[ants2_req])
+        pipeline.connect_input(ref, ants_linear, 'ref_file')
+        pipeline.connect_input(to_reg, ants_linear, 'input_file')
+
+        pipeline.connect_output(reg, ants_linear, 'reg_file')
+        pipeline.connect_output(matrix, ants_linear, 'regmat')
+
         return pipeline
 
     def brain_mask_pipeline(self, in_file='preproc', **kwargs):
@@ -372,6 +409,8 @@ class MRIStudy(Study):
                                          self.COREGISTER_TO_ATLAS_NAME)
         if atlas_reg_tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
+        elif atlas_reg_tool == 'ants':
+            pipeline = self._ants_to_atlas_pipeline(**kwargs)
         else:
             raise ArcanaError("Unrecognised coregistration tool '{}'"
                               .format(atlas_reg_tool))
@@ -463,6 +502,43 @@ class MRIStudy(Study):
         pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
         pipeline.connect_output('coreg_to_atlas_coeff', fnirt,
                                 'fieldcoeff_file')
+        return pipeline
+
+    def _ants_to_atlas_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name=self.COREGISTER_TO_ATLAS_NAME,
+            inputs=[DatasetSpec('coreg_ref_brain', nifti_gz_format)],
+            outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
+                     DatasetSpec('coreg_to_atlas_mat', text_matrix_format),
+                     DatasetSpec('coreg_to_atlas_warp', nifti_gz_format),
+                     DatasetSpec('coreg_to_atlas_report', gif_format)],
+            desc=("Nonlinearly registers a MR scan to a standard space,"
+                  "e.g. MNI-space"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+        ants_reg = pipeline.create_node(
+            AntsRegSyn(num_dimensions=3, transformation='s',
+                       out_prefix='Struct2MNI', num_threads=4),
+            name='Struct2MNI_reg', wall_time=25, requirements=[ants2_req])
+
+        ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
+                                   resolution=pipeline.option('resolution'))
+        ants_reg.inputs.ref_file = ref_brain
+        pipeline.connect_input('coreg_ref_brain', ants_reg, 'input_file')
+
+        slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
+                                      requirements=[fsl5_req])
+        slices.inputs.outname = 'coreg_to_atlas_report'
+        slices.inputs.im1 = pipeline.option('MNI_template')
+        pipeline.connect(ants_reg, 'reg_file', slices, 'im2')
+
+        pipeline.connect_output('coreg_to_atlas', ants_reg, 'reg_file')
+        pipeline.connect_output('coreg_to_atlas_mat', ants_reg, 'regmat')
+        pipeline.connect_output('coreg_to_atlas_warp', ants_reg, 'warp_file')
+        pipeline.connect_output('coreg_to_atlas_report', slices, 'report')
+
         return pipeline
 
     def segmentation_pipeline(self, img_type=2, **kwargs):
@@ -621,4 +697,3 @@ class MRIStudy(Study):
                 pipeline.connect_input('align_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
         return pipeline
-

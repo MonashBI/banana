@@ -1,33 +1,35 @@
 from nipype.interfaces.fsl.model import MELODIC
-from nipype.interfaces.fsl.preprocess import BET, FLIRT
-from nipype.interfaces.afni.preprocess import Volreg, BlurToFWHM
+from nipype.interfaces.fsl.preprocess import FLIRT
+from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
-from nianalysis.interfaces.fsl import (FSLFIX, FSLFixTraining, FSLSlices,
+from nianalysis.interfaces.fsl import (FSLFIX, FSLFixTraining,
                                        SignalRegression)
-from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
-from nianalysis.requirement import (fsl5_req, ants2_req, afni_req, fix_req,
-                                    fsl509_req, fsl510_req)
+from nianalysis.requirement import (fsl5_req, afni_req, fix_req,
+                                    fsl509_req, fsl510_req, ants2_req)
 from nianalysis.citation import fsl_cite
 from nianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
-    zip_format, text_matrix_format, par_format, gif_format, targz_format,
-    text_format, dicom_format)
-from nianalysis.interfaces.ants import AntsRegSyn
+    zip_format, text_matrix_format, par_format, text_format, dicom_format)
 from nianalysis.interfaces.afni import Tproject
 from arcana.interfaces.utils import MakeDir, CopyFile, CopyDir
-from arcana.interfaces.utils import Merge
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
-import subprocess as sp
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.option import OptionSpec
 from nianalysis.study.mri.epi import EPIStudy
+from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.study.mri.structural.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from arcana.dataset import DatasetMatch
+from nianalysis.utils import get_atlas_path
+from nipype.interfaces.afni.preprocess import BlurToFWHM
+
+
+atlas_path = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))
 
 
 class FunctionalMRIStudy(EPIStudy):
@@ -39,12 +41,11 @@ class FunctionalMRIStudy(EPIStudy):
         OptionSpec('motion_reg', True),
         OptionSpec('highpass', 0.01),
         OptionSpec('brain_thresh_percent', 5),
-        OptionSpec('MNI_template', os.path.join(
-            os.environ['FSLDIR'], 'data', 'standard',
-            'MNI152_T1_2mm_brain.nii.gz')),
+        OptionSpec('MNI_template',
+                   os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         OptionSpec('MNI_template_mask', os.path.join(
-            os.environ['FSLDIR'], 'data', 'standard',
-            'MNI152_T1_2mm_brain_mask.nii.gz'))]
+            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
+        OptionSpec('linear_reg_method', 'ants')]
 
     add_data_specs = [
         DatasetSpec('train_data', rdata_format, 'TrainingFix',
@@ -53,31 +54,19 @@ class FunctionalMRIStudy(EPIStudy):
                     'fix_classification'),
         DatasetSpec('cleaned_file', nifti_gz_format,
                     'fix_regression'),
-        DatasetSpec('epi2T1', nifti_gz_format, 'ANTsRegistration'),
-        DatasetSpec('epi2T1_mat', text_matrix_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_reg', nifti_gz_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_mat', text_matrix_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_warp', nifti_gz_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_invwarp', nifti_gz_format,
-                    'ANTsRegistration'),
-        DatasetSpec('T12MNI_reg_report', gif_format,
-                    'ANTsRegistration'),
         DatasetSpec('filtered_data', nifti_gz_format,
                     'rsfMRI_filtering'),
         DatasetSpec('hires2example', text_matrix_format,
                     'rsfMRI_filtering'),
         DatasetSpec('mc_par', par_format, 'rsfMRI_filtering'),
         DatasetSpec('melodic_ica', zip_format, 'MelodicL1'),
-        DatasetSpec('registered_file', nifti_gz_format,
-                    'applyTransform'),
         DatasetSpec('fix_dir', directory_format, 'PrepareFix'),
-        DatasetSpec('smoothed_file', nifti_gz_format, 'applySmooth'),
         DatasetSpec('group_melodic', directory_format, 'groupMelodic',
-                    frequency='per_visit')]
+                    frequency='per_visit'),
+        DatasetSpec('normalized_ts', nifti_gz_format,
+                    'timeseries_normalization_to_atlas_pipeline'),
+        DatasetSpec('smoothed_ts', nifti_gz_format,
+                    'timeseries_smoothing_pipeline')]
 
     def fix_classification(self, **kwargs):
 
@@ -131,69 +120,6 @@ class FunctionalMRIStudy(EPIStudy):
         signal_reg.inputs.highpass = pipeline.option('highpass')
 
         pipeline.connect_output('cleaned_file', signal_reg, 'output')
-
-        return pipeline
-
-    def ANTsRegistration(self, **kwargs):
-
-        try:
-            cmd = 'which ANTS'
-            antspath = sp.check_output(cmd, shell=True)
-            antspath = '/'.join(antspath.split('/')[0:-1])
-            os.environ['ANTSPATH'] = antspath
-#             print antspath
-        except ImportError:
-            print "NO ANTs module found. Please ensure to have it in you PATH."
-
-        pipeline = self.create_pipeline(
-            name='ANTsReg',
-            inputs=[DatasetSpec('coreg_ref_brain', nifti_gz_format),
-                    DatasetSpec('brain', nifti_gz_format)],
-            outputs=[DatasetSpec('epi2T1', nifti_gz_format),
-                     DatasetSpec('epi2T1_mat', text_matrix_format),
-                     DatasetSpec('T12MNI_reg', nifti_gz_format),
-                     DatasetSpec('T12MNI_mat', text_matrix_format),
-                     DatasetSpec('T12MNI_warp', nifti_gz_format),
-                     DatasetSpec('T12MNI_invwarp', nifti_gz_format),
-                     DatasetSpec('T12MNI_reg_report', gif_format)],
-            desc=("python implementation of antsRegistrationSyN.sh"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        bet_rsfmri = pipeline.create_node(BET(), name="bet_rsfmri",
-                                          wall_time=5, requirements=[fsl5_req])
-        bet_rsfmri.inputs.robust = True
-        bet_rsfmri.inputs.frac = 0.4
-        bet_rsfmri.inputs.mask = True
-        pipeline.connect_input('brain', bet_rsfmri, 'in_file')
-        epireg = pipeline.create_node(
-            AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='epi2T1'), name='ANTsReg', wall_time=10,
-            requirements=[ants2_req])
-        pipeline.connect_input('coreg_ref_brain', epireg, 'ref_file')
-        pipeline.connect(bet_rsfmri, 'out_file', epireg, 'input_file')
-
-        t1reg = pipeline.create_node(
-            AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI', num_threads=4), name='T1_reg',
-            wall_time=25, requirements=[ants2_req])
-        t1reg.inputs.ref_file = pipeline.option('MNI_template')
-        pipeline.connect_input('coreg_ref_brain', t1reg, 'input_file')
-
-        slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
-                                      requirements=[fsl5_req])
-        slices.inputs.outname = 'T12MNI_reg_report'
-        slices.inputs.im1 = pipeline.option('MNI_template')
-        pipeline.connect(t1reg, 'reg_file', slices, 'im2')
-
-        pipeline.connect_output('epi2T1', epireg, 'reg_file')
-        pipeline.connect_output('epi2T1_mat', epireg, 'regmat')
-        pipeline.connect_output('T12MNI_reg', t1reg, 'reg_file')
-        pipeline.connect_output('T12MNI_mat', t1reg, 'regmat')
-        pipeline.connect_output('T12MNI_warp', t1reg, 'warp_file')
-        pipeline.connect_output('T12MNI_invwarp', t1reg, 'inv_warp')
-        pipeline.connect_output('T12MNI_reg_report', slices, 'report')
 
         return pipeline
 
@@ -290,62 +216,6 @@ class FunctionalMRIStudy(EPIStudy):
         pipeline.connect_output('filtered_data', add_mean, 'out_file')
         pipeline.connect_output('hires2example', convxfm, 'out_file')
         pipeline.connect_output('mc_par', afni_mc, 'oned_file')
-
-        return pipeline
-
-    def applyTransform(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='ANTsApplyTransform',
-            inputs=[DatasetSpec('cleaned_file', nifti_gz_format),
-                    DatasetSpec('T12MNI_warp', nifti_gz_format),
-                    DatasetSpec('T12MNI_mat', text_matrix_format),
-                    DatasetSpec('epi2T1_mat', text_matrix_format)],
-            outputs=[DatasetSpec('registered_file', nifti_gz_format)],
-            desc=("Spatial and temporal rsfMRI filtering"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        merge_trans = pipeline.create_node(Merge(3), name='merge_transforms',
-                                           wall_time=1)
-        pipeline.connect_input('T12MNI_warp', merge_trans, 'in1')
-        pipeline.connect_input('T12MNI_mat', merge_trans, 'in2')
-        pipeline.connect_input('epi2T1_mat', merge_trans, 'in3')
-
-        apply_trans = pipeline.create_node(
-            ApplyTransforms(), name='ApplyTransform', wall_time=7,
-            memory=24000, requirements=[ants2_req])
-        apply_trans.inputs.reference_image = pipeline.option('MNI_template')
-#         apply_trans.inputs.dimension = 3
-        apply_trans.inputs.interpolation = 'Linear'
-        apply_trans.inputs.input_image_type = 3
-        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect_input('cleaned_file', apply_trans, 'input_image')
-
-        pipeline.connect_output('registered_file', apply_trans, 'output_image')
-
-        return pipeline
-
-    def applySmooth(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='3dBlurToFWHM',
-            inputs=[DatasetSpec('registered_file', nifti_gz_format)],
-            outputs=[DatasetSpec('smoothed_file', nifti_gz_format)],
-            desc=("Spatial and temporal rsfMRI filtering"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        smooth = pipeline.create_node(BlurToFWHM(), name='3dBlurToFWHM',
-                                      wall_time=5, requirements=[afni_req])
-        smooth.inputs.fwhm = 5
-        smooth.inputs.out_file = 'rs-fmri_filtered_reg_smooth.nii.gz'
-        smooth.inputs.mask = pipeline.option('MNI_template_mask')
-        pipeline.connect_input('registered_file', smooth, 'in_file')
-
-        pipeline.connect_output('smoothed_file', smooth, 'out_file')
 
         return pipeline
 
@@ -499,6 +369,67 @@ class FunctionalMRIStudy(EPIStudy):
 
         return pipeline
 
+    def timeseries_normalization_to_atlas_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='timeseries_normalization_to_atlas_pipeline',
+            inputs=[DatasetSpec('cleaned_file', nifti_gz_format),
+                    DatasetSpec('coreg_to_atlas_warp', nifti_gz_format),
+                    DatasetSpec('coreg_to_atlas_mat', text_matrix_format),
+                    DatasetSpec('coreg_matrix', text_matrix_format)],
+            outputs=[DatasetSpec('registered_file', nifti_gz_format)],
+            desc=("Apply spatial normalization to a 4D file (usually a fMRI "
+                  "file which has been previously filtered). This "
+                  "transformations must be the outputs of ANTs."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        merge_trans = pipeline.create_node(
+            NiPypeMerge(3), name='merge_transforms', wall_time=1)
+        pipeline.connect_input('coreg_to_atlas_warp', merge_trans, 'in1')
+        pipeline.connect_input('coreg_to_atlas_mat', merge_trans, 'in2')
+        pipeline.connect_input('coreg_matrix', merge_trans, 'in3')
+
+        apply_trans = pipeline.create_node(
+            ApplyTransforms(), name='ApplyTransform', wall_time=7,
+            memory=24000, requirements=[ants2_req])
+        ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
+                                   resolution=pipeline.option('resolution'))
+        apply_trans.inputs.reference_image = ref_brain
+#         apply_trans.inputs.dimension = 3
+        apply_trans.inputs.interpolation = 'Linear'
+        apply_trans.inputs.input_image_type = 3
+        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
+        pipeline.connect_input('cleaned_file', apply_trans, 'input_image')
+
+        pipeline.connect_output('normalized_ts', apply_trans, 'output_image')
+
+        return pipeline
+
+    def timeseries_spatial_smoothing_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='timeseries_spatial_smoothing_pipeline',
+            inputs=[DatasetSpec('normalized_ts', nifti_gz_format)],
+            outputs=[DatasetSpec('smoothed_ts', nifti_gz_format)],
+            desc=("Spatial smoothing of a 4D file (usually a fMRI file output "
+                  "of apply_transform)."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        smooth = pipeline.create_node(BlurToFWHM(), name='3dBlurToFWHM',
+                                      wall_time=5, requirements=[afni_req])
+        smooth.inputs.fwhm = 5
+        smooth.inputs.out_file = 'smoothed_ts.nii.gz'
+        smooth.inputs.mask = pipeline.option('MNI_template_mask')
+        pipeline.connect_input('normalized_ts', smooth, 'in_file')
+
+        pipeline.connect_output('smoothed_ts', smooth, 'out_file')
+
+        return pipeline
+
     def groupMelodic(self, **kwargs):
 
         pipeline = self.create_pipeline(
@@ -561,7 +492,7 @@ def create_fmri_study_class(name, t1, epis, fm_mag=None, fm_phase=None,
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref_preproc'})
     study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMRIStudy,
-                                    epi_refspec)
+                                    ref_spec)
                        for i in range(len(epis)))
     inputs.extend(
         DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)

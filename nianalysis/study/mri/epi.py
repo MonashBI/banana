@@ -39,9 +39,20 @@ class EPIStudy(MRIStudy):
     add_option_specs = [
         OptionSpec('bet_robust', True),
         OptionSpec('bet_f_threshold', 0.2),
-        OptionSpec('bet_reduce_bias', False)]
+        OptionSpec('bet_reduce_bias', False),
+        OptionSpec('linear_reg_method', 'epireg')]
 
     def linear_coregistration_pipeline(self, **kwargs):
+        pipeline_name = 'linear_coreg'
+        method = self.pre_option('linear_reg_method', pipeline_name,
+                                 **kwargs)
+        if method == 'epireg':
+            return self._epireg_linear_coregistration_pipeline(**kwargs)
+        else:
+            return super(EPIStudy, self).linear_coregistration_pipeline(
+                **kwargs)
+
+    def _epireg_linear_coregistration_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='EPIREG_pipeline',
