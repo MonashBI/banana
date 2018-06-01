@@ -146,7 +146,7 @@ class EPIStudy(MRIStudy):
         prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
         prep_dwi.inputs.topup = True
         pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-        pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
+        pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
         pipeline.connect(reorient_epi_in, 'out_file', prep_dwi, 'dwi')
         pipeline.connect(reorient_epi_opposite, 'out_file', prep_dwi,
                          'dwi1')
