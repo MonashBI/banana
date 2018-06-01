@@ -305,12 +305,12 @@ class MRIStudy(Study):
                               .format(bet_method))
         return pipeline
 
-    def _fsl_bet_brain_mask_pipeline(self, in_file, name='', **kwargs):
+    def _fsl_bet_brain_mask_pipeline(self, in_file, **kwargs):
         """
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.create_pipeline(
-            name=name+self.BRAIN_MASK_NAME,
+            name=self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=[DatasetSpec('brain', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
@@ -336,7 +336,7 @@ class MRIStudy(Study):
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         return pipeline
 
-    def _optiBET_brain_mask_pipeline(self, in_file, name='', **kwargs):
+    def _optiBET_brain_mask_pipeline(self, in_file, **kwargs):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
@@ -347,7 +347,7 @@ class MRIStudy(Study):
                            **kwargs):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
-            name=name+self.BRAIN_MASK_NAME,
+            name=self.BRAIN_MASK_NAME,
             inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
             desc=("Modified implementation of optiBET.sh"),
