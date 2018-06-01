@@ -18,7 +18,7 @@ from nianalysis.data_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format)
 from nianalysis.requirement import (
-    fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req)
+    fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
 from arcana.exception import ArcanaError
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
@@ -140,7 +140,7 @@ class DiffusionStudy(EPIStudy):
             subtract.inputs.operation = 'subtract'
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
-            requirements=[mrtrix3_req, fsl509_req], wall_time=60)
+            requirements=[mrtrix3_req, fsl510_req], wall_time=60)
         dwipreproc.inputs.eddy_options = '--data_is_shelled '
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
