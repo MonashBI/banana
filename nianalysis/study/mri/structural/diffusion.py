@@ -177,7 +177,7 @@ class DiffusionStudy(EPIStudy):
                 requirements=[fsl509_req])
             pipeline.connect(dwipreproc, 'out_file', swap, 'in_file')
             # Connect inputs
-            pipeline.connect_input('reverse_pe', mrcat, 'second_scan')
+            pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
         if pipeline.option('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
