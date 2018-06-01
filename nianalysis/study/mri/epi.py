@@ -55,7 +55,7 @@ class EPIStudy(MRIStudy):
     def _epireg_linear_coregistration_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
-            name='EPIREG_pipeline',
+            name='linear_coreg',
             inputs=[DatasetSpec('brain', nifti_gz_format),
                     DatasetSpec('coreg_ref_brain', nifti_gz_format),
                     DatasetSpec('coreg_ref_preproc', nifti_gz_format),

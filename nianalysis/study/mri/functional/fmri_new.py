@@ -24,12 +24,11 @@ from nianalysis.study.mri.structural.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from arcana.dataset import DatasetMatch
-from nianalysis.utils import get_atlas_path
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 
 
 atlas_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))
+    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'atlases'))
 
 
 class FunctionalMRIStudy(EPIStudy):
@@ -66,7 +65,7 @@ class FunctionalMRIStudy(EPIStudy):
         DatasetSpec('normalized_ts', nifti_gz_format,
                     'timeseries_normalization_to_atlas_pipeline'),
         DatasetSpec('smoothed_ts', nifti_gz_format,
-                    'timeseries_smoothing_pipeline')]
+                    'timeseries_spatial_smoothing_pipeline')]
 
     def fix_classification(self, **kwargs):
 
@@ -377,7 +376,7 @@ class FunctionalMRIStudy(EPIStudy):
                     DatasetSpec('coreg_to_atlas_warp', nifti_gz_format),
                     DatasetSpec('coreg_to_atlas_mat', text_matrix_format),
                     DatasetSpec('coreg_matrix', text_matrix_format)],
-            outputs=[DatasetSpec('registered_file', nifti_gz_format)],
+            outputs=[DatasetSpec('normalized_ts', nifti_gz_format)],
             desc=("Apply spatial normalization to a 4D file (usually a fMRI "
                   "file which has been previously filtered). This "
                   "transformations must be the outputs of ANTs."),
@@ -394,8 +393,7 @@ class FunctionalMRIStudy(EPIStudy):
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
             memory=24000, requirements=[ants2_req])
-        ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
-                                   resolution=pipeline.option('resolution'))
+        ref_brain = pipeline.option('MNI_template')
         apply_trans.inputs.reference_image = ref_brain
 #         apply_trans.inputs.dimension = 3
         apply_trans.inputs.interpolation = 'Linear'
@@ -472,6 +470,7 @@ def create_fmri_study_class(name, t1, epis, fm_mag=None, fm_phase=None,
     dct = {}
     data_specs = []
     option_specs = []
+    output_files = []
     distortion_correction = False
 
     if fm_mag and fm_phase:
@@ -508,12 +507,14 @@ def create_fmri_study_class(name, t1, epis, fm_mag=None, fm_phase=None,
         inputs.extend(DatasetMatch('epi_{}_train_data'.format(i),
                                    rdata_format, training_set)
                       for i in range(len(epis)))
-        output_file = 'smoothed_file'
+        output_files.extend('epi_{}_smoothed_ts'.format(i) for i,
+                            epi_scan in enumerate(epis))
     else:
-        output_file = 'melodic_ica'
+        output_files.extend('epi_{}_melodic_ica'.format(i) for i,
+                            epi_scan in enumerate(epis))
 
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_option_specs'] = option_specs
-    return MultiStudyMetaClass(name, (MultiStudy,), dct), inputs, output_file
+    return MultiStudyMetaClass(name, (MultiStudy,), dct), inputs, output_files

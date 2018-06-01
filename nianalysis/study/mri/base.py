@@ -97,10 +97,12 @@ class MRIStudy(Study):
                    choices=('fsl_bet', 'optibet')),
         OptionSpec('MNI_template',
                    os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
+        OptionSpec('MNI_template_brain',
+                   os.path.join(atlas_path, 'MNI152_T1_2mm_brain.nii.gz')),
         OptionSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         OptionSpec('optibet_gen_report', False),
-        OptionSpec('fnirt_atlas_reg_tool', 'ants',
+        OptionSpec('atlas_coreg_tool', 'ants',
                    choices=('fnirt', 'ants')),
         OptionSpec('fnirt_atlas', 'MNI152'),
         OptionSpec('fnirt_resolution', '2mm'),
@@ -405,8 +407,8 @@ class MRIStudy(Study):
         return pipeline
 
     def coregister_to_atlas_pipeline(self, **kwargs):
-        atlas_reg_tool = self.option.get('atlas_reg_tool',
-                                         self.COREGISTER_TO_ATLAS_NAME)
+        atlas_reg_tool = self.pre_option(
+            'atlas_coreg_tool', self.COREGISTER_TO_ATLAS_NAME, **kwargs)
         if atlas_reg_tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
         elif atlas_reg_tool == 'ants':
@@ -523,8 +525,7 @@ class MRIStudy(Study):
                        out_prefix='Struct2MNI', num_threads=4),
             name='Struct2MNI_reg', wall_time=25, requirements=[ants2_req])
 
-        ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
-                                   resolution=pipeline.option('resolution'))
+        ref_brain = pipeline.option('MNI_template_brain')
         ants_reg.inputs.ref_file = ref_brain
         pipeline.connect_input('coreg_ref_brain', ants_reg, 'input_file')
 

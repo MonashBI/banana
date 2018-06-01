@@ -6,7 +6,7 @@ from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from mc_pipeline.generate_mc_pipeline import create_motion_correction_class  # @IgnorePep8 @Reimport
 
 
-ref = ''
+ref = 'ref'
 ref_type = 't1'
 t1s = ['ute']
 t2s = ['t2']
