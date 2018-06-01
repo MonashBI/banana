@@ -11,7 +11,7 @@ ref_type = 't1'
 t1s = ['ute']
 t2s = ['t2']
 epis = ['epi']
-dmris = ['dwi_main', 'dwi_opposite']
+dmris = [['dwi_main', '0'], ['dwi_opposite', '-1']]
 
 
 class TestMC(TestCase):

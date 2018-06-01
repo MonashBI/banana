@@ -487,8 +487,9 @@ class ExtractFSLGradients(CommandLine):
 # =============================================================================
 
 class ExtractDWIorB0InputSpec(CommandLineInputSpec):
-    in_file = File(exists=True, argstr='%s', mandatory=True, position=0,
-                   desc="Diffusion weighted images with graident info")
+    in_file = traits.Either(File, Directory, exists=True, argstr='%s',
+                            mandatory=True, position=0,
+                            desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
@@ -499,6 +500,8 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
     quiet = traits.Bool(
         mandatory=False, argstr="-quiet",
         desc="Don't display output during operation")
+
+    out_ext = traits.Str(desc='Extention of the output file.')
 
     grad = traits.Str(
         mandatory=False, argstr='-grad %s',
@@ -546,7 +549,13 @@ class ExtractDWIorB0(CommandLine):
         if isdefined(self.inputs.out_file):
             filename = self.inputs.out_file
         else:
-            base, ext = split_extension(os.path.basename(self.inputs.in_file))
+            if isdefined(self.inputs.out_ext):
+                ext = self.inputs.out_ext
+                base, _ = split_extension(os.path.basename(
+                    self.inputs.in_file))
+            else:
+                base, ext = split_extension(os.path.basename(
+                    self.inputs.in_file))
             if isdefined(self.inputs.bzero):
                 suffix = 'b0'
             else:

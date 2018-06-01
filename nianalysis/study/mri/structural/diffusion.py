@@ -155,6 +155,7 @@ class DiffusionStudy(EPIStudy):
                 ExtractDWIorB0(), name='dwiextract',
                 requirements=[mrtrix3_req])
             dwiextract.inputs.bzero = True
+            dwiextract.inputs.out_ext = '.nii.gz'
             # Get first b=0 from dwi b=0 volumes
             mrconvert = pipeline.create_node(MRConvert(), name="mrconvert",
                                              requirements=[mrtrix3_req])
