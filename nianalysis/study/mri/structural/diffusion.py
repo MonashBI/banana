@@ -191,7 +191,7 @@ class DiffusionStudy(EPIStudy):
             pipeline.connect(subtract_operands, 'out', subtract, 'operands')
         if distortion_correction:
             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-            pipeline.connect_input('pe_angle', prep_dwi, 'phase_offset')
+            pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
             pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
             pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
             pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
