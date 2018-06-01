@@ -145,6 +145,10 @@ class DiffusionStudy(EPIStudy):
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
         dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
+        # Create node to reorient dwi_preproc out_file
+        swap = pipeline.create_node(
+                fsl.utils.Reorient2Std(), name='fslreorient2std',
+                requirements=[fsl509_req])
         if distortion_correction:
             # Extract b=0 volumes
             dwiextract = pipeline.create_node(
@@ -171,11 +175,6 @@ class DiffusionStudy(EPIStudy):
             extract_grad = pipeline.create_node(
                 ExtractFSLGradients(), name="extract_grad",
                 requirements=[mrtrix3_req])
-            # Create node to reorient dwi_preproc out_file
-            swap = pipeline.create_node(
-                fsl.utils.Reorient2Std(), name='fslreorient2std',
-                requirements=[fsl509_req])
-            pipeline.connect(dwipreproc, 'out_file', swap, 'in_file')
             # Connect inputs
             pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
         if pipeline.option('preproc_denoise'):
