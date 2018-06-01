@@ -39,8 +39,8 @@ class DiffusionStudy(EPIStudy):
     add_data_specs = [
         DatasetSpec('dwi_reference', nifti_gz_format, optional=True),
         DatasetSpec('forward_pe', dicom_format, optional=True),
-#         DatasetSpec('primary', nifti_gz_format, 'extract_b0_pipeline',
-#                     desc="b0 image"),
+        DatasetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
+                    desc="b0 image"),
         DatasetSpec('noise_residual', mrtrix_format, 'basic_preproc_pipeline'),
         DatasetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         DatasetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
@@ -77,7 +77,7 @@ class DiffusionStudy(EPIStudy):
     add_option_specs = [
         OptionSpec('multi_tissue', True),
         OptionSpec('preproc_pe_dir', None, dtype=str),
-        OptionSpec('preproc_denoise', True),
+        OptionSpec('preproc_denoise', False),
         OptionSpec('brain_extract_method', 'mrtrix'),
         OptionSpec('bias_correct_method', 'ants',
                    choices=('ants', 'fsl')),
@@ -374,7 +374,7 @@ class DiffusionStudy(EPIStudy):
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('tensor', nifti_gz_format)],
             desc=("Estimates the apparent diffusion tensor in each "
-                         "voxel"),
+                  "voxel"),
             version=1,
             citations=[],
             **kwargs)
@@ -510,7 +510,7 @@ class DiffusionStudy(EPIStudy):
                     DatasetSpec('response', text_format)],
             outputs=[DatasetSpec('fod', nifti_gz_format)],
             desc=("Estimates the fibre orientation distribution in each"
-                         " voxel"),
+                  " voxel"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)

@@ -9,8 +9,7 @@ from arcana.study.base import Study, StudyMetaClass
 from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from nianalysis.data_format import (
     dicom_format, text_format, gif_format)
-from nianalysis.requirement import (fsl5_req, mrtrix3_req, fsl509_req,
-                                    ants2_req, dcm2niix_req, afni_req)
+from nianalysis.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
 from arcana.exception import (
@@ -18,14 +17,12 @@ from arcana.exception import (
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
-from nipype.interfaces.afni.preprocess import BlurToFWHM
 from nianalysis.interfaces.fsl import FSLSlices
 from nianalysis.data_format import text_matrix_format
 import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.interfaces.converters import Dcm2niix
 from arcana.option import OptionSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
