@@ -219,7 +219,7 @@ class DiffusionStudy(EPIStudy):
             Can be either 'bet' or 'dwi2mask' depending on which mask tool you
             want to use
         """
-        pipeline_name = 'brain_mask_mrtrix'
+        pipeline_name = 'brain_mask'
         mask_tool = self.pre_option('brain_extract_method', pipeline_name,
                                     **kwargs)
         if mask_tool == 'fsl':
