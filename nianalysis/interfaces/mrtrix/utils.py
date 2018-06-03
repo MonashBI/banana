@@ -432,8 +432,9 @@ class MRCalc(CommandLine):
 
 
 class ExtractFSLGradientsInputSpec(CommandLineInputSpec):
-    in_file = File(exists=True, argstr='%s', mandatory=True, position=0,
-                   desc="Diffusion weighted images with graident info")
+    in_file = traits.Either(
+        File, Directory, exists=True, argstr='%s', mandatory=True, position=0,
+        desc="Diffusion weighted images with graident info")
     bvecs_file = File(genfile=True, argstr='-export_grad_fsl %s', position=1,
                       desc=("Extracted gradient encoding directions in FSL "
                             "format"))

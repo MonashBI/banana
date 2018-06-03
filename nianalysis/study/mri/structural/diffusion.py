@@ -167,11 +167,8 @@ class DiffusionStudy(EPIStudy):
             prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
             # Create preprocessing node
             dwipreproc.inputs.rpe_pair = True
-    #         if pipeline.option('preproc_pe_dir') is None:
-    #             raise ArcanaError(
-    #                 "Required option 'preproc_pe_dir' was not provided to '{}' "
-    #                 "pipeline in {}".format(pipeline.name, self))
-#             dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
+            if pipeline.option('preproc_pe_dir') is not None:
+                dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
             # Create nodes to gradients to FSL format
             extract_grad = pipeline.create_node(
                 ExtractFSLGradients(), name="extract_grad",
@@ -196,7 +193,7 @@ class DiffusionStudy(EPIStudy):
             pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
             pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
             pipeline.connect(mrconvert, 'out_file', mrcat, 'first_scan')
-        pipeline.connect(dwipreproc, 'out_file', extract_grad, 'in_file')
+        pipeline.connect_input('primary', extract_grad, 'in_file')
         pipeline.connect(dwipreproc, 'out_file', swap, 'in_file')
         # Connect outputs
         pipeline.connect_output('preproc', swap, 'out_file')
