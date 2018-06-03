@@ -1,15 +1,8 @@
 from __future__ import absolute_import
-from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
-                                    traits, TraitedSpec, Directory, File,
-                                    isdefined)
-import numpy as np
+from nipype.interfaces.base import (
+    BaseInterface, BaseInterfaceInputSpec, TraitedSpec, Directory, File)
 import glob
-import pydicom
-from nipype.utils.filemanip import split_filename
-import datetime as dt
 import os
-import nibabel as nib
-from arcana.utils import split_extension
 import shutil
 
 
