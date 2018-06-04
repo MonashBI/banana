@@ -1,11 +1,11 @@
 from nianalysis.data_format import dicom_format
 from arcana.dataset import DatasetMatch
-from arcana.archive.xnat import XNATArchive
+from arcana.repository.xnat import XnatRepository
 
 
-archive = XNATArchive()
+repository = XnatRepository()
 
-archive.cache(
+repository.cache(
     'MRH032',
     [Dataset('t1_mprage_sag_p2_iso_1mm', format=dicom_format),
      Dataset('t2_tra_tse_320_4mm', format=dicom_format)],

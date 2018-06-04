@@ -8,7 +8,7 @@ from nianalysis.testing import BaseTestCase as TestCase # @IgnorePep8 @Reimport
 t1 = 't1'
 fm_mag = 'field_map_mag'
 fm_phase = 'field_map_phase'
-epis = ['epi_1', 'epi_2']
+epis = 'epi_1'
 train_set = 'rs_train'
 
 
@@ -17,7 +17,7 @@ class TestFMRI(TestCase):
     def test_fmri(self):
 
         fMRI, inputs, output_files = create_fmri_study_class(
-            'fMRI', t1, epis, fm_mag=fm_mag, fm_phase=fm_phase,
+            'fMRI', t1, epis, 1, fm_mag=fm_mag, fm_phase=fm_phase,
             training_set=train_set)
 
         study = self.create_study(

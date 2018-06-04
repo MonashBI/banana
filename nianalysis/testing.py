@@ -11,22 +11,22 @@ from collections import defaultdict
 import warnings
 import logging
 import xnat
-from arcana.archive.xnat import (
+from arcana.repository.xnat import (
     guess_data_format, special_char_re, lower, BUILTIN_XNAT_FIELDS)
 from arcana.exception import ArcanaMissingDataException
 from arcana.data_format import DataFormat
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
-from arcana.archive.local import (
-    LocalArchive, SUMMARY_NAME)
+from arcana.repository.local import (
+    LocalRepository, SUMMARY_NAME)
 from arcana.runner import LinearRunner
 from arcana.exception import ArcanaError
 from arcana.node import ArcanaNodeMixin
 from arcana.exception import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
-from arcana.archive.local import (
+from arcana.repository.local import (
     SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
 logger = logging.getLogger('Arcana')
@@ -65,8 +65,8 @@ class BaseTestCase(TestCase):
 
     @classproperty
     @classmethod
-    def archive_path(cls):
-        return os.path.join(cls.test_data_dir, 'archive')
+    def repository_path(cls):
+        return os.path.join(cls.test_data_dir, 'repository')
 
     @classproperty
     @classmethod
@@ -122,7 +122,7 @@ class BaseTestCase(TestCase):
             pass
 
     def delete_project(self, project_dir):
-        # Clean out any existing archive files
+        # Clean out any existing repository files
         shutil.rmtree(project_dir, ignore_errors=True)
 
     def reset_dirs(self):
@@ -148,8 +148,8 @@ class BaseTestCase(TestCase):
         return os.path.join(self.base_cache_path, self.name)
 
     @property
-    def archive(self):
-        return LocalArchive(self.project_dir)
+    def repository(self):
+        return LocalRepository(self.project_dir)
 
     @property
     def runner(self):
@@ -157,7 +157,7 @@ class BaseTestCase(TestCase):
 
     @property
     def project_dir(self):
-        return os.path.join(self.archive_path, self.name)
+        return os.path.join(self.repository_path, self.name)
 
     @property
     def work_dir(self):
@@ -185,10 +185,10 @@ class BaseTestCase(TestCase):
         test_class_name = cls.__name__[4:].upper()
         return module_name + '_' + test_class_name
 
-    def create_study(self, study_cls, name, inputs, archive=None,
+    def create_study(self, study_cls, name, inputs, repository=None,
                      runner=None, **kwargs):
         """
-        Creates a study using default archive and runners.
+        Creates a study using default repository and runners.
 
         Parameters
         ----------
@@ -198,20 +198,20 @@ class BaseTestCase(TestCase):
             Name of the study
         inputs : List[BaseSpec]
             List of inputs to the study
-        archive : BaseArchive | None
-            The archive to use (a default local archive is used if one
+        repository : BaseRepository | None
+            The repository to use (a default local repository is used if one
             isn't provided
         runner : Runner | None
             The runner to use (a default LinearRunner is used if one
             isn't provided
         """
-        if archive is None:
-            archive = self.archive
+        if repository is None:
+            repository = self.repository
         if runner is None:
             runner = self.runner
         return study_cls(
             name=name,
-            archive=archive,
+            repository=repository,
             runner=runner,
             inputs=inputs,
             **kwargs)

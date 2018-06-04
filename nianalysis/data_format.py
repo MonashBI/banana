@@ -40,7 +40,8 @@ class MrtrixConverter(Converter):
 
 # NeuroImaging data formats
 dicom_format = DataFormat(name='dicom', extension=None,
-                          directory=True, within_dir_exts=['.dcm'])
+                          directory=True, within_dir_exts=['.dcm'],
+                          alternate_names=['secondary'])
 nifti_format = DataFormat(name='nifti', extension='.nii',
                           converters={'dicom': Dcm2niixConverter,
                                       'analyze': MrtrixConverter,

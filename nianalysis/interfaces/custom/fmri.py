@@ -1,13 +1,12 @@
 from __future__ import absolute_import
 from nipype.interfaces.base import (
     BaseInterface, BaseInterfaceInputSpec, TraitedSpec, Directory, File)
-import glob
 import os
 import shutil
 
 
 class PrepareFIXInputSpec(BaseInterfaceInputSpec):
-    
+
     melodic_dir = Directory()
     filtered_epi = File(exists=True)
     t1_brain = File(exists=True)
@@ -22,17 +21,17 @@ class PrepareFIXInputSpec(BaseInterfaceInputSpec):
 
 
 class PrepareFIXOutputSpec(TraitedSpec):
-    
+
     fix_dir = Directory()
 
 
 class PrepareFIX(BaseInterface):
-    
+
     input_spec = PrepareFIXInputSpec
     output_spec = PrepareFIXOutputSpec
 
     def _run_interface(self, runtime):
-        
+
         melodic_dir = self.inputs.melodic_dir
         filtered_epi = self.inputs.filtered_epi
         t1_brain = self.inputs.t1_brain
@@ -45,32 +44,26 @@ class PrepareFIX(BaseInterface):
         MNI2t1_mat = self.inputs.MNI2t1_mat
         epi_mean = self.inputs.epi_mean
 
-        os.mkdir(melodic_dir+'/reg')
-        shutil.copy2(t12MNI_mat, melodic_dir+'/reg/highres2std.mat')
-        shutil.copy2(MNI2t1_mat, melodic_dir+'/reg/std2highres.mat')
-        shutil.copy2(epi2t1_mat, melodic_dir+
-                     '/reg/example_func2highres.mat')
-        shutil.copy2(t1_brain, melodic_dir+'/reg/highres.nii.gz')
-        shutil.copy2(epi_preproc, melodic_dir+
-                     '/reg/example_func.nii.gz')
-        shutil.copy2(t12epi_mat, melodic_dir+
-                     '/reg/highres2example_func.mat')
-        os.mkdir(melodic_dir+'/mc')
-        shutil.copy2(mc_par, melodic_dir+
-                     '/mc/prefiltered_func_data_mcf.par')
-        shutil.copy2(epi_brain_mask, melodic_dir+'/mask.nii.gz')
-        shutil.copy2(epi_mean, melodic_dir+'/mean_func.nii.gz')
-        os.mkdir(melodic_dir+'/filtered_func_data.ica')
-        for f in glob.glob(melodic_dir+'/*'):
-            shutil.copy2(f, melodic_dir+'/filtered_func_data.ica/')
-        shutil.copy2(filtered_epi, melodic_dir+
-                     '/filtered_func_data.nii.gz')
+        shutil.copytree(melodic_dir, 'melodic_ica')
+        os.mkdir('melodic_ica/reg')
+        shutil.copy2(t12MNI_mat, 'melodic_ica/reg/highres2std.mat')
+        shutil.copy2(MNI2t1_mat, 'melodic_ica/reg/std2highres.mat')
+        shutil.copy2(epi2t1_mat, 'melodic_ica/reg/example_func2highres.mat')
+        shutil.copy2(t1_brain, 'melodic_ica/reg/highres.nii.gz')
+        shutil.copy2(epi_preproc, 'melodic_ica/reg/example_func.nii.gz')
+        shutil.copy2(t12epi_mat, 'melodic_ica/reg/highres2example_func.mat')
+        os.mkdir('melodic_ica/mc')
+        shutil.copy2(mc_par, 'melodic_ica/mc/prefiltered_func_data_mcf.par')
+        shutil.copy2(epi_brain_mask, 'melodic_ica/mask.nii.gz')
+        shutil.copy2(epi_mean, 'melodic_ica/mean_func.nii.gz')
+        shutil.copytree(melodic_dir, 'melodic_ica/filtered_func_data.ica')
+        shutil.copy2(filtered_epi, 'melodic_ica/filtered_func_data.nii.gz')
 
         return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        
-        outputs["fix_dir"] = self.inputs.melodic_dir
-        
+
+        outputs["fix_dir"] = os.getcwd()+'/melodic_ica'
+
         return outputs

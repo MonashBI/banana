@@ -2,20 +2,20 @@ from nianalysis.study.mri.motion_detection_mixin import (
     create_motion_detection_class)
 import os.path
 import errno
-from arcana.archive.local import LocalArchive
-from arcana.archive.xnat import XNATArchive
+from arcana.repository.local import LocalRepository
+from arcana.repository.xnat import XnatRepository
 
 
 def run_md(input_dir, dynamic=False, xnat_id=None):
 
     if xnat_id is not None:
-        archive = XNATArchive(cache_dir=input_dir+'/motion_detection_cache')
+        repository = XnatRepository(cache_dir=input_dir+'/motion_detection_cache')
         work_dir = input_dir
         project_id = xnat_id.split('_')[0]
         sub_id = xnat_id.split('_')[0]+'_'+xnat_id.split('_')[1]
         session_id = xnat_id.split('_')[2]
     else:
-        archive = LocalArchive(input_dir)
+        repository = LocalRepository(input_dir)
         work_dir = os.path.join(input_dir, 'motion_detection_cache')
         project_id = 'work_dir'
         sub_id = 'work_sub_dir'
@@ -34,7 +34,7 @@ def run_md(input_dir, dynamic=False, xnat_id=None):
             raise
 
     study = cls(name='motion_detection', project_id=project_id,
-                archive=archive, inputs=inputs)
+                repository=repository, inputs=inputs)
     study.gather_outputs_pipeline().run(
         subject_ids=[sub_id],
         visit_ids=[session_id], work_dir=WORK_PATH)

@@ -3,7 +3,7 @@ import os.path
 import errno
 from arcana.dataset import DatasetMatch
 from nianalysis.study.mri.structural.t2star import T2StarStudy
-from arcana.archive.xnat import XNATArchive
+from arcana.repository.xnat import XnatRepository
 from nianalysis.data_format import zip_format
 import argparse
 import cPickle as pkl
@@ -31,10 +31,10 @@ PROJECT_ID = 'MRH017'
 datasets = {DatasetMatch('coils', zip_format, 'swi_coils')}
 visit_ids = visit_ids['MR01']
 
-archive = XNATArchive(cache_dir='/scratch/dq13/xnat_cache3')
+repository = XnatRepository(cache_dir='/scratch/dq13/xnat_cache3')
 
 if args.cache_project:
-    project = archive.project(PROJECT_ID, subject_ids=ids, visit_ids=visit_ids)
+    project = repository.project(PROJECT_ID, subject_ids=ids, visit_ids=visit_ids)
     with open(CACHE_PROJECT_PATH, 'w') as f:
         pkl.dump(project, f)
 else:
@@ -42,11 +42,11 @@ else:
         project = pkl.load(f)   
 
 
-archive.cache(PROJECT_ID, datasets.values(), subject_ids=ids, visit_ids=visit_ids)
+repository.cache(PROJECT_ID, datasets.values(), subject_ids=ids, visit_ids=visit_ids)
     
 study = T2StarStudy(
     name='qsm',
-    project_id=PROJECT_ID, archive=archive, input_datasets=datasets)
+    project_id=PROJECT_ID, repository=repository, input_datasets=datasets)
 study.qsm_pipeline().submit(subject_ids=ids, visit_ids=visit_ids,
                             work_dir=WORK_PATH, email='tom.close@monash.edu',
                             project=project)

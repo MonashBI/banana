@@ -3,7 +3,7 @@ from mc_pipeline.generate_mc_pipeline import create_motion_correction_class
 import os.path
 import errno
 # from arcana.runner import MultiProcRunner
-from arcana.archive.local import LocalArchive
+from arcana.repository.local import LocalRepository
 from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    archive = LocalArchive(args.input_dir+'/work_dir')
+    repository = LocalRepository(args.input_dir+'/work_dir')
     work_dir = os.path.join(args.input_dir, 'motion_detection_cache')
     WORK_PATH = work_dir
     try:
@@ -171,7 +171,7 @@ if __name__ == "__main__":
 
     study = MotionCorrection(name='MotionCorrection',
                              runner=LinearRunner(WORK_PATH),
-                             archive=archive, inputs=inputs,
+                             repository=repository, inputs=inputs,
                              subject_ids=[sub_id], options=mc.options,
                              visit_ids=[session_id])
     study.data(out_data)

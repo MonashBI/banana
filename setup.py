@@ -21,7 +21,7 @@ setup(
     license='The Apache Software Licence 2.0',
     description=(
         'A data-centric NeuroImaging analysis package based on '
-        'NiPype with archive backends for XNAT and local storage'),
+        'NiPype with repository backends for XNAT and local storage'),
     long_description=open('README.rst').read(),
     install_requires=['arcana>=0.2.2',
                       'pydicom>=1.0'],
