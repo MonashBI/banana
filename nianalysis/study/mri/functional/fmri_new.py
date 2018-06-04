@@ -127,12 +127,12 @@ class FunctionalMRIStudy(EPIStudy):
                     FieldSpec('tr', float),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('melodic_ica', directory_format)],
-            desc=("python implementation of Melodic"),
+            desc=("Single subject ICA analysis using FSL MELODIC."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
 
-        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC', wall_time=15,
+        mel = pipeline.create_node(MELODIC(), name='melodic_L1', wall_time=15,
                                    requirements=[fsl5_req])
         mel.inputs.no_bet = True
         pipeline.connect_input('brain_mask', mel, 'mask')
@@ -163,8 +163,8 @@ class FunctionalMRIStudy(EPIStudy):
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('primary', nifti_gz_format)],
             outputs=[DatasetSpec('fix_dir', directory_format)],
-            desc=("Automatic classification and removal of noisy"
-                  "components from the rsfMRI data"),
+            desc=("Pipeline to create the right folder structure before "
+                  "running FIX"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -231,8 +231,9 @@ class FunctionalMRIStudy(EPIStudy):
             name='training_fix',
             inputs=[DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('train_data', rdata_format)],
-            desc=("Automatic classification and removal of noisy"
-                  "components from the rsfMRI data"),
+            desc=("Pipeline to create the training set for FIX given a group "
+                  "of subjects with the hand_label_noise.txt file within "
+                  "their fix_dir."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -266,8 +267,8 @@ class FunctionalMRIStudy(EPIStudy):
                                 frequency='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
-            desc=("Automatic classification of noisy"
-                  "components from the rsfMRI data"),
+            desc=("Automatic classification of noisy components from the "
+                  "rsfMRI data using fsl FIX."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -292,8 +293,8 @@ class FunctionalMRIStudy(EPIStudy):
             inputs=[DatasetSpec('fix_dir', directory_format),
                     DatasetSpec('labelled_components', text_format)],
             outputs=[DatasetSpec('cleaned_file', nifti_gz_format)],
-            desc=("Regression of the noisy"
-                  "components from the rsfMRI data"),
+            desc=("Regression of the noisy components from the rsfMRI data "
+                  "using a python implementation equivalent to that in FIX."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -320,9 +321,8 @@ class FunctionalMRIStudy(EPIStudy):
                     DatasetSpec('coreg_to_atlas_mat', text_matrix_format),
                     DatasetSpec('coreg_matrix', text_matrix_format)],
             outputs=[DatasetSpec('normalized_ts', nifti_gz_format)],
-            desc=("Apply spatial normalization to a 4D file (usually a fMRI "
-                  "file which has been previously filtered). This "
-                  "transformations must be the outputs of ANTs."),
+            desc=("Apply ANTs transformation to the fmri filtered file to "
+                  "normalize it to MNI 2mm."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
@@ -353,8 +353,7 @@ class FunctionalMRIStudy(EPIStudy):
             name='timeseries_spatial_smoothing_pipeline',
             inputs=[DatasetSpec('normalized_ts', nifti_gz_format)],
             outputs=[DatasetSpec('smoothed_ts', nifti_gz_format)],
-            desc=("Spatial smoothing of a 4D file (usually a fMRI file output "
-                  "of apply_transform)."),
+            desc=("Spatial smoothing of the normalized fmri file"),
             version=1,
             citations=[fsl_cite],
             **kwargs)
