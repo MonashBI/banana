@@ -10,9 +10,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference_data'))
 
 
-class StaticPETStudy(PETStudy):
-
-    __metaclass__ = StudyMetaClass
+class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('pet_image', nifti_gz_format),

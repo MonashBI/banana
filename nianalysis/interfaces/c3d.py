@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from nipype.interfaces.base import (
     isdefined, CommandLineInputSpec, TraitedSpec, CommandLine, File,
     traits)

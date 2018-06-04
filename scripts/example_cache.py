@@ -6,7 +6,7 @@ from nianalysis.study.mri.structural.t2star import T2StarStudy
 from arcana.repository.xnat import XnatRepository
 from nianalysis.data_format import zip_format
 import argparse
-import cPickle as pkl
+import pickle as pkl
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--cache_project', help="Cache project to file", action='store_true',
@@ -23,7 +23,7 @@ except OSError as e:
 session_ids_path = os.path.join(
     os.path.dirname(os.path.realpath(__file__)), '..', 'resources',
     'old_swi_coils_remaining.txt')
-print session_ids_path
+print(session_ids_path)
 with open(session_ids_path) as f:
     ids = f.read().split()
 

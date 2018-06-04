@@ -5,9 +5,7 @@ from nianalysis.data_format import (
     dicom_format)
 
 
-class TestMatchStudy(Study):
-
-    __metaclass__ = StudyMetaClass
+class TestMatchStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('gre_phase', dicom_format),

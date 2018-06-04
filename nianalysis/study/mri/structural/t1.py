@@ -12,9 +12,7 @@ from arcana.study.base import StudyMetaClass
 from arcana.option import OptionSpec
 
 
-class T1Study(MRIStudy):
-
-    __metaclass__ = StudyMetaClass
+class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,

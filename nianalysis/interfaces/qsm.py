@@ -173,8 +173,8 @@ class QSMSummary(BaseInterface):
                 for ts, tv, to in zip(s, v, o):
                     fp.write(','.join(str(t) for t in [ts, tv]) + ',')
                     fp.write(','.join(str(t) for t in to) + '\n')
-        print os.path.join(os.getcwd(),
-                               self._gen_filename('out_file'))
+        print(os.path.join(os.getcwd(),
+                               self._gen_filename('out_file')))
         return runtime
 
     def _list_outputs(self):

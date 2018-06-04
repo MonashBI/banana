@@ -103,7 +103,7 @@ dat_format = DataFormat(name='dat', extension='.dat')
 registered_data_formats = []
 
 # Register all data formats in module
-for data_format in copy(globals()).itervalues():
+for data_format in copy(globals()).values():
     if isinstance(data_format, DataFormat):
         DataFormat.register(data_format)
         registered_data_formats.append(data_format.name)

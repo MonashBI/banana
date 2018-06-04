@@ -1,2 +1,2 @@
-import functional
-import structural
+from . import functional
+from . import structural

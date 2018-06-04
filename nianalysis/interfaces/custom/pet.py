@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, File, TraitedSpec)
 import nibabel as nib
@@ -248,8 +248,8 @@ class PrepareUnlistingInputs(BaseInterface):
         start_times = (np.arange(time_offset, num_frames*temporal_len,
                                  temporal_len)).tolist()
 
-        self.list_outputs = zip([list_mode]*len(start_times), start_times,
-                                [temporal_len]*len(start_times))
+        self.list_outputs = list(zip([list_mode]*len(start_times), start_times,
+                                 [temporal_len]*len(start_times)))
 
         return runtime
 
@@ -284,7 +284,7 @@ class PETListModeUnlisting(BaseInterface):
         start = self.inputs.list_inputs[1]
         frame_len = self.inputs.list_inputs[2]
         end = start+frame_len
-        print 'Unlisting Frame {}'.format(str(start/frame_len))
+        print('Unlisting Frame {}'.format(str(start/frame_len)))
         cmd = (
             '{0} {1} 0 {2} 4 {3} {4} {5}'.format(
                 list_mode_framing_path, file_path, str(frame_len), str(start),
@@ -348,7 +348,7 @@ class SSRB(BaseInterface):
 
         file_pre = sinogram.split('/')[-1].split('.')[0]
         file_suf = '.hs'
-        print 'New file name: ' + file_pre + file_suf
+        print('New file name: ' + file_pre + file_suf)
         with open(file_pre + file_suf, 'w') as new_file:
             with open(interfile_path) as old_file:
                 for line in old_file:

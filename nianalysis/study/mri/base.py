@@ -33,12 +33,10 @@ atlas_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))
 
 
-class MRIStudy(Study):
+class MRIStudy(Study, metaclass=StudyMetaClass):
 
     BRAIN_MASK_NAME = 'brain_mask'
     COREGISTER_TO_ATLAS_NAME = 'coregister_to_atlas'
-
-    __metaclass__ = StudyMetaClass
 
     add_data_specs = [
         DatasetSpec('primary', dicom_format),

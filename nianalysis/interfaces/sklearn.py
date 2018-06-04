@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, File, TraitedSpec)
 import nibabel as nib
@@ -68,9 +68,9 @@ class FastICA(BaseInterface):
             num = np.mean(dt**3)
             denom = (np.mean(dt**2))**1.5
             s = num / denom
-            print s
+            print(s)
             if np.sign(s) == -1:
-                print 'Flipping sign of component {}'.format(str(i))
+                print('Flipping sign of component {}'.format(str(i)))
                 sm[:, i] = -1*sm[:, i]
                 tc[:, i] = -1*tc[:, i]
 

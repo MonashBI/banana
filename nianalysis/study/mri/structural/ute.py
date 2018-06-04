@@ -27,9 +27,7 @@ from nianalysis.interfaces.custom.motion_correction import (
 from arcana.option import OptionSpec
 
 
-class UTEStudy(MRIStudy):
-
-    __metaclass__ = StudyMetaClass
+class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('umap', dicom_format),
@@ -536,9 +534,7 @@ class UTEStudy(MRIStudy):
 #             conversion_to_dicom_pipeline)]
 
 
-class CoregisteredUTEStudy(MultiStudy):
-
-    __metaclass__ = MultiStudyMetaClass
+class CoregisteredUTEStudy(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_sub_study_specs = [
         SubStudySpec('ute', UTEStudy, {

@@ -27,9 +27,7 @@ class DummyConverter(Converter):
         return convert_node, 'in_out', 'in_out'
 
 
-class DummyStudy(Study):
-
-    __metaclass__ = StudyMetaClass
+class DummyStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('input_dataset', dicom_format),

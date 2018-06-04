@@ -6,7 +6,7 @@ from arcana.repository.local import LocalRepository
 from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
-import cPickle as pkl
+import pickle as pkl
 from arcana.runner.linear import LinearRunner
 
 
@@ -26,10 +26,10 @@ class create_motion_detection:
                 with open(cache_input_path, 'r') as f:
                     ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
                 cached_inputs = True
-            except IOError, e:
+            except IOError as e:
                 if e.errno == errno.ENOENT:
-                    print ('No inputs.pickle files found in {}. Running inputs'
-                           ' generation'.format(input_dir))
+                    print('No inputs.pickle files found in {}. Running inputs'
+                          ' generation'.format(input_dir))
         if not cached_inputs:
             scans = local_motion_detection(input_dir, pet_dir=pet_dir)
             list_inputs = guess_scan_type(scans, input_dir)
@@ -77,4 +77,4 @@ if __name__ == "__main__":
                             subject_ids=[sub_id], visit_ids=[session_id])
     study.data('motion_detection_output')
 
-print 'Done!'
+print('Done!')

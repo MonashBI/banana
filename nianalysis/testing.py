@@ -313,7 +313,7 @@ class BaseTestCase(TestCase):
                .format(a=out_path, b=ref_path))
         out = sp.check_output(cmd, shell=True)
         mean, stdev = (float(x) for x in out.split())
-        self.assert_(
+        self.assertTrue(
             abs(mean) < mean_threshold and stdev < stdev_threshold,
             ("Mean ({mean}) or standard deviation ({stdev}) of difference "
              "between images {a} and {b} differ more than threshold(s) "
@@ -414,11 +414,11 @@ class BaseMultiSubjectTestCase(BaseTestCase):
             fields = defaultdict(lambda: defaultdict(dict))
             with open(os.path.join(cache_dir, FIELDS_FNAME), 'rb') as f:
                 all_fields = json.load(f)
-            for name, value in all_fields.items():
+            for name, value in list(all_fields.items()):
                 subj_id, visit_id, field_name = self._extract_ids(name)
                 fields[subj_id][visit_id][field_name] = value
-            for subj_id, subj_fields in fields.items():
-                for visit_id, visit_fields in subj_fields.items():
+            for subj_id, subj_fields in list(fields.items()):
+                for visit_id, visit_fields in list(subj_fields.items()):
                     session_dir = self.make_session_dir(
                         project_dir, subj_id, visit_id)
                     with open(os.path.join(session_dir, FIELDS_FNAME),
@@ -538,7 +538,7 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        for dataset in session.scans.itervalues():
+        for dataset in session.scans.values():
             data_format = guess_data_format(dataset)
             ext = data_format.extension
             if ext is None:
@@ -548,7 +548,7 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
                 download_resource(download_path, dataset,
                                   data_format, session.label)
         fields = {}
-        for name, value in session.fields.items():
+        for name, value in list(session.fields.items()):
             # Try convert to each datatypes in order of specificity to
             # determine type
             if name not in BUILTIN_XNAT_FIELDS:
@@ -627,4 +627,4 @@ def download_resource(download_path, dataset, data_format,
 def list_datasets(server, user, password, session_id):
     with xnat.connect(server, user=user, password=password) as xnat_login:
         session = xnat_login.experiments[session_id]
-        return [s.type for s in session.scans.itervalues()]
+        return [s.type for s in session.scans.values()]

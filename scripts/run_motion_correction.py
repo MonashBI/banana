@@ -7,7 +7,7 @@ from arcana.repository.local import LocalRepository
 from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
-import cPickle as pkl
+import pickle as pkl
 from arcana.runner.linear import LinearRunner
 
 
@@ -50,10 +50,10 @@ class RunMotionCorrection:
                 with open(cache_input_path, 'r') as f:
                     ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
                 cached_inputs = True
-            except IOError, e:
+            except IOError as e:
                 if e.errno == errno.ENOENT:
-                    print ('No inputs.pickle files found in {}. Running inputs'
-                           ' generation'.format(input_dir))
+                    print('No inputs.pickle files found in {}. Running inputs'
+                          ' generation'.format(input_dir))
         if not cached_inputs:
             scans = local_motion_detection(input_dir, pet_dir=pet_dir,
                                            pet_recon=pet_recon,
@@ -64,7 +64,7 @@ class RunMotionCorrection:
                     inputs_generation(scans, input_dir, siemens=True))
                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
             else:
-                print list_inputs
+                print(list_inputs)
                 ref, ref_type, t1s, epis, t2s, dmris = list_inputs
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)
@@ -175,4 +175,4 @@ if __name__ == "__main__":
                              subject_ids=[sub_id], options=mc.options,
                              visit_ids=[session_id])
     study.data(out_data)
-print 'Done!'
+print('Done!')

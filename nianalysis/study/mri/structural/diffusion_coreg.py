@@ -18,9 +18,7 @@ from arcana.option import OptionSpec
 from nipype.interfaces import fsl
 
 
-class DWIStudy(MRIStudy):
-
-    __metaclass__ = StudyMetaClass
+class DWIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('dwi_reference', dicom_format, optional=True),

@@ -7,9 +7,7 @@ from nianalysis.interfaces.custom.pet import (
 from nianalysis.requirement import stir_req
 
 
-class PETPCAMotionDetectionStudy(PETStudy):
-
-    __metaclass__ = StudyMetaClass
+class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('list_mode', list_mode_format),

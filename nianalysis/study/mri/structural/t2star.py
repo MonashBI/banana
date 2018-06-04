@@ -10,9 +10,7 @@ from nipype.interfaces import fsl
 from arcana.option import OptionSpec
 
 
-class T2StarStudy(MRIStudy):
-
-    __metaclass__ = StudyMetaClass
+class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('coils', directory_format,

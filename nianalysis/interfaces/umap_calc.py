@@ -4,7 +4,7 @@ Created on 1 Sep. 2017
 @author: jakubb
 '''
 
-from __future__ import absolute_import
+
 import os.path
 from nipype.interfaces.base import (
     TraitedSpec, BaseInterface, File, isdefined)

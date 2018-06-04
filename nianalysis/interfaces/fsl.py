@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 import os.path
 import warnings
 from string import Template
@@ -72,7 +72,6 @@ class MelodicL1FSF(BaseInterface):
         template_file.close()
 #        inputs = self.input_spec().get()
         d = {}
-        print self.inputs
         d['outputdir'] = self.inputs.output_dir
         d['tr'] = self.inputs.tr
         d['volumes'] = self.get_vols(self.inputs.fmri)
@@ -143,7 +142,7 @@ class SignalRegression(BaseInterface):
             hdr = im2filt.header
             sa = hdr.structarr
             TR = sa['pixdim'][4]
-            print 'Repetition time from the header: {} sec'.format(str(TR))
+            print('Repetition time from the header: {} sec'.format(str(TR)))
         else:
             TR = None
         im2filt = im2filt.get_data()
@@ -266,7 +265,7 @@ class FSLFIX(FSLCommand):
 
     def _list_outputs(self):
         outputs = self.output_spec().get()
-        print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
+        # print(self.inputs.feat_dir+'./filtered_func_data_clean.nii*')
         if self.inputs.all:
             outputs['output'] = self._gen_filename('out_file')
             outputs['label_file'] = self._gen_filename('label_file')

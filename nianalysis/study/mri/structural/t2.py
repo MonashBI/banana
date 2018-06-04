@@ -3,9 +3,7 @@ from ..base import MRIStudy
 from arcana.option import OptionSpec
 
 
-class T2Study(MRIStudy):
-
-    __metaclass__ = StudyMetaClass
+class T2Study(MRIStudy, metaclass=StudyMetaClass):
 
     add_option_specs = [
         OptionSpec('bet_robust', True),

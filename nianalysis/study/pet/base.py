@@ -16,9 +16,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference_data'))
 
 
-class PETStudy(Study):
-
-    __metaclass__ = StudyMetaClass
+class PETStudy(Study, metaclass=StudyMetaClass):
 
     add_option_specs = [OptionSpec('ica_n_components', 2),
                         OptionSpec('ica_type', 'spatial'),

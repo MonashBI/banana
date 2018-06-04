@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from nipype.interfaces.base import (
     BaseInterface, BaseInterfaceInputSpec, TraitedSpec, Directory, File)
 import os

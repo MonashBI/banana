@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, File, TraitedSpec, Directory)
 import numpy as np
@@ -498,9 +498,9 @@ class MeanDisplacementCalculation(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        list_inputs = zip(self.inputs.motion_mats, self.inputs.start_times,
+        list_inputs = list(zip(self.inputs.motion_mats, self.inputs.start_times,
                           self.inputs.real_durations, self.inputs.trs,
-                          self.inputs.input_names)
+                          self.inputs.input_names))
         ref = nib.load(self.inputs.reference)
         ref_data = ref.get_data()
         # centre of gravity
@@ -652,8 +652,8 @@ class MeanDisplacementCalculation(BaseInterface):
             trans_x_moco = -trans_y
             trans_y_moco = trans_x
             trans_z_moco = -trans_z
-            print [trans_x_moco, trans_y_moco, trans_z_moco, rot_x_moco,
-                   rot_y_moco, rot_z_moco]
+            print([trans_x_moco, trans_y_moco, trans_z_moco, rot_x_moco,
+                   rot_y_moco, rot_z_moco])
         return [rot_x, rot_y, rot_z, trans_x, trans_y, trans_z]
 
     def rad2degree(self, alpha_rad):
@@ -1350,10 +1350,10 @@ class FixedBinning(BaseInterface):
         indxs = []
         PetBins.append(pet_st+dt.timedelta(seconds=pet_len))
         if pet_offset != 0:
-            print ('PET start time offset of {0} seconds detected. '
+            print(('PET start time offset of {0} seconds detected. '
                    'Fixed binning will start at {2} and will last '
                    'for {1} seconds.'.format(str(pet_offset), str(pet_len),
-                                             pet_st.strftime('%H%M%S.%f')))
+                                             pet_st.strftime('%H%M%S.%f'))))
         for pet_bin in PetBins:
 
             for i in range(len(MrStartPoints)-1):

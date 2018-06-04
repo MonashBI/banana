@@ -35,9 +35,7 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class FunctionalMRIStudy(EPIStudy):
-
-    __metaclass__ = StudyMetaClass
+class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     add_option_specs = [
         OptionSpec('component_threshold', 20),

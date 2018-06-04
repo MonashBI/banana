@@ -7,9 +7,7 @@ from arcana.testing import BaseTestCase
 from nipype.interfaces.utility import IdentityInterface
 
 
-class ConversionStudy(Study):
-
-    __metaclass__ = StudyMetaClass
+class ConversionStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('mrtrix', text_format),

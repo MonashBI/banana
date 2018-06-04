@@ -11,12 +11,10 @@ from nianalysis.requirement import fsl5_req
 from nianalysis.citation import fsl_cite
 
 
-class T1T2Study(MultiStudy):
+class T1T2Study(MultiStudy, metaclass=MultiStudyMetaClass):
     """
     T1 and T2 weighted MR dataset, with the T2-weighted coregistered to the T1.
     """
-
-    __metaclass__ = MultiStudyMetaClass
 
     add_sub_study_specs = [
         SubStudySpec('t1', T1Study, {

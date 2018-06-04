@@ -1,5 +1,5 @@
 
-from __future__ import absolute_import
+
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, TraitedSpec, Directory, File,
                                     isdefined)
@@ -189,7 +189,7 @@ class ScanTimesInfo(BaseInterface):
                 time_offset = 0
             time_info[start_times[i-1][0]]['time_offset'] = time_offset
         with open('scan_time_info.txt', 'w') as f:
-            for k in time_info.keys():
+            for k in list(time_info.keys()):
                 f.write(k+' '+str(time_info[k]['scan_duration'])+' ' +
                         str(time_info[k]['time_offset'])+'\n')
             f.close()

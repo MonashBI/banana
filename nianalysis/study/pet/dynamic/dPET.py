@@ -15,9 +15,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference_data'))
 
 
-class DynamicPETStudy(PETStudy):
-
-    __metaclass__ = StudyMetaClass
+class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('pet_volumes', nifti_gz_format),

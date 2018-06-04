@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from __future__ import division, unicode_literals  # @IgnorePep8
+  # @IgnorePep8
 example = """MRtrix 3.0_RC1-187-gb98b6898-dirty mrregister                        Jul 19 2017
 
      mrregister: part of the MRtrix package
@@ -372,13 +372,13 @@ from pprint import pprint  # @IgnorePep8
 def parse(parser, start, stop):
     lines = example.split('\n')
     string = '\n'.join(lines[(start - 3):(stop - 2)]) + '\n'
-    print "Parsing:\n---\n{}---".format(string)
+    print("Parsing:\n---\n{}---".format(string))
     try:
         p = parser.parseString(string)
         pprint(p)
     except pp.ParseException as e:
         n = e.args[1]
-        print(string[:n] + u'\u2021' + string[(n + 1):])
+        print((string[:n] + '\u2021' + string[(n + 1):]))
         print(e)
         p = None
     return p

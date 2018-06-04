@@ -1,4 +1,4 @@
-from base import MRIStudy
+from .base import MRIStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
@@ -19,9 +19,7 @@ from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
 
 
-class EPIStudy(MRIStudy):
-
-    __metaclass__ = StudyMetaClass
+class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('coreg_ref_preproc', nifti_gz_format, optional=True),

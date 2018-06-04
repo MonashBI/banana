@@ -9,9 +9,7 @@ from arcana.study import (  # @IgnorePep8
     MultiStudy, MultiStudyMetaClass, SubStudySpec)
 
 
-class TestCoregStudy(MultiStudy):
-
-    __metaclass__ = MultiStudyMetaClass
+class TestCoregStudy(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_sub_study_specs = [
         SubStudySpec('ref', MRIStudy),
