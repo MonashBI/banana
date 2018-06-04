@@ -1,5 +1,4 @@
 from nipype.interfaces.fsl.model import MELODIC
-from nipype.interfaces.fsl.preprocess import FLIRT
 from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from nianalysis.interfaces.fsl import (FSLFIX, FSLFixTraining,
@@ -7,7 +6,7 @@ from nianalysis.interfaces.fsl import (FSLFIX, FSLFixTraining,
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
 from nianalysis.requirement import (fsl5_req, afni_req, fix_req,
-                                    fsl509_req, fsl510_req, ants2_req)
+                                    fsl509_req, fsl510_req, ants2_req, c3d_req)
 from nianalysis.citation import fsl_cite
 from nianalysis.data_format import (
     nifti_gz_format, rdata_format, directory_format,
@@ -25,6 +24,7 @@ from arcana.study.multi import (
 from arcana.dataset import DatasetMatch
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from nianalysis.interfaces.custom.fmri import PrepareFIX
+from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
 
 
 atlas_path = os.path.abspath(
@@ -60,8 +60,6 @@ class FunctionalMRIStudy(EPIStudy):
                     'fix_regression_pipeline'),
         DatasetSpec('filtered_data', nifti_gz_format,
                     'rsfMRI_filtering_pipeline'),
-        DatasetSpec('hires2example', text_matrix_format,
-                    'rsfMRI_filtering_pipeline'),
         DatasetSpec('mc_par', par_format, 'rsfMRI_filtering_pipeline'),
         DatasetSpec('melodic_ica', zip_format,
                     'single_subject_melodic_pipeline'),
@@ -72,6 +70,193 @@ class FunctionalMRIStudy(EPIStudy):
                     'timeseries_normalization_to_atlas_pipeline'),
         DatasetSpec('smoothed_ts', nifti_gz_format,
                     'timeseries_spatial_smoothing_pipeline')]
+
+    def rsfMRI_filtering_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='rsfMRI_filtering',
+            inputs=[DatasetSpec('preproc', nifti_gz_format),
+                    DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
+                    FieldSpec('tr', float)],
+            outputs=[DatasetSpec('filtered_data', nifti_gz_format),
+                     DatasetSpec('mc_par', par_format)],
+            desc=("Spatial and temporal rsfMRI filtering"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        afni_mc = pipeline.create_node(Volreg(), name='AFNI_MC', wall_time=5,
+                                       requirements=[afni_req])
+        afni_mc.inputs.zpad = 1
+        afni_mc.inputs.out_file = 'rsfmri_mc.nii.gz'
+        afni_mc.inputs.oned_file = 'prefiltered_func_data_mcf.par'
+        pipeline.connect_input('preproc', afni_mc, 'in_file')
+
+        filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
+                                    requirements=[afni_req])
+        filt.inputs.stopband = (0, 0.01)
+        filt.inputs.polort = 3
+        filt.inputs.blur = 3
+        filt.inputs.out_file = 'filtered_func_data.nii.gz'
+        pipeline.connect_input('tr', filt, 'delta_t')
+        pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
+        pipeline.connect_input('brain_mask', filt, 'mask')
+
+        meanfunc = pipeline.create_node(
+            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
+            wall_time=5, requirements=[fsl5_req])
+        pipeline.connect(afni_mc, 'out_file', meanfunc, 'in_file')
+
+        add_mean = pipeline.create_node(
+            ImageMaths(op_string='-add'), name='add_mean', wall_time=5,
+            requirements=[fsl5_req])
+        pipeline.connect(filt, 'out_file', add_mean, 'in_file')
+        pipeline.connect(meanfunc, 'out_file', add_mean, 'in_file2')
+
+        pipeline.connect_output('filtered_data', add_mean, 'out_file')
+        pipeline.connect_output('mc_par', afni_mc, 'oned_file')
+
+        return pipeline
+
+    def single_subject_melodic_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='MelodicL1',
+            inputs=[DatasetSpec('filtered_data', nifti_gz_format),
+                    FieldSpec('tr', float),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
+            outputs=[DatasetSpec('melodic_ica', directory_format)],
+            desc=("python implementation of Melodic"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC', wall_time=15,
+                                   requirements=[fsl5_req])
+        mel.inputs.no_bet = True
+        pipeline.connect_input('brain_mask', mel, 'mask')
+        mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
+        mel.inputs.report = True
+        mel.inputs.out_stats = True
+        mel.inputs.mm_thresh = 0.5
+        mel.inputs.out_dir = 'melodic_ica'
+        pipeline.connect_input('tr', mel, 'tr_sec')
+        pipeline.connect_input('filtered_data', mel, 'in_files')
+
+        pipeline.connect_output('melodic_ica', mel, 'out_dir')
+
+        return pipeline
+
+    def fix_preparation_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='prepare_fix',
+            inputs=[DatasetSpec('melodic_ica', directory_format),
+                    DatasetSpec('filtered_data', nifti_gz_format),
+                    DatasetSpec('coreg_to_atlas_mat', text_matrix_format),
+                    DatasetSpec('coreg_matrix', text_matrix_format),
+                    DatasetSpec('preproc', nifti_gz_format),
+                    DatasetSpec('brain', nifti_gz_format),
+                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
+                    DatasetSpec('mc_par', par_format),
+                    DatasetSpec('brain_mask', nifti_gz_format),
+                    DatasetSpec('primary', nifti_gz_format)],
+            outputs=[DatasetSpec('fix_dir', directory_format)],
+            desc=("Automatic classification and removal of noisy"
+                  "components from the rsfMRI data"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        struct_ants2fsl = pipeline.create_node(
+            ANTs2FSLMatrixConversion(), name='struct_ants2fsl',
+            requirements=[c3d_req])
+        struct_ants2fsl.inputs.ras2fsl = True
+        struct_ants2fsl.inputs.reference_file = pipeline.option('MNI_template')
+        pipeline.connect_input('coreg_to_atlas_mat', struct_ants2fsl,
+                               'itk_file')
+        pipeline.connect_input('coreg_ref_brain', struct_ants2fsl,
+                               'source_file')
+        epi_ants2fsl = pipeline.create_node(
+            ANTs2FSLMatrixConversion(), name='epi_ants2fsl',
+            requirements=[c3d_req])
+        epi_ants2fsl.inputs.ras2fsl = True
+        pipeline.connect_input('brain', epi_ants2fsl,
+                               'source_file')
+        pipeline.connect_input('coreg_matrix', epi_ants2fsl,
+                               'itk_file')
+        pipeline.connect_input('coreg_ref_brain', epi_ants2fsl,
+                               'reference_file')
+
+        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5,
+                                      requirements=[fsl509_req])
+        MNI2t1.inputs.invert_xfm = True
+        MNI2t1.inputs.out_file = 'MNI2T1.mat'
+        pipeline.connect(struct_ants2fsl, 'fsl_matrix', MNI2t1, 'in_file')
+
+        struct2epi = pipeline.create_node(
+            ConvertXFM(), name='struct2epi', wall_time=5,
+            requirements=[fsl509_req])
+        struct2epi.inputs.invert_xfm = True
+        struct2epi.inputs.out_file = 'struct2epi.mat'
+        pipeline.connect(epi_ants2fsl, 'fsl_matrix', struct2epi, 'in_file')
+
+        meanfunc = pipeline.create_node(
+            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
+            wall_time=5, requirements=[fsl509_req])
+        pipeline.connect_input('primary', meanfunc, 'in_file')
+
+        prep_fix = pipeline.create_node(PrepareFIX(), name='prep_fix')
+        pipeline.connect_input('melodic_ica', prep_fix, 'melodic_dir')
+        pipeline.connect_input('coreg_ref_brain', prep_fix, 't1_brain')
+        pipeline.connect_input('mc_par', prep_fix, 'mc_par')
+        pipeline.connect_input('brain_mask', prep_fix, 'epi_brain_mask')
+        pipeline.connect_input('preproc', prep_fix, 'epi_preproc')
+        pipeline.connect_input('filtered_data', prep_fix, 'filtered_epi')
+        pipeline.connect(epi_ants2fsl, 'fsl_matrix', prep_fix, 'epi2t1_mat')
+        pipeline.connect(struct_ants2fsl, 'fsl_matrix', prep_fix,
+                         't12MNI_mat')
+        pipeline.connect(MNI2t1, 'out_file', prep_fix, 'MNI2t1_mat')
+        pipeline.connect(struct2epi, 'out_file', prep_fix, 't12epi_mat')
+        pipeline.connect(meanfunc, 'out_file', prep_fix, 'epi_mean')
+
+        pipeline.connect_output('fix_dir', prep_fix, 'fix_dir')
+
+        return pipeline
+
+    def fix_training_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='training_fix',
+            inputs=[DatasetSpec('fix_dir', directory_format)],
+            outputs=[DatasetSpec('train_data', rdata_format)],
+            desc=("Automatic classification and removal of noisy"
+                  "components from the rsfMRI data"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+#         labeled_sub = pipeline.create_join_subjects_node(
+#             CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
+#         pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
+        merge_visits = pipeline.create_join_visits_node(
+            IdentityInterface(['list_dir']), joinfield=['list_dir'],
+            name='merge_visits')
+        merge_subjects = pipeline.create_join_subjects_node(
+            NiPypeMerge(1), joinfield=['in1'], name='merge_subjects')
+        merge_subjects.inputs.ravel_inputs = True
+        fix_training = pipeline.create_node(
+            FSLFixTraining(), name='fix_training',
+            wall_time=240, requirements=[fix_req])
+        fix_training.inputs.outname = 'FIX_training_set'
+        fix_training.inputs.training = True
+        pipeline.connect_input('fix_dir', merge_visits, 'list_dir')
+        pipeline.connect(merge_visits, 'list_dir', merge_subjects, 'in1')
+        pipeline.connect(merge_subjects, 'out', fix_training, 'list_dir')
+
+        pipeline.connect_output('train_data', fix_training, 'training_set')
+
+        return pipeline
 
     def fix_classification_pipeline(self, **kwargs):
 
@@ -123,261 +308,6 @@ class FunctionalMRIStudy(EPIStudy):
         signal_reg.inputs.highpass = pipeline.option('highpass')
 
         pipeline.connect_output('cleaned_file', signal_reg, 'output')
-
-        return pipeline
-
-    def single_subject_melodic_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='MelodicL1',
-            inputs=[DatasetSpec('filtered_data', nifti_gz_format),
-                    FieldSpec('tr', float),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('melodic_ica', directory_format)],
-            desc=("python implementation of Melodic"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        mel = pipeline.create_node(MELODIC(), name='fsl-MELODIC', wall_time=15,
-                                   requirements=[fsl5_req])
-        mel.inputs.no_bet = True
-        pipeline.connect_input('brain_mask', mel, 'mask')
-        mel.inputs.bg_threshold = pipeline.option('brain_thresh_percent')
-        mel.inputs.report = True
-        mel.inputs.out_stats = True
-        mel.inputs.mm_thresh = 0.5
-        mel.inputs.out_dir = 'melodic_ica'
-        pipeline.connect_input('tr', mel, 'tr_sec')
-        pipeline.connect_input('filtered_data', mel, 'in_files')
-
-        pipeline.connect_output('melodic_ica', mel, 'out_dir')
-
-        return pipeline
-
-    def rsfMRI_filtering_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='rsfMRI_filtering',
-            inputs=[DatasetSpec('preproc', nifti_gz_format),
-                    DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
-                    FieldSpec('tr', float)],
-            outputs=[DatasetSpec('filtered_data', nifti_gz_format),
-                     DatasetSpec('hires2example', text_matrix_format),
-                     DatasetSpec('mc_par', par_format)],
-            desc=("Spatial and temporal rsfMRI filtering"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        flirt_t1 = pipeline.create_node(FLIRT(), name='FLIRT_T1', wall_time=5,
-                                        requirements=[fsl5_req])
-        flirt_t1.inputs.dof = 6
-        flirt_t1.inputs.out_matrix_file = 'example2hires.mat'
-        pipeline.connect_input('coreg_ref_brain', flirt_t1, 'reference')
-        pipeline.connect_input('preproc', flirt_t1, 'in_file')
-
-        convxfm = pipeline.create_node(ConvertXFM(), name='convertxfm',
-                                       wall_time=1, requirements=[fsl5_req])
-        convxfm.inputs.invert_xfm = True
-        convxfm.inputs.out_file = 'hires2example.mat'
-        pipeline.connect(flirt_t1, 'out_matrix_file', convxfm, 'in_file')
-
-        afni_mc = pipeline.create_node(Volreg(), name='AFNI_MC', wall_time=5,
-                                       requirements=[afni_req])
-        afni_mc.inputs.zpad = 1
-        afni_mc.inputs.out_file = 'rsfmri_mc.nii.gz'
-        afni_mc.inputs.oned_file = 'prefiltered_func_data_mcf.par'
-        pipeline.connect_input('preproc', afni_mc, 'in_file')
-
-        filt = pipeline.create_node(Tproject(), name='Tproject', wall_time=5,
-                                    requirements=[afni_req])
-        filt.inputs.stopband = (0, 0.01)
-        filt.inputs.polort = 3
-        filt.inputs.blur = 3
-        filt.inputs.out_file = 'filtered_func_data.nii.gz'
-        pipeline.connect_input('tr', filt, 'delta_t')
-        pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
-        pipeline.connect_input('brain_mask', filt, 'mask')
-
-        meanfunc = pipeline.create_node(
-            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
-            wall_time=5, requirements=[fsl5_req])
-        pipeline.connect(afni_mc, 'out_file', meanfunc, 'in_file')
-
-        add_mean = pipeline.create_node(
-            ImageMaths(op_string='-add'), name='add_mean', wall_time=5,
-            requirements=[fsl5_req])
-        pipeline.connect(filt, 'out_file', add_mean, 'in_file')
-        pipeline.connect(meanfunc, 'out_file', add_mean, 'in_file2')
-
-        pipeline.connect_output('filtered_data', add_mean, 'out_file')
-        pipeline.connect_output('hires2example', convxfm, 'out_file')
-        pipeline.connect_output('mc_par', afni_mc, 'oned_file')
-
-        return pipeline
-
-    def fix_preparation_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='prepare_fix',
-            inputs=[DatasetSpec('melodic_ica', directory_format),
-                    DatasetSpec('filtered_data', nifti_gz_format),
-                    DatasetSpec('hires2example', text_matrix_format),
-                    DatasetSpec('preproc', nifti_gz_format),
-                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
-                    DatasetSpec('mc_par', par_format),
-                    DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('primary', nifti_gz_format)],
-            outputs=[DatasetSpec('fix_dir', directory_format)],
-            desc=("Automatic classification and removal of noisy"
-                  "components from the rsfMRI data"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-
-        t12MNI = pipeline.create_node(FLIRT(), name='t12MNI_reg', wall_time=5,
-                                      requirements=[fsl509_req])
-        t12MNI.inputs.reference = pipeline.option('MNI_template')
-        t12MNI.inputs.out_matrix_file = 'T12MNI.mat'
-        pipeline.connect_input('coreg_ref_brain', t12MNI, 'in_file')
-
-        MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5,
-                                      requirements=[fsl509_req])
-        MNI2t1.inputs.invert_xfm = True
-        MNI2t1.inputs.out_file = 'MNI2T1.mat'
-        pipeline.connect(t12MNI, 'out_matrix_file', MNI2t1, 'in_file')
-
-        epi2t1 = pipeline.create_node(ConvertXFM(), name='epi2t1', wall_time=5,
-                                      requirements=[fsl509_req])
-        epi2t1.inputs.invert_xfm = True
-        epi2t1.inputs.out_file = 'epi2T1.mat'
-        pipeline.connect_input('hires2example', epi2t1, 'in_file')
-
-        meanfunc = pipeline.create_node(
-            ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
-            wall_time=5, requirements=[fsl509_req])
-        pipeline.connect_input('primary', meanfunc, 'in_file')
-
-        prep_fix = pipeline.create_node(PrepareFIX(), name='prep_fix')
-        pipeline.connect_input('melodic_ica', prep_fix, 'melodic_dir')
-        pipeline.connect_input('coreg_ref_brain', prep_fix, 't1_brain')
-        pipeline.connect_input('mc_par', prep_fix, 'mc_par')
-        pipeline.connect_input('brain_mask', prep_fix, 'epi_brain_mask')
-        pipeline.connect_input('preproc', prep_fix, 'epi_preproc')
-        pipeline.connect_input('hires2example', prep_fix, 't12epi_mat')
-        pipeline.connect_input('filtered_data', prep_fix, 'filtered_epi')
-        pipeline.connect(t12MNI, 'out_matrix_file', prep_fix, 't12MNI_mat')
-        pipeline.connect(MNI2t1, 'out_file', prep_fix, 'MNI2t1_mat')
-        pipeline.connect(epi2t1, 'out_file', prep_fix, 'epi2t1_mat')
-        pipeline.connect(meanfunc, 'out_file', prep_fix, 'epi_mean')
-
-        pipeline.connect_output('fix_dir', prep_fix, 'fix_dir')
-
-#         mkdir1 = pipeline.create_node(MakeDir(), name='makedir1', wall_time=5)
-#         mkdir1.inputs.name_dir = 'reg'
-#         pipeline.connect_input('melodic_ica', mkdir1, 'base_dir')
-#
-#         cp0 = pipeline.create_node(CopyFile(), name='copyfile0', wall_time=5)
-#         cp0.inputs.dst = 'reg/highres2std.mat'
-#         pipeline.connect(t12MNI, 'out_matrix_file', cp0, 'src')
-#         pipeline.connect(mkdir1, 'new_dir', cp0, 'base_dir')
-#
-#         cp00 = pipeline.create_node(CopyFile(), name='copyfile00', wall_time=5)
-#         cp00.inputs.dst = 'reg/std2highres.mat'
-#         pipeline.connect(MNI2t1, 'out_file', cp00, 'src')
-#         pipeline.connect(cp0, 'basedir', cp00, 'base_dir')
-#
-#         cp000 = pipeline.create_node(CopyFile(), name='copyfile000',
-#                                      wall_time=5)
-#         cp000.inputs.dst = 'reg/example_func2highres.mat'
-#         pipeline.connect(epi2t1, 'out_file', cp000, 'src')
-#         pipeline.connect(cp00, 'basedir', cp000, 'base_dir')
-#
-#         cp1 = pipeline.create_node(CopyFile(), name='copyfile1', wall_time=5)
-#         cp1.inputs.dst = 'reg/highres.nii.gz'
-#         pipeline.connect_input('coreg_ref_brain', cp1, 'src')
-#         pipeline.connect(cp000, 'basedir', cp1, 'base_dir')
-#
-#         cp2 = pipeline.create_node(CopyFile(), name='copyfile2', wall_time=5)
-#         cp2.inputs.dst = 'reg/example_func.nii.gz'
-#         pipeline.connect_input('preproc', cp2, 'src')
-#         pipeline.connect(cp1, 'basedir', cp2, 'base_dir')
-#
-#         cp3 = pipeline.create_node(CopyFile(), name='copyfile3', wall_time=5)
-#         cp3.inputs.dst = 'reg/highres2example_func.mat'
-#         pipeline.connect_input('hires2example', cp3, 'src')
-#         pipeline.connect(cp2, 'basedir', cp3, 'base_dir')
-#
-#         mkdir2 = pipeline.create_node(MakeDir(), name='makedir2', wall_time=5)
-#         mkdir2.inputs.name_dir = 'mc'
-#         pipeline.connect(cp3, 'basedir', mkdir2, 'base_dir')
-#
-#         cp4 = pipeline.create_node(CopyFile(), name='copyfile4', wall_time=5)
-#         cp4.inputs.dst = 'mc/prefiltered_func_data_mcf.par'
-#         pipeline.connect_input('mc_par', cp4, 'src')
-#         pipeline.connect(mkdir2, 'new_dir', cp4, 'base_dir')
-#
-#         cp5 = pipeline.create_node(CopyFile(), name='copyfile5', wall_time=5)
-#         cp5.inputs.dst = 'mask.nii.gz'
-#         pipeline.connect_input('brain_mask', cp5, 'src')
-#         pipeline.connect(cp4, 'basedir', cp5, 'base_dir')
-#
-#         cp6 = pipeline.create_node(CopyFile(), name='copyfile6', wall_time=5)
-#         cp6.inputs.dst = 'mean_func.nii.gz'
-#         pipeline.connect(meanfunc, 'out_file', cp6, 'src')
-#         pipeline.connect(cp5, 'basedir', cp6, 'base_dir')
-#
-#         mkdir3 = pipeline.create_node(MakeDir(), name='makedir3', wall_time=5)
-#         mkdir3.inputs.name_dir = 'filtered_func_data.ica'
-#         pipeline.connect(cp6, 'basedir', mkdir3, 'base_dir')
-#
-#         cp7 = pipeline.create_node(CopyDir(), name='copyfile7', wall_time=5)
-#         cp7.inputs.dst = 'filtered_func_data.ica'
-#         cp7.inputs.method = 1
-#         pipeline.connect_input('melodic_ica', cp7, 'src')
-#         pipeline.connect(mkdir3, 'new_dir', cp7, 'base_dir')
-#
-#         cp8 = pipeline.create_node(CopyFile(), name='copyfile8', wall_time=5)
-#         cp8.inputs.dst = 'filtered_func_data.nii.gz'
-#         pipeline.connect_input('filtered_data', cp8, 'src')
-#         pipeline.connect(cp7, 'basedir', cp8, 'base_dir')
-#
-#         pipeline.connect_output('fix_dir', cp8, 'basedir')
-
-        return pipeline
-
-    def fix_training_pipeline(self, **kwargs):
-
-        pipeline = self.create_pipeline(
-            name='training_fix',
-            inputs=[DatasetSpec('fix_dir', directory_format)],
-            outputs=[DatasetSpec('train_data', rdata_format)],
-            desc=("Automatic classification and removal of noisy"
-                  "components from the rsfMRI data"),
-            version=1,
-            citations=[fsl_cite],
-            **kwargs)
-#         labeled_sub = pipeline.create_join_subjects_node(
-#             CheckLabelFile(), joinfield='in_list', name='labeled_subjects')
-#         pipeline.connect_input('fix_dir', labeled_sub, 'in_list')
-        merge_visits = pipeline.create_join_visits_node(
-            IdentityInterface(['list_dir']), joinfield=['list_dir'],
-            name='merge_visits')
-        merge_subjects = pipeline.create_join_subjects_node(
-            NiPypeMerge(1), joinfield=['in1'], name='merge_subjects')
-        merge_subjects.inputs.ravel_inputs = True
-        fix_training = pipeline.create_node(
-            FSLFixTraining(), name='fix_training',
-            wall_time=240, requirements=[fix_req])
-        fix_training.inputs.outname = 'FIX_training_set'
-        fix_training.inputs.training = True
-        pipeline.connect_input('fix_dir', merge_visits, 'list_dir')
-        pipeline.connect(merge_visits, 'list_dir', merge_subjects, 'in1')
-        pipeline.connect(merge_subjects, 'out', fix_training, 'list_dir')
-
-        pipeline.connect_output('train_data', fix_training, 'training_set')
 
         return pipeline
 
