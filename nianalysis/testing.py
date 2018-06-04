@@ -553,7 +553,7 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
             # determine type
             if name not in BUILTIN_XNAT_FIELDS:
                 fields[name] = value
-        with open(os.path.join(download_dir, FIELDS_FNAME), 'wb') as f:
+        with open(os.path.join(download_dir, FIELDS_FNAME), 'w') as f:
             json.dump(fields, f)
 
 

@@ -10,8 +10,11 @@ import nibabel as nib
 from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
-import matplotlib
-import matplotlib.pyplot as plot
+try:
+    import matplotlib
+    import matplotlib.pyplot as plot
+except ImportError:
+    pass
 from nipype.interfaces import fsl
 import pydicom
 import math

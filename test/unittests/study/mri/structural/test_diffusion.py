@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import os.path
 from nipype import config
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
@@ -15,17 +16,15 @@ class TestDiffusion(BaseTestCase):
     def test_preprocess(self):
         study = self.create_study(
             DiffusionStudy, 'preprocess', [
-                DatasetMatch('dwi_scan', mrtrix_format, 'r_l_dwi_b700_30'),
-                DatasetMatch('reverse_pe', mrtrix_format, 'l_r_dwi_b0_6')])
-        study.preprocess_pipeline(preproc_pe_dir='RL',
-                                  preproc_denoise=True).run(
-            work_dir=self.work_dir)
-        self.assertDatasetCreated('dwi_preproc.nii.gz', study.name)
+                DatasetMatch('primary', mrtrix_format, 'r_l_dwi_b700_30'),
+                DatasetMatch('dwi_reference', mrtrix_format, 'l_r_dwi_b0_6')])
+        preproc = study.data('preproc')[0]
+        self.assertTrue(os.path.exists(preproc.path))
 
     def test_extract_b0(self):
         study = self.create_study(
             DiffusionStudy, 'extract_b0', [
-                DatasetMatch('dwi_preproc', nifti_gz_format, 'dwi_preproc'),
+                DatasetMatch('preproc', nifti_gz_format, 'preproc'),
                 DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
                 DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
         study.extract_b0_pipeline().run(work_dir=self.work_dir)
@@ -34,7 +33,7 @@ class TestDiffusion(BaseTestCase):
     def test_bias_correct(self):
         study = self.create_study(
             DiffusionStudy, 'bias_correct', [
-                DatasetMatch('dwi_preproc', nifti_gz_format, 'dwi_preproc'),
+                DatasetMatch('preproc', nifti_gz_format, 'preproc'),
                 DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
                 DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
         study.bias_correct_pipeline(mask_tool='mrtrix').run(
@@ -123,7 +122,7 @@ class TestNODDI(BaseTestCase):
 #     def test_noddi_fitting(self, nthreads=6):
 #         study = self.create_study(
 #             NODDIStudy, 'noddi', inputs=[
-#                 DatasetMatch('dwi_preproc', mrtrix_format, 'noddi_dwi'),
+#                 DatasetMatch('preproc', mrtrix_format, 'noddi_dwi'),
 #                 DatasetMatch('brain_mask', analyze_format, 'roi_mask'),
 #                 'grad_dirs': Dataset('noddi_gradient_directions',
 #                                      fsl_bvecs_format),

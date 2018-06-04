@@ -44,7 +44,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         DatasetSpec('response', text_format, 'response_pipeline'),
         DatasetSpec('avg_response', text_format, 'average_response_pipeline'),
         DatasetSpec('fod', mrtrix_format, 'fod_pipeline'),
-        DatasetSpec('dwi_preproc', nifti_gz_format, 'basic_preproc_pipeline'),
         DatasetSpec('bias_correct', nifti_gz_format, 'bias_correct_pipeline'),
         DatasetSpec('grad_dirs', fsl_bvecs_format, 'basic_preproc_pipeline'),
         DatasetSpec('bvalues', fsl_bvals_format, 'basic_preproc_pipeline'),
@@ -141,10 +140,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
         dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
-        # Create node to reorient dwi_preproc out_file
+        # Create node to reorient preproc out_file
         swap = pipeline.create_node(
-                fsl.utils.Reorient2Std(), name='fslreorient2std',
-                requirements=[fsl509_req])
+            fsl.utils.Reorient2Std(), name='fslreorient2std',
+            requirements=[fsl509_req])
         if distortion_correction:
             # Extract b=0 volumes
             dwiextract = pipeline.create_node(
@@ -221,7 +220,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         elif mask_tool == 'mrtrix':
             pipeline = self.create_pipeline(
                 pipeline_name,
-                inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
+                inputs=[DatasetSpec('preproc', nifti_gz_format),
                         DatasetSpec('grad_dirs', fsl_bvecs_format),
                         DatasetSpec('bvalues', fsl_bvals_format)],
                 outputs=[DatasetSpec('brain_mask', nifti_gz_format)],
@@ -240,7 +239,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Connect inputs
             pipeline.connect_input('grad_dirs', grad_fsl, 'in1')
             pipeline.connect_input('bvalues', grad_fsl, 'in2')
-            pipeline.connect_input('dwi_preproc', dwi2mask, 'in_file')
+            pipeline.connect_input('preproc', dwi2mask, 'in_file')
             # Connect outputs
             pipeline.connect_output('brain_mask', dwi2mask, 'out_file')
             # Check inputs/outputs are connected
@@ -260,7 +259,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                       pipeline_name, **kwargs)
         pipeline = self.create_pipeline(
             name=pipeline_name,
-            inputs=[DatasetSpec('dwi_preproc', nifti_gz_format),
+            inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format)],
@@ -284,7 +283,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Connect to inputs
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
-        pipeline.connect_input('dwi_preproc', bias_correct, 'in_file')
+        pipeline.connect_input('preproc', bias_correct, 'in_file')
         pipeline.connect_input('brain_mask', bias_correct, 'mask')
         # Connect to outputs
         pipeline.connect_output('bias_correct', bias_correct, 'out_file')
