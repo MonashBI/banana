@@ -539,14 +539,14 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
             if e.errno != errno.EEXIST:
                 raise
         for dataset in session.scans.itervalues():
-            data_format_name = guess_data_format(dataset)
-            ext = DataFormat.by_name(data_format_name).extension
+            data_format = guess_data_format(dataset)
+            ext = data_format.extension
             if ext is None:
                 ext = ''
             download_path = os.path.join(download_dir, dataset.type + ext)
             if overwrite or not os.path.exists(download_path):
                 download_resource(download_path, dataset,
-                                  data_format_name, session.label)
+                                  data_format, session.label)
         fields = {}
         for name, value in session.fields.items():
             # Try convert to each datatypes in order of specificity to
@@ -577,25 +577,35 @@ def download_dataset(download_path, server, user, password, session_id,
                                                                  session_id))
         if data_format is None:
             data_format = guess_data_format(dataset)
-        download_resource(download_path, dataset, data_format, session.label)
+        download_resource(download_path, dataset, data_format,
+                          session.label)
 
 
-def download_resource(download_path, dataset, data_format_name,
+def download_resource(download_path, dataset, data_format,
                       session_label):
-
-    data_format = DataFormat.by_name(data_format_name)
-    try:
-        resource = dataset.resources[data_format.xnat_resource_name]
-    except KeyError:
+    xresource = None
+    for resource_name in data_format.xnat_resource_names:
+        try:
+            xresource = dataset.resources[resource_name]
+            break
+        except KeyError:
+            logger.debug(
+                "Did not find resource corresponding to '{}' for {}, "
+                "will try alternatives if available".format(
+                    resource_name, dataset))
+            continue
+    if xresource is None:
         raise ArcanaError(
-            "Didn't find {} resource in {} dataset matching '{}' in {}"
-            .format(data_format.xnat_resource_name, dataset.type))
+            "Didn't find '{}' resource(s) in {} dataset matching "
+            "'{}' in {}".format(
+                "', '".join(data_format.xnat_resource_names),
+                dataset.type))
     tmp_dir = download_path + '.download'
-    resource.download_dir(tmp_dir)
+    xresource.download_dir(tmp_dir)
     dataset_label = dataset.id + '-' + special_char_re.sub('_', dataset.type)
     src_path = os.path.join(tmp_dir, session_label, 'scans',
-                            dataset_label, 'resources',
-                            data_format.xnat_resource_name, 'files')
+                            dataset_label, 'resources', xresource.label,
+                            'files')
     if not data_format.directory:
         fnames = os.listdir(src_path)
         match_fnames = [
