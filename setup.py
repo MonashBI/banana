@@ -17,13 +17,13 @@ setup(
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
     packages=find_packages(),
-    url='https://github.com/mbi-image/arcana',
+    url='https://github.com/monashbiomedicalimaging/nianalysis',
     license='The Apache Software Licence 2.0',
     description=(
-        'A data-centric NeuroImaging analysis package based on '
-        'NiPype with repository backends for XNAT and local storage'),
+        'A collection of "Arcana" (http://arcana.readthedocs.io) Study '
+        'classes implementing NeuroImaging analysis workflows'),
     long_description=open('README.rst').read(),
-    install_requires=['arcana>=0.2.2',
+    install_requires=['arcana>=0.2.3',
                       'pydicom>=1.0'],
     classifiers=[
         "Development Status :: 4 - Beta",
@@ -31,6 +31,8 @@ setup(
         "Intended Audience :: Science/Research",
         "License :: OSI Approved :: Apache Software License",
         "Natural Language :: English",
-        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Scientific/Engineering :: Medical Science Apps."])
