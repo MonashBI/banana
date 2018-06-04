@@ -25,7 +25,6 @@ class GenFSBrainMasks(BaseInterface):
 
     input_spec = GenFSBrainMasksInputSpec
     output_spec = GenFSBrainMasksOutputSpec
-    
+
     def _run_interface(self, runtime):
-        
-        
+        pass

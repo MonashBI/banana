@@ -24,11 +24,11 @@ os.makedirs(WORK_PATH)
 study = NODDIStudy(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, repository=LocalRepository(repository_path),
-    input_scans={
-        'low_b_dw_scan': Dataset(
-            'r_l_noddi_b700_30_directions', mrtrix_format),
-        'high_b_dw_scan': Dataset(
-            'r_l_noddi_b2000_60_directions', mrtrix_format),
+    input_scans=[
+        DatasetMatch('low_b_dw_scan', mrtrix_format,
+                     'r_l_noddi_b700_30_directions'),
+        DatasetMatch('high_b_dw_scan', mrtrix_format,
+                     'r_l_noddi_b2000_60_directions'),
         DatasetMatch('forward_rpe', mrtrix_format, 'r_l_noddi_b0_6'),
-        DatasetMatch('reverse_rpe', mrtrix_format, 'l_r_noddi_b0_6')})
+        DatasetMatch('reverse_rpe', mrtrix_format, 'l_r_noddi_b0_6')])
 study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)
