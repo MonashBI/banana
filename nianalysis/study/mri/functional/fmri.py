@@ -423,7 +423,8 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(DatasetMatch('t1_primary', dicom_format, t1))
+    inputs.append(DatasetMatch('t1_primary', dicom_format, t1, is_regex=True,
+                               order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref_preproc'})
@@ -433,28 +434,28 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
 
     for i in range(epi_number):
         inputs.append(DatasetMatch('epi_{}_primary'.format(i),
-                                   dicom_format, epis, order=i))
+                                   dicom_format, epis, order=i, is_regex=True))
 
-#     inputs.extend(
-#         DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
-#         for i, epi_scan in enumerate(epis))
     if distortion_correction:
         inputs.extend(DatasetMatch(
             'epi_{}_field_map_mag'.format(i), dicom_format, fm_mag,
-            dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE})
+            dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE}, is_regex=True,
+            order=0)
             for i in range(epi_number))
         inputs.extend(DatasetMatch(
             'epi_{}_field_map_phase'.format(i), dicom_format, fm_phase,
-            dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE})
+            dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE}, is_regex=True,
+            order=0)
             for i in range(epi_number))
     if training_set is not None:
         inputs.extend(DatasetMatch('epi_{}_train_data'.format(i),
-                                   rdata_format, training_set)
+                                   rdata_format, training_set,
+                                   frequency='per_project')
                       for i in range(epi_number))
         output_files.extend('epi_{}_smoothed_ts'.format(i)
                             for i in range(epi_number))
     else:
-        output_files.extend('epi_{}_melodic_ica'.format(i)
+        output_files.extend('epi_{}_fix_dir'.format(i)
                             for i in range(epi_number))
 
     dct['add_sub_study_specs'] = study_specs
