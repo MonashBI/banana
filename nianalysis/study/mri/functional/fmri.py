@@ -161,8 +161,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                     DatasetSpec('brain', nifti_gz_format),
                     DatasetSpec('coreg_ref_brain', nifti_gz_format),
                     DatasetSpec('mc_par', par_format),
-                    DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('primary', nifti_gz_format)],
+                    DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('fix_dir', directory_format)],
             desc=("Pipeline to create the right folder structure before "
                   "running FIX"),
@@ -183,30 +182,26 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
             ANTs2FSLMatrixConversion(), name='epi_ants2fsl',
             requirements=[c3d_req])
         epi_ants2fsl.inputs.ras2fsl = True
-        pipeline.connect_input('brain', epi_ants2fsl,
-                               'source_file')
-        pipeline.connect_input('coreg_matrix', epi_ants2fsl,
-                               'itk_file')
+        pipeline.connect_input('brain', epi_ants2fsl, 'source_file')
+        pipeline.connect_input('coreg_matrix', epi_ants2fsl, 'itk_file')
         pipeline.connect_input('coreg_ref_brain', epi_ants2fsl,
                                'reference_file')
 
         MNI2t1 = pipeline.create_node(ConvertXFM(), name='MNI2t1', wall_time=5,
                                       requirements=[fsl509_req])
         MNI2t1.inputs.invert_xfm = True
-        MNI2t1.inputs.out_file = 'MNI2T1.mat'
         pipeline.connect(struct_ants2fsl, 'fsl_matrix', MNI2t1, 'in_file')
 
         struct2epi = pipeline.create_node(
             ConvertXFM(), name='struct2epi', wall_time=5,
             requirements=[fsl509_req])
         struct2epi.inputs.invert_xfm = True
-        struct2epi.inputs.out_file = 'struct2epi.mat'
         pipeline.connect(epi_ants2fsl, 'fsl_matrix', struct2epi, 'in_file')
 
         meanfunc = pipeline.create_node(
             ImageMaths(op_string='-Tmean', suffix='_mean'), name='meanfunc',
             wall_time=5, requirements=[fsl509_req])
-        pipeline.connect_input('primary', meanfunc, 'in_file')
+        pipeline.connect_input('preproc', meanfunc, 'in_file')
 
         prep_fix = pipeline.create_node(PrepareFIX(), name='prep_fix')
         pipeline.connect_input('melodic_ica', prep_fix, 'melodic_dir')

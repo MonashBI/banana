@@ -1,4 +1,4 @@
-from nianalysis.study.mri.functional.fmri_new import create_fmri_study_class
+from nianalysis.study.mri.functional.fmri import create_fmri_study_class
 from arcana.repository.xnat import XnatRepository
 from arcana.runner.linear import LinearRunner
 import os.path

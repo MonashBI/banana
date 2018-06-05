@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode() # @IgnorePep8
-from nianalysis.study.mri.functional.fmri_new import create_fmri_study_class # @IgnorePep8 @Reimport
+from nianalysis.study.mri.functional.fmri import create_fmri_study_class # @IgnorePep8 @Reimport
 from nianalysis.testing import BaseTestCase as TestCase # @IgnorePep8 @Reimport
 
 
