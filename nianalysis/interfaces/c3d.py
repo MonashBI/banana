@@ -43,7 +43,7 @@ class ANTs2FSLMatrixConversion(CommandLine):
             out_name = self.inputs.fsl_matrix
         else:
             base, _ = split_extension(
-                os.path.basename(self.inputs.fsl_matrix))
+                os.path.basename(self.inputs.itk_file))
             out_name = os.path.join(os.getcwd(),
                                     "{}_fsl.mat".format(base))
         return out_name

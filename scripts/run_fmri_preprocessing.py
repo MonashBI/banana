@@ -31,12 +31,13 @@ if __name__ == "__main__":
                         help='If more than one fmri image is going to match '
                         'the --fmri regular expression provided, you can '
                         'specify which one to use. For example, if there are 5'
-                        ' matches and you specify order=3 only the first 3 '
-                        'images will be processed PER SUBJECT. Please be aware'
-                        'that if one subject as a number of fmri less than the'
-                        ' order, this will cause an error. In this case you '
-                        'may want to process that subject independently. '
-                        'Default is the first match.', default=0)
+                        ' matches and you specify order=3 and only the first 3'
+                        ' images will be processed PER SUBJECT. Please be '
+                        'aware that if one subject as a number of fmri less '
+                        'than the order, this will cause an error. In this '
+                        'case you may want to process that subject '
+                        'independently. Default is the first match.',
+                        default=0)
     parser.add_argument('--session_ids', '-s', type=str,
                         help='Session ID on XNAT. Default is all of the '
                         'sessions found in the XNAT project.')
@@ -97,9 +98,10 @@ if __name__ == "__main__":
 
     sub_ids = args.subject_ids
     session_ids = args.session_ids
-    repository = XnatRepository(server=args.xnat_server, project_id=args.project_id,
-                          user=args.xnat_username, password=args.xnat_password,
-                          cache_dir=CACHE_PATH)
+    repository = XnatRepository(
+        server=args.xnat_server, project_id=args.project_id,
+        user=args.xnat_username, password=args.xnat_password,
+        cache_dir=CACHE_PATH)
 
     study = fMRI(name='fMRI_preprocessing', runner=LinearRunner(WORK_PATH),
                  repository=repository, inputs=inputs, subject_ids=[sub_ids],
