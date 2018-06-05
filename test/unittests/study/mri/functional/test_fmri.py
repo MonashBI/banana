@@ -23,6 +23,5 @@ class TestFMRI(TestCase):
         study = self.create_study(
             fMRI, 'fMRI', inputs=inputs,
             enforce_inputs=False)
-        epi1, epi2 = study.data(output_files)
-        self.assertDatasetsEqual(epi1, epi2)
-        self.assertDatasetCreated('.nii.gz', study.name)
+        study.data(output_files)
+        self.assertDatasetCreated(output_files[0]+'.nii.gz', study.name)
