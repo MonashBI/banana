@@ -8,8 +8,8 @@ analysis workflows, which can be used to process datasets in XNAT or local
 Dependencies
 -----------------
 
-Core Python
-~~~~~~~~~~~
+Core
+~~~~
 
 * arcana
 * pydicom
@@ -19,8 +19,8 @@ Both of these are available on PyPI and can be installed with::
     $ pip install -e <path-to-nianalysis-repo>
 
 
-Pipeline
-~~~~~~~~
+Pipelines
+~~~~~~~~~
 
 Depending on which pipelines you need to run, you may need to install some or
 all of the following tools. Note that MRtrix3 and Dcm2niix are used for implicit
