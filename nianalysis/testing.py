@@ -29,7 +29,7 @@ from traceback import format_exc
 from arcana.repository.local import (
     SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
-logger = logging.getLogger('Arcana')
+logger = logging.getLogger('arcana')
 logger.setLevel(logging.INFO)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
