@@ -31,15 +31,15 @@ if __name__ == "__main__":
                         help='If more than one fmri image is going to match '
                         'the --fmri regular expression provided, you can '
                         'specify which one to use. For example, if there are 5'
-                        ' matches and you specify order=3 and only the first 3'
-                        ' images will be processed PER SUBJECT. Please be '
+                        ' matches and you specify order=3 then only the first '
+                        '3 images will be processed PER SUBJECT. Please be '
                         'aware that if one subject as a number of fmri less '
                         'than the order, this will cause an error. In this '
                         'case you may want to process that subject '
                         'independently. Default is the first match.',
                         default=0)
     parser.add_argument('--session_ids', '-s', type=str,
-                        help='Session ID on XNAT. Default is all of the '
+                        help='Session ID on XNAT. Default is all the '
                         'sessions found in the XNAT project.')
     parser.add_argument('--subject_ids', '-sub', type=str,
                         help='Subject ID on XNAT. Default is all the '
@@ -51,11 +51,13 @@ if __name__ == "__main__":
     parser.add_argument('--xnat_username', '-user', type=str,
                         help='Username with which to connect to XNAT with. '
                         'This can be skiped if it has already been saved in '
-                        'the .netrc in your home directory', default=None)
+                        'the .netrc in your home directory, otherwise it is '
+                        'mandatory.', default=None)
     parser.add_argument('--xnat_password', '-password', type=str,
                         help='Password to connect to XNAt with. '
                         'This can be skiped if it has already been saved in '
-                        'the .netrc in your home directory', default=None)
+                        'the .netrc in your home directory, otherwise it is '
+                        'mandatory.', default=None)
     parser.add_argument('--field_map_mag', '-mag', type=str,
                         help='Magnitude field map image used to correct for B0'
                         ' inhomogeneity. For the correction to take place, '
@@ -74,8 +76,9 @@ if __name__ == "__main__":
                         'provided, fix classification and regression of the '
                         'noisy component will be performed and the final image'
                         ' will be fully pre-processed. Otherwise, the '
-                        'pipeline will generate only the MELODIC L1 results.',
-                        default=None)
+                        'pipeline will generate only the MELODIC L1 results '
+                        'with the right folder structure so that it can be '
+                        'used with fsl FIX.', default=None)
     args = parser.parse_args()
 
     fMRI, inputs, output_files = create_fmri_study_class(
