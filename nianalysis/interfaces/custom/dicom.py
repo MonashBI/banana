@@ -48,7 +48,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        list_dicom = sorted(glob.glob(self.inputs.dicom_folder+'/*'))
+        list_dicom = sorted(glob.glob(self.inputs.dicom_folder + '/*'))
         multivol = self.inputs.multivol
         _, out_name, _ = split_filename(self.inputs.dicom_folder)
         ped = ''
@@ -62,14 +62,18 @@ class DicomHeaderInfoExtraction(BaseInterface):
         except KeyError:
             pass  # image does not have ped info in the header
 
-        with open(list_dicom[0], 'r') as f:
+        with open(list_dicom[0], 'rb') as f:
             for line in f:
+                try:
+                    line = line[:-1].decode('utf-8')
+                except UnicodeDecodeError:
+                    continue
                 if 'TotalScan' in line:
                     total_duration = line.split('=')[-1].strip()
                     if not multivol:
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
-                    tr = float(line.split('=')[-1].strip())/1000000
+                    tr = float(line.split('=')[-1].strip()) / 1000000
                 elif ('SliceArray.asSlice[0].dInPlaneRot' in line and
                         (not phase_offset or not ped)):
                     if len(line.split('=')) > 1:
@@ -91,7 +95,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
                 n_vols = dwi_directions
             else:
                 n_vols = len(list_dicom)
-            real_duration = n_vols*tr
+            real_duration = n_vols * tr
 
         hd = pydicom.read_file(list_dicom[0])
         try:
@@ -110,9 +114,9 @@ class DicomHeaderInfoExtraction(BaseInterface):
         keys = ['start_time', 'tr', 'total_duration', 'real_duration', 'ped',
                 'pe_angle']
         with open('scan_header_info.txt', 'w') as f:
-                f.write(str(out_name)+'\n')
+                f.write(str(out_name) + '\n')
                 for k in keys:
-                    f.write(k+' '+str(self.dict_output[k])+'\n')
+                    f.write(k + ' ' + str(self.dict_output[k]) + '\n')
                 f.close()
         if self.inputs.reference:
             os.mkdir('reference_motion_mats')
@@ -132,9 +136,9 @@ class DicomHeaderInfoExtraction(BaseInterface):
         outputs["real_duration"] = self.dict_output['real_duration']
         outputs["ped"] = self.dict_output['ped']
         outputs["pe_angle"] = self.dict_output['pe_angle']
-        outputs["dcm_info"] = os.getcwd()+'/scan_header_info.txt'
+        outputs["dcm_info"] = os.getcwd() + '/scan_header_info.txt'
         if self.inputs.reference:
-            outputs["ref_motion_mats"] = os.getcwd()+'/reference_motion_mats'
+            outputs["ref_motion_mats"] = os.getcwd() + '/reference_motion_mats'
 
         return outputs
 

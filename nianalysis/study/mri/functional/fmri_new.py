@@ -25,6 +25,9 @@ from arcana.dataset import DatasetMatch
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from nianalysis.interfaces.custom.fmri import PrepareFIX
 from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
+import logging
+
+logger = logging.getLogger('nianalysis')
 
 
 atlas_path = os.path.abspath(
@@ -410,15 +413,18 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
     distortion_correction = False
 
     if fm_mag and fm_phase:
-        print ('Both magnitude and phase field map images provided. EPI '
-               'ditortion correction will be performed.')
+        logger.info(
+            'Both magnitude and phase field map images provided. EPI '
+            'ditortion correction will be performed.')
         distortion_correction = True
     elif fm_mag or fm_phase:
-        print ('In order to perform EPI ditortion correction both magnitude '
-               'and phase field map images must be provided.')
+        logger.info(
+            'In order to perform EPI ditortion correction both magnitude '
+            'and phase field map images must be provided.')
     else:
-        print ('No field map image provided. Distortion correction will not be'
-               'performed.')
+        logger.info(
+            'No field map image provided. Distortion correction will not be'
+            'performed.')
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
@@ -441,11 +447,11 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
         inputs.extend(DatasetMatch(
             'epi_{}_field_map_mag'.format(i), dicom_format, fm_mag,
             dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE})
-                      for i in range(epi_number))
+            for i in range(epi_number))
         inputs.extend(DatasetMatch(
             'epi_{}_field_map_phase'.format(i), dicom_format, fm_phase,
             dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE})
-                      for i in range(epi_number))
+            for i in range(epi_number))
     if training_set is not None:
         inputs.extend(DatasetMatch('epi_{}_train_data'.format(i),
                                    rdata_format, training_set)
@@ -458,6 +464,5 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
 
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
-    dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_option_specs'] = option_specs
     return MultiStudyMetaClass(name, (MultiStudy,), dct), inputs, output_files
