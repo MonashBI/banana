@@ -98,6 +98,9 @@ list_mode_format = DataFormat(name='pet_list_mode', extension='.bf')
 # Raw formats
 dat_format = DataFormat(name='dat', extension='.dat')
 
+# MRS format
+rda_format = DataFormat(name='raw', extension='.rda')
+
 # Record list of all data formats registered by module (not really
 # used currently but could be useful in future)
 registered_data_formats = []
