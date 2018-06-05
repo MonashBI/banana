@@ -8,7 +8,7 @@ import os
 from nianalysis.requirement import fsl509_req, mrtrix3_req
 from nianalysis.interfaces.custom.pet import PreparePetDir
 from nianalysis.interfaces.custom.dicom import PetTimeInfo
-from arcana.option import OptionSpec
+from arcana.option import ParameterSpec
 
 
 template_path = os.path.abspath(
@@ -18,20 +18,20 @@ template_path = os.path.abspath(
 
 class PETStudy(Study, metaclass=StudyMetaClass):
 
-    add_option_specs = [OptionSpec('ica_n_components', 2),
-                        OptionSpec('ica_type', 'spatial'),
-                        OptionSpec('norm_transformation', 's'),
-                        OptionSpec('norm_dim', 3),
-                        OptionSpec('norm_template',
+    add_option_specs = [ParameterSpec('ica_n_components', 2),
+                        ParameterSpec('ica_type', 'spatial'),
+                        ParameterSpec('norm_transformation', 's'),
+                        ParameterSpec('norm_dim', 3),
+                        ParameterSpec('norm_template',
                                    os.path.join(template_path,
                                                 'PET_template.nii.gz')),
-                        OptionSpec('crop_xmin', 100),
-                        OptionSpec('crop_xsize', 130),
-                        OptionSpec('crop_ymin', 100),
-                        OptionSpec('crop_ysize', 130),
-                        OptionSpec('crop_zmin', 20),
-                        OptionSpec('crop_zsize', 100),
-                        OptionSpec('image_orientation_check', False)]
+                        ParameterSpec('crop_xmin', 100),
+                        ParameterSpec('crop_xsize', 130),
+                        ParameterSpec('crop_ymin', 100),
+                        ParameterSpec('crop_ysize', 130),
+                        ParameterSpec('crop_zmin', 20),
+                        ParameterSpec('crop_zsize', 100),
+                        ParameterSpec('image_orientation_check', False)]
 
     add_data_specs = [
         DatasetSpec('registered_volumes', nifti_gz_format, optional=True),

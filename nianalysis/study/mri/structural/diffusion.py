@@ -23,7 +23,7 @@ from arcana.exception import ArcanaError
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.interfaces.iterators import SelectSession
-from arcana.option import OptionSpec
+from arcana.option import ParameterSpec
 from nianalysis.study.mri.epi import EPIStudy
 from nipype.interfaces import fsl
 from nianalysis.interfaces.custom.motion_correction import (
@@ -74,19 +74,19 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     frequency='per_project')]
 
     add_option_specs = [
-        OptionSpec('multi_tissue', True),
-        OptionSpec('preproc_pe_dir', None, dtype=str),
-        OptionSpec('preproc_denoise', False),
-        OptionSpec('brain_extract_method', 'mrtrix'),
-        OptionSpec('bias_correct_method', 'ants',
+        ParameterSpec('multi_tissue', True),
+        ParameterSpec('preproc_pe_dir', None, dtype=str),
+        ParameterSpec('preproc_denoise', False),
+        ParameterSpec('brain_extract_method', 'mrtrix'),
+        ParameterSpec('bias_correct_method', 'ants',
                    choices=('ants', 'fsl')),
-        OptionSpec('response_algorithm', 'tax'),
-        OptionSpec('fod_algorithm', 'tax'),
-        OptionSpec('tbss_skel_thresh', 0.2),
-        OptionSpec('fsl_mask_f', 0.25),
-        OptionSpec('bet_robust', True),
-        OptionSpec('bet_f_threshold', 0.2),
-        OptionSpec('bet_reduce_bias', False)]
+        ParameterSpec('response_algorithm', 'tax'),
+        ParameterSpec('fod_algorithm', 'tax'),
+        ParameterSpec('tbss_skel_thresh', 0.2),
+        ParameterSpec('fsl_mask_f', 0.25),
+        ParameterSpec('bet_robust', True),
+        ParameterSpec('bet_f_threshold', 0.2),
+        ParameterSpec('bet_reduce_bias', False)]
 
     def basic_preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -866,9 +866,9 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         DatasetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
         DatasetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 
-    add_option_specs = [OptionSpec('noddi_model',
+    add_option_specs = [ParameterSpec('noddi_model',
                                    'WatsonSHStickTortIsoV_B0'),
-                        OptionSpec('single_slice', False)]
+                        ParameterSpec('single_slice', False)]
 
     def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
         """

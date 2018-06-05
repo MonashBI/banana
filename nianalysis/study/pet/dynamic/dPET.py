@@ -7,7 +7,7 @@ from arcana.interfaces.utils import Merge
 from nianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
 from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      png_format)
-from arcana.option import OptionSpec
+from arcana.option import ParameterSpec
 import os
 
 template_path = os.path.abspath(
@@ -31,12 +31,12 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
         DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]
 
     add_option_specs = [
-        OptionSpec('trans_template',
+        ParameterSpec('trans_template',
                    os.path.join(template_path, 'PET_template.nii.gz')),
-        OptionSpec('base_remove_th', 0),
-        OptionSpec('base_remove_binarize', False),
-        OptionSpec('regress_th', 0),
-        OptionSpec('regress_binarize', False)]
+        ParameterSpec('base_remove_th', 0),
+        ParameterSpec('base_remove_binarize', False),
+        ParameterSpec('regress_th', 0),
+        ParameterSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(

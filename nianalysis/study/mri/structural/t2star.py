@@ -7,7 +7,7 @@ from arcana.dataset import DatasetSpec
 from nianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
 from nipype.interfaces import fsl
-from arcana.option import OptionSpec
+from arcana.option import ParameterSpec
 
 
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):

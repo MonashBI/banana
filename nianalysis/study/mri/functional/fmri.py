@@ -15,7 +15,7 @@ from nianalysis.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.option import OptionSpec
+from arcana.option import ParameterSpec
 from nianalysis.study.mri.epi import EPIStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.study.mri.structural.t1 import T1Study
@@ -43,16 +43,16 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     add_option_specs = [
-        OptionSpec('component_threshold', 20),
-        OptionSpec('motion_reg', True),
-        OptionSpec('highpass', 0.01),
-        OptionSpec('brain_thresh_percent', 5),
-        OptionSpec('MNI_template',
+        ParameterSpec('component_threshold', 20),
+        ParameterSpec('motion_reg', True),
+        ParameterSpec('highpass', 0.01),
+        ParameterSpec('brain_thresh_percent', 5),
+        ParameterSpec('MNI_template',
                    os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
-        OptionSpec('MNI_template_mask', os.path.join(
+        ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        OptionSpec('linear_reg_method', 'ants'),
-        OptionSpec('group_ica_components', 15)]
+        ParameterSpec('linear_reg_method', 'ants'),
+        ParameterSpec('group_ica_components', 15)]
 
     add_data_specs = [
         DatasetSpec('train_data', rdata_format, optional=True,

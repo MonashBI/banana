@@ -23,7 +23,7 @@ import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.option import OptionSpec
+from arcana.option import ParameterSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -84,37 +84,37 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
     add_option_specs = [
-        OptionSpec('bet_robust', True),
-        OptionSpec('bet_f_threshold', 0.5),
-        OptionSpec('bet_reduce_bias', False),
-        OptionSpec('bet_g_threshold', 0.0),
-        OptionSpec('bet_method', 'fsl_bet',
+        ParameterSpec('bet_robust', True),
+        ParameterSpec('bet_f_threshold', 0.5),
+        ParameterSpec('bet_reduce_bias', False),
+        ParameterSpec('bet_g_threshold', 0.0),
+        ParameterSpec('bet_method', 'fsl_bet',
                    choices=('fsl_bet', 'optibet')),
-        OptionSpec('MNI_template',
+        ParameterSpec('MNI_template',
                    os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
-        OptionSpec('MNI_template_brain',
+        ParameterSpec('MNI_template_brain',
                    os.path.join(atlas_path, 'MNI152_T1_2mm_brain.nii.gz')),
-        OptionSpec('MNI_template_mask', os.path.join(
+        ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        OptionSpec('optibet_gen_report', False),
-        OptionSpec('atlas_coreg_tool', 'ants',
+        ParameterSpec('optibet_gen_report', False),
+        ParameterSpec('atlas_coreg_tool', 'ants',
                    choices=('fnirt', 'ants')),
-        OptionSpec('fnirt_atlas', 'MNI152'),
-        OptionSpec('fnirt_resolution', '2mm'),
-        OptionSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
-        OptionSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
-        OptionSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
-        OptionSpec('preproc_resolution', None, dtype=list),
-        OptionSpec('linear_reg_method', 'flirt',
+        ParameterSpec('fnirt_atlas', 'MNI152'),
+        ParameterSpec('fnirt_resolution', '2mm'),
+        ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
+        ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
+        ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
+        ParameterSpec('preproc_resolution', None, dtype=list),
+        ParameterSpec('linear_reg_method', 'flirt',
                    choices=('flirt', 'spm', 'ants')),
-        OptionSpec('flirt_degrees_of_freedom', 6, desc=(
+        ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
-        OptionSpec('flirt_cost_func', 'normmi', desc=(
+        ParameterSpec('flirt_cost_func', 'normmi', desc=(
             "Cost function used for the registration. Can be one of "
             "'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',"
             " 'labeldiff', 'bbr'")),
-        OptionSpec('flirt_qsform', False, desc=(
+        ParameterSpec('flirt_qsform', False, desc=(
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
             "scanner"))]
@@ -573,7 +573,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
 
-        Options
+        Parameters
         -------
         new_dims : tuple(str)[3]
             A 3-tuple with the new orientation of the image (see FSL
