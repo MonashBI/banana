@@ -7,7 +7,7 @@ from arcana.dataset import DatasetSpec
 from nianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
 from nipype.interfaces import fsl
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 
 
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -28,7 +28,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('qsm_mask', nifti_gz_format, 'qsm_pipeline',
                     desc=("Brain mask generated from T2* image"))]
 
-    add_option_specs = [
+    add_parameter_specs = [
 #         'SUIT_mask': lookup_template_mask_path('SUIT')
         ]
 

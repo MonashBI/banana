@@ -23,7 +23,7 @@ from nianalysis.requirement import (
     fsl5_req, spm12_req, matlab2015_req)
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 
 
 class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -57,9 +57,9 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('sute_cont_ute', nifti_gz_format,
                     'backwrap_to_ute_pipeline')]
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('bet_method', 'optibet',
-                   choices=MRIStudy.option_spec('bet_method').choices)]
+                   choices=MRIStudy.parameter_spec('bet_method').choices)]
 
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
@@ -476,7 +476,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 #                 "parallel implementation"),
 #             version=1,
 #             citations=(),
-#             options=options)
+#             parameters=parameters)
 #
 #         cont_split = pipeline.create_node(Split(), name='cont_split',
 #                                           requirements=[fsl5_req])

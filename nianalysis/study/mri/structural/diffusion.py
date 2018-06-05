@@ -23,7 +23,7 @@ from arcana.exception import ArcanaError
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.interfaces.iterators import SelectSession
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.study.mri.epi import EPIStudy
 from nipype.interfaces import fsl
 from nianalysis.interfaces.custom.motion_correction import (
@@ -73,11 +73,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     'intensity_normalisation_pipeline',
                     frequency='per_project')]
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('multi_tissue', True),
         ParameterSpec('preproc_pe_dir', None, dtype=str),
-        ParameterSpec('preproc_denoise', False),
-        ParameterSpec('brain_extract_method', 'mrtrix'),
+        ParameterSpec('preproc_denoise', False),        
         ParameterSpec('bias_correct_method', 'ants',
                    choices=('ants', 'fsl')),
         ParameterSpec('response_algorithm', 'tax'),
@@ -87,6 +86,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False)]
+    
+    add_switch_specs = [
+        SwitchSpec('brain_extract_method', 'mrtrix', ('fsl', 'mrtrix')),
+        SwitchSpec('bias_correct_method', 'fsl', ('ants', 'fsl'))]
 
     def basic_preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -104,7 +107,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    DatasetSpec('eddy_par', eddy_par_format)]
         citations = [fsl_cite, eddy_cite, topup_cite,
                      distort_correct_cite]
-        if self.pre_option('preproc_denoise', 'preprocess', **kwargs):
+        if self.pre_parameter('preproc_denoise', 'preprocess', **kwargs):
             outputs.append(DatasetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
@@ -128,7 +131,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=citations,
             **kwargs)
         # Denoise the dwi-scan
-        if pipeline.option('preproc_denoise'):
+        if pipeline.parameter('preproc_denoise'):
             # Run denoising
             denoise = pipeline.create_node(DWIDenoise(), name='denoise',
                                            requirements=[mrtrix3_req])
@@ -167,22 +170,22 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
             # Create preprocessing node
             dwipreproc.inputs.rpe_pair = True
-            if pipeline.option('preproc_pe_dir') is not None:
-                dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
+            if pipeline.parameter('preproc_pe_dir') is not None:
+                dwipreproc.inputs.pe_dir = pipeline.parameter('preproc_pe_dir')
             # Create nodes to gradients to FSL format
             extract_grad = pipeline.create_node(
                 ExtractFSLGradients(), name="extract_grad",
                 requirements=[mrtrix3_req])
             # Connect inputs
             pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
-        if pipeline.option('preproc_denoise'):
+        if pipeline.parameter('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
         else:
             pipeline.connect_input('primary', dwipreproc, 'in_file')
         pipeline.connect_input('primary', dwiextract, 'in_file')
         # Connect inter-nodes
-        if pipeline.option('preproc_denoise'):
+        if pipeline.parameter('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
             pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
             pipeline.connect(subtract_operands, 'out', subtract, 'operands')
@@ -201,7 +204,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-        if pipeline.option('preproc_denoise'):
+        if pipeline.parameter('preproc_denoise'):
             pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
         return pipeline
@@ -217,8 +220,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             want to use
         """
         pipeline_name = 'brain_mask'
-        mask_tool = self.pre_option('brain_extract_method', pipeline_name,
-                                    **kwargs)
+        mask_tool = self.switch('brain_extract_method')
         if mask_tool == 'fsl':
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
@@ -260,8 +262,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         Corrects B1 field inhomogeneities
         """
         pipeline_name = 'bias_correct'
-        bias_method = self.pre_option('bias_correct_method',
-                                      pipeline_name, **kwargs)
+        bias_method = self.switch('bias_correct_method')
         pipeline = self.create_pipeline(
             name=pipeline_name,
             inputs=[DatasetSpec('preproc', nifti_gz_format),
@@ -687,166 +688,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             'align_mats', aff_mat, 'affine_matrices')
         return pipeline
 
-# class TractographyInputSpec(MRTrix3BaseInputSpec):
-#     sph_trait = traits.Tuple(traits.Float, traits.Float, traits.Float,
-#                              traits.Float, argstr='%f,%f,%f,%f')
-#
-#     in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
-#                    desc='input file to be processed')
-#
-#     out_file = File('tracked.tck', argstr='%s', mandatory=True, position=-1,
-#                     usedefault=True, desc='output file containing tracks')
-#
-#     algorithm = traits.Enum(
-#         'iFOD2', 'FACT', 'iFOD1', 'Nulldist', 'SD_Stream', 'Tensor_Det',
-#         'Tensor_Prob', usedefault=True, argstr='-algorithm %s',
-#         desc='tractography algorithm to be used')
-#
-#     # ROIs processing options
-#     roi_incl = traits.Either(
-#         File(exists=True), sph_trait, argstr='-include %s',
-#         desc=('specify an inclusion region of interest, streamlines must'
-#               ' traverse ALL inclusion regions to be accepted'))
-#     roi_excl = traits.Either(
-#         File(exists=True), sph_trait, argstr='-exclude %s',
-#         desc=('specify an exclusion region of interest, streamlines that'
-#               ' enter ANY exclude region will be discarded'))
-#     roi_mask = traits.Either(
-#         File(exists=True), sph_trait, argstr='-mask %s',
-#         desc=('specify a masking region of interest. If defined,'
-#               'streamlines exiting the mask will be truncated'))
-#
-#     # Streamlines tractography options
-#     step_size = traits.Float(
-#         argstr='-step %f',
-#         desc=('set the step size of the algorithm in mm (default is 0.1'
-#               ' x voxelsize; for iFOD2: 0.5 x voxelsize)'))
-#     angle = traits.Float(
-#         argstr='-angle %f',
-#         desc=('set the maximum angle between successive steps (default '
-#               'is 90deg x stepsize / voxelsize)'))
-#     n_tracks = traits.Int(
-#         argstr='-number %d',
-#         desc=('set the desired number of tracks. The program will continue'
-#               ' to generate tracks until this number of tracks have been '
-#               'selected and written to the output file'))
-#     max_tracks = traits.Int(
-#         argstr='-maxnum %d',
-#         desc=('set the maximum number of tracks to generate. The program '
-#               'will not generate more tracks than this number, even if '
-#               'the desired number of tracks hasn\'t yet been reached '
-#               '(default is 100 x number)'))
-#     max_length = traits.Float(
-#         argstr='-maxlength %f',
-#         desc=('set the maximum length of any track in mm (default is '
-#               '100 x voxelsize)'))
-#     min_length = traits.Float(
-#         argstr='-minlength %f',
-#         desc=('set the minimum length of any track in mm (default is '
-#               '5 x voxelsize)'))
-#     cutoff = traits.Float(
-#         argstr='-cutoff %f',
-#         desc=('set the FA or FOD amplitude cutoff for terminating '
-#               'tracks (default is 0.1)'))
-#     cutoff_init = traits.Float(
-#         argstr='-initcutoff %f',
-#         desc=('set the minimum FA or FOD amplitude for initiating '
-#               'tracks (default is the same as the normal cutoff)'))
-#     n_trials = traits.Int(
-#         argstr='-trials %d',
-#         desc=('set the maximum number of sampling trials at each point'
-#               ' (only used for probabilistic tracking)'))
-#     unidirectional = traits.Bool(
-#         argstr='-unidirectional',
-#         desc=('track from the seed point in one direction only '
-#               '(default is to track in both directions)'))
-#     init_dir = traits.Tuple(
-#         traits.Float, traits.Float, traits.Float,
-#         argstr='-initdirection %f,%f,%f',
-#         desc=('specify an initial direction for the tracking (this '
-#               'should be supplied as a vector of 3 comma-separated values'))
-#     noprecompt = traits.Bool(
-#         argstr='-noprecomputed',
-#         desc=('do NOT pre-compute legendre polynomial values. Warning: this '
-#               'will slow down the algorithm by a factor of approximately 4'))
-#     power = traits.Int(
-#         argstr='-power %d',
-#         desc=('raise the FOD to the power specified (default is 1/nsamples)'))
-#     n_samples = traits.Int(
-#         4, argstr='-samples %d',
-#         desc=('set the number of FOD samples to take per step for the 2nd '
-#               'order (iFOD2) method'))
-#     use_rk4 = traits.Bool(
-#         argstr='-rk4',
-#         desc=('use 4th-order Runge-Kutta integration (slower, but eliminates'
-#               ' curvature overshoot in 1st-order deterministic methods)'))
-#     stop = traits.Bool(
-#         argstr='-stop',
-#         desc=('stop propagating a streamline once it has traversed all '
-#               'include regions'))
-#     downsample = traits.Float(
-#         argstr='-downsample %f',
-#         desc='downsample the generated streamlines to reduce output file size')
-#
-#     # Anatomically-Constrained Tractography options
-#     act_file = File(
-#         exists=True, argstr='-act %s',
-#         desc=('use the Anatomically-Constrained Tractography framework during'
-#               ' tracking; provided image must be in the 5TT '
-#               '(five - tissue - type) format'))
-#     backtrack = traits.Bool(argstr='-backtrack',
-#                             desc='allow tracks to be truncated')
-#
-#     crop_at_gmwmi = traits.Bool(
-#         argstr='-crop_at_gmwmi',
-#         desc=('crop streamline endpoints more '
-#               'precisely as they cross the GM-WM interface'))
-#
-#     # Tractography seeding options
-#     seed_sphere = traits.Tuple(
-#         traits.Float, traits.Float, traits.Float, traits.Float,
-#         argstr='-seed_sphere %f,%f,%f,%f', desc='spherical seed')
-#     seed_image = File(exists=True, argstr='-seed_image %s',
-#                       desc='seed streamlines entirely at random within mask')
-#     seed_rnd_voxel = traits.Tuple(
-#         File(exists=True), traits.Int(),
-#         argstr='-seed_random_per_voxel %s %d',
-#         xor=['seed_image', 'seed_grid_voxel'],
-#         desc=('seed a fixed number of streamlines per voxel in a mask '
-#               'image; random placement of seeds in each voxel'))
-#     seed_grid_voxel = traits.Tuple(
-#         File(exists=True), traits.Int(),
-#         argstr='-seed_grid_per_voxel %s %d',
-#         xor=['seed_image', 'seed_rnd_voxel'],
-#         desc=('seed a fixed number of streamlines per voxel in a mask '
-#               'image; place seeds on a 3D mesh grid (grid_size argument '
-#               'is per axis; so a grid_size of 3 results in 27 seeds per'
-#               ' voxel)'))
-#     seed_rejection = File(
-#         exists=True, argstr='-seed_rejection %s',
-#         desc=('seed from an image using rejection sampling (higher '
-#               'values = more probable to seed from'))
-#     seed_gmwmi = File(
-#         exists=True, argstr='-seed_gmwmi %s', requires=['act_file'],
-#         desc=('seed from the grey matter - white matter interface (only '
-#               'valid if using ACT framework)'))
-#     seed_dynamic = File(
-#         exists=True, argstr='-seed_dynamic %s',
-#         desc=('determine seed points dynamically using the SIFT model '
-#               '(must not provide any other seeding mechanism). Note that'
-#               ' while this seeding mechanism improves the distribution of'
-#               ' reconstructed streamlines density, it should NOT be used '
-#               'as a substitute for the SIFT method itself.'))
-#     max_seed_attempts = traits.Int(
-#         argstr='-max_seed_attempts %d',
-#         desc=('set the maximum number of times that the tracking '
-#               'algorithm should attempt to find an appropriate tracking'
-#               ' direction from a given seed point'))
-#     out_seeds = File(
-#         'out_seeds.nii.gz', argstr='-output_seeds %s',
-#         desc=('output the seed location of all successful streamlines to'
-#               ' a file'))
-
 
 class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
 
@@ -866,9 +707,11 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         DatasetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
         DatasetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 
-    add_option_specs = [ParameterSpec('noddi_model',
-                                   'WatsonSHStickTortIsoV_B0'),
-                        ParameterSpec('single_slice', False)]
+    add_parameter_specs = [ParameterSpec('noddi_model',
+                                   'WatsonSHStickTortIsoV_B0')]
+    
+    add_switch_specs = [
+        SwitchSpec('single_slice', False)]
 
     def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -916,7 +759,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         inputs = [DatasetSpec('bias_correct', nifti_gz_format),
                   DatasetSpec('grad_dirs', fsl_bvecs_format),
                   DatasetSpec('bvalues', fsl_bvals_format)]
-        if self.pre_option('single_slice', pipeline_name, **kwargs):
+        if self.switch('single_slice'):
             inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(DatasetSpec('brain_mask', nifti_gz_format))
@@ -959,7 +802,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             BatchNODDIFitting(), name="batch_fit",
             requirements=[noddi_req, matlab2015_req], wall_time=180,
             memory=8000)
-        batch_fit.inputs.model = pipeline.option('noddi_model')
+        batch_fit.inputs.model = pipeline.parameter('noddi_model')
         batch_fit.inputs.nthreads = self.runner.num_processes
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
@@ -974,7 +817,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
                          'brain_mask_file')
         # Connect inputs
         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
-        if pipeline.option('single_slice') is None:
+        if not pipeline.switch('single_slice'):
             pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
         else:
             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')

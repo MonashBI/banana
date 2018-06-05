@@ -9,7 +9,7 @@ from arcana.dataset import DatasetSpec
 from arcana.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from arcana.study.base import StudyMetaClass
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 
 
 class T1Study(MRIStudy, metaclass=StudyMetaClass):
@@ -19,9 +19,9 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
                     'freesurfer_pipeline'),
         DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline')]
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('bet_method', 'optibet',
-                   choices=MRIStudy.option_spec('bet_method').choices),
+                   choices=MRIStudy.parameter_spec('bet_method').choices),
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.57),
         ParameterSpec('bet_g_threshold', -0.1)]

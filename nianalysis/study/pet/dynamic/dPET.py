@@ -7,7 +7,7 @@ from arcana.interfaces.utils import Merge
 from nianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
 from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
                                      png_format)
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 import os
 
 template_path = os.path.abspath(
@@ -30,7 +30,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
                     'Dual_Regression_pipeline'),
         DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('trans_template',
                    os.path.join(template_path, 'PET_template.nii.gz')),
         ParameterSpec('base_remove_th', 0),
@@ -73,7 +73,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform')
-        apply_trans.inputs.reference_image = pipeline.option(
+        apply_trans.inputs.reference_image = pipeline.parameter(
             'trans_template')
         apply_trans.inputs.interpolation = 'Linear'
         apply_trans.inputs.input_image_type = 3
@@ -115,8 +115,8 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             **kwargs)
 
         dr = pipeline.create_node(PETdr(), name='PET_dr')
-        dr.inputs.threshold = pipeline.option('regress_th')
-        dr.inputs.binarize = pipeline.option('regress_binarize')
+        dr.inputs.threshold = pipeline.parameter('regress_th')
+        dr.inputs.binarize = pipeline.parameter('regress_binarize')
         pipeline.connect_input('detrended_volumes', dr, 'volume')
         pipeline.connect_input('regression_map', dr, 'regression_map')
 

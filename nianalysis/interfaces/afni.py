@@ -42,7 +42,7 @@ class TprojectOutputSpec(TraitedSpec):
 class Tproject(AFNICommand):
     """This program projects (detrends) out various 'nuisance' time series from
     each voxel in the input dataset.  Note that all the projections are done
-    via linear regression, including the frequency-based options such as
+    via linear regression, including the frequency-based parameters such as
     '-passband'.  In this way, you can bandpass time-censored data, and at the
     same time, remove other time series of no interest (e.g., physiological
     estimates, motion parameters).

@@ -225,7 +225,7 @@ class SignalRegression(BaseInterface):
 
 
 class FSLFIXInputSpec(FSLCommandInputSpec):
-    _xor_options = ('classification', 'regression', 'all')
+    _xor_parameters = ('classification', 'regression', 'all')
     _xor_input_files = ('feat_dir', 'labelled_component')
     feat_dir = Directory(
         exists=True, argstr="%s", position=1, xor=_xor_input_files,
@@ -233,13 +233,13 @@ class FSLFIXInputSpec(FSLCommandInputSpec):
     train_data = File(exists=True, argstr="%s", position=2,
                       desc="Training file")
     regression = traits.Bool(desc='Regress previously classified components.',
-                             position=0, argstr="-a", xor=_xor_options)
+                             position=0, argstr="-a", xor=_xor_parameters)
     classification = traits.Bool(
         desc='Components classification without regression.', position=0,
-        argstr="-c", xor=_xor_options)
+        argstr="-c", xor=_xor_parameters)
     all = traits.Bool(
         desc='Components classification and regression.', position=0,
-        argstr="-f", xor=_xor_options)
+        argstr="-f", xor=_xor_parameters)
     component_threshold = traits.Int(
         argstr="%d", mandatory=True, position=3,
         desc="threshold for the number of components")

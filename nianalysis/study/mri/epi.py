@@ -12,7 +12,7 @@ from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
@@ -34,7 +34,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline')]
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
@@ -42,7 +42,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def linear_coregistration_pipeline(self, **kwargs):
         pipeline_name = 'linear_coreg'
-        method = self.pre_option('linear_reg_method', pipeline_name,
+        method = self.pre_parameter('linear_reg_method', pipeline_name,
                                  **kwargs)
         if method == 'epireg':
             return self._epireg_linear_coregistration_pipeline(**kwargs)

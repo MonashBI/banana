@@ -24,7 +24,7 @@ class RunMotionCorrection:
         self.dynamic = dynamic
         self.struct2align = struct2align
         self.pet_recon = pet_recon
-        self.options = {'fixed_binning_n_frames': frames,
+        self.parameters = {'fixed_binning_n_frames': frames,
                         'pet_offset': pet_offset,
                         'fixed_binning_bin_len': bin_len,
                         'PET2MNI_reg': mni_reg,
@@ -34,11 +34,11 @@ class RunMotionCorrection:
         if crop_coordinates is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):
-                self.options['crop_{}min'.format(crop_axes[i])] = c
+                self.parameters['crop_{}min'.format(crop_axes[i])] = c
         if crop_size is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_size):
-                self.options['crop_{}size'.format(crop_axes[i])] = c
+                self.parameters['crop_{}size'.format(crop_axes[i])] = c
 
     def create_motion_correction_inputs(self):
 
@@ -205,7 +205,7 @@ if __name__ == "__main__":
     study = MotionCorrection(name='MotionCorrection',
                              runner=LinearRunner(WORK_PATH),
                              repository=repository, inputs=inputs,
-                             subject_ids=[sub_id], options=mc.options,
+                             subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])
     study.data(out_data)
 print('Done!')

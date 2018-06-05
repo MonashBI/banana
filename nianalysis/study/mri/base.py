@@ -23,7 +23,7 @@ import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -83,7 +83,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('ped', str, 'header_info_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),
         ParameterSpec('bet_reduce_bias', False),
@@ -134,7 +134,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def linear_coregistration_pipeline(self, **kwargs):
         pipeline_name = 'linear_coreg'
-        method = self.pre_option('linear_reg_method', pipeline_name,
+        method = self.pre_parameter('linear_reg_method', pipeline_name,
                                  **kwargs)
         if method == 'flirt':
             pipeline = self._flirt_factory(
@@ -187,10 +187,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                      requirements=[fsl5_req],
                                      wall_time=5)
 
-        # Set registration options
-        flirt.inputs.dof = pipeline.option('flirt_degrees_of_freedom')
-        flirt.inputs.cost = pipeline.option('flirt_cost_func')
-        flirt.inputs.cost_func = pipeline.option('flirt_cost_func')
+        # Set registration parameters
+        flirt.inputs.dof = pipeline.parameter('flirt_degrees_of_freedom')
+        flirt.inputs.cost = pipeline.parameter('flirt_cost_func')
+        flirt.inputs.cost_func = pipeline.parameter('flirt_cost_func')
         flirt.inputs.output_type = 'NIFTI_GZ'
         # Connect inputs
         pipeline.connect_input(to_reg, flirt, 'in_file')
@@ -289,7 +289,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def brain_mask_pipeline(self, in_file='preproc', **kwargs):
-        bet_method = self.pre_option('bet_method', self.BRAIN_MASK_NAME,
+        bet_method = self.pre_parameter('bet_method', self.BRAIN_MASK_NAME,
                                      **kwargs)
         if bet_method == 'fsl_bet':
             pipeline = self._fsl_bet_brain_mask_pipeline(in_file, **kwargs)
@@ -318,12 +318,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                    requirements=[fsl509_req])
         bet.inputs.mask = True
         bet.inputs.output_type = 'NIFTI_GZ'
-        if pipeline.option('bet_robust'):
+        if pipeline.parameter('bet_robust'):
             bet.inputs.robust = True
-        if pipeline.option('bet_reduce_bias'):
+        if pipeline.parameter('bet_reduce_bias'):
             bet.inputs.reduce_bias = True
-        bet.inputs.frac = pipeline.option('bet_f_threshold')
-        bet.inputs.vertical_gradient = pipeline.option(
+        bet.inputs.frac = pipeline.parameter('bet_f_threshold')
+        bet.inputs.vertical_gradient = pipeline.parameter(
             'bet_g_threshold')
         # Connect inputs/outputs
         pipeline.connect_input(in_file, bet, 'in_file')
@@ -338,7 +338,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if self.pre_option('optibet_gen_report', self.BRAIN_MASK_NAME,
+        if self.pre_parameter('optibet_gen_report', self.BRAIN_MASK_NAME,
                            **kwargs):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
@@ -354,7 +354,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             AntsRegSyn(num_dimensions=3, transformation='s',
                        out_prefix='T12MNI', num_threads=4), name='T1_reg',
             wall_time=25, requirements=[ants2_req])
-        mni_reg.inputs.ref_file = pipeline.option('MNI_template')
+        mni_reg.inputs.ref_file = pipeline.parameter('MNI_template')
         pipeline.connect_input(in_file, mni_reg, 'input_file')
 
         merge_trans = pipeline.create_node(Merge(2), name='merge_transforms',
@@ -370,7 +370,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
             memory=24000, requirements=[ants2_req])
-        apply_trans.inputs.input_image = pipeline.option('MNI_template_mask')
+        apply_trans.inputs.input_image = pipeline.parameter('MNI_template_mask')
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
@@ -387,7 +387,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             name='mask', wall_time=5, requirements=[fsl5_req])
         pipeline.connect_input(in_file, maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
-        if pipeline.option('optibet_gen_report'):
+        if pipeline.parameter('optibet_gen_report'):
             slices = pipeline.create_node(
                 FSLSlices(), name='slices', wall_time=5,
                 requirements=[fsl5_req])
@@ -402,7 +402,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def coregister_to_atlas_pipeline(self, **kwargs):
-        atlas_reg_tool = self.pre_option(
+        atlas_reg_tool = self.pre_parameter(
             'atlas_coreg_tool', self.COREGISTER_TO_ATLAS_NAME, **kwargs)
         if atlas_reg_tool == 'fnirt':
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
@@ -436,13 +436,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(pipeline.option('fnirt_atlas'), 'image',
-                                   resolution=pipeline.option('resolution'))
+        ref_atlas = get_atlas_path(pipeline.parameter('fnirt_atlas'), 'image',
+                                   resolution=pipeline.parameter('resolution'))
         ref_mask = get_atlas_path(
-            pipeline.option('fnirt_atlas'), 'mask_dilated',
-            resolution=pipeline.option('resolution'))
-        ref_brain = get_atlas_path(pipeline.option('fnirt_atlas'), 'brain',
-                                   resolution=pipeline.option('resolution'))
+            pipeline.parameter('fnirt_atlas'), 'mask_dilated',
+            resolution=pipeline.parameter('resolution'))
+        ref_brain = get_atlas_path(pipeline.parameter('fnirt_atlas'), 'brain',
+                                   resolution=pipeline.parameter('resolution'))
         # Basic reorientation to standard MNI space
         reorient = pipeline.create_node(Reorient2Std(), name='reorient',
                                         requirements=[fsl5_req])
@@ -467,11 +467,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
         fnirt.inputs.output_type = 'NIFTI_GZ'
-        intensity_model = pipeline.option('fnirt_intensity_model')
+        intensity_model = pipeline.parameter('fnirt_intensity_model')
         if intensity_model is None:
             intensity_model = 'none'
         fnirt.inputs.intensity_mapping_model = intensity_model
-        fnirt.inputs.subsampling_scheme = pipeline.option('fnirt_subsampling')
+        fnirt.inputs.subsampling_scheme = pipeline.parameter('fnirt_subsampling')
         fnirt.inputs.fieldcoeff_file = True
         fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
@@ -481,7 +481,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
         apply_mask = [int(s == 1)
-                      for s in pipeline.option('fnirt_subsampling')]
+                      for s in pipeline.parameter('fnirt_subsampling')]
         fnirt.inputs.apply_inmask = apply_mask
         fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
@@ -489,8 +489,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
         pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
         pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
-        # Set registration options
-        # TOD: Need to work out which options to use
+        # Set registration parameters
+        # TOD: Need to work out which parameters to use
         # Connect inputs
         pipeline.connect_input('preproc', reorient, 'in_file')
         pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
@@ -520,14 +520,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                        out_prefix='Struct2MNI', num_threads=4),
             name='Struct2MNI_reg', wall_time=25, requirements=[ants2_req])
 
-        ref_brain = pipeline.option('MNI_template_brain')
+        ref_brain = pipeline.parameter('MNI_template_brain')
         ants_reg.inputs.ref_file = ref_brain
         pipeline.connect_input('coreg_ref_brain', ants_reg, 'input_file')
 
         slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
                                       requirements=[fsl5_req])
         slices.inputs.outname = 'coreg_to_atlas_report'
-        slices.inputs.im1 = pipeline.option('MNI_template')
+        slices.inputs.im1 = pipeline.parameter('MNI_template')
         pipeline.connect(ants_reg, 'reg_file', slices, 'im2')
 
         pipeline.connect_output('coreg_to_atlas', ants_reg, 'reg_file')
@@ -563,7 +563,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             pipeline.connect_output('wm_seg', split, 'out2')
         else:
             raise ArcanaUsageError(
-                "'img_type' option can either be 1 or 2 (not {})"
+                "'img_type' parameter can either be 1 or 2 (not {})"
                 .format(img_type))
 
         return pipeline
@@ -594,12 +594,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         swap = pipeline.create_node(fsl.utils.Reorient2Std(),
                                     name='fslreorient2std',
                                     requirements=[fsl509_req])
-#         swap.inputs.new_dims = pipeline.option('preproc_new_dims')
+#         swap.inputs.new_dims = pipeline.parameter('preproc_new_dims')
         pipeline.connect_input(in_file_name, swap, 'in_file')
-        if pipeline.option('preproc_resolution') is not None:
+        if pipeline.parameter('preproc_resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample",
                                             requirements=[mrtrix3_req])
-            resample.inputs.voxel = pipeline.option('preproc_resolution')
+            resample.inputs.voxel = pipeline.parameter('preproc_resolution')
             pipeline.connect(swap, 'out_file', resample, 'in_file')
             pipeline.connect_output('preproc', resample, 'out_file')
         else:

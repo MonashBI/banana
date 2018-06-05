@@ -8,7 +8,7 @@ import os
 from nianalysis.requirement import fsl509_req, mrtrix3_req
 from nianalysis.interfaces.custom.pet import PreparePetDir
 from nianalysis.interfaces.custom.dicom import PetTimeInfo
-from arcana.option import ParameterSpec
+from arcana.parameter import ParameterSpec
 
 
 template_path = os.path.abspath(
@@ -18,7 +18,7 @@ template_path = os.path.abspath(
 
 class PETStudy(Study, metaclass=StudyMetaClass):
 
-    add_option_specs = [ParameterSpec('ica_n_components', 2),
+    add_parameter_specs = [ParameterSpec('ica_n_components', 2),
                         ParameterSpec('ica_type', 'spatial'),
                         ParameterSpec('norm_transformation', 's'),
                         ParameterSpec('norm_dim', 3),
@@ -78,8 +78,8 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             **kwargs)
 
         ica = pipeline.create_node(FastICA(), name='ICA')
-        ica.inputs.n_components = pipeline.option('ica_n_components')
-        ica.inputs.ica_type = pipeline.option('ica_type')
+        ica.inputs.n_components = pipeline.parameter('ica_n_components')
+        ica.inputs.ica_type = pipeline.parameter('ica_type')
         pipeline.connect_input('registered_volumes', ica, 'volume')
 
         pipeline.connect_output('decomposed_file', ica, 'ica_decomposition')
@@ -104,10 +104,10 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
         reg = pipeline.create_node(AntsRegSyn(out_prefix='vol2template'),
                                    name='ANTs')
-        reg.inputs.num_dimensions = pipeline.option('norm_dim')
+        reg.inputs.num_dimensions = pipeline.parameter('norm_dim')
         reg.inputs.num_threads = self.runner.num_processes
-        reg.inputs.transformation = pipeline.option('norm_transformation')
-        reg.inputs.ref_file = pipeline.option('norm_template')
+        reg.inputs.transformation = pipeline.parameter('norm_transformation')
+        reg.inputs.ref_file = pipeline.parameter('norm_template')
         pipeline.connect_input('pet_image', reg, 'input_file')
 
         pipeline.connect_output('registered_volume', reg, 'reg_file')
@@ -131,7 +131,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
                                         requirements=[mrtrix3_req, fsl509_req])
-        prep_dir.inputs.image_orientation_check = pipeline.option(
+        prep_dir.inputs.image_orientation_check = pipeline.parameter(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
 
