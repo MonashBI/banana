@@ -25,7 +25,7 @@ feat_template_path = os.path.join(
 optiBET_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
                                             'resources', 'bash', 'optiBET.sh'))
 
-logger = logging.getLogger('Arcana')
+logger = logging.getLogger('arcana')
 
 
 class MelodicL1FSFInputSpec(BaseInterfaceInputSpec):

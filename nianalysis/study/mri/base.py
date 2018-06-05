@@ -27,7 +27,7 @@ from arcana.option import OptionSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
-logger = logging.getLogger('Arcana')
+logger = logging.getLogger('arcana')
 
 atlas_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))

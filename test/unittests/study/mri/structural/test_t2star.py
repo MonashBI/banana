@@ -7,7 +7,7 @@ from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from nianalysis.data_format import zip_format  # @IgnorePep8
 from nianalysis.study.mri.structural.t2star import T2StarStudy  # @IgnorePep8
 
-logger = logging.getLogger('Arcana')
+logger = logging.getLogger('arcana')
 
 
 class TestQSM(TestCase):
