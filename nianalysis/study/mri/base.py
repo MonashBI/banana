@@ -89,16 +89,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('bet_g_threshold', 0.0),
         ParameterSpec('bet_method', 'fsl_bet',
-                   choices=('fsl_bet', 'optibet')),
+                      choices=('fsl_bet', 'optibet')),
         ParameterSpec('MNI_template',
-                   os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
+                      os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         ParameterSpec('MNI_template_brain',
-                   os.path.join(atlas_path, 'MNI152_T1_2mm_brain.nii.gz')),
+                      os.path.join(atlas_path, 'MNI152_T1_2mm_brain.nii.gz')),
         ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         ParameterSpec('optibet_gen_report', False),
         ParameterSpec('atlas_coreg_tool', 'ants',
-                   choices=('fnirt', 'ants')),
+                      choices=('fnirt', 'ants')),
         ParameterSpec('fnirt_atlas', 'MNI152'),
         ParameterSpec('fnirt_resolution', '2mm'),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
@@ -106,7 +106,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParameterSpec('preproc_resolution', None, dtype=list),
         ParameterSpec('linear_reg_method', 'flirt',
-                   choices=('flirt', 'spm', 'ants')),
+                      choices=('flirt', 'spm', 'ants')),
         ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
@@ -135,7 +135,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
     def linear_coregistration_pipeline(self, **kwargs):
         pipeline_name = 'linear_coreg'
         method = self.pre_parameter('linear_reg_method', pipeline_name,
-                                 **kwargs)
+                                    **kwargs)
         if method == 'flirt':
             pipeline = self._flirt_factory(
                 pipeline_name, 'brain', 'coreg_ref_brain',
