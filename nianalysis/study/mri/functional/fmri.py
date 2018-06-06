@@ -450,7 +450,7 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
     if training_set is not None:
         inputs.extend(DatasetMatch('epi_{}_train_data'.format(i),
                                    rdata_format, training_set,
-                                   frequency='per_project')
+                                   frequency='per_project', derived=True)
                       for i in range(epi_number))
         output_files.extend('epi_{}_smoothed_ts'.format(i)
                             for i in range(epi_number))
