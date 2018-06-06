@@ -76,20 +76,18 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
     add_parameter_specs = [
         ParameterSpec('multi_tissue', True),
         ParameterSpec('preproc_pe_dir', None, dtype=str),
-        ParameterSpec('preproc_denoise', False),        
-        ParameterSpec('bias_correct_method', 'ants',
-                   choices=('ants', 'fsl')),
         ParameterSpec('response_algorithm', 'tax'),
-        ParameterSpec('fod_algorithm', 'tax'),
         ParameterSpec('tbss_skel_thresh', 0.2),
         ParameterSpec('fsl_mask_f', 0.25),
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False)]
-    
+
     add_switch_specs = [
-        SwitchSpec('brain_extract_method', 'mrtrix', ('fsl', 'mrtrix')),
-        SwitchSpec('bias_correct_method', 'fsl', ('ants', 'fsl'))]
+        SwitchSpec('preproc_denoise', False),
+        SwitchSpec('bias_correct_method', 'ants',
+                   choices=('ants', 'fsl')),
+        SwitchSpec('brain_extract_method', 'mrtrix')]
 
     def basic_preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -107,7 +105,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    DatasetSpec('eddy_par', eddy_par_format)]
         citations = [fsl_cite, eddy_cite, topup_cite,
                      distort_correct_cite]
-        if self.pre_parameter('preproc_denoise', 'preprocess', **kwargs):
+        if self.switch('preproc_denoise'):
             outputs.append(DatasetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
@@ -452,7 +450,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
-        response.inputs.algorithm = pipeline.option('response_algorithm')
+        response.inputs.algorithm = pipeline.parameter('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
