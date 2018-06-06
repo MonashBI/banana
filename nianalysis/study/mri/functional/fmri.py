@@ -70,7 +70,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         DatasetSpec('normalized_ts', nifti_gz_format,
                     'timeseries_normalization_to_atlas_pipeline'),
         DatasetSpec('smoothed_ts', nifti_gz_format,
-                    'timeseries_spatial_smoothing_pipeline')]
+                    'smoothing_pipeline')]
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 
@@ -343,10 +343,10 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def timeseries_spatial_smoothing_pipeline(self, **kwargs):
+    def smoothing_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
-            name='timeseries_spatial_smoothing_pipeline',
+            name='smoothing_pipeline',
             inputs=[DatasetSpec('normalized_ts', nifti_gz_format)],
             outputs=[DatasetSpec('smoothed_ts', nifti_gz_format)],
             desc=("Spatial smoothing of the normalized fmri file"),
