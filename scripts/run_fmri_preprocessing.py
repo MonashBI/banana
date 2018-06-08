@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--session_ids', '-s', type=str,
                         help='Session ID on XNAT. Default is all the '
                         'sessions found in the XNAT project.')
-    parser.add_argument('--subject_ids', '-sub', type=str,
+    parser.add_argument('--subject_ids', '-sub', type=str, nargs='+',
                         help='Subject ID on XNAT. Default is all the '
                         'subjects found in all the session specified.')
     parser.add_argument('--xnat_server', '-server', type=str,
@@ -107,8 +107,8 @@ if __name__ == "__main__":
         cache_dir=CACHE_PATH)
 
     study = fMRI(name='fMRI_preprocessing', runner=LinearRunner(WORK_PATH),
-                 repository=repository, inputs=inputs, subject_ids=[sub_ids],
+                 repository=repository, inputs=inputs, subject_ids=sub_ids,
                  visit_ids=[session_ids])
-    study.data(output_files)
+    study.data('train_data')
 
 print('Done!')

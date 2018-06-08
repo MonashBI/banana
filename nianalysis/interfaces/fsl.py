@@ -15,6 +15,8 @@ import numpy as np
 import ast
 import subprocess as sp
 import scipy
+from random import shuffle
+import shutil
 
 
 warn = warnings.warn
@@ -403,3 +405,44 @@ class FSLSlices(FSLCommand):
         else:
             assert False
         return fname
+
+
+class PrepareFIXTrainingInputSpec(BaseInterfaceInputSpec):
+
+    label_files = traits.List()
+    sub_dirs = traits.List()
+
+
+class PrepareFIXTrainingOutputSpec(TraitedSpec):
+
+    prepared_dirs = traits.List()
+
+
+class PrepareFIXTraining(BaseInterface):
+
+    input_spec = PrepareFIXTrainingInputSpec
+    output_spec = PrepareFIXTrainingOutputSpec
+
+    def _run_interface(self, runtime):
+
+        labels = self.inputs.label_files
+        sub_dirs = self.inputs.sub_dirs
+        self.out_dirs = []
+
+        if len(labels) != len(sub_dirs):
+            raise Exception('The number of subjects provided is different from'
+                            'the number of hand_label_noise files. Fix '
+                            'training cannot be performed. Please check.')
+        for i, label in enumerate(labels):
+            with open(label, 'r') as f:
+                if 'not_provided' not in f[0]:
+                    shutil.copy2(label, sub_dirs[i]+'/hand_labels_noise.txt')
+                    self.out_dirs.append(sub_dirs[i])
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        # print self.inputs.feat_dir+'./filtered_func_data_clean.nii*'
+        outputs['prepared_dirs'] = self.out_dirs
+        return outputs
