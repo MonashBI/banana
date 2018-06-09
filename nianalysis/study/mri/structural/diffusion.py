@@ -41,7 +41,11 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         DatasetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         DatasetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
         DatasetSpec('adc', nifti_gz_format, 'tensor_pipeline'),
-        DatasetSpec('response', text_format, 'response_pipeline'),
+        DatasetSpec('wm_response', text_format, 'response_pipeline'),
+        DatasetSpec('gm_response', text_format, 'response_pipeline',
+                    optional=True),
+        DatasetSpec('csf_response', text_format, 'response_pipeline',
+                    optional=True),
         DatasetSpec('avg_response', text_format, 'average_response_pipeline'),
         DatasetSpec('fod', mrtrix_format, 'fod_pipeline'),
         DatasetSpec('bias_correct', nifti_gz_format, 'bias_correct_pipeline'),
@@ -76,7 +80,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         OptionSpec('brain_extract_method', 'mrtrix'),
         OptionSpec('bias_correct_method', 'ants',
                    choices=('ants', 'fsl')),
-        OptionSpec('fod_response_algorithm', 'tax'),
+        OptionSpec('response_algorithm', 'tax'),
+        OptionSpec('fod_algorithm', 'tax'),
         OptionSpec('tbss_skel_thresh', 0.2),
         OptionSpec('fsl_mask_f', 0.25),
         OptionSpec('bet_robust', True),
@@ -423,7 +428,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
         Parameters
         ----------
-        fod_response_algorithm : str
+        response_algorithm : str
             Algorithm used to estimate the response
         """
         pipeline = self.create_pipeline(
@@ -432,15 +437,21 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('response', text_format)],
+            outputs=[DatasetSpec('wm_response', text_format)],
             desc=("Estimates the fibre response function"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
+        multi_tissue = (pipeline.option('response_algorithm') in
+                        ('dhollander', 'msmt_5tt'))
+        if multi_tissue:
+            pipeline.add_output(DatasetSpec('gm_response', text_format))
+            pipeline.add_output(DatasetSpec('csf_response',
+                                            text_format))
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
-        response.inputs.algorithm = pipeline.option('fod_response_algorithm')
+        response.inputs.algorithm = pipeline.option('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -451,7 +462,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('bias_correct', response, 'in_file')
         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
-        pipeline.connect_output('response', response, 'wm_file')
+        pipeline.connect_output('wm_response', response, 'wm_file')
+        if multi_tissue:
+            pipeline.connect_output('gm_response', response, 'gm_file')
+            pipeline.connect_output('csf_response', response, 'csf_file')
         # Check inputs/output are connected
         return pipeline
 
@@ -462,7 +476,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='average_response',
-            inputs=[DatasetSpec('response', text_format)],
+            inputs=[DatasetSpec('wm_response', text_format)],
             outputs=[DatasetSpec('avg_response', text_format,
                                  frequency='per_project')],
             desc=(
@@ -478,7 +492,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         avg_response = pipeline.create_node(AverageResponse(),
                                             name='avg_response')
         # Connect inputs
-        pipeline.connect_input('response', join_subjects, 'responses')
+        pipeline.connect_input('wm_response', join_subjects, 'responses')
         # Connect inter-nodes
         pipeline.connect(join_subjects, 'responses', join_visits, 'responses')
         pipeline.connect(join_visits, 'responses', avg_response, 'in_files')
@@ -486,6 +500,36 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_output('avg_response', avg_response, 'out_file')
         # Check inputs/output are connected
         return pipeline
+# 
+# algorithm = traits.Enum(
+#         'csd',
+#         'msmt_csd',
+#         argstr='%s',
+#         position=-8,
+#         mandatory=True,
+#         desc='FOD algorithm')
+#     in_file = File(
+#         exists=True,
+#         argstr='%s',
+#         position=-7,
+#         mandatory=True,
+#         desc='input DWI image')
+#     wm_txt = File(
+#         argstr='%s', position=-6, mandatory=True, desc='WM response text file')
+#     wm_odf = File(
+#         'wm.mif',
+#         argstr='%s',
+#         position=-5,
+#         usedefault=True,
+#         mandatory=True,
+#         desc='output WM ODF')
+#     gm_txt = File(argstr='%s', position=-4, desc='GM response text file')
+#     gm_odf = File('gm.mif', usedefault=True, argstr='%s',
+#                   position=-3, desc='output GM ODF')
+#     csf_txt = File(argstr='%s', position=-2, desc='CSF response text file')
+#     csf_odf = File('csf.mif', usedefault=True, argstr='%s',
+#                    position=-1, desc='output CSF ODF')
+#     mask_file = File(exists=True, argstr='-mask %s', desc='mask image')
 
     def fod_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -500,17 +544,21 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('response', text_format)],
+                    DatasetSpec('wm_response', text_format)],
             outputs=[DatasetSpec('fod', nifti_gz_format)],
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
+        multi_tissue = pipeline.option('fod_algorithm') == 'msmt_csd'
+        if multi_tissue:
+            pipeline.add_input(DatasetSpec('gm_response', text_format))
+            pipeline.add_input(DatasetSpec('csf_response', text_format))
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
-        dwi2fod.inputs.algorithm = 'csd'
+        dwi2fod.inputs.algorithm = pipeline.option('fod_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -519,7 +567,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
         pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
-        pipeline.connect_input('response', dwi2fod, 'wm_txt')
+        pipeline.connect_input('wm_response', dwi2fod, 'wm_txt')
         pipeline.connect_input('brain_mask', dwi2fod, 'mask_file')
         # Connect to outputs
         pipeline.connect_output('fod', dwi2fod, 'wm_odf')
