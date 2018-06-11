@@ -409,8 +409,8 @@ class FSLSlices(FSLCommand):
 
 class PrepareFIXTrainingInputSpec(BaseInterfaceInputSpec):
 
-    label_files = traits.List()
-    sub_dirs = traits.List()
+    inputs_list = traits.List()
+    epi_number = traits.Int()
 
 
 class PrepareFIXTrainingOutputSpec(TraitedSpec):
@@ -424,20 +424,33 @@ class PrepareFIXTraining(BaseInterface):
     output_spec = PrepareFIXTrainingOutputSpec
 
     def _run_interface(self, runtime):
-
-        labels = self.inputs.label_files
-        sub_dirs = self.inputs.sub_dirs
+        
+        epi_number = self.inputs.epi_number
+        inputs = self.inputs.inputs_list
+        fix_dirs = [inputs[x:x+epi_number] for x in
+                    np.arange(0, len(inputs)/2, epi_number, dtype=int)]
+        labels = [inputs[x:x+epi_number] for x in
+                    np.arange(len(inputs)/2, len(inputs), epi_number, dtype=int)]
         self.out_dirs = []
+        
 
-        if len(labels) != len(sub_dirs):
+        if len(labels) != len(fix_dirs):
             raise Exception('The number of subjects provided is different from'
                             'the number of hand_label_noise files. Fix '
                             'training cannot be performed. Please check.')
         for i, label in enumerate(labels):
-            with open(label, 'r') as f:
-                if 'not_provided' not in f[0]:
-                    shutil.copy2(label, sub_dirs[i]+'/hand_labels_noise.txt')
-                    self.out_dirs.append(sub_dirs[i])
+            for j in range(epi_number):
+                with open(label[j], 'r') as f:
+                    if 'not_provided' not in f.readline():
+                        shutil.copy2(label[j], fix_dirs[i][j]+'/hand_labels_noise.txt')
+                        self.out_dirs.append(fix_dirs[i][j])
+        if not self.out_dirs:
+            raise Exception('No non-empty hand_labels_noise.txt file found in the fix_dir '
+                            'provided. In order to run FIX training at least 25 '
+                            'hand_labels_noise.txt files have to be provided. Please '
+                            'go through 25 single-subject MELODIC ICA results, create '
+                            'those text files and upload them on XNAT. Have a look at '
+                            'the documentation to have more information.')
 
         return runtime
 

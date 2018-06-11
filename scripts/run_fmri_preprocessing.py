@@ -71,8 +71,8 @@ if __name__ == "__main__":
                         'phase image is the output of a SIEMENS scanner. It '
                         'does not support other vendors.',
                         default=None)
-    parser.add_argument('--fix_training_set', '-ts', type=str,
-                        help='Trainging set for FSL-FIX (.RData format). If '
+    parser.add_argument('--run_regression', '-regression', type=str,
+                        help='If '
                         'provided, fix classification and regression of the '
                         'noisy component will be performed and the final image'
                         ' will be fully pre-processed. Otherwise, the '
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     fMRI, inputs, output_files = create_fmri_study_class(
             'fMRI', args.hires_structural, args.fmri, args.fmri_order,
             fm_mag=args.field_map_mag, fm_phase=args.field_map_phase,
-            training_set=args.fix_training_set)
+            run_regression=args.run_regression)
 
     CACHE_PATH = os.path.join(args.working_dir, 'xnat_cache')
     WORK_PATH = os.path.join(args.working_dir, 'work_dir')
@@ -109,6 +109,6 @@ if __name__ == "__main__":
     study = fMRI(name='fMRI_preprocessing', runner=LinearRunner(WORK_PATH),
                  repository=repository, inputs=inputs, subject_ids=sub_ids,
                  visit_ids=[session_ids])
-    study.data('train_data')
+    study.data(output_files)
 
 print('Done!')

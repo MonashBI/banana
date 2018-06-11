@@ -23,6 +23,7 @@ class PrepareFIXInputSpec(BaseInterfaceInputSpec):
 class PrepareFIXOutputSpec(TraitedSpec):
 
     fix_dir = Directory()
+    hand_label_file = File(exists=True)
 
 
 class PrepareFIX(BaseInterface):
@@ -58,6 +59,9 @@ class PrepareFIX(BaseInterface):
         shutil.copy2(epi_mean, 'melodic_ica/mean_func.nii.gz')
         shutil.copytree(melodic_dir, 'melodic_ica/filtered_func_data.ica')
         shutil.copy2(filtered_epi, 'melodic_ica/filtered_func_data.nii.gz')
+        
+        with open('hand_label_file.txt', 'w') as f:
+            f.write('not_provided')
 
         return runtime
 
@@ -65,5 +69,6 @@ class PrepareFIX(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["fix_dir"] = os.getcwd()+'/melodic_ica'
+        outputs["hand_label_file"] = os.getcwd()+'/hand_label_file.txt'
 
         return outputs
