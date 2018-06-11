@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from mc_pipeline.generate_mc_pipeline import create_motion_correction_class
 import os.path
 import errno
@@ -16,7 +16,7 @@ class RunMotionCorrection:
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
                  pet_offset=0, frames='all', struct2align=None,
                  pet_recon=None, crop_coordinates=None, mni_reg=False,
-                 crop_size=None):
+                 crop_size=None, static_len=0):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
@@ -24,10 +24,11 @@ class RunMotionCorrection:
         self.struct2align = struct2align
         self.pet_recon = pet_recon
         self.options = {'fixed_binning_n_frames': frames,
-                        'fixed_binning_pet_offset': pet_offset,
+                        'pet_offset': pet_offset,
                         'fixed_binning_bin_len': bin_len,
                         'PET2MNI_reg': mni_reg,
-                        'dynamic_pet_mc': dynamic}
+                        'dynamic_pet_mc': dynamic,
+                        'framing_duration': static_len}
         if crop_coordinates is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):
@@ -101,6 +102,12 @@ if __name__ == "__main__":
                         help=("Path to an existing directory with the PET "
                               "reconstructed data (one folder containing DICOM"
                               " files per frame)."))
+    parser.add_argument('--static_pet_len', '-sl', type=int,
+                        help=("If static motion correction, this is the "
+                              "length of PET data you want to reconstruct and "
+                              "correct for motion. Default is from the "
+                              "PET_start_time+recon_offset to the end of the "
+                              "PET acquisition."), default=0)
     parser.add_argument('--bin_length', '-l', type=int,
                         help=("If dynamic motion correction, the temporal "
                               "length of each bin has to be provided (in sec)."
@@ -108,10 +115,11 @@ if __name__ == "__main__":
                               "temporal duration. Default is 60 seconds."),
                         default=60)
     parser.add_argument('--recon_offset', '-ro', type=int,
-                        help=("If dynamic motion correction, this is the time "
+                        help=("This is the time "
                               "difference, in seconds, between the PET start "
-                              "time and the start time of the first "
-                              "reconstructed bin. Default is 0."), default=0)
+                              "time and the start time of the reconstruction "
+                              "(valid for both dynamic and static motion "
+                              "correction). Default is 0."), default=0)
     parser.add_argument('--frames', '-f', type=int,
                         help=("If dynamic motion correction, this is the "
                               "number of reconstructed frames that have to be"
@@ -147,7 +155,8 @@ if __name__ == "__main__":
         bin_len=args.bin_length, pet_offset=args.recon_offset,
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
         struct2align=args.struct2align, crop_size=args.cropping_size,
-        crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg)
+        crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg,
+        static_len=args.static_len)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
