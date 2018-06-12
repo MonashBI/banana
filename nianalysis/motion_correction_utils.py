@@ -221,7 +221,7 @@ def guess_scan_type(scans, input_dir):
             continue
         dicom = dcm_files[0]
         hd = pydicom.read_file(dicom)
-        with open(dcm_files[0], 'r') as f:
+        with open(dcm_files[0], 'rb') as f:
             for line in f:
                 try:
                     line = line[:-1].decode('utf-8')
