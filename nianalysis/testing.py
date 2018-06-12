@@ -14,7 +14,7 @@ import xnat
 from arcana.repository.xnat import (
     guess_file_format, special_char_re, lower, BUILTIN_XNAT_FIELDS)
 from arcana.exception import ArcanaMissingDataException
-from arcana.file_format import DataFormat
+from arcana.file_format import FileFormat
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty

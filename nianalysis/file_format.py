@@ -1,6 +1,6 @@
 from copy import deepcopy, copy
 from arcana.node import Node
-from arcana.file_format import DataFormat, Converter
+from arcana.file_format import FileFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
@@ -39,67 +39,67 @@ class MrtrixConverter(Converter):
 
 
 # NeuroImaging data formats
-dicom_format = DataFormat(name='dicom', extension=None,
+dicom_format = FileFormat(name='dicom', extension=None,
                           directory=True, within_dir_exts=['.dcm'],
                           alternate_names=['secondary'])
-nifti_format = DataFormat(name='nifti', extension='.nii',
+nifti_format = FileFormat(name='nifti', extension='.nii',
                           converters={'dicom': Dcm2niixConverter,
                                       'analyze': MrtrixConverter,
                                       'nifti_gz': MrtrixConverter,
                                       'mrtrix': MrtrixConverter})
-nifti_gz_format = DataFormat(name='nifti_gz', extension='.nii.gz',
+nifti_gz_format = FileFormat(name='nifti_gz', extension='.nii.gz',
                              converters={'dicom': Dcm2niixConverter,
                                          'nifti': MrtrixConverter,
                                          'analyze': MrtrixConverter,
                                          'mrtrix': MrtrixConverter})
-analyze_format = DataFormat(name='analyze', extension='.img',
+analyze_format = FileFormat(name='analyze', extension='.img',
                             converters={'dicom': MrtrixConverter,
                                         'nifti': MrtrixConverter,
                                         'nifti_gz': MrtrixConverter,
                                         'mrtrix': MrtrixConverter})
-mrtrix_format = DataFormat(name='mrtrix', extension='.mif',
+mrtrix_format = FileFormat(name='mrtrix', extension='.mif',
                            converters={'dicom': MrtrixConverter,
                                        'nifti': MrtrixConverter,
                                        'nifti_gz': MrtrixConverter,
                                        'analyze': MrtrixConverter})
 
 # Tabular formats
-rfile_format = DataFormat(name='rdata', extension='.RData')
-# matlab_format = DataFormat(name='matlab', extension='.mat')
-csv_format = DataFormat(name='comma-separated_file', extension='.csv')
-text_matrix_format = DataFormat(name='text_matrix', extension='.mat')
+rfile_format = FileFormat(name='rdata', extension='.RData')
+# matlab_format = FileFormat(name='matlab', extension='.mat')
+csv_format = FileFormat(name='comma-separated_file', extension='.csv')
+text_matrix_format = FileFormat(name='text_matrix', extension='.mat')
 
 # Diffusion gradient-table data formats
-fsl_bvecs_format = DataFormat(name='fsl_bvecs', extension='.bvec')
-fsl_bvals_format = DataFormat(name='fsl_bvals', extension='.bval')
-mrtrix_grad_format = DataFormat(name='mrtrix_grad', extension='.b')
+fsl_bvecs_format = FileFormat(name='fsl_bvecs', extension='.bvec')
+fsl_bvals_format = FileFormat(name='fsl_bvals', extension='.bval')
+mrtrix_grad_format = FileFormat(name='mrtrix_grad', extension='.b')
 
 # Tool-specific formats
-eddy_par_format = DataFormat(name='eddy_par',
+eddy_par_format = FileFormat(name='eddy_par',
                              extension='.eddy_parameters')
-freesurfer_recon_all_format = DataFormat(name='fs_recon_all',
+freesurfer_recon_all_format = FileFormat(name='fs_recon_all',
                                          directory=True)
-ica_format = DataFormat(name='ica', extension='.ica', directory=True)
-par_format = DataFormat(name='parameters', extension='.par')
-motion_mats_format = DataFormat(
+ica_format = FileFormat(name='ica', extension='.ica', directory=True)
+par_format = FileFormat(name='parameters', extension='.par')
+motion_mats_format = FileFormat(
     name='motion_mats', directory=True, within_dir_exts=['.mat'],
     desc=("Format used for storing motion matrices produced during "
           "motion detection pipeline"))
 
 
 # General image formats
-gif_format = DataFormat(name='gif', extension='.gif')
-png_format = DataFormat(name='portable-network-graphics',
+gif_format = FileFormat(name='gif', extension='.gif')
+png_format = FileFormat(name='portable-network-graphics',
                         extension='.png')
 
 # PET formats
-list_mode_format = DataFormat(name='pet_list_mode', extension='.bf')
+list_mode_format = FileFormat(name='pet_list_mode', extension='.bf')
 
 # Raw formats
-dat_format = DataFormat(name='dat', extension='.dat')
+dat_format = FileFormat(name='dat', extension='.dat')
 
 # MRS format
-rda_format = DataFormat(name='raw', extension='.rda')
+rda_format = FileFormat(name='raw', extension='.rda')
 
 # Record list of all data formats registered by module (not really
 # used currently but could be useful in future)
@@ -107,8 +107,8 @@ registered_file_formats = []
 
 # Register all data formats in module
 for file_format in copy(globals()).values():
-    if isinstance(file_format, DataFormat):
-        DataFormat.register(file_format)
+    if isinstance(file_format, FileFormat):
+        FileFormat.register(file_format)
         registered_file_formats.append(file_format.name)
 
 # Since the conversion from DICOM->NIfTI is unfortunately slightly
