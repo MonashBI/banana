@@ -473,8 +473,6 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   DatasetSpec('timestamps', directory_format)]
         if ('umap_ref' in self.sub_study_names and
                 'umap' in self.input_names):
-            inputs.append(
-                DatasetSpec('frame2reference_mats', directory_format))
             inputs.append(DatasetSpec('umap_ref_preproc', nifti_gz_format))
             inputs.append(
                 DatasetSpec('umap_aligned_dicoms', directory_format))
