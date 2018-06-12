@@ -50,7 +50,7 @@ class RunMotionCorrection:
         cache_input_path = os.path.join(input_dir, 'inputs.pickle')
         if os.path.isdir(input_dir):
             try:
-                with open(cache_input_path, 'r') as f:
+                with open(cache_input_path, 'rb') as f:
                     (ref, ref_type, t1s, epis, t2s, dmris, pd,
                      pr) = pkl.load(f)
                 working_dir = (
