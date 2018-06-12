@@ -85,7 +85,7 @@ class RunMotionCorrection:
                 list_inputs.append(pet_recon)
             else:
                 list_inputs.append('')
-            with open(cache_input_path, 'w') as f:
+            with open(cache_input_path, 'wb') as f:
                 pkl.dump(list_inputs, f)
 
         return ref, ref_type, t1s, epis, t2s, dmris
