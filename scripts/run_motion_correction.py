@@ -180,7 +180,7 @@ if __name__ == "__main__":
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
         struct2align=args.struct2align, crop_size=args.cropping_size,
         crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg,
-        static_len=args.static_len, pct_umap=args.continuos_umap)
+        static_len=args.static_pet_len, pct_umap=args.continuos_umap)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
