@@ -252,7 +252,7 @@ class PetTimeInfo(BaseInterface):
                 pet_start_time = hd.AcquisitionTime
             except AttributeError:
                 pet_start_time = None
-            with open(pet_image[0], 'rb') as f:
+            with open(pet_image, 'rb') as f:
                 for line in f:
                     try:
                         line = line[:-1].decode('utf-8')
