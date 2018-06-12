@@ -255,7 +255,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         framing.inputs.temporal_threshold = pipeline.option(
             'framing_temporal_th')
         framing.inputs.pet_offset = pipeline.option('pet_offset')
-        framing.input.pet_duration = pipeline.option('framing_duration')
+        framing.inputs.pet_duration = pipeline.option('framing_duration')
         pipeline.connect_input('mean_displacement', framing,
                                'mean_displacement')
         pipeline.connect_input('mean_displacement_consecutive', framing,
