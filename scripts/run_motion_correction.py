@@ -9,6 +9,7 @@ from mc_pipeline.utils import (
 import argparse
 import pickle as pkl
 from arcana.runner.linear import LinearRunner
+import shutil
 
 
 class RunMotionCorrection:
@@ -50,7 +51,14 @@ class RunMotionCorrection:
         if os.path.isdir(input_dir):
             try:
                 with open(cache_input_path, 'r') as f:
-                    ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
+                    (ref, ref_type, t1s, epis, t2s, dmris, pd,
+                     pr) = pkl.load(f)
+                working_dir = (
+                    input_dir+'/work_dir/work_sub_dir/work_session_dir/')
+                if pet_dir is not None and pd != pet_dir:
+                    shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
+                if pet_recon is not None and pr != pet_recon:
+                    shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
                 cached_inputs = True
             except IOError as e:
                 if e.errno == errno.ENOENT:
@@ -67,7 +75,16 @@ class RunMotionCorrection:
                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
             else:
                 print(list_inputs)
-                ref, ref_type, t1s, epis, t2s, dmris = list_inputs
+                ref, ref_type, t1s, epis, t2s, dmris = (
+                    list_inputs)
+            if pet_dir is not None:
+                list_inputs.append(pet_dir)
+            else:
+                list_inputs.append('')
+            if pet_recon is not None:
+                list_inputs.append(pet_recon)
+            else:
+                list_inputs.append('')
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)
 
