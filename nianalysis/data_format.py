@@ -1,11 +1,11 @@
 from copy import deepcopy, copy
 from arcana.node import Node
-from arcana.data_format import DataFormat, Converter
+from arcana.file_format import DataFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
 from nianalysis.interfaces.converters import Dcm2niix
-from arcana.data_format import (
+from arcana.file_format import (
     text_format, directory_format, zip_format, targz_format)  # @UnusedImport
 
 
@@ -64,7 +64,7 @@ mrtrix_format = DataFormat(name='mrtrix', extension='.mif',
                                        'analyze': MrtrixConverter})
 
 # Tabular formats
-rdata_format = DataFormat(name='rdata', extension='.RData')
+rfile_format = DataFormat(name='rdata', extension='.RData')
 # matlab_format = DataFormat(name='matlab', extension='.mat')
 csv_format = DataFormat(name='comma-separated_file', extension='.csv')
 text_matrix_format = DataFormat(name='text_matrix', extension='.mat')
@@ -103,13 +103,13 @@ rda_format = DataFormat(name='raw', extension='.rda')
 
 # Record list of all data formats registered by module (not really
 # used currently but could be useful in future)
-registered_data_formats = []
+registered_file_formats = []
 
 # Register all data formats in module
-for data_format in copy(globals()).values():
-    if isinstance(data_format, DataFormat):
-        DataFormat.register(data_format)
-        registered_data_formats.append(data_format.name)
+for file_format in copy(globals()).values():
+    if isinstance(file_format, DataFormat):
+        DataFormat.register(file_format)
+        registered_file_formats.append(file_format.name)
 
 # Since the conversion from DICOM->NIfTI is unfortunately slightly
 # different between MRConvert and Dcm2niix, these data formats can

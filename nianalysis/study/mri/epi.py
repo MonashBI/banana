@@ -3,7 +3,7 @@ from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     par_format, motion_mats_format)
 from nianalysis.citation import fsl_cite

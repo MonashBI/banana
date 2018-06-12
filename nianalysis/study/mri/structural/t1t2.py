@@ -1,5 +1,5 @@
 from nipype.interfaces.fsl import ApplyMask
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from arcana.dataset import DatasetSpec
 from arcana.study.multi import (

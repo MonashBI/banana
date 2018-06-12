@@ -1,5 +1,5 @@
 from arcana.dataset import DatasetSpec, DatasetMatch
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
 from arcana.study.base import Study, StudyMetaClass

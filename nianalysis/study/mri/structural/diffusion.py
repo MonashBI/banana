@@ -14,7 +14,7 @@ from nipype.interfaces.utility import IdentityInterface
 from nianalysis.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format)
 from nianalysis.requirement import (

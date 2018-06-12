@@ -1,6 +1,6 @@
 from arcana.study.base import Study, StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (nifti_gz_format, text_format,
+from nianalysis.file_format import (nifti_gz_format, text_format,
                                     text_matrix_format, directory_format)
 from nianalysis.interfaces.sklearn import FastICA
 from nianalysis.interfaces.ants import AntsRegSyn

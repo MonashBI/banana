@@ -1,5 +1,5 @@
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     nifti_gz_format, directory_format, text_format, png_format, dicom_format,
     text_matrix_format)
 from nianalysis.interfaces.custom.motion_correction import (

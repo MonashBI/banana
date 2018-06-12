@@ -3,7 +3,7 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.interfaces.utils import DummyReconAll as ReconAll
 from nianalysis.requirement import freesurfer_req
 from nianalysis.citation import freesurfer_cites
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     freesurfer_recon_all_format, nifti_gz_format)
 from arcana.dataset import DatasetSpec
 from arcana.interfaces.utils import JoinPath

@@ -1,6 +1,6 @@
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (list_mode_format, directory_format)
+from nianalysis.file_format import (list_mode_format, directory_format)
 from nianalysis.study.pet.base import PETStudy
 from nianalysis.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)

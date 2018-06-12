@@ -12,9 +12,9 @@ import warnings
 import logging
 import xnat
 from arcana.repository.xnat import (
-    guess_data_format, special_char_re, lower, BUILTIN_XNAT_FIELDS)
+    guess_file_format, special_char_re, lower, BUILTIN_XNAT_FIELDS)
 from arcana.exception import ArcanaMissingDataException
-from arcana.data_format import DataFormat
+from arcana.file_format import DataFormat
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
@@ -539,14 +539,14 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
             if e.errno != errno.EEXIST:
                 raise
         for dataset in session.scans.values():
-            data_format = guess_data_format(dataset)
-            ext = data_format.extension
+            file_format = guess_file_format(dataset)
+            ext = file_format.extension
             if ext is None:
                 ext = ''
             download_path = os.path.join(download_dir, dataset.type + ext)
             if overwrite or not os.path.exists(download_path):
                 download_resource(download_path, dataset,
-                                  data_format, session.label)
+                                  file_format, session.label)
         fields = {}
         for name, value in list(session.fields.items()):
             # Try convert to each datatypes in order of specificity to
@@ -558,7 +558,7 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
 
 
 def download_dataset(download_path, server, user, password, session_id,
-                     dataset_name, data_format=None):
+                     dataset_name, file_format=None):
     """
     Downloads a single dataset from an XNAT server
     """
@@ -575,16 +575,16 @@ def download_dataset(download_path, server, user, password, session_id,
             raise ArcanaError(
                 "Didn't find dataset matching '{}' in {}".format(dataset_name,
                                                                  session_id))
-        if data_format is None:
-            data_format = guess_data_format(dataset)
-        download_resource(download_path, dataset, data_format,
+        if file_format is None:
+            file_format = guess_file_format(dataset)
+        download_resource(download_path, dataset, file_format,
                           session.label)
 
 
-def download_resource(download_path, dataset, data_format,
+def download_resource(download_path, dataset, file_format,
                       session_label):
     xresource = None
-    for resource_name in data_format.xnat_resource_names:
+    for resource_name in file_format.xnat_resource_names:
         try:
             xresource = dataset.resources[resource_name]
             break
@@ -598,7 +598,7 @@ def download_resource(download_path, dataset, data_format,
         raise ArcanaError(
             "Didn't find '{}' resource(s) in {} dataset matching "
             "'{}' in {}".format(
-                "', '".join(data_format.xnat_resource_names),
+                "', '".join(file_format.xnat_resource_names),
                 dataset.type))
     tmp_dir = download_path + '.download'
     xresource.download_dir(tmp_dir)
@@ -606,19 +606,19 @@ def download_resource(download_path, dataset, data_format,
     src_path = os.path.join(tmp_dir, session_label, 'scans',
                             dataset_label, 'resources', xresource.label,
                             'files')
-    if not data_format.directory:
+    if not file_format.directory:
         fnames = os.listdir(src_path)
         match_fnames = [
             f for f in fnames
             if lower(split_extension(f)[-1]) == lower(
-                data_format.extension)]
+                file_format.extension)]
         if len(match_fnames) == 1:
             src_path = os.path.join(src_path, match_fnames[0])
         else:
             raise ArcanaMissingDataException(
                 "Did not find single file with extension '{}' "
                 "(found '{}') in resource '{}'"
-                .format(data_format.extension,
+                .format(file_format.extension,
                         "', '".join(fnames), src_path))
     shutil.move(src_path, download_path)
     shutil.rmtree(tmp_dir)

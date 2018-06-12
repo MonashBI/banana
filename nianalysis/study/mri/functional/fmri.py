@@ -8,8 +8,8 @@ from arcana.study.base import StudyMetaClass
 from nianalysis.requirement import (fsl5_req, afni_req, fix_req,
                                     fsl509_req, fsl510_req, ants2_req, c3d_req)
 from nianalysis.citation import fsl_cite
-from nianalysis.data_format import (
-    nifti_gz_format, rdata_format, directory_format,
+from nianalysis.file_format import (
+    nifti_gz_format, rfile_format, directory_format,
     zip_format, text_matrix_format, par_format, text_format, dicom_format)
 from nianalysis.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
@@ -55,7 +55,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         ParameterSpec('group_ica_components', 15)]
 
     add_data_specs = [
-        DatasetSpec('train_data', rdata_format, optional=True,
+        DatasetSpec('train_data', rfile_format, optional=True,
                     frequency='per_project'),
         DatasetSpec('hand_label_noise', text_format,
                     'fix_preparation_pipeline'),
@@ -245,7 +245,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 #         pipeline = self.create_pipeline(
 #             name='training_fix',
 #             inputs=inputs,
-#             outputs=[DatasetSpec('train_data', rdata_format)],
+#             outputs=[DatasetSpec('train_data', rfile_format)],
 #             desc=("Pipeline to create the training set for FIX given a group "
 #                   "of subjects with the hand_label_noise.txt file within "
 #                   "their fix_dir."),
@@ -301,7 +301,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='fix_classification',
-            inputs=[DatasetSpec('train_data', rdata_format,
+            inputs=[DatasetSpec('train_data', rfile_format,
                                 frequency='per_project'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
@@ -411,7 +411,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('train_data', rdata_format, 'fix_training_pipeline',
+        DatasetSpec('train_data', rfile_format, 'fix_training_pipeline',
                     frequency='per_project'),
 #         DatasetSpec('fmri_pre-processeing_results', directory_format,
 #                     'gather_fmri_result_pipeline'),
@@ -436,7 +436,7 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline = self.create_pipeline(
             name='training_fix',
             inputs=inputs,
-            outputs=[DatasetSpec('train_data', rdata_format)],
+            outputs=[DatasetSpec('train_data', rfile_format)],
             desc=("Pipeline to create the training set for FIX given a group "
                   "of subjects with the hand_label_noise.txt file within "
                   "their fix_dir."),

@@ -1,7 +1,7 @@
 from nianalysis.requirement import fsl5_req, matlab2015_req
 from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
-from nianalysis.data_format import directory_format, nifti_gz_format
+from nianalysis.file_format import directory_format, nifti_gz_format
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec
 from nianalysis.interfaces.qsm import STI, STI_SE, Prepare

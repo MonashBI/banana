@@ -2,7 +2,7 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
-from nianalysis.data_format import (nifti_gz_format) # @IgnorePep8
+from nianalysis.file_format import (nifti_gz_format) # @IgnorePep8
 from nianalysis.study.pet.dynamic.dPET import DynamicPETStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase  # @IgnorePep8 @Reimport
 

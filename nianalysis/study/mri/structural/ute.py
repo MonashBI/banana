@@ -16,7 +16,7 @@ from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from nianalysis.citation import (
     fsl_cite, spm_cite, matlab_cite)
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
     directory_format, text_format)
 from nianalysis.requirement import (

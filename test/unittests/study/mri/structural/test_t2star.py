@@ -4,7 +4,7 @@ config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
-from nianalysis.data_format import zip_format  # @IgnorePep8
+from nianalysis.file_format import zip_format  # @IgnorePep8
 from nianalysis.study.mri.structural.t2star import T2StarStudy  # @IgnorePep8
 
 logger = logging.getLogger('arcana')

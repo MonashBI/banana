@@ -1,7 +1,7 @@
 from arcana.testing import BaseTestCase, BaseMultiSubjectTestCase
 from arcana.study.base import Study, StudyMetaClass
 from arcana.dataset import DatasetSpec, DatasetMatch
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     dicom_format)
 
 
