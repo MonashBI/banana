@@ -223,6 +223,10 @@ def guess_scan_type(scans, input_dir):
         hd = pydicom.read_file(dicom)
         with open(dcm_files[0], 'r') as f:
             for line in f:
+                try:
+                    line = line[:-1].decode('utf-8')
+                except UnicodeDecodeError:
+                    continue
                 if 'tSequenceFileName' in line:
                     sequence_name = line.strip().split('\\')[-1].split('"')[0]
                     break
