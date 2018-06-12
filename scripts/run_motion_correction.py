@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from mc_pipeline.generate_mc_pipeline import create_motion_correction_class
+from nianalysis.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.runner import MultiProcRunner
 from arcana.repository.local import LocalRepository
-from mc_pipeline.utils import (
+from nianalysis.motion_correction_utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
