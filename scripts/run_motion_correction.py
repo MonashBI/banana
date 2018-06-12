@@ -16,7 +16,7 @@ class RunMotionCorrection:
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
                  pet_offset=0, frames='all', struct2align=None,
                  pet_recon=None, crop_coordinates=None, mni_reg=False,
-                 crop_size=None, static_len=0):
+                 crop_size=None, static_len=0, pct_umap=False):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
@@ -28,7 +28,8 @@ class RunMotionCorrection:
                         'fixed_binning_bin_len': bin_len,
                         'PET2MNI_reg': mni_reg,
                         'dynamic_pet_mc': dynamic,
-                        'framing_duration': static_len}
+                        'framing_duration': static_len,
+                        'align_pct': pct_umap}
         if crop_coordinates is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):
@@ -148,6 +149,12 @@ if __name__ == "__main__":
                         help=("If provided, motion correction results will be "
                               "registered to PET template in MNI space. "
                               "Default is False."), default=False)
+    parser.add_argument('--continuos_umap', action='store_true',
+                        help=("If provided, the pipeline will assume that the"
+                              "provided umap has continuous range of values "
+                              "(for example pct umap). Otherwise discrete "
+                              "(like UTE-based umap). Default is discrete."),
+                        default=False)
     args = parser.parse_args()
 
     mc = RunMotionCorrection(
@@ -156,7 +163,7 @@ if __name__ == "__main__":
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
         struct2align=args.struct2align, crop_size=args.cropping_size,
         crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg,
-        static_len=args.static_len)
+        static_len=args.static_len, pct_umap=args.continuos_umap)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
