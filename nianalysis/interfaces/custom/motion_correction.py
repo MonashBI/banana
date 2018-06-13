@@ -1475,8 +1475,8 @@ class ReorientUmap(BaseInterface):
         umap = self.inputs.umap
 
         for nifti in niftis:
-            base, ext = split_extension(nifti)
-            outname = base+'_reorient.'+ext
+            _, base, ext = split_filename(nifti)
+            outname = base+'_reorient'+ext
             cmd = ('mrconvert -strides {0} {1} {2}'
                    .format(umap, nifti, outname))
             sp.check_output(cmd, shell=True)
