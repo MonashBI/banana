@@ -12,8 +12,7 @@ from nianalysis.file_format import (
 from nianalysis.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from nianalysis.utils import get_atlas_path
-from arcana.exception import (
-    ArcanaError, ArcanaUsageError)
+from arcana.exception import ArcanaUsageError
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
