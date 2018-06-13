@@ -5,7 +5,7 @@ from nianalysis.file_format import (
 from nianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, CreateMocoSeries, FixedBinning,
-    UmapAlign2Reference)
+    UmapAlign2Reference, ReorientUmap)
 from nianalysis.citation import fsl_cite
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
@@ -386,6 +386,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             **kwargs)
 
         list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
+        reorient_niftis = pipeline.create_node(ReorientUmap(), name='reorient_niftis',
+                                               requirements=[mrtrix3_req])
         nii2dicom = pipeline.create_map_node(
             Nii2Dicom(), name='nii2dicom',
             iterfield=['in_file'], wall_time=20)
@@ -395,12 +397,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
         copy2dir.inputs.extension = 'Frame'
         # Connect nodes
-        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
+        pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
+        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom, 'in_file')
         pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
         pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
         # Connect inputs
         pipeline.connect_input('umaps_align2ref', list_niftis, 'directory')
         pipeline.connect_input('umap', list_dicoms, 'directory')
+        pipeline.connect_input('umap', reorient_niftis, 'umap')
         # Connect outputs
         pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
 

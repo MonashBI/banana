@@ -10,6 +10,7 @@ import nibabel as nib
 from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
+from arcana.utils import split_extension
 try:
     import matplotlib
     import matplotlib.pyplot as plot
@@ -18,6 +19,7 @@ except ImportError:
 from nipype.interfaces import fsl
 import pydicom
 import math
+import subprocess as sp
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -1447,5 +1449,44 @@ class FixedBinning(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["average_bin_mats"] = os.getcwd()+'/average_bin_mats'
+
+        return outputs
+
+
+class ReorientUmapInputSpec(BaseInterfaceInputSpec):
+    
+    umap = Directory(exists=True)
+    niftis = traits.List()
+
+
+class ReorientUmapOutputSpec(TraitedSpec):
+    
+    reoriented_umaps = traits.List()
+
+
+class ReorientUmap(BaseInterface):
+
+    input_spec = ReorientUmapInputSpec
+    output_spec = ReorientUmapOutputSpec
+
+    def _run_interface(self, runtime):
+        
+        niftis = self.inputs.niftis
+        umap = self.inputs.umap
+
+        for nifti in niftis:
+            base, ext = split_extension(nifti)
+            outname = base+'_reorient.'+ext
+            cmd = ('mrconvert -strides {0} {1} {2}'
+                   .format(umap, nifti, outname))
+            sp.check_output(cmd, shell=True)
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["reoriented_umaps"] = sorted(glob.glob(
+            os.getcwd()+'/*_reorient.*'))
 
         return outputs
