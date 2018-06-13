@@ -35,9 +35,6 @@ atlas_path = os.path.abspath(
 
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
-    BRAIN_MASK_NAME = 'brain_mask'
-    COREGISTER_TO_ATLAS_NAME = 'coregister_to_atlas'
-
     add_data_specs = [
         DatasetSpec('primary', dicom_format),
         DatasetSpec('coreg_ref_brain', nifti_gz_format,
@@ -299,7 +296,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.create_pipeline(
-            name=self.BRAIN_MASK_NAME,
+            name='brain_extraction',
             inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=[DatasetSpec('brain', nifti_gz_format),
                      DatasetSpec('brain_mask', nifti_gz_format)],
@@ -335,7 +332,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         if self.switch('optibet_gen_report'):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
-            name=self.BRAIN_MASK_NAME,
+            name='brain_extraction',
             inputs=[DatasetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
             desc=("Modified implementation of optiBET.sh"),
@@ -414,7 +411,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
         pipeline = self.create_pipeline(
-            name=self.COREGISTER_TO_ATLAS_NAME,
+            name='coregister_to_atlas',
             inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('brain', nifti_gz_format)],
@@ -494,7 +491,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
     def _ants_to_atlas_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
-            name=self.COREGISTER_TO_ATLAS_NAME,
+            name='coregister_to_atlas',
             inputs=[DatasetSpec('coreg_ref_brain', nifti_gz_format)],
             outputs=[DatasetSpec('coreg_to_atlas', nifti_gz_format),
                      DatasetSpec('coreg_to_atlas_mat', text_matrix_format),

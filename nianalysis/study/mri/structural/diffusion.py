@@ -217,13 +217,9 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             Can be either 'bet' or 'dwi2mask' depending on which mask tool you
             want to use
         """
-        pipeline_name = 'brain_mask'
-        if self.branch('brain_extract_method', 'fsl'):
-            pipeline = super(DiffusionStudy, self).brain_extraction_pipeline(
-                **kwargs)
-        elif self.branch('brain_extract_method', 'mrtrix'):
+        if self.branch('brain_extract_method', 'mrtrix'):
             pipeline = self.create_pipeline(
-                pipeline_name,
+                'brain_extraction',
                 inputs=[DatasetSpec('preproc', nifti_gz_format),
                         DatasetSpec('grad_dirs', fsl_bvecs_format),
                         DatasetSpec('bvalues', fsl_bvals_format)],
@@ -249,7 +245,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Check inputs/outputs are connected
             pipeline.assert_connected()
         else:
-            self.unhandled_branch('brain_extract_method')
+            pipeline = super(DiffusionStudy, self).brain_extraction_pipeline(
+                **kwargs)
         return pipeline
 
     def bias_correct_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
