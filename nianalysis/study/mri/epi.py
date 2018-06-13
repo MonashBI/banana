@@ -41,10 +41,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('linear_reg_method', 'epireg')]
 
     def linear_coregistration_pipeline(self, **kwargs):
-        pipeline_name = 'linear_coreg'
-        method = self.pre_parameter('linear_reg_method', pipeline_name,
-                                 **kwargs)
-        if method == 'epireg':
+        if self.switch('linear_reg_method', 'epireg'):
             return self._epireg_linear_coregistration_pipeline(**kwargs)
         else:
             return super(EPIStudy, self).linear_coregistration_pipeline(

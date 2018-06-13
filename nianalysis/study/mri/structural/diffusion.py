@@ -81,13 +81,14 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         ParameterSpec('fsl_mask_f', 0.25),
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False)]
+        ParameterSpec('bet_reduce_bias', False),
+        ParameterSpec('bias_correct_method', 'ants',
+                      choices=('ants', 'fsl'))]
 
     add_switch_specs = [
         SwitchSpec('preproc_denoise', False),
-        SwitchSpec('bias_correct_method', 'ants',
-                   choices=('ants', 'fsl')),
-        SwitchSpec('brain_extract_method', 'mrtrix')]
+        SwitchSpec('brain_extract_method', 'mrtrix',
+                   ('mrtrix', 'fsl'))]
 
     def basic_preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -218,11 +219,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             want to use
         """
         pipeline_name = 'brain_mask'
-        mask_tool = self.switch('brain_extract_method')
-        if mask_tool == 'fsl':
+        if self.switch('brain_extract_method', 'fsl'):
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
-        elif mask_tool == 'mrtrix':
+        elif self.switch('brain_extract_method', 'mrtrix'):
             pipeline = self.create_pipeline(
                 pipeline_name,
                 inputs=[DatasetSpec('preproc', nifti_gz_format),
@@ -250,9 +250,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Check inputs/outputs are connected
             pipeline.assert_connected()
         else:
-            raise ArcanaError(
-                "Unrecognised mask_tool '{}' (valid options 'bet' or "
-                "'mrtrix')".format(mask_tool))
+            self.unhandled_switch('brain_extract_method')
         return pipeline
 
     def bias_correct_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
@@ -260,7 +258,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         Corrects B1 field inhomogeneities
         """
         pipeline_name = 'bias_correct'
-        bias_method = self.switch('bias_correct_method')
+        bias_method = self.parameter('bias_correcct_method')
         pipeline = self.create_pipeline(
             name=pipeline_name,
             inputs=[DatasetSpec('preproc', nifti_gz_format),
@@ -707,7 +705,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
 
     add_parameter_specs = [ParameterSpec('noddi_model',
                                    'WatsonSHStickTortIsoV_B0')]
-    
+
     add_switch_specs = [
         SwitchSpec('single_slice', False)]
 

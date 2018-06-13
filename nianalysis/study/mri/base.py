@@ -133,21 +133,18 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return DatasetSpec(name, nifti_gz_format)
 
     def linear_coregistration_pipeline(self, **kwargs):
-        pipeline_name = 'linear_coreg'
-        method = self.pre_parameter('linear_reg_method', pipeline_name,
-                                    **kwargs)
-        if method == 'flirt':
+        if self.switch('linear_reg_method', 'flirt'):
             pipeline = self._flirt_factory(
-                pipeline_name, 'brain', 'coreg_ref_brain',
+                'linear_coreg', 'brain', 'coreg_ref_brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
-        elif method == 'ants':
+        elif self.switch('linear_reg_method', 'ants'):
             pipeline = self._ants_linear_coreg_pipeline(
-                pipeline_name, 'brain', 'coreg_ref_brain',
+                'linear_coreg', 'brain', 'coreg_ref_brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
-        elif method == 'spm':
+        elif self.switch('linear_reg_method', 'spm'):
             raise NotImplementedError
         else:
-            assert False
+            self.unhandled_switch('linear_reg_method')
         return pipeline
 
     def qform_transform_pipeline(self, **kwargs):
@@ -289,15 +286,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def brain_mask_pipeline(self, in_file='preproc', **kwargs):
-        bet_method = self.pre_parameter('bet_method', self.BRAIN_MASK_NAME,
-                                     **kwargs)
-        if bet_method == 'fsl_bet':
+        if self.switch('bet_method', 'fsl_bet'):
             pipeline = self._fsl_bet_brain_mask_pipeline(in_file, **kwargs)
-        elif bet_method == 'optibet':
+        elif self.switch('bet_method', 'optibet'):
             pipeline = self._optiBET_brain_mask_pipeline(in_file, **kwargs)
         else:
-            raise ArcanaError("Unrecognised brain extraction tool '{}'"
-                              .format(bet_method))
+            self.unhandled_switch('bet_method')
         return pipeline
 
     def _fsl_bet_brain_mask_pipeline(self, in_file, **kwargs):
@@ -338,8 +332,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if self.pre_parameter('optibet_gen_report', self.BRAIN_MASK_NAME,
-                           **kwargs):
+        if self.switch('optibet_gen_report'):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name=self.BRAIN_MASK_NAME,
@@ -402,15 +395,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def coregister_to_atlas_pipeline(self, **kwargs):
-        atlas_reg_tool = self.pre_parameter(
-            'atlas_coreg_tool', self.COREGISTER_TO_ATLAS_NAME, **kwargs)
-        if atlas_reg_tool == 'fnirt':
+        if self.switch('atlas_coreg_tool', 'fnirt'):
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
-        elif atlas_reg_tool == 'ants':
+        elif self.switch('atlas_coreg_tool', 'ants'):
             pipeline = self._ants_to_atlas_pipeline(**kwargs)
         else:
-            raise ArcanaError("Unrecognised coregistration tool '{}'"
-                              .format(atlas_reg_tool))
+            self.unhandled_switch('atlas_coreg_tool')
         return pipeline
 
     # @UnusedVariable @IgnorePep8
