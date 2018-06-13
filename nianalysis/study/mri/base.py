@@ -47,7 +47,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         DatasetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
         DatasetSpec('preproc', nifti_gz_format,
-                    'basic_preproc_pipeline'),
+                    'preproc_pipeline'),
         DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline',
                     desc="The brain masked image"),
         DatasetSpec('brain_mask', nifti_gz_format,
@@ -558,7 +558,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def basic_preproc_pipeline(self, in_file_name='primary', **kwargs):
+    def preproc_pipeline(self, in_file_name='primary', **kwargs):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -573,7 +573,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             performed
         """
         pipeline = self.create_pipeline(
-            name='basic_preproc_pipeline',
+            name='preproc_pipeline',
             inputs=[DatasetSpec(in_file_name, nifti_gz_format)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Dimensions swapping to ensure that all the images "
