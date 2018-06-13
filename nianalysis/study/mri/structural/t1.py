@@ -17,7 +17,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline')]
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('bet_method', 'optibet',

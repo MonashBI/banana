@@ -32,7 +32,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('umap', dicom_format),
         DatasetSpec('umap_nifti', nifti_gz_format,
                     'umap_dcm2nii_conversion_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
         DatasetSpec('ute_echo1', dicom_format),
         DatasetSpec('ute_echo2', dicom_format),
         DatasetSpec('umap_ute', dicom_format),

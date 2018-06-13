@@ -19,7 +19,6 @@ from nianalysis.file_format import (
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format)
 from nianalysis.requirement import (
     fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
-from arcana.exception import ArcanaError
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.interfaces.iterators import SelectSession
@@ -62,8 +61,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     frequency='per_project'),
         DatasetSpec('tbss_skeleton_mask', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_project'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline'),
-        DatasetSpec('brain_mask', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        DatasetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline'),
         DatasetSpec('norm_intensity', mrtrix_format,
                     'intensity_normalisation_pipeline'),
         DatasetSpec('norm_intens_fa_template', mrtrix_format,
@@ -208,7 +207,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Check inputs/outputs are connected
         return pipeline
 
-    def brain_mask_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
+    def brain_extraction_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
 
@@ -220,7 +219,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline_name = 'brain_mask'
         if self.branch('brain_extract_method', 'fsl'):
-            pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
+            pipeline = super(DiffusionStudy, self).brain_extraction_pipeline(
                 **kwargs)
         elif self.branch('brain_extract_method', 'mrtrix'):
             pipeline = self.create_pipeline(

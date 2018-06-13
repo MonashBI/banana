@@ -48,10 +48,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                     'linear_coregistration_pipeline'),
         DatasetSpec('preproc', nifti_gz_format,
                     'preproc_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline',
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="The brain masked image"),
         DatasetSpec('brain_mask', nifti_gz_format,
-                    'brain_mask_pipeline',
+                    'brain_extraction_pipeline',
                     desc="Mask of the brain"),
         DatasetSpec('coreg_brain', nifti_gz_format,
                     'linear_coregistration_pipeline',
@@ -285,16 +285,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def brain_mask_pipeline(self, in_file='preproc', **kwargs):
+    def brain_extraction_pipeline(self, in_file='preproc', **kwargs):
         if self.branch('bet_method', 'fsl_bet'):
-            pipeline = self._fsl_bet_brain_mask_pipeline(in_file, **kwargs)
+            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file, **kwargs)
         elif self.branch('bet_method', 'optibet'):
-            pipeline = self._optiBET_brain_mask_pipeline(in_file, **kwargs)
+            pipeline = self._optiBET_brain_extraction_pipeline(in_file, **kwargs)
         else:
             self.unhandled_branch('bet_method')
         return pipeline
 
-    def _fsl_bet_brain_mask_pipeline(self, in_file, **kwargs):
+    def _fsl_bet_brain_extraction_pipeline(self, in_file, **kwargs):
         """
         Generates a whole brain mask using FSL's BET command.
         """
@@ -325,7 +325,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.connect_output('brain_mask', bet, 'mask_file')
         return pipeline
 
-    def _optiBET_brain_mask_pipeline(self, in_file, **kwargs):
+    def _optiBET_brain_extraction_pipeline(self, in_file, **kwargs):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
