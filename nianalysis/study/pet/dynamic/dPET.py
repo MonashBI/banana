@@ -73,7 +73,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform')
-        apply_trans.inputs.reference_image = pipeline.parameter(
+        apply_trans.inputs.reference_image = self.parameter(
             'trans_template')
         apply_trans.inputs.interpolation = 'Linear'
         apply_trans.inputs.input_image_type = 3
@@ -115,8 +115,8 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             **kwargs)
 
         dr = pipeline.create_node(PETdr(), name='PET_dr')
-        dr.inputs.threshold = pipeline.parameter('regress_th')
-        dr.inputs.binarize = pipeline.parameter('regress_binarize')
+        dr.inputs.threshold = self.parameter('regress_th')
+        dr.inputs.binarize = self.parameter('regress_binarize')
         pipeline.connect_input('detrended_volumes', dr, 'volume')
         pipeline.connect_input('regression_map', dr, 'regression_map')
 

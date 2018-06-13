@@ -139,7 +139,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                                    requirements=[fsl5_req])
         mel.inputs.no_bet = True
         pipeline.connect_input('brain_mask', mel, 'mask')
-        mel.inputs.bg_threshold = pipeline.parameter('brain_thresh_percent')
+        mel.inputs.bg_threshold = self.parameter('brain_thresh_percent')
         mel.inputs.report = True
         mel.inputs.out_stats = True
         mel.inputs.mm_thresh = 0.5
@@ -176,7 +176,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
             ANTs2FSLMatrixConversion(), name='struct_ants2fsl',
             requirements=[c3d_req])
         struct_ants2fsl.inputs.ras2fsl = True
-        struct_ants2fsl.inputs.reference_file = pipeline.parameter('MNI_template')
+        struct_ants2fsl.inputs.reference_file = self.parameter('MNI_template')
         pipeline.connect_input('coreg_to_atlas_mat', struct_ants2fsl,
                                'itk_file')
         pipeline.connect_input('coreg_ref_brain', struct_ants2fsl,
@@ -315,9 +315,9 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                                    requirements=[fsl509_req, fix_req])
         pipeline.connect_input("fix_dir", fix, "feat_dir")
         pipeline.connect_input("train_data", fix, "train_data")
-        fix.inputs.component_threshold = pipeline.parameter(
+        fix.inputs.component_threshold = self.parameter(
             'component_threshold')
-        fix.inputs.motion_reg = pipeline.parameter('motion_reg')
+        fix.inputs.motion_reg = self.parameter('motion_reg')
         fix.inputs.classification = True
 
         pipeline.connect_output('labelled_components', fix, 'label_file')
@@ -343,8 +343,8 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input("fix_dir", signal_reg, "fix_dir")
         pipeline.connect_input("labelled_components", signal_reg,
                                "labelled_components")
-        signal_reg.inputs.motion_regression = pipeline.parameter('motion_reg')
-        signal_reg.inputs.highpass = pipeline.parameter('highpass')
+        signal_reg.inputs.motion_regression = self.parameter('motion_reg')
+        signal_reg.inputs.highpass = self.parameter('highpass')
 
         pipeline.connect_output('cleaned_file', signal_reg, 'output')
 
@@ -374,7 +374,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
             memory=24000, requirements=[ants2_req])
-        ref_brain = pipeline.parameter('MNI_template')
+        ref_brain = self.parameter('MNI_template')
         apply_trans.inputs.reference_image = ref_brain
         apply_trans.inputs.interpolation = 'Linear'
         apply_trans.inputs.input_image_type = 3
@@ -400,7 +400,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                                       wall_time=5, requirements=[afni_req])
         smooth.inputs.fwhm = 5
         smooth.inputs.out_file = 'smoothed_ts.nii.gz'
-        smooth.inputs.mask = pipeline.parameter('MNI_template_mask')
+        smooth.inputs.mask = self.parameter('MNI_template_mask')
         pipeline.connect_input('normalized_ts', smooth, 'in_file')
 
         pipeline.connect_output('smoothed_ts', smooth, 'out_file')
@@ -537,14 +537,14 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             MELODIC(), joinfield=['in_files'], name='gica',
             requirements=[fsl510_req], wall_time=7200)
         gica.inputs.no_bet = True
-        gica.inputs.bg_threshold = pipeline.parameter('brain_thresh_percent')
-        gica.inputs.bg_image = pipeline.parameter('MNI_template')
-        gica.inputs.dim = pipeline.parameter('group_ica_components')
+        gica.inputs.bg_threshold = self.parameter('brain_thresh_percent')
+        gica.inputs.bg_image = self.parameter('MNI_template')
+        gica.inputs.dim = self.parameter('group_ica_components')
         gica.inputs.report = True
         gica.inputs.out_stats = True
         gica.inputs.mm_thresh = 0.5
         gica.inputs.sep_vn = True
-        gica.inputs.mask = pipeline.parameter('MNI_template_mask')
+        gica.inputs.mask = self.parameter('MNI_template_mask')
         gica.inputs.out_dir = 'group_melodic.ica'
         pipeline.connect_input('smoothed_ts', gica, 'in_files')
         pipeline.connect_input('tr', gica, 'tr_sec')

@@ -188,9 +188,9 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                      wall_time=5)
 
         # Set registration parameters
-        flirt.inputs.dof = pipeline.parameter('flirt_degrees_of_freedom')
-        flirt.inputs.cost = pipeline.parameter('flirt_cost_func')
-        flirt.inputs.cost_func = pipeline.parameter('flirt_cost_func')
+        flirt.inputs.dof = self.parameter('flirt_degrees_of_freedom')
+        flirt.inputs.cost = self.parameter('flirt_cost_func')
+        flirt.inputs.cost_func = self.parameter('flirt_cost_func')
         flirt.inputs.output_type = 'NIFTI_GZ'
         # Connect inputs
         pipeline.connect_input(to_reg, flirt, 'in_file')
@@ -318,12 +318,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                    requirements=[fsl509_req])
         bet.inputs.mask = True
         bet.inputs.output_type = 'NIFTI_GZ'
-        if pipeline.parameter('bet_robust'):
+        if self.parameter('bet_robust'):
             bet.inputs.robust = True
-        if pipeline.parameter('bet_reduce_bias'):
+        if self.parameter('bet_reduce_bias'):
             bet.inputs.reduce_bias = True
-        bet.inputs.frac = pipeline.parameter('bet_f_threshold')
-        bet.inputs.vertical_gradient = pipeline.parameter(
+        bet.inputs.frac = self.parameter('bet_f_threshold')
+        bet.inputs.vertical_gradient = self.parameter(
             'bet_g_threshold')
         # Connect inputs/outputs
         pipeline.connect_input(in_file, bet, 'in_file')
@@ -354,7 +354,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             AntsRegSyn(num_dimensions=3, transformation='s',
                        out_prefix='T12MNI', num_threads=4), name='T1_reg',
             wall_time=25, requirements=[ants2_req])
-        mni_reg.inputs.ref_file = pipeline.parameter('MNI_template')
+        mni_reg.inputs.ref_file = self.parameter('MNI_template')
         pipeline.connect_input(in_file, mni_reg, 'input_file')
 
         merge_trans = pipeline.create_node(Merge(2), name='merge_transforms',
@@ -370,7 +370,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform', wall_time=7,
             memory=24000, requirements=[ants2_req])
-        apply_trans.inputs.input_image = pipeline.parameter('MNI_template_mask')
+        apply_trans.inputs.input_image = self.parameter('MNI_template_mask')
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
@@ -387,7 +387,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             name='mask', wall_time=5, requirements=[fsl5_req])
         pipeline.connect_input(in_file, maths2, 'in_file')
         pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
-        if pipeline.parameter('optibet_gen_report'):
+        if self.parameter('optibet_gen_report'):
             slices = pipeline.create_node(
                 FSLSlices(), name='slices', wall_time=5,
                 requirements=[fsl5_req])
@@ -436,13 +436,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(pipeline.parameter('fnirt_atlas'), 'image',
-                                   resolution=pipeline.parameter('resolution'))
+        ref_atlas = get_atlas_path(self.parameter('fnirt_atlas'), 'image',
+                                   resolution=self.parameter('resolution'))
         ref_mask = get_atlas_path(
-            pipeline.parameter('fnirt_atlas'), 'mask_dilated',
-            resolution=pipeline.parameter('resolution'))
-        ref_brain = get_atlas_path(pipeline.parameter('fnirt_atlas'), 'brain',
-                                   resolution=pipeline.parameter('resolution'))
+            self.parameter('fnirt_atlas'), 'mask_dilated',
+            resolution=self.parameter('resolution'))
+        ref_brain = get_atlas_path(self.parameter('fnirt_atlas'), 'brain',
+                                   resolution=self.parameter('resolution'))
         # Basic reorientation to standard MNI space
         reorient = pipeline.create_node(Reorient2Std(), name='reorient',
                                         requirements=[fsl5_req])
@@ -467,11 +467,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         fnirt.inputs.ref_file = ref_atlas
         fnirt.inputs.refmask_file = ref_mask
         fnirt.inputs.output_type = 'NIFTI_GZ'
-        intensity_model = pipeline.parameter('fnirt_intensity_model')
+        intensity_model = self.parameter('fnirt_intensity_model')
         if intensity_model is None:
             intensity_model = 'none'
         fnirt.inputs.intensity_mapping_model = intensity_model
-        fnirt.inputs.subsampling_scheme = pipeline.parameter('fnirt_subsampling')
+        fnirt.inputs.subsampling_scheme = self.parameter('fnirt_subsampling')
         fnirt.inputs.fieldcoeff_file = True
         fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
@@ -481,7 +481,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
         apply_mask = [int(s == 1)
-                      for s in pipeline.parameter('fnirt_subsampling')]
+                      for s in self.parameter('fnirt_subsampling')]
         fnirt.inputs.apply_inmask = apply_mask
         fnirt.inputs.apply_refmask = apply_mask
         # Connect nodes
@@ -520,14 +520,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                        out_prefix='Struct2MNI', num_threads=4),
             name='Struct2MNI_reg', wall_time=25, requirements=[ants2_req])
 
-        ref_brain = pipeline.parameter('MNI_template_brain')
+        ref_brain = self.parameter('MNI_template_brain')
         ants_reg.inputs.ref_file = ref_brain
         pipeline.connect_input('coreg_ref_brain', ants_reg, 'input_file')
 
         slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
                                       requirements=[fsl5_req])
         slices.inputs.outname = 'coreg_to_atlas_report'
-        slices.inputs.im1 = pipeline.parameter('MNI_template')
+        slices.inputs.im1 = self.parameter('MNI_template')
         pipeline.connect(ants_reg, 'reg_file', slices, 'im2')
 
         pipeline.connect_output('coreg_to_atlas', ants_reg, 'reg_file')
@@ -594,12 +594,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         swap = pipeline.create_node(fsl.utils.Reorient2Std(),
                                     name='fslreorient2std',
                                     requirements=[fsl509_req])
-#         swap.inputs.new_dims = pipeline.parameter('preproc_new_dims')
+#         swap.inputs.new_dims = self.parameter('preproc_new_dims')
         pipeline.connect_input(in_file_name, swap, 'in_file')
-        if pipeline.parameter('preproc_resolution') is not None:
+        if self.parameter('preproc_resolution') is not None:
             resample = pipeline.create_node(MRResize(), name="resample",
                                             requirements=[mrtrix3_req])
-            resample.inputs.voxel = pipeline.parameter('preproc_resolution')
+            resample.inputs.voxel = self.parameter('preproc_resolution')
             pipeline.connect(swap, 'out_file', resample, 'in_file')
             pipeline.connect_output('preproc', resample, 'out_file')
         else:

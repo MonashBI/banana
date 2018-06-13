@@ -129,7 +129,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=citations,
             **kwargs)
         # Denoise the dwi-scan
-        if pipeline.parameter('preproc_denoise'):
+        if self.parameter('preproc_denoise'):
             # Run denoising
             denoise = pipeline.create_node(DWIDenoise(), name='denoise',
                                            requirements=[mrtrix3_req])
@@ -168,22 +168,22 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
             # Create preprocessing node
             dwipreproc.inputs.rpe_pair = True
-            if pipeline.parameter('preproc_pe_dir') is not None:
-                dwipreproc.inputs.pe_dir = pipeline.parameter('preproc_pe_dir')
+            if self.parameter('preproc_pe_dir') is not None:
+                dwipreproc.inputs.pe_dir = self.parameter('preproc_pe_dir')
             # Create nodes to gradients to FSL format
             extract_grad = pipeline.create_node(
                 ExtractFSLGradients(), name="extract_grad",
                 requirements=[mrtrix3_req])
             # Connect inputs
             pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
-        if pipeline.parameter('preproc_denoise'):
+        if self.parameter('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
         else:
             pipeline.connect_input('primary', dwipreproc, 'in_file')
         pipeline.connect_input('primary', dwiextract, 'in_file')
         # Connect inter-nodes
-        if pipeline.parameter('preproc_denoise'):
+        if self.parameter('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
             pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
             pipeline.connect(subtract_operands, 'out', subtract, 'operands')
@@ -202,7 +202,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-        if pipeline.parameter('preproc_denoise'):
+        if self.parameter('preproc_denoise'):
             pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
         return pipeline
@@ -450,7 +450,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
-        response.inputs.algorithm = pipeline.parameter('response_algorithm')
+        response.inputs.algorithm = self.parameter('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -800,7 +800,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             BatchNODDIFitting(), name="batch_fit",
             requirements=[noddi_req, matlab2015_req], wall_time=180,
             memory=8000)
-        batch_fit.inputs.model = pipeline.parameter('noddi_model')
+        batch_fit.inputs.model = self.parameter('noddi_model')
         batch_fit.inputs.nthreads = self.runner.num_processes
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
