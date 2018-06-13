@@ -133,18 +133,18 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return DatasetSpec(name, nifti_gz_format)
 
     def linear_coregistration_pipeline(self, **kwargs):
-        if self.switch('linear_reg_method', 'flirt'):
+        if self.branch('linear_reg_method', 'flirt'):
             pipeline = self._flirt_factory(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
-        elif self.switch('linear_reg_method', 'ants'):
+        elif self.branch('linear_reg_method', 'ants'):
             pipeline = self._ants_linear_coreg_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
                 'coreg_brain', 'coreg_matrix', **kwargs)
-        elif self.switch('linear_reg_method', 'spm'):
+        elif self.branch('linear_reg_method', 'spm'):
             raise NotImplementedError
         else:
-            self.unhandled_switch('linear_reg_method')
+            self.unhandled_branch('linear_reg_method')
         return pipeline
 
     def qform_transform_pipeline(self, **kwargs):
@@ -286,12 +286,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def brain_mask_pipeline(self, in_file='preproc', **kwargs):
-        if self.switch('bet_method', 'fsl_bet'):
+        if self.branch('bet_method', 'fsl_bet'):
             pipeline = self._fsl_bet_brain_mask_pipeline(in_file, **kwargs)
-        elif self.switch('bet_method', 'optibet'):
+        elif self.branch('bet_method', 'optibet'):
             pipeline = self._optiBET_brain_mask_pipeline(in_file, **kwargs)
         else:
-            self.unhandled_switch('bet_method')
+            self.unhandled_branch('bet_method')
         return pipeline
 
     def _fsl_bet_brain_mask_pipeline(self, in_file, **kwargs):
@@ -395,12 +395,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def coregister_to_atlas_pipeline(self, **kwargs):
-        if self.switch('atlas_coreg_tool', 'fnirt'):
+        if self.branch('atlas_coreg_tool', 'fnirt'):
             pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
-        elif self.switch('atlas_coreg_tool', 'ants'):
+        elif self.branch('atlas_coreg_tool', 'ants'):
             pipeline = self._ants_to_atlas_pipeline(**kwargs)
         else:
-            self.unhandled_switch('atlas_coreg_tool')
+            self.unhandled_branch('atlas_coreg_tool')
         return pipeline
 
     # @UnusedVariable @IgnorePep8

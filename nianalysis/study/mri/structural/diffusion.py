@@ -219,10 +219,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             want to use
         """
         pipeline_name = 'brain_mask'
-        if self.switch('brain_extract_method', 'fsl'):
+        if self.branch('brain_extract_method', 'fsl'):
             pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
                 **kwargs)
-        elif self.switch('brain_extract_method', 'mrtrix'):
+        elif self.branch('brain_extract_method', 'mrtrix'):
             pipeline = self.create_pipeline(
                 pipeline_name,
                 inputs=[DatasetSpec('preproc', nifti_gz_format),
@@ -250,7 +250,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Check inputs/outputs are connected
             pipeline.assert_connected()
         else:
-            self.unhandled_switch('brain_extract_method')
+            self.unhandled_branch('brain_extract_method')
         return pipeline
 
     def bias_correct_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
