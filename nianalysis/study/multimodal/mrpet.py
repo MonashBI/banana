@@ -386,8 +386,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             **kwargs)
 
         list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
-        reorient_niftis = pipeline.create_node(ReorientUmap(), name='reorient_niftis',
-                                               requirements=[mrtrix3_req])
+        reorient_niftis = pipeline.create_node(
+            ReorientUmap(), name='reorient_niftis', requirements=[mrtrix3_req])
         nii2dicom = pipeline.create_map_node(
             Nii2Dicom(), name='nii2dicom',
             iterfield=['in_file'], wall_time=20)
@@ -398,7 +398,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         copy2dir.inputs.extension = 'Frame'
         # Connect nodes
         pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
-        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom, 'in_file')
+        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom,
+                         'in_file')
         pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
         pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
         # Connect inputs
@@ -420,19 +421,17 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             inputs.append(DatasetSpec('umap', nifti_gz_format))
             outputs.append(DatasetSpec('umaps_align2ref', directory_format))
         pipeline = self.create_pipeline(
-            name='static_frame2ref_alignment',
+            name='umap_realignment',
             inputs=inputs,
             outputs=outputs,
-            desc=("Pipeline to create an affine mat to align each "
-                  "detected frame to the reference. If umap is provided"
-                  ", it will be also aligned to match the head position"
-                  " in each frame and improve the static PET image "
-                  "quality."),
+            desc=("Pipeline to align the original umap (if provided)"
+                  "to match the head position in each frame and improve the "
+                  "static PET image quality."),
             version=1,
             citations=[fsl_cite],
             **kwargs)
         frame_align = pipeline.create_node(
-            UmapAlign2Reference(), name='static_frame2ref_alignment',
+            UmapAlign2Reference(), name='umap2ref_alignment',
             requirements=[fsl509_req])
         frame_align.inputs.pct = self.parameter('align_pct')
         pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
@@ -447,7 +446,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
     def create_moco_series_pipeline(self, **kwargs):
-
+        """This pipeline is probably wrong as we still do not know how to
+        import back the new moco series into the scanner. This was just a first
+        attempt.
+        """
         pipeline = self.create_pipeline(
             name='create_moco_series',
             inputs=[DatasetSpec('start_times', text_format),

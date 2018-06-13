@@ -10,7 +10,6 @@ import nibabel as nib
 from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
-from arcana.utils import split_extension
 try:
     import matplotlib
     import matplotlib.pyplot as plot
@@ -503,9 +502,10 @@ class MeanDisplacementCalculation(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        list_inputs = list(zip(self.inputs.motion_mats, self.inputs.start_times,
-                          self.inputs.real_durations, self.inputs.trs,
-                          self.inputs.input_names))
+        list_inputs = list(zip(
+            self.inputs.motion_mats, self.inputs.start_times,
+            self.inputs.real_durations, self.inputs.trs,
+            self.inputs.input_names))
         ref = nib.load(self.inputs.reference)
         ref_data = ref.get_data()
         # centre of gravity
@@ -1454,23 +1454,27 @@ class FixedBinning(BaseInterface):
 
 
 class ReorientUmapInputSpec(BaseInterfaceInputSpec):
-    
+
     umap = Directory(exists=True)
     niftis = traits.List()
 
 
 class ReorientUmapOutputSpec(TraitedSpec):
-    
+
     reoriented_umaps = traits.List()
 
 
 class ReorientUmap(BaseInterface):
-
+    """Had to write this pipeline because I found out that sometimes the
+    reoriented umaps (in nifti format) had different orientation with respect
+    to the original umap (dicom). This pipeline uses mrconvert to extract the
+    strides from the dicom umap and to apply them to each of the nifti umaps.
+    """
     input_spec = ReorientUmapInputSpec
     output_spec = ReorientUmapOutputSpec
 
     def _run_interface(self, runtime):
-        
+
         niftis = self.inputs.niftis
         umap = self.inputs.umap
 

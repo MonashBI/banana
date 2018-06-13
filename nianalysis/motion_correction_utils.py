@@ -341,10 +341,12 @@ def dwi_type_assignment(input_dir, dmri_images):
 
     for dwi in dmri_images:
         cmd = 'mrinfo {0}'.format(input_dir+'/'+dwi)
-        info = sp.check_output(cmd, shell=True).strip().split('\n')
+        info = (sp.check_output(cmd, shell=True, encoding='utf8')
+                .strip().split('\n'))
         for line in info:
             if 'Dimensions:' in line:
                 dim = line.split('Dimensions:')[-1].strip().split('x')
+                break
         hd_extraction = DicomHeaderInfoExtraction()
         hd_extraction.inputs.dicom_folder = input_dir+'/'+dwi
         dcm_info = hd_extraction.run()
@@ -376,9 +378,9 @@ def dwi_type_assignment(input_dir, dmri_images):
         for j in range(len(b0)):
             ped_b0 = b0[j][2]
             if ped_b0 == ped_main:
-                if main_dwi[i][1] == b0[j][1]:
+                if main_dwi[i][1] == b0[j][1] and j == i:
                     dmris.append([b0[j][0], '1'])
-                elif main_dwi[i][1] != b0[j][1]:
+                elif main_dwi[i][1] != b0[j][1] and j == i:
                     dmris.append([b0[j][0], '-1'])
             else:
                 unused_b0.append(b0[j][0])
