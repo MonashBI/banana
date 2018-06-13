@@ -103,11 +103,14 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs.append(DatasetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
-        if 'dwi_reference' in self.input_names:
+        if 'dwi_reference' in self.input_names or 'reverse_phase' in self.input_names:
             inputs = [DatasetSpec('primary', dicom_format),
-                      DatasetSpec('dwi_reference', nifti_gz_format),
                       FieldSpec('ped', dtype=str),
                       FieldSpec('pe_angle', dtype=str)]
+            if 'dwi_reference' in self.input_names:
+                inputs.append(DatasetSpec('dwi_reference', nifti_gz_format))
+            if 'reverse_phase' in self.input_names:
+                inputs.append(DatasetSpec('reverse_phase', nifti_gz_format))
             distortion_correction = True
         else:
             inputs = [DatasetSpec('primary', dicom_format)]
@@ -169,13 +172,18 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                 ExtractFSLGradients(), name="extract_grad",
                 requirements=[mrtrix3_req])
             # Connect inputs
-            pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
+            if 'dwi_reference' in self.input_names:
+                pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
+            elif 'reverse_phase' in self.input_names:
+                pipeline.connect_input('reverse_phase', mrcat, 'second_scan')
+            else:
+                assert False
+            pipeline.connect_input('primary', dwiextract, 'in_file')
         if pipeline.option('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
         else:
             pipeline.connect_input('primary', dwipreproc, 'in_file')
-        pipeline.connect_input('primary', dwiextract, 'in_file')
         # Connect inter-nodes
         if pipeline.option('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
