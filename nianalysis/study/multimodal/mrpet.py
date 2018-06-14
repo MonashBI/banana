@@ -276,9 +276,12 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline = self.create_pipeline(
             name='plot_mean_displacement',
             inputs=[DatasetSpec('mean_displacement_rc', text_format),
+                    DatasetSpec('motion_par_rc', text_format),
                     DatasetSpec('offset_indexes', text_format),
                     DatasetSpec('frame_start_times', text_format)],
-            outputs=[DatasetSpec('mean_displacement_plot', png_format)],
+            outputs=[DatasetSpec('mean_displacement_plot', png_format),
+                     DatasetSpec('rotation_plot', png_format),
+                     DatasetSpec('translation_plot', png_format)],
             desc=("Plot the mean displacement real clock"),
             version=1,
             citations=[fsl_cite],
@@ -293,8 +296,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                                'false_indexes')
         pipeline.connect_input('frame_start_times', plot_md,
                                'frame_start_times')
+        pipeline.connect_input('motion_par_rc', plot_md,
+                               'motion_par_rc')
         pipeline.connect_output('mean_displacement_plot', plot_md,
                                 'mean_disp_plot')
+        pipeline.connect_output('rotation_plot', plot_md,
+                                'rot_plot')
+        pipeline.connect_output('translation_plot', plot_md,
+                                'trans_plot')
         return pipeline
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
