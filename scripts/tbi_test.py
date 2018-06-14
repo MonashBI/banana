@@ -4,7 +4,7 @@ import shutil
 from arcana.dataset import DatasetMatch
 from nianalysis.study.mri.diffusion import DiffusionStudy
 from arcana.repository.local import LocalRepository
-from nianalysis.data_format import mrtrix_format
+from nianalysis.file_format import mrtrix_format
 
 repository_path = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'tbi', ))

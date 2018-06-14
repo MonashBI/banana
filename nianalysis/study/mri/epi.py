@@ -3,7 +3,7 @@ from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     par_format, motion_mats_format)
 from nianalysis.citation import fsl_cite
@@ -12,7 +12,7 @@ from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
@@ -34,17 +34,14 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline')]
 
-    add_option_specs = [
-        OptionSpec('bet_robust', True),
-        OptionSpec('bet_f_threshold', 0.2),
-        OptionSpec('bet_reduce_bias', False),
-        OptionSpec('linear_reg_method', 'epireg')]
+    add_parameter_specs = [
+        ParameterSpec('bet_robust', True),
+        ParameterSpec('bet_f_threshold', 0.2),
+        ParameterSpec('bet_reduce_bias', False),
+        ParameterSpec('linear_reg_method', 'epireg')]
 
     def linear_coregistration_pipeline(self, **kwargs):
-        pipeline_name = 'linear_coreg'
-        method = self.pre_option('linear_reg_method', pipeline_name,
-                                 **kwargs)
-        if method == 'epireg':
+        if self.branch('linear_reg_method', 'epireg'):
             return self._epireg_linear_coregistration_pipeline(**kwargs)
         else:
             return super(EPIStudy, self).linear_coregistration_pipeline(
@@ -107,7 +104,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def basic_preproc_pipeline(self, **kwargs):
+    def preproc_pipeline(self, **kwargs):
 
         if ('field_map_phase' in self.input_names and
                 'field_map_mag' in self.input_names):
@@ -115,12 +112,12 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         elif 'reverse_phase' in self.input_names:
             return self._topup_pipeline(**kwargs)
         else:
-            return super(EPIStudy, self).basic_preproc_pipeline(**kwargs)
+            return super(EPIStudy, self).preproc_pipeline(**kwargs)
 
     def _topup_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
-            name='basic_preproc_pipeline',
+            name='preproc_pipeline',
             inputs=[DatasetSpec('primary', nifti_gz_format),
                     DatasetSpec('reverse_phase', nifti_gz_format),
                     FieldSpec('ped', str),
@@ -183,7 +180,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
     def _fugue_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
-            name='basic_preproc_pipeline',
+            name='preproc_pipeline',
             inputs=[DatasetSpec('primary', nifti_gz_format),
                     DatasetSpec('field_map_mag', nifti_gz_format),
                     DatasetSpec('field_map_phase', nifti_gz_format)],

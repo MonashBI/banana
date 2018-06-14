@@ -16,14 +16,14 @@ from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from nianalysis.citation import (
     fsl_cite, spm_cite, matlab_cite)
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
     directory_format, text_format)
 from nianalysis.requirement import (
     fsl5_req, spm12_req, matlab2015_req)
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec
 
 
 class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -32,7 +32,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('umap', dicom_format),
         DatasetSpec('umap_nifti', nifti_gz_format,
                     'umap_dcm2nii_conversion_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
         DatasetSpec('ute_echo1', dicom_format),
         DatasetSpec('ute_echo2', dicom_format),
         DatasetSpec('umap_ute', dicom_format),
@@ -57,9 +57,9 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('sute_cont_ute', nifti_gz_format,
                     'backwrap_to_ute_pipeline')]
 
-    add_option_specs = [
-        OptionSpec('bet_method', 'optibet',
-                   choices=MRIStudy.option_spec('bet_method').choices)]
+    add_parameter_specs = [
+        ParameterSpec('bet_method', 'optibet',
+                   choices=MRIStudy.parameter_spec('bet_method').choices)]
 
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
@@ -476,7 +476,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 #                 "parallel implementation"),
 #             version=1,
 #             citations=(),
-#             options=options)
+#             parameters=parameters)
 #
 #         cont_split = pipeline.create_node(Split(), name='cont_split',
 #                                           requirements=[fsl5_req])

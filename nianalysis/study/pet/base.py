@@ -1,6 +1,6 @@
 from arcana.study.base import Study, StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
-from nianalysis.data_format import (nifti_gz_format, text_format,
+from nianalysis.file_format import (nifti_gz_format, text_format,
                                     text_matrix_format, directory_format)
 from nianalysis.interfaces.sklearn import FastICA
 from nianalysis.interfaces.ants import AntsRegSyn
@@ -8,7 +8,7 @@ import os
 from nianalysis.requirement import fsl509_req, mrtrix3_req
 from nianalysis.interfaces.custom.pet import PreparePetDir
 from nianalysis.interfaces.custom.dicom import PetTimeInfo
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec
 
 
 template_path = os.path.abspath(
@@ -18,20 +18,20 @@ template_path = os.path.abspath(
 
 class PETStudy(Study, metaclass=StudyMetaClass):
 
-    add_option_specs = [OptionSpec('ica_n_components', 2),
-                        OptionSpec('ica_type', 'spatial'),
-                        OptionSpec('norm_transformation', 's'),
-                        OptionSpec('norm_dim', 3),
-                        OptionSpec('norm_template',
+    add_parameter_specs = [ParameterSpec('ica_n_components', 2),
+                        ParameterSpec('ica_type', 'spatial'),
+                        ParameterSpec('norm_transformation', 's'),
+                        ParameterSpec('norm_dim', 3),
+                        ParameterSpec('norm_template',
                                    os.path.join(template_path,
                                                 'PET_template.nii.gz')),
-                        OptionSpec('crop_xmin', 100),
-                        OptionSpec('crop_xsize', 130),
-                        OptionSpec('crop_ymin', 100),
-                        OptionSpec('crop_ysize', 130),
-                        OptionSpec('crop_zmin', 20),
-                        OptionSpec('crop_zsize', 100),
-                        OptionSpec('image_orientation_check', False)]
+                        ParameterSpec('crop_xmin', 100),
+                        ParameterSpec('crop_xsize', 130),
+                        ParameterSpec('crop_ymin', 100),
+                        ParameterSpec('crop_ysize', 130),
+                        ParameterSpec('crop_zmin', 20),
+                        ParameterSpec('crop_zsize', 100),
+                        ParameterSpec('image_orientation_check', False)]
 
     add_data_specs = [
         DatasetSpec('registered_volumes', nifti_gz_format, optional=True),
@@ -78,8 +78,8 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             **kwargs)
 
         ica = pipeline.create_node(FastICA(), name='ICA')
-        ica.inputs.n_components = pipeline.option('ica_n_components')
-        ica.inputs.ica_type = pipeline.option('ica_type')
+        ica.inputs.n_components = self.parameter('ica_n_components')
+        ica.inputs.ica_type = self.parameter('ica_type')
         pipeline.connect_input('registered_volumes', ica, 'volume')
 
         pipeline.connect_output('decomposed_file', ica, 'ica_decomposition')
@@ -104,10 +104,10 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
         reg = pipeline.create_node(AntsRegSyn(out_prefix='vol2template'),
                                    name='ANTs')
-        reg.inputs.num_dimensions = pipeline.option('norm_dim')
+        reg.inputs.num_dimensions = self.parameter('norm_dim')
         reg.inputs.num_threads = self.runner.num_processes
-        reg.inputs.transformation = pipeline.option('norm_transformation')
-        reg.inputs.ref_file = pipeline.option('norm_template')
+        reg.inputs.transformation = self.parameter('norm_transformation')
+        reg.inputs.ref_file = self.parameter('norm_template')
         pipeline.connect_input('pet_image', reg, 'input_file')
 
         pipeline.connect_output('registered_volume', reg, 'reg_file')
@@ -131,7 +131,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
                                         requirements=[mrtrix3_req, fsl509_req])
-        prep_dir.inputs.image_orientation_check = pipeline.option(
+        prep_dir.inputs.image_orientation_check = self.parameter(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
 

@@ -1,4 +1,4 @@
-from nianalysis.data_format import dicom_format
+from nianalysis.file_format import dicom_format
 from arcana.dataset import DatasetMatch
 from arcana.repository.xnat import XnatRepository
 

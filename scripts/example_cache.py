@@ -4,7 +4,7 @@ import errno
 from arcana.dataset import DatasetMatch
 from nianalysis.study.mri.structural.t2star import T2StarStudy
 from arcana.repository.xnat import XnatRepository
-from nianalysis.data_format import zip_format
+from nianalysis.file_format import zip_format
 import argparse
 import pickle as pkl
 

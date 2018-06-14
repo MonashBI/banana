@@ -10,7 +10,7 @@ SYNOPSIS
 
 USAGE
 
-     mrregister [ options ] image1 image2
+     mrregister [ parameters ] image1 image2
 
         image1       input image 1 ('moving')
 
@@ -25,7 +25,7 @@ DESCRIPTION
      FOD registration (with apodised point spread reorientation) will be
      performed by default if the number of volumes in the 4th dimension equals
      the number of coefficients in an antipodally symmetric spherical harmonic
-     series (e.g. 6, 15, 28 etc). The -no_reorientation option can be used to
+     series (e.g. 6, 15, 28 etc). The -no_reorientation parameter can be used to
      force reorientation off if required.
 
      Non-linear registration computes warps to map from both image1->image2 and
@@ -61,7 +61,7 @@ OPTIONS
   -mask2 filename
      a mask to define the region of image2 to use for optimisation.
 
-Rigid registration options
+Rigid registration parameters
 
   -rigid file
      the output text file containing the rigid transformation as a 4x4 matrix
@@ -118,7 +118,7 @@ Rigid registration options
   -rigid_log file
      write gradient descent parameter evolution to log file
 
-Affine registration options
+Affine registration parameters
 
   -affine file
      the output text file containing the affine transformation as a 4x4 matrix
@@ -174,7 +174,7 @@ Affine registration options
   -affine_log file
      write gradient descent parameter evolution to log file
 
-Advanced linear transformation initialisation options
+Advanced linear transformation initialisation parameters
 
   -init_translation.unmasked1
      disregard mask1 for the translation initialisation (affects 'mass')
@@ -206,7 +206,7 @@ Advanced linear transformation initialisation options
   -init_rotation.search.global.iterations num
      number of rotations to investigate (Default: 10000)
 
-Advanced linear registration stage options
+Advanced linear registration stage parameters
 
   -linstage.iterations num or comma separated list
      number of iterations for each registration stage, not to be confused with
@@ -233,7 +233,7 @@ Advanced linear registration stage options
   -linstage.diagnostics.prefix file prefix
      generate diagnostics images after every registration stage
 
-Non-linear registration options
+Non-linear registration parameters
 
   -nl_warp warp1 warp2
      the non-linear warp output defined as two deformation fields, where warp1
@@ -257,7 +257,7 @@ Non-linear registration options
   -nl_init image
      initialise the non-linear registration with the supplied warp image. The
      supplied warp must be in the same format as output using the -nl_warp_full
-     option (i.e. have 4 deformation fields with the linear transforms in the
+     parameter (i.e. have 4 deformation fields with the linear transforms in the
      image header)
 
   -nl_scale factor
@@ -286,7 +286,7 @@ Non-linear registration options
      scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will
      be performed with lmax = 0.
 
-FOD registration options
+FOD registration parameters
 
   -directions file
      the directions used for FOD reorienation using apodised point spread
@@ -298,7 +298,7 @@ FOD registration options
      in an antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45,
      66 etc
 
-Data type options
+Data type parameters
 
   -datatype spec
      specify output image data type. Valid choices are: float32, float32le,
@@ -308,7 +308,7 @@ Data type options
      cfloat32le, cfloat32be, cfloat64, cfloat64le, cfloat64be, int8, uint8,
      bit.
 
-Standard options
+Standard parameters
 
   -info
      display information messages.
@@ -406,15 +406,15 @@ empty_line = (pp.ZeroOrMore(space) + pp.LineEnd())
 desc = pp.Combine(
     desc_line + pp.ZeroOrMore(desc_line | empty_line)).setResultsName('desc')
 
-option_name = (pp.White(' ', exact=2).suppress() +
+parameter_name = (pp.White(' ', exact=2).suppress() +
                pp.Word('-').suppress() +
                word).setResultsName('name')
 
 metavar = pp.Combine(
     pp.ZeroOrMore(pp.White(' ').suppress() + word).setResultsName('metavar'))
 
-option = pp.Group(
-    option_name +
+parameter = pp.Group(
+    parameter_name +
     metavar +
     nl +
     desc)
@@ -427,12 +427,12 @@ block_name = pp.Or((pp.Literal('SYNOPSIS'),
                     pp.Literal('COPYRIGHT'),
                     pp.Literal('REFERENCES'))).setResultsName('block_name')
 
-option_comment = (pp.NotAny(block_name) +
+parameter_comment = (pp.NotAny(block_name) +
                   pp.OneOrMore(word + pp.Optional(space)).setResultsName(
-                      'option_comment') +
+                      'parameter_comment') +
                   nl + empty_line)
 
-parser = pp.ZeroOrMore(option)
+parser = pp.ZeroOrMore(parameter)
 
 title = (pp.Literal('MRtrix') + line + nl +
          indent(5) +
@@ -442,7 +442,7 @@ synopsis = (pp.Literal('SYNOPSIS').suppress() + nl +
             pp.Combine(pp.OneOrMore(desc_line)).setResultsName('synopsis'))
 usage = (pp.Literal('USAGE').suppress() + nl + nl +
          indent(5) + word + space +
-         pp.Literal('[ options ]').suppress() +
+         pp.Literal('[ parameters ]').suppress() +
          pp.OneOrMore(space.suppress() + word) + nl + nl +
          pp.OneOrMore(indent(8) + word + indent(6) +
                       pp.OneOrMore(space + word) + nl + nl))

@@ -14,16 +14,15 @@ from nipype.interfaces.utility import IdentityInterface
 from nianalysis.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format)
 from nianalysis.requirement import (
     fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
-from arcana.exception import ArcanaError
 from arcana.study.base import StudyMetaClass
 from arcana.dataset import DatasetSpec, FieldSpec
 from arcana.interfaces.iterators import SelectSession
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.study.mri.epi import EPIStudy
 from nipype.interfaces import fsl
 from nianalysis.interfaces.custom.motion_correction import (
@@ -37,17 +36,19 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         DatasetSpec('forward_pe', dicom_format, optional=True),
         DatasetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
-        DatasetSpec('noise_residual', mrtrix_format, 'basic_preproc_pipeline'),
+        DatasetSpec('noise_residual', mrtrix_format, 'preproc_pipeline'),
         DatasetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         DatasetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
         DatasetSpec('adc', nifti_gz_format, 'tensor_pipeline'),
-        DatasetSpec('response', text_format, 'response_pipeline'),
+        DatasetSpec('wm_response', text_format, 'response_pipeline'),
+        DatasetSpec('gm_response', text_format, 'response_pipeline'),
+        DatasetSpec('csf_response', text_format, 'response_pipeline'),
         DatasetSpec('avg_response', text_format, 'average_response_pipeline'),
         DatasetSpec('fod', mrtrix_format, 'fod_pipeline'),
         DatasetSpec('bias_correct', nifti_gz_format, 'bias_correct_pipeline'),
-        DatasetSpec('grad_dirs', fsl_bvecs_format, 'basic_preproc_pipeline'),
-        DatasetSpec('bvalues', fsl_bvals_format, 'basic_preproc_pipeline'),
-        DatasetSpec('eddy_par', eddy_par_format, 'basic_preproc_pipeline'),
+        DatasetSpec('grad_dirs', fsl_bvecs_format, 'preproc_pipeline'),
+        DatasetSpec('bvalues', fsl_bvals_format, 'preproc_pipeline'),
+        DatasetSpec('eddy_par', eddy_par_format, 'preproc_pipeline'),
         DatasetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
         DatasetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
@@ -58,8 +59,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     frequency='per_project'),
         DatasetSpec('tbss_skeleton_mask', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_project'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline'),
-        DatasetSpec('brain_mask', nifti_gz_format, 'brain_mask_pipeline'),
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        DatasetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline'),
         DatasetSpec('norm_intensity', mrtrix_format,
                     'intensity_normalisation_pipeline'),
         DatasetSpec('norm_intens_fa_template', mrtrix_format,
@@ -69,21 +70,26 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     'intensity_normalisation_pipeline',
                     frequency='per_project')]
 
-    add_option_specs = [
-        OptionSpec('multi_tissue', True),
-        OptionSpec('preproc_pe_dir', None, dtype=str),
-        OptionSpec('preproc_denoise', False),
-        OptionSpec('brain_extract_method', 'mrtrix'),
-        OptionSpec('bias_correct_method', 'ants',
-                   choices=('ants', 'fsl')),
-        OptionSpec('fod_response_algorithm', 'tax'),
-        OptionSpec('tbss_skel_thresh', 0.2),
-        OptionSpec('fsl_mask_f', 0.25),
-        OptionSpec('bet_robust', True),
-        OptionSpec('bet_f_threshold', 0.2),
-        OptionSpec('bet_reduce_bias', False)]
+    add_parameter_specs = [
+        ParameterSpec('multi_tissue', True),
+        ParameterSpec('preproc_pe_dir', None, dtype=str),
+        ParameterSpec('tbss_skel_thresh', 0.2),
+        ParameterSpec('fsl_mask_f', 0.25),
+        ParameterSpec('bet_robust', True),
+        ParameterSpec('bet_f_threshold', 0.2),
+        ParameterSpec('bet_reduce_bias', False)]
 
-    def basic_preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
+    add_switch_specs = [
+        SwitchSpec('preproc_denoise', False),
+        SwitchSpec('response_algorithm', 'tax',
+                      ('tax', 'dhollander', 'msmt_5tt')),
+        SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd')),
+        SwitchSpec('brain_extract_method', 'mrtrix',
+                   ('mrtrix', 'fsl')),
+        SwitchSpec('bias_correct_method', 'ants',
+                   choices=('ants', 'fsl'))]
+
+    def preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
@@ -99,7 +105,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    DatasetSpec('eddy_par', eddy_par_format)]
         citations = [fsl_cite, eddy_cite, topup_cite,
                      distort_correct_cite]
-        if self.pre_option('preproc_denoise', 'preprocess', **kwargs):
+        if self.switch('preproc_denoise'):
             outputs.append(DatasetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
@@ -126,7 +132,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=citations,
             **kwargs)
         # Denoise the dwi-scan
-        if pipeline.option('preproc_denoise'):
+        if self.switch('preproc_denoise'):
             # Run denoising
             denoise = pipeline.create_node(DWIDenoise(), name='denoise',
                                            requirements=[mrtrix3_req])
@@ -139,7 +145,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
             requirements=[mrtrix3_req, fsl510_req], wall_time=60)
-        dwipreproc.inputs.eddy_options = '--data_is_shelled '
+        dwipreproc.inputs.eddy_parameters = '--data_is_shelled '
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
         dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
@@ -165,8 +171,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
             # Create preprocessing node
             dwipreproc.inputs.rpe_pair = True
-            if pipeline.option('preproc_pe_dir') is not None:
-                dwipreproc.inputs.pe_dir = pipeline.option('preproc_pe_dir')
+            if self.parameter('preproc_pe_dir') is not None:
+                dwipreproc.inputs.pe_dir = self.parameter('preproc_pe_dir')
             # Create nodes to gradients to FSL format
             extract_grad = pipeline.create_node(
                 ExtractFSLGradients(), name="extract_grad",
@@ -179,16 +185,15 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             else:
                 assert False
             pipeline.connect_input('primary', dwiextract, 'in_file')
-        if pipeline.option('preproc_denoise'):
+        # Connect inter-nodes
+        if self.switch('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
-        else:
-            pipeline.connect_input('primary', dwipreproc, 'in_file')
-        # Connect inter-nodes
-        if pipeline.option('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
             pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
             pipeline.connect(subtract_operands, 'out', subtract, 'operands')
+        else:
+            pipeline.connect_input('primary', dwipreproc, 'in_file')
         if distortion_correction:
             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
             pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
@@ -204,12 +209,12 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-        if pipeline.option('preproc_denoise'):
+        if self.switch('preproc_denoise'):
             pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
         return pipeline
 
-    def brain_mask_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
+    def brain_extraction_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
 
@@ -219,15 +224,9 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             Can be either 'bet' or 'dwi2mask' depending on which mask tool you
             want to use
         """
-        pipeline_name = 'brain_mask'
-        mask_tool = self.pre_option('brain_extract_method', pipeline_name,
-                                    **kwargs)
-        if mask_tool == 'fsl':
-            pipeline = super(DiffusionStudy, self).brain_mask_pipeline(
-                **kwargs)
-        elif mask_tool == 'mrtrix':
+        if self.branch('brain_extract_method', 'mrtrix'):
             pipeline = self.create_pipeline(
-                pipeline_name,
+                'brain_extraction',
                 inputs=[DatasetSpec('preproc', nifti_gz_format),
                         DatasetSpec('grad_dirs', fsl_bvecs_format),
                         DatasetSpec('bvalues', fsl_bvals_format)],
@@ -253,20 +252,17 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Check inputs/outputs are connected
             pipeline.assert_connected()
         else:
-            raise ArcanaError(
-                "Unrecognised mask_tool '{}' (valid options 'bet' or "
-                "'mrtrix')".format(mask_tool))
+            pipeline = super(DiffusionStudy, self).brain_extraction_pipeline(
+                **kwargs)
         return pipeline
 
     def bias_correct_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
         Corrects B1 field inhomogeneities
         """
-        pipeline_name = 'bias_correct'
-        bias_method = self.pre_option('bias_correct_method',
-                                      pipeline_name, **kwargs)
+        bias_method = self.switch('bias_correct_method')
         pipeline = self.create_pipeline(
-            name=pipeline_name,
+            name='bias_correct',
             inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -431,16 +427,20 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
         Parameters
         ----------
-        fod_response_algorithm : str
+        response_algorithm : str
             Algorithm used to estimate the response
         """
+        outputs = [DatasetSpec('wm_response', text_format)]
+        if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
+            outputs.append(DatasetSpec('gm_response', text_format))
+            outputs.append(DatasetSpec('csf_response', text_format))
         pipeline = self.create_pipeline(
             name='response',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('response', text_format)],
+            outputs=outputs,
             desc=("Estimates the fibre response function"),
             version=1,
             citations=[mrtrix_cite],
@@ -448,7 +448,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
-        response.inputs.algorithm = pipeline.option('fod_response_algorithm')
+        response.inputs.algorithm = self.switch('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -459,7 +459,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('bias_correct', response, 'in_file')
         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
-        pipeline.connect_output('response', response, 'wm_file')
+        pipeline.connect_output('wm_response', response, 'wm_file')
+        if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
+            pipeline.connect_output('gm_response', response, 'gm_file')
+            pipeline.connect_output('csf_response', response, 'csf_file')
         # Check inputs/output are connected
         return pipeline
 
@@ -470,7 +473,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='average_response',
-            inputs=[DatasetSpec('response', text_format)],
+            inputs=[DatasetSpec('wm_response', text_format)],
             outputs=[DatasetSpec('avg_response', text_format,
                                  frequency='per_project')],
             desc=(
@@ -486,7 +489,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         avg_response = pipeline.create_node(AverageResponse(),
                                             name='avg_response')
         # Connect inputs
-        pipeline.connect_input('response', join_subjects, 'responses')
+        pipeline.connect_input('wm_response', join_subjects, 'responses')
         # Connect inter-nodes
         pipeline.connect(join_subjects, 'responses', join_visits, 'responses')
         pipeline.connect(join_visits, 'responses', avg_response, 'in_files')
@@ -494,6 +497,36 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_output('avg_response', avg_response, 'out_file')
         # Check inputs/output are connected
         return pipeline
+# 
+# algorithm = traits.Enum(
+#         'csd',
+#         'msmt_csd',
+#         argstr='%s',
+#         position=-8,
+#         mandatory=True,
+#         desc='FOD algorithm')
+#     in_file = File(
+#         exists=True,
+#         argstr='%s',
+#         position=-7,
+#         mandatory=True,
+#         desc='input DWI image')
+#     wm_txt = File(
+#         argstr='%s', position=-6, mandatory=True, desc='WM response text file')
+#     wm_odf = File(
+#         'wm.mif',
+#         argstr='%s',
+#         position=-5,
+#         usedefault=True,
+#         mandatory=True,
+#         desc='output WM ODF')
+#     gm_txt = File(argstr='%s', position=-4, desc='GM response text file')
+#     gm_odf = File('gm.mif', usedefault=True, argstr='%s',
+#                   position=-3, desc='output GM ODF')
+#     csf_txt = File(argstr='%s', position=-2, desc='CSF response text file')
+#     csf_odf = File('csf.mif', usedefault=True, argstr='%s',
+#                    position=-1, desc='output CSF ODF')
+#     mask_file = File(exists=True, argstr='-mask %s', desc='mask image')
 
     def fod_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -508,17 +541,21 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('response', text_format)],
+                    DatasetSpec('wm_response', text_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('fod', nifti_gz_format)],
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
+        if self.branch('fod_algorithm', 'msmt_csd'):
+            pipeline.add_input(DatasetSpec('gm_response', text_format))
+            pipeline.add_input(DatasetSpec('csf_response', text_format))
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
-        dwi2fod.inputs.algorithm = 'csd'
+        dwi2fod.inputs.algorithm = self.switch('fod_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -527,7 +564,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')
         pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
-        pipeline.connect_input('response', dwi2fod, 'wm_txt')
+        pipeline.connect_input('wm_response', dwi2fod, 'wm_txt')
         pipeline.connect_input('brain_mask', dwi2fod, 'mask_file')
         # Connect to outputs
         pipeline.connect_output('fod', dwi2fod, 'wm_odf')
@@ -647,166 +684,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             'align_mats', aff_mat, 'affine_matrices')
         return pipeline
 
-# class TractographyInputSpec(MRTrix3BaseInputSpec):
-#     sph_trait = traits.Tuple(traits.Float, traits.Float, traits.Float,
-#                              traits.Float, argstr='%f,%f,%f,%f')
-#
-#     in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
-#                    desc='input file to be processed')
-#
-#     out_file = File('tracked.tck', argstr='%s', mandatory=True, position=-1,
-#                     usedefault=True, desc='output file containing tracks')
-#
-#     algorithm = traits.Enum(
-#         'iFOD2', 'FACT', 'iFOD1', 'Nulldist', 'SD_Stream', 'Tensor_Det',
-#         'Tensor_Prob', usedefault=True, argstr='-algorithm %s',
-#         desc='tractography algorithm to be used')
-#
-#     # ROIs processing options
-#     roi_incl = traits.Either(
-#         File(exists=True), sph_trait, argstr='-include %s',
-#         desc=('specify an inclusion region of interest, streamlines must'
-#               ' traverse ALL inclusion regions to be accepted'))
-#     roi_excl = traits.Either(
-#         File(exists=True), sph_trait, argstr='-exclude %s',
-#         desc=('specify an exclusion region of interest, streamlines that'
-#               ' enter ANY exclude region will be discarded'))
-#     roi_mask = traits.Either(
-#         File(exists=True), sph_trait, argstr='-mask %s',
-#         desc=('specify a masking region of interest. If defined,'
-#               'streamlines exiting the mask will be truncated'))
-#
-#     # Streamlines tractography options
-#     step_size = traits.Float(
-#         argstr='-step %f',
-#         desc=('set the step size of the algorithm in mm (default is 0.1'
-#               ' x voxelsize; for iFOD2: 0.5 x voxelsize)'))
-#     angle = traits.Float(
-#         argstr='-angle %f',
-#         desc=('set the maximum angle between successive steps (default '
-#               'is 90deg x stepsize / voxelsize)'))
-#     n_tracks = traits.Int(
-#         argstr='-number %d',
-#         desc=('set the desired number of tracks. The program will continue'
-#               ' to generate tracks until this number of tracks have been '
-#               'selected and written to the output file'))
-#     max_tracks = traits.Int(
-#         argstr='-maxnum %d',
-#         desc=('set the maximum number of tracks to generate. The program '
-#               'will not generate more tracks than this number, even if '
-#               'the desired number of tracks hasn\'t yet been reached '
-#               '(default is 100 x number)'))
-#     max_length = traits.Float(
-#         argstr='-maxlength %f',
-#         desc=('set the maximum length of any track in mm (default is '
-#               '100 x voxelsize)'))
-#     min_length = traits.Float(
-#         argstr='-minlength %f',
-#         desc=('set the minimum length of any track in mm (default is '
-#               '5 x voxelsize)'))
-#     cutoff = traits.Float(
-#         argstr='-cutoff %f',
-#         desc=('set the FA or FOD amplitude cutoff for terminating '
-#               'tracks (default is 0.1)'))
-#     cutoff_init = traits.Float(
-#         argstr='-initcutoff %f',
-#         desc=('set the minimum FA or FOD amplitude for initiating '
-#               'tracks (default is the same as the normal cutoff)'))
-#     n_trials = traits.Int(
-#         argstr='-trials %d',
-#         desc=('set the maximum number of sampling trials at each point'
-#               ' (only used for probabilistic tracking)'))
-#     unidirectional = traits.Bool(
-#         argstr='-unidirectional',
-#         desc=('track from the seed point in one direction only '
-#               '(default is to track in both directions)'))
-#     init_dir = traits.Tuple(
-#         traits.Float, traits.Float, traits.Float,
-#         argstr='-initdirection %f,%f,%f',
-#         desc=('specify an initial direction for the tracking (this '
-#               'should be supplied as a vector of 3 comma-separated values'))
-#     noprecompt = traits.Bool(
-#         argstr='-noprecomputed',
-#         desc=('do NOT pre-compute legendre polynomial values. Warning: this '
-#               'will slow down the algorithm by a factor of approximately 4'))
-#     power = traits.Int(
-#         argstr='-power %d',
-#         desc=('raise the FOD to the power specified (default is 1/nsamples)'))
-#     n_samples = traits.Int(
-#         4, argstr='-samples %d',
-#         desc=('set the number of FOD samples to take per step for the 2nd '
-#               'order (iFOD2) method'))
-#     use_rk4 = traits.Bool(
-#         argstr='-rk4',
-#         desc=('use 4th-order Runge-Kutta integration (slower, but eliminates'
-#               ' curvature overshoot in 1st-order deterministic methods)'))
-#     stop = traits.Bool(
-#         argstr='-stop',
-#         desc=('stop propagating a streamline once it has traversed all '
-#               'include regions'))
-#     downsample = traits.Float(
-#         argstr='-downsample %f',
-#         desc='downsample the generated streamlines to reduce output file size')
-#
-#     # Anatomically-Constrained Tractography options
-#     act_file = File(
-#         exists=True, argstr='-act %s',
-#         desc=('use the Anatomically-Constrained Tractography framework during'
-#               ' tracking; provided image must be in the 5TT '
-#               '(five - tissue - type) format'))
-#     backtrack = traits.Bool(argstr='-backtrack',
-#                             desc='allow tracks to be truncated')
-#
-#     crop_at_gmwmi = traits.Bool(
-#         argstr='-crop_at_gmwmi',
-#         desc=('crop streamline endpoints more '
-#               'precisely as they cross the GM-WM interface'))
-#
-#     # Tractography seeding options
-#     seed_sphere = traits.Tuple(
-#         traits.Float, traits.Float, traits.Float, traits.Float,
-#         argstr='-seed_sphere %f,%f,%f,%f', desc='spherical seed')
-#     seed_image = File(exists=True, argstr='-seed_image %s',
-#                       desc='seed streamlines entirely at random within mask')
-#     seed_rnd_voxel = traits.Tuple(
-#         File(exists=True), traits.Int(),
-#         argstr='-seed_random_per_voxel %s %d',
-#         xor=['seed_image', 'seed_grid_voxel'],
-#         desc=('seed a fixed number of streamlines per voxel in a mask '
-#               'image; random placement of seeds in each voxel'))
-#     seed_grid_voxel = traits.Tuple(
-#         File(exists=True), traits.Int(),
-#         argstr='-seed_grid_per_voxel %s %d',
-#         xor=['seed_image', 'seed_rnd_voxel'],
-#         desc=('seed a fixed number of streamlines per voxel in a mask '
-#               'image; place seeds on a 3D mesh grid (grid_size argument '
-#               'is per axis; so a grid_size of 3 results in 27 seeds per'
-#               ' voxel)'))
-#     seed_rejection = File(
-#         exists=True, argstr='-seed_rejection %s',
-#         desc=('seed from an image using rejection sampling (higher '
-#               'values = more probable to seed from'))
-#     seed_gmwmi = File(
-#         exists=True, argstr='-seed_gmwmi %s', requires=['act_file'],
-#         desc=('seed from the grey matter - white matter interface (only '
-#               'valid if using ACT framework)'))
-#     seed_dynamic = File(
-#         exists=True, argstr='-seed_dynamic %s',
-#         desc=('determine seed points dynamically using the SIFT model '
-#               '(must not provide any other seeding mechanism). Note that'
-#               ' while this seeding mechanism improves the distribution of'
-#               ' reconstructed streamlines density, it should NOT be used '
-#               'as a substitute for the SIFT method itself.'))
-#     max_seed_attempts = traits.Int(
-#         argstr='-max_seed_attempts %d',
-#         desc=('set the maximum number of times that the tracking '
-#               'algorithm should attempt to find an appropriate tracking'
-#               ' direction from a given seed point'))
-#     out_seeds = File(
-#         'out_seeds.nii.gz', argstr='-output_seeds %s',
-#         desc=('output the seed location of all successful streamlines to'
-#               ' a file'))
-
 
 class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
 
@@ -826,9 +703,11 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         DatasetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
         DatasetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 
-    add_option_specs = [OptionSpec('noddi_model',
-                                   'WatsonSHStickTortIsoV_B0'),
-                        OptionSpec('single_slice', False)]
+    add_parameter_specs = [ParameterSpec('noddi_model',
+                                   'WatsonSHStickTortIsoV_B0')]
+
+    add_switch_specs = [
+        SwitchSpec('single_slice', False)]
 
     def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -876,7 +755,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         inputs = [DatasetSpec('bias_correct', nifti_gz_format),
                   DatasetSpec('grad_dirs', fsl_bvecs_format),
                   DatasetSpec('bvalues', fsl_bvals_format)]
-        if self.pre_option('single_slice', pipeline_name, **kwargs):
+        if self.switch('single_slice'):
             inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(DatasetSpec('brain_mask', nifti_gz_format))
@@ -919,7 +798,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             BatchNODDIFitting(), name="batch_fit",
             requirements=[noddi_req, matlab2015_req], wall_time=180,
             memory=8000)
-        batch_fit.inputs.model = pipeline.option('noddi_model')
+        batch_fit.inputs.model = self.parameter('noddi_model')
         batch_fit.inputs.nthreads = self.runner.num_processes
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
@@ -934,7 +813,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
                          'brain_mask_file')
         # Connect inputs
         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
-        if pipeline.option('single_slice') is None:
+        if not pipeline.switch('single_slice'):
             pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
         else:
             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')

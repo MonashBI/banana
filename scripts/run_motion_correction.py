@@ -1,14 +1,15 @@
-#!/usr/bin/env python
-from mc_pipeline.generate_mc_pipeline import create_motion_correction_class
+#!/usr/bin/env python3
+from nianalysis.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.runner import MultiProcRunner
 from arcana.repository.local import LocalRepository
-from mc_pipeline.utils import (
+from nianalysis.motion_correction_utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
 from arcana.runner.linear import LinearRunner
+import shutil
 
 
 class RunMotionCorrection:
@@ -16,26 +17,28 @@ class RunMotionCorrection:
     def __init__(self, input_dir, pet_dir=None, dynamic=False, bin_len=60,
                  pet_offset=0, frames='all', struct2align=None,
                  pet_recon=None, crop_coordinates=None, mni_reg=False,
-                 crop_size=None):
+                 crop_size=None, static_len=0, pct_umap=False):
 
         self.input_dir = input_dir
         self.pet_dir = pet_dir
         self.dynamic = dynamic
         self.struct2align = struct2align
         self.pet_recon = pet_recon
-        self.options = {'fixed_binning_n_frames': frames,
-                        'fixed_binning_pet_offset': pet_offset,
+        self.parameters = {'fixed_binning_n_frames': frames,
+                        'pet_offset': pet_offset,
                         'fixed_binning_bin_len': bin_len,
                         'PET2MNI_reg': mni_reg,
-                        'dynamic_pet_mc': dynamic}
+                        'dynamic_pet_mc': dynamic,
+                        'framing_duration': static_len,
+                        'align_pct': pct_umap}
         if crop_coordinates is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):
-                self.options['crop_{}min'.format(crop_axes[i])] = c
+                self.parameters['crop_{}min'.format(crop_axes[i])] = c
         if crop_size is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_size):
-                self.options['crop_{}size'.format(crop_axes[i])] = c
+                self.parameters['crop_{}size'.format(crop_axes[i])] = c
 
     def create_motion_correction_inputs(self):
 
@@ -47,8 +50,15 @@ class RunMotionCorrection:
         cache_input_path = os.path.join(input_dir, 'inputs.pickle')
         if os.path.isdir(input_dir):
             try:
-                with open(cache_input_path, 'r') as f:
-                    ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
+                with open(cache_input_path, 'rb') as f:
+                    (ref, ref_type, t1s, epis, t2s, dmris, pd,
+                     pr) = pkl.load(f)
+                working_dir = (
+                    input_dir+'/work_dir/work_sub_dir/work_session_dir/')
+                if pet_dir is not None and pd != pet_dir:
+                    shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
+                if pet_recon is not None and pr != pet_recon:
+                    shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
                 cached_inputs = True
             except IOError as e:
                 if e.errno == errno.ENOENT:
@@ -65,8 +75,17 @@ class RunMotionCorrection:
                 list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
             else:
                 print(list_inputs)
-                ref, ref_type, t1s, epis, t2s, dmris = list_inputs
-            with open(cache_input_path, 'w') as f:
+                ref, ref_type, t1s, epis, t2s, dmris = (
+                    list_inputs)
+            if pet_dir is not None:
+                list_inputs.append(pet_dir)
+            else:
+                list_inputs.append('')
+            if pet_recon is not None:
+                list_inputs.append(pet_recon)
+            else:
+                list_inputs.append('')
+            with open(cache_input_path, 'wb') as f:
                 pkl.dump(list_inputs, f)
 
         return ref, ref_type, t1s, epis, t2s, dmris
@@ -101,6 +120,12 @@ if __name__ == "__main__":
                         help=("Path to an existing directory with the PET "
                               "reconstructed data (one folder containing DICOM"
                               " files per frame)."))
+    parser.add_argument('--static_pet_len', '-sl', type=int,
+                        help=("If static motion correction, this is the "
+                              "length of PET data you want to reconstruct and "
+                              "correct for motion. Default is from the "
+                              "PET_start_time+recon_offset to the end of the "
+                              "PET acquisition."), default=0)
     parser.add_argument('--bin_length', '-l', type=int,
                         help=("If dynamic motion correction, the temporal "
                               "length of each bin has to be provided (in sec)."
@@ -108,10 +133,11 @@ if __name__ == "__main__":
                               "temporal duration. Default is 60 seconds."),
                         default=60)
     parser.add_argument('--recon_offset', '-ro', type=int,
-                        help=("If dynamic motion correction, this is the time "
+                        help=("This is the time "
                               "difference, in seconds, between the PET start "
-                              "time and the start time of the first "
-                              "reconstructed bin. Default is 0."), default=0)
+                              "time and the start time of the reconstruction "
+                              "(valid for both dynamic and static motion "
+                              "correction). Default is 0."), default=0)
     parser.add_argument('--frames', '-f', type=int,
                         help=("If dynamic motion correction, this is the "
                               "number of reconstructed frames that have to be"
@@ -140,6 +166,12 @@ if __name__ == "__main__":
                         help=("If provided, motion correction results will be "
                               "registered to PET template in MNI space. "
                               "Default is False."), default=False)
+    parser.add_argument('--continuos_umap', action='store_true',
+                        help=("If provided, the pipeline will assume that the"
+                              "provided umap has continuous range of values "
+                              "(for example pct umap). Otherwise discrete "
+                              "(like UTE-based umap). Default is discrete."),
+                        default=False)
     args = parser.parse_args()
 
     mc = RunMotionCorrection(
@@ -147,7 +179,8 @@ if __name__ == "__main__":
         bin_len=args.bin_length, pet_offset=args.recon_offset,
         frames=args.frames, pet_recon=args.pet_reconstructed_dir,
         struct2align=args.struct2align, crop_size=args.cropping_size,
-        crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg)
+        crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg,
+        static_len=args.static_pet_len, pct_umap=args.continuos_umap)
 
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
@@ -172,7 +205,7 @@ if __name__ == "__main__":
     study = MotionCorrection(name='MotionCorrection',
                              runner=LinearRunner(WORK_PATH),
                              repository=repository, inputs=inputs,
-                             subject_ids=[sub_id], options=mc.options,
+                             subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])
     study.data(out_data)
 print('Done!')

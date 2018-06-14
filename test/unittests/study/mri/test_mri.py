@@ -2,7 +2,7 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.dataset import DatasetMatch  # @IgnorePep8
-from nianalysis.data_format import nifti_gz_format  # @IgnorePep8
+from nianalysis.file_format import nifti_gz_format  # @IgnorePep8
 from nianalysis.study.mri.base import MRIStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from arcana.study import (  # @IgnorePep8

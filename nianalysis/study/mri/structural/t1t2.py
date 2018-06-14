@@ -1,5 +1,5 @@
 from nipype.interfaces.fsl import ApplyMask
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     nifti_gz_format, freesurfer_recon_all_format, text_matrix_format)
 from arcana.dataset import DatasetSpec
 from arcana.study.multi import (
@@ -49,11 +49,11 @@ class T1T2Study(MultiStudy, metaclass=MultiStudyMetaClass):
                     desc="Manual WMH segmentations"),
         DatasetSpec('t2_coreg', nifti_gz_format, 't2_registration_pipeline',
                     desc="T2 registered to T1 weighted"),
-        DatasetSpec('t1_brain', nifti_gz_format, 't1_brain_mask_pipeline',
+        DatasetSpec('t1_brain', nifti_gz_format, 't1_brain_extraction_pipeline',
                     desc="T1 brain by brain mask"),
-        DatasetSpec('t2_brain', nifti_gz_format, 't2_brain_mask_pipeline',
+        DatasetSpec('t2_brain', nifti_gz_format, 't2_brain_extraction_pipeline',
                     desc="Coregistered T2 brain by brain mask"),
-        DatasetSpec('brain_mask', nifti_gz_format, 't2_brain_mask_pipeline',
+        DatasetSpec('brain_mask', nifti_gz_format, 't2_brain_extraction_pipeline',
                     desc="Brain mask generated from coregistered T2"),
         DatasetSpec('manual_wmh_mask_coreg', nifti_gz_format,
                     'manual_wmh_mask_registration_pipeline',
@@ -90,16 +90,16 @@ class T1T2Study(MultiStudy, metaclass=MultiStudyMetaClass):
         'wmhcoregt1',
         'linear_registration_pipeline')
 
-    t2_brain_mask_pipeline = MultiStudy.translate(
-        't2', 'brain_mask_pipeline')
+    t2_brain_extraction_pipeline = MultiStudy.translate(
+        't2', 'brain_extraction_pipeline')
 
-    def t1_brain_mask_pipeline(self, **kwargs):
+    def t1_brain_extraction_pipeline(self, **kwargs):
         """
         Masks the T1 image using the coregistered T2 brain mask as the brain
         mask from T2 is usually more reliable (using BET in any case)
         """
         pipeline = self.create_pipeline(
-            name='t1_brain_mask_pipeline',
+            name='t1_brain_extraction_pipeline',
             inputs=[DatasetSpec('t1', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('t1_brain', nifti_gz_format)],

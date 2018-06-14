@@ -209,11 +209,11 @@ class EstimateFODInputSpec(MRTrix3BaseInputSpec):
         usedefault=True, desc=('the output spherical harmonics coefficients'
                                ' image'))
 
-    # DW Shell selection options
+    # DW Shell selection parameters
     shell = traits.List(traits.Float, sep=',', argstr='-shell %s',
                         desc='specify one or more dw gradient shells')
 
-    # Spherical deconvolution options
+    # Spherical deconvolution parameters
     max_sh = traits.Int(8, argstr='-lmax %d',
                         desc='maximum harmonic degree of response function')
     in_mask = File(exists=True, argstr='-mask %s',

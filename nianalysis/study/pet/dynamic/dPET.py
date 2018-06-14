@@ -5,9 +5,9 @@ from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.interfaces.utils import Merge
 from nianalysis.interfaces.custom.pet import PETdr, GlobalTrendRemoval
-from nianalysis.data_format import (nifti_gz_format, text_matrix_format,
+from nianalysis.file_format import (nifti_gz_format, text_matrix_format,
                                      png_format)
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec
 import os
 
 template_path = os.path.abspath(
@@ -30,13 +30,13 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
                     'Dual_Regression_pipeline'),
         DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]
 
-    add_option_specs = [
-        OptionSpec('trans_template',
+    add_parameter_specs = [
+        ParameterSpec('trans_template',
                    os.path.join(template_path, 'PET_template.nii.gz')),
-        OptionSpec('base_remove_th', 0),
-        OptionSpec('base_remove_binarize', False),
-        OptionSpec('regress_th', 0),
-        OptionSpec('regress_binarize', False)]
+        ParameterSpec('base_remove_th', 0),
+        ParameterSpec('base_remove_binarize', False),
+        ParameterSpec('regress_th', 0),
+        ParameterSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
@@ -73,7 +73,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
         apply_trans = pipeline.create_node(
             ApplyTransforms(), name='ApplyTransform')
-        apply_trans.inputs.reference_image = pipeline.option(
+        apply_trans.inputs.reference_image = self.parameter(
             'trans_template')
         apply_trans.inputs.interpolation = 'Linear'
         apply_trans.inputs.input_image_type = 3
@@ -115,8 +115,8 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             **kwargs)
 
         dr = pipeline.create_node(PETdr(), name='PET_dr')
-        dr.inputs.threshold = pipeline.option('regress_th')
-        dr.inputs.binarize = pipeline.option('regress_binarize')
+        dr.inputs.threshold = self.parameter('regress_th')
+        dr.inputs.binarize = self.parameter('regress_binarize')
         pipeline.connect_input('detrended_volumes', dr, 'volume')
         pipeline.connect_input('regression_map', dr, 'regression_map')
 

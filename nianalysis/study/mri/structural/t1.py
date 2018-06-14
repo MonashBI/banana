@@ -3,13 +3,13 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.interfaces.utils import DummyReconAll as ReconAll
 from nianalysis.requirement import freesurfer_req
 from nianalysis.citation import freesurfer_cites
-from nianalysis.data_format import (
+from nianalysis.file_format import (
     freesurfer_recon_all_format, nifti_gz_format)
 from arcana.dataset import DatasetSpec
 from arcana.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from arcana.study.base import StudyMetaClass
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec
 
 
 class T1Study(MRIStudy, metaclass=StudyMetaClass):
@@ -17,14 +17,14 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_mask_pipeline')]
+        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline')]
 
-    add_option_specs = [
-        OptionSpec('bet_method', 'optibet',
-                   choices=MRIStudy.option_spec('bet_method').choices),
-        OptionSpec('bet_robust', True),
-        OptionSpec('bet_f_threshold', 0.57),
-        OptionSpec('bet_g_threshold', -0.1)]
+    add_parameter_specs = [
+        ParameterSpec('bet_method', 'optibet',
+                   choices=MRIStudy.parameter_spec('bet_method').choices),
+        ParameterSpec('bet_robust', True),
+        ParameterSpec('bet_f_threshold', 0.57),
+        ParameterSpec('bet_g_threshold', -0.1)]
 
     def freesurfer_pipeline(self, **kwargs):
         """

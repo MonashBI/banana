@@ -41,7 +41,7 @@ if __name__ == "__main__":
     parser.add_argument('--session_ids', '-s', type=str,
                         help='Session ID on XNAT. Default is all the '
                         'sessions found in the XNAT project.')
-    parser.add_argument('--subject_ids', '-sub', type=str,
+    parser.add_argument('--subject_ids', '-sub', type=str, nargs='+',
                         help='Subject ID on XNAT. Default is all the '
                         'subjects found in all the session specified.')
     parser.add_argument('--xnat_server', '-server', type=str,
@@ -71,8 +71,8 @@ if __name__ == "__main__":
                         'phase image is the output of a SIEMENS scanner. It '
                         'does not support other vendors.',
                         default=None)
-    parser.add_argument('--fix_training_set', '-ts', type=str,
-                        help='Trainging set for FSL-FIX (.RData format). If '
+    parser.add_argument('--run_regression', '-regression', type=str,
+                        help='If '
                         'provided, fix classification and regression of the '
                         'noisy component will be performed and the final image'
                         ' will be fully pre-processed. Otherwise, the '
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     fMRI, inputs, output_files = create_fmri_study_class(
             'fMRI', args.hires_structural, args.fmri, args.fmri_order,
             fm_mag=args.field_map_mag, fm_phase=args.field_map_phase,
-            training_set=args.fix_training_set)
+            run_regression=args.run_regression)
 
     CACHE_PATH = os.path.join(args.working_dir, 'xnat_cache')
     WORK_PATH = os.path.join(args.working_dir, 'work_dir')
@@ -107,7 +107,7 @@ if __name__ == "__main__":
         cache_dir=CACHE_PATH)
 
     study = fMRI(name='fMRI_preprocessing', runner=LinearRunner(WORK_PATH),
-                 repository=repository, inputs=inputs, subject_ids=[sub_ids],
+                 repository=repository, inputs=inputs, subject_ids=sub_ids,
                  visit_ids=[session_ids])
     study.data(output_files)
 

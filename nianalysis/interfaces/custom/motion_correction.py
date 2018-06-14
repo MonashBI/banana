@@ -736,6 +736,12 @@ class MotionFramingInputSpec(BaseInterfaceInputSpec):
                                       '30sec', default=30)
     pet_start_time = traits.Str(desc='PET start time', default=None)
     pet_end_time = traits.Str(desc='PET end time', default=None)
+    pet_offset = traits.Int(desc='Offset in seconds between the PET start time'
+                            'and the time you want to start the static motion'
+                            'correction. Default is 0.')
+    pet_duration = traits.Int(desc='Time, in seconds, the static PET '
+                              'reconstruction lasts. Default is from '
+                              'pet_start_time+pet_offest to the pet_end_time')
 
 
 class MotionFramingOutputSpec(TraitedSpec):
@@ -767,6 +773,17 @@ class MotionFraming(BaseInterface):
         if not pet_st and not pet_endtime:
             pet_st = None
             pet_endtime = None
+        else:
+            if isdefined(self.inputs.pet_offset):
+                offset = self.inputs.pet_offset
+                pet_st = (dt.datetime.strptime(pet_st, '%H%M%S.%f') +
+                          dt.timedelta(seconds=offset)).strftime('%H%M%S.%f')
+            if (isdefined(self.inputs.pet_duration) and
+                    self.inputs.pet_duration > 0):
+                pet_len = self.inputs.pet_duration
+                pet_endtime = ((dt.datetime.strptime(pet_st, '%H%M%S.%f') +
+                                dt.timedelta(seconds=pet_len))
+                               .strftime('%H%M%S.%f'))
 
         md_0 = mean_displacement[0]
         max_md = mean_displacement[0]
