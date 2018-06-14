@@ -341,8 +341,8 @@ def dwi_type_assignment(input_dir, dmri_images):
 
     for dwi in dmri_images:
         cmd = 'mrinfo {0}'.format(input_dir+'/'+dwi)
-        info = (sp.check_output(cmd, shell=True, encoding='utf8')
-                .strip().split('\n'))
+        info = (sp.check_output(cmd, shell=True)).decode('utf-8')
+        info = info.strip().split('\n')
         for line in info:
             if 'Dimensions:' in line:
                 dim = line.split('Dimensions:')[-1].strip().split('x')
