@@ -48,7 +48,7 @@ reference_path = os.path.abspath(
 
 template_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__).split('nianalysis')[0],
-                 'nianalysis', 'templates'))
+                 'nianalysis', 'nianalysis', 'templates'))
 
 
 class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
