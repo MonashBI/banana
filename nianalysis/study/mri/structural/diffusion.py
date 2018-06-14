@@ -448,7 +448,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
-        response.inputs.algorithm = self.parameter('response_algorithm')
+        response.inputs.algorithm = self.switch('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
