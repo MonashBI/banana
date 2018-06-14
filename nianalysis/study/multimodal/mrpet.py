@@ -251,11 +251,11 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             **kwargs)
 
         framing = pipeline.create_node(MotionFraming(), name='motion_framing')
-        framing.inputs.motion_threshold = pipeline.option('framing_th')
-        framing.inputs.temporal_threshold = pipeline.option(
+        framing.inputs.motion_threshold = self.parameter('framing_th')
+        framing.inputs.temporal_threshold = self.parameter(
             'framing_temporal_th')
-        framing.inputs.pet_offset = pipeline.option('pet_offset')
-        framing.inputs.pet_duration = pipeline.option('framing_duration')
+        framing.inputs.pet_offset = self.parameter('pet_offset')
+        framing.inputs.pet_duration = self.parameter('framing_duration')
         pipeline.connect_input('mean_displacement', framing,
                                'mean_displacement')
         pipeline.connect_input('mean_displacement_consecutive', framing,
@@ -286,7 +286,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         plot_md = pipeline.create_node(PlotMeanDisplacementRC(),
                                        name='plot_md')
-        plot_md.inputs.framing = pipeline.option('md_framing')
+        plot_md.inputs.framing = self.parameter('md_framing')
         pipeline.connect_input('mean_displacement_rc', plot_md,
                                'mean_disp_rc')
         pipeline.connect_input('offset_indexes', plot_md,
@@ -340,9 +340,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect_input('pet_start_time', binning, 'pet_start_time')
         pipeline.connect_input('pet_duration', binning, 'pet_duration')
         pipeline.connect_input('mats4average', binning, 'motion_mats')
-        binning.inputs.n_frames = pipeline.option('fixed_binning_n_frames')
-        binning.inputs.pet_offset = pipeline.option('pet_offset')
-        binning.inputs.bin_len = pipeline.option('fixed_binning_bin_len')
+        binning.inputs.n_frames = self.parameter('fixed_binning_n_frames')
+        binning.inputs.pet_offset = self.parameter('pet_offset')
+        binning.inputs.bin_len = self.parameter('fixed_binning_bin_len')
 
         pipeline.connect_output('fixed_binning_mats', binning,
                                 'average_bin_mats')
@@ -430,7 +430,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         frame_align = pipeline.create_node(
             UmapAlign2Reference(), name='static_frame2ref_alignment',
             requirements=[fsl509_req])
-        frame_align.inputs.pct = pipeline.option('align_pct')
+        frame_align.inputs.pct = self.parameter('align_pct')
         pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
                                'ute_regmat')
         pipeline.connect_input('umap_ref_qform_mat', frame_align,
@@ -460,7 +460,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                                     name='create_moco_series')
         pipeline.connect_input('start_times', moco, 'start_times')
         pipeline.connect_input('motion_par', moco, 'motion_par')
-        moco.inputs.moco_template = pipeline.option('moco_template')
+        moco.inputs.moco_template = self.parameter('moco_template')
 
         pipeline.connect_output('moco_series', moco, 'modified_moco')
         return pipeline
@@ -577,7 +577,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'structural2ref_regmat')
             pipeline.connect_input('struct2align', pet_mc, 'structural_image')
-        if pipeline.option('PET2MNI_reg'):
+        if self.parameter('PET2MNI_reg'):
             mni_reg = True
         else:
             mni_reg = False
@@ -605,12 +605,12 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if not StructAlignment:
             cropping = pipeline.create_node(
                 PETFovCropping(), name='pet_cropping')
-            cropping.inputs.x_min = pipeline.option('crop_xmin')
-            cropping.inputs.x_size = pipeline.option('crop_xsize')
-            cropping.inputs.y_min = pipeline.option('crop_ymin')
-            cropping.inputs.y_size = pipeline.option('crop_ysize')
-            cropping.inputs.z_min = pipeline.option('crop_zmin')
-            cropping.inputs.z_size = pipeline.option('crop_zsize')
+            cropping.inputs.x_min = self.parameter('crop_xmin')
+            cropping.inputs.x_size = self.parameter('crop_xsize')
+            cropping.inputs.y_min = self.parameter('crop_ymin')
+            cropping.inputs.y_size = self.parameter('crop_ysize')
+            cropping.inputs.z_min = self.parameter('crop_zmin')
+            cropping.inputs.z_size = self.parameter('crop_zsize')
             if dynamic:
                 pipeline.connect(merge_mc, 'merged_file', cropping,
                                  'pet_image')
@@ -619,12 +619,12 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
             cropping_no_mc = pipeline.create_node(
                 PETFovCropping(), name='pet_no_mc_cropping')
-            cropping_no_mc.inputs.x_min = pipeline.option('crop_xmin')
-            cropping_no_mc.inputs.x_size = pipeline.option('crop_xsize')
-            cropping_no_mc.inputs.y_min = pipeline.option('crop_ymin')
-            cropping_no_mc.inputs.y_size = pipeline.option('crop_ysize')
-            cropping_no_mc.inputs.z_min = pipeline.option('crop_zmin')
-            cropping_no_mc.inputs.z_size = pipeline.option('crop_zsize')
+            cropping_no_mc.inputs.x_min = self.parameter('crop_xmin')
+            cropping_no_mc.inputs.x_size = self.parameter('crop_xsize')
+            cropping_no_mc.inputs.y_min = self.parameter('crop_ymin')
+            cropping_no_mc.inputs.y_size = self.parameter('crop_ysize')
+            cropping_no_mc.inputs.z_min = self.parameter('crop_zmin')
+            cropping_no_mc.inputs.z_size = self.parameter('crop_zsize')
             if dynamic:
                 pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
                                  'pet_image')
@@ -645,7 +645,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                                out_prefix='reg2MNI', num_threads=4),
                     name='reg2MNI', wall_time=25,
                     requirements=[ants2_req])
-                reg_tmean2MNI.inputs.ref_file = pipeline.option(
+                reg_tmean2MNI.inputs.ref_file = self.parameter(
                     'PET_template_MNI')
                 if dynamic:
                     pipeline.connect(t_mean, 'out_file', reg_tmean2MNI,
@@ -660,7 +660,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     apply_trans = pipeline.create_node(
                         ApplyTransforms(), name='apply_trans', wall_time=7,
                         memory=24000, requirements=[ants2_req])
-                    apply_trans.inputs.reference_image = pipeline.option(
+                    apply_trans.inputs.reference_image = self.parameter(
                         'PET_template_MNI')
                     apply_trans.inputs.interpolation = 'Linear'
                     apply_trans.inputs.input_image_type = 3

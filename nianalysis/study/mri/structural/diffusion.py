@@ -73,19 +73,21 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
     add_parameter_specs = [
         ParameterSpec('multi_tissue', True),
         ParameterSpec('preproc_pe_dir', None, dtype=str),
-        ParameterSpec('response_algorithm', 'tax'),
         ParameterSpec('tbss_skel_thresh', 0.2),
         ParameterSpec('fsl_mask_f', 0.25),
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('bias_correct_method', 'ants',
-                      choices=('ants', 'fsl'))]
+        ParameterSpec('bet_reduce_bias', False)]
 
     add_switch_specs = [
         SwitchSpec('preproc_denoise', False),
+        SwitchSpec('response_algorithm', 'tax',
+                      ('tax', 'dhollander', 'msmt_5tt')),
+        SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd')),
         SwitchSpec('brain_extract_method', 'mrtrix',
-                   ('mrtrix', 'fsl'))]
+                   ('mrtrix', 'fsl')),
+        SwitchSpec('bias_correct_method', 'ants',
+                   choices=('ants', 'fsl'))]
 
     def preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """
@@ -130,7 +132,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=citations,
             **kwargs)
         # Denoise the dwi-scan
-        if self.parameter('preproc_denoise'):
+        if self.switch('preproc_denoise'):
             # Run denoising
             denoise = pipeline.create_node(DWIDenoise(), name='denoise',
                                            requirements=[mrtrix3_req])
@@ -143,7 +145,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
             requirements=[mrtrix3_req, fsl510_req], wall_time=60)
-        dwipreproc.inputs.eddy_options = '--data_is_shelled '
+        dwipreproc.inputs.eddy_parameters = '--data_is_shelled '
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
         dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
@@ -183,16 +185,15 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             else:
                 assert False
             pipeline.connect_input('primary', dwiextract, 'in_file')
-        if self.parameter('preproc_denoise'):
+        # Connect inter-nodes
+        if self.switch('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
-        else:
-            pipeline.connect_input('primary', dwipreproc, 'in_file')
-        # Connect inter-nodes
-        if self.parameter('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
             pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
             pipeline.connect(subtract_operands, 'out', subtract, 'operands')
+        else:
+            pipeline.connect_input('primary', dwipreproc, 'in_file')
         if distortion_correction:
             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
             pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
@@ -208,7 +209,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-        if self.parameter('preproc_denoise'):
+        if self.switch('preproc_denoise'):
             pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
         return pipeline
@@ -259,10 +260,9 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         Corrects B1 field inhomogeneities
         """
-        pipeline_name = 'bias_correct'
-        bias_method = self.parameter('bias_correcct_method')
+        bias_method = self.switch('bias_correct_method')
         pipeline = self.create_pipeline(
-            name=pipeline_name,
+            name='bias_correct',
             inputs=[DatasetSpec('preproc', nifti_gz_format),
                     DatasetSpec('brain_mask', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
@@ -430,23 +430,21 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         response_algorithm : str
             Algorithm used to estimate the response
         """
+        outputs = [DatasetSpec('wm_response', text_format)]
+        if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
+            outputs.append(DatasetSpec('gm_response', text_format))
+            outputs.append(DatasetSpec('csf_response', text_format))
         pipeline = self.create_pipeline(
             name='response',
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
                     DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('wm_response', text_format)],
+            outputs=outputs,
             desc=("Estimates the fibre response function"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
-        multi_tissue = (pipeline.option('response_algorithm') in
-                        ('dhollander', 'msmt_5tt'))
-        if multi_tissue:
-            pipeline.add_output(DatasetSpec('gm_response', text_format))
-            pipeline.add_output(DatasetSpec('csf_response',
-                                            text_format))
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
@@ -462,7 +460,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
         pipeline.connect_output('wm_response', response, 'wm_file')
-        if multi_tissue:
+        if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
             pipeline.connect_output('gm_response', response, 'gm_file')
             pipeline.connect_output('csf_response', response, 'csf_file')
         # Check inputs/output are connected
@@ -543,21 +541,21 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             inputs=[DatasetSpec('bias_correct', nifti_gz_format),
                     DatasetSpec('grad_dirs', fsl_bvecs_format),
                     DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('wm_response', text_format)],
+                    DatasetSpec('wm_response', text_format),
+                    DatasetSpec('brain_mask', nifti_gz_format)],
             outputs=[DatasetSpec('fod', nifti_gz_format)],
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
-        multi_tissue = pipeline.option('fod_algorithm') == 'msmt_csd'
-        if multi_tissue:
+        if self.branch('fod_algorithm', 'msmt_csd'):
             pipeline.add_input(DatasetSpec('gm_response', text_format))
             pipeline.add_input(DatasetSpec('csf_response', text_format))
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
-        dwi2fod.inputs.algorithm = pipeline.option('fod_algorithm')
+        dwi2fod.inputs.algorithm = self.switch('fod_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
