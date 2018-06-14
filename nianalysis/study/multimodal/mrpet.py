@@ -43,12 +43,12 @@ logger.addHandler(handler)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 reference_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../',
+    os.path.join(os.path.dirname(__file__), '../../',
                  'reference_data'))
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../',
-                 'templates'))
+    os.path.join(os.path.dirname(__file__).split('nianalysis')[0],
+                 'nianalysis', 'templates'))
 
 
 class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
