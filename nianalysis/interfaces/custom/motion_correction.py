@@ -943,7 +943,7 @@ class PlotMeanDisplacementRC(BaseInterface):
         mean_disp_rc = np.loadtxt(self.inputs.mean_disp_rc)
         false_indexes = np.loadtxt(self.inputs.false_indexes, dtype=int)
         if isdefined(self.inputs.motion_par_rc):
-            motion_par_rc = self.inputs.motion_par_rc
+            motion_par_rc = np.loadtxt(self.inputs.motion_par_rc)
             plot_mp = True
         else:
             plot_mp = False
