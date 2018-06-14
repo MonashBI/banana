@@ -58,7 +58,8 @@ class RunMotionCorrection:
                 if pet_dir is not None and pd != pet_dir:
                     shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
                 if pet_recon is not None and pr != pet_recon:
-                    shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
+                    shutil.copytree(pet_recon, working_dir +
+                                    '/pet_data_reconstructed')
                 cached_inputs = True
             except IOError as e:
                 if e.errno == errno.ENOENT:
