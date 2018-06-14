@@ -55,11 +55,22 @@ class RunMotionCorrection:
                      pr) = pkl.load(f)
                 working_dir = (
                     input_dir+'/work_dir/work_sub_dir/work_session_dir/')
-                if pet_dir is not None and pd != pet_dir:
+                if pet_dir is not None and not pd and pd != pet_dir:
                     shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
                 if pet_recon is not None and pr != pet_recon:
+                    if pr:
+                        print('Different PET recon dir, respect to that '
+                              'provided in a previous run. The directory '
+                              'pet_data_reconstructed in the working directory'
+                              ' will be removed and substituted with the new '
+                              'one.')
+                        shutil.rmtree(working_dir+'/pet_data_reconstructed')
                     shutil.copytree(pet_recon, working_dir +
                                     '/pet_data_reconstructed')
+                    list_inputs = [ref, ref_type, t1s, epis, t2s, dmris, pd,
+                                   pet_recon]
+                    with open(cache_input_path, 'wb') as f:
+                        pkl.dump(list_inputs, f)
                 cached_inputs = True
             except IOError as e:
                 if e.errno == errno.ENOENT:
