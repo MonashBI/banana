@@ -12,7 +12,7 @@ from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
@@ -39,6 +39,10 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('linear_reg_method', 'epireg')]
+    
+    add_switch_specs = [
+        SwitchSpec('linear_reg_method', 'epireg',
+                   choices=('flirt', 'spm', 'ants', 'epireg'))]
 
     def linear_coregistration_pipeline(self, **kwargs):
         if self.branch('linear_reg_method', 'epireg'):
