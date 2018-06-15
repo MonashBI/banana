@@ -533,7 +533,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         inputs = [DatasetSpec('pet_data_prepared', directory_format),
                   DatasetSpec('ref_brain', nifti_gz_format),
                   DatasetSpec('mean_displacement_plot', png_format)]
-        if self.option_spec('dynamic_pet_mc').value:
+        if self.parameter_spec('dynamic_pet_mc').value:
             inputs.append(DatasetSpec('fixed_binning_mats', directory_format))
             outputs = [DatasetSpec('dynamic_motion_correction_results',
                                    directory_format)]
@@ -737,7 +737,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    option_specs = [ParameterSpec('ref_preproc_resolution', [1])]
+    parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
     if struct2align is not None:
         struct_image = struct2align.split('/')[-1].split('.')[0]
 
@@ -752,7 +752,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 DatasetMatch('struct2align', nifti_gz_format, struct_image))
     if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
         output_data = 'dynamic_motion_correction_results'
-        option_specs.append(ParameterSpec('dynamic_pet_mc', True))
+        parameter_specs.append(ParameterSpec('dynamic_pet_mc', True))
         if struct2align is not None:
             inputs.append(
                 DatasetMatch('struct2align', nifti_gz_format, struct_image))
@@ -850,7 +850,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         dwi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                            'ref_preproc': 'coreg_ref_preproc'})
         if dmris_main:
-            option_specs.extend(
+            parameter_specs.extend(
                 ParameterSpec('dwi_{}_brain_extract_method'.format(i), 'fsl')
                 for i in range(len(dmris_main)))
         if dmris_main and not dmris_opposite:
@@ -936,7 +936,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    dct['add_parameter_specs'] = option_specs
+    dct['add_parameter_specs'] = parameter_specs
     return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
             output_data)
 
@@ -949,7 +949,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    option_specs = [ParameterSpec('ref_preproc_resolution', [1])]
+    parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
         inputs.append(DatasetMatch('pet_data_dir', directory_format,
@@ -1089,5 +1089,5 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    dct['add_parameter_specs'] = option_specs
+    dct['add_parameter_specs'] = parameter_specs
     return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
