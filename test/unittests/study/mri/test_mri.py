@@ -25,6 +25,6 @@ class TestMRI(TestCase):
                 DatasetMatch('ref_primary', nifti_gz_format, 'mprage'),
                 DatasetMatch('tocoreg_primary', nifti_gz_format,
                              'flair')])
-        coreg_brain = study.data('tocoreg_coreg_brain')[0]
+        coreg_brain = list(study.data('tocoreg_coreg_brain'))[0]
         self.assertDatasetsEqual(coreg_brain,
                                  self.reference('coreg_brain'))

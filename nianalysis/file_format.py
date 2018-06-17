@@ -4,9 +4,9 @@ from arcana.file_format import FileFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
-from nianalysis.interfaces.converters import Dcm2niix
-from arcana.file_format import (
-    text_format, directory_format, zip_format, targz_format)  # @UnusedImport
+from nianalysis.interfaces.converters import Dcm2niix  # @UnusedImport
+from arcana.file_format.standard import (
+    text_format, directory_format, zip_format, targz_format)
 
 
 class Dcm2niixConverter(Converter):

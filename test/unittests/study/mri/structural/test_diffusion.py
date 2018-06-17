@@ -18,7 +18,7 @@ class TestDiffusion(BaseTestCase):
             DiffusionStudy, 'preprocess', [
                 DatasetMatch('primary', mrtrix_format, 'r_l_dwi_b700_30'),
                 DatasetMatch('dwi_reference', mrtrix_format, 'l_r_dwi_b0_6')])
-        preproc = study.data('preproc')[0]
+        preproc = list(study.data('preproc'))[0]
         self.assertTrue(os.path.exists(preproc.path))
 
     def test_extract_b0(self):
