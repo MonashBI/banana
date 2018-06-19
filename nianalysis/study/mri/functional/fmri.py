@@ -42,7 +42,7 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
-    add_option_specs = [
+    add_parameter_specs = [
         ParameterSpec('component_threshold', 20),
         ParameterSpec('motion_reg', True),
         ParameterSpec('highpass', 0.01),
@@ -585,11 +585,17 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref_preproc',
-                        'train_data': 'train_data'})
-
-    study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMRIStudy,
-                                    epi_refspec)
-                       for i in range(epi_number))
+                        'train_data': 'train_data',})
+    study_specs.append(SubStudySpec('epi_0', FunctionalMRIStudy, epi_refspec))
+    if epi_number > 1:
+        epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
+                            't1_preproc': 'coreg_ref_preproc',
+                            'train_data': 'train_data',
+                            'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
+                            'epi_0_coreg_to_atlas_mat': 'coreg_to_atlas_mat'})
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMRIStudy,
+                                        epi_refspec)
+                           for i in range(1, epi_number))
 
     for i in range(epi_number):
         inputs.append(DatasetMatch('epi_{}_primary'.format(i),
