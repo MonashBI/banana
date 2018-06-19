@@ -11,7 +11,8 @@ from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
 try:
-    import matplotlib
+    import matplotlib 
+    matplotlib.use('Agg') 
     import matplotlib.pyplot as plot
 except ImportError:
     pass
