@@ -44,7 +44,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
               "these two images must have the same phase"),
         position=3)
     eddy_parameters = traits.Str(
-        argstr='-eddy_parameters "%s"', desc='parameters to be passed to eddy')
+        argstr='-eddy_options "%s"', desc='parameters to be passed to eddy')
     no_clean_up = traits.Bool(True, argstr='-nocleanup',
                               desc='Do not delete the temporary folder')
     temp_dir = Directory(genfile=True, argstr='-tempdir %s',
