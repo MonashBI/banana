@@ -37,8 +37,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
     add_parameter_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('linear_reg_method', 'epireg')]
+        ParameterSpec('bet_reduce_bias', False)]
     
     add_switch_specs = [
         SwitchSpec('linear_reg_method', 'epireg',

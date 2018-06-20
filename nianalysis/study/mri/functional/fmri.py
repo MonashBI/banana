@@ -15,7 +15,7 @@ from nianalysis.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.study.mri.epi import EPIStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.study.mri.structural.t1 import T1Study
@@ -28,6 +28,7 @@ from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exception import ArcanaNameError
 from arcana.interfaces.utils import CopyToDir
+from nianalysis.study.mri.base import MRIStudy
 
 logger = logging.getLogger('nianalysis')
 
@@ -51,7 +52,6 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                    os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        ParameterSpec('linear_reg_method', 'ants'),
         ParameterSpec('group_ica_components', 15)]
 
     add_data_specs = [
@@ -73,6 +73,10 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                     'timeseries_normalization_to_atlas_pipeline'),
         DatasetSpec('smoothed_ts', nifti_gz_format,
                     'smoothing_pipeline')]
+    
+    add_switch_specs = [
+        SwitchSpec('linear_reg_method', 'ants',
+                   choices=('flirt', 'spm', 'ants', 'epireg'))]
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 
