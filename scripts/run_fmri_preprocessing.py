@@ -71,14 +71,14 @@ if __name__ == "__main__":
                         'phase image is the output of a SIEMENS scanner. It '
                         'does not support other vendors.',
                         default=None)
-    parser.add_argument('--run_regression', '-regression', type=str,
+    parser.add_argument('--run_regression', '-regression', action='store_true',
                         help='If '
                         'provided, fix classification and regression of the '
                         'noisy component will be performed and the final image'
                         ' will be fully pre-processed. Otherwise, the '
                         'pipeline will generate only the MELODIC L1 results '
                         'with the right folder structure so that it can be '
-                        'used with fsl FIX.', default=None)
+                        'used with fsl FIX.', default=False)
     args = parser.parse_args()
 
     fMRI, inputs, output_files = create_fmri_study_class(
