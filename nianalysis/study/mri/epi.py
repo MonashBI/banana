@@ -42,7 +42,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('fugue_echo_spacing', 0.000275)]
-    
+
     add_switch_specs = [
         SwitchSpec('linear_reg_method', 'epireg',
                    choices=('flirt', 'spm', 'ants', 'epireg'))]

@@ -63,7 +63,7 @@ class PrepareFIX(BaseInterface):
         shutil.copy2(epi_mean, 'melodic_ica/mean_func.nii.gz')
         shutil.copytree(melodic_dir, 'melodic_ica/filtered_func_data.ica')
         shutil.copy2(filtered_epi, 'melodic_ica/filtered_func_data.nii.gz')
-        
+
         with open('hand_label_file.txt', 'w') as f:
             f.write('not_provided')
 
@@ -79,12 +79,12 @@ class PrepareFIX(BaseInterface):
 
 
 class FieldMapTimeInfoInputSpec(BaseInterfaceInputSpec):
-    
+
     fm_mag = Directory()
 
 
 class FieldMapTimeInfoOutputSpec(TraitedSpec):
-    
+
     delta_te = traits.Float()
 
 
@@ -92,9 +92,9 @@ class FieldMapTimeInfo(BaseInterface):
 
     input_spec = FieldMapTimeInfoInputSpec
     output_spec = FieldMapTimeInfoOutputSpec
-    
+
     def _run_interface(self, runtime):
-        
+
         fm_mag = sorted(glob.glob(self.inputs.fm_mag+'/*'))
         tes = [pydicom.read_file(x).EchoTime for x in fm_mag]
         tes = list(set(tes))

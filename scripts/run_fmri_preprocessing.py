@@ -28,12 +28,14 @@ if __name__ == "__main__":
                         ' images, the same field map images (if provided) will'
                         ' be used to perform B0 unwarping.')
     parser.add_argument('--fmri_echo_spacing', type=float, required=True,
-                        help='Echo spacing (in seconds) from the EPI acquisition parameter.'
-                        'Please be aware that if you acquired you EPI with acceleration'
-                        'factors (i.e. iPAT) you have to divide the echo spacing by that factor.'
-                        ' For example, if the iPAT was 2 than you have to provide echo_spacing/2.'
-                        ' N.B. If you have multiband factor you DO NOT have to divide echo spacing'
-                        ' by that factor!')
+                        help='Echo spacing (in seconds) from the EPI '
+                        'acquisition parameter. Please be aware that if you '
+                        'acquired your EPI with acceleration factors '
+                        '(i.e. iPAT) you have to divide the echo spacing by '
+                        'that factor. For example, if the iPAT was 2 than you '
+                        'have to provide echo_spacing/2. '
+                        'N.B. If you have multiband factor you DO NOT have to '
+                        'divide the echo spacing by that factor!')
     parser.add_argument('--fmri_order', type=int, required=True,
                         help='If more than one fmri image is going to match '
                         'the --fmri regular expression provided, you can '

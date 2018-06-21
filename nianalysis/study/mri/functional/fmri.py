@@ -47,7 +47,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         ParameterSpec('highpass', 0.01),
         ParameterSpec('brain_thresh_percent', 5),
         ParameterSpec('MNI_template',
-                   os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
+                      os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         ParameterSpec('group_ica_components', 15)]
@@ -71,7 +71,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                     'timeseries_normalization_to_atlas_pipeline'),
         DatasetSpec('smoothed_ts', nifti_gz_format,
                     'smoothing_pipeline')]
-    
+
     add_switch_specs = [
         SwitchSpec('linear_reg_method', 'ants',
                    choices=('flirt', 'spm', 'ants', 'epireg'))]
@@ -344,7 +344,8 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
     add_data_specs = [
         DatasetSpec('train_data', rfile_format, 'fix_training_pipeline',
                     frequency='per_project'),
-        DatasetSpec('group_melodic', directory_format, 'group_melodic_pipeline')]
+        DatasetSpec('group_melodic', directory_format,
+                    'group_melodic_pipeline')]
 
     def fix_training_pipeline(self, **kwargs):
 
@@ -495,8 +496,8 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
     for i in range(epi_number):
         inputs.append(DatasetMatch('epi_{}_primary'.format(i),
                                    dicom_format, epis, order=i, is_regex=True))
-        parameter_specs.append(ParameterSpec('epi_{}_fugue_echo_spacing'.format(i),
-                                             echo_spacing))
+        parameter_specs.append(
+            ParameterSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
         inputs.extend(DatasetMatch(
