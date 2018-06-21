@@ -1,8 +1,12 @@
 
 from nipype.interfaces.base import (
-    BaseInterface, BaseInterfaceInputSpec, TraitedSpec, Directory, File)
+    BaseInterface, BaseInterfaceInputSpec, TraitedSpec, Directory, File,
+    traits)
 import os
 import shutil
+import pydicom
+import numpy as np
+import glob
 
 
 class PrepareFIXInputSpec(BaseInterfaceInputSpec):
@@ -70,5 +74,45 @@ class PrepareFIX(BaseInterface):
 
         outputs["fix_dir"] = os.getcwd()+'/melodic_ica'
         outputs["hand_label_file"] = os.getcwd()+'/hand_label_file.txt'
+
+        return outputs
+
+
+class FieldMapTimeInfoInputSpec(BaseInterfaceInputSpec):
+    
+    fm_mag = Directory()
+
+
+class FieldMapTimeInfoOutputSpec(TraitedSpec):
+    
+    delta_te = traits.Float()
+
+
+class FieldMapTimeInfo(BaseInterface):
+
+    input_spec = FieldMapTimeInfoInputSpec
+    output_spec = FieldMapTimeInfoOutputSpec
+    
+    def _run_interface(self, runtime):
+        
+        fm_mag = sorted(glob.glob(self.inputs.fm_mag+'/*'))
+        tes = [pydicom.read_file(x).EchoTime for x in fm_mag]
+        tes = list(set(tes))
+        if len(tes) != 2:
+            print('Something went wrong when trying to estimate '
+                  'the delta TE between the two echos field map '
+                  'images. delta_TE will be set equal to 2.46, '
+                  'but please check if this is correct.')
+            self.delta_te = 2.46
+        else:
+            self.delta_te = float(np.abs(tes[1]-tes[0]))
+        print('delta_TE: {}'.format(self.delta_te))
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["delta_te"] = self.delta_te
 
         return outputs

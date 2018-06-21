@@ -27,6 +27,13 @@ if __name__ == "__main__":
                         '--fmri_order as well. Also, in case of multiple fmri '
                         ' images, the same field map images (if provided) will'
                         ' be used to perform B0 unwarping.')
+    parser.add_argument('--fmri_echo_spacing', type=float, required=True,
+                        help='Echo spacing (in seconds) from the EPI acquisition parameter.'
+                        'Please be aware that if you acquired you EPI with acceleration'
+                        'factors (i.e. iPAT) you have to divide the echo spacing by that factor.'
+                        ' For example, if the iPAT was 2 than you have to provide echo_spacing/2.'
+                        ' N.B. If you have multiband factor you DO NOT have to divide echo spacing'
+                        ' by that factor!')
     parser.add_argument('--fmri_order', type=int, required=True,
                         help='If more than one fmri image is going to match '
                         'the --fmri regular expression provided, you can '
@@ -83,7 +90,8 @@ if __name__ == "__main__":
 
     fMRI, inputs, output_files = create_fmri_study_class(
             'fMRI', args.hires_structural, args.fmri, args.fmri_order,
-            fm_mag=args.field_map_mag, fm_phase=args.field_map_phase,
+            args.fmri_echo_spacing, fm_mag=args.field_map_mag,
+            fm_phase=args.field_map_phase,
             run_regression=args.run_regression)
 
     CACHE_PATH = os.path.join(args.working_dir, 'xnat_cache')

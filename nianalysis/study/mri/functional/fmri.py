@@ -27,8 +27,6 @@ from nianalysis.interfaces.custom.fmri import PrepareFIX
 from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exception import ArcanaNameError
-from arcana.interfaces.utils import CopyToDir
-from nianalysis.study.mri.base import MRIStudy
 
 logger = logging.getLogger('nianalysis')
 
@@ -451,8 +449,8 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
 
-def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
-                            fm_phase=None, run_regression=False):
+def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
+                            fm_mag=None, fm_phase=None, run_regression=False):
 
     inputs = []
     dct = {}
@@ -497,6 +495,8 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
     for i in range(epi_number):
         inputs.append(DatasetMatch('epi_{}_primary'.format(i),
                                    dicom_format, epis, order=i, is_regex=True))
+        parameter_specs.append(ParameterSpec('epi_{}_fugue_echo_spacing'.format(i),
+                                             echo_spacing))
 
     if distortion_correction:
         inputs.extend(DatasetMatch(
