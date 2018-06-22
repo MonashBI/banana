@@ -58,8 +58,9 @@ if __name__ == "__main__":
             cache_dir=os.path.join(scratch_dir, 'xnat_cache-mnd')),
         runner=LinearRunner(work_dir=os.path.join(scratch_dir,
                                                   'xnat_working_dir-mnd')),
-        inputs=inputs, subject_ids=[args.subject], visit_ids=[args.session],
-        parameters={'preproc_pe_dir': 'RL'})
+        inputs=inputs, subject_ids=args.subject, visit_ids=args.session,
+        parameters={'preproc_pe_dir': 'RL'},
+        switches={'preproc_denoise': True})
 
     fods = study.data('fod')
     # print(fods[0].path)

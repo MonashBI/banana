@@ -142,11 +142,13 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Run denoising
             denoise = pipeline.create_node(DWIDenoise(), name='denoise',
                                            requirements=[mrtrix3_req])
+            denoise.inputs.out_file_ext = '.mif'
             # Calculate residual noise
             subtract_operands = pipeline.create_node(Merge(2),
                                                      name='subtract_operands')
             subtract = pipeline.create_node(MRCalc(), name='subtract',
                                             requirements=[mrtrix3_req])
+            subtract.inputs.out_ext = '.mif'
             subtract.inputs.operation = 'subtract'
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',

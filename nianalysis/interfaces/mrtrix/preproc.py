@@ -220,6 +220,7 @@ class DWIDenoiseInputSpec(MRTrix3BaseInputSpec):
               "*nix) are found in the provided output file then the CWD (when "
               "the workflow is run, i.e. the working directory) will be "
               "prepended to the output path."))
+    out_file_ext = traits.Str(desc='Extention of the output file.')
     noise = File(
         genfile=True, argstr="-noise %s",
         desc=("The estimated spatially-varying noise level"))
@@ -261,8 +262,13 @@ class DWIDenoise(MRTrix3Base):
         if isdefined(self.inputs.out_file):
             out_name = self.inputs.out_file
         else:
-            base, ext = split_extension(
-                os.path.basename(self.inputs.in_file))
+            if isdefined(self.inputs.out_file_ext):
+                ext = self.inputs.out_file_ext
+                base, _ = split_extension(os.path.basename(
+                    self.inputs.in_file))
+            else:
+                base, ext = split_extension(
+                    os.path.basename(self.inputs.in_file))
             out_name = os.path.join(os.getcwd(),
                                     "{}_conv{}".format(base, ext))
         return out_name
@@ -271,8 +277,13 @@ class DWIDenoise(MRTrix3Base):
         if isdefined(self.inputs.out_file):
             out_name = self.inputs.out_file
         else:
-            base, ext = split_extension(
-                os.path.basename(self.inputs.in_file))
+            if isdefined(self.inputs.out_file_ext):
+                ext = self.inputs.out_file_ext
+                base, _ = split_extension(os.path.basename(
+                    self.inputs.in_file))
+            else:
+                base, ext = split_extension(
+                    os.path.basename(self.inputs.in_file))
             out_name = os.path.join(os.getcwd(),
                                     "{}_noise{}".format(base, ext))
         return out_name
