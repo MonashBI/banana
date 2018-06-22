@@ -11,23 +11,27 @@ from arcana.runner.linear import LinearRunner
 
 
 if __name__ == "__main__":
-    
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--subject', type=str, default=None,
+    parser.add_argument('--subject', type=str, nargs='+', default=None,
                         help="Subject IDs to process")
-    parser.add_argument('--session', type=str, default=None,
+    parser.add_argument('--session', type=str, nargs='+', default=None,
                         help="Session IDs to process")
+    parser.add_argument('--study_name', type=str, default='diffusion',
+                        help="Study name to be prepend to the output names "
+                        "of all pre-processing results. Default is "
+                        "'diffusion'.")
     args = parser.parse_args()
-    
+
     scratch_dir = os.path.expanduser('~/scratch')
-    
+
     WORK_PATH = os.path.join(scratch_dir, 'mnd', 'diffusion')
     try:
         os.makedirs(WORK_PATH)
     except OSError as e:
         if e.errno != errno.EEXIST:
             raise
-    
+
     logger = logging.getLogger('NiAnalysis')
     logger.setLevel(logging.DEBUG)
     # Stream Handler
@@ -40,21 +44,23 @@ if __name__ == "__main__":
     formatter = logging.Formatter("%(levelname)s - %(message)s")
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-    
-    inputs = [DatasetMatch('primary', dicom_format,
-                           'R-L_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2'),
-              DatasetMatch('dwi_reference', dicom_format,
-                           'L-R_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2')]
-    
+
+    inputs = [
+        DatasetMatch('primary', dicom_format,
+                     'R-L_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2'),
+        DatasetMatch('dwi_reference', dicom_format,
+                     'L-R_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2')]
+
     study = DiffusionStudy(
-        name='diffusion', repository=XnatRepository(
-        project_id='MRH060', server='https://mbi-xnat.erc.monash.edu.au',
-        cache_dir=os.path.join(scratch_dir, 'xnat_cache-mnd')),
+        name=args.study_name,
+        repository=XnatRepository(
+            project_id='MRH060', server='https://mbi-xnat.erc.monash.edu.au',
+            cache_dir=os.path.join(scratch_dir, 'xnat_cache-mnd')),
         runner=LinearRunner(work_dir=os.path.join(scratch_dir,
                                                   'xnat_working_dir-mnd')),
         inputs=inputs, subject_ids=[args.subject], visit_ids=[args.session],
         parameters={'preproc_pe_dir': 'RL'})
-    
+
     fods = study.data('fod')
     # print(fods[0].path)
     print('Done')

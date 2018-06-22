@@ -18,14 +18,14 @@ if __name__ == "__main__":
                         'and to carry out all the processing.')
     parser.add_argument('--hires_structural', '-struct', type=str,
                         required=True, help='High resolution structural image '
-                        'to used to improve the registation between fMRI and '
-                        'MNI template (usually is a T1 weigthed image).')
+                        'to used to improve the registration between fMRI and '
+                        'MNI template (usually is a T1 weighted image).')
     parser.add_argument('--fmri', type=str, required=True,
                         help='Regular expression to match the name of the fMRI'
                         ' images on XNAT to be pre-processed. If more than one'
                         ' image match this expression, please provide the '
                         '--fmri_order as well. Also, in case of multiple fmri '
-                        ' images, the same field map images (if provided) will'
+                        'images, the same field map images (if provided) will'
                         ' be used to perform B0 unwarping.')
     parser.add_argument('--fmri_echo_spacing', type=float, required=True,
                         help='Echo spacing (in seconds) from the EPI '
@@ -59,12 +59,12 @@ if __name__ == "__main__":
                         default='https://mbi-xnat.erc.monash.edu.au')
     parser.add_argument('--xnat_username', '-user', type=str,
                         help='Username with which to connect to XNAT with. '
-                        'This can be skiped if it has already been saved in '
+                        'This can be skipped if it has already been saved in '
                         'the .netrc in your home directory, otherwise it is '
                         'mandatory.', default=None)
     parser.add_argument('--xnat_password', '-password', type=str,
                         help='Password to connect to XNAt with. '
-                        'This can be skiped if it has already been saved in '
+                        'This can be skipped if it has already been saved in '
                         'the .netrc in your home directory, otherwise it is '
                         'mandatory.', default=None)
     parser.add_argument('--field_map_mag', '-mag', type=str,
