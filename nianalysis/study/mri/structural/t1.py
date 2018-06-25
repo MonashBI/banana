@@ -20,11 +20,13 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline')]
 
     add_parameter_specs = [
-        ParameterSpec('bet_method', 'optibet',
-                   choices=MRIStudy.switch_spec('bet_method').choices),
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.57),
         ParameterSpec('bet_g_threshold', -0.1)]
+    
+    add_switch_specs = [
+        ParameterSpec('bet_method', 'optibet',
+                   choices=MRIStudy.switch_spec('bet_method').choices)]
 
     def freesurfer_pipeline(self, **kwargs):
         """
