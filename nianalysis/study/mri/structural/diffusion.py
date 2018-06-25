@@ -85,6 +85,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         SwitchSpec('preproc_denoise', False),
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt')),
+        SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd')),
         SwitchSpec('brain_extract_method', 'mrtrix',
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants',

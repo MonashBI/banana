@@ -22,7 +22,7 @@ from nianalysis.study.pet.base import PETStudy
 from nianalysis.interfaces.custom.pet import (
     CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
     PETFovCropping)
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 import os
 from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
@@ -738,6 +738,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     data_specs = []
     run_pipeline = False
     parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
+    switch_specs = []
     if struct2align is not None:
         struct_image = struct2align.split('/')[-1].split('.')[0]
 
@@ -850,9 +851,9 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         dwi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                            'ref_preproc': 'coreg_ref_preproc'})
         if dmris_main:
-            parameter_specs.extend(
-                ParameterSpec('dwi_{}_brain_extract_method'.format(i), 'fsl')
-                for i in range(len(dmris_main)))
+            switch_specs.extend(
+                SwitchSpec('dwi_{}_brain_extract_method'.format(i), 'fsl',
+                           ('mrtrix', 'fsl')) for i in range(len(dmris_main)))
         if dmris_main and not dmris_opposite:
             logger.warning(
                 'No opposite phase encoding direction b0 provided. DWI '
@@ -937,6 +938,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_parameter_specs'] = parameter_specs
+    dct['add_switch_specs'] = switch_specs
     return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
             output_data)
 
