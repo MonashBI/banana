@@ -9,7 +9,7 @@ from arcana.dataset import DatasetSpec
 from arcana.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from arcana.study.base import StudyMetaClass
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 
 
 class T1Study(MRIStudy, metaclass=StudyMetaClass):
@@ -25,7 +25,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_g_threshold', -0.1)]
     
     add_switch_specs = [
-        ParameterSpec('bet_method', 'optibet',
+        SwitchSpec('bet_method', 'optibet',
                    choices=MRIStudy.switch_spec('bet_method').choices)]
 
     def freesurfer_pipeline(self, **kwargs):
