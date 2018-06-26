@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from nianalysis.study.mri.functional.fmri import create_fmri_study_class
 from arcana.repository.xnat import XnatRepository
 from arcana.runner.linear import LinearRunner
