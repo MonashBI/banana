@@ -412,12 +412,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         copy2dir.inputs.extension = 'Frame'
         # Connect nodes
         pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
-<<<<<<< Upstream, based on mbi/master
         pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom,
                          'in_file')
-=======
-        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom, 'in_file')
->>>>>>> d70f0b3 added pipeline to reorient the nifti umaps to the original one before 
         pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
         pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
         # Connect inputs

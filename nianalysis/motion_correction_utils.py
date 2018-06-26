@@ -426,10 +426,12 @@ def check_image_start_time(input_dir, scans):
     toremove = []
     for scan in scans:
         try:
+#             scan_name = scan.split('-')[1]
+            scan_number = scan.split('-')[0].zfill(3)
             hd_extraction = DicomHeaderInfoExtraction()
             hd_extraction.inputs.dicom_folder = input_dir+'/'+scan
             dcm_info = hd_extraction.run()
-            start_times.append([dcm_info.outputs.start_time, scan])
+            start_times.append([dcm_info.outputs.start_time, scan_number, scan])
         except:
             print(('This folder {} seems to not contain DICOM files. It will '
                    'be ingnored.'.format(scan)))
@@ -438,8 +440,8 @@ def check_image_start_time(input_dir, scans):
         diff = ((dt.datetime.strptime(start_times[i][0], '%H%M%S.%f') -
                 dt.datetime.strptime(start_times[i-1][0], '%H%M%S.%f'))
                 .total_seconds())
-        if diff < 10:
-            toremove.append(start_times[i][1])
+        if diff < 5:
+            toremove.append(start_times[i][-1])
 
     return toremove
 
