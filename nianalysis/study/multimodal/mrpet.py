@@ -124,27 +124,28 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         FieldSpec('pet_start_time', dtype=str,
                   pipeline_name='pet_header_info_extraction_pipeline')]
 
-    add_parameter_specs = [ParameterSpec('framing_th', 2.0),
-                        ParameterSpec('framing_temporal_th', 30.0),
-                        ParameterSpec('framing_duration', 0),
-                        ParameterSpec('md_framing', True),
-                        ParameterSpec('align_pct', False),
-                        ParameterSpec('align_fixed_binning', False),
-                        ParameterSpec('moco_template', os.path.join(
-                            reference_path, 'moco_template.IMA')),
-                        ParameterSpec('PET_template_MNI', os.path.join(
-                            template_path, 'PET_template_MNI.nii.gz')),
-                        ParameterSpec('fixed_binning_n_frames', 0),
-                        ParameterSpec('pet_offset', 0),
-                        ParameterSpec('fixed_binning_bin_len', 60),
-                        ParameterSpec('crop_xmin', 100),
-                        ParameterSpec('crop_xsize', 130),
-                        ParameterSpec('crop_ymin', 100),
-                        ParameterSpec('crop_ysize', 130),
-                        ParameterSpec('crop_zmin', 20),
-                        ParameterSpec('crop_zsize', 100),
-                        ParameterSpec('PET2MNI_reg', False),
-                        ParameterSpec('dynamic_pet_mc', False)]
+    add_parameter_specs = [
+        ParameterSpec('framing_th', 2.0),
+        ParameterSpec('framing_temporal_th', 30.0),
+        ParameterSpec('framing_duration', 0),
+        ParameterSpec('md_framing', True),
+        ParameterSpec('align_pct', False),
+        ParameterSpec('align_fixed_binning', False),
+        ParameterSpec('moco_template', os.path.join(
+            reference_path, 'moco_template.IMA')),
+        ParameterSpec('PET_template_MNI', os.path.join(
+            template_path, 'PET_template_MNI.nii.gz')),
+        ParameterSpec('fixed_binning_n_frames', 0),
+        ParameterSpec('pet_offset', 0),
+        ParameterSpec('fixed_binning_bin_len', 60),
+        ParameterSpec('crop_xmin', 100),
+        ParameterSpec('crop_xsize', 130),
+        ParameterSpec('crop_ymin', 100),
+        ParameterSpec('crop_ysize', 130),
+        ParameterSpec('crop_zmin', 20),
+        ParameterSpec('crop_zsize', 100),
+        ParameterSpec('PET2MNI_reg', False),
+        ParameterSpec('dynamic_pet_mc', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [DatasetSpec('ref_brain', nifti_gz_format)]

@@ -14,10 +14,10 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 
 
 # def xnat_motion_detection(xnat_id):
-# 
+#
 #     avail_scans = xnat_ls(xnat_id, datatype='scan')
 #     print(avail_scans)
-# 
+#
 #     return avail_scans
 
 
@@ -152,7 +152,7 @@ def inputs_generation(scan_description, input_dir, siemens=False):
     t1s = input("Please select the T1 weighted scans: ").split()
     epis = input("Please select the EPI scans: ").split()
     dwi = input("Please select the DWI scans (including both b0 and"
-                    " main diffusion images): ").split()
+                " main diffusion images): ").split()
     dwi = [scan_description[int(i)-1] for i in dwi]
     if dwi:
         dmris, unused_b0 = dwi_type_assignment(input_dir, dwi)
@@ -184,7 +184,7 @@ def inputs_generation(scan_description, input_dir, siemens=False):
             umaps = [scan_description[int(i)-1] for i in umaps]
 
     t2s = input("Please select the all the other scans the do not belog to"
-                    " any of the previous classes: ").split()
+                " any of the previous classes: ").split()
     t1s = [scan_description[int(i)-1] for i in t1s]
     t2s = [scan_description[int(i)-1] for i in t2s]
     epis = [scan_description[int(i)-1] for i in epis]
@@ -426,12 +426,12 @@ def check_image_start_time(input_dir, scans):
     toremove = []
     for scan in scans:
         try:
-#             scan_name = scan.split('-')[1]
             scan_number = scan.split('-')[0].zfill(3)
             hd_extraction = DicomHeaderInfoExtraction()
             hd_extraction.inputs.dicom_folder = input_dir+'/'+scan
             dcm_info = hd_extraction.run()
-            start_times.append([dcm_info.outputs.start_time, scan_number, scan])
+            start_times.append([dcm_info.outputs.start_time, scan_number,
+                                scan])
         except:
             print(('This folder {} seems to not contain DICOM files. It will '
                    'be ingnored.'.format(scan)))
