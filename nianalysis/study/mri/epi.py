@@ -5,18 +5,19 @@ from nianalysis.interfaces.custom.motion_correction import (
 from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
-    par_format, motion_mats_format)
+    par_format, motion_mats_format, dicom_format)
 from nianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
+from nianalysis.interfaces.custom.fmri import FieldMapTimeInfo
 
 
 class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -32,13 +33,19 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         DatasetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
         DatasetSpec('moco_par', par_format,
-                    'intrascan_alignment_pipeline')]
+                    'intrascan_alignment_pipeline'),
+        FieldSpec('field_map_delta_te', float,
+                  'field_map_time_info_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('linear_reg_method', 'epireg')]
+        ParameterSpec('fugue_echo_spacing', 0.000275)]
+
+    add_switch_specs = [
+        SwitchSpec('linear_reg_method', 'epireg',
+                   choices=('flirt', 'spm', 'ants', 'epireg'))]
 
     def linear_coregistration_pipeline(self, **kwargs):
         if self.branch('linear_reg_method', 'epireg'):
@@ -101,6 +108,25 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         merge = pipeline.create_node(MergeListMotionMat(), name='merge')
         pipeline.connect(mcflirt, 'mat_file', merge, 'file_list')
         pipeline.connect_output('align_mats', merge, 'out_dir')
+
+        return pipeline
+
+    def field_map_time_info_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='field_map_time_info_pipeline',
+            inputs=[DatasetSpec('field_map_mag', dicom_format)],
+            outputs=[FieldSpec('field_map_delta_te', float)],
+            desc=("Pipeline to extract delta TE from field map "
+                  "images, if provided"),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        delta_te = pipeline.create_node(FieldMapTimeInfo(),
+                                        name='extract_delta_te')
+        pipeline.connect_input('field_map_mag', delta_te, 'fm_mag')
+        pipeline.connect_output('field_map_delta_te', delta_te, 'delta_te')
 
         return pipeline
 
@@ -183,7 +209,8 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
             name='preproc_pipeline',
             inputs=[DatasetSpec('primary', nifti_gz_format),
                     DatasetSpec('field_map_mag', nifti_gz_format),
-                    DatasetSpec('field_map_phase', nifti_gz_format)],
+                    DatasetSpec('field_map_phase', nifti_gz_format),
+                    FieldSpec('field_map_delta_te', float)],
             outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Fugue distortion correction pipeline"),
             version=1,
@@ -210,7 +237,9 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         create_fmap = pipeline.create_node(
             PrepareFieldmap(), name="prepfmap", wall_time=5,
             requirements=[fsl509_req])
-        create_fmap.inputs.delta_TE = 2.46
+#         create_fmap.inputs.delta_TE = 2.46
+        pipeline.connect_input('field_map_delta_te', create_fmap,
+                               'delta_TE')
         pipeline.connect(bet, "out_file", create_fmap, "in_magnitude")
         pipeline.connect(fm_phase_reorient, 'out_file', create_fmap,
                          'in_phase')
@@ -218,7 +247,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         fugue = pipeline.create_node(FUGUE(), name='fugue', wall_time=5,
                                      requirements=[fsl509_req])
         fugue.inputs.unwarp_direction = 'x'
-        fugue.inputs.dwell_time = 0.000275
+        fugue.inputs.dwell_time = self.parameter('fugue_echo_spacing')
         fugue.inputs.unwarped_file = 'example_func.nii.gz'
         pipeline.connect(create_fmap, 'out_fieldmap', fugue,
                          'fmap_in_file')

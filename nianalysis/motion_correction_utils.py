@@ -341,10 +341,12 @@ def dwi_type_assignment(input_dir, dmri_images):
 
     for dwi in dmri_images:
         cmd = 'mrinfo {0}'.format(input_dir+'/'+dwi)
-        info = sp.check_output(cmd, shell=True).strip().split('\n')
+        info = (sp.check_output(cmd, shell=True)).decode('utf-8')
+        info = info.strip().split('\n')
         for line in info:
             if 'Dimensions:' in line:
                 dim = line.split('Dimensions:')[-1].strip().split('x')
+                break
         hd_extraction = DicomHeaderInfoExtraction()
         hd_extraction.inputs.dicom_folder = input_dir+'/'+dwi
         dcm_info = hd_extraction.run()
@@ -376,9 +378,9 @@ def dwi_type_assignment(input_dir, dmri_images):
         for j in range(len(b0)):
             ped_b0 = b0[j][2]
             if ped_b0 == ped_main:
-                if main_dwi[i][1] == b0[j][1]:
+                if main_dwi[i][1] == b0[j][1] and (j == i or j == i+1):
                     dmris.append([b0[j][0], '1'])
-                elif main_dwi[i][1] != b0[j][1]:
+                elif main_dwi[i][1] != b0[j][1] and (j == i or j == i+1):
                     dmris.append([b0[j][0], '-1'])
             else:
                 unused_b0.append(b0[j][0])
@@ -424,10 +426,12 @@ def check_image_start_time(input_dir, scans):
     toremove = []
     for scan in scans:
         try:
+#             scan_name = scan.split('-')[1]
+            scan_number = scan.split('-')[0].zfill(3)
             hd_extraction = DicomHeaderInfoExtraction()
             hd_extraction.inputs.dicom_folder = input_dir+'/'+scan
             dcm_info = hd_extraction.run()
-            start_times.append([dcm_info.outputs.start_time, scan])
+            start_times.append([dcm_info.outputs.start_time, scan_number, scan])
         except:
             print(('This folder {} seems to not contain DICOM files. It will '
                    'be ingnored.'.format(scan)))
@@ -436,8 +440,8 @@ def check_image_start_time(input_dir, scans):
         diff = ((dt.datetime.strptime(start_times[i][0], '%H%M%S.%f') -
                 dt.datetime.strptime(start_times[i-1][0], '%H%M%S.%f'))
                 .total_seconds())
-        if diff < 10:
-            toremove.append(start_times[i][1])
+        if diff < 5:
+            toremove.append(start_times[i][-1])
 
     return toremove
 

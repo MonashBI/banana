@@ -650,7 +650,7 @@ class CheckPetMCInputs(BaseInterface):
     def get_qform(self, image):
 
         cmd = 'mrinfo {}'.format(image)
-        hd = sp.check_output(cmd, shell=True)
+        hd = (sp.check_output(cmd, shell=True)).decode('utf-8')
         i = [n for n, el in enumerate(hd.split('\n')) if 'Transform' in el][0]
         mat = []
         for j in range(3):
@@ -755,7 +755,8 @@ class PetImageMotionCorrection(BaseInterface):
     def extract_qform(self, image):
 
         cmd = 'fslhd {}'.format(image)
-        image_info = sp.check_output(cmd, shell=True).strip().split('\n')
+        image_info = (sp.check_output(cmd, shell=True)).decode('utf-8')
+        image_info = image_info.strip().split('\n')
         qform = np.eye(4)
         for i, line in enumerate(image_info):
             if 'qto_xyz:1' in line:

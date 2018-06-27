@@ -11,13 +11,15 @@ from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
 try:
-    import matplotlib
+    import matplotlib 
+    matplotlib.use('Agg') 
     import matplotlib.pyplot as plot
 except ImportError:
     pass
 from nipype.interfaces import fsl
 import pydicom
 import math
+import subprocess as sp
 
 
 class MotionMatCalculationInputSpec(BaseInterfaceInputSpec):
@@ -501,9 +503,10 @@ class MeanDisplacementCalculation(BaseInterface):
 
     def _run_interface(self, runtime):
 
-        list_inputs = list(zip(self.inputs.motion_mats, self.inputs.start_times,
-                          self.inputs.real_durations, self.inputs.trs,
-                          self.inputs.input_names))
+        list_inputs = list(zip(
+            self.inputs.motion_mats, self.inputs.start_times,
+            self.inputs.real_durations, self.inputs.trs,
+            self.inputs.input_names))
         ref = nib.load(self.inputs.reference)
         ref_data = ref.get_data()
         # centre of gravity
@@ -516,7 +519,7 @@ class MeanDisplacementCalculation(BaseInterface):
              .total_seconds(), x[2], x[3], x[4]) for x in list_inputs]
         study_len = int((list_inputs[-1][1]+float(list_inputs[-1][2]))*1000)
         mean_displacement_rc = np.zeros(study_len)-1
-        motion_par_rc = np.zeros((6, study_len))
+        motion_par_rc = np.zeros((6, study_len))-1
         mean_displacement = []
         motion_par = []
         idt_mat = np.eye(4)
@@ -604,6 +607,9 @@ class MeanDisplacementCalculation(BaseInterface):
             if (mean_displacement_rc[i] == -1 and
                     mean_displacement_rc[i-1] != -1):
                 mean_displacement_rc[i] = mean_displacement_rc[i-1]
+        for i in range(motion_par_rc.shape[1]):
+            if (motion_par_rc[0, i] == -1 and motion_par_rc[0, i-1] != -1):
+                motion_par_rc[:, i] = motion_par_rc[:, i-1]
 
         to_save = [mean_displacement, mean_displacement_consecutive,
                    mean_displacement_rc, motion_par_rc, start_times,
@@ -914,6 +920,8 @@ class PlotMeanDisplacementRCInputSpec(BaseInterfaceInputSpec):
 
     mean_disp_rc = File(exists=True, desc='Text file containing the mean '
                         'displacement real clock.')
+    motion_par_rc = File(exists=True, desc='Text file containing the motion '
+                         'parameters real clock.')
     frame_start_times = File(exists=True, desc='Frame start times as detected'
                              'by the motion framing pipeline')
     false_indexes = File(exists=True, desc='Time indexes were the scanner was '
@@ -925,6 +933,8 @@ class PlotMeanDisplacementRCInputSpec(BaseInterfaceInputSpec):
 class PlotMeanDisplacementRCOutputSpec(TraitedSpec):
 
     mean_disp_plot = File(exists=True, desc='Mean displacement plot.')
+    rot_plot = File(exists=True, desc='Rotation parameters plot.')
+    trans_plot = File(exists=True, desc='Translation parameters plot.')
 
 
 class PlotMeanDisplacementRC(BaseInterface):
@@ -935,9 +945,13 @@ class PlotMeanDisplacementRC(BaseInterface):
     def _run_interface(self, runtime):
 
         mean_disp_rc = np.loadtxt(self.inputs.mean_disp_rc)
-        frame_start_times = np.loadtxt(self.inputs.frame_start_times)
         false_indexes = np.loadtxt(self.inputs.false_indexes, dtype=int)
-        framing = self.inputs.framing
+
+        if isdefined(self.inputs.motion_par_rc):
+            motion_par_rc = np.loadtxt(self.inputs.motion_par_rc)
+            plot_mp = True
+        else:
+            plot_mp = False
         plot_offset = True
         dates = np.arange(0, len(mean_disp_rc), 1)
         indxs = np.zeros(len(mean_disp_rc), int)+1
@@ -953,28 +967,60 @@ class PlotMeanDisplacementRC(BaseInterface):
         if len(start_true_period) == len(end_true_period)-1:
             end_true_period.remove(end_true_period[-1])
         elif len(start_true_period) != len(end_true_period):
-            print ('Something went wrong in the indentification of the MR '
+            print ('Something went wrong in the identification of the MR '
                    'idling time. It will not be plotted.')
             plot_offset = False
 
-        fig, ax = plot.subplots()
-        fig.set_size_inches(21, 9)
+        self.gen_plot(dates, mean_disp_rc, plot_offset, start_true_period,
+                      end_true_period)
+        if plot_mp:
+            for i in range(2):
+                mp = motion_par_rc[i*3:(i+1)*3, :]
+                self.gen_plot(
+                    dates, mp, plot_offset, start_true_period, end_true_period,
+                    plot_mp=plot_mp, mp_ind=i)
+
+        return runtime
+
+    def gen_plot(self, dates, to_plot, plot_offset, start_true_period,
+                 end_true_period, plot_mp=False, mp_ind=None):
+
+        frame_start_times = np.loadtxt(self.inputs.frame_start_times)
+        framing = self.inputs.framing
         font = {'weight': 'bold', 'size': 30}
         matplotlib.rc('font', **font)
+        fig, ax = plot.subplots()
+        fig.set_size_inches(21, 9)
         ax.set_xlim(0, dates[-1])
-        ax.set_ylim(-0.3, np.max(mean_disp_rc) + 1)
+        if plot_mp:
+            col = ['b', 'g', 'r']
         if plot_offset:
             for i in range(0, len(start_true_period)):
-                ax.plot(dates[start_true_period[i]-1:end_true_period[i]+1],
-                        mean_disp_rc[start_true_period[i]-1:
-                                     end_true_period[i]+1],
-                        c='b', linewidth=2)
+                if plot_mp:
+                    for ii in range(3):
+                        ax.plot(
+                            dates[start_true_period[i]-1:end_true_period[i]+1],
+                            to_plot[ii, start_true_period[i]-1:
+                                    end_true_period[i]+1],
+                            c=col[ii], linewidth=2)
+                else:
+                    ax.plot(dates[start_true_period[i]-1:end_true_period[i]+1],
+                            to_plot[start_true_period[i]-1:
+                                    end_true_period[i]+1], c='b', linewidth=2)
             for i in range(0, len(end_true_period)-1):
-                ax.plot(
-                    dates[end_true_period[i]-1:start_true_period[i+1]+1],
-                    mean_disp_rc[end_true_period[i]-1:
-                                 start_true_period[i+1]+1],
-                    c='b', linewidth=2, ls='--', dashes=(2, 3))
+                if plot_mp:
+                    for ii in range(3):
+                        ax.plot(
+                            dates[end_true_period[i]-1:
+                                  start_true_period[i+1]+1],
+                            to_plot[ii, end_true_period[i]-1:
+                                    start_true_period[i+1]+1],
+                            c=col[ii], linewidth=2, ls='--', dashes=(2, 3))
+                else:
+                    ax.plot(
+                        dates[end_true_period[i]-1:start_true_period[i+1]+1],
+                        to_plot[end_true_period[i]-1:start_true_period[i+1]+1],
+                        c='b', linewidth=2, ls='--', dashes=(2, 3))
 
         if framing:
             cl = 'yellow'
@@ -1006,19 +1052,35 @@ class PlotMeanDisplacementRC(BaseInterface):
                     cl = 'yellow'
 
         indx = np.arange(0, len(dates), 300000)
-        my_thick = [str(i) for i in np.arange(0, len(dates)/60000, 5)]
+        my_thick = [str(i) for i in np.arange(0, len(dates)/60000, 5,
+                                              dtype=int)]
         plot.xticks(dates[indx], my_thick)
-
-        plot.savefig('mean_displacement_real_clock.png')
+        plot.xlabel('Time [min]', fontsize=25)
+        if mp_ind == 0:
+            ax.set_ylim(np.min(to_plot)-0.1, np.max(to_plot)+0.1)
+            plot.legend(['Rotation X', 'Rotation Y', 'Rotation Z'], loc=0)
+            plot.ylabel('Rotation [rad]', fontsize=25)
+            plot.savefig('Rotation_real_clock.png')
+        elif mp_ind == 1:
+            ax.set_ylim(np.min(to_plot)-0.5, np.max(to_plot)+0.5)
+            plot.legend(
+                ['Translation X', 'Translation Y', 'Translation Z'], loc=0)
+            plot.ylabel('Translation [mm]', fontsize=25)
+            plot.savefig('Translation_real_clock.png')
+        else:
+            plot.ylabel('Mean displacement [mm]', fontsize=25)
+            plot.savefig('mean_displacement_real_clock.png')
         plot.close()
-
-        return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
 
         outputs["mean_disp_plot"] = (
             os.getcwd()+'/mean_displacement_real_clock.png')
+        outputs["rot_plot"] = (
+            os.getcwd()+'/Rotation_real_clock.png')
+        outputs["trans_plot"] = (
+            os.getcwd()+'/Translation_real_clock.png')
 
         return outputs
 
@@ -1447,5 +1509,48 @@ class FixedBinning(BaseInterface):
         outputs = self._outputs().get()
 
         outputs["average_bin_mats"] = os.getcwd()+'/average_bin_mats'
+
+        return outputs
+
+
+class ReorientUmapInputSpec(BaseInterfaceInputSpec):
+
+    umap = Directory(exists=True)
+    niftis = traits.List()
+
+
+class ReorientUmapOutputSpec(TraitedSpec):
+
+    reoriented_umaps = traits.List()
+
+
+class ReorientUmap(BaseInterface):
+    """Had to write this pipeline because I found out that sometimes the
+    reoriented umaps (in nifti format) had different orientation with respect
+    to the original umap (dicom). This pipeline uses mrconvert to extract the
+    strides from the dicom umap and to apply them to each of the nifti umaps.
+    """
+    input_spec = ReorientUmapInputSpec
+    output_spec = ReorientUmapOutputSpec
+
+    def _run_interface(self, runtime):
+
+        niftis = self.inputs.niftis
+        umap = self.inputs.umap
+
+        for nifti in niftis:
+            _, base, ext = split_filename(nifti)
+            outname = base+'_reorient'+ext
+            cmd = ('mrconvert -strides {0} {1} {2}'
+                   .format(umap, nifti, outname))
+            sp.check_output(cmd, shell=True)
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+
+        outputs["reoriented_umaps"] = sorted(glob.glob(
+            os.getcwd()+'/*_reorient.*'))
 
         return outputs

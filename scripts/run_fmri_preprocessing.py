@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from nianalysis.study.mri.functional.fmri import create_fmri_study_class
 from arcana.repository.xnat import XnatRepository
 from arcana.runner.linear import LinearRunner
@@ -18,15 +19,24 @@ if __name__ == "__main__":
                         'and to carry out all the processing.')
     parser.add_argument('--hires_structural', '-struct', type=str,
                         required=True, help='High resolution structural image '
-                        'to used to improve the registation between fMRI and '
-                        'MNI template (usually is a T1 weigthed image).')
+                        'to used to improve the registration between fMRI and '
+                        'MNI template (usually is a T1 weighted image).')
     parser.add_argument('--fmri', type=str, required=True,
                         help='Regular expression to match the name of the fMRI'
                         ' images on XNAT to be pre-processed. If more than one'
                         ' image match this expression, please provide the '
                         '--fmri_order as well. Also, in case of multiple fmri '
-                        ' images, the same field map images (if provided) will'
+                        'images, the same field map images (if provided) will'
                         ' be used to perform B0 unwarping.')
+    parser.add_argument('--fmri_echo_spacing', type=float, required=True,
+                        help='Echo spacing (in seconds) from the EPI '
+                        'acquisition parameter. Please be aware that if you '
+                        'acquired your EPI with acceleration factors '
+                        '(i.e. iPAT) you have to divide the echo spacing by '
+                        'that factor. For example, if the iPAT was 2 than you '
+                        'have to provide echo_spacing/2. '
+                        'N.B. If you have multiband factor you DO NOT have to '
+                        'divide the echo spacing by that factor!')
     parser.add_argument('--fmri_order', type=int, required=True,
                         help='If more than one fmri image is going to match '
                         'the --fmri regular expression provided, you can '
@@ -50,12 +60,12 @@ if __name__ == "__main__":
                         default='https://mbi-xnat.erc.monash.edu.au')
     parser.add_argument('--xnat_username', '-user', type=str,
                         help='Username with which to connect to XNAT with. '
-                        'This can be skiped if it has already been saved in '
+                        'This can be skipped if it has already been saved in '
                         'the .netrc in your home directory, otherwise it is '
                         'mandatory.', default=None)
     parser.add_argument('--xnat_password', '-password', type=str,
                         help='Password to connect to XNAt with. '
-                        'This can be skiped if it has already been saved in '
+                        'This can be skipped if it has already been saved in '
                         'the .netrc in your home directory, otherwise it is '
                         'mandatory.', default=None)
     parser.add_argument('--field_map_mag', '-mag', type=str,
@@ -71,19 +81,20 @@ if __name__ == "__main__":
                         'phase image is the output of a SIEMENS scanner. It '
                         'does not support other vendors.',
                         default=None)
-    parser.add_argument('--run_regression', '-regression', type=str,
+    parser.add_argument('--run_regression', '-regression', action='store_true',
                         help='If '
                         'provided, fix classification and regression of the '
                         'noisy component will be performed and the final image'
                         ' will be fully pre-processed. Otherwise, the '
                         'pipeline will generate only the MELODIC L1 results '
                         'with the right folder structure so that it can be '
-                        'used with fsl FIX.', default=None)
+                        'used with fsl FIX.', default=False)
     args = parser.parse_args()
 
     fMRI, inputs, output_files = create_fmri_study_class(
             'fMRI', args.hires_structural, args.fmri, args.fmri_order,
-            fm_mag=args.field_map_mag, fm_phase=args.field_map_phase,
+            args.fmri_echo_spacing, fm_mag=args.field_map_mag,
+            fm_phase=args.field_map_phase,
             run_regression=args.run_regression)
 
     CACHE_PATH = os.path.join(args.working_dir, 'xnat_cache')

@@ -22,7 +22,7 @@ import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -84,8 +84,6 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.5),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('bet_g_threshold', 0.0),
-        ParameterSpec('bet_method', 'fsl_bet',
-                      choices=('fsl_bet', 'optibet')),
         ParameterSpec('MNI_template',
                       os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         ParameterSpec('MNI_template_brain',
@@ -93,16 +91,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         ParameterSpec('optibet_gen_report', False),
-        ParameterSpec('atlas_coreg_tool', 'ants',
-                      choices=('fnirt', 'ants')),
         ParameterSpec('fnirt_atlas', 'MNI152'),
         ParameterSpec('fnirt_resolution', '2mm'),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParameterSpec('preproc_resolution', None, dtype=list),
-        ParameterSpec('linear_reg_method', 'flirt',
-                      choices=('flirt', 'spm', 'ants')),
         ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
@@ -114,6 +108,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
             "scanner"))]
+    
+    add_switch_specs = [
+        SwitchSpec('linear_reg_method', 'flirt',
+                   choices=('flirt', 'spm', 'ants')),
+        SwitchSpec('atlas_coreg_tool', 'ants',
+                      choices=('fnirt', 'ants')),
+        SwitchSpec('bet_method', 'fsl_bet',
+                      choices=('fsl_bet', 'optibet'))]
 
     @property
     def coreg_brain_spec(self):
@@ -328,7 +330,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         outputs = [DatasetSpec('brain', nifti_gz_format),
                    DatasetSpec('brain_mask', nifti_gz_format)]
-        if self.switch('optibet_gen_report'):
+        if self.parameter('optibet_gen_report'):
             outputs.append(DatasetSpec('optiBET_report', gif_format))
         pipeline = self.create_pipeline(
             name='brain_extraction',
