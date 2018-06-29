@@ -439,6 +439,9 @@ class ExtractFSLGradientsInputSpec(CommandLineInputSpec):
     in_file = traits.Either(
         File, Directory, exists=True, argstr='%s', mandatory=True, position=0,
         desc="Diffusion weighted images with graident info")
+    out_file = traits.File(
+        'out.mif', usedefault=True, argstr='%s', position=-1,
+        desc="Dummy output file, which isn't used.")
     bvecs_file = File(genfile=True, argstr='-export_grad_fsl %s', position=1,
                       desc=("Extracted gradient encoding directions in FSL "
                             "format"))
@@ -458,7 +461,7 @@ class ExtractFSLGradients(CommandLine):
     """
     Extracts the gradient information in MRtrix format from a DWI image
     """
-    _cmd = 'mrinfo'
+    _cmd = 'mrconvert'
     input_spec = ExtractFSLGradientsInputSpec
     output_spec = ExtractFSLGradientsOutputSpec
 
