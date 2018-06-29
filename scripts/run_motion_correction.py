@@ -220,5 +220,5 @@ if __name__ == "__main__":
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])
-    study.data(out_data)
+    study.data('mean_displacement_plot')
 print('Done!')
