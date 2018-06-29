@@ -63,5 +63,5 @@ if __name__ == "__main__":
         switches={'preproc_denoise': True})
 
     fods = study.data('wm_odf')
-    # print(fods[0].path)
+    print(fods[0].path)
     print('Done')
