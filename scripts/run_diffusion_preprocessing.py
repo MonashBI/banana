@@ -62,6 +62,6 @@ if __name__ == "__main__":
         parameters={'preproc_pe_dir': 'RL'},
         switches={'preproc_denoise': True})
 
-    fods = study.data('fod')
+    fods = study.data('wm_odf')
     # print(fods[0].path)
     print('Done')
