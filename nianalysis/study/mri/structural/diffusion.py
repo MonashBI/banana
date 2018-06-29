@@ -153,7 +153,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             subtract.inputs.operation = 'subtract'
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
-            requirements=[mrtrix3_req, fsl510_req], wall_time=60)
+            requirements=[mrtrix3_req, fsl509_req], wall_time=60)
         dwipreproc.inputs.eddy_parameters = '--data_is_shelled '
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
