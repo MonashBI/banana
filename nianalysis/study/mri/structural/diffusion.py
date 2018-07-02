@@ -116,7 +116,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs.append(DatasetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
-        if 'dwi_reference' in self.input_names or 'reverse_phase' in self.input_names:
+        if ('dwi_reference' in self.input_names or
+                'reverse_phase' in self.input_names):
             inputs = [DatasetSpec('primary', dicom_format),
                       FieldSpec('ped', dtype=str),
                       FieldSpec('pe_angle', dtype=str)]
@@ -182,10 +183,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             dwipreproc.inputs.rpe_pair = True
             if self.parameter('preproc_pe_dir') is not None:
                 dwipreproc.inputs.pe_dir = self.parameter('preproc_pe_dir')
-            # Create nodes to gradients to FSL format
-            extract_grad = pipeline.create_node(
-                ExtractFSLGradients(), name="extract_grad",
-                requirements=[mrtrix3_req])
             # Connect inputs
             if 'dwi_reference' in self.input_names:
                 pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
@@ -194,6 +191,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             else:
                 assert False
             pipeline.connect_input('primary', dwiextract, 'in_file')
+        # Create nodes to gradients to FSL format
+        extract_grad = pipeline.create_node(
+            ExtractFSLGradients(), name="extract_grad",
+            requirements=[mrtrix3_req])
         # Connect inter-nodes
         if self.switch('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
