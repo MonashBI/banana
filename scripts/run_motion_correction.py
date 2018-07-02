@@ -24,13 +24,14 @@ class RunMotionCorrection:
         self.dynamic = dynamic
         self.struct2align = struct2align
         self.pet_recon = pet_recon
-        self.parameters = {'fixed_binning_n_frames': frames,
-                        'pet_offset': pet_offset,
-                        'fixed_binning_bin_len': bin_len,
-                        'PET2MNI_reg': mni_reg,
-                        'dynamic_pet_mc': dynamic,
-                        'framing_duration': static_len,
-                        'align_pct': pct_umap}
+        self.parameters = {
+            'fixed_binning_n_frames': frames,
+            'pet_offset': pet_offset,
+            'fixed_binning_bin_len': bin_len,
+            'PET2MNI_reg': mni_reg,
+            'dynamic_pet_mc': dynamic,
+            'framing_duration': static_len,
+            'align_pct': pct_umap}
         if crop_coordinates is not None:
             crop_axes = ['x', 'y', 'z']
             for i, c in enumerate(crop_coordinates):
@@ -197,7 +198,7 @@ if __name__ == "__main__":
     ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
 
     MotionCorrection, inputs, out_data = create_motion_correction_class(
-        'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
+        'MotionCorrection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
         epis=epis, umap_ref=args.umap_ref, umap=args.umap,
         pet_data_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         pet_recon_dir=args.pet_reconstructed_dir,
@@ -219,5 +220,5 @@ if __name__ == "__main__":
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])
-    study.data(out_data)
+    study.data('mean_displacement_plot')
 print('Done!')

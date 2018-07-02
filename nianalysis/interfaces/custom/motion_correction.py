@@ -11,8 +11,8 @@ from nipype.interfaces.base import isdefined
 import scipy.ndimage.measurements as snm
 import datetime as dt
 try:
-    import matplotlib 
-    matplotlib.use('Agg') 
+    import matplotlib
+    matplotlib.use('Agg')
     import matplotlib.pyplot as plot
 except ImportError:
     pass
@@ -992,6 +992,7 @@ class PlotMeanDisplacementRC(BaseInterface):
         fig, ax = plot.subplots()
         fig.set_size_inches(21, 9)
         ax.set_xlim(0, dates[-1])
+        ax.set_ylim(25, 60)
         if plot_mp:
             col = ['b', 'g', 'r']
         if plot_offset:
@@ -1055,6 +1056,12 @@ class PlotMeanDisplacementRC(BaseInterface):
         my_thick = [str(i) for i in np.arange(0, len(dates)/60000, 5,
                                               dtype=int)]
         plot.xticks(dates[indx], my_thick)
+#         ax.set_yscale('log')
+#         ax.set_yticks([10, 30, 50])
+#         ax.get_yaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+        my_y_ticks = [25, 30, 35, 40, 45, 50, 55]
+#         y = [0, 1, 2, 3, 4, 5, 10, 30, 35, 40, 45, 50, 55, 60]
+        plot.yticks(my_y_ticks, my_y_ticks)
         plot.xlabel('Time [min]', fontsize=25)
         if mp_ind == 0:
             ax.set_ylim(np.min(to_plot)-0.1, np.max(to_plot)+0.1)
