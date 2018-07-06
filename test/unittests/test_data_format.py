@@ -3,7 +3,7 @@ from nipype.interfaces.utility import IdentityInterface
 from arcana.testing import BaseTestCase
 from arcana.interfaces.mrtrix import MRConvert
 from arcana.exception import ArcanaModulesNotInstalledException
-from arcana.file_format import (
+from arcana.dataset.file_format import (
     Converter)
 from nianalysis.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)

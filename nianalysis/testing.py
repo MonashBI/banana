@@ -539,7 +539,7 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
             if e.errno != errno.EEXIST:
                 raise
         for dataset in session.scans.values():
-            file_format = guess_file_format(dataset)
+            file_format = XnatRepository.guess_file_format(dataset)
             ext = file_format.extension
             if ext is None:
                 ext = ''
@@ -551,8 +551,7 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
         for name, value in list(session.fields.items()):
             # Try convert to each datatypes in order of specificity to
             # determine type
-            if name not in BUILTIN_XNAT_FIELDS:
-                fields[name] = value
+            fields[name] = value
         with open(os.path.join(download_dir, FIELDS_FNAME), 'w') as f:
             json.dump(fields, f)
 
@@ -576,7 +575,7 @@ def download_dataset(download_path, server, user, password, session_id,
                 "Didn't find dataset matching '{}' in {}".format(dataset_name,
                                                                  session_id))
         if file_format is None:
-            file_format = guess_file_format(dataset)
+            file_format = XnatRepository.guess_file_format(dataset)
         download_resource(download_path, dataset, file_format,
                           session.label)
 
