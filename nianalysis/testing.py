@@ -19,7 +19,7 @@ import nianalysis
 from arcana.utils import classproperty
 from arcana.repository.local import (
     LocalRepository, SUMMARY_NAME)
-from arcana.runner import LinearRunner
+from arcana.processor import LinearProcessor
 from arcana.exception import ArcanaError
 from arcana.node import ArcanaNodeMixin
 from arcana.exception import (
@@ -151,8 +151,8 @@ class BaseTestCase(TestCase):
         return LocalRepository(self.project_dir)
 
     @property
-    def runner(self):
-        return LinearRunner(self.work_dir)
+    def processor(self):
+        return LinearProcessor(self.work_dir)
 
     @property
     def project_dir(self):
@@ -185,9 +185,9 @@ class BaseTestCase(TestCase):
         return module_name + '_' + test_class_name
 
     def create_study(self, study_cls, name, inputs, repository=None,
-                     runner=None, **kwargs):
+                     processor=None, **kwargs):
         """
-        Creates a study using default repository and runners.
+        Creates a study using default repository and processors.
 
         Parameters
         ----------
@@ -200,18 +200,18 @@ class BaseTestCase(TestCase):
         repository : BaseRepository | None
             The repository to use (a default local repository is used if one
             isn't provided
-        runner : Runner | None
-            The runner to use (a default LinearRunner is used if one
+        processor : Processor | None
+            The processor to use (a default LinearProcessor is used if one
             isn't provided
         """
         if repository is None:
             repository = self.repository
-        if runner is None:
-            runner = self.runner
+        if processor is None:
+            processor = self.processor
         return study_cls(
             name=name,
             repository=repository,
-            runner=runner,
+            processor=processor,
             inputs=inputs,
             **kwargs)
 

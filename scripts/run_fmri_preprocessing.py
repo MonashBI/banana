@@ -1,6 +1,6 @@
 from nianalysis.study.mri.functional.fmri import create_fmri_study_class
 from arcana.repository.xnat import XnatRepository
-from arcana.runner.linear import LinearRunner
+from arcana.processor.linear import LinearProcessor
 import os.path
 import errno
 import argparse
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         user=args.xnat_username, password=args.xnat_password,
         cache_dir=CACHE_PATH)
 
-    study = fMRI(name='fMRI_preprocessing', runner=LinearRunner(WORK_PATH),
+    study = fMRI(name='fMRI_preprocessing', processor=LinearProcessor(WORK_PATH),
                  repository=repository, inputs=inputs, subject_ids=sub_ids,
                  visit_ids=[session_ids])
     study.data(output_files)

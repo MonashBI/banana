@@ -7,7 +7,7 @@ from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
-from arcana.runner.linear import LinearRunner
+from arcana.processor.linear import LinearProcessor
 
 
 class create_motion_detection:
@@ -72,7 +72,7 @@ if __name__ == "__main__":
             raise
 
     study = MotionDetection(name='MotionDetection',
-                            runner=LinearRunner(WORK_PATH),
+                            processor=LinearProcessor(WORK_PATH),
                             repository=repository, inputs=inputs,
                             subject_ids=[sub_id], visit_ids=[session_id])
     study.data('motion_detection_output')

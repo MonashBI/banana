@@ -105,7 +105,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
         reg = pipeline.create_node(AntsRegSyn(out_prefix='vol2template'),
                                    name='ANTs')
         reg.inputs.num_dimensions = self.parameter('norm_dim')
-        reg.inputs.num_threads = self.runner.num_processes
+        reg.inputs.num_threads = self.processor.num_processes
         reg.inputs.transformation = self.parameter('norm_transformation')
         reg.inputs.ref_file = self.parameter('norm_template')
         pipeline.connect_input('pet_image', reg, 'input_file')

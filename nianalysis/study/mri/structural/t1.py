@@ -47,7 +47,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
             interface=ReconAll(), name='recon_all',
             requirements=[freesurfer_req], wall_time=2000)
         recon_all.inputs.directive = 'all'
-        recon_all.inputs.openmp = self.runner.num_processes
+        recon_all.inputs.openmp = self.processor.num_processes
         # Wrapper around os.path.join
         join = pipeline.create_node(interface=JoinPath(), name='join')
         pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')

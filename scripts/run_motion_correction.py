@@ -2,13 +2,13 @@
 from nianalysis.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
-# from arcana.runner import MultiProcRunner
+# from arcana.processor import MultiProcProcessor
 from arcana.repository.local import LocalRepository
 from nianalysis.motion_correction_utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
-from arcana.runner.linear import LinearRunner
+from arcana.processor.linear import LinearProcessor
 import shutil
 
 
@@ -203,7 +203,7 @@ if __name__ == "__main__":
             raise
 
     study = MotionCorrection(name='MotionCorrection',
-                             runner=LinearRunner(WORK_PATH),
+                             processor=LinearProcessor(WORK_PATH),
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])

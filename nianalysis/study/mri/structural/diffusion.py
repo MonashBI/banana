@@ -799,7 +799,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             requirements=[noddi_req, matlab2015_req], wall_time=180,
             memory=8000)
         batch_fit.inputs.model = self.parameter('noddi_model')
-        batch_fit.inputs.nthreads = self.runner.num_processes
+        batch_fit.inputs.nthreads = self.processor.num_processes
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
         save_params = pipeline.create_node(
