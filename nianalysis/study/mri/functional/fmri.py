@@ -56,7 +56,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('train_data', rfile_format, optional=True,
-                    frequency='per_project'),
+                    frequency='per_study'),
         DatasetSpec('hand_label_noise', text_format,
                     'fix_preparation_pipeline'),
         DatasetSpec('labelled_components', text_format,
@@ -302,7 +302,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline = self.create_pipeline(
             name='fix_classification',
             inputs=[DatasetSpec('train_data', rfile_format,
-                                frequency='per_project'),
+                                frequency='per_study'),
                     DatasetSpec('fix_dir', directory_format)],
             outputs=[DatasetSpec('labelled_components', text_format)],
             desc=("Automatic classification of noisy components from the "
@@ -412,7 +412,7 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_data_specs = [
         DatasetSpec('train_data', rfile_format, 'fix_training_pipeline',
-                    frequency='per_project'),
+                    frequency='per_study'),
 #         DatasetSpec('fmri_pre-processeing_results', directory_format,
 #                     'gather_fmri_result_pipeline'),
         DatasetSpec('group_melodic', directory_format, 'group_melodic_pipeline')]

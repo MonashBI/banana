@@ -92,10 +92,10 @@ class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
                                           subject=subject_id, visit=visit_id)
         self.assertDatasetCreated(
             'norm_intens_fa_template.mif', study.name,
-            frequency='per_project')
+            frequency='per_study')
         self.assertDatasetCreated(
             'norm_intens_wm_mask.mif', study.name,
-            frequency='per_project')
+            frequency='per_study')
 
     def test_average_response(self):
         study = self.create_study(

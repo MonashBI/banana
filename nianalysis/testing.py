@@ -14,7 +14,6 @@ import xnat
 from arcana.repository.xnat import (
     XnatRepository, special_char_re, lower)
 from arcana.exception import ArcanaMissingDataException
-from arcana.dataset.file_format import FileFormat
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
@@ -340,7 +339,7 @@ class BaseTestCase(TestCase):
             assert visit is not None
             assert subject is None
             path = os.path.join(self.project_dir, SUMMARY_NAME, visit)
-        elif frequency == 'per_project':
+        elif frequency == 'per_study':
             assert subject is None
             assert visit is None
             path = os.path.join(self.project_dir, SUMMARY_NAME, SUMMARY_NAME)
