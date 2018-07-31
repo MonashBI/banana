@@ -48,7 +48,7 @@ if __name__ == "__main__":
                         'case you may want to process that subject '
                         'independently. Default is the first match.',
                         default=0)
-    parser.add_argument('--session_ids', '-s', type=str,
+    parser.add_argument('--visit_ids', '-s', type=str, default=None, nargs='+',
                         help='Session ID on XNAT. Default is all the '
                         'sessions found in the XNAT project.')
     parser.add_argument('--subject_ids', '-sub', type=str, nargs='+',
@@ -110,16 +110,14 @@ if __name__ == "__main__":
         if e.errno != errno.EEXIST:
             raise
 
-    sub_ids = args.subject_ids
-    session_ids = args.session_ids
     repository = XnatRepository(
         server=args.xnat_server, project_id=args.project_id,
         user=args.xnat_username, password=args.xnat_password,
         cache_dir=CACHE_PATH)
 
     study = fMRI(name='fMRI_preprocessing', runner=LinearRunner(WORK_PATH),
-                 repository=repository, inputs=inputs, subject_ids=sub_ids,
-                 visit_ids=[session_ids])
+                 repository=repository, inputs=inputs, subject_ids=args.subject_ids,
+                 visit_ids=args.visit_ids)
     study.data(output_files)
 
 print('Done!')
