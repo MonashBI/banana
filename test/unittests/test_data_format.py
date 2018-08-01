@@ -3,14 +3,14 @@ from nipype.interfaces.utility import IdentityInterface
 from arcana.testing import BaseTestCase
 from arcana.interfaces.mrtrix import MRConvert
 from arcana.exception import ArcanaModulesNotInstalledException
-from arcana.dataset.file_format import (
+from arcana.data.file_format import (
     Converter)
 from nianalysis.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.requirement import Requirement
 from arcana.node import Node
 from arcana.study.base import Study, StudyMetaClass
-from arcana.dataset import DatasetMatch, DatasetSpec
+from arcana.data import FilesetMatch, FilesetSpec
 
 
 dummy_req = Requirement('name-for-module-that-will-never-exist',
@@ -30,14 +30,14 @@ class DummyConverter(Converter):
 class DummyStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('input_dataset', dicom_format),
-        DatasetSpec('output_dataset', nifti_gz_format, 'pipeline')]
+        FilesetSpec('input_fileset', dicom_format),
+        FilesetSpec('output_fileset', nifti_gz_format, 'pipeline')]
 
     def pipeline(self):
         pipeline = self.create_pipeline(
             name='pipeline',
-            inputs=[DatasetSpec('input_dataset', nifti_gz_format)],
-            outputs=[DatasetSpec('output_dataset', nifti_gz_format)],
+            inputs=[FilesetSpec('input_fileset', nifti_gz_format)],
+            outputs=[FilesetSpec('output_fileset', nifti_gz_format)],
             desc=("A dummy pipeline used to test dicom-to-nifti "
                          "conversion method"),
             version=1,
@@ -45,9 +45,9 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
         identity = pipeline.create_node(IdentityInterface(['field']),
                                         name='identity')
         # Connect inputs
-        pipeline.connect_input('input_dataset', identity, 'field')
+        pipeline.connect_input('input_fileset', identity, 'field')
         # Connect outputs
-        pipeline.connect_output('output_dataset', identity, 'field')
+        pipeline.connect_output('output_fileset', identity, 'field')
         return pipeline
 
 
@@ -72,7 +72,7 @@ class TestDicom2Niix(BaseTestCase):
     def test_dcm2niix(self):
         study = self.create_study(
             DummyStudy, 'concatenate', inputs=[
-                DatasetMatch('input_dataset',
+                FilesetMatch('input_fileset',
                              dicom_format, 't2_tse_tra_p2_448')])
-        list(study.data('output_dataset'))[0]
-        self.assertDatasetCreated('output_dataset.nii.gz', study.name)
+        list(study.data('output_fileset'))[0]
+        self.assertFilesetCreated('output_fileset.nii.gz', study.name)

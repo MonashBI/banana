@@ -24,4 +24,4 @@ class TestFMRI(TestCase):
             fMRI, 'fMRI', inputs=inputs,
             enforce_inputs=False)
         study.data(output_files)
-        self.assertDatasetCreated(output_files[0]+'.nii.gz', study.name)
+        self.assertFilesetCreated(output_files[0]+'.nii.gz', study.name)

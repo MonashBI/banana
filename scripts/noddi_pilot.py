@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from arcana.dataset import DatasetMatch
+from arcana.data import FilesetMatch
 from nianalysis.study.mri.diffusion import NODDIStudy
 from arcana.repository.local import LocalRepository
 from nianalysis.file_format import mrtrix_format
@@ -25,10 +25,10 @@ study = NODDIStudy(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, repository=LocalRepository(repository_path),
     input_scans=[
-        DatasetMatch('low_b_dw_scan', mrtrix_format,
+        FilesetMatch('low_b_dw_scan', mrtrix_format,
                      'r_l_noddi_b700_30_directions'),
-        DatasetMatch('high_b_dw_scan', mrtrix_format,
+        FilesetMatch('high_b_dw_scan', mrtrix_format,
                      'r_l_noddi_b2000_60_directions'),
-        DatasetMatch('forward_rpe', mrtrix_format, 'r_l_noddi_b0_6'),
-        DatasetMatch('reverse_rpe', mrtrix_format, 'l_r_noddi_b0_6')])
+        FilesetMatch('forward_rpe', mrtrix_format, 'r_l_noddi_b0_6'),
+        FilesetMatch('reverse_rpe', mrtrix_format, 'l_r_noddi_b0_6')])
 study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)

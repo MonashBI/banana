@@ -36,10 +36,10 @@ else:
     graph_file = 'graph.dot.png'
 graph = img.imread(graph_file)
 plt.imshow(graph)
-# Clean up created graph datasets
+# Clean up created graph filesets
 if args.save is not None:
     os.rename(graph_file, args.save)
-# Clean up graph datasets
+# Clean up graph filesets
 os.remove('graph.dot')
 os.remove('graph_detailed.dot')
 try:

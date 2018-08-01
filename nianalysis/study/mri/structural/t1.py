@@ -5,7 +5,7 @@ from nianalysis.requirement import freesurfer_req
 from nianalysis.citation import freesurfer_cites
 from nianalysis.file_format import (
     freesurfer_recon_all_format, nifti_gz_format)
-from arcana.dataset import DatasetSpec
+from arcana.data import FilesetSpec
 from arcana.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from arcana.study.base import StudyMetaClass
@@ -15,9 +15,9 @@ from arcana.parameter import ParameterSpec
 class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('fs_recon_all', freesurfer_recon_all_format,
+        FilesetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline')]
+        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('bet_method', 'optibet',
@@ -35,8 +35,8 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='segmentation',
-            inputs=[DatasetSpec('primary', nifti_gz_format)],
-            outputs=[DatasetSpec('fs_recon_all',
+            inputs=[FilesetSpec('primary', nifti_gz_format)],
+            outputs=[FilesetSpec('fs_recon_all',
                                  freesurfer_recon_all_format)],
             desc="Segment white/grey matter and csf",
             version=1,

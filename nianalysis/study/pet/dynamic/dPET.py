@@ -1,5 +1,5 @@
 from ..base import PETStudy
-from arcana.dataset import DatasetSpec
+from arcana.data import FilesetSpec
 from arcana.study.base import StudyMetaClass
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
@@ -18,17 +18,17 @@ template_path = os.path.abspath(
 class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('pet_volumes', nifti_gz_format),
-        DatasetSpec('regression_map', nifti_gz_format),
-        DatasetSpec('pet_image', nifti_gz_format,
+        FilesetSpec('pet_volumes', nifti_gz_format),
+        FilesetSpec('regression_map', nifti_gz_format),
+        FilesetSpec('pet_image', nifti_gz_format,
                     'Extract_vol_pipeline'),
-        DatasetSpec('registered_volumes', nifti_gz_format,
+        FilesetSpec('registered_volumes', nifti_gz_format,
                     'ApplyTransform_pipeline'),
-        DatasetSpec('detrended_volumes', nifti_gz_format,
+        FilesetSpec('detrended_volumes', nifti_gz_format,
                     'Baseline_Removal_pipeline'),
-        DatasetSpec('spatial_map', nifti_gz_format,
+        FilesetSpec('spatial_map', nifti_gz_format,
                     'Dual_Regression_pipeline'),
-        DatasetSpec('ts', png_format, 'Dual_Regression_pipeline')]
+        FilesetSpec('ts', png_format, 'Dual_Regression_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('trans_template',
@@ -41,8 +41,8 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
     def Extract_vol_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='Extract_volume',
-            inputs=[DatasetSpec('pet_volumes', nifti_gz_format)],
-            outputs=[DatasetSpec('pet_image', nifti_gz_format)],
+            inputs=[FilesetSpec('pet_volumes', nifti_gz_format)],
+            outputs=[FilesetSpec('pet_image', nifti_gz_format)],
             desc=('Extract the last volume of the 4D PET timeseries'),
             version=1,
             citations=[],
@@ -58,10 +58,10 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
     def ApplyTransform_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='applytransform',
-            inputs=[DatasetSpec('pet_volumes', nifti_gz_format),
-                    DatasetSpec('warp_file', nifti_gz_format),
-                    DatasetSpec('affine_mat', text_matrix_format)],
-            outputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
+            inputs=[FilesetSpec('pet_volumes', nifti_gz_format),
+                    FilesetSpec('warp_file', nifti_gz_format),
+                    FilesetSpec('affine_mat', text_matrix_format)],
+            outputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
             desc=('Apply transformation the the 4D PET timeseries'),
             version=1,
             citations=[],
@@ -88,8 +88,8 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='Baseline_removal',
-            inputs=[DatasetSpec('registered_volumes', nifti_gz_format)],
-            outputs=[DatasetSpec('detrended_volumes', nifti_gz_format)],
+            inputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
+            outputs=[FilesetSpec('detrended_volumes', nifti_gz_format)],
             desc=('PET dual regression'),
             citations=[],
             version=1,
@@ -105,10 +105,10 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='Dual_regression',
-            inputs=[DatasetSpec('detrended_volumes', nifti_gz_format),
-                    DatasetSpec('regression_map', nifti_gz_format)],
-            outputs=[DatasetSpec('spatial_map', nifti_gz_format),
-                     DatasetSpec('ts', png_format)],
+            inputs=[FilesetSpec('detrended_volumes', nifti_gz_format),
+                    FilesetSpec('regression_map', nifti_gz_format)],
+            outputs=[FilesetSpec('spatial_map', nifti_gz_format),
+                     FilesetSpec('ts', png_format)],
             desc=('PET dual regression'),
             citations=[],
             version=1,
@@ -132,5 +132,5 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def dynamics_ica_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(
-            input_dataset=DatasetSpec(
+            input_fileset=FilesetSpec(
                 'registered_volumes', nifti_gz_format, **kwargs))

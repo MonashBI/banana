@@ -19,7 +19,7 @@ def get_fsl_reference_path():
     return os.path.join(os.environ['FSLDIR'], 'data', 'standard')
 
 
-def get_atlas_path(name, dataset='brain', resolution='1mm'):
+def get_atlas_path(name, fileset='brain', resolution='1mm'):
     """
     Returns the path to the atlas (or atlas mask) in the arcana repository
 
@@ -38,14 +38,14 @@ def get_atlas_path(name, dataset='brain', resolution='1mm'):
             raise ArcanaError(
                 "Invalid resolution for MNI152, '{}', can be one of '0.5mm', "
                 "'1mm' or '2mm'".format(resolution))
-        if dataset == 'image':
+        if fileset == 'image':
             path = os.path.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}.nii.gz'.format(resolution))
-        elif dataset == 'mask':
+        elif fileset == 'mask':
             path = os.path.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}_brain_mask.nii.gz'
                                 .format(resolution))
-        elif dataset == 'mask_dilated':
+        elif fileset == 'mask_dilated':
             if resolution != '2mm':
                 raise ArcanaError(
                     "Dilated MNI masks are not available for {} resolution "
@@ -53,13 +53,13 @@ def get_atlas_path(name, dataset='brain', resolution='1mm'):
             path = os.path.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}_brain_mask_dil.nii.gz'
                                 .format(resolution))
-        elif dataset == 'brain':
+        elif fileset == 'brain':
             path = os.path.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}_brain.nii.gz'
                                 .format(resolution))
         else:
-            raise ArcanaError("Unrecognised dataset '{}'"
-                                  .format(dataset))
+            raise ArcanaError("Unrecognised fileset '{}'"
+                                  .format(fileset))
     else:
         raise ArcanaError("Unrecognised atlas name '{}'"
                               .format(name))

@@ -3,7 +3,7 @@ from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import directory_format, nifti_gz_format
 from arcana.study.base import StudyMetaClass
-from arcana.dataset import DatasetSpec
+from arcana.data import FilesetSpec
 from nianalysis.interfaces.qsm import STI, STI_SE, Prepare
 from ..base import MRIStudy
 from nipype.interfaces import fsl
@@ -13,19 +13,19 @@ from arcana.parameter import ParameterSpec
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('coils', directory_format,
+        FilesetSpec('coils', directory_format,
                     desc=("Reconstructed T2* complex image for each "
                                  "coil")),
-        DatasetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
+        FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     desc=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
-        DatasetSpec('tissue_phase', nifti_gz_format, 'qsm_pipeline',
+        FilesetSpec('tissue_phase', nifti_gz_format, 'qsm_pipeline',
                     desc=("Phase map for each coil following unwrapping"
                                  " and background field removal")),
-        DatasetSpec('tissue_mask', nifti_gz_format, 'qsm_pipeline',
+        FilesetSpec('tissue_mask', nifti_gz_format, 'qsm_pipeline',
                     desc=("Mask for each coil corresponding to areas of"
                                  " high magnitude")),
-        DatasetSpec('qsm_mask', nifti_gz_format, 'qsm_pipeline',
+        FilesetSpec('qsm_mask', nifti_gz_format, 'qsm_pipeline',
                     desc=("Brain mask generated from T2* image"))]
 
     add_parameter_specs = [
@@ -40,12 +40,12 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='qsmrecon',
-            inputs=[DatasetSpec('coils', directory_format)],
+            inputs=[FilesetSpec('coils', directory_format)],
             # TODO should this be primary?
-            outputs=[DatasetSpec('qsm', nifti_gz_format),
-                     DatasetSpec('tissue_phase', nifti_gz_format),
-                     DatasetSpec('tissue_mask', nifti_gz_format),
-                     DatasetSpec('qsm_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('qsm', nifti_gz_format),
+                     FilesetSpec('tissue_phase', nifti_gz_format),
+                     FilesetSpec('tissue_mask', nifti_gz_format),
+                     FilesetSpec('qsm_mask', nifti_gz_format)],
             desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
@@ -87,9 +87,9 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='BET_T1',
-            inputs=[DatasetSpec('t1', nifti_gz_format)],
-            outputs=[DatasetSpec('betted_T1', nifti_gz_format),
-                     DatasetSpec('betted_T1_mask', nifti_gz_format)],
+            inputs=[FilesetSpec('t1', nifti_gz_format)],
+            outputs=[FilesetSpec('betted_T1', nifti_gz_format),
+                     FilesetSpec('betted_T1_mask', nifti_gz_format)],
             desc=("python implementation of BET"),
             version=1,
             citations=[fsl_cite],
@@ -112,13 +112,13 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
     def cet_T1(self, **kwargs):
         pipeline = self.create_pipeline(
             name='CET_T1',
-            inputs=[DatasetSpec('betted_T1', nifti_gz_format),
-                    DatasetSpec(
+            inputs=[FilesetSpec('betted_T1', nifti_gz_format),
+                    FilesetSpec(
                 self._lookup_l_tfm_to_name('MNI'),
                 text_matrix_format),
-                DatasetSpec(self._lookup_nl_tfm_inv_name('MNI'), nifti_gz_format)],
-            outputs=[DatasetSpec('cetted_T1_mask', nifti_gz_format),
-                     DatasetSpec('cetted_T1', nifti_gz_format)],
+                FilesetSpec(self._lookup_nl_tfm_inv_name('MNI'), nifti_gz_format)],
+            outputs=[FilesetSpec('cetted_T1_mask', nifti_gz_format),
+                     FilesetSpec('cetted_T1', nifti_gz_format)],
             desc=("Construct cerebellum mask using SUIT template"),
             version=1,
             citations=[fsl_cite],
@@ -144,12 +144,12 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='qsmrecon',
-            inputs=[DatasetSpec('coils', directory_format)],
+            inputs=[FilesetSpec('coils', directory_format)],
             # TODO should this be primary?
-            outputs=[DatasetSpec('qsm', nifti_gz_format),
-                     DatasetSpec('tissue_phase', nifti_gz_format),
-                     DatasetSpec('tissue_mask', nifti_gz_format),
-                     DatasetSpec('qsm_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('qsm', nifti_gz_format),
+                     FilesetSpec('tissue_phase', nifti_gz_format),
+                     FilesetSpec('tissue_mask', nifti_gz_format),
+                     FilesetSpec('qsm_mask', nifti_gz_format)],
             desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,

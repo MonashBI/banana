@@ -20,7 +20,7 @@ from nianalysis.file_format import (
 from nianalysis.requirement import (
     fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
 from arcana.study.base import StudyMetaClass
-from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec
 from arcana.interfaces.iterators import SelectSession
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.study.mri.epi import EPIStudy
@@ -32,41 +32,41 @@ from nianalysis.interfaces.custom.motion_correction import (
 class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('dwi_reference', nifti_gz_format, optional=True),
-        DatasetSpec('forward_pe', dicom_format, optional=True),
-        DatasetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
+        FilesetSpec('dwi_reference', nifti_gz_format, optional=True),
+        FilesetSpec('forward_pe', dicom_format, optional=True),
+        FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
-        DatasetSpec('noise_residual', mrtrix_format, 'preproc_pipeline'),
-        DatasetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
-        DatasetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
-        DatasetSpec('adc', nifti_gz_format, 'tensor_pipeline'),
-        DatasetSpec('wm_response', text_format, 'response_pipeline'),
-        DatasetSpec('gm_response', text_format, 'response_pipeline'),
-        DatasetSpec('csf_response', text_format, 'response_pipeline'),
-        DatasetSpec('avg_response', text_format, 'average_response_pipeline'),
-        DatasetSpec('fod', mrtrix_format, 'fod_pipeline'),
-        DatasetSpec('bias_correct', nifti_gz_format, 'bias_correct_pipeline'),
-        DatasetSpec('grad_dirs', fsl_bvecs_format, 'preproc_pipeline'),
-        DatasetSpec('bvalues', fsl_bvals_format, 'preproc_pipeline'),
-        DatasetSpec('eddy_par', eddy_par_format, 'preproc_pipeline'),
-        DatasetSpec('align_mats', directory_format,
+        FilesetSpec('noise_residual', mrtrix_format, 'preproc_pipeline'),
+        FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
+        FilesetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
+        FilesetSpec('adc', nifti_gz_format, 'tensor_pipeline'),
+        FilesetSpec('wm_response', text_format, 'response_pipeline'),
+        FilesetSpec('gm_response', text_format, 'response_pipeline'),
+        FilesetSpec('csf_response', text_format, 'response_pipeline'),
+        FilesetSpec('avg_response', text_format, 'average_response_pipeline'),
+        FilesetSpec('fod', mrtrix_format, 'fod_pipeline'),
+        FilesetSpec('bias_correct', nifti_gz_format, 'bias_correct_pipeline'),
+        FilesetSpec('grad_dirs', fsl_bvecs_format, 'preproc_pipeline'),
+        FilesetSpec('bvalues', fsl_bvals_format, 'preproc_pipeline'),
+        FilesetSpec('eddy_par', eddy_par_format, 'preproc_pipeline'),
+        FilesetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
-        DatasetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
+        FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_study'),
-        DatasetSpec('tbss_proj_fa', nifti_gz_format, 'tbss_pipeline',
+        FilesetSpec('tbss_proj_fa', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_study'),
-        DatasetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
+        FilesetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_study'),
-        DatasetSpec('tbss_skeleton_mask', nifti_gz_format, 'tbss_pipeline',
+        FilesetSpec('tbss_skeleton_mask', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_study'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
-        DatasetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline'),
-        DatasetSpec('norm_intensity', mrtrix_format,
+        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline'),
+        FilesetSpec('norm_intensity', mrtrix_format,
                     'intensity_normalisation_pipeline'),
-        DatasetSpec('norm_intens_fa_template', mrtrix_format,
+        FilesetSpec('norm_intens_fa_template', mrtrix_format,
                     'intensity_normalisation_pipeline',
                     frequency='per_study'),
-        DatasetSpec('norm_intens_wm_mask', mrtrix_format,
+        FilesetSpec('norm_intens_wm_mask', mrtrix_format,
                     'intensity_normalisation_pipeline',
                     frequency='per_study')]
 
@@ -99,27 +99,27 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             The phase encode direction
         """
 
-        outputs = [DatasetSpec('preproc', nifti_gz_format),
-                   DatasetSpec('grad_dirs', fsl_bvecs_format),
-                   DatasetSpec('bvalues', fsl_bvals_format),
-                   DatasetSpec('eddy_par', eddy_par_format)]
+        outputs = [FilesetSpec('preproc', nifti_gz_format),
+                   FilesetSpec('grad_dirs', fsl_bvecs_format),
+                   FilesetSpec('bvalues', fsl_bvals_format),
+                   FilesetSpec('eddy_par', eddy_par_format)]
         citations = [fsl_cite, eddy_cite, topup_cite,
                      distort_correct_cite]
         if self.switch('preproc_denoise'):
-            outputs.append(DatasetSpec('noise_residual', mrtrix_format))
+            outputs.append(FilesetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
         if 'dwi_reference' in self.input_names or 'reverse_phase' in self.input_names:
-            inputs = [DatasetSpec('primary', dicom_format),
+            inputs = [FilesetSpec('primary', dicom_format),
                       FieldSpec('ped', dtype=str),
                       FieldSpec('pe_angle', dtype=str)]
             if 'dwi_reference' in self.input_names:
-                inputs.append(DatasetSpec('dwi_reference', nifti_gz_format))
+                inputs.append(FilesetSpec('dwi_reference', nifti_gz_format))
             if 'reverse_phase' in self.input_names:
-                inputs.append(DatasetSpec('reverse_phase', nifti_gz_format))
+                inputs.append(FilesetSpec('reverse_phase', nifti_gz_format))
             distortion_correction = True
         else:
-            inputs = [DatasetSpec('primary', dicom_format)]
+            inputs = [FilesetSpec('primary', dicom_format)]
             distortion_correction = False
 
         pipeline = self.create_pipeline(
@@ -227,10 +227,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         if self.branch('brain_extract_method', 'mrtrix'):
             pipeline = self.create_pipeline(
                 'brain_extraction',
-                inputs=[DatasetSpec('preproc', nifti_gz_format),
-                        DatasetSpec('grad_dirs', fsl_bvecs_format),
-                        DatasetSpec('bvalues', fsl_bvals_format)],
-                outputs=[DatasetSpec('brain_mask', nifti_gz_format)],
+                inputs=[FilesetSpec('preproc', nifti_gz_format),
+                        FilesetSpec('grad_dirs', fsl_bvecs_format),
+                        FilesetSpec('bvalues', fsl_bvals_format)],
+                outputs=[FilesetSpec('brain_mask', nifti_gz_format)],
                 desc="Generate brain mask from b0 images",
                 version=1,
                 citations=[mrtrix_cite],
@@ -263,11 +263,11 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         bias_method = self.switch('bias_correct_method')
         pipeline = self.create_pipeline(
             name='bias_correct',
-            inputs=[DatasetSpec('preproc', nifti_gz_format),
-                    DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format)],
-            outputs=[DatasetSpec('bias_correct', nifti_gz_format)],
+            inputs=[FilesetSpec('preproc', nifti_gz_format),
+                    FilesetSpec('brain_mask', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format)],
+            outputs=[FilesetSpec('bias_correct', nifti_gz_format)],
             desc="Corrects for B1 field inhomogeneity",
             version=1,
             citations=[fast_cite,
@@ -297,14 +297,14 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
     def intensity_normalisation_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='intensity_normalization',
-            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
-                    DatasetSpec('brain_mask', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format)],
-            outputs=[DatasetSpec('norm_intensity', mrtrix_format),
-                     DatasetSpec('norm_intens_fa_template', mrtrix_format,
+            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('brain_mask', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format)],
+            outputs=[FilesetSpec('norm_intensity', mrtrix_format),
+                     FilesetSpec('norm_intens_fa_template', mrtrix_format,
                                  frequency='per_study'),
-                     DatasetSpec('norm_intens_wm_mask', mrtrix_format,
+                     FilesetSpec('norm_intens_wm_mask', mrtrix_format,
                                  frequency='per_study')],
             desc="Corrects for B1 field inhomogeneity",
             version=1,
@@ -365,11 +365,11 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='tensor',
-            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('tensor', nifti_gz_format)],
+            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format),
+                    FilesetSpec('brain_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('tensor', nifti_gz_format)],
             desc=("Estimates the apparent diffusion tensor in each "
                   "voxel"),
             version=1,
@@ -398,10 +398,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='fa',
-            inputs=[DatasetSpec('tensor', nifti_gz_format),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('fa', nifti_gz_format),
-                     DatasetSpec('adc', nifti_gz_format)],
+            inputs=[FilesetSpec('tensor', nifti_gz_format),
+                    FilesetSpec('brain_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('fa', nifti_gz_format),
+                     FilesetSpec('adc', nifti_gz_format)],
             desc=("Calculates the FA and ADC from a tensor image"),
             version=1,
             citations=[],
@@ -430,16 +430,16 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         response_algorithm : str
             Algorithm used to estimate the response
         """
-        outputs = [DatasetSpec('wm_response', text_format)]
+        outputs = [FilesetSpec('wm_response', text_format)]
         if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
-            outputs.append(DatasetSpec('gm_response', text_format))
-            outputs.append(DatasetSpec('csf_response', text_format))
+            outputs.append(FilesetSpec('gm_response', text_format))
+            outputs.append(FilesetSpec('csf_response', text_format))
         pipeline = self.create_pipeline(
             name='response',
-            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
+            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format),
+                    FilesetSpec('brain_mask', nifti_gz_format)],
             outputs=outputs,
             desc=("Estimates the fibre response function"),
             version=1,
@@ -473,8 +473,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='average_response',
-            inputs=[DatasetSpec('wm_response', text_format)],
-            outputs=[DatasetSpec('avg_response', text_format,
+            inputs=[FilesetSpec('wm_response', text_format)],
+            outputs=[FilesetSpec('avg_response', text_format,
                                  frequency='per_study')],
             desc=(
                 "Averages the fibre response function over the project"),
@@ -538,20 +538,20 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='fod',
-            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format),
-                    DatasetSpec('wm_response', text_format),
-                    DatasetSpec('brain_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('fod', nifti_gz_format)],
+            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format),
+                    FilesetSpec('wm_response', text_format),
+                    FilesetSpec('brain_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('fod', nifti_gz_format)],
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
             version=1,
             citations=[mrtrix_cite],
             **kwargs)
         if self.branch('fod_algorithm', 'msmt_csd'):
-            pipeline.add_input(DatasetSpec('gm_response', text_format))
-            pipeline.add_input(DatasetSpec('csf_response', text_format))
+            pipeline.add_input(FilesetSpec('gm_response', text_format))
+            pipeline.add_input(FilesetSpec('csf_response', text_format))
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
@@ -574,13 +574,13 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
     def tbss_pipeline(self, **kwargs):  # @UnusedVariable
         pipeline = self.create_pipeline(
             name='tbss',
-            inputs=[DatasetSpec('fa', nifti_gz_format)],
-            outputs=[DatasetSpec('tbss_mean_fa', nifti_gz_format),
-                     DatasetSpec('tbss_proj_fa', nifti_gz_format,
+            inputs=[FilesetSpec('fa', nifti_gz_format)],
+            outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
+                     FilesetSpec('tbss_proj_fa', nifti_gz_format,
                                  frequency='per_study'),
-                     DatasetSpec('tbss_skeleton', nifti_gz_format,
+                     FilesetSpec('tbss_skeleton', nifti_gz_format,
                                  frequency='per_study'),
-                     DatasetSpec('tbss_skeleton_mask', nifti_gz_format,
+                     FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
                                  frequency='per_study')],
             version=1,
             citations=[tbss_cite, fsl_cite],
@@ -607,10 +607,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='extract_b0',
-            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format)],
-            outputs=[DatasetSpec('b0', nifti_gz_format)],
+            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format)],
+            outputs=[FilesetSpec('b0', nifti_gz_format)],
             desc="Extract b0 image from a DWI study",
             version=1,
             citations=[mrtrix_cite],
@@ -652,10 +652,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
     def track_gen_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='extract_b0',
-            inputs=[DatasetSpec('bias_correct', nifti_gz_format),
-                    DatasetSpec('grad_dirs', fsl_bvecs_format),
-                    DatasetSpec('bvalues', fsl_bvals_format)],
-            outputs=[DatasetSpec('b0', nifti_gz_format)],
+            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format)],
+            outputs=[FilesetSpec('b0', nifti_gz_format)],
             desc="Extract b0 image from a DWI study",
             version=1,
             citations=[mrtrix_cite])
@@ -665,10 +665,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='affine_mat_generation',
-            inputs=[DatasetSpec('preproc', nifti_gz_format),
-                    DatasetSpec('eddy_par', eddy_par_format)],
+            inputs=[FilesetSpec('preproc', nifti_gz_format),
+                    FilesetSpec('eddy_par', eddy_par_format)],
             outputs=[
-                DatasetSpec('align_mats', directory_format)],
+                FilesetSpec('align_mats', directory_format)],
             desc=("Generation of the affine matrices for the main dwi "
                   "sequence starting from eddy motion parameters"),
             version=1,
@@ -688,20 +688,20 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('low_b_dw_scan', mrtrix_format),
-        DatasetSpec('high_b_dw_scan', mrtrix_format),
-        DatasetSpec('forward_pe', mrtrix_format),
-        DatasetSpec('reverse_pe', mrtrix_format),
-        DatasetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
-        DatasetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fibredirs_xvec', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fibredirs_yvec', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fibredirs_zvec', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('fmin', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
-        DatasetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
+        FilesetSpec('low_b_dw_scan', mrtrix_format),
+        FilesetSpec('high_b_dw_scan', mrtrix_format),
+        FilesetSpec('forward_pe', mrtrix_format),
+        FilesetSpec('reverse_pe', mrtrix_format),
+        FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
+        FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('fibredirs_xvec', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('fibredirs_yvec', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('fibredirs_zvec', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('fmin', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
+        FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 
     add_parameter_specs = [ParameterSpec('noddi_model',
                                    'WatsonSHStickTortIsoV_B0')]
@@ -711,16 +711,16 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
 
     def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
         """
-        Concatenates two dMRI datasets (with different b-values) along the
+        Concatenates two dMRI filesets (with different b-values) along the
         DW encoding (4th) axis
         """
         pipeline = self.create_pipeline(
             name='concatenation',
-            inputs=[DatasetSpec('low_b_dw_scan', mrtrix_format),
-                    DatasetSpec('high_b_dw_scan', mrtrix_format)],
-            outputs=[DatasetSpec('dwi_scan', mrtrix_format)],
+            inputs=[FilesetSpec('low_b_dw_scan', mrtrix_format),
+                    FilesetSpec('high_b_dw_scan', mrtrix_format)],
+            outputs=[FilesetSpec('dwi_scan', mrtrix_format)],
             desc=(
-                "Concatenate low and high b-value dMRI datasets for NODDI "
+                "Concatenate low and high b-value dMRI filesets for NODDI "
                 "processing"),
             version=1,
             citations=[mrtrix_cite],
@@ -752,25 +752,25 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             Number of processes to use
         """
         pipeline_name = 'noddi_fitting'
-        inputs = [DatasetSpec('bias_correct', nifti_gz_format),
-                  DatasetSpec('grad_dirs', fsl_bvecs_format),
-                  DatasetSpec('bvalues', fsl_bvals_format)]
+        inputs = [FilesetSpec('bias_correct', nifti_gz_format),
+                  FilesetSpec('grad_dirs', fsl_bvecs_format),
+                  FilesetSpec('bvalues', fsl_bvals_format)]
         if self.switch('single_slice'):
-            inputs.append(DatasetSpec('eroded_mask', nifti_gz_format))
+            inputs.append(FilesetSpec('eroded_mask', nifti_gz_format))
         else:
-            inputs.append(DatasetSpec('brain_mask', nifti_gz_format))
+            inputs.append(FilesetSpec('brain_mask', nifti_gz_format))
         pipeline = self.create_pipeline(
             name=pipeline_name,
             inputs=inputs,
-            outputs=[DatasetSpec('ficvf', nifti_format),
-                     DatasetSpec('odi', nifti_format),
-                     DatasetSpec('fiso', nifti_format),
-                     DatasetSpec('fibredirs_xvec', nifti_format),
-                     DatasetSpec('fibredirs_yvec', nifti_format),
-                     DatasetSpec('fibredirs_zvec', nifti_format),
-                     DatasetSpec('fmin', nifti_format),
-                     DatasetSpec('kappa', nifti_format),
-                     DatasetSpec('error_code', nifti_format)],
+            outputs=[FilesetSpec('ficvf', nifti_format),
+                     FilesetSpec('odi', nifti_format),
+                     FilesetSpec('fiso', nifti_format),
+                     FilesetSpec('fibredirs_xvec', nifti_format),
+                     FilesetSpec('fibredirs_yvec', nifti_format),
+                     FilesetSpec('fibredirs_zvec', nifti_format),
+                     FilesetSpec('fmin', nifti_format),
+                     FilesetSpec('kappa', nifti_format),
+                     FilesetSpec('error_code', nifti_format)],
             desc=(
                 "Creates a ROI in which the NODDI processing will be "
                 "performed"),

@@ -1,6 +1,6 @@
 from ..base import MRIStudy
 from arcana.study.base import StudyMetaClass
-from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
 from nipype.interfaces.fsl.utils import ConvertXFM, Smooth
 from nipype.interfaces.fsl.maths import (
@@ -29,32 +29,32 @@ from arcana.parameter import ParameterSpec
 class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('umap', dicom_format),
-        DatasetSpec('umap_nifti', nifti_gz_format,
+        FilesetSpec('umap', dicom_format),
+        FilesetSpec('umap_nifti', nifti_gz_format,
                     'umap_dcm2nii_conversion_pipeline'),
-        DatasetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
-        DatasetSpec('ute_echo1', dicom_format),
-        DatasetSpec('ute_echo2', dicom_format),
-        DatasetSpec('umap_ute', dicom_format),
-        DatasetSpec('ute1_registered', nifti_gz_format,
+        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        FilesetSpec('ute_echo1', dicom_format),
+        FilesetSpec('ute_echo2', dicom_format),
+        FilesetSpec('umap_ute', dicom_format),
+        FilesetSpec('ute1_registered', nifti_gz_format,
                     'registration_pipeline'),
-        DatasetSpec('ute2_registered', nifti_gz_format,
+        FilesetSpec('ute2_registered', nifti_gz_format,
                     'registration_pipeline'),
-        DatasetSpec('template_to_ute_mat', text_matrix_format,
+        FilesetSpec('template_to_ute_mat', text_matrix_format,
                     'registration_pipeline'),
-        DatasetSpec('ute_to_template_mat', text_matrix_format,
+        FilesetSpec('ute_to_template_mat', text_matrix_format,
                     'registration_pipeline'),
-        DatasetSpec('air_mask', nifti_gz_format,
+        FilesetSpec('air_mask', nifti_gz_format,
                     'segmentation_pipeline'),
-        DatasetSpec('bones_mask', nifti_gz_format,
+        FilesetSpec('bones_mask', nifti_gz_format,
                     'segmentation_pipeline'),
-        DatasetSpec('sute_cont_template', nifti_gz_format,
+        FilesetSpec('sute_cont_template', nifti_gz_format,
                     'umaps_calculation_pipeline'),
-        DatasetSpec('sute_fix_template', nifti_gz_format,
+        FilesetSpec('sute_fix_template', nifti_gz_format,
                     'umaps_calculation_pipeline'),
-        DatasetSpec('sute_fix_ute', nifti_gz_format,
+        FilesetSpec('sute_fix_ute', nifti_gz_format,
                     'backwrap_to_ute_pipeline'),
-        DatasetSpec('sute_cont_ute', nifti_gz_format,
+        FilesetSpec('sute_cont_ute', nifti_gz_format,
                     'backwrap_to_ute_pipeline')]
 
     add_parameter_specs = [
@@ -82,12 +82,12 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.create_pipeline(
             name='registration_pipeline',
-            inputs=[DatasetSpec('ute_echo1', dicom_format),
-                    DatasetSpec('ute_echo2', dicom_format)],
-            outputs=[DatasetSpec('ute1_registered', nifti_format),
-                     DatasetSpec('ute2_registered', nifti_gz_format),
-                     DatasetSpec('template_to_ute_mat', text_matrix_format),
-                     DatasetSpec('ute_to_template_mat', text_matrix_format)],
+            inputs=[FilesetSpec('ute_echo1', dicom_format),
+                    FilesetSpec('ute_echo2', dicom_format)],
+            outputs=[FilesetSpec('ute1_registered', nifti_format),
+                     FilesetSpec('ute2_registered', nifti_gz_format),
+                     FilesetSpec('template_to_ute_mat', text_matrix_format),
+                     FilesetSpec('ute_to_template_mat', text_matrix_format)],
             desc="Register ute images to the template",
             version=1,
             citations=(fsl_cite),
@@ -168,9 +168,9 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='ute1_segmentation',
-            inputs=[DatasetSpec('ute1_registered', nifti_format)],
-            outputs=[DatasetSpec('air_mask', nifti_gz_format),
-                     DatasetSpec('bones_mask', nifti_gz_format)],
+            inputs=[FilesetSpec('ute1_registered', nifti_format)],
+            outputs=[FilesetSpec('air_mask', nifti_gz_format),
+                     FilesetSpec('bones_mask', nifti_gz_format)],
             desc="Segmentation of the first echo UTE image",
             version=1,
             citations=(spm_cite, matlab_cite),
@@ -263,12 +263,12 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='core_umaps_calculation',
-            inputs=[DatasetSpec('ute1_registered', nifti_gz_format),
-                    DatasetSpec('ute2_registered', nifti_gz_format),
-                    DatasetSpec('air_mask', nifti_gz_format),
-                    DatasetSpec('bones_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('sute_cont_template', nifti_gz_format),
-                     DatasetSpec('sute_fix_template', nifti_gz_format)],
+            inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
+                    FilesetSpec('ute2_registered', nifti_gz_format),
+                    FilesetSpec('air_mask', nifti_gz_format),
+                    FilesetSpec('bones_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('sute_cont_template', nifti_gz_format),
+                     FilesetSpec('sute_fix_template', nifti_gz_format)],
             desc="Umaps calculation in the template space",
             version=1,
             citations=(matlab_cite),
@@ -304,14 +304,14 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='backwrap_to_ute',
-            inputs=[DatasetSpec('ute1_registered', nifti_gz_format),
-                    DatasetSpec('ute_echo1', dicom_format),
-                    DatasetSpec('umap_ute', dicom_format),
-                    DatasetSpec('template_to_ute_mat', text_matrix_format),
-                    DatasetSpec('sute_cont_template', nifti_gz_format),
-                    DatasetSpec('sute_fix_template', nifti_gz_format)],
-            outputs=[DatasetSpec('sute_cont_ute', nifti_gz_format),
-                     DatasetSpec('sute_fix_ute', nifti_gz_format)],
+            inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
+                    FilesetSpec('ute_echo1', dicom_format),
+                    FilesetSpec('umap_ute', dicom_format),
+                    FilesetSpec('template_to_ute_mat', text_matrix_format),
+                    FilesetSpec('sute_cont_template', nifti_gz_format),
+                    FilesetSpec('sute_fix_template', nifti_gz_format)],
+            outputs=[FilesetSpec('sute_cont_ute', nifti_gz_format),
+                     FilesetSpec('sute_fix_ute', nifti_gz_format)],
             desc="Moving umaps back to the UTE space",
             version=1,
             citations=(matlab_cite),
@@ -466,11 +466,11 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 #
 #         pipeline = self.create_pipeline(
 #             name='conversion_to_dicom',
-#             inputs=[DatasetSpec('sute_cont_ute', nifti_gz_format),
-#                     DatasetSpec('sute_fix_ute', nifti_gz_format),
-#                     DatasetSpec('umap_ute', dicom_format)],
-#             outputs=[DatasetSpec('sute_cont_dicoms', dicom_format),
-#                      DatasetSpec('sute_fix_dicoms', dicom_format)],
+#             inputs=[FilesetSpec('sute_cont_ute', nifti_gz_format),
+#                     FilesetSpec('sute_fix_ute', nifti_gz_format),
+#                     FilesetSpec('umap_ute', dicom_format)],
+#             outputs=[FilesetSpec('sute_cont_dicoms', dicom_format),
+#                      FilesetSpec('sute_fix_dicoms', dicom_format)],
 #             desc=(
 #                 "Conversing resulted two umaps from nifti to dicom format - "
 #                 "parallel implementation"),
@@ -523,11 +523,11 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
     # The list of study data_specs that are either primary from the scanner
     # (i.e. without a specified pipeline) or generated by processing pipelines
 #     add_data_specs = [
-#         DatasetSpec(
+#         FilesetSpec(
 #             'sute_fix_dicoms',
 #             dicom_format,
 #             conversion_to_dicom_pipeline),
-#         DatasetSpec(
+#         FilesetSpec(
 #             'sute_cont_dicoms',
 #             dicom_format,
 #             conversion_to_dicom_pipeline)]

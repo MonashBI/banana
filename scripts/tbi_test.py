@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from arcana.dataset import DatasetMatch
+from arcana.data import FilesetMatch
 from nianalysis.study.mri.diffusion import DiffusionStudy
 from arcana.repository.local import LocalRepository
 from nianalysis.file_format import mrtrix_format
@@ -21,9 +21,9 @@ study = DiffusionStudy(
     project_id='2_vs_2.5',
     repository=LocalRepository(repository_path),
     input_scans={
-        'dwi_scan': Dataset('R-L_60dir_b2000', mrtrix_format),
-        'forward_rpe': Dataset('R-L_6dir_b0', mrtrix_format),
-        'reverse_rpe': Dataset('L-R_6dir_b0', mrtrix_format)})
+        'dwi_scan': Fileset('R-L_60dir_b2000', mrtrix_format),
+        'forward_rpe': Fileset('R-L_6dir_b0', mrtrix_format),
+        'reverse_rpe': Fileset('L-R_6dir_b0', mrtrix_format)})
 study.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
 study.fod_pipeline().run(work_dir=WORK_PATH)
 study.fa_pipeline().run(work_dir=WORK_PATH)

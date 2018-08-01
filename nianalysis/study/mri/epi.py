@@ -2,7 +2,7 @@ from .base import MRIStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
-from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec
 from nianalysis.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     par_format, motion_mats_format)
@@ -22,16 +22,16 @@ from nipype.interfaces.fsl.preprocess import BET, FUGUE
 class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('coreg_ref_preproc', nifti_gz_format, optional=True),
-        DatasetSpec('coreg_ref_wmseg', nifti_gz_format, optional=True),
-        DatasetSpec('reverse_phase', nifti_gz_format, optional=True),
-        DatasetSpec('field_map_mag', nifti_gz_format, optional=True),
-        DatasetSpec('field_map_phase', nifti_gz_format, optional=True),
-        DatasetSpec('moco', nifti_gz_format,
+        FilesetSpec('coreg_ref_preproc', nifti_gz_format, optional=True),
+        FilesetSpec('coreg_ref_wmseg', nifti_gz_format, optional=True),
+        FilesetSpec('reverse_phase', nifti_gz_format, optional=True),
+        FilesetSpec('field_map_mag', nifti_gz_format, optional=True),
+        FilesetSpec('field_map_phase', nifti_gz_format, optional=True),
+        FilesetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
-        DatasetSpec('align_mats', directory_format,
+        FilesetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
-        DatasetSpec('moco_par', par_format,
+        FilesetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline')]
 
     add_parameter_specs = [
@@ -51,12 +51,12 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='linear_coreg',
-            inputs=[DatasetSpec('brain', nifti_gz_format),
-                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
-                    DatasetSpec('coreg_ref_preproc', nifti_gz_format),
-                    DatasetSpec('coreg_ref_wmseg', nifti_gz_format)],
-            outputs=[DatasetSpec('coreg_brain', nifti_gz_format),
-                     DatasetSpec('coreg_matrix', text_matrix_format)],
+            inputs=[FilesetSpec('brain', nifti_gz_format),
+                    FilesetSpec('coreg_ref_brain', nifti_gz_format),
+                    FilesetSpec('coreg_ref_preproc', nifti_gz_format),
+                    FilesetSpec('coreg_ref_wmseg', nifti_gz_format)],
+            outputs=[FilesetSpec('coreg_brain', nifti_gz_format),
+                     FilesetSpec('coreg_matrix', text_matrix_format)],
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
             version=1,
@@ -79,10 +79,10 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='MCFLIRT_pipeline',
-            inputs=[DatasetSpec('preproc', nifti_gz_format)],
-            outputs=[DatasetSpec('moco', nifti_gz_format),
-                     DatasetSpec('align_mats', directory_format),
-                     DatasetSpec('moco_par', par_format)],
+            inputs=[FilesetSpec('preproc', nifti_gz_format)],
+            outputs=[FilesetSpec('moco', nifti_gz_format),
+                     FilesetSpec('align_mats', directory_format),
+                     FilesetSpec('moco_par', par_format)],
             desc=("Intra-epi volumes alignment."),
             version=1,
             citations=[fsl_cite],
@@ -118,11 +118,11 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='preproc_pipeline',
-            inputs=[DatasetSpec('primary', nifti_gz_format),
-                    DatasetSpec('reverse_phase', nifti_gz_format),
+            inputs=[FilesetSpec('primary', nifti_gz_format),
+                    FilesetSpec('reverse_phase', nifti_gz_format),
                     FieldSpec('ped', str),
                     FieldSpec('pe_angle', str)],
-            outputs=[DatasetSpec('preproc', nifti_gz_format)],
+            outputs=[FilesetSpec('preproc', nifti_gz_format)],
             desc=("Topup distortion correction pipeline"),
             version=1,
             citations=[fsl_cite],
@@ -181,10 +181,10 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='preproc_pipeline',
-            inputs=[DatasetSpec('primary', nifti_gz_format),
-                    DatasetSpec('field_map_mag', nifti_gz_format),
-                    DatasetSpec('field_map_phase', nifti_gz_format)],
-            outputs=[DatasetSpec('preproc', nifti_gz_format)],
+            inputs=[FilesetSpec('primary', nifti_gz_format),
+                    FilesetSpec('field_map_mag', nifti_gz_format),
+                    FilesetSpec('field_map_phase', nifti_gz_format)],
+            outputs=[FilesetSpec('preproc', nifti_gz_format)],
             desc=("Fugue distortion correction pipeline"),
             version=1,
             citations=[fsl_cite],
@@ -228,14 +228,14 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def motion_mat_pipeline(self, **kwargs):
 
-        inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
-                  DatasetSpec('qform_mat', text_matrix_format)]
+        inputs = [FilesetSpec('coreg_matrix', text_matrix_format),
+                  FilesetSpec('qform_mat', text_matrix_format)]
         if 'reverse_phase' not in self.input_names:
-            inputs.append(DatasetSpec('align_mats', directory_format))
+            inputs.append(FilesetSpec('align_mats', directory_format))
         pipeline = self.create_pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
-            outputs=[DatasetSpec('motion_mats', motion_mats_format)],
+            outputs=[FilesetSpec('motion_mats', motion_mats_format)],
             desc=("Motion matrices calculation"),
             version=1,
             citations=[fsl_cite],

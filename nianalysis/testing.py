@@ -83,26 +83,26 @@ class BaseTestCase(TestCase):
                          cache_dir=cache_dir)
 
     def add_session(self, project_dir, subject, session,
-                    required_datasets=None, cache_dir=None):
+                    required_filesets=None, cache_dir=None):
         if cache_dir is None:
             cache_dir = self.cache_dir
         session_dir = os.path.join(project_dir, subject, session)
         os.makedirs(session_dir)
         try:
-            download_all_datasets(
+            download_all_filesets(
                 cache_dir, self.SERVER, self.xnat_session_name,
                 overwrite=False)
         except Exception:
             if os.path.exists(cache_dir):
                 warnings.warn(
-                    "Could not download datasets from '{}_{}' session on "
+                    "Could not download filesets from '{}_{}' session on "
                     "MBI-XNAT, attempting with what has already been "
                     "downloaded:\n\n{}"
                     .format(self.XNAT_TEST_PROJECT, self.name, format_exc()))
             else:
                 raise
         for f in os.listdir(cache_dir):
-            if required_datasets is None or f in required_datasets:
+            if required_filesets is None or f in required_filesets:
                 src_path = os.path.join(cache_dir, f)
                 dst_path = os.path.join(session_dir, f)
                 if os.path.isdir(src_path):
@@ -113,7 +113,7 @@ class BaseTestCase(TestCase):
                     assert False
         # Download reference
         try:
-            download_all_datasets(
+            download_all_filesets(
                 cache_dir, self.SERVER,
                 self.xnat_session_name + self.REF_SUFFIX,
                 overwrite=False)
@@ -215,16 +215,16 @@ class BaseTestCase(TestCase):
             inputs=inputs,
             **kwargs)
 
-    def assertDatasetCreated(self, dataset_name, study_name, subject=None,
+    def assertFilesetCreated(self, fileset_name, study_name, subject=None,
                              visit=None, frequency='per_session'):
         output_dir = self.get_session_dir(subject, visit, frequency)
         out_path = self.output_file_path(
-            dataset_name, study_name, subject, visit, frequency)
+            fileset_name, study_name, subject, visit, frequency)
         self.assertTrue(
             os.path.exists(out_path),
-            ("Dataset '{}' (expected at '{}') was not created by unittest"
+            ("Fileset '{}' (expected at '{}') was not created by unittest"
              " ('{}' found in '{}' instead)".format(
-                 dataset_name, out_path, "', '".join(os.listdir(output_dir)),
+                 fileset_name, out_path, "', '".join(os.listdir(output_dir)),
                  output_dir)))
 
     def assertField(self, name, ref_value, study_name, subject=None,
@@ -257,11 +257,11 @@ class BaseTestCase(TestCase):
         else:
             self.assertEqual(value, ref_value, msg)
 
-    def assertDatasetsEqual(self, dataset1, dataset2, error_msg=None):
-        msg = "{} does not match {}".format(dataset1, dataset2)
+    def assertFilesetsEqual(self, fileset1, fileset2, error_msg=None):
+        msg = "{} does not match {}".format(fileset1, fileset2)
         if msg is not None:
             msg += ':\n' + error_msg
-        self.assertTrue(filecmp.cmp(dataset1.path, dataset2.path,
+        self.assertTrue(filecmp.cmp(fileset1.path, fileset2.path,
                                     shallow=False), msg=msg)
 
 #     def assertImagesMatch(self, output, ref, study_name):
@@ -280,7 +280,7 @@ class BaseTestCase(TestCase):
 #             else:
 #                 raise
 
-    def assertStatEqual(self, stat, dataset_name, target, study_name,
+    def assertStatEqual(self, stat, fileset_name, target, study_name,
                         subject=None, visit=None,
                         frequency='per_session'):
             try:
@@ -290,7 +290,7 @@ class BaseTestCase(TestCase):
             val = float(sp.check_output(
                 'mrstats {} -output {}'.format(
                     self.output_file_path(
-                        dataset_name, study_name,
+                        fileset_name, study_name,
                         subject=subject, visit=visit,
                         frequency=frequency),
                     stat),
@@ -299,7 +299,7 @@ class BaseTestCase(TestCase):
                 val, target, (
                     "{} value of '{}' ({}) does not equal target ({}) "
                     "for subject {} visit {}"
-                    .format(stat, dataset_name, val, target,
+                    .format(stat, fileset_name, val, target,
                             subject, visit)))
 
     def assertImagesAlmostMatch(self, out, ref, mean_threshold,
@@ -349,7 +349,7 @@ class BaseTestCase(TestCase):
 
     @classmethod
     def remove_generated_files(cls, study=None):
-        # Remove derived datasets
+        # Remove derived filesets
         for fname in os.listdir(cls.get_session_dir()):
             if study is None or fname.startswith(study + '_'):
                 os.remove(os.path.join(cls.get_session_dir(), fname))
@@ -374,18 +374,18 @@ class BaseMultiSubjectTestCase(BaseTestCase):
         self.reset_dirs()
         self.add_sessions(self.project_dir, cache_dir=cache_dir)
 
-    def add_sessions(self, project_dir, required_datasets=None,
+    def add_sessions(self, project_dir, required_filesets=None,
                      cache_dir=None):
         if cache_dir is None:
             cache_dir = self.cache_dir
         try:
-            download_all_datasets(
+            download_all_filesets(
                 cache_dir, self.SERVER, self.xnat_session_name,
                 overwrite=False)
         except XNATError as e:
             if os.path.exists(cache_dir):
                 warnings.warn(
-                    "Could not download datasets from '{}_{}' session on "
+                    "Could not download filesets from '{}_{}' session on "
                     "MBI-XNAT, attempting with what has already been "
                     "downloaded:\n\n{}"
                     .format(self.XNAT_TEST_PROJECT, self.name, e))
@@ -397,12 +397,12 @@ class BaseMultiSubjectTestCase(BaseTestCase):
                 continue
             if fname.startswith('.'):
                 continue
-            subj_id, visit_id, dataset = self._extract_ids(fname)
-            if required_datasets is None or dataset in required_datasets:
+            subj_id, visit_id, fileset = self._extract_ids(fname)
+            if required_filesets is None or fileset in required_filesets:
                 session_dir = self.make_session_dir(
                     project_dir, subj_id, visit_id)
                 src_path = os.path.join(cache_dir, fname)
-                dst_path = os.path.join(session_dir, dataset)
+                dst_path = os.path.join(session_dir, fileset)
                 if os.path.isdir(src_path):
                     shutil.copytree(src_path, dst_path)
                 elif os.path.isfile(src_path):
@@ -523,7 +523,7 @@ class TestTestCase(BaseTestCase):
         pass
 
 
-def download_all_datasets(download_dir, server, session_id, overwrite=True,
+def download_all_filesets(download_dir, server, session_id, overwrite=True,
                           **kwargs):
     with xnat.connect(server, **kwargs) as xnat_login:
         try:
@@ -537,14 +537,14 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
         except OSError as e:
             if e.errno != errno.EEXIST:
                 raise
-        for dataset in session.scans.values():
-            file_format = XnatRepository.guess_file_format(dataset)
+        for fileset in session.scans.values():
+            file_format = XnatRepository.guess_file_format(fileset)
             ext = file_format.extension
             if ext is None:
                 ext = ''
-            download_path = os.path.join(download_dir, dataset.type + ext)
+            download_path = os.path.join(download_dir, fileset.type + ext)
             if overwrite or not os.path.exists(download_path):
-                download_resource(download_path, dataset,
+                download_resource(download_path, fileset,
                                   file_format, session.label)
         fields = {}
         for name, value in list(session.fields.items()):
@@ -555,10 +555,10 @@ def download_all_datasets(download_dir, server, session_id, overwrite=True,
             json.dump(fields, f)
 
 
-def download_dataset(download_path, server, user, password, session_id,
-                     dataset_name, file_format=None):
+def download_fileset(download_path, server, user, password, session_id,
+                     fileset_name, file_format=None):
     """
-    Downloads a single dataset from an XNAT server
+    Downloads a single fileset from an XNAT server
     """
     with xnat.connect(server, user=user, password=password) as xnat_login:
         try:
@@ -568,41 +568,41 @@ def download_dataset(download_path, server, user, password, session_id,
                 "Didn't find session matching '{}' on {}".format(session_id,
                                                                  server))
         try:
-            dataset = session.scans[dataset_name]
+            fileset = session.scans[fileset_name]
         except KeyError:
             raise ArcanaError(
-                "Didn't find dataset matching '{}' in {}".format(dataset_name,
+                "Didn't find fileset matching '{}' in {}".format(fileset_name,
                                                                  session_id))
         if file_format is None:
-            file_format = XnatRepository.guess_file_format(dataset)
-        download_resource(download_path, dataset, file_format,
+            file_format = XnatRepository.guess_file_format(fileset)
+        download_resource(download_path, fileset, file_format,
                           session.label)
 
 
-def download_resource(download_path, dataset, file_format,
+def download_resource(download_path, fileset, file_format,
                       session_label):
     xresource = None
     for resource_name in file_format.xnat_resource_names:
         try:
-            xresource = dataset.resources[resource_name]
+            xresource = fileset.resources[resource_name]
             break
         except KeyError:
             logger.debug(
                 "Did not find resource corresponding to '{}' for {}, "
                 "will try alternatives if available".format(
-                    resource_name, dataset))
+                    resource_name, fileset))
             continue
     if xresource is None:
         raise ArcanaError(
-            "Didn't find '{}' resource(s) in {} dataset matching "
+            "Didn't find '{}' resource(s) in {} fileset matching "
             "'{}' in {}".format(
                 "', '".join(file_format.xnat_resource_names),
-                dataset.type))
+                fileset.type))
     tmp_dir = download_path + '.download'
     xresource.download_dir(tmp_dir)
-    dataset_label = dataset.id + '-' + special_char_re.sub('_', dataset.type)
+    fileset_label = fileset.id + '-' + special_char_re.sub('_', fileset.type)
     src_path = os.path.join(tmp_dir, session_label, 'scans',
-                            dataset_label, 'resources', xresource.label,
+                            fileset_label, 'resources', xresource.label,
                             'files')
     if not file_format.directory:
         fnames = os.listdir(src_path)
@@ -622,7 +622,7 @@ def download_resource(download_path, dataset, file_format,
     shutil.rmtree(tmp_dir)
 
 
-def list_datasets(server, user, password, session_id):
+def list_filesets(server, user, password, session_id):
     with xnat.connect(server, user=user, password=password) as xnat_login:
         session = xnat_login.experiments[session_id]
         return [s.type for s in session.scans.values()]

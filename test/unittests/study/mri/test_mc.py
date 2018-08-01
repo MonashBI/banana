@@ -22,7 +22,7 @@ class TestMC(TestCase):
 #             MotionDetection, 'MotionDetection', inputs=inputs,
 #             enforce_inputs=False)
 #         study.data('motion_detection_output')
-#         self.assertDatasetCreated('motion_detection_output', study.name)
+#         self.assertFilesetCreated('motion_detection_output', study.name)
 
     def test_motion_correction(self):
 
@@ -34,4 +34,4 @@ class TestMC(TestCase):
             MotionCorrection, 'MotionCorrection', inputs=inputs,
             enforce_inputs=False)
         study.data(out_data)
-        self.assertDatasetCreated(out_data, study.name)
+        self.assertFilesetCreated(out_data, study.name)

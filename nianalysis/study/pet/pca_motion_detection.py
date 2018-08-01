@@ -1,5 +1,5 @@
 from arcana.study.base import StudyMetaClass
-from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec
 from nianalysis.file_format import (list_mode_format, directory_format)
 from nianalysis.study.pet.base import PETStudy
 from nianalysis.interfaces.custom.pet import (
@@ -10,22 +10,22 @@ from nianalysis.requirement import stir_req
 class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('list_mode', list_mode_format),
+        FilesetSpec('list_mode', list_mode_format),
         FieldSpec('time_offset', int),
         FieldSpec('temporal_length', float),
         FieldSpec('num_frames', int),
-        DatasetSpec('ssrb_sinograms', directory_format,
+        FilesetSpec('ssrb_sinograms', directory_format,
                     'sinogram_unlisting_pipeline')]
 
     def sinogram_unlisting_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='prepare_sinogram',
-            inputs=[DatasetSpec('list_mode', list_mode_format),
+            inputs=[FilesetSpec('list_mode', list_mode_format),
                     FieldSpec('time_offset', int),
                     FieldSpec('temporal_length', float),
                     FieldSpec('num_frames', int)],
-            outputs=[DatasetSpec('ssrb_sinograms', directory_format)],
+            outputs=[FilesetSpec('ssrb_sinograms', directory_format)],
             desc=('Unlist pet listmode data into several sinograms and '
                          'perform ssrb compression to prepare data for motion '
                          'detection using PCA pipeline.'),

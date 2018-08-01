@@ -1,5 +1,5 @@
 from arcana.study.base import Study, StudyMetaClass
-from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec
 from nianalysis.file_format import (nifti_gz_format, text_format,
                                     text_matrix_format, directory_format)
 from nianalysis.interfaces.sklearn import FastICA
@@ -34,22 +34,22 @@ class PETStudy(Study, metaclass=StudyMetaClass):
                         ParameterSpec('image_orientation_check', False)]
 
     add_data_specs = [
-        DatasetSpec('registered_volumes', nifti_gz_format, optional=True),
-        DatasetSpec('pet_image', nifti_gz_format, optional=True),
-        DatasetSpec('pet_data_dir', directory_format),
-        DatasetSpec('pet_recon_dir', directory_format),
-        DatasetSpec('pet_recon_dir_prepared', directory_format,
+        FilesetSpec('registered_volumes', nifti_gz_format, optional=True),
+        FilesetSpec('pet_image', nifti_gz_format, optional=True),
+        FilesetSpec('pet_data_dir', directory_format),
+        FilesetSpec('pet_recon_dir', directory_format),
+        FilesetSpec('pet_recon_dir_prepared', directory_format,
                     'pet_data_preparation_pipeline'),
-        DatasetSpec('decomposed_file', nifti_gz_format, 'ICA_pipeline'),
-        DatasetSpec('timeseries', nifti_gz_format, 'ICA_pipeline'),
-        DatasetSpec('mixing_mat', text_format, 'ICA_pipeline'),
-        DatasetSpec('registered_volume', nifti_gz_format,
+        FilesetSpec('decomposed_file', nifti_gz_format, 'ICA_pipeline'),
+        FilesetSpec('timeseries', nifti_gz_format, 'ICA_pipeline'),
+        FilesetSpec('mixing_mat', text_format, 'ICA_pipeline'),
+        FilesetSpec('registered_volume', nifti_gz_format,
                     'Image_normalization_pipeline'),
-        DatasetSpec('warp_file', nifti_gz_format,
+        FilesetSpec('warp_file', nifti_gz_format,
                     'Image_normalization_pipeline'),
-        DatasetSpec('invwarp_file', nifti_gz_format,
+        FilesetSpec('invwarp_file', nifti_gz_format,
                     'Image_normalization_pipeline'),
-        DatasetSpec('affine_mat', text_matrix_format,
+        FilesetSpec('affine_mat', text_matrix_format,
                     'Image_normalization_pipeline'),
         FieldSpec('pet_duration', dtype=int,
                   pipeline_name='pet_time_info_extraction_pipeline'),
@@ -60,18 +60,18 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def ICA_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(
-            input_dataset=DatasetSpec('registered_volumes', nifti_gz_format),
+            input_fileset=FilesetSpec('registered_volumes', nifti_gz_format),
             **kwargs)
 
-    def _ICA_pipeline_factory(self, input_dataset, **kwargs):
+    def _ICA_pipeline_factory(self, input_fileset, **kwargs):
 
         pipeline = self.create_pipeline(
             name='ICA',
-            inputs=[input_dataset],
-            outputs=[DatasetSpec('decomposed_file', nifti_gz_format),
-                     DatasetSpec('timeseries', nifti_gz_format),
-                     DatasetSpec('mixing_mat', text_format)],
-            desc=('Decompose a 4D dataset into a set of independent '
+            inputs=[input_fileset],
+            outputs=[FilesetSpec('decomposed_file', nifti_gz_format),
+                     FilesetSpec('timeseries', nifti_gz_format),
+                     FilesetSpec('mixing_mat', text_format)],
+            desc=('Decompose a 4D fileset into a set of independent '
                   'components using FastICA'),
             version=1,
             citations=[],
@@ -92,11 +92,11 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='Image_registration',
-            inputs=[DatasetSpec('pet_image', nifti_gz_format)],
-            outputs=[DatasetSpec('registered_volume', nifti_gz_format),
-                     DatasetSpec('warp_file', nifti_gz_format),
-                     DatasetSpec('invwarp_file', nifti_gz_format),
-                     DatasetSpec('affine_mat', text_matrix_format)],
+            inputs=[FilesetSpec('pet_image', nifti_gz_format)],
+            outputs=[FilesetSpec('registered_volume', nifti_gz_format),
+                     FilesetSpec('warp_file', nifti_gz_format),
+                     FilesetSpec('invwarp_file', nifti_gz_format),
+                     FilesetSpec('affine_mat', text_matrix_format)],
             desc=('Image registration to a template using ANTs'),
             version=1,
             citations=[],
@@ -120,8 +120,8 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='pet_data_preparation',
-            inputs=[DatasetSpec('pet_recon_dir', directory_format)],
-            outputs=[DatasetSpec('pet_recon_dir_prepared', directory_format)],
+            inputs=[FilesetSpec('pet_recon_dir', directory_format)],
+            outputs=[FilesetSpec('pet_recon_dir_prepared', directory_format)],
             desc=("Given a folder with reconstructed PET data, this "
                   "pipeline will prepare the data for the motion "
                   "correction"),
@@ -142,7 +142,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
     def pet_time_info_extraction_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
             name='pet_info_extraction',
-            inputs=[DatasetSpec('pet_data_dir', directory_format)],
+            inputs=[FilesetSpec('pet_data_dir', directory_format)],
             outputs=[FieldSpec('pet_end_time', dtype=float),
                      FieldSpec('pet_start_time', dtype=str),
                      FieldSpec('pet_duration', dtype=int)],

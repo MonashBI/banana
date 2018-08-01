@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from arcana.dataset import DatasetMatch  # @IgnorePep8
+from arcana.data import FilesetMatch  # @IgnorePep8
 from nianalysis.file_format import nifti_gz_format  # @IgnorePep8
 from nianalysis.study.mri.base import MRIStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
@@ -22,9 +22,9 @@ class TestMRI(TestCase):
     def test_coreg_and_brain_mask(self):
         study = self.create_study(
             TestCoregStudy, 'coreg_and_mask_study', inputs=[
-                DatasetMatch('ref_primary', nifti_gz_format, 'mprage'),
-                DatasetMatch('tocoreg_primary', nifti_gz_format,
+                FilesetMatch('ref_primary', nifti_gz_format, 'mprage'),
+                FilesetMatch('tocoreg_primary', nifti_gz_format,
                              'flair')])
         coreg_brain = list(study.data('tocoreg_coreg_brain'))[0]
-        self.assertDatasetsEqual(coreg_brain,
+        self.assertFilesetsEqual(coreg_brain,
                                  self.reference('coreg_brain'))

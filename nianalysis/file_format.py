@@ -1,11 +1,11 @@
 from copy import deepcopy, copy
 from arcana.node import Node
-from arcana.dataset.file_format import FileFormat, Converter
+from arcana.data.file_format import FileFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
 from nianalysis.interfaces.converters import Dcm2niix  # @UnusedImport
-from arcana.dataset.file_format.standard import (
+from arcana.data.file_format.standard import (
     text_format, directory_format, zip_format, targz_format)
 
 

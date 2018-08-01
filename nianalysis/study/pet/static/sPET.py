@@ -1,5 +1,5 @@
 from ..base import PETStudy
-from arcana.dataset import DatasetSpec
+from arcana.data import FilesetSpec
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.pet import SUVRCalculation
 from nianalysis.file_format import (nifti_gz_format)
@@ -13,17 +13,17 @@ template_path = os.path.abspath(
 class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('pet_image', nifti_gz_format),
-        DatasetSpec('base_mask', nifti_gz_format),
-        DatasetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]
+        FilesetSpec('pet_image', nifti_gz_format),
+        FilesetSpec('base_mask', nifti_gz_format),
+        FilesetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]
 
     def suvr_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
             name='SUVR',
-            inputs=[DatasetSpec('registered_volume', nifti_gz_format),
-                    DatasetSpec('base_mask', nifti_gz_format)],
-            outputs=[DatasetSpec('SUVR_image', nifti_gz_format)],
+            inputs=[FilesetSpec('registered_volume', nifti_gz_format),
+                    FilesetSpec('base_mask', nifti_gz_format)],
+            outputs=[FilesetSpec('SUVR_image', nifti_gz_format)],
             desc=('Calculate SUVR image'),
             version=1,
             citations=[],

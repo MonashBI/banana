@@ -1,4 +1,4 @@
-from arcana.dataset import DatasetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec
 from nianalysis.file_format import (
     nifti_gz_format, directory_format, text_format, png_format, dicom_format,
     text_matrix_format)
@@ -16,7 +16,7 @@ from nipype.interfaces.utility import Merge
 from nianalysis.study.mri.structural.diffusion import DiffusionStudy
 from nianalysis.requirement import fsl509_req, mrtrix3_req, ants2_req
 from arcana.exception import ArcanaNameError
-from arcana.dataset import DatasetMatch
+from arcana.data import FilesetMatch
 import logging
 from nianalysis.study.pet.base import PETStudy
 from nianalysis.interfaces.custom.pet import (
@@ -63,55 +63,55 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             'pet_duration': 'pet_duration'})]
 
     add_data_specs = [
-        DatasetSpec('pet_data_dir', directory_format, optional=True),
-        DatasetSpec('pet_data_reconstructed', directory_format, optional=True),
-        DatasetSpec('struct2align', nifti_gz_format, optional=True),
-        DatasetSpec('pet_data_prepared', directory_format,
+        FilesetSpec('pet_data_dir', directory_format, optional=True),
+        FilesetSpec('pet_data_reconstructed', directory_format, optional=True),
+        FilesetSpec('struct2align', nifti_gz_format, optional=True),
+        FilesetSpec('pet_data_prepared', directory_format,
                     'prepare_pet_pipeline'),
-        DatasetSpec('static_motion_correction_results', directory_format,
+        FilesetSpec('static_motion_correction_results', directory_format,
                     'motion_correction_pipeline'),
-        DatasetSpec('dynamic_motion_correction_results', directory_format,
+        FilesetSpec('dynamic_motion_correction_results', directory_format,
                     'motion_correction_pipeline'),
-        DatasetSpec('umap', dicom_format, optional=True),
-        DatasetSpec('mean_displacement', text_format,
+        FilesetSpec('umap', dicom_format, optional=True),
+        FilesetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_rc', text_format,
+        FilesetSpec('mean_displacement_rc', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('mean_displacement_consecutive', text_format,
+        FilesetSpec('mean_displacement_consecutive', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('mats4average', text_format,
+        FilesetSpec('mats4average', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('start_times', text_format,
+        FilesetSpec('start_times', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('motion_par_rc', text_format,
+        FilesetSpec('motion_par_rc', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('motion_par', text_format,
+        FilesetSpec('motion_par', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('offset_indexes', text_format,
+        FilesetSpec('offset_indexes', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('severe_motion_detection_report', text_format,
+        FilesetSpec('severe_motion_detection_report', text_format,
                     'mean_displacement_pipeline'),
-        DatasetSpec('frame_start_times', text_format,
+        FilesetSpec('frame_start_times', text_format,
                     'motion_framing_pipeline'),
-        DatasetSpec('frame_vol_numbers', text_format,
+        FilesetSpec('frame_vol_numbers', text_format,
                     'motion_framing_pipeline'),
-        DatasetSpec('timestamps', directory_format,
+        FilesetSpec('timestamps', directory_format,
                     'motion_framing_pipeline'),
-        DatasetSpec('mean_displacement_plot', png_format,
+        FilesetSpec('mean_displacement_plot', png_format,
                     'plot_mean_displacement_pipeline'),
-        DatasetSpec('average_mats', directory_format,
+        FilesetSpec('average_mats', directory_format,
                     'frame_mean_transformation_mats_pipeline'),
-        DatasetSpec('correction_factors', text_format,
+        FilesetSpec('correction_factors', text_format,
                     'pet_correction_factors_pipeline'),
-        DatasetSpec('umaps_align2ref', directory_format,
+        FilesetSpec('umaps_align2ref', directory_format,
                     'umap_realignment_pipeline'),
-        DatasetSpec('umap_aligned_dicoms', directory_format,
+        FilesetSpec('umap_aligned_dicoms', directory_format,
                     'nifti2dcm_conversion_pipeline'),
-        DatasetSpec('motion_detection_output', directory_format,
+        FilesetSpec('motion_detection_output', directory_format,
                     'gather_outputs_pipeline'),
-        DatasetSpec('moco_series', directory_format,
+        FilesetSpec('moco_series', directory_format,
                     'create_moco_series_pipeline'),
-        DatasetSpec('fixed_binning_mats', directory_format,
+        FilesetSpec('fixed_binning_mats', directory_format,
                     'fixed_binning_pipeline'),
         FieldSpec('pet_duration', dtype=int,
                   pipeline_name='pet_header_info_extraction_pipeline'),
@@ -143,7 +143,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                         OptionSpec('dynamic_pet_mc', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('ref_brain', nifti_gz_format)]
+        inputs = [FilesetSpec('ref_brain', nifti_gz_format)]
         sub_study_names = []
         input_names = []
         for sub_study_spec in self.sub_study_specs():
@@ -166,15 +166,15 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline = self.create_pipeline(
             name='mean_displacement_calculation',
             inputs=inputs,
-            outputs=[DatasetSpec('mean_displacement', text_format),
-                     DatasetSpec('mean_displacement_rc', text_format),
-                     DatasetSpec('mean_displacement_consecutive', text_format),
-                     DatasetSpec('start_times', text_format),
-                     DatasetSpec('motion_par_rc', text_format),
-                     DatasetSpec('motion_par', text_format),
-                     DatasetSpec('offset_indexes', text_format),
-                     DatasetSpec('mats4average', text_format),
-                     DatasetSpec('severe_motion_detection_report',
+            outputs=[FilesetSpec('mean_displacement', text_format),
+                     FilesetSpec('mean_displacement_rc', text_format),
+                     FilesetSpec('mean_displacement_consecutive', text_format),
+                     FilesetSpec('start_times', text_format),
+                     FilesetSpec('motion_par_rc', text_format),
+                     FilesetSpec('motion_par', text_format),
+                     FilesetSpec('offset_indexes', text_format),
+                     FilesetSpec('mats4average', text_format),
+                     FilesetSpec('severe_motion_detection_report',
                                  text_format)],
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
@@ -232,18 +232,18 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def motion_framing_pipeline(self, **kwargs):
 
-        inputs = [DatasetSpec('mean_displacement', text_format),
-                  DatasetSpec('mean_displacement_consecutive', text_format),
-                  DatasetSpec('start_times', text_format)]
+        inputs = [FilesetSpec('mean_displacement', text_format),
+                  FilesetSpec('mean_displacement_consecutive', text_format),
+                  FilesetSpec('start_times', text_format)]
         if 'pet_data_dir' in self.input_names:
             inputs.append(FieldSpec('pet_start_time', str))
             inputs.append(FieldSpec('pet_end_time', str))
         pipeline = self.create_pipeline(
             name='motion_framing',
             inputs=inputs,
-            outputs=[DatasetSpec('frame_start_times', text_format),
-                     DatasetSpec('frame_vol_numbers', text_format),
-                     DatasetSpec('timestamps', directory_format)],
+            outputs=[FilesetSpec('frame_start_times', text_format),
+                     FilesetSpec('frame_vol_numbers', text_format),
+                     FilesetSpec('timestamps', directory_format)],
             desc=("Calculate when the head movement exceeded a "
                   "predefined threshold (default 2mm)."),
             version=1,
@@ -275,10 +275,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='plot_mean_displacement',
-            inputs=[DatasetSpec('mean_displacement_rc', text_format),
-                    DatasetSpec('offset_indexes', text_format),
-                    DatasetSpec('frame_start_times', text_format)],
-            outputs=[DatasetSpec('mean_displacement_plot', png_format)],
+            inputs=[FilesetSpec('mean_displacement_rc', text_format),
+                    FilesetSpec('offset_indexes', text_format),
+                    FilesetSpec('frame_start_times', text_format)],
+            outputs=[FilesetSpec('mean_displacement_plot', png_format)],
             desc=("Plot the mean displacement real clock"),
             version=1,
             citations=[fsl_cite],
@@ -301,9 +301,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='frame_mean_transformation_mats',
-            inputs=[DatasetSpec('mats4average', text_format),
-                    DatasetSpec('frame_vol_numbers', text_format)],
-            outputs=[DatasetSpec('average_mats', directory_format)],
+            inputs=[FilesetSpec('mats4average', text_format),
+                    FilesetSpec('frame_vol_numbers', text_format)],
+            outputs=[FilesetSpec('average_mats', directory_format)],
             desc=("Average all the transformation mats within each "
                   "detected frame."),
             version=1,
@@ -324,11 +324,11 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='fixed_binning',
-            inputs=[DatasetSpec('start_times', text_format),
+            inputs=[FilesetSpec('start_times', text_format),
                     FieldSpec('pet_start_time', str),
                     FieldSpec('pet_duration', int),
-                    DatasetSpec('mats4average', text_format)],
-            outputs=[DatasetSpec('fixed_binning_mats', directory_format)],
+                    FilesetSpec('mats4average', text_format)],
+            outputs=[FilesetSpec('fixed_binning_mats', directory_format)],
             desc=("Pipeline to generate average motion matrices for "
                   "each bin in a dynamic PET reconstruction experiment."
                   "This will be the input for the dynamic motion correction."),
@@ -354,8 +354,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='pet_correction_factors',
-            inputs=[DatasetSpec('timestamps', directory_format)],
-            outputs=[DatasetSpec('correction_factors', text_format)],
+            inputs=[FilesetSpec('timestamps', directory_format)],
+            outputs=[FilesetSpec('correction_factors', text_format)],
             desc=("Pipeline to calculate the correction factors to "
                   "account for frame duration when averaging the PET "
                   "frames to create the static PET image"),
@@ -375,9 +375,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='conversion_to_dicom',
-            inputs=[DatasetSpec('umaps_align2ref', directory_format),
-                    DatasetSpec('umap', dicom_format)],
-            outputs=[DatasetSpec('umap_aligned_dicoms', directory_format)],
+            inputs=[FilesetSpec('umaps_align2ref', directory_format),
+                    FilesetSpec('umap', dicom_format)],
+            outputs=[FilesetSpec('umap_aligned_dicoms', directory_format)],
             desc=(
                 "Conversing aligned umap from nifti to dicom format - "
                 "parallel implementation"),
@@ -407,14 +407,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
     def umap_realignment_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('average_mats', directory_format),
-                  DatasetSpec('umap_ref_coreg_matrix', text_matrix_format),
-                  DatasetSpec('umap_ref_qform_mat', text_matrix_format)]
+        inputs = [FilesetSpec('average_mats', directory_format),
+                  FilesetSpec('umap_ref_coreg_matrix', text_matrix_format),
+                  FilesetSpec('umap_ref_qform_mat', text_matrix_format)]
         outputs = []
         if ('umap_ref' in self.sub_study_names and
                 'umap' in self.input_names):
-            inputs.append(DatasetSpec('umap', nifti_gz_format))
-            outputs.append(DatasetSpec('umaps_align2ref', directory_format))
+            inputs.append(FilesetSpec('umap', nifti_gz_format))
+            outputs.append(FilesetSpec('umaps_align2ref', directory_format))
         pipeline = self.create_pipeline(
             name='static_frame2ref_alignment',
             inputs=inputs,
@@ -446,9 +446,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline = self.create_pipeline(
             name='create_moco_series',
-            inputs=[DatasetSpec('start_times', text_format),
-                    DatasetSpec('motion_par', text_format)],
-            outputs=[DatasetSpec('moco_series', directory_format)],
+            inputs=[FilesetSpec('start_times', text_format),
+                    FilesetSpec('motion_par', text_format)],
+            outputs=[FilesetSpec('moco_series', directory_format)],
             desc=("Pipeline to generate a moco_series that can be then "
                   "imported back in the scanner and used to correct the"
                   " pet data"),
@@ -466,21 +466,21 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
     def gather_outputs_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('mean_displacement_plot', png_format),
-                  DatasetSpec('motion_par', text_format),
-                  DatasetSpec('correction_factors', text_format),
-                  DatasetSpec('severe_motion_detection_report', text_format),
-                  DatasetSpec('timestamps', directory_format)]
+        inputs = [FilesetSpec('mean_displacement_plot', png_format),
+                  FilesetSpec('motion_par', text_format),
+                  FilesetSpec('correction_factors', text_format),
+                  FilesetSpec('severe_motion_detection_report', text_format),
+                  FilesetSpec('timestamps', directory_format)]
         if ('umap_ref' in self.sub_study_names and
                 'umap' in self.input_names):
-            inputs.append(DatasetSpec('umap_ref_preproc', nifti_gz_format))
+            inputs.append(FilesetSpec('umap_ref_preproc', nifti_gz_format))
             inputs.append(
-                DatasetSpec('umap_aligned_dicoms', directory_format))
+                FilesetSpec('umap_aligned_dicoms', directory_format))
 
         pipeline = self.create_pipeline(
             name='gather_motion_detection_outputs',
             inputs=inputs,
-            outputs=[DatasetSpec('motion_detection_output', directory_format)],
+            outputs=[FilesetSpec('motion_detection_output', directory_format)],
             desc=("Pipeline to gather together all the outputs from "
                   "the motion detection pipeline."),
             version=1,
@@ -489,9 +489,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         merge_inputs = pipeline.create_node(Merge(len(inputs)),
                                             name='merge_inputs')
-        for i, dataset in enumerate(inputs, start=1):
+        for i, fileset in enumerate(inputs, start=1):
             pipeline.connect_input(
-                dataset.name, merge_inputs, 'in{}'.format(i))
+                fileset.name, merge_inputs, 'in{}'.format(i))
 
         copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
         pipeline.connect(merge_inputs, 'out', copy2dir, 'in_files')
@@ -506,22 +506,22 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         'pet_mc', 'pet_time_info_extraction_pipeline')
 
     def motion_correction_pipeline(self, **kwargs):
-        inputs = [DatasetSpec('pet_data_prepared', directory_format),
-                  DatasetSpec('ref_brain', nifti_gz_format),
-                  DatasetSpec('mean_displacement_plot', png_format)]
+        inputs = [FilesetSpec('pet_data_prepared', directory_format),
+                  FilesetSpec('ref_brain', nifti_gz_format),
+                  FilesetSpec('mean_displacement_plot', png_format)]
         if self.option_spec('dynamic_pet_mc').value:
-            inputs.append(DatasetSpec('fixed_binning_mats', directory_format))
-            outputs = [DatasetSpec('dynamic_motion_correction_results',
+            inputs.append(FilesetSpec('fixed_binning_mats', directory_format))
+            outputs = [FilesetSpec('dynamic_motion_correction_results',
                                    directory_format)]
             dynamic = True
         else:
-            inputs.append(DatasetSpec('average_mats', directory_format))
-            inputs.append(DatasetSpec('correction_factors', text_format))
-            outputs = [DatasetSpec('static_motion_correction_results',
+            inputs.append(FilesetSpec('average_mats', directory_format))
+            inputs.append(FilesetSpec('correction_factors', text_format))
+            outputs = [FilesetSpec('static_motion_correction_results',
                                    directory_format)]
             dynamic = False
         if 'struct2align' in self.input_names:
-            inputs.append(DatasetSpec('struct2align', nifti_gz_format))
+            inputs.append(FilesetSpec('struct2align', nifti_gz_format))
             StructAlignment = True
         else:
             StructAlignment = False
@@ -718,20 +718,20 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         struct_image = struct2align.split('/')[-1].split('.')[0]
 
     if pet_data_dir is not None:
-        inputs.append(DatasetMatch('pet_data_dir', directory_format,
+        inputs.append(FilesetMatch('pet_data_dir', directory_format,
                                    'pet_data_dir'))
     if pet_recon_dir is not None:
-        inputs.append(DatasetMatch('pet_data_reconstructed', directory_format,
+        inputs.append(FilesetMatch('pet_data_reconstructed', directory_format,
                                    'pet_data_reconstructed'))
         if struct2align is not None:
             inputs.append(
-                DatasetMatch('struct2align', nifti_gz_format, struct_image))
+                FilesetMatch('struct2align', nifti_gz_format, struct_image))
     if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
         output_data = 'dynamic_motion_correction_results'
         option_specs.append(OptionSpec('dynamic_pet_mc', True))
         if struct2align is not None:
             inputs.append(
-                DatasetMatch('struct2align', nifti_gz_format, struct_image))
+                FilesetMatch('struct2align', nifti_gz_format, struct_image))
     elif (pet_recon_dir is not None and not dynamic):
         output_data = 'static_motion_correction_results'
     else:
@@ -749,7 +749,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
 
     study_specs = [SubStudySpec('ref', ref_study)]
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
-    inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
+    inputs.append(FilesetMatch('ref_primary', dicom_format, ref))
 
     if umap_ref and umap:
         if umap_ref.endswith('/'):
@@ -770,7 +770,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 [SubStudySpec('t1_{}'.format(i), T1Study,
                               ref_spec) for i in range(len(t1s))])
         inputs.extend(
-            DatasetMatch('t1_{}_primary'.format(i), dicom_format, t1_scan)
+            FilesetMatch('t1_{}_primary'.format(i), dicom_format, t1_scan)
             for i, t1_scan in enumerate(t1s))
         run_pipeline = True
 
@@ -778,7 +778,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         study_specs.extend(
                 [SubStudySpec('t2_{}'.format(i), T2Study,
                               ref_spec) for i in range(len(t2s))])
-        inputs.extend(DatasetMatch('t2_{}_primary'.format(i), dicom_format,
+        inputs.extend(FilesetMatch('t2_{}_primary'.format(i), dicom_format,
                                    t2_scan)
                       for i, t2_scan in enumerate(t2s))
         run_pipeline = True
@@ -796,8 +796,8 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                         'be used.')
             umap = umap[0]
         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
-        inputs.append(DatasetMatch('umap_ref_primary', dicom_format, umap_ref))
-        inputs.append(DatasetMatch('umap', dicom_format, umap))
+        inputs.append(FilesetMatch('umap_ref_primary', dicom_format, umap_ref))
+        inputs.append(FilesetMatch('umap', dicom_format, umap))
 
         run_pipeline = True
 
@@ -814,7 +814,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                                         epi_refspec)
                            for i in range(len(epis)))
         inputs.extend(
-            DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
+            FilesetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
             for i, epi_scan in enumerate(epis))
         run_pipeline = True
     if dmris:
@@ -838,7 +838,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('dwi_{}'.format(i), DiffusionStudy, dwi_refspec)
                 for i in range(len(dmris_main)))
             inputs.extend(
-                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
+                FilesetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main_scan[0])
                 for i, dmris_main_scan in enumerate(dmris_main))
         if dmris_main and dmris_opposite:
@@ -846,29 +846,29 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('dwi_{}'.format(i), DiffusionStudy, dwi_refspec)
                 for i in range(len(dmris_main)))
             inputs.extend(
-                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
+                FilesetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
             if len(dmris_main) <= len(dmris_opposite):
-                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
+                inputs.extend(FilesetMatch('dwi_{}_dwi_reference'.format(i),
                                            dicom_format, dmris_opposite[i][0])
                               for i in range(len(dmris_main)))
             else:
-                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
+                inputs.extend(FilesetMatch('dwi_{}_dwi_reference'.format(i),
                                            dicom_format, dmris_opposite[0][0])
                               for i in range(len(dmris_main)))
         if dmris_opposite and dmris_main and not dmris_ref:
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EPIStudy, dwi_refspec)
                 for i in range(len(dmris_opposite)))
-            inputs.extend(DatasetMatch('b0_{}_primary'.format(i),
+            inputs.extend(FilesetMatch('b0_{}_primary'.format(i),
                                        dicom_format, dmris_opposite[i][0])
                           for i in range(len(dmris_opposite)))
             if len(dmris_opposite) <= len(dmris_main):
-                inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
+                inputs.extend(FilesetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[i][0])
                               for i in range(len(dmris_opposite)))
             else:
-                inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
+                inputs.extend(FilesetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[0][0])
                               for i in range(len(dmris_opposite)))
         elif dmris_opposite and dmris_ref:
@@ -877,12 +877,12 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('b0_{}'.format(i), EPIStudy, dwi_refspec)
                 for i in range(min_index*2))
             inputs.extend(
-                DatasetMatch('b0_{}_primary'.format(i), dicom_format,
+                FilesetMatch('b0_{}_primary'.format(i), dicom_format,
                              scan[0])
                 for i, scan in enumerate(dmris_opposite[:min_index] +
                                          dmris_ref[:min_index]))
             inputs.extend(
-                DatasetMatch('b0_{}_reverse_phase'.format(i), dicom_format,
+                FilesetMatch('b0_{}_reverse_phase'.format(i), dicom_format,
                              scan[0])
                 for i, scan in enumerate(dmris_ref[:min_index] +
                                          dmris_opposite[:min_index]))
@@ -901,7 +901,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
                 for i in range(len(t2s), len(t2s)+len(unused_dwi)))
             inputs.extend(
-                DatasetMatch('t2_{}_primary'.format(i), dicom_format, scan[0])
+                FilesetMatch('t2_{}_primary'.format(i), dicom_format, scan[0])
                 for i, scan in enumerate(unused_dwi, start=len(t2s)))
         run_pipeline = True
 
@@ -928,7 +928,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     option_specs = [OptionSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
-        inputs.append(DatasetMatch('pet_data_dir', directory_format,
+        inputs.append(FilesetMatch('pet_data_dir', directory_format,
                                    'pet_data_dir'))
 
     if not ref:
@@ -943,14 +943,14 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
     study_specs = [SubStudySpec('ref', ref_study)]
     ref_spec = {'ref_brain': 'coreg_ref_brain'}
-    inputs.append(DatasetMatch('ref_primary', dicom_format, ref))
+    inputs.append(FilesetMatch('ref_primary', dicom_format, ref))
 
     if t1s:
         study_specs.extend(
                 [SubStudySpec('t1_{}'.format(i), T1Study,
                               ref_spec) for i in range(len(t1s))])
         inputs.extend(
-            DatasetMatch('t1_{}_primary'.format(i), dicom_format, t1_scan)
+            FilesetMatch('t1_{}_primary'.format(i), dicom_format, t1_scan)
             for i, t1_scan in enumerate(t1s))
         run_pipeline = True
 
@@ -958,7 +958,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         study_specs.extend(
                 [SubStudySpec('t2_{}'.format(i), T2Study,
                               ref_spec) for i in range(len(t2s))])
-        inputs.extend(DatasetMatch('t2_{}_primary'.format(i), dicom_format,
+        inputs.extend(FilesetMatch('t2_{}_primary'.format(i), dicom_format,
                                    t2_scan)
                       for i, t2_scan in enumerate(t2s))
         run_pipeline = True
@@ -971,7 +971,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                                         epi_refspec)
                            for i in range(len(epis)))
         inputs.extend(
-            DatasetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
+            FilesetMatch('epi_{}_primary'.format(i), dicom_format, epi_scan)
             for i, epi_scan in enumerate(epis))
         run_pipeline = True
     if dmris:
@@ -991,7 +991,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('dwi_{}'.format(i), DiffusionStudy, ref_spec)
                 for i in range(len(dmris_main)))
             inputs.extend(
-                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
+                FilesetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main_scan[0])
                 for i, dmris_main_scan in enumerate(dmris_main))
         if dmris_main and dmris_opposite:
@@ -999,29 +999,29 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('dwi_{}'.format(i), DiffusionStudy, ref_spec)
                 for i in range(len(dmris_main)))
             inputs.extend(
-                DatasetMatch('dwi_{}_primary'.format(i), dicom_format,
+                FilesetMatch('dwi_{}_primary'.format(i), dicom_format,
                              dmris_main[i][0]) for i in range(len(dmris_main)))
             if len(dmris_main) <= len(dmris_opposite):
-                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
+                inputs.extend(FilesetMatch('dwi_{}_dwi_reference'.format(i),
                                            dicom_format, dmris_opposite[i][0])
                               for i in range(len(dmris_main)))
             else:
-                inputs.extend(DatasetMatch('dwi_{}_dwi_reference'.format(i),
+                inputs.extend(FilesetMatch('dwi_{}_dwi_reference'.format(i),
                                            dicom_format, dmris_opposite[0][0])
                               for i in range(len(dmris_main)))
         if dmris_opposite and dmris_main and not dmris_ref:
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
                 for i in range(len(dmris_opposite)))
-            inputs.extend(DatasetMatch('b0_{}_primary'.format(i),
+            inputs.extend(FilesetMatch('b0_{}_primary'.format(i),
                                        dicom_format, dmris_opposite[i][0])
                           for i in range(len(dmris_opposite)))
             if len(dmris_opposite) <= len(dmris_main):
-                inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
+                inputs.extend(FilesetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[i][0])
                               for i in range(len(dmris_opposite)))
             else:
-                inputs.extend(DatasetMatch('b0_{}_reverse_phase'.format(i),
+                inputs.extend(FilesetMatch('b0_{}_reverse_phase'.format(i),
                                            dicom_format, dmris_main[0][0])
                               for i in range(len(dmris_opposite)))
         elif dmris_opposite and dmris_ref:
@@ -1030,12 +1030,12 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('b0_{}'.format(i), EPIStudy, b0_refspec)
                 for i in range(min_index*2))
             inputs.extend(
-                DatasetMatch('b0_{}_primary'.format(i), dicom_format,
+                FilesetMatch('b0_{}_primary'.format(i), dicom_format,
                              scan[0])
                 for i, scan in enumerate(dmris_opposite[:min_index] +
                                          dmris_ref[:min_index]))
             inputs.extend(
-                DatasetMatch('b0_{}_reverse_phase'.format(i), dicom_format,
+                FilesetMatch('b0_{}_reverse_phase'.format(i), dicom_format,
                              scan[0])
                 for i, scan in enumerate(dmris_ref[:min_index] +
                                          dmris_opposite[:min_index]))
@@ -1054,7 +1054,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 SubStudySpec('t2_{}'.format(i), T2Study, ref_spec)
                 for i in range(len(t2s), len(t2s)+len(unused_dwi)))
             inputs.extend(
-                DatasetMatch('t2_{}_primary'.format(i), dicom_format, scan[0])
+                FilesetMatch('t2_{}_primary'.format(i), dicom_format, scan[0])
                 for i, scan in enumerate(unused_dwi, start=len(t2s)))
         run_pipeline = True
 
