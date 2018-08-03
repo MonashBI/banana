@@ -33,19 +33,20 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('dwi_reference', nifti_gz_format, optional=True),
-        FilesetSpec('forward_pe', dicom_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
         FilesetSpec('noise_residual', mrtrix_format, 'preproc_pipeline'),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
-        FilesetSpec('fa', nifti_gz_format, 'tensor_pipeline'),
-        FilesetSpec('adc', nifti_gz_format, 'tensor_pipeline'),
+        FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline'),
+        FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline'),
         FilesetSpec('wm_response', text_format, 'response_pipeline'),
         FilesetSpec('gm_response', text_format, 'response_pipeline'),
         FilesetSpec('csf_response', text_format, 'response_pipeline'),
-        FilesetSpec('avg_response', text_format, 'average_response_pipeline'),
+        FilesetSpec('avg_response', text_format,
+                    'average_response_pipeline'),
         FilesetSpec('fod', mrtrix_format, 'fod_pipeline'),
-        FilesetSpec('bias_correct', nifti_gz_format, 'bias_correct_pipeline'),
+        FilesetSpec('bias_correct', nifti_gz_format,
+                    'bias_correct_pipeline'),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preproc_pipeline'),
         FilesetSpec('bvalues', fsl_bvals_format, 'preproc_pipeline'),
         FilesetSpec('eddy_par', eddy_par_format, 'preproc_pipeline'),
@@ -57,10 +58,12 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     frequency='per_study'),
         FilesetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
                     frequency='per_study'),
-        FilesetSpec('tbss_skeleton_mask', nifti_gz_format, 'tbss_pipeline',
-                    frequency='per_study'),
-        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
-        FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline'),
+        FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
+                    'tbss_pipeline', frequency='per_study'),
+        FilesetSpec('brain', nifti_gz_format,
+                    'brain_extraction_pipeline'),
+        FilesetSpec('brain_mask', nifti_gz_format,
+                    'brain_extraction_pipeline'),
         FilesetSpec('norm_intensity', mrtrix_format,
                     'intensity_normalisation_pipeline'),
         FilesetSpec('norm_intens_fa_template', mrtrix_format,
@@ -68,7 +71,9 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     frequency='per_study'),
         FilesetSpec('norm_intens_wm_mask', mrtrix_format,
                     'intensity_normalisation_pipeline',
-                    frequency='per_study')]
+                    frequency='per_study'),
+        FilesetSpec('wb_tracking', mrtrix_format,
+                    'wb_tracking_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('multi_tissue', True),
@@ -109,7 +114,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs.append(FilesetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
-        if 'dwi_reference' in self.input_names or 'reverse_phase' in self.input_names:
+        if ('dwi_reference' in self.input_names or
+                'reverse_phase' in self.input_names):
             inputs = [FilesetSpec('primary', dicom_format),
                       FieldSpec('ped', dtype=str),
                       FieldSpec('pe_angle', dtype=str)]
@@ -145,7 +151,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         dwipreproc = pipeline.create_node(
             DWIPreproc(), name='dwipreproc',
             requirements=[mrtrix3_req, fsl510_req], wall_time=60)
-        dwipreproc.inputs.eddy_parameters = '--data_is_shelled '
+        # FIXME: dwipreproc.inputs.eddy_parameters = '--data_is_shelled '
         dwipreproc.inputs.no_clean_up = True
         dwipreproc.inputs.out_file_ext = '.nii.gz'
         dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
@@ -392,7 +398,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Check inputs/output are connected
         return pipeline
 
-    def fa_pipeline(self, **kwargs):  # @UnusedVariable
+    def tensor_metrics_pipeline(self, **kwargs):  # @UnusedVariable
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -649,13 +655,12 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Check inputs/outputs are connected
         return pipeline
 
-    def track_gen_pipeline(self, **kwargs):
+    def wb_tracking_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
-            name='extract_b0',
-            inputs=[FilesetSpec('bias_correct', nifti_gz_format),
-                    FilesetSpec('grad_dirs', fsl_bvecs_format),
-                    FilesetSpec('bvalues', fsl_bvals_format)],
-            outputs=[FilesetSpec('b0', nifti_gz_format)],
+            name='wb_tracking',
+            inputs=[FilesetSpec('fod', mrtrix_format),
+                    FilesetSpec()],
+            outputs=[FilesetSpec('wb_tracking', mrtrix_format)],
             desc="Extract b0 image from a DWI study",
             version=1,
             citations=[mrtrix_cite])
@@ -690,8 +695,6 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('low_b_dw_scan', mrtrix_format),
         FilesetSpec('high_b_dw_scan', mrtrix_format),
-        FilesetSpec('forward_pe', mrtrix_format),
-        FilesetSpec('reverse_pe', mrtrix_format),
         FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
         FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
         FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
