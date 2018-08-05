@@ -111,7 +111,8 @@ class ImageDisplayMixin():
         # Create figure in which to aggregate the plots
         gs = GridSpec(n_rows, 3)
         gs.update(wspace=0.0, hspace=0.0)
-        fig = plt.figure(figsize=(n_rows * img_size, img_size))
+        fig = plt.figure(figsize=(3 * img_size,
+                                  n_rows * img_size))
         # Create temp dir to store screen captures
         tmpdir = tempfile.mkdtemp()
         for i, (tck, bg) in enumerate(zip(tcks, backgrounds)):
@@ -139,6 +140,7 @@ class ImageDisplayMixin():
                 axis.get_xaxis().set_visible(False)
                 axis.get_yaxis().set_visible(False)
                 plt.imshow(img)
+        plt.tight_layout(0.0)
 
     def _save_or_show(self, path=None, subj_id=None, visit_id=None):
         """
