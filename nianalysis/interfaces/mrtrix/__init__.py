@@ -5,3 +5,4 @@ from .preproc import (
 from .utils import (
     MRConvert, MRCat, MRCrop, MRPad, MRMath, MRCalc, ExtractFSLGradients,
     ExtractDWIorB0)
+from .tracking import GlobalTractography

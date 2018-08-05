@@ -7,6 +7,7 @@ from nianalysis.requirement import (
 from nianalysis.interfaces.converters import Dcm2niix  # @UnusedImport
 from arcana.data.file_format.standard import (
     text_format, directory_format, zip_format, targz_format)
+import nibabel
 
 
 class Dcm2niixConverter(Converter):
@@ -33,6 +34,13 @@ class MrtrixConverter(Converter):
         return convert_node, 'in_file', 'out_file'
 
 
+def nifti_array_loader(path):
+    return nibabel.load(path).get_data()
+
+
+def nifti_header_loader(path):
+    return dict(nibabel.load(path).get_header())
+
 # =====================================================================
 # All Data Formats
 # =====================================================================
@@ -46,12 +54,16 @@ nifti_format = FileFormat(name='nifti', extension='.nii',
                           converters={'dicom': Dcm2niixConverter,
                                       'analyze': MrtrixConverter,
                                       'nifti_gz': MrtrixConverter,
-                                      'mrtrix': MrtrixConverter})
+                                      'mrtrix': MrtrixConverter},
+                          array_loader=nifti_array_loader,
+                          header_loader=nifti_header_loader)
 nifti_gz_format = FileFormat(name='nifti_gz', extension='.nii.gz',
                              converters={'dicom': Dcm2niixConverter,
                                          'nifti': MrtrixConverter,
                                          'analyze': MrtrixConverter,
-                                         'mrtrix': MrtrixConverter})
+                                         'mrtrix': MrtrixConverter},
+                             array_loader=nifti_array_loader,
+                             header_loader=nifti_header_loader)
 analyze_format = FileFormat(name='analyze', extension='.img',
                             converters={'dicom': MrtrixConverter,
                                         'nifti': MrtrixConverter,
@@ -62,6 +74,9 @@ mrtrix_format = FileFormat(name='mrtrix', extension='.mif',
                                        'nifti': MrtrixConverter,
                                        'nifti_gz': MrtrixConverter,
                                        'analyze': MrtrixConverter})
+
+# Tractography formats
+mrtrix_track_format = FileFormat(name='mrtrix_track', extension='.tck')
 
 # Tabular formats
 rfile_format = FileFormat(name='rdata', extension='.RData')

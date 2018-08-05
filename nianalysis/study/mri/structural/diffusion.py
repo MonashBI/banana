@@ -1,10 +1,10 @@
 from nipype.interfaces.utility import Merge
-from nipype.interfaces.mrtrix3 import ResponseSD
+from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
 from nianalysis.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, DWIIntensityNorm, AverageResponse)
+    MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from nianalysis.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
@@ -16,7 +16,8 @@ from nianalysis.citation import (
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from nianalysis.file_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
-    nifti_format, text_format, dicom_format, eddy_par_format, directory_format)
+    nifti_format, text_format, dicom_format, eddy_par_format, directory_format,
+    mrtrix_track_format)
 from nianalysis.requirement import (
     fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
 from arcana.study.base import StudyMetaClass
@@ -72,8 +73,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         FilesetSpec('norm_intens_wm_mask', mrtrix_format,
                     'intensity_normalisation_pipeline',
                     frequency='per_study'),
-        FilesetSpec('wb_tracking', mrtrix_format,
-                    'wb_tracking_pipeline')]
+        FilesetSpec('global_tracks', mrtrix_track_format,
+                    'global_tracking_pipeline'),
+        FilesetSpec('wm_mask', mrtrix_format,
+                    'global_tracking_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('multi_tissue', True),
@@ -82,7 +85,9 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         ParameterSpec('fsl_mask_f', 0.25),
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False)]
+        ParameterSpec('bet_reduce_bias', False),
+        ParameterSpec('num_global_tracks', int(1e9)),
+        ParameterSpec('global_tracks_cutoff', 0.05)]
 
     add_switch_specs = [
         SwitchSpec('preproc_denoise', False),
@@ -191,6 +196,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             else:
                 assert False
             pipeline.connect_input('primary', dwiextract, 'in_file')
+            pipeline.connect_input('primary', extract_grad, 'in_file')
         # Connect inter-nodes
         if self.switch('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
@@ -207,7 +213,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
             pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
             pipeline.connect(mrconvert, 'out_file', mrcat, 'first_scan')
-        pipeline.connect_input('primary', extract_grad, 'in_file')
         pipeline.connect(dwipreproc, 'out_file', swap, 'in_file')
         # Connect outputs
         pipeline.connect_output('preproc', swap, 'out_file')
@@ -503,36 +508,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect_output('avg_response', avg_response, 'out_file')
         # Check inputs/output are connected
         return pipeline
-# 
-# algorithm = traits.Enum(
-#         'csd',
-#         'msmt_csd',
-#         argstr='%s',
-#         position=-8,
-#         mandatory=True,
-#         desc='FOD algorithm')
-#     in_file = File(
-#         exists=True,
-#         argstr='%s',
-#         position=-7,
-#         mandatory=True,
-#         desc='input DWI image')
-#     wm_txt = File(
-#         argstr='%s', position=-6, mandatory=True, desc='WM response text file')
-#     wm_odf = File(
-#         'wm.mif',
-#         argstr='%s',
-#         position=-5,
-#         usedefault=True,
-#         mandatory=True,
-#         desc='output WM ODF')
-#     gm_txt = File(argstr='%s', position=-4, desc='GM response text file')
-#     gm_odf = File('gm.mif', usedefault=True, argstr='%s',
-#                   position=-3, desc='output GM ODF')
-#     csf_txt = File(argstr='%s', position=-2, desc='CSF response text file')
-#     csf_odf = File('csf.mif', usedefault=True, argstr='%s',
-#                    position=-1, desc='output CSF ODF')
-#     mask_file = File(exists=True, argstr='-mask %s', desc='mask image')
 
     def fod_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -655,15 +630,36 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Check inputs/outputs are connected
         return pipeline
 
-    def wb_tracking_pipeline(self, **kwargs):
+    def global_tracking_pipeline(self, **kwargs):
         pipeline = self.create_pipeline(
-            name='wb_tracking',
+            name='global_tracking',
             inputs=[FilesetSpec('fod', mrtrix_format),
-                    FilesetSpec()],
-            outputs=[FilesetSpec('wb_tracking', mrtrix_format)],
+                    FilesetSpec('bias_correct', nifti_gz_format),
+                    FilesetSpec('brain_mask', nifti_gz_format),
+                    FilesetSpec('wm_response', text_format),
+                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+                    FilesetSpec('bvalues', fsl_bvals_format)],
+            outputs=[FilesetSpec('global_tracks', mrtrix_track_format)],
             desc="Extract b0 image from a DWI study",
             version=1,
-            citations=[mrtrix_cite])
+            citations=[mrtrix_cite],
+            **kwargs)
+        tck = pipeline.create_node(Tractography(),
+                                   name='tracking')
+        tck.inputs.n_tracks = self.parameter('num_global_tracks')
+        tck.inputs.cutoff = self.parameter(
+            'global_tracks_cutoff')
+        mask = pipeline.create_node(DWI2Mask(), name='mask')
+        # Add gradients to input image
+        fsl_grads = pipeline.create_node(MergeTuple(2),
+                                         name="fsl_grads")
+        pipeline.connect(fsl_grads, 'out', mask, 'grad_fsl')
+        pipeline.connect(mask, 'out_file', tck, 'seed_image')
+        pipeline.connect_input('fod', tck, 'in_file')
+        pipeline.connect_input('bias_correct', mask, 'in_file')
+        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
+        pipeline.connect_input('bvalues', fsl_grads, 'in2')
+        pipeline.connect_output('global_tracks', tck, 'out_file')
         return pipeline
 
     def intrascan_alignment_pipeline(self, **kwargs):

@@ -1,0 +1,3 @@
+
+class NiAnalysisUsageError(Exception):
+    pass
