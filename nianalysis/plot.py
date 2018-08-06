@@ -12,7 +12,7 @@ from nianalysis.exception import NiAnalysisUsageError
 
 class ImageDisplayMixin():
 
-    def _display_slice_panel(self, filesets, img_size=5,
+    def display_slice_panel(self, filesets, img_size=5,
                              row_kwargs=None, **kwargs):
         """
         Displays an image in a Nx3 panel axial, coronal and sagittal
@@ -56,42 +56,7 @@ class ImageDisplayMixin():
         plt.tight_layout(0.0)
         # Either show image or save it to file
 
-    def _display_mid_slices(self, array, vox_sizes, fig, grid_spec,
-                            row_index, padding=1, vmax=None,
-                            vmax_percentile=98):
-        # Guard agains NaN
-        array[np.isnan(array)] = 0.0
-        # Crop black-space around array
-        array = self.crop(array, padding)
-        # Pad out image array into cube
-        padded_size = np.max(array.shape)
-        mid = np.array(array.shape, dtype=int) // 2
-
-        # Get dynamic range of array
-        if vmax is None:
-            assert vmax_percentile is not None
-            vmax = np.percentile(array, vmax_percentile)
-
-        # Function to plot a slice
-        def display_slice(slce, index, aspect):
-            axis = fig.add_subplot(grid_spec[index])
-            axis.get_xaxis().set_visible(False)
-            axis.get_yaxis().set_visible(False)
-            padded_slce = self.pad_to_size(slce, (padded_size,
-                                                   padded_size))
-            plt.imshow(padded_slce,
-                       interpolation='bilinear',
-                       cmap='gray', aspect=aspect,
-                       vmin=0, vmax=vmax)
-        # Display slices
-        display_slice(np.squeeze(array[-1:0:-1, -1:0:-1, mid[2]]).T,
-                      row_index * 3, vox_sizes[0] / vox_sizes[1])
-        display_slice(np.squeeze(array[-1:0:-1, mid[1], -1:0:-1]).T,
-                      row_index * 3 + 1, vox_sizes[0] / vox_sizes[2])
-        display_slice(np.squeeze(array[mid[0], -1:0:-1, -1:0:-1]).T,
-                      row_index * 3 + 2, vox_sizes[1] / vox_sizes[2])
-
-    def _display_tcks_with_mrview(self, tcks, backgrounds, padding=1,
+    def display_tcks_with_mrview(self, tcks, backgrounds, padding=1,
                                   img_size=5):
         """
         Displays dMRI tractography streamlines using MRtrix's mrview to
@@ -142,7 +107,7 @@ class ImageDisplayMixin():
                 plt.imshow(img)
         plt.tight_layout(0.0)
 
-    def _save_or_show(self, path=None, subj_id=None, visit_id=None):
+    def save_or_show(self, path=None, subj_id=None, visit_id=None):
         """
         Save current figure to file or show it
         """
@@ -155,6 +120,41 @@ class ImageDisplayMixin():
             if len(list(self.visit_ids)) > 1:
                 base += '-vis{}'.format(visit_id)
             plt.savefig(base + ext)
+
+    def _display_mid_slices(self, array, vox_sizes, fig, grid_spec,
+                            row_index, padding=1, vmax=None,
+                            vmax_percentile=98):
+        # Guard agains NaN
+        array[np.isnan(array)] = 0.0
+        # Crop black-space around array
+        array = self.crop(array, padding)
+        # Pad out image array into cube
+        padded_size = np.max(array.shape)
+        mid = np.array(array.shape, dtype=int) // 2
+
+        # Get dynamic range of array
+        if vmax is None:
+            assert vmax_percentile is not None
+            vmax = np.percentile(array, vmax_percentile)
+
+        # Function to plot a slice
+        def display_slice(slce, index, aspect):
+            axis = fig.add_subplot(grid_spec[index])
+            axis.get_xaxis().set_visible(False)
+            axis.get_yaxis().set_visible(False)
+            padded_slce = self.pad_to_size(slce, (padded_size,
+                                                   padded_size))
+            plt.imshow(padded_slce,
+                       interpolation='bilinear',
+                       cmap='gray', aspect=aspect,
+                       vmin=0, vmax=vmax)
+        # Display slices
+        display_slice(np.squeeze(array[-1:0:-1, -1:0:-1, mid[2]]).T,
+                      row_index * 3, vox_sizes[0] / vox_sizes[1])
+        display_slice(np.squeeze(array[-1:0:-1, mid[1], -1:0:-1]).T,
+                      row_index * 3 + 1, vox_sizes[0] / vox_sizes[2])
+        display_slice(np.squeeze(array[mid[0], -1:0:-1, -1:0:-1]).T,
+                      row_index * 3 + 2, vox_sizes[1] / vox_sizes[2])
 
     @classmethod
     def crop(cls, array, border=0):
