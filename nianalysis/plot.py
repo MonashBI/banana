@@ -13,7 +13,8 @@ from nianalysis.exception import NiAnalysisUsageError
 class ImageDisplayMixin():
 
     def display_slice_panel(self, filesets, img_size=5,
-                             row_kwargs=None, **kwargs):
+                             row_kwargs=None, offset=None,
+                             **kwargs):
         """
         Displays an image in a Nx3 panel axial, coronal and sagittal
         slices for the filesets correspdong to each of the data names
@@ -28,6 +29,8 @@ class ImageDisplayMixin():
         row_kargs : List[Dict[str, *]]
             A list of row-specific kwargs to passed on to
             _display_mid_slices
+        offset : Tuple(3)[int]
+            An array of integers with with to offset the slices displayed
         """
         n_rows = len(filesets)
         if row_kwargs is None:
@@ -51,13 +54,14 @@ class ImageDisplayMixin():
             vox = header['pixdim'][1:4]
             rkwargs = copy(rkwargs)
             rkwargs.update(kwargs)
-            self._display_mid_slices(array, vox, fig, gs, i, **rkwargs)
+            self._display_mid_slices(array, vox, fig, gs, i, offset,
+                                     **rkwargs)
         # Remove space around figure
         plt.tight_layout(0.0)
         # Either show image or save it to file
 
     def display_tcks_with_mrview(self, tcks, backgrounds, padding=1,
-                                  img_size=5):
+                                  img_size=5, offset=None):
         """
         Displays dMRI tractography streamlines using MRtrix's mrview to
         display and screenshot to file the streamlines. Then reload,
@@ -71,6 +75,8 @@ class ImageDisplayMixin():
             images are displayed instead
         size : Tuple(2)[int]
             The size of the combined figure to plot
+        offset : Tuple(3)[int]
+            An array of integers with with to offset the slices displayed
         """
         n_rows = len(tcks)
         # Create figure in which to aggregate the plots
@@ -85,8 +91,15 @@ class ImageDisplayMixin():
             # file and then reload the image into a matplotlib
             # grid
             options = ['-tractography.load', tck.path,
-                       '-noannotations', '-lock', 'yes',
-                       '-capture.grab', '-exit']
+                       '-noannotations']
+            if offset is not None:
+                header = tck.get_header()
+                dims = np.array(header[''], dtype=int)
+                mid = dims // 2
+                target = mid + np.array(offset, dtype=int)
+                options.extend(['-target', '{},{},{}'.format(*target)])
+            # Set options to remove cursor, capture hte image and exit
+            options.extend(['-lock', 'yes', '-capture.grab', '-exit'])
             imgs = []
             for i in range(3):
                 sp.call(
@@ -123,7 +136,7 @@ class ImageDisplayMixin():
 
     def _display_mid_slices(self, array, vox_sizes, fig, grid_spec,
                             row_index, padding=1, vmax=None,
-                            vmax_percentile=98):
+                            vmax_percentile=98, offset=None):
         # Guard agains NaN
         array[np.isnan(array)] = 0.0
         # Crop black-space around array
@@ -131,6 +144,8 @@ class ImageDisplayMixin():
         # Pad out image array into cube
         padded_size = np.max(array.shape)
         mid = np.array(array.shape, dtype=int) // 2
+        if offset is not None:
+            mid += np.array(offset, dtype=int)
 
         # Get dynamic range of array
         if vmax is None:
