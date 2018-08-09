@@ -34,7 +34,7 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('output_fileset', nifti_gz_format, 'pipeline')]
 
     def pipeline(self):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='pipeline',
             inputs=[FilesetSpec('input_fileset', nifti_gz_format)],
             outputs=[FilesetSpec('output_fileset', nifti_gz_format)],

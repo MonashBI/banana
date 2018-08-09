@@ -166,7 +166,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             Name of the FilesetSpec to output as registration matrix
         """
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name=name,
             inputs=[FilesetSpec(to_reg, nifti_gz_format),
                     FilesetSpec(ref, nifti_gz_format)],
@@ -196,7 +196,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def _qform_transform_factory(self, name, to_reg, ref, qformed,
                                  qformed_mat, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name=name,
             inputs=[FilesetSpec(to_reg, nifti_gz_format),
                     FilesetSpec(ref, nifti_gz_format)],
@@ -226,7 +226,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='registration',
             inputs=[FilesetSpec('t1', nifti_format),
                     FilesetSpec('t2', nifti_format)],
@@ -258,7 +258,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
     def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
                                     **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name=name,
             inputs=[FilesetSpec(to_reg, nifti_gz_format),
                     FilesetSpec(ref, nifti_gz_format)],
@@ -294,7 +294,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         Generates a whole brain mask using FSL's BET command.
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='brain_extraction',
             inputs=[FilesetSpec(in_file, nifti_gz_format)],
             outputs=[FilesetSpec('brain', nifti_gz_format),
@@ -330,7 +330,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                    FilesetSpec('brain_mask', nifti_gz_format)]
         if self.switch('optibet_gen_report'):
             outputs.append(FilesetSpec('optiBET_report', gif_format))
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='brain_extraction',
             inputs=[FilesetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
@@ -409,7 +409,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ----------
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='coregister_to_atlas',
             inputs=[FilesetSpec('preproc', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
@@ -489,7 +489,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def _ants_to_atlas_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='coregister_to_atlas',
             inputs=[FilesetSpec('coreg_ref_brain', nifti_gz_format)],
             outputs=[FilesetSpec('coreg_to_atlas', nifti_gz_format),
@@ -524,7 +524,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def segmentation_pipeline(self, img_type=2, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='FAST_segmentation',
             inputs=[FilesetSpec('brain', nifti_gz_format)],
             outputs=[FilesetSpec('wm_seg', nifti_gz_format)],
@@ -568,7 +568,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             New resolution of the image. If None no resampling is
             performed
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='preproc_pipeline',
             inputs=[FilesetSpec(in_file_name, nifti_gz_format)],
             outputs=[FilesetSpec('preproc', nifti_gz_format)],
@@ -621,7 +621,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                    FieldSpec(pe_angle, dtype=str),
                    FilesetSpec(dcm_info, text_format)]
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name=name,
             inputs=[FilesetSpec(dcm_in_name, dicom_format)],
             outputs=outputs,
@@ -658,7 +658,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             if 'align_mats' in self.data_spec_names():
                 inputs.append(FilesetSpec('align_mats', directory_format))
             ref = False
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
             outputs=[FilesetSpec('motion_mats', motion_mats_format)],

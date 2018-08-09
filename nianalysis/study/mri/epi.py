@@ -49,7 +49,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def _epireg_linear_coregistration_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='linear_coreg',
             inputs=[FilesetSpec('brain', nifti_gz_format),
                     FilesetSpec('coreg_ref_brain', nifti_gz_format),
@@ -77,7 +77,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def intrascan_alignment_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='MCFLIRT_pipeline',
             inputs=[FilesetSpec('preproc', nifti_gz_format)],
             outputs=[FilesetSpec('moco', nifti_gz_format),
@@ -116,7 +116,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def _topup_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='preproc_pipeline',
             inputs=[FilesetSpec('primary', nifti_gz_format),
                     FilesetSpec('reverse_phase', nifti_gz_format),
@@ -179,7 +179,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def _fugue_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='preproc_pipeline',
             inputs=[FilesetSpec('primary', nifti_gz_format),
                     FilesetSpec('field_map_mag', nifti_gz_format),
@@ -232,7 +232,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
                   FilesetSpec('qform_mat', text_matrix_format)]
         if 'reverse_phase' not in self.input_names:
             inputs.append(FilesetSpec('align_mats', directory_format))
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
             outputs=[FilesetSpec('motion_mats', motion_mats_format)],

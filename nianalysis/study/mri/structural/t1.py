@@ -33,7 +33,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='segmentation',
             inputs=[FilesetSpec('primary', nifti_gz_format)],
             outputs=[FilesetSpec('fs_recon_all',

@@ -133,7 +133,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             inputs = [FilesetSpec('primary', dicom_format)]
             distortion_correction = False
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='preprocess',
             inputs=inputs,
             outputs=outputs,
@@ -236,7 +236,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             want to use
         """
         if self.branch('brain_extract_method', 'mrtrix'):
-            pipeline = self.create_pipeline(
+            pipeline = self.new_pipeline(
                 'brain_extraction',
                 inputs=[FilesetSpec('preproc', nifti_gz_format),
                         FilesetSpec('grad_dirs', fsl_bvecs_format),
@@ -272,7 +272,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         Corrects B1 field inhomogeneities
         """
         bias_method = self.switch('bias_correct_method')
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='bias_correct',
             inputs=[FilesetSpec('preproc', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
@@ -306,7 +306,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def intensity_normalisation_pipeline(self, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='intensity_normalization',
             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
@@ -374,7 +374,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='tensor',
             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
                     FilesetSpec('grad_dirs', fsl_bvecs_format),
@@ -407,7 +407,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='fa',
             inputs=[FilesetSpec('tensor', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format)],
@@ -445,7 +445,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
             outputs.append(FilesetSpec('gm_response', text_format))
             outputs.append(FilesetSpec('csf_response', text_format))
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='response',
             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
                     FilesetSpec('grad_dirs', fsl_bvecs_format),
@@ -482,7 +482,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         Averages the estimate response function over all subjects in the
         project
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='average_response',
             inputs=[FilesetSpec('wm_response', text_format)],
             outputs=[FilesetSpec('avg_response', text_format,
@@ -517,7 +517,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         Parameters
         ----------
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='fod',
             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
                     FilesetSpec('grad_dirs', fsl_bvecs_format),
@@ -553,7 +553,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def tbss_pipeline(self, **kwargs):  # @UnusedVariable
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='tbss',
             inputs=[FilesetSpec('fa', nifti_gz_format)],
             outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
@@ -586,7 +586,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         Extracts the b0 images from a DWI study and takes their mean
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='extract_b0',
             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
                     FilesetSpec('grad_dirs', fsl_bvecs_format),
@@ -631,7 +631,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def global_tracking_pipeline(self, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='global_tracking',
             inputs=[FilesetSpec('fod', mrtrix_format),
                     FilesetSpec('bias_correct', nifti_gz_format),
@@ -664,7 +664,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def intrascan_alignment_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='affine_mat_generation',
             inputs=[FilesetSpec('preproc', nifti_gz_format),
                     FilesetSpec('eddy_par', eddy_par_format)],
@@ -713,7 +713,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         Concatenates two dMRI filesets (with different b-values) along the
         DW encoding (4th) axis
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='concatenation',
             inputs=[FilesetSpec('low_b_dw_scan', mrtrix_format),
                     FilesetSpec('high_b_dw_scan', mrtrix_format)],
@@ -758,7 +758,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             inputs.append(FilesetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(FilesetSpec('brain_mask', nifti_gz_format))
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name=pipeline_name,
             inputs=inputs,
             outputs=[FilesetSpec('ficvf', nifti_format),

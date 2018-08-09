@@ -19,7 +19,7 @@ class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
 
     def sinogram_unlisting_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='prepare_sinogram',
             inputs=[FilesetSpec('list_mode', list_mode_format),
                     FieldSpec('time_offset', int),

@@ -22,7 +22,7 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('zip_from_directory', zip_format, 'pipeline')]
 
     def pipeline(self):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='pipeline',
             inputs=[FilesetSpec('mrtrix', text_format),
                     FilesetSpec('nifti_gz', text_format),

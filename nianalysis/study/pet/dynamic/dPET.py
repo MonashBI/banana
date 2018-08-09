@@ -39,7 +39,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
         ParameterSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='Extract_volume',
             inputs=[FilesetSpec('pet_volumes', nifti_gz_format)],
             outputs=[FilesetSpec('pet_image', nifti_gz_format)],
@@ -56,7 +56,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def ApplyTransform_pipeline(self, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='applytransform',
             inputs=[FilesetSpec('pet_volumes', nifti_gz_format),
                     FilesetSpec('warp_file', nifti_gz_format),
@@ -86,7 +86,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def Baseline_Removal_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='Baseline_removal',
             inputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
             outputs=[FilesetSpec('detrended_volumes', nifti_gz_format)],
@@ -103,7 +103,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def Dual_Regression_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='Dual_regression',
             inputs=[FilesetSpec('detrended_volumes', nifti_gz_format),
                     FilesetSpec('regression_map', nifti_gz_format)],

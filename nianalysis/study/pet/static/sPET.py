@@ -19,7 +19,7 @@ class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def suvr_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='SUVR',
             inputs=[FilesetSpec('registered_volume', nifti_gz_format),
                     FilesetSpec('base_mask', nifti_gz_format)],

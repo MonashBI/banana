@@ -80,7 +80,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         Parameters
         ----------
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='registration_pipeline',
             inputs=[FilesetSpec('ute_echo1', dicom_format),
                     FilesetSpec('ute_echo2', dicom_format)],
@@ -166,7 +166,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def segmentation_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='ute1_segmentation',
             inputs=[FilesetSpec('ute1_registered', nifti_format)],
             outputs=[FilesetSpec('air_mask', nifti_gz_format),
@@ -261,7 +261,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def umaps_calculation_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='core_umaps_calculation',
             inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
                     FilesetSpec('ute2_registered', nifti_gz_format),
@@ -302,7 +302,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def backwrap_to_ute_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='backwrap_to_ute',
             inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
                     FilesetSpec('ute_echo1', dicom_format),
@@ -464,7 +464,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
 #     def conversion_to_dicom_pipeline(self, **kwargs):
 #
-#         pipeline = self.create_pipeline(
+#         pipeline = self.new_pipeline(
 #             name='conversion_to_dicom',
 #             inputs=[FilesetSpec('sute_cont_ute', nifti_gz_format),
 #                     FilesetSpec('sute_fix_ute', nifti_gz_format),

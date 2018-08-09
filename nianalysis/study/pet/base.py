@@ -65,7 +65,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def _ICA_pipeline_factory(self, input_fileset, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='ICA',
             inputs=[input_fileset],
             outputs=[FilesetSpec('decomposed_file', nifti_gz_format),
@@ -90,7 +90,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def Image_normalization_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='Image_registration',
             inputs=[FilesetSpec('pet_image', nifti_gz_format)],
             outputs=[FilesetSpec('registered_volume', nifti_gz_format),
@@ -118,7 +118,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def pet_data_preparation_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='pet_data_preparation',
             inputs=[FilesetSpec('pet_recon_dir', directory_format)],
             outputs=[FilesetSpec('pet_recon_dir_prepared', directory_format)],
@@ -140,7 +140,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def pet_time_info_extraction_pipeline(self, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='pet_info_extraction',
             inputs=[FilesetSpec('pet_data_dir', directory_format)],
             outputs=[FieldSpec('pet_end_time', dtype=float),

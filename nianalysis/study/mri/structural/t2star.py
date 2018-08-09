@@ -38,7 +38,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='qsmrecon',
             inputs=[FilesetSpec('coils', directory_format)],
             # TODO should this be primary?
@@ -85,7 +85,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def bet_T1(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='BET_T1',
             inputs=[FilesetSpec('t1', nifti_gz_format)],
             outputs=[FilesetSpec('betted_T1', nifti_gz_format),
@@ -110,7 +110,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def cet_T1(self, **kwargs):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='CET_T1',
             inputs=[FilesetSpec('betted_T1', nifti_gz_format),
                     FilesetSpec(
@@ -142,7 +142,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='qsmrecon',
             inputs=[FilesetSpec('coils', directory_format)],
             # TODO should this be primary?

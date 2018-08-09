@@ -163,7 +163,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='mean_displacement_calculation',
             inputs=inputs,
             outputs=[FilesetSpec('mean_displacement', text_format),
@@ -238,7 +238,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if 'pet_data_dir' in self.input_names:
             inputs.append(FieldSpec('pet_start_time', str))
             inputs.append(FieldSpec('pet_end_time', str))
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='motion_framing',
             inputs=inputs,
             outputs=[FilesetSpec('frame_start_times', text_format),
@@ -273,7 +273,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def plot_mean_displacement_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='plot_mean_displacement',
             inputs=[FilesetSpec('mean_displacement_rc', text_format),
                     FilesetSpec('offset_indexes', text_format),
@@ -299,7 +299,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='frame_mean_transformation_mats',
             inputs=[FilesetSpec('mats4average', text_format),
                     FilesetSpec('frame_vol_numbers', text_format)],
@@ -322,7 +322,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def fixed_binning_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='fixed_binning',
             inputs=[FilesetSpec('start_times', text_format),
                     FieldSpec('pet_start_time', str),
@@ -352,7 +352,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def pet_correction_factors_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='pet_correction_factors',
             inputs=[FilesetSpec('timestamps', directory_format)],
             outputs=[FilesetSpec('correction_factors', text_format)],
@@ -373,7 +373,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def nifti2dcm_conversion_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='conversion_to_dicom',
             inputs=[FilesetSpec('umaps_align2ref', directory_format),
                     FilesetSpec('umap', dicom_format)],
@@ -415,7 +415,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 'umap' in self.input_names):
             inputs.append(FilesetSpec('umap', nifti_gz_format))
             outputs.append(FilesetSpec('umaps_align2ref', directory_format))
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='static_frame2ref_alignment',
             inputs=inputs,
             outputs=outputs,
@@ -444,7 +444,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def create_moco_series_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='create_moco_series',
             inputs=[FilesetSpec('start_times', text_format),
                     FilesetSpec('motion_par', text_format)],
@@ -477,7 +477,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             inputs.append(
                 FilesetSpec('umap_aligned_dicoms', directory_format))
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='gather_motion_detection_outputs',
             inputs=inputs,
             outputs=[FilesetSpec('motion_detection_output', directory_format)],
@@ -525,7 +525,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             StructAlignment = True
         else:
             StructAlignment = False
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='pet_mc',
             inputs=inputs,
             outputs=outputs,
