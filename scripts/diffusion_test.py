@@ -1,4 +1,4 @@
-from arcana import LocalRepository, LinearProcessor, FilesetMatch
+from arcana import SimpleRepository, LinearProcessor, FilesetMatch
 from nianalysis.study.mri.structural.diffusion import DiffusionStudy
 from nianalysis.file_format import dicom_format
 import os.path as op
@@ -8,7 +8,7 @@ test_dir = op.join(op.dirname(__file__), '..', 'test', 'data',
 
 study = DiffusionStudy(
     'diffusion',
-    LocalRepository(op.join(test_dir, 'study')),
+    SimpleRepository(op.join(test_dir, 'study')),
     LinearProcessor(op.join(test_dir, 'work')),
     inputs=[FilesetMatch('primary', dicom_format, '16.*',
                          is_regex=True),

@@ -17,15 +17,15 @@ from arcana.exception import ArcanaMissingDataException
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
-from arcana.repository.local import (
-    LocalRepository, SUMMARY_NAME)
+from arcana.repository.simple import (
+    SimpleRepository, SUMMARY_NAME)
 from arcana.processor import LinearProcessor
 from arcana.exception import ArcanaError
 from arcana.node import ArcanaNodeMixin
 from arcana.exception import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
-from arcana.repository.local import (
+from arcana.repository.simple import (
     SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
 logger = logging.getLogger('arcana')
@@ -148,7 +148,7 @@ class BaseTestCase(TestCase):
 
     @property
     def repository(self):
-        return LocalRepository(self.project_dir)
+        return SimpleRepository(self.project_dir)
 
     @property
     def processor(self):

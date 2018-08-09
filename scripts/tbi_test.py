@@ -3,7 +3,7 @@ import os.path
 import shutil
 from arcana.data import FilesetMatch
 from nianalysis.study.mri.diffusion import DiffusionStudy
-from arcana.repository.local import LocalRepository
+from arcana.repository.simple import SimpleRepository
 from nianalysis.file_format import mrtrix_format
 
 repository_path = os.path.abspath(os.path.join(
@@ -19,7 +19,7 @@ os.makedirs(WORK_PATH)
 study = DiffusionStudy(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
-    repository=LocalRepository(repository_path),
+    repository=SimpleRepository(repository_path),
     input_scans={
         'dwi_scan': Fileset('R-L_60dir_b2000', mrtrix_format),
         'forward_rpe': Fileset('R-L_6dir_b0', mrtrix_format),
