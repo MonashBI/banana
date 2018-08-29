@@ -13,8 +13,7 @@ from nianalysis.exception import NiAnalysisUsageError
 class ImageDisplayMixin():
 
     def display_slice_panel(self, filesets, img_size=5,
-                             row_kwargs=None, offset=None,
-                             **kwargs):
+                            row_kwargs=None, offset=None, **kwargs):
         """
         Displays an image in a Nx3 panel axial, coronal and sagittal
         slices for the filesets correspdong to each of the data names
@@ -30,7 +29,7 @@ class ImageDisplayMixin():
             A list of row-specific kwargs to passed on to
             _display_mid_slices
         offset : Tuple(3)[int]
-            An array of integers with with to offset the slices displayed
+            An array of integers with which to offset the slices displayed
         """
         n_rows = len(filesets)
         if row_kwargs is None:
@@ -54,8 +53,12 @@ class ImageDisplayMixin():
             vox = header['pixdim'][1:4]
             rkwargs = copy(rkwargs)
             rkwargs.update(kwargs)
-            self._display_mid_slices(array, vox, fig, gs, i, offset,
-                                     **rkwargs)
+            try:
+                self._display_mid_slices(array, vox, fig, gs, i,
+                                         offset=offset, **rkwargs)
+            except NiAnalysisUsageError as e:
+                raise NiAnalysisUsageError(
+                    str(e) + " displaying {}".format(fileset.path))
         # Remove space around figure
         plt.tight_layout(0.0)
         # Either show image or save it to file
@@ -90,14 +93,11 @@ class ImageDisplayMixin():
             # Call mrview to display the tracks, capture them to
             # file and then reload the image into a matplotlib
             # grid
-            options = ['-tractography.load', tck.path,
-                       '-noannotations']
+            options = ['-tractography.load', tck.path, '-noannotations']
             if offset is not None:
-                header = tck.get_header()
-                dims = np.array(header[''], dtype=int)
-                mid = dims // 2
-                target = mid + np.array(offset, dtype=int)
-                options.extend(['-target', '{},{},{}'.format(*target)])
+                array = bg.get_array()
+                centre = self.image_centre(array, offset)
+                options.extend(['-voxel', '{},{},{}'.format(*centre)])
             # Set options to remove cursor, capture hte image and exit
             options.extend(['-lock', 'yes', '-capture.grab', '-exit'])
             imgs = []
@@ -143,10 +143,8 @@ class ImageDisplayMixin():
         array = self.crop(array, padding)
         # Pad out image array into cube
         padded_size = np.max(array.shape)
-        mid = np.array(array.shape, dtype=int) // 2
-        if offset is not None:
-            mid += np.array(offset, dtype=int)
-
+        # Get centre of the image in order to take image slices there
+        centre = self.image_centre(array, offset)
         # Get dynamic range of array
         if vmax is None:
             assert vmax_percentile is not None
@@ -164,21 +162,46 @@ class ImageDisplayMixin():
                        cmap='gray', aspect=aspect,
                        vmin=0, vmax=vmax)
         # Display slices
-        display_slice(np.squeeze(array[-1:0:-1, -1:0:-1, mid[2]]).T,
+        display_slice(np.squeeze(array[-1:0:-1, -1:0:-1, centre[2]]).T,
                       row_index * 3, vox_sizes[0] / vox_sizes[1])
-        display_slice(np.squeeze(array[-1:0:-1, mid[1], -1:0:-1]).T,
+        display_slice(np.squeeze(array[-1:0:-1, centre[1], -1:0:-1]).T,
                       row_index * 3 + 1, vox_sizes[0] / vox_sizes[2])
-        display_slice(np.squeeze(array[mid[0], -1:0:-1, -1:0:-1]).T,
+        display_slice(np.squeeze(array[centre[0], -1:0:-1, -1:0:-1]).T,
                       row_index * 3 + 2, vox_sizes[1] / vox_sizes[2])
 
     @classmethod
     def crop(cls, array, border=0):
-        nz = np.argwhere(array)
-        return array[tuple(
-            slice(max(a - border, 0),
-                  min(b + border, array.shape[i]))
-            for i, (a, b) in enumerate(zip(nz.min(axis=0),
-                                           nz.max(axis=0))))]
+        """
+        Crops an image array to the nonzero voxels (+ equal border in
+        each dimension)
+        """
+        nonzeros = np.argwhere(array)
+        # Build index slices for each dimension of the array
+        slices = []
+        for i, (a, b) in enumerate(zip(nonzeros.min(axis=0),
+                                       nonzeros.max(axis=0))):
+            # Append the index slice for the
+            slices.append(slice(max(a - border, 0),
+                                min(b + border, array.shape[i])))
+        return array[tuple(slices)]
+
+    @classmethod
+    def image_centre(cls, array, offset=None):
+        """
+        Returns the centre point of the non-zero voxels in the image
+        """
+        nonzeros = np.argwhere(array)
+        min_ind = nonzeros.min(axis=0)
+        max_ind = nonzeros.max(axis=0)
+        centre = ((max_ind - min_ind) // 2) + min_ind
+        if offset is not None:
+            centre += np.array(offset, dtype=int)
+            if np.any(centre < 0) or np.any(centre > array.shape):
+                raise NiAnalysisUsageError(
+                    "Specified offset ({}) is larger than the "
+                    "dimension of the image / 2 ({})"
+                    .format(offset, array.shape // 2))
+        return centre
 
     @classmethod
     def pad_to_size(cls, array, size):

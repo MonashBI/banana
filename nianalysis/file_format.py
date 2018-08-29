@@ -1,13 +1,29 @@
 from copy import deepcopy, copy
+from abc import ABCMeta, abstractmethod
 from arcana.node import Node
 from arcana.data.file_format import FileFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.requirement import (
     dcm2niix_req, mrtrix3_req)
 from nianalysis.interfaces.converters import Dcm2niix  # @UnusedImport
-from arcana.data.file_format.standard import (
-    text_format, directory_format, zip_format, targz_format)
 import nibabel
+# Import base file formats from Arcana for convenience
+from arcana.data.file_format.standard import (
+    text_format, directory_format, zip_format, targz_format)  # @UnusedImport
+
+
+class ImageFileFormat(FileFormat, ABCMeta):
+
+    @abstractmethod
+    def load_header(self, fileset):
+        pass
+
+    @abstractmethod
+    def load_array(self, fileset):
+        pass
+
+    def get_vox_sizes(self, fileset):
+        return self.load_header(fileset)[self.VOX_SIZE_FIELD][1:4]
 
 
 class Dcm2niixConverter(Converter):
@@ -34,12 +50,18 @@ class MrtrixConverter(Converter):
         return convert_node, 'in_file', 'out_file'
 
 
+# =====================================================================
+# # Custom loader functions for different image types
+# =====================================================================
+
+
 def nifti_array_loader(path):
     return nibabel.load(path).get_data()
 
 
 def nifti_header_loader(path):
     return dict(nibabel.load(path).get_header())
+
 
 # =====================================================================
 # All Data Formats
