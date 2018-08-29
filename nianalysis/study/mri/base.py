@@ -328,7 +328,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         outputs = [FilesetSpec('brain', nifti_gz_format),
                    FilesetSpec('brain_mask', nifti_gz_format)]
-        if self.switch('optibet_gen_report'):
+        if self.branch('optibet_gen_report'):
             outputs.append(FilesetSpec('optiBET_report', gif_format))
         pipeline = self.new_pipeline(
             name='brain_extraction',

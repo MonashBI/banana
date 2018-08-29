@@ -87,9 +87,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('num_global_tracks', int(1e9)),
-        ParameterSpec('global_tracks_cutoff', 0.05)]
-
-    add_switch_specs = [
+        ParameterSpec('global_tracks_cutoff', 0.05),
         SwitchSpec('preproc_denoise', False),
         SwitchSpec('response_algorithm', 'tax',
                       ('tax', 'dhollander', 'msmt_5tt')),
@@ -115,7 +113,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    FilesetSpec('eddy_par', eddy_par_format)]
         citations = [fsl_cite, eddy_cite, topup_cite,
                      distort_correct_cite]
-        if self.switch('preproc_denoise'):
+        if self.branch('preproc_denoise'):
             outputs.append(FilesetSpec('noise_residual', mrtrix_format))
             citations.extend(dwidenoise_cites)
 
@@ -143,7 +141,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=citations,
             **kwargs)
         # Denoise the dwi-scan
-        if self.switch('preproc_denoise'):
+        if self.branch('preproc_denoise'):
             # Run denoising
             denoise = pipeline.create_node(DWIDenoise(), name='denoise',
                                            requirements=[mrtrix3_req])
@@ -198,7 +196,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             pipeline.connect_input('primary', dwiextract, 'in_file')
             pipeline.connect_input('primary', extract_grad, 'in_file')
         # Connect inter-nodes
-        if self.switch('preproc_denoise'):
+        if self.branch('preproc_denoise'):
             pipeline.connect_input('primary', denoise, 'in_file')
             pipeline.connect_input('primary', subtract_operands, 'in1')
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
@@ -220,7 +218,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                 'bvecs_file')
         pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-        if self.switch('preproc_denoise'):
+        if self.branch('preproc_denoise'):
             pipeline.connect_output('noise_residual', subtract, 'out_file')
         # Check inputs/outputs are connected
         return pipeline
@@ -271,7 +269,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         """
         Corrects B1 field inhomogeneities
         """
-        bias_method = self.switch('bias_correct_method')
+        bias_method = self.parameter('bias_correct_method')
         pipeline = self.new_pipeline(
             name='bias_correct',
             inputs=[FilesetSpec('preproc', nifti_gz_format),
@@ -459,7 +457,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Create fod fit node
         response = pipeline.create_node(ResponseSD(), name='response',
                                         requirements=[mrtrix3_req])
-        response.inputs.algorithm = self.switch('response_algorithm')
+        response.inputs.algorithm = self.parameter('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -536,7 +534,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         # Create fod fit node
         dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
                                        requirements=[mrtrix3_req])
-        dwi2fod.inputs.algorithm = self.switch('fod_algorithm')
+        dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
         # Connect nodes
@@ -703,10 +701,8 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 
     add_parameter_specs = [ParameterSpec('noddi_model',
-                                   'WatsonSHStickTortIsoV_B0')]
-
-    add_switch_specs = [
-        SwitchSpec('single_slice', False)]
+                                         'WatsonSHStickTortIsoV_B0'),
+                           SwitchSpec('single_slice', False)]
 
     def concatenate_pipeline(self, **kwargs):  # @UnusedVariable
         """
@@ -754,7 +750,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         inputs = [FilesetSpec('bias_correct', nifti_gz_format),
                   FilesetSpec('grad_dirs', fsl_bvecs_format),
                   FilesetSpec('bvalues', fsl_bvals_format)]
-        if self.switch('single_slice'):
+        if self.branch('single_slice'):
             inputs.append(FilesetSpec('eroded_mask', nifti_gz_format))
         else:
             inputs.append(FilesetSpec('brain_mask', nifti_gz_format))
@@ -812,10 +808,10 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
                          'brain_mask_file')
         # Connect inputs
         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
-        if not pipeline.switch('single_slice'):
-            pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
-        else:
+        if pipeline.branch('single_slice'):
             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
+        else:
+            pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
         pipeline.connect_input('grad_dirs', batch_fit, 'bvecs_file')
         pipeline.connect_input('bvalues', batch_fit, 'bvals_file')
         # Connect outputs
