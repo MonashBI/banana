@@ -3,7 +3,7 @@ import os.path
 import shutil
 from arcana.data import FilesetMatch
 from nianalysis.study.mri.diffusion import NODDIStudy
-from arcana.repository.simple import SimpleRepository
+from arcana.repository.simple import DirectoryRepository
 from nianalysis.file_format import mrtrix_format
 
 repository_path = os.path.abspath(os.path.join(
@@ -23,7 +23,7 @@ shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
 study = NODDIStudy(
     name=DATASET_NAME,
-    project_id=NODDI_PROJECT, repository=SimpleRepository(repository_path),
+    project_id=NODDI_PROJECT, repository=DirectoryRepository(repository_path),
     input_scans=[
         FilesetMatch('low_b_dw_scan', mrtrix_format,
                      'r_l_noddi_b700_30_directions'),

@@ -14,6 +14,7 @@ from nianalysis.file_format import (
 from nianalysis.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
+import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.parameter import ParameterSpec
 from nianalysis.study.mri.epi import EPIStudy
@@ -32,8 +33,8 @@ from arcana.interfaces.utils import CopyToDir
 logger = logging.getLogger('nianalysis')
 
 
-atlas_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', '..', 'atlases'))
+atlas_path = op.abspath(
+    op.join(op.dirname(__file__), '..', '..', '..', 'atlases'))
 
 IMAGE_TYPE_TAG = ('0008', '0008')
 PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
@@ -41,18 +42,6 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
 class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
-
-    add_option_specs = [
-        ParameterSpec('component_threshold', 20),
-        ParameterSpec('motion_reg', True),
-        ParameterSpec('highpass', 0.01),
-        ParameterSpec('brain_thresh_percent', 5),
-        ParameterSpec('MNI_template',
-                   os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
-        ParameterSpec('MNI_template_mask', os.path.join(
-            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        ParameterSpec('linear_reg_method', 'ants'),
-        ParameterSpec('group_ica_components', 15)]
 
     add_data_specs = [
         FilesetSpec('train_data', rfile_format, optional=True,
@@ -73,6 +62,18 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                     'timeseries_normalization_to_atlas_pipeline'),
         FilesetSpec('smoothed_ts', nifti_gz_format,
                     'smoothing_pipeline')]
+
+    add_parameter_specs = [
+        ParameterSpec('component_threshold', 20),
+        ParameterSpec('motion_reg', True),
+        ParameterSpec('highpass', 0.01),
+        ParameterSpec('brain_thresh_percent', 5),
+        ParameterSpec('MNI_template', op.join(atlas_path,
+                                              'MNI152_T1_2mm.nii.gz')),
+        ParameterSpec('MNI_template_mask', op.join(
+            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
+        ParameterSpec('linear_reg_method', 'ants'),
+        ParameterSpec('group_ica_components', 15)]
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 

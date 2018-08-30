@@ -18,7 +18,7 @@ from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
 from arcana.repository.simple import (
-    SimpleRepository, SUMMARY_NAME)
+    DirectoryRepository, SUMMARY_NAME)
 from arcana.processor import LinearProcessor
 from arcana.exception import ArcanaError
 from arcana.node import ArcanaNodeMixin
@@ -148,7 +148,7 @@ class BaseTestCase(TestCase):
 
     @property
     def repository(self):
-        return SimpleRepository(self.project_dir)
+        return DirectoryRepository(self.project_dir)
 
     @property
     def processor(self):
