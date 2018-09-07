@@ -18,14 +18,14 @@ class T1T2Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_sub_study_specs = [
         SubStudySpec('t1', T1Study, {
-            't1': 'primary',
+            't1': 'magnitude',
             't1_coreg_to_atlas': 'coreg_to_atlas',
             'coreg_to_atlas_coeff': 'coreg_to_atlas_coeff',
             'brain_mask': 'brain_mask',
             't1_brain': 'brain',
             'fs_recon_all': 'fs_recon_all'}),
         SubStudySpec('t2', T2Study, {
-            't2_coreg': 'primary',
+            't2_coreg': 'magnitude',
             'manual_wmh_mask_coreg': 'manual_wmh_mask',
             't2_brain': 'brain',
             'brain_mask': 'brain_mask'}),

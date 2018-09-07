@@ -10,7 +10,7 @@ study = DiffusionStudy(
     'diffusion',
     DirectoryRepository(op.join(test_dir, 'study')),
     LinearProcessor(op.join(test_dir, 'work')),
-    inputs=[FilesetMatch('primary', dicom_format, '16.*',
+    inputs=[FilesetMatch('magnitude', dicom_format, '16.*',
                          is_regex=True),
             FilesetMatch('reverse_phase', dicom_format, '15.*',
                          is_regex=True)])

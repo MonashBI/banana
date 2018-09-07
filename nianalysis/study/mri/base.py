@@ -35,7 +35,7 @@ atlas_path = os.path.abspath(
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('primary', dicom_format),
+        FilesetSpec('magnitude', dicom_format),
         FilesetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
@@ -554,7 +554,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preproc_pipeline(self, in_file_name='primary', **kwargs):
+    def preproc_pipeline(self, in_file_name='magnitude', **kwargs):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -594,13 +594,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def header_info_extraction_pipeline(self, **kwargs):
-        if self.input('primary').format != dicom_format:
+        if self.input('magnitude').format != dicom_format:
             raise ArcanaUsageError(
-                "Can only extract header info if 'primary' fileset "
+                "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM format ({})".format(
-                    self.input('primary').format))
+                    self.input('magnitude').format))
         return self.header_info_extraction_pipeline_factory(
-            'header_info_extraction', 'primary', **kwargs)
+            'header_info_extraction', 'magnitude', **kwargs)
 
     def header_info_extraction_pipeline_factory(
             self, name, dcm_in_name, multivol=False, output_prefix='',
@@ -650,7 +650,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             logger.info("Cannot derive 'coreg_matrix' for {} required for "
                         "motion matrix calculation, assuming that it "
                         "is the reference study".format(self))
-            inputs = [FilesetSpec('primary', dicom_format)]
+            inputs = [FilesetSpec('magnitude', dicom_format)]
             ref = True
         else:
             inputs = [FilesetSpec('coreg_matrix', text_matrix_format),
@@ -671,7 +671,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             MotionMatCalculation(), name='motion_mats')
         if ref:
             mm.inputs.reference = True
-            pipeline.connect_input('primary', mm, 'dummy_input')
+            pipeline.connect_input('magnitude', mm, 'dummy_input')
         else:
             pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
             pipeline.connect_input('qform_mat', mm, 'qform_mat')

@@ -16,7 +16,7 @@ class TestDiffusion(BaseTestCase):
     def test_preprocess(self):
         study = self.create_study(
             DiffusionStudy, 'preprocess', [
-                FilesetMatch('primary', mrtrix_format, 'r_l_dwi_b700_30'),
+                FilesetMatch('magnitude', mrtrix_format, 'r_l_dwi_b700_30'),
                 FilesetMatch('dwi_reference', mrtrix_format, 'l_r_dwi_b0_6')])
         preproc = list(study.data('preproc'))[0]
         self.assertTrue(os.path.exists(preproc.path))

@@ -35,7 +35,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.new_pipeline(
             name='segmentation',
-            inputs=[FilesetSpec('primary', nifti_gz_format)],
+            inputs=[FilesetSpec('magnitude', nifti_gz_format)],
             outputs=[FilesetSpec('fs_recon_all',
                                  freesurfer_recon_all_format)],
             desc="Segment white/grey matter and csf",
@@ -53,7 +53,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')
         pipeline.connect(recon_all, 'subject_id', join, 'filename')
         # Connect inputs/outputs
-        pipeline.connect_input('primary', recon_all, 'T1_files')
+        pipeline.connect_input('magnitude', recon_all, 'T1_files')
         pipeline.connect_output('fs_recon_all', join, 'path')
         return pipeline
 

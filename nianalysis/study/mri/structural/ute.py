@@ -67,7 +67,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
     def header_info_extraction_pipeline(self, **kwargs):
         return (super(UTEStudy, self).
                 header_info_extraction_pipeline_factory(
-                    'primary', **kwargs))
+                    'magnitude', **kwargs))
 
     def umap_dcm2nii_conversion_pipeline(self, **kwargs):
         return super(UTEStudy, self).dcm2nii_conversion_pipeline_factory(

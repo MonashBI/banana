@@ -119,7 +119,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
         if ('dwi_reference' in self.input_names or
                 'reverse_phase' in self.input_names):
-            inputs = [FilesetSpec('primary', dicom_format),
+            inputs = [FilesetSpec('magnitude', dicom_format),
                       FieldSpec('ped', dtype=str),
                       FieldSpec('pe_angle', dtype=str)]
             if 'dwi_reference' in self.input_names:
@@ -128,7 +128,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                 inputs.append(FilesetSpec('reverse_phase', nifti_gz_format))
             distortion_correction = True
         else:
-            inputs = [FilesetSpec('primary', dicom_format)]
+            inputs = [FilesetSpec('magnitude', dicom_format)]
             distortion_correction = False
 
         pipeline = self.new_pipeline(
@@ -193,17 +193,17 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                 pipeline.connect_input('reverse_phase', mrcat, 'second_scan')
             else:
                 assert False
-            pipeline.connect_input('primary', dwiextract, 'in_file')
-            pipeline.connect_input('primary', extract_grad, 'in_file')
+            pipeline.connect_input('magnitude', dwiextract, 'in_file')
+            pipeline.connect_input('magnitude', extract_grad, 'in_file')
         # Connect inter-nodes
         if self.branch('preproc_denoise'):
-            pipeline.connect_input('primary', denoise, 'in_file')
-            pipeline.connect_input('primary', subtract_operands, 'in1')
+            pipeline.connect_input('magnitude', denoise, 'in_file')
+            pipeline.connect_input('magnitude', subtract_operands, 'in1')
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
             pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
             pipeline.connect(subtract_operands, 'out', subtract, 'operands')
         else:
-            pipeline.connect_input('primary', dwipreproc, 'in_file')
+            pipeline.connect_input('magnitude', dwipreproc, 'in_file')
         if distortion_correction:
             pipeline.connect_input('ped', prep_dwi, 'pe_dir')
             pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')

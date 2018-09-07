@@ -118,7 +118,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.new_pipeline(
             name='preproc_pipeline',
-            inputs=[FilesetSpec('primary', nifti_gz_format),
+            inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('reverse_phase', nifti_gz_format),
                     FieldSpec('ped', str),
                     FieldSpec('pe_angle', str)],
@@ -131,7 +131,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         reorient_epi_in = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_epi_in',
             requirements=[fsl509_req])
-        pipeline.connect_input('primary', reorient_epi_in, 'in_file')
+        pipeline.connect_input('magnitude', reorient_epi_in, 'in_file')
 
         reorient_epi_opposite = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_epi_opposite',
@@ -181,7 +181,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.new_pipeline(
             name='preproc_pipeline',
-            inputs=[FilesetSpec('primary', nifti_gz_format),
+            inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('field_map_mag', nifti_gz_format),
                     FilesetSpec('field_map_phase', nifti_gz_format)],
             outputs=[FilesetSpec('preproc', nifti_gz_format)],
@@ -193,7 +193,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         reorient_epi_in = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_epi_in',
             requirements=[fsl509_req])
-        pipeline.connect_input('primary', reorient_epi_in, 'in_file')
+        pipeline.connect_input('magnitude', reorient_epi_in, 'in_file')
         fm_mag_reorient = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_fm_mag',
             requirements=[fsl509_req])

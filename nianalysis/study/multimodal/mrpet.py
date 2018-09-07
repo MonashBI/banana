@@ -158,7 +158,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                         'real_duration')))
                 input_names.append(
                     self.spec(sub_study_spec.inverse_map(
-                        'primary')).pattern)
+                        'magnitude')).pattern)
                 sub_study_names.append(sub_study_spec.name)
             except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
