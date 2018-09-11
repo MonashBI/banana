@@ -2,7 +2,7 @@ import os.path
 from arcana.testing import BaseTestCase
 import tempfile
 from arcana.node import Node
-from arcana.interfaces.mrtrix import MRCalc
+from nianalysis.interfaces.mrtrix import MRCalc
 from nianalysis.requirement import mrtrix3_req
 
 

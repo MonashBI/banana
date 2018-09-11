@@ -9,6 +9,7 @@
 .settings/
 *.swp 
 .settings/
+__pycache__
 /nianalysis.egg-info/
 /nianalysis/atlases
 /nianalysis/templates

@@ -21,6 +21,7 @@ from nianalysis.file_format import text_matrix_format
 import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
+from nianalysis.interfaces.custom.coils import CombineCoils
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec
 from nianalysis.interfaces.custom.motion_correction import (
@@ -35,13 +36,18 @@ atlas_path = os.path.abspath(
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('magnitude', dicom_format),
+        FilesetSpec('raw_channels', directory_format,
+                    description=(
+                        "Reconstructed complex image for each "
+                        "coil without standardisation.")),
+        FilesetSpec('magnitude', dicom_format, 'combine_channels'),
         FilesetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
                     optional=True),
         FilesetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
+        FilesetSpec('atlas', nifti_gz_format),
         FilesetSpec('preproc', nifti_gz_format,
                     'preproc_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
@@ -113,7 +119,31 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('flirt_qsform', False, desc=(
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
-            "scanner"))]
+            "scanner")),
+        ParameterSpec(
+            'raw_channel_fname_regex',
+            r'.*(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
+            desc=("The regular expression to extract channel, echo and complex"
+                  " axis from the filename of the raw channel NIfTI image")),
+        ParameterSpec(
+            'raw_channel_real_label', 'REAL',
+            desc=("The name of the real axis extracted from the channel "
+                  "filename")),
+        ParameterSpec(
+            'raw_channel_imag_label', 'IMAGINARY',
+            desc=("The name of the real axis extracted from the channel "
+                  "filename"))]
+
+    combine_channels = Study.pipeline_constructor(
+        'combine_channels',
+        CombineCoils,
+        desc=("Combine raw channel coils into magnitude and phase and combine "
+              "to produce magnitude image"),
+        inputs={'raw_channels': 'in_dir'},
+        outputs={'magnitude': 'first_echo'},
+        parameters={'raw_channel_fname_regex': 'fname_re',
+                    'raw_channel_real_label': 'real_label',
+                    'raw_channel_imag_label': 'imaginary_lable'})
 
     @property
     def coreg_brain_spec(self):
@@ -678,4 +708,56 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             if 'align_mats' in self.data_spec_names():
                 pipeline.connect_input('align_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
+        return pipeline
+
+    def prepare_swi_coils(self, **options):
+        """
+        Standalone coil combination code for combining the signal from
+        multiple coil channels into a single phase and magnitude images
+        """
+        pipeline = self.create_pipeline(
+            name='swi_coils_preparation',
+            inputs=[FilesetSpec('raw_coils', directory_format)],
+            outputs=[FilesetSpec('t2s', nifti_gz_format),
+                     FilesetSpec('t2s_last_echo', nifti_gz_format)],
+            description="Perform preprocessing on raw coils",
+            default_options={
+                'qsm_echo_times': [7.38, 22.14],
+                'qsm_num_channels': 32,
+                'swi_coils_filename':
+                'T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil'},
+            citations=[matlab_cite],
+            version=1,
+            options=options)
+
+        # Prepare and reformat SWI_COILS for T2s only
+        # Prepared output not saved to avoid being uploaded into xnat
+        # Only required prior to QSM, so node incorporated into QSM pipeline
+        prepare = pipeline.create_node(interface=qsm.Prepare(),
+                                       name='prepare',
+                                       requirements=[matlab2015_req],
+                                       wall_time=30, memory=16000)
+        prepare.inputs.echo_times = pipeline.option('qsm_echo_times')
+        prepare.inputs.num_channels = pipeline.option('qsm_num_channels')
+        prepare.inputs.base_filename = pipeline.option('swi_coils_filename')
+        pipeline.connect_input('raw_coils', prepare, 'in_dir')
+
+        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
+                                    name='n4_bias_correction',
+                                    requirements=[ants19_req],
+                                    wall_time=60, memory=12000)
+        bias.inputs.n_iterations = [200, 200, 200, 200]
+        bias.inputs.convergence_threshold = 0.0000001
+        pipeline.connect(prepare, 'out_file_fe', bias, 'input_image')
+        pipeline.connect_output('t2s', bias, 'output_image')
+
+        bias_2 = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
+                                      name='n4_bias_correction_2',
+                                      requirements=[ants19_req],
+                                      wall_time=60, memory=12000)
+        bias_2.inputs.n_iterations = [200, 200, 200, 200]
+        bias_2.inputs.convergence_threshold = 0.0000001
+        pipeline.connect(prepare, 'out_file_le', bias_2, 'input_image')
+        pipeline.connect_output('t2s_last_echo', bias_2, 'output_image')
+
         return pipeline

@@ -17,15 +17,14 @@ from arcana.exception import ArcanaMissingDataException
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
-from arcana.repository.simple import (
-    DirectoryRepository, SUMMARY_NAME)
 from arcana.processor import LinearProcessor
 from arcana.exception import ArcanaError
 from arcana.node import ArcanaNodeMixin
 from arcana.exception import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
-from arcana.repository.simple import (
+from arcana.repository.directory import (
+    DirectoryRepository, SUMMARY_NAME,
     SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
 logger = logging.getLogger('arcana')
