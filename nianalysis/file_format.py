@@ -9,7 +9,8 @@ from nianalysis.interfaces.converters import Dcm2niix  # @UnusedImport
 import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format.standard import (
-    text_format, directory_format, zip_format, targz_format)  # @UnusedImport
+    text_format, directory_format, zip_format, targz_format,
+    UnzipConverter, UnTarGzConverter)  # @UnusedImport
 
 
 class ImageFileFormat(FileFormat, ABCMeta):
@@ -96,6 +97,11 @@ mrtrix_format = FileFormat(name='mrtrix', extension='.mif',
                                        'nifti': MrtrixConverter,
                                        'nifti_gz': MrtrixConverter,
                                        'analyze': MrtrixConverter})
+
+multi_nifti_gz_format = FileFormat(name='multi_nifti_gz', extension=None,
+                                   directory=True, within_dir_exts=['.nii.gz'],
+                                   converters={'zip': UnzipConverter,
+                                               'targz': UnTarGzConverter})
 
 # Tractography formats
 mrtrix_track_format = FileFormat(name='mrtrix_track', extension='.tck')

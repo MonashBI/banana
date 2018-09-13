@@ -2,8 +2,8 @@ from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
 from nianalysis.requirement import spm12_req
 from nianalysis.citation import spm_cite
-from nianalysis.file_format import nifti_format, motion_mats_format,\
-    directory_format, nifti_gz_format
+from nianalysis.file_format import (nifti_format, motion_mats_format,
+    directory_format, nifti_gz_format, multi_nifti_gz_format)
 from arcana.data import FilesetSpec, FieldSpec
 from arcana.study.base import Study, StudyMetaClass
 from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
@@ -21,7 +21,7 @@ from nianalysis.file_format import text_matrix_format
 import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
-from nianalysis.interfaces.custom.coils import CombineCoils
+from nianalysis.interfaces.custom.raw_channels import PrepareChannels
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec
 from nianalysis.interfaces.custom.motion_correction import (
@@ -36,11 +36,13 @@ atlas_path = os.path.abspath(
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('raw_channels', directory_format,
+        FilesetSpec('raw_channels', multi_nifti_gz_format,
                     description=(
                         "Reconstructed complex image for each "
                         "coil without standardisation.")),
-        FilesetSpec('magnitude', dicom_format, 'combine_channels'),
+        FilesetSpec('magnitude', dicom_format, 'prepare_channels'),
+        FilesetSpec('channels', multi_nifti_gz_format,
+                    'prepare_channels'),
         FilesetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
                           "scan to. Should be brain extracted"),
@@ -134,13 +136,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
-    combine_channels = Study.pipeline_constructor(
-        'combine_channels',
-        CombineCoils,
+    prepare_channels = Study.pipeline_constructor(
+        'prepare_channels',
+        PrepareChannels,
         desc=("Combine raw channel coils into magnitude and phase and combine "
               "to produce magnitude image"),
         inputs={'raw_channels': 'in_dir'},
-        outputs={'magnitude': 'first_echo'},
+        outputs={'magnitude': 'first_echo',
+                 'channels': 'coils_dir'},
         parameters={'raw_channel_fname_regex': 'fname_re',
                     'raw_channel_real_label': 'real_label',
                     'raw_channel_imag_label': 'imaginary_lable'})

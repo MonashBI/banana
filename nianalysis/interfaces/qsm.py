@@ -1,9 +1,22 @@
 from nipype.interfaces.matlab import MatlabCommand
 import nianalysis.interfaces
 from nipype.interfaces.base import (
-    TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File, Directory)
+    TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File,
+    Directory)
 import os
 import os.path as op
+
+
+SCRIPT_TEMPLATE = (
+    "set_param(0,'CharacterEncoding','UTF-8');\n"
+    "addpath(genpath('{matlab_dir}'));\n"
+    "{{cmd}};\n"
+    "exit;\n").format(op.join(nianalysis.interfaces.RESOURCES_DIR, 'matlab',
+                              'qsm'))
+
+
+def matlab_cmd(cmd):
+    return MatlabCommand(script=SCRIPT_TEMPLATE.format(cmd), mfile=True)
 
 
 class ShMRFInputSpec(BaseInterfaceInputSpec):
@@ -20,19 +33,11 @@ class ShMRF(BaseInterface):
     output_spec = ShMRFOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
-            "ShMRF('{in_file}', '{mask_file}', '{out_file}');\n"
-            "exit;\n").format(
+        mlab = matlab_cmd(
+            "ShMRF('{in_file}', '{mask_file}', '{out_file}')").format(
                 in_file=self.inputs.in_file,
                 mask_file=self.inputs.mask_file,
-                out_file=self._gen_filename('out_file'),
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                out_file=self._gen_filename('out_file'))
         result = mlab.run()
         return result.runtime
 
@@ -64,19 +69,11 @@ class FlipSWI(BaseInterface):
     output_spec = FlipSWIOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
-            "FlipSWI('{in_file}', '{hdr_file}', '{out_file}');\n"
-            "exit;\n").format(
+        mlab = matlab_cmd(
+            "FlipSWI('{in_file}', '{hdr_file}', '{out_file}')".format(
                 in_file=self.inputs.in_file,
                 hdr_file=self.inputs.hdr_file,
-                out_file=self._gen_filename('out_file'),
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                out_file=self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -114,14 +111,10 @@ class CVImage(BaseInterface):
     output_spec = CVImageOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
+        mlab = matlab_cmd(
             "CVImage('{qsm_file}', '{swi_file}', '{vein_atlas_file}', "
             "'{mask_file}', '{q_prior_file}', '{s_prior_file}', "
-            "'{a_prior_file}', '{out_file}');\n"
-            "exit;\n").format(
+            "'{a_prior_file}', '{out_file}')".format(
                 qsm_file=self.inputs.qsm,
                 swi_file=self.inputs.swi,
                 vein_atlas_file=self.inputs.vein_atlas,
@@ -129,11 +122,7 @@ class CVImage(BaseInterface):
                 q_prior_file=self.inputs.q_prior,
                 s_prior_file=self.inputs.s_prior,
                 a_prior_file=self.inputs.a_prior,
-                out_file=self._gen_filename('out_file'),
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                out_file=self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -145,7 +134,7 @@ class CVImage(BaseInterface):
 
     def _gen_filename(self, name):
         if name == 'out_file':
-            fname = op.join(self.working_dir,'CVImage.nii.gz')
+            fname = op.join(self.working_dir, 'CVImage.nii.gz')
         else:
             assert False
         return fname
@@ -153,9 +142,13 @@ class CVImage(BaseInterface):
 
 class PrepareInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
-    base_filename = traits.Str(value='T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil', mandatory=True, desc='Base filename of coil files');
-    echo_times = traits.List(traits.Float(), mandatory=True, value=[20.0], desc='Echo times in ms')
-    num_channels = traits.Int(value=32, mandatory=True, desc='Number of channels')
+    base_filename = traits.Str(
+        value='T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil',
+        mandatory=True, desc='Base filename of coil files');
+    echo_times = traits.List(traits.Float(), mandatory=True, value=[20.0],
+                             desc='Echo times in ms')
+    num_channels = traits.Int(value=32, mandatory=True,
+                              desc='Number of channels')
 
 
 class PrepareOutputSpec(TraitedSpec):
@@ -169,23 +162,17 @@ class Prepare(BaseInterface):
     output_spec = PrepareOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
-            "Prepare_Raw_Channels('{in_dir}', '{filename}', {echo_times}, {num_channels}, '{out_dir}', '{out_file_fe}', '{out_file_le}');\n"
-            "exit;\n").format(
+        mlab = matlab_cmd(
+            "Prepare_Raw_Channels('{in_dir}', '{filename}', {echo_times}, "
+            "{num_channels}, '{out_dir}', '{out_file_fe}', '{out_file_le}')"
+            .format(
                 in_dir=self.inputs.in_dir,
                 filename=self.inputs.base_filename,
                 out_dir=self._gen_filename('out_dir'),
                 out_file_fe=self._gen_filename('out_file_fe'),
                 out_file_le=self._gen_filename('out_file_le'),
                 echo_times=self.inputs.echo_times,
-                num_channels=self.inputs.num_channels,
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                num_channels=self.inputs.num_channels))
         result = mlab.run()
         return result.runtime
 
@@ -227,19 +214,12 @@ class FillHoles(BaseInterface):
     output_spec = FillHolesOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
+        mlab = matlab_cmd(
             "fillholes('{in_file}', '{out_file}');\n"
             "exit;\n").format(
                 in_file=self.inputs.in_file,
                 out_file=op.join(os.getcwd(),
-                                         self._gen_filename('out_file')),
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                                         self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -271,20 +251,13 @@ class FitMask(BaseInterface):
     output_spec = FitMaskOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
+        mlab = matlab_cmd(
             "FitMask('{in_file}', '{initial_mask_file}', '{out_file}');\n"
             "exit;\n").format(
                 in_file=self.inputs.in_file,
                 initial_mask_file=self.inputs.initial_mask_file,
                 out_file=op.join(os.getcwd(),
-                                         self._gen_filename('out_file')),
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                                         self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -321,22 +294,20 @@ class QSMSummary(BaseInterface):
         with open(op.join(os.getcwd(),
                                self._gen_filename('out_file')), 'w') as fp:
 
-            fp.write('subjectId,visitId,' + ','.join(str(t) for t in self.inputs.in_field_names) + '\n')
+            fp.write('subjectId,visitId,' + ','.join(
+                str(t) for t in self.inputs.in_field_names) + '\n')
 
-            for s, v, o in zip(self.inputs.in_subject_id, 
-                               self.inputs.in_visit_id, 
+            for s, v, o in zip(self.inputs.in_subject_id,
+                               self.inputs.in_visit_id,
                                self.inputs.in_field_values):
                 for ts, tv, to in zip(s, v, o):
                     fp.write(','.join(str(t) for t in [ts, tv]) + ',')
                     fp.write(','.join(str(t) for t in to) + '\n')
-        print op.join(os.getcwd(),
-                               self._gen_filename('out_file'))
         return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_file'] = op.join(os.getcwd(),
-                                           self._gen_filename('out_file'))
+        outputs['out_file'] = self._gen_filename('out_file')
         return outputs
 
     def _gen_filename(self, name):
@@ -344,14 +315,16 @@ class QSMSummary(BaseInterface):
             fname = 'qsm_summary.csv'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class STIInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     mask_file = File(exists=True, mandatory=True)
-    echo_times = traits.List(traits.Float(), value=[20.0], desc='Echo times in ms')
-    num_channels = traits.Int(value=32, mandatory=True, desc='Number of channels')
+    echo_times = traits.List(traits.Float(), value=[20.0],
+                             desc='Echo times in ms')
+    num_channels = traits.Int(value=32, mandatory=True,
+                              desc='Number of channels')
 
 
 class STIOutputSpec(TraitedSpec):
@@ -366,20 +339,14 @@ class STI(BaseInterface):
 
     def _run_interface(self, runtime):  # @UnusedVariable
         self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
-            "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times}, {num_channels});\n"
-            "exit;").format(
+        mlab = matlab_cmd(
+            "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times}, "
+            "{num_channels})").format(
                 in_dir=self.inputs.in_dir,
                 mask_file=self.inputs.mask_file,
                 out_dir=self.working_dir,
                 echo_times=self.inputs.echo_times,
-                num_channels=self.inputs.num_channels,
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                num_channels=self.inputs.num_channels)
         result = mlab.run()
         return result.runtime
 
@@ -402,19 +369,11 @@ class STI_SE(BaseInterface):
     output_spec = STIOutputSpec
 
     def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        script = (
-            "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{matlab_dir}'));\n"
-            "QSM_SingleEcho('{in_dir}', '{mask_file}', '{out_dir}');\n"
-            "exit;").format(
+        mlab = matlab_cmd(
+            "QSM_SingleEcho('{in_dir}', '{mask_file}', '{out_dir}')").format(
                 in_dir=self.inputs.in_dir,
                 mask_file=self.inputs.mask_file,
-                out_dir=self.working_dir,
-                matlab_dir=op.abspath(op.join(
-                    op.dirname(nianalysis.interfaces.__file__),
-                    'resources', 'matlab', 'qsm')))
-        mlab = MatlabCommand(script=script, mfile=True)
+                out_dir=self.working_dir)
         result = mlab.run()
         return result.runtime
 
