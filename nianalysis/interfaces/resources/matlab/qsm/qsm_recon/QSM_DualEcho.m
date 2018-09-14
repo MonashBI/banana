@@ -41,7 +41,7 @@ nii.img = Unwrapped_Phase;
 save_untouch_nii(nii,unwrapFile);
 
 % Step 2: Remove background phase
-% Apply V-Shape             
+% Apply V-Shape
 [TissuePhase,NewMask]=V_SHARP(Unwrapped_Phase,imerode(mask.img>0,ball(5)),'voxelsize',params.voxelsize);
 
 % Save Intermediate Results

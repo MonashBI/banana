@@ -37,11 +37,18 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('raw_channels', multi_nifti_gz_format,
-                    description=(
+                    desc=(
                         "Reconstructed complex image for each "
                         "coil without standardisation.")),
-        FilesetSpec('magnitude', dicom_format, 'prepare_channels'),
-        FilesetSpec('channels', multi_nifti_gz_format,
+        FilesetSpec('magnitude', nifti_gz_format, 'prepare_channels',
+                    desc=("Typically the primary scan acquired from the "
+                          "scanner, in some cases (e.g. QSM) it is desirable "
+                          "to be generated from separate channel signals, "
+                          "which can be provided to 'raw_channels' but in most"
+                          " cases it will be an input of the study.")),
+        FilesetSpec('channel_mags', multi_nifti_gz_format,
+                    'prepare_channels'),
+        FilesetSpec('channel_phases', multi_nifti_gz_format,
                     'prepare_channels'),
         FilesetSpec('coreg_ref_brain', nifti_gz_format,
                     desc=("A reference scan to coregister the primary "
@@ -49,17 +56,18 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                     optional=True),
         FilesetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
-        FilesetSpec('atlas', nifti_gz_format),
-        FilesetSpec('preproc', nifti_gz_format,
-                    'preproc_pipeline'),
+        FilesetSpec('atlas', nifti_gz_format, optional=True,
+                    desc=("Atlas to register the study to")),
+        FilesetSpec('preproc', nifti_gz_format, 'preproc_pipeline',
+                    desc=("Performs basic preprocessing, such as realigning "
+                          "image axis to a standard rotation")),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="The brain masked image"),
-        FilesetSpec('brain_mask', nifti_gz_format,
-                    'brain_extraction_pipeline',
+        FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="Mask of the brain"),
         FilesetSpec('coreg_brain', nifti_gz_format,
                     'linear_coregistration_pipeline',
-                    desc=""),
+                    desc="Brain coregistered to the coreg_ref_brain"),
         FilesetSpec('coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format,
@@ -70,14 +78,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                     'coregister_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_report', gif_format,
                     'coregister_to_atlas_pipeline'),
-        FilesetSpec('wm_seg', nifti_gz_format,
-                    'segmentation_pipeline'),
+        FilesetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         FilesetSpec('dcm_info', text_format,
-                    'header_info_extraction_pipeline'),
-        FilesetSpec('motion_mats', motion_mats_format,
-                    'motion_mat_pipeline'),
-        FilesetSpec('qformed', nifti_gz_format,
-                    'qform_transform_pipeline'),
+                    'header_info_extraction_pipeline',
+                    desc=("Extracts ")),
+        FilesetSpec('motion_mats', motion_mats_format, 'motion_mat_pipeline'),
+        FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
         FilesetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
         FieldSpec('tr', float, 'header_info_extraction_pipeline'),
@@ -143,7 +149,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
               "to produce magnitude image"),
         inputs={'raw_channels': 'in_dir'},
         outputs={'magnitude': 'first_echo',
-                 'channels': 'coils_dir'},
+                 'channel_mags': 'coil_magnitudes_dir',
+                 'channel_phases': 'coill_phases_dir'},
         parameters={'raw_channel_fname_regex': 'fname_re',
                     'raw_channel_real_label': 'real_label',
                     'raw_channel_imag_label': 'imaginary_lable'})

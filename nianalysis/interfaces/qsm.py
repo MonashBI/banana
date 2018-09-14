@@ -49,10 +49,10 @@ class ShMRF(BaseInterface):
 
     def _gen_filename(self, name):
         if name == 'out_file':
-            fname = op.join(self.working_dir, 'ShMRF_Vein_Mask.nii.gz')
+            fname = 'ShMRF_Vein_Mask.nii.gz'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class FlipSWIInputSpec(BaseInterfaceInputSpec):
@@ -85,11 +85,10 @@ class FlipSWI(BaseInterface):
 
     def _gen_filename(self, name):
         if name == 'out_file':
-            fname = op.join(self.working_dir,
-                            'Flipped_Scanner_Image.nii.gz')
+            fname = 'Flipped_Scanner_Image.nii.gz'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class CVImageInputSpec(BaseInterfaceInputSpec):
@@ -129,22 +128,21 @@ class CVImage(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_file'] = self._gen_filename('out_file')
-
         return outputs
 
     def _gen_filename(self, name):
         if name == 'out_file':
-            fname = op.join(self.working_dir, 'CVImage.nii.gz')
+            fname = 'CVImage.nii.gz'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class PrepareInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     base_filename = traits.Str(
         value='T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil',
-        mandatory=True, desc='Base filename of coil files');
+        mandatory=True, desc='Base filename of coil files')
     echo_times = traits.List(traits.Float(), mandatory=True, value=[20.0],
                              desc='Echo times in ms')
     num_channels = traits.Int(value=32, mandatory=True,
@@ -186,19 +184,14 @@ class Prepare(BaseInterface):
 
     def _gen_filename(self, name):
         if name == 'out_file_fe':
-            fname = op.join(self.working_dir,
-                                 'Raw',
-                                 'Raw_MAGNITUDE_FirstEcho.nii.gz')
+            fname = op.join('Raw', 'Raw_MAGNITUDE_FirstEcho.nii.gz')
         elif name == 'out_file_le':
-            fname = op.join(self.working_dir,
-                                 'Raw',
-                                 'Raw_MAGNITUDE_LastEcho.nii.gz')
+            fname = op.join('Raw', 'Raw_MAGNITUDE_LastEcho.nii.gz')
         elif name == 'out_dir':
-            fname = op.join(self.working_dir,
-                                 'Raw')
+            fname = 'Raw'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class FillHolesInputSpec(BaseInterfaceInputSpec):
@@ -218,15 +211,13 @@ class FillHoles(BaseInterface):
             "fillholes('{in_file}', '{out_file}');\n"
             "exit;\n").format(
                 in_file=self.inputs.in_file,
-                out_file=op.join(os.getcwd(),
-                                         self._gen_filename('out_file')))
+                out_file=self._gen_filename('out_file'))
         result = mlab.run()
         return result.runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_file'] = op.join(os.getcwd(),
-                                           self._gen_filename('out_file'))
+        outputs['out_file'] = self._gen_filename('out_file')
         return outputs
 
     def _gen_filename(self, name):
@@ -234,7 +225,7 @@ class FillHoles(BaseInterface):
             fname = 'Filled_Mask.nii.gz'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class FitMaskInputSpec(BaseInterfaceInputSpec):
@@ -263,8 +254,7 @@ class FitMask(BaseInterface):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_file'] = op.join(os.getcwd(),
-                                           self._gen_filename('out_file'))
+        outputs['out_file'] = self._gen_filename('out_file')
         return outputs
 
     def _gen_filename(self, name):
@@ -272,7 +262,7 @@ class FitMask(BaseInterface):
             fname = 'Fitted_Mask.nii.gz'
         else:
             assert False
-        return fname
+        return op.abspath(fname)
 
 
 class QSMSummaryInputsSpec(BaseInterfaceInputSpec):
@@ -316,76 +306,3 @@ class QSMSummary(BaseInterface):
         else:
             assert False
         return op.abspath(fname)
-
-
-class STIInputSpec(BaseInterfaceInputSpec):
-    in_dir = Directory(exists=True, mandatory=True)
-    mask_file = File(exists=True, mandatory=True)
-    echo_times = traits.List(traits.Float(), value=[20.0],
-                             desc='Echo times in ms')
-    num_channels = traits.Int(value=32, mandatory=True,
-                              desc='Number of channels')
-
-
-class STIOutputSpec(TraitedSpec):
-    qsm = File(exists=True)
-    tissue_phase = File(exists=True)
-    tissue_mask = File(exists=True)
-
-
-class STI(BaseInterface):
-    input_spec = STIInputSpec
-    output_spec = STIOutputSpec
-
-    def _run_interface(self, runtime):  # @UnusedVariable
-        self.working_dir = op.abspath(os.getcwd())
-        mlab = matlab_cmd(
-            "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times}, "
-            "{num_channels})").format(
-                in_dir=self.inputs.in_dir,
-                mask_file=self.inputs.mask_file,
-                out_dir=self.working_dir,
-                echo_times=self.inputs.echo_times,
-                num_channels=self.inputs.num_channels)
-        result = mlab.run()
-        return result.runtime
-
-    def _list_outputs(self):
-        outputs = self._outputs().get()
-        outputs['qsm'] = op.join(self.working_dir, 'QSM', 'QSM.nii.gz')
-        outputs['tissue_phase'] = op.join(
-            self.working_dir,
-            'QSM',
-            'TissuePhase.nii.gz')
-        outputs['tissue_mask'] = op.join(
-            self.working_dir,
-            'QSM',
-            'PhaseMask.nii.gz')
-        return outputs
-
-
-class STI_SE(BaseInterface):
-    input_spec = STIInputSpec
-    output_spec = STIOutputSpec
-
-    def _run_interface(self, runtime):  # @UnusedVariable
-        mlab = matlab_cmd(
-            "QSM_SingleEcho('{in_dir}', '{mask_file}', '{out_dir}')").format(
-                in_dir=self.inputs.in_dir,
-                mask_file=self.inputs.mask_file,
-                out_dir=self.working_dir)
-        result = mlab.run()
-        return result.runtime
-
-    def _list_outputs(self):
-        outputs = self._outputs().get()
-        outputs['qsm'] = op.join(self.working_dir, 'QSM', 'QSM.nii.gz')
-        outputs['tissue_phase'] = op.join(
-            self.working_dir,
-            'TissuePhase',
-            'TissuePhase.nii.gz')
-        outputs['tissue_mask'] = op.join(
-            self.working_dir,
-            'TissuePhase',
-            'CoilMasks.nii.gz')
-        return outputs
