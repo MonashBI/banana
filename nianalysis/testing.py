@@ -11,23 +11,22 @@ from collections import defaultdict
 import warnings
 import logging
 import xnat
-from arcana.repository.xnat import (
-    guess_file_format, special_char_re, lower, BUILTIN_XNAT_FIELDS)
+# from arcana.repository.xnat import guess_file_format, BUILTIN_XNAT_FIELDS
+from arcana.repository.xnat import (  
+    special_char_re, lower)
 from arcana.exception import ArcanaMissingDataException
-from arcana.file_format import FileFormat
+from arcana.dataset.file_format import FileFormat
 from arcana.utils import split_extension
 import nianalysis
 from arcana.utils import classproperty
-from arcana.repository.local import (
-    LocalRepository, SUMMARY_NAME)
+from arcana.repository.local import LocalRepository
+# from arcana.repository.local import SUMMARY_NAME, SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME
 from arcana.runner import LinearRunner
 from arcana.exception import ArcanaError
 from arcana.node import ArcanaNodeMixin
 from arcana.exception import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
-from arcana.repository.local import (
-    SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
 logger = logging.getLogger('arcana')
 logger.setLevel(logging.INFO)
@@ -38,6 +37,8 @@ logger.addHandler(handler)
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
+
+LOCAL_SUMMARY_NAME = 'ALL'
 
 class BaseTestCase(TestCase):
 
