@@ -1,21 +1,8 @@
 from nipype.interfaces.matlab import MatlabCommand, MatlabInputSpec
-from nipype.interfaces.base import (
-    TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File,
-    Directory, isdefined)
-from operator import attrgetter
+from nipype.interfaces.base import TraitedSpec, traits, File
 import os.path as op
 import nianalysis.interfaces
 
-# 
-# SCRIPT_TEMPLATE = (
-#     "set_param(0,'CharacterEncoding','UTF-8');\n"
-#     "addpath(genpath('{matlab_dir}'));\n"
-#     "{{cmd}};\n"
-#     "exit;\n").format()
-
-
-# def matlab_cmd(cmd):
-#     return MatlabCommand(script=SCRIPT_TEMPLATE.format(cmd), mfile=True)
 
 MATLAB_RESOURCES = op.join(nianalysis.interfaces.RESOURCES_DIR, 'matlab')
 
@@ -104,6 +91,8 @@ class BaseSTICommand(MatlabCommand):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
+        for name, _ in self.output_imgs:
+            outputs[name] = self._gen_filename(name)
         return outputs
 
 
@@ -120,7 +109,7 @@ class MRPhaseUnwrapInputSpec(BaseSTIInputSpec):
                           desc="Padding size for each dimension")
 
 
-class MRPhaseUnwrapOutputSpec(BaseSTIInputSpec):
+class MRPhaseUnwrapOutputSpec(BaseSTIOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
@@ -133,72 +122,30 @@ class MRPhaseUnwrap(BaseSTICommand):
     output_spec = MRPhaseUnwrapOutputSpec
 
 
-# class STIInputSpec(BaseInterfaceInputSpec):
-#     in_dir = Directory(exists=True, mandatory=True)
-#     mask_file = File(exists=True, mandatory=True)
-#     echo_times = traits.List(traits.Float(), value=[20.0],
-#                              desc='Echo times in ms')
-#     num_channels = traits.Int(value=32, mandatory=True,
-#                               desc='Number of channels')
-#     out_dir = Directory(exists=True, genfile=True,
-#                         "Directory to use for command outputs")
-# 
-# 
-# class STIOutputSpec(TraitedSpec):
-#     qsm = File(exists=True)
-#     tissue_phase = File(exists=True)
-#     tissue_mask = File(exists=True)
-# 
-# 
-# class STI(BaseInterface):
-#     input_spec = STIInputSpec
-#     output_spec = STIOutputSpec
-# 
-#     def _run_interface(self, runtime):  # @UnusedVariable
-#         mlab = matlab_cmd(
-#             "QSM('{in_dir}', '{mask_file}', '{out_dir}', {echo_times}, "
-#             "{num_channels})").format(
-#                 in_dir=self.inputs.in_dir,
-#                 mask_file=self.inputs.mask_file,
-#                 out_dir=self._gen_filename('out_dir'),
-#                 echo_times=self.inputs.echo_times,
-#                 num_channels=self.inputs.num_channels)
-#         result = mlab.run()
-#         return result.runtime
-# 
-#     def _list_outputs(self):
-#         outputs = self._outputs().get()
-#         qsm_dir = op.join(self._gen_filename('out_dir'), 'QSM')
-#         outputs['qsm'] = op.join(qsm_dir, 'QSM.nii.gz')
-#         outputs['tissue_phase'] = op.join(qsm_dir, 'TissuePhase.nii.gz')
-#         outputs['tissue_mask'] = op.join(qsm_dir, 'PhaseMask.nii.gz')
-#         return outputs
-# 
-#     def _gen_filename(self, name):
-#         if name == 'out_dir':
-#             fname = (self.inputs.out_dir
-#                      if isdefined(self.inputs.out_dir) else 'out_dir')
-#         else:
-#             assert False
-#         return op.abspath(fname)
-# 
-# 
-# class STI_SE(STI):
-# 
-#     def _run_interface(self, runtime):  # @UnusedVariable
-#         mlab = matlab_cmd(
-#             "QSM_SingleEcho('{in_dir}', '{mask_file}', '{out_dir}')").format(
-#                 in_dir=self.inputs.in_dir,
-#                 mask_file=self.inputs.mask_file,
-#                 out_dir=self._gen_filename('out_dir'))
-#         result = mlab.run()
-#         return result.runtime
-# 
-#     def _list_outputs(self):
-#         outputs = self._outputs().get()
-#         qsm_dir = op.join(self._gen_filename('out_dir'), 'QSM')
-#         tissue_dir = op.join(self._gen_filename('out_dir'), 'TissuePhase')
-#         outputs['qsm'] = op.join(qsm_dir, 'QSM.nii.gz')
-#         outputs['tissue_phase'] = op.join(tissue_dir, 'TissuePhase.nii.gz')
-#         outputs['tissue_mask'] = op.join(tissue_dir, 'CoilMasks.nii.gz')
-#         return outputs
+class VSharpInputSpec(BaseSTIInputSpec):
+
+    in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
+                   desc="Input file to unwrap")
+    mask = File(exists=True, mandatory=True, argpos=1,
+                formatstr="imerode({}>0, ball(5))",
+                desc="Mask file")
+    voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
+                             mandatory=True, keyword=True,
+                             desc="Voxel size of the image")
+
+
+class VSharpOutputSpec(BaseSTIOutputSpec):
+
+    out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
+                    header_from='in_file')
+    new_mask = File(exists=True, outpos=1, desc="New mask",
+                    header_from='mask')
+
+
+class VSharp(BaseSTICommand):
+
+    func = 'V_SHARP'
+    input_spec = VSharpInputSpec
+    output_spec = VSharpOutputSpec
+
+
