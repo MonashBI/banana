@@ -124,12 +124,6 @@ class Nii2Dicom(BaseInterface):
         for f in list(dcms):
             if not f.endswith('.dcm'):
                 dcms.remove(f)
-#         dcms = glob.glob(self.inputs.reference_dicom+'/*.dcm')
-#         if not dcms:
-#             dcms = glob.glob(self.inputs.reference_dicom+'/*.IMA')
-#         if not dcms:
-#             raise Exception('No DICOM files found in {}'
-#                             .format(self.inputs.reference_dicom))
         nifti_image = nib.load(self.inputs.in_file)
         nii_data = nifti_image.get_data()
         if len(dcms) != nii_data.shape[2]:
