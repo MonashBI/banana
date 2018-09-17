@@ -133,11 +133,11 @@ class Nii2Dicom(BaseInterface):
         nifti_image = nib.load(self.inputs.in_file)
         nii_data = nifti_image.get_data()
         if len(dcms) != nii_data.shape[2]:
-            raise Exception('Different number of nifti and dicom files '
-                            'provided ({} vs {}). Dicom to nifti conversion '
-                            'requires the same number of files in order to '
-                            'run. Please check.'.format(nii_data.shape[2],
-                                                        len(dcms)))
+            raise Exception("Different number of nifti slices and dicom files "
+                            "provided ({} vs {}). Dicom to nifti conversion "
+                            "requires the same number in order to run. "
+                            "Please check.".format(nii_data.shape[2],
+                                                   len(dcms)))
         out_dir = self._gen_filename('out_file')
         os.makedirs(out_dir, exist_ok=True)
         _, basename, _ = split_filename(self.inputs.in_file)
