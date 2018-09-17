@@ -1,6 +1,7 @@
 import os.path as op
 from arcana.study.base import Study, StudyMetaClass
 from arcana import ParameterSpec, DatasetSpec
+from nianalysis.interfaces.mrtrix import MRConvert
 from nianalysis.file_format import dicom_format, nifti_gz_format
 from nianalysis.interfaces.custom.motion_correction import ReorientUmap
 from nianalysis.requirement import mrtrix3_req
@@ -10,7 +11,7 @@ from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
 
 template_path = op.abspath(
     op.join(op.dirname(__file__).split('arcana')[0],
-                 'arcana', 'reference_data'))
+            'arcana', 'reference_data'))
 
 
 class CtStudy(Study, metaclass=StudyMetaClass):
@@ -20,7 +21,8 @@ class CtStudy(Study, metaclass=StudyMetaClass):
         DatasetSpec('dicom_ref', dicom_format),
         DatasetSpec('ct_umap', nifti_gz_format),
         DatasetSpec('ct_reg', nifti_gz_format, 'registration_pipeline'),
-        DatasetSpec('ct_reg_dicom', dicom_format, 'nifti2dcm_conversion_pipeline')]
+        DatasetSpec('ct_reg_dicom', dicom_format,
+                    'nifti2dcm_conversion_pipeline')]
 
     add_parameter_specs = []
 
@@ -45,7 +47,7 @@ class CtStudy(Study, metaclass=StudyMetaClass):
             citations=(),
             **kwargs)
         return pipeline
-    
+
     def nifti2dcm_conversion_pipeline(self, **kwargs):
 
         pipeline = self.create_pipeline(
@@ -60,29 +62,22 @@ class CtStudy(Study, metaclass=StudyMetaClass):
             citations=(),
             **kwargs)
 
-        list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
-        reorient_niftis = pipeline.create_node(
-            ReorientUmap(), name='reorient_niftis', requirements=[mrtrix3_req])
-
-        nii2dicom = pipeline.create_map_node(
-            Nii2Dicom(), name='nii2dicom',
-            iterfield=['in_file'], wall_time=20)
-#         nii2dicom.inputs.extension = 'Frame'
+        # Restride nifti image so that it matches dicom reference
+        mrconvert = pipeline.create_node(
+            MRConvert(), name='reorient_nifti', requirements=[mrtrix3_req])
+        # Node to copy nifti images to reference dicom
+        nii2dicom = pipeline.create_node(
+            Nii2Dicom(), name='nii2dicom', wall_time=20)
+        # List DICOMs from input directory
         list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
         list_dicoms.inputs.sort_key = dicom_fname_sort_key
-        copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
-        copy2dir.inputs.extension = 'Frame'
         # Connect nodes
-        pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
-        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom,
-                         'in_file')
+        pipeline.connect(mrconvert, 'out_file', nii2dicom, 'in_file')
         pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
-        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
         # Connect inputs
-        pipeline.connect_input('dicom_ref', list_niftis, 'directory')
-        pipeline.connect_input('ct_umap', list_dicoms, 'directory')
-        pipeline.connect_input('ct_umap', reorient_niftis, 'umap')
+        pipeline.connect_input('ct_umap', mrconvert, 'in_file')
+        pipeline.connect_input('dicom_ref', mrconvert, 'stride')
+        pipeline.connect_input('dicom_ref', list_dicoms, 'directory')
         # Connect outputs
-        pipeline.connect_output('ct_reg_dicom', copy2dir, 'out_dir')
+        pipeline.connect_output('ct_reg_dicom', nii2dicom, 'out_file')
         return pipeline
-    

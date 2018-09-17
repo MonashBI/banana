@@ -1,5 +1,5 @@
-
-import os.path
+import os
+import os.path as op
 from nipype.interfaces.base import (
     TraitedSpec, BaseInterface, File, Directory, traits, isdefined,
     CommandLineInputSpec, CommandLine)
@@ -49,7 +49,7 @@ class Dcm2niix(CommandLine):
         base, ext = split_extension(fname)
         match_re = re.compile(r'(_e\d+)?{}(_(?:e|c)\d+)?{}'
                               .format(base, ext if ext is not None else ''))
-        products = [os.path.join(out_dir, f) for f in os.listdir(out_dir)
+        products = [op.join(out_dir, f) for f in os.listdir(out_dir)
                     if match_re.match(f) is not None]
         if len(products) == 1:
             converted = products[0]
@@ -85,21 +85,21 @@ class Dcm2niix(CommandLine):
         if isdefined(self.inputs.out_dir):
             out_name = self.inputs.out_dir
         else:
-            out_name = os.path.join(os.getcwd())
+            out_name = op.join(os.getcwd())
         return out_name
 
     def _gen_outfilename(self):
         if isdefined(self.inputs.filename):
             out_name = self.inputs.filename
         else:
-            out_name = os.path.basename(self.inputs.input_dir)
+            out_name = op.basename(self.inputs.input_dir)
         return out_name
 
 
 class Nii2DicomInputSpec(TraitedSpec):
     in_file = File(mandatory=True, desc='input nifti file')
     reference_dicom = traits.List(mandatory=True, desc='original umap')
-#     out_file = Directory(genfile=True, desc='the output dicom file')
+    out_file = Directory(genfile=True, desc='the output dicom file')
 
 
 class Nii2DicomOutputSpec(TraitedSpec):
@@ -121,9 +121,8 @@ class Nii2Dicom(BaseInterface):
 
     def _run_interface(self, runtime):
         dcms = self.inputs.reference_dicom
-        to_remove = [x for x in dcms if '.dcm' not in x]
-        if to_remove:
-            for f in to_remove:
+        for f in list(dcms):
+            if not f.endswith('.dcm'):
                 dcms.remove(f)
 #         dcms = glob.glob(self.inputs.reference_dicom+'/*.dcm')
 #         if not dcms:
@@ -135,10 +134,12 @@ class Nii2Dicom(BaseInterface):
         nii_data = nifti_image.get_data()
         if len(dcms) != nii_data.shape[2]:
             raise Exception('Different number of nifti and dicom files '
-                            'provided. Dicom to nifti conversion require the '
-                            'same number of files in order to run. Please '
-                            'check.')
-        os.mkdir('nifti2dicom')
+                            'provided ({} vs {}). Dicom to nifti conversion '
+                            'requires the same number of files in order to '
+                            'run. Please check.'.format(nii_data.shape[2],
+                                                        len(dcms)))
+        out_dir = self._gen_filename('out_file')
+        os.makedirs(out_dir, exist_ok=True)
         _, basename, _ = split_filename(self.inputs.in_file)
         for i in range(nii_data.shape[2]):
             dcm = pydicom.read_file(dcms[i])
@@ -147,30 +148,22 @@ class Nii2Dicom(BaseInterface):
             dcm.pixel_array.setflags(write=True)
             dcm.pixel_array.flat[:] = nifti.flat[:]
             dcm.PixelData = dcm.pixel_array.T.tostring()
-            dcm.save_as('nifti2dicom/{0}_vol{1}.dcm'
-                        .format(basename, str(i).zfill(4)))
+            dcm.save_as(op.join(out_dir,
+                                '{}_vol{:04}.dcm'.format(basename, i)))
 
         return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_file'] = (
-            os.getcwd()+'/nifti2dicom')
+        outputs['out_file'] = op.abspath(self._gen_filename('out_file'))
         return outputs
 
     def _gen_filename(self, name):
         if name == 'out_file':
-            fname = self._gen_outfilename()
+            fname = (
+                self.inputs.out_file if isdefined(self.inputs.out_file) else
+                split_extension(op.basename(self.inputs.in_file))[0] +
+                '_dicom')
         else:
             assert False
-        return fname
-
-    def _gen_outfilename(self):
-        if isdefined(self.inputs.out_file):
-            fpath = self.inputs.out_file
-        else:
-            fname = (
-                split_extension(os.path.basename(self.inputs.in_file))[0] +
-                '_dicom')
-            fpath = os.path.join(os.getcwd(), fname)
-        return fpath
+        return op.abspath(fname)
