@@ -1,3 +1,5 @@
+from itertools import groupby, chain
+from operator import itemgetter
 from nipype.interfaces.matlab import MatlabCommand, MatlabInputSpec
 from nipype.interfaces.base import TraitedSpec, traits, File
 import os.path as op
@@ -47,6 +49,10 @@ class BaseSTICommand(MatlabCommand):
         for name, _ in self.input_imgs:
             script += "{} = load_untouch_nii('{}');\n".format(
                 name, getattr(self.inputs, name))
+        # Create parameter structs
+        for struct, keywords in self.structs:
+            for name, val in keywords.items():
+                script += '{}.{} = {};\n'.format(struct, name, val)
         # Create function call
         script += '[{}] = {}({}'.format(
             ', '.join(o[0] for o in self.output_imgs), self.func,
@@ -82,12 +88,22 @@ class BaseSTICommand(MatlabCommand):
             key=lambda x: x[1].outpos)
 
     @property
+    def structs(self):
+        key = itemgetter(0)
+        for struct, keywords in groupby(sorted(
+            ((t.in_struct, (n, t)) for n, t in self.inputs.items()
+             if t.in_struct is not None), key=key), key=key):
+            yield struct, dict(kw for _, kw in keywords)
+
+    @property
     def has_keywords(self):
-        return any(i.keyword for i in self.inputs.traits().values())
+        return (any(i.keyword for i in self.inputs.traits().values()) or
+                list(self.structs))
 
     @property
     def keyword_args(self):
-        return (n for n, i in self.inputs.items() if i.keyword)
+        return chain((n for n, i in self.inputs.items() if i.keyword),
+                     (n for n, kw in self.structs))
 
     def _list_outputs(self):
         outputs = self._outputs().get()
@@ -113,6 +129,8 @@ class MRPhaseUnwrapOutputSpec(BaseSTIOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
+    dummy = File(exists=True, outpos=1, desc=(
+        "Not sure, and not currently required by out workflows"))
 
 
 class MRPhaseUnwrap(BaseSTICommand):
@@ -149,3 +167,33 @@ class VSharp(BaseSTICommand):
     output_spec = VSharpOutputSpec
 
 
+class QSMiLSQRUnwrapInputSpec(BaseSTIInputSpec):
+
+    in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
+                   desc="Input file to unwrap")
+    voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
+                             mandatory=True, in_struct='params',
+                             desc="Voxel size of the image")
+    padsize = traits.List([12, 12, 12],
+                          (traits.Int(), traits.Int(), traits.Int()),
+                          usedefault=True, in_struct='params',
+                          desc="Padding size for each dimension")
+    te = traits.Float(mandatory=True, desc="TE time of acquisition protocol",
+                      in_struct='params')
+    B0 = traits.Enum((1, 2, 3), mandatory=True, desc="B0 axis",
+                     in_struct='params')
+    H = traits.Tuple((traits.Int(), traits.Int(), traits.Int()),
+                     mandatory=True, desc="Not sure", in_struct='params')
+
+
+class QSMiLSQRUnwrapOutputSpec(BaseSTIOutputSpec):
+
+    out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
+                    header_from='in_file')
+
+
+class QSMiLSQRUnwrap(BaseSTICommand):
+
+    func = 'QSMiLSQRUnwrap'
+    input_spec = QSMiLSQRUnwrapInputSpec
+    output_spec = QSMiLSQRUnwrapOutputSpec
