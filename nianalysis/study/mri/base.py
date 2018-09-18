@@ -88,6 +88,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
         FieldSpec('tr', float, 'header_extraction_pipeline'),
+        FieldSpec('echo_times', float, 'header_extraction_pipeline'),
+        FieldSpec('voxel_sizes', float, 'header_extraction_pipeline'),
+        FieldSpec('main_field_orient', float, 'header_extraction_pipeline'),
+        FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
         FieldSpec('start_time', str, 'header_extraction_pipeline'),
         FieldSpec('real_duration', str, 'header_extraction_pipeline'),
         FieldSpec('tot_duration', str, 'header_extraction_pipeline'),
@@ -654,12 +658,20 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ped = output_prefix + 'ped'
         pe_angle = output_prefix + 'pe_angle'
         dcm_info = output_prefix + 'dcm_info'
+        echo_times = output_prefix + 'echo_times'
+        vox_sizes = output_prefix + 'vox_sizes'
+        main_field_strength = output_prefix + 'main_field_strength'
+        main_field_orient = output_prefix + 'main_field_orient'
         outputs = [FieldSpec(tr, dtype=float),
                    FieldSpec(start_time, dtype=str),
                    FieldSpec(tot_duration, dtype=str),
                    FieldSpec(real_duration, dtype=str),
                    FieldSpec(ped, dtype=str),
                    FieldSpec(pe_angle, dtype=str),
+                   FieldSpec(echo_times, dtype=float),
+                   FieldSpec(vox_sizes, dtype=float),
+                   FieldSpec(main_field_strength, dtype=float),
+                   FieldSpec(main_field_orient, dtype=float),
                    FilesetSpec(dcm_info, text_format)]
 
         pipeline = self.new_pipeline(
@@ -684,6 +696,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.connect_output(ped, hd_extraction, 'ped')
         pipeline.connect_output(pe_angle, hd_extraction, 'pe_angle')
         pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
+        pipeline.connect_output(echo_times, hd_extraction, 'echo_times')
+        pipeline.connect_output(vox_sizes, hd_extraction, 'vox_sizes')
+        pipeline.connect_output(main_field_strength, hd_extraction,
+                                'main_field_strength')
+        pipeline.connect_output(main_field_orient, hd_extraction,
+                                'main_field_orient')
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):

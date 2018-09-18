@@ -8,16 +8,15 @@ from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import (
     directory_format, nifti_gz_format, text_matrix_format, csv_format,
-    zip_format, dicom_format)
+    dicom_format)
 from nianalysis.interfaces import qsm
 from arcana.interfaces import utils
-from arcana.exception import ArcanaNameError, ArcanaMissingDataException
 from nianalysis.exception import NiAnalysisUsageError
 from ..base import MRIStudy
 from .t1 import T1Study
 from nipype.interfaces import fsl, ants
 from nianalysis.interfaces.ants import AntsRegSyn
-from nianalysis.interfaces.sti import UnwrapPhase, VSharp, QSMiLSQRUnwrap
+from nianalysis.interfaces.sti import UnwrapPhase, VSharp, QSMiLSQR
 from nianalysis.interfaces.custom.coils import HIPCombineChannels
 from nipype.interfaces.utility.base import (
     IdentityInterface, Merge, Split)
@@ -48,7 +47,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             "perform the analysis (e.g. TE, B0, H)"))]
 
     add_parameter_specs = [
-        ParameterSpec('qsm_echo_times', [7.38, 22.14]),  # FIXME: Should be pulled from header into a Field
         ParameterSpec('qsm_padding', [12, 12, 12])]
 
     def swi_pipeline(self, **nmaps):
@@ -98,34 +96,26 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             # Unwrap phase using Laplacian unwrapping
             unwrap = pipeline.create_node(UnwrapPhase(), name='unwrap_phase')
             pipeline.connect(channel_combine, 'phase', unwrap, 'in_file')
-            unwrap.inputs.voxelsize = 0  # FIXME: Should be pulled from header
+            pipeline.connect_input('voxel_sizes', unwrap, 'voxelsize')
             unwrap.inputs.padsize = self.parameter('qsm_padding')
             # Remove background noise
             vsharp = pipeline.create_node(VSharp(), name="vsharp")
             pipeline.connect(unwrap, 'out_file', vsharp, 'in_file')
             pipeline.connect(erosion, 'out_file', vsharp, 'mask')
-            vsharp.inputs.voxelsize = 0
+            vsharp.inputs.mask_manip = "imerode({}>0, ball(5))"
+            pipeline.connect_input('voxel_sizes', vsharp, 'voxelsize')
             # Run QSM iLSQR
-            qsm = pipeline.create_node(QSMiLSQRUnwrap(), name='qsm')
-            pipeline.connect(vsharp, 'out_file', qsm, 'in_file')
-            pipeline.connect(vsharp, 'new_mask', qsm, 'mask')
-            qsm.inputs.voxelsize = 0
-            qsm.inputs.padsize = self.parameter('qsm_padding')
-            qsm.inputs.te = 
-            qsm.inputs = 
-            qsm.inputs = 
-            # params to go here...
+            qsmrecon = pipeline.create_node(QSMiLSQR(), name='qsm')
+            pipeline.connect(vsharp, 'out_file', qsmrecon, 'in_file')
+            pipeline.connect(vsharp, 'new_mask', qsmrecon, 'mask')
+            qsmrecon.inputs.mask_manip = "{}>0"
+            pipeline.connect_input('voxel_sizes', qsmrecon, 'voxelsize')
+            pipeline.connect_input('echo_times', qsmrecon, 'te')
+            pipeline.connect_input('main_field_strength', qsmrecon, 'B0')
+            pipeline.connect_input('main_field_orient', qsmrecon, 'voxelsize')
+            qsmrecon.inputs.padsize = self.parameter('qsm_padding')
         else:
             pass
-
-        # Phase and QSM for dual echo
-        qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',
-                                        requirements=[matlab2015_req],
-                                        wall_time=300, memory=24000)
-        qsmrecon.inputs.echo_times = self.parameter('qsm_echo_times')
-        qsmrecon.inputs.num_channels = self.parameter('qsm_num_channels')
-        pipeline.connect(erosion, 'out_file', qsmrecon, 'mask_file')
-        pipeline.connect_input('channels', 'out_dir', qsmrecon, 'in_dir')
 
         # Use geometry from scanner image
         qsm_geom = pipeline.create_node(
@@ -134,7 +124,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             requirements=[fsl5_req],
             memory=4000,
             wall_time=5)
-        pipeline.connect(qsmrecon, 'qsm', qsm_geom, 'dest_file')
+        pipeline.connect(qsmrecon, 'out_file', qsm_geom, 'dest_file')
         pipeline.connect_input('magnitude', 'out_file_fe', qsm_geom, 'in_file')
 
         phase_geom = pipeline.create_node(
@@ -143,7 +133,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             requirements=[fsl5_req],
             memory=4000,
             wall_time=5)
-        pipeline.connect(qsmrecon, 'tissue_phase', phase_geom, 'dest_file')
+        pipeline.connect(vsharp, 'out_file', phase_geom, 'dest_file')
         pipeline.connect_input('magnitude', phase_geom, 'in_file')
 
         mask_geom = pipeline.create_node(
@@ -152,7 +142,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             requirements=[fsl5_req],
             memory=4000,
             wall_time=5)
-        pipeline.connect(qsmrecon, 'tissue_mask', mask_geom, 'dest_file')
+        pipeline.connect(vsharp, 'new_mask', mask_geom, 'dest_file')
         pipeline.connect_input('magnitude', mask_geom, 'in_file')
 
         # Connect inputs/outputs

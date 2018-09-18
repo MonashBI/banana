@@ -54,9 +54,16 @@ class BaseSTICommand(MatlabCommand):
             for name, val in keywords.items():
                 script += '{}.{} = {};\n'.format(struct, name, val)
         # Create function call
+        input_args = []
+        for name, trait in self.input_imgs:
+            if trait.format_str is not None:
+                arg = getattr(self.inputs, trait.format_str).format(name)
+            else:
+                arg = name
+            input_args.append(arg)
+        output_args = (o[0] for o in self.output_imgs)
         script += '[{}] = {}({}'.format(
-            ', '.join(o[0] for o in self.output_imgs), self.func,
-            ', '.join(tr.formatstr.format(n) for n, tr in self.input_imgs))
+            ', '.join(output_args), self.func, ', '.join(input_args))
         if self.has_keywords:
             script += ', ' + ', '.join(
                 "'{}', {}".format(kw, getattr(self.inputs, kw))
@@ -142,11 +149,13 @@ class UnwrapPhase(BaseSTICommand):
 
 class VSharpInputSpec(BaseSTIInputSpec):
 
-    in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
+    in_file = File(exists=True, mandatory=True, argpos=0,
                    desc="Input file to unwrap")
-    mask = File(exists=True, mandatory=True, argpos=1,
-                formatstr="imerode({}>0, ball(5))",
-                desc="Mask file")
+    mask = File(exists=True, mandatory=True, argpos=1, desc="Mask file",
+                format_str='mask_manip')
+    mask_manip = traits.Str(
+        desc=("A format string used to manipulate the mask before it is "
+              "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
                              mandatory=True, keyword=True,
                              desc="Voxel size of the image")
@@ -167,12 +176,15 @@ class VSharp(BaseSTICommand):
     output_spec = VSharpOutputSpec
 
 
-class QSMiLSQRUnwrapInputSpec(BaseSTIInputSpec):
+class QSMiLSQRInputSpec(BaseSTIInputSpec):
 
-    in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
+    in_file = File(exists=True, mandatory=True, argpos=0,
                    desc="Input file to unwrap")
-    mask = File(exists=True, mandatory=True, argpos=1, formatstr="{}",
-                desc="Input file to unwrap")
+    mask = File(exists=True, mandatory=True, argpos=1,
+                desc="Input file to unwrap", format_str='mask_manip')
+    mask_manip = traits.Str(
+        desc=("The format string used to manipulate the mask before it is "
+              "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
                              mandatory=True, in_struct='params',
                              desc="Voxel size of the image")
@@ -189,14 +201,14 @@ class QSMiLSQRUnwrapInputSpec(BaseSTIInputSpec):
                      in_struct='params')
 
 
-class QSMiLSQRUnwrapOutputSpec(BaseSTIOutputSpec):
+class QSMiLSQROutputSpec(BaseSTIOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
 
 
-class QSMiLSQRUnwrap(BaseSTICommand):
+class QSMiLSQR(BaseSTICommand):
 
     func = 'QSMiLSQRUnwrap'
-    input_spec = QSMiLSQRUnwrapInputSpec
-    output_spec = QSMiLSQRUnwrapOutputSpec
+    input_spec = QSMiLSQRInputSpec
+    output_spec = QSMiLSQROutputSpec
