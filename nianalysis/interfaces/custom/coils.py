@@ -82,13 +82,13 @@ class ToPolarCoords(BaseInterface):
         # Get names for output directories
         combined_dir = outputs['combined_dir'] = self._gen_filename(
             'combined_dir')
-        coil_mags_dir = outputs['magnitudes_dir'] = self._gen_filename(
+        mags_dir = outputs['magnitudes_dir'] = self._gen_filename(
             'magnitudes_dir')
-        phases_dir = outputs['magnitudes_dir'] = self._gen_filename(
-            'magnitudes_dir')
+        phases_dir = outputs['phases_dir'] = self._gen_filename(
+            'phases_dir')
         # Ensure output directories exist
         os.makedirs(combined_dir, exist_ok=True)
-        os.makedirs(coil_mags_dir, exist_ok=True)
+        os.makedirs(mags_dir, exist_ok=True)
         os.makedirs(phases_dir, exist_ok=True)
         outputs['combined_images'] = []
         coil_mags = outputs['coil_magnitudes'] = []
@@ -138,7 +138,7 @@ class ToPolarCoords(BaseInterface):
                 mag_array = np.abs(cmplx)
                 mag_img = nib.Nifti1Image(mag_array, img.affine, img.header)
                 mag_path = op.join(
-                    coil_mags_dir,
+                    mags_dir,
                     self.inputs.out_fname_str.format(channel_i, echo_i))
                 echo_coil_mags.append(mag_path)
                 nib.save(mag_img, mag_path)
@@ -185,12 +185,12 @@ class ToPolarCoords(BaseInterface):
                                if isdefined(self.inputs.combined_dir)
                                else 'combined_images')
         elif name == 'magnitudes_dir':
-            fname = op.abspath(self.inputs.coils_dir
-                               if isdefined(self.inputs.coils_dir)
+            fname = op.abspath(self.inputs.magnitudes_dir
+                               if isdefined(self.inputs.magnitudes_dir)
                                else 'magnitudes_dir')
         elif name == 'phases_dir':
-            fname = op.abspath(self.inputs.coils_dir
-                               if isdefined(self.inputs.coils_dir)
+            fname = op.abspath(self.inputs.phases_dir
+                               if isdefined(self.inputs.phases_dir)
                                else 'phases_dir')
         else:
             assert False
@@ -311,3 +311,6 @@ class HIPCombineChannels(BaseInterface):
         else:
             assert False
         return fname
+
+
+class 

@@ -134,16 +134,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             "header (the image coordinates of the FOV supplied by the "
             "scanner")),
         ParameterSpec(
-            'coil_channel_fname_regex',
+            'channel_fname_regex',
             r'.*(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
             desc=("The regular expression to extract channel, echo and complex"
                   " axis from the filenames of the coils channel images")),
         ParameterSpec(
-            'coil_channel_real_label', 'REAL',
+            'channel_real_label', 'REAL',
             desc=("The name of the real axis extracted from the channel "
                   "filename")),
         ParameterSpec(
-            'coil_channel_imag_label', 'IMAGINARY',
+            'channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
@@ -156,9 +156,9 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         outputs={'magnitude': 'first_echo',
                  'channel_mags': 'magnitudes_dir',
                  'channel_phases': 'phases_dir'},
-        parameters={'coil_channel_fname_regex': 'fname_re',
-                    'coil_channel_real_label': 'real_label',
-                    'coil_channel_imag_label': 'imaginary_lable'})
+        parameters={'channel_fname_regex': 'fname_re',
+                    'channel_real_label': 'real_label',
+                    'channel_imag_label': 'imaginary_lable'})
 
     @property
     def coreg_brain_spec(self):

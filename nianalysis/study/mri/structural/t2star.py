@@ -1,4 +1,5 @@
 import os.path as op
+import re
 from arcana.study import (
     StudyMetaClass, MultiStudy, MultiStudyMetaClass, SubStudySpec)
 from arcana.data import FilesetSpec, FilesetCollection
@@ -15,6 +16,7 @@ from nianalysis.exception import NiAnalysisUsageError
 from ..base import MRIStudy
 from .t1 import T1Study
 from nipype.interfaces import fsl, ants
+from arcana.interfaces.utils import ListDir
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.sti import UnwrapPhase, VSharp, QSMiLSQR
 from nianalysis.interfaces.custom.coils import HIPCombineChannels
@@ -22,9 +24,13 @@ from nipype.interfaces.utility.base import (
     IdentityInterface, Merge, Split)
 from cProfile import label
 import nianalysis
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 
 atlas_path = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
+
+
+def coil_sort_key(fname):
+    return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
 
 
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -32,10 +38,10 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
     add_data_specs = [
 
         # QSM and phase processing
+        FilesetSpec('swi', nifti_gz_format, 'swi_pipeline'),
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     description=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
-        FilesetSpec('swi', nifti_gz_format, 'swi_pipeline'),
         FilesetSpec('tissue_phase', nifti_gz_format, 'qsm_pipeline',
                     description=("Phase map for each coil following unwrapping"
                                  " and background field removal")),
@@ -44,13 +50,15 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                                  " high magnitude")),
         FilesetSpec('header_image', dicom_format, desc=(
             "The image that contains the header information required to "
-            "perform the analysis (e.g. TE, B0, H)"))]
+            "perform the analysis (e.g. TE, B0, H). Alternatively, values "
+            "for extracted fields can be explicitly passed as inputs to the "
+            "Study"))]
 
     add_parameter_specs = [
+        SwitchSpec('qsm_dual_echo', False),
+        ParameterSpec('qsm_echo', 0,
+                      desc="The echo to use when using single echo"),
         ParameterSpec('qsm_padding', [12, 12, 12])]
-
-    def swi_pipeline(self, **nmaps):
-        raise NotImplementedError
 
     def header_extraction_pipeline(self, **kwargs):
         return self.header_extraction_pipeline_factory(
@@ -75,8 +83,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             version=1,
             **nmaps)
 
-        multi_echo = len(self.parameter('qsm_echo_times')) > 1
-
         erosion = pipeline.create_node(interface=fsl.ErodeImage(),
                                        name='mask_erosion',
                                        requirements=[fsl5_req],
@@ -85,7 +91,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         erosion.inputs.kernel_size = 2
         pipeline.connect_input('betted_T2s_mask', erosion, 'in_file')
 
-        if multi_echo:
+        if self.branch('qsm_dual_echo'):
             # Combine channels to produce phase and magnitude images
             channel_combine = pipeline.create_node(
                 interface=HIPCombineChannels(), name='channel_combine')
@@ -115,7 +121,20 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             pipeline.connect_input('main_field_orient', qsmrecon, 'voxelsize')
             qsmrecon.inputs.padsize = self.parameter('qsm_padding')
         else:
-            pass
+            def coil_echo_filter(fname):
+                return re.match(r'coil_\d+_(\d+)',
+                                fname) == self.parameter('qsm_echo')
+            # List phases in channel phases
+            list_phases = pipeline.create_node(ListDir(), name='list_phases')
+            pipeline.connect_input('channel_phases', list_phases, 'directory')
+            list_phases.inputs.sort_key = coil_sort_key
+            list_phases.inputs.filter = coil_echo_filter
+            # List magnitude in channel magnitudes
+            list_mags = pipeline.create_node(ListDir(), name='list_mags')
+            pipeline.connect_input('channel_magnitudes', list_mags,
+                                   'directory')
+            list_phases.inputs.sort_key = coil_sort_key
+            list_phases.inputs.filter = coil_echo_filter
 
         # Use geometry from scanner image
         qsm_geom = pipeline.create_node(
@@ -151,6 +170,9 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         pipeline.connect_output('tissue_mask', mask_geom, 'out_file')
 
         return pipeline
+
+    def swi_pipeline(self, **nmaps):
+        raise NotImplementedError
 
 
 class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
