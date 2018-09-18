@@ -13,14 +13,14 @@ from nianalysis.exception import NiAnalysisUsageError
 logger = logging.getLogger('nianalysis')
 
 
-class PrepareChannelsInputSpec(BaseInterfaceInputSpec):
+class ToPolarCoordsInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     in_fname_re = traits.Str(
         r'.*(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
         usedefault=True, desc=(
-            "Regex to extract the channel, echo and complex axis from "
-            "the input file name. Must returned named groups for 'channel' "
-            "'echo' and 'axis'"))
+            "Regex to extract the channel, echo and axis "
+            "(i.e. real or imaginary) information from the input file name. "
+            "Must incluce named groups for 'channel', 'echo' and 'axis'"))
     out_fname_str = traits.Str(
         'coil_{channel}_{echo}.nii.gz', usedefault=True,
         desc=("The format string used to generate the save channel filenames. "
@@ -33,13 +33,13 @@ class PrepareChannelsInputSpec(BaseInterfaceInputSpec):
         "Output directory for coil magnitude and phase images. "
         "Files will be saved with the name "
         "'Raw_Coil_<channel>_<echo>.nii.gz'"))
-    coil_magnitudes_dir = Directory(genfile=True, desc=(
+    magnitudes_dir = Directory(genfile=True, desc=(
         "Output directory for coil magnitude images."))
-    coil_phases_dir = Directory(genfile=True, desc=(
+    phases_dir = Directory(genfile=True, desc=(
         "Output directory for coil phase images"))
 
 
-class PrepareChannelsOutputSpec(TraitedSpec):
+class ToPolarCoordsOutputSpec(TraitedSpec):
     combined_images = traits.List(
         File(exists=True),
         desc="List of combined images for each echo using least squares")
@@ -55,13 +55,13 @@ class PrepareChannelsOutputSpec(TraitedSpec):
         desc=("List of magnitude images for each coil for each echo"))
     combined_dir = Directory(exists=True, desc=(
         "Output directory for combined magnitude images for each echo time "))
-    coil_magnitudes_dir = Directory(exists=True, desc=(
+    magnitudes_dir = Directory(exists=True, desc=(
         "Output directory for coil magnitude images"))
-    coil_phases_dir = Directory(exists=True, desc=(
+    phases_dir = Directory(exists=True, desc=(
         "Output directory for coil phase images"))
 
 
-class PrepareChannels(BaseInterface):
+class ToPolarCoords(BaseInterface):
     """
     Takes all REAL and IMAGINARY pairs in current directory and prepares
     them for Phase and QSM processing.
@@ -71,8 +71,8 @@ class PrepareChannels(BaseInterface):
     3. Magnitude and Phase components are produced
     4. Coils are combined for single magnitude images per echo
     """
-    input_spec = PrepareChannelsInputSpec
-    output_spec = PrepareChannelsOutputSpec
+    input_spec = ToPolarCoordsInputSpec
+    output_spec = ToPolarCoordsOutputSpec
 
     def _run_interface(self, runtime):
         return runtime
@@ -82,14 +82,14 @@ class PrepareChannels(BaseInterface):
         # Get names for output directories
         combined_dir = outputs['combined_dir'] = self._gen_filename(
             'combined_dir')
-        coil_mags_dir = outputs['coil_magnitudes_dir'] = self._gen_filename(
-            'coil_magnitudes_dir')
-        coil_phases_dir = outputs['coil_magnitudes_dir'] = self._gen_filename(
-            'coil_magnitudes_dir')
+        coil_mags_dir = outputs['magnitudes_dir'] = self._gen_filename(
+            'magnitudes_dir')
+        phases_dir = outputs['magnitudes_dir'] = self._gen_filename(
+            'magnitudes_dir')
         # Ensure output directories exist
         os.makedirs(combined_dir, exist_ok=True)
         os.makedirs(coil_mags_dir, exist_ok=True)
-        os.makedirs(coil_phases_dir, exist_ok=True)
+        os.makedirs(phases_dir, exist_ok=True)
         outputs['combined_images'] = []
         coil_mags = outputs['coil_magnitudes'] = []
         coil_phases = outputs['coil_phases'] = []
@@ -148,7 +148,7 @@ class PrepareChannels(BaseInterface):
                 phase_img = nib.Nifti1Image(phase_array, img.affine,
                                             img.header)
                 phase_path = op.join(
-                    coil_phases_dir,
+                    phases_dir,
                     self.inputs.out_fname_str.format(channel_i, echo_i))
                 echo_coil_phases.append(phase_path)
                 nib.save(phase_img, phase_path)
@@ -184,14 +184,14 @@ class PrepareChannels(BaseInterface):
             fname = op.abspath(self.inputs.combined_dir
                                if isdefined(self.inputs.combined_dir)
                                else 'combined_images')
-        elif name == 'coil_magnitudes_dir':
+        elif name == 'magnitudes_dir':
             fname = op.abspath(self.inputs.coils_dir
                                if isdefined(self.inputs.coils_dir)
-                               else 'coil_magnitudes_dir')
-        elif name == 'coil_phases_dir':
+                               else 'magnitudes_dir')
+        elif name == 'phases_dir':
             fname = op.abspath(self.inputs.coils_dir
                                if isdefined(self.inputs.coils_dir)
-                               else 'coil_phases_dir')
+                               else 'phases_dir')
         else:
             assert False
         return fname
@@ -199,9 +199,9 @@ class PrepareChannels(BaseInterface):
 
 class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
 
-    coil_magnitudes_dir = Directory(exists=True, desc=(
+    magnitudes_dir = Directory(exists=True, desc=(
         "Input directory containing coil magnitude images."))
-    coil_phases_dir = Directory(exists=True, desc=(
+    phases_dir = Directory(exists=True, desc=(
         "Input directory containing coil phase images."))
     in_fname_re = traits.Str(
         'coil_(?P<channel>\d+)_(?P<echo>\d+)\.nii\.gz', usedefault=True,
@@ -239,8 +239,8 @@ class HIPCombineChannels(BaseInterface):
         # Compile regular expression for extracting channel, echo and
         # complex axis indices from input file names
         fname_re = re.compile(self.inputs.in_fname_re)
-        for dpath, dct in ((self.inputs.coil_magnitudes_dir, mag_paths),
-                           (self.inputs.coil_phases_dir, phase_paths)):
+        for dpath, dct in ((self.inputs.magnitudes_dir, mag_paths),
+                           (self.inputs.phases_dir, phase_paths)):
             for fname in os.listdir(dpath):
                 match = fname_re.match(fname)
                 if match is None:

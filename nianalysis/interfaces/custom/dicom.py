@@ -12,6 +12,11 @@ import os.path
 import nibabel as nib
 from arcana.utils import split_extension
 import nibabel.nicom.csareader as csareader
+from logging import getLogger
+from nianalysis.exception import NiAnalysisMissingHeaderValue
+
+
+logger = getLogger('nianalysis')
 
 
 PEDP_TO_SIGN = {0: '-1', 1: '+1'}
@@ -30,6 +35,11 @@ class DicomHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
 class DicomHeaderInfoExtractionOutputSpec(TraitedSpec):
 
     tr = traits.Float(desc='Repetition time.')
+    echo_times = traits.List(traits.Float(), desc='Echo times')
+    voxel_sizes = traits.List(traits.Float(), desc="Voxel sizes")
+    H = traits.List((traits.Float(), traits.Float(), traits.Float),
+                    desc="Main magnetic field ")
+    B0 = traits.Float(desc="Main magnetic field strength")
     start_time = traits.Str(desc='Scan start time.')
     real_duration = traits.Str(desc='For 4D files, this will be the number of '
                                'volumes multiplied by the TR.')
@@ -97,6 +107,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
                 n_vols = len(list_dicom)
             real_duration = n_vols * tr
 
+        # Read header from first DICOM file in list
         hd = pydicom.read_file(list_dicom[0])
         try:
             start_time = str(hd.AcquisitionTime)
@@ -104,9 +115,34 @@ class DicomHeaderInfoExtraction(BaseInterface):
             try:
                 start_time = str(hd.AcquisitionDateTime)[8:]
             except AttributeError:
-                raise Exception('No acquisition time found for this scan.')
+                raise NiAnalysisMissingHeaderValue(
+                    'No acquisition time found for this scan.')
+        # Get echo times
+        num_echoes = hd.EchoTrainLength
+        if num_echoes == 1:
+            echo_times = [hd.EchoTime]
+        else:
+            echo_times = set()
+            for f in list_dicom:
+                hdr = pydicom.read_file(f)
+                echo_times.add(hdr.EchoTime)
+                if len(echo_times) == num_echoes:
+                    break
+            echo_times = list(echo_times)
+        # Get the orientation of the main magnetic field as a vector
+        img_orient = np.reshape(np.asarray(hd.ImageOrientationPatient),
+                                newshape=(3, 2))
+        b0_orient = np.cross(img_orient[0], img_orient[1])
+        # Get voxel sizes
+        vox_sizes = list(hd.PixelSpacing)
+        vox_sizes.append(hd.SliceThickness)
+        # Save extracted values to output dictionary
         self.dict_output['start_time'] = str(start_time)
         self.dict_output['tr'] = tr
+        self.dict_output['echo_times'] = echo_times
+        self.dict_output['vox_sizes'] = vox_sizes
+        self.dict_output['H'] = b0_orient
+        self.dict_output['B0'] = hd.MagneticFieldStrength
         self.dict_output['total_duration'] = str(total_duration)
         self.dict_output['real_duration'] = str(real_duration)
         self.dict_output['ped'] = ped
@@ -236,8 +272,9 @@ class PetTimeInfo(BaseInterface):
         if not bf_files:
             pet_start_time = None
             pet_endtime = None
-            print ('No .bf file found in {}. If you want to perform motion '
-                   'correction please provide the right pet data. ')
+            logger.warning(
+                'No .bf file found in {}. If you want to perform motion '
+                'correction please provide the right pet data. ')
         else:
             max_size = 0
             for bf in bf_files:

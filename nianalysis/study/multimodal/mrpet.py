@@ -114,11 +114,11 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         FilesetSpec('fixed_binning_mats', directory_format,
                     'fixed_binning_pipeline'),
         FieldSpec('pet_duration', dtype=int,
-                  pipeline_name='pet_header_info_extraction_pipeline'),
+                  pipeline_name='pet_header_extraction_pipeline'),
         FieldSpec('pet_end_time', dtype=str,
-                  pipeline_name='pet_header_info_extraction_pipeline'),
+                  pipeline_name='pet_header_extraction_pipeline'),
         FieldSpec('pet_start_time', dtype=str,
-                  pipeline_name='pet_header_info_extraction_pipeline')]
+                  pipeline_name='pet_header_extraction_pipeline')]
 
     add_option_specs = [OptionSpec('framing_th', 2.0),
                         OptionSpec('framing_temporal_th', 30.0),
@@ -502,7 +502,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
     prepare_pet_pipeline = MultiStudy.translate(
         'pet_mc', 'pet_data_preparation_pipeline')
 
-    pet_header_info_extraction_pipeline = MultiStudy.translate(
+    pet_header_extraction_pipeline = MultiStudy.translate(
         'pet_mc', 'pet_time_info_extraction_pipeline')
 
     def motion_correction_pipeline(self, **kwargs):

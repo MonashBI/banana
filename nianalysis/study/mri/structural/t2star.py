@@ -8,7 +8,7 @@ from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import (
     directory_format, nifti_gz_format, text_matrix_format, csv_format,
-    zip_format)
+    zip_format, dicom_format)
 from nianalysis.interfaces import qsm
 from arcana.interfaces import utils
 from arcana.exception import ArcanaNameError, ArcanaMissingDataException
@@ -17,7 +17,8 @@ from ..base import MRIStudy
 from .t1 import T1Study
 from nipype.interfaces import fsl, ants
 from nianalysis.interfaces.ants import AntsRegSyn
-from nianalysis.interfaces.sti import STI
+from nianalysis.interfaces.sti import UnwrapPhase, VSharp, QSMiLSQRUnwrap
+from nianalysis.interfaces.custom.coils import HIPCombineChannels
 from nipype.interfaces.utility.base import (
     IdentityInterface, Merge, Split)
 from cProfile import label
@@ -41,13 +42,21 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                                  " and background field removal")),
         FilesetSpec('tissue_mask', nifti_gz_format, 'qsm_pipeline',
                     description=("Mask for each coil corresponding to areas of"
-                                 " high magnitude"))]
+                                 " high magnitude")),
+        FilesetSpec('header_image', dicom_format, desc=(
+            "The image that contains the header information required to "
+            "perform the analysis (e.g. TE, B0, H)"))]
 
     add_parameter_specs = [
-        ParameterSpec('qsm_echo_times', [7.38, 22.14])]
+        ParameterSpec('qsm_echo_times', [7.38, 22.14]),  # FIXME: Should be pulled from header into a Field
+        ParameterSpec('qsm_padding', [12, 12, 12])]
 
     def swi_pipeline(self, **nmaps):
         raise NotImplementedError
+
+    def header_extraction_pipeline(self, **kwargs):
+        return self.header_extraction_pipeline_factory(
+            'header_info_extraction', 'header_image', **kwargs)
 
     def qsm_pipeline(self, **nmaps):
         """
@@ -68,6 +77,8 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             version=1,
             **nmaps)
 
+        multi_echo = len(self.parameter('qsm_echo_times')) > 1
+
         erosion = pipeline.create_node(interface=fsl.ErodeImage(),
                                        name='mask_erosion',
                                        requirements=[fsl5_req],
@@ -75,6 +86,37 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         erosion.inputs.kernel_shape = 'sphere'
         erosion.inputs.kernel_size = 2
         pipeline.connect_input('betted_T2s_mask', erosion, 'in_file')
+
+        if multi_echo:
+            # Combine channels to produce phase and magnitude images
+            channel_combine = pipeline.create_node(
+                interface=HIPCombineChannels(), name='channel_combine')
+            pipeline.connect_input('channel_mags', channel_combine,
+                                   'magnitudes_dir')
+            pipeline.connect_input('channel_phases', channel_combine,
+                                   'phases_dir')
+            # Unwrap phase using Laplacian unwrapping
+            unwrap = pipeline.create_node(UnwrapPhase(), name='unwrap_phase')
+            pipeline.connect(channel_combine, 'phase', unwrap, 'in_file')
+            unwrap.inputs.voxelsize = 0  # FIXME: Should be pulled from header
+            unwrap.inputs.padsize = self.parameter('qsm_padding')
+            # Remove background noise
+            vsharp = pipeline.create_node(VSharp(), name="vsharp")
+            pipeline.connect(unwrap, 'out_file', vsharp, 'in_file')
+            pipeline.connect(erosion, 'out_file', vsharp, 'mask')
+            vsharp.inputs.voxelsize = 0
+            # Run QSM iLSQR
+            qsm = pipeline.create_node(QSMiLSQRUnwrap(), name='qsm')
+            pipeline.connect(vsharp, 'out_file', qsm, 'in_file')
+            pipeline.connect(vsharp, 'new_mask', qsm, 'mask')
+            qsm.inputs.voxelsize = 0
+            qsm.inputs.padsize = self.parameter('qsm_padding')
+            qsm.inputs.te = 
+            qsm.inputs = 
+            qsm.inputs = 
+            # params to go here...
+        else:
+            pass
 
         # Phase and QSM for dual echo
         qsmrecon = pipeline.create_node(interface=STI(), name='qsmrecon',

@@ -112,7 +112,7 @@ class BaseSTICommand(MatlabCommand):
         return outputs
 
 
-class MRPhaseUnwrapInputSpec(BaseSTIInputSpec):
+class UnwrapPhaseInputSpec(BaseSTIInputSpec):
 
     in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
                    desc="Input file to unwrap")
@@ -125,7 +125,7 @@ class MRPhaseUnwrapInputSpec(BaseSTIInputSpec):
                           desc="Padding size for each dimension")
 
 
-class MRPhaseUnwrapOutputSpec(BaseSTIOutputSpec):
+class UnwrapPhaseOutputSpec(BaseSTIOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
@@ -133,11 +133,11 @@ class MRPhaseUnwrapOutputSpec(BaseSTIOutputSpec):
         "Not sure, and not currently required by out workflows"))
 
 
-class MRPhaseUnwrap(BaseSTICommand):
+class UnwrapPhase(BaseSTICommand):
 
     func = 'MRPhaseUnwrap'
-    input_spec = MRPhaseUnwrapInputSpec
-    output_spec = MRPhaseUnwrapOutputSpec
+    input_spec = UnwrapPhaseInputSpec
+    output_spec = UnwrapPhaseOutputSpec
 
 
 class VSharpInputSpec(BaseSTIInputSpec):
@@ -171,6 +171,8 @@ class QSMiLSQRUnwrapInputSpec(BaseSTIInputSpec):
 
     in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
                    desc="Input file to unwrap")
+    mask = File(exists=True, mandatory=True, argpos=1, formatstr="{}",
+                desc="Input file to unwrap")
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
                              mandatory=True, in_struct='params',
                              desc="Voxel size of the image")
@@ -180,10 +182,11 @@ class QSMiLSQRUnwrapInputSpec(BaseSTIInputSpec):
                           desc="Padding size for each dimension")
     te = traits.Float(mandatory=True, desc="TE time of acquisition protocol",
                       in_struct='params')
-    B0 = traits.Enum((1, 2, 3), mandatory=True, desc="B0 axis",
-                     in_struct='params')
+    B0 = traits.Float(mandatory=True, desc="B0 field strength",
+                      in_struct='params')
     H = traits.Tuple((traits.Int(), traits.Int(), traits.Int()),
-                     mandatory=True, desc="Not sure", in_struct='params')
+                     mandatory=True, desc="Direction of the B0 field",
+                     in_struct='params')
 
 
 class QSMiLSQRUnwrapOutputSpec(BaseSTIOutputSpec):

@@ -64,9 +64,9 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
 
-    def header_info_extraction_pipeline(self, **kwargs):
+    def header_extraction_pipeline(self, **kwargs):
         return (super(UTEStudy, self).
-                header_info_extraction_pipeline_factory(
+                header_extraction_pipeline_factory(
                     'magnitude', **kwargs))
 
     def umap_dcm2nii_conversion_pipeline(self, **kwargs):

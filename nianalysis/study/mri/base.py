@@ -2,8 +2,9 @@ from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
 from nianalysis.requirement import spm12_req
 from nianalysis.citation import spm_cite
-from nianalysis.file_format import (nifti_format, motion_mats_format,
-    directory_format, nifti_gz_format, multi_nifti_gz_format)
+from nianalysis.file_format import (
+    nifti_format, motion_mats_format, directory_format, nifti_gz_format,
+    multi_nifti_gz_format)
 from arcana.data import FilesetSpec, FieldSpec
 from arcana.study.base import Study, StudyMetaClass
 from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
@@ -21,7 +22,7 @@ from nianalysis.file_format import text_matrix_format
 import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
-from nianalysis.interfaces.custom.raw_channels import PrepareChannels
+from nianalysis.interfaces.custom.coils import ToPolarCoords
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec
 from nianalysis.interfaces.custom.motion_correction import (
@@ -36,7 +37,7 @@ atlas_path = os.path.abspath(
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('raw_channels', multi_nifti_gz_format,
+        FilesetSpec('coil_channels', multi_nifti_gz_format,
                     desc=(
                         "Reconstructed complex image for each "
                         "coil without standardisation.")),
@@ -44,8 +45,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                     desc=("Typically the primary scan acquired from the "
                           "scanner, in some cases (e.g. QSM) it is desirable "
                           "to be generated from separate channel signals, "
-                          "which can be provided to 'raw_channels' but in most"
-                          " cases it will be an input of the study.")),
+                          "which can be provided to 'coil_channels' but in "
+                          "most cases it will be an input of the study.")),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
                     'prepare_channels'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
@@ -80,18 +81,18 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                     'coregister_to_atlas_pipeline'),
         FilesetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         FilesetSpec('dcm_info', text_format,
-                    'header_info_extraction_pipeline',
+                    'header_extraction_pipeline',
                     desc=("Extracts ")),
         FilesetSpec('motion_mats', motion_mats_format, 'motion_mat_pipeline'),
         FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
         FilesetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
-        FieldSpec('tr', float, 'header_info_extraction_pipeline'),
-        FieldSpec('start_time', str, 'header_info_extraction_pipeline'),
-        FieldSpec('real_duration', str, 'header_info_extraction_pipeline'),
-        FieldSpec('tot_duration', str, 'header_info_extraction_pipeline'),
-        FieldSpec('ped', str, 'header_info_extraction_pipeline'),
-        FieldSpec('pe_angle', str, 'header_info_extraction_pipeline')]
+        FieldSpec('tr', float, 'header_extraction_pipeline'),
+        FieldSpec('start_time', str, 'header_extraction_pipeline'),
+        FieldSpec('real_duration', str, 'header_extraction_pipeline'),
+        FieldSpec('tot_duration', str, 'header_extraction_pipeline'),
+        FieldSpec('ped', str, 'header_extraction_pipeline'),
+        FieldSpec('pe_angle', str, 'header_extraction_pipeline')]
 
     add_parameter_specs = [
         ParameterSpec('bet_robust', True),
@@ -129,31 +130,31 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             "header (the image coordinates of the FOV supplied by the "
             "scanner")),
         ParameterSpec(
-            'raw_channel_fname_regex',
+            'coil_channel_fname_regex',
             r'.*(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
             desc=("The regular expression to extract channel, echo and complex"
-                  " axis from the filename of the raw channel NIfTI image")),
+                  " axis from the filenames of the coils channel images")),
         ParameterSpec(
-            'raw_channel_real_label', 'REAL',
+            'coil_channel_real_label', 'REAL',
             desc=("The name of the real axis extracted from the channel "
                   "filename")),
         ParameterSpec(
-            'raw_channel_imag_label', 'IMAGINARY',
+            'coil_channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
     prepare_channels = Study.pipeline_constructor(
         'prepare_channels',
-        PrepareChannels,
+        ToPolarCoords,
         desc=("Combine raw channel coils into magnitude and phase and combine "
               "to produce magnitude image"),
-        inputs={'raw_channels': 'in_dir'},
+        inputs={'coil_channels': 'in_dir'},
         outputs={'magnitude': 'first_echo',
-                 'channel_mags': 'coil_magnitudes_dir',
-                 'channel_phases': 'coill_phases_dir'},
-        parameters={'raw_channel_fname_regex': 'fname_re',
-                    'raw_channel_real_label': 'real_label',
-                    'raw_channel_imag_label': 'imaginary_lable'})
+                 'channel_mags': 'magnitudes_dir',
+                 'channel_phases': 'phases_dir'},
+        parameters={'coil_channel_fname_regex': 'fname_re',
+                    'coil_channel_real_label': 'real_label',
+                    'coil_channel_imag_label': 'imaginary_lable'})
 
     @property
     def coreg_brain_spec(self):
@@ -633,16 +634,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def header_info_extraction_pipeline(self, **kwargs):
+    def header_extraction_pipeline(self, **kwargs):
         if self.input('magnitude').format != dicom_format:
             raise ArcanaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM format ({})".format(
                     self.input('magnitude').format))
-        return self.header_info_extraction_pipeline_factory(
+        return self.header_extraction_pipeline_factory(
             'header_info_extraction', 'magnitude', **kwargs)
 
-    def header_info_extraction_pipeline_factory(
+    def header_extraction_pipeline_factory(
             self, name, dcm_in_name, multivol=False, output_prefix='',
             **kwargs):
 
