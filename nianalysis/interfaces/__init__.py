@@ -20,3 +20,5 @@ import os.path as op
 
 RESOURCES_DIR = op.join(op.realpath(op.abspath(op.dirname(__file__))),
                         'resources')
+
+MATLAB_RESOURCES = op.join(RESOURCES_DIR, 'matlab')

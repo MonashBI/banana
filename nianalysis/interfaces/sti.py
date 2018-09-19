@@ -3,10 +3,7 @@ from operator import itemgetter
 from nipype.interfaces.matlab import MatlabCommand, MatlabInputSpec
 from nipype.interfaces.base import TraitedSpec, traits, File
 import os.path as op
-import nianalysis.interfaces
-
-
-MATLAB_RESOURCES = op.join(nianalysis.interfaces.RESOURCES_DIR, 'matlab')
+from nianalysis.interfaces import MATLAB_RESOURCES
 
 
 class BaseSTIInputSpec(MatlabInputSpec):
@@ -30,7 +27,6 @@ class BaseSTICommand(MatlabCommand):
     def run(self, **inputs):
         # Set the script input of the matlab spec
         self.inputs.script = self.script(**inputs)
-        print(self.inputs.script)
         results = super().run(**inputs)
         stdout = results.runtime.stdout
         # Attach stdout to outputs to access matlab results
@@ -115,7 +111,7 @@ class BaseSTICommand(MatlabCommand):
     def _list_outputs(self):
         outputs = self._outputs().get()
         for name, _ in self.output_imgs:
-            outputs[name] = self._gen_filename(name)
+            outputs[name] = op.abspath(name)
         return outputs
 
 
