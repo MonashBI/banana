@@ -24,7 +24,7 @@ import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.custom.coils import ToPolarCoords
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 
@@ -103,8 +103,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.5),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('bet_g_threshold', 0.0),
-        ParameterSpec('bet_method', 'fsl_bet',
-                      choices=('fsl_bet', 'optibet')),
+        SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         ParameterSpec('MNI_template',
                       os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
         ParameterSpec('MNI_template_brain',
@@ -112,16 +111,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         ParameterSpec('optibet_gen_report', False),
-        ParameterSpec('atlas_coreg_tool', 'ants',
-                      choices=('fnirt', 'ants')),
+        SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
         ParameterSpec('fnirt_atlas', 'MNI152'),
         ParameterSpec('fnirt_resolution', '2mm'),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParameterSpec('preproc_resolution', None, dtype=list),
-        ParameterSpec('linear_reg_method', 'flirt',
-                      choices=('flirt', 'spm', 'ants')),
+        SwitchSpec('linear_reg_method', 'flirt', ('flirt', 'spm', 'ants')),
         ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),

@@ -23,7 +23,7 @@ from nianalysis.requirement import (
     fsl5_req, spm12_req, matlab2015_req)
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 
 
 class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -58,7 +58,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
                     'backwrap_to_ute_pipeline')]
 
     add_parameter_specs = [
-        ParameterSpec('bet_method', 'optibet',
+        SwitchSpec('bet_method', 'optibet',
                    choices=MRIStudy.parameter_spec('bet_method').choices)]
 
     template_path = '/home/jakubb/template/template_template0.nii.gz'

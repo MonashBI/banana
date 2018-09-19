@@ -94,8 +94,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd')),
         SwitchSpec('brain_extract_method', 'mrtrix',
                    ('mrtrix', 'fsl')),
-        SwitchSpec('bias_correct_method', 'ants',
-                   choices=('ants', 'fsl'))]
+        SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
     def preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
         """

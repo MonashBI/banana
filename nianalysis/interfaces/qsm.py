@@ -9,7 +9,7 @@ import os.path as op
 
 SCRIPT_TEMPLATE = (
     "set_param(0,'CharacterEncoding','UTF-8');\n"
-    "addpath(genpath('{matlab_dir}'));\n"
+    "addpath(genpath('{}'));\n"
     "{{cmd}};\n"
     "exit;\n").format(op.join(nianalysis.interfaces.RESOURCES_DIR, 'matlab',
                               'qsm'))

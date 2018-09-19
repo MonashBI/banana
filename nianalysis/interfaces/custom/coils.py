@@ -311,6 +311,3 @@ class HIPCombineChannels(BaseInterface):
         else:
             assert False
         return fname
-
-
-class 

@@ -29,6 +29,13 @@ def coil_sort_key(fname):
     return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
 
 
+class QsmAtlas(FilesetCollection):
+
+    def __init__(self, name):
+        super().__init__(name, op.join(atlas_path,
+                                       '{}.nii.gz'.format(name)))
+
+
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
@@ -190,14 +197,11 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
         FilesetSpec('mni_template_qsm_prior', nifti_gz_format,
-                    default=FilesetCollection(
-                        op.join(atlas_path, 'QSMPrior.nii.gz'))),
+                    default=QsmAtlas('QSMPrior')),
         FilesetSpec('mni_template_swi_prior', nifti_gz_format,
-                    default=FilesetCollection(
-                        op.join(atlas_path, 'SWIPrior.nii.gz'))),
+                    default=QsmAtlas('SWIPrior')),
         FilesetSpec('mni_template_atlas_prior', nifti_gz_format,
-                    default=FilesetCollection(op.abspath(
-                        op.join(atlas_path, 'VeinFrequencyPrior.nii.gz')))),
+                    default=QsmAtlas('VeinFrequencyPrior')),
         FilesetSpec('mni_template_vein_atlas', nifti_gz_format,
                     default=FilesetCollection(op.abspath(
                         op.join(atlas_path, 'VeinFrequencyMap.nii.gz'))))]
