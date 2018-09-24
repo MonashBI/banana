@@ -37,16 +37,13 @@ atlas_path = os.path.abspath(
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('coil_channels', multi_nifti_gz_format,
+        FilesetSpec('coil_channels', multi_nifti_gz_format, optional=True,
                     desc=(
                         "Reconstructed complex image for each "
                         "coil without standardisation.")),
-        FilesetSpec('magnitude', nifti_gz_format, 'prepare_channels',
+        FilesetSpec('magnitude', dicom_format,
                     desc=("Typically the primary scan acquired from the "
-                          "scanner, in some cases (e.g. QSM) it is desirable "
-                          "to be generated from separate channel signals, "
-                          "which can be provided to 'coil_channels' but in "
-                          "most cases it will be an input of the study.")),
+                          "scanner for the given contrast")),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
                     'prepare_channels'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
@@ -110,7 +107,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                       os.path.join(atlas_path, 'MNI152_T1_2mm_brain.nii.gz')),
         ParameterSpec('MNI_template_mask', os.path.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        ParameterSpec('optibet_gen_report', False),
+        SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
         ParameterSpec('fnirt_atlas', 'MNI152'),
         ParameterSpec('fnirt_resolution', '2mm'),
@@ -143,19 +140,41 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             'channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
+# 
+#     prepare_channels = Study.pipeline_constructor(
+#         'prepare_channels',
+#         ToPolarCoords,
+#         desc=("Combine raw channel coils into magnitude and phase and combine "
+#               "to produce magnitude image"),
+#         inputs={'coil_channels': 'in_dir'},
+#         outputs={'magnitude': 'first_echo',
+#                  'channel_mags': 'magnitudes_dir',
+#                  'channel_phases': 'phases_dir'},
+#         parameters={'channel_fname_regex': 'fname_re',
+#                     'channel_real_label': 'real_label',
+#                     'channel_imag_label': 'imaginary_lable'})
 
-    prepare_channels = Study.pipeline_constructor(
-        'prepare_channels',
-        ToPolarCoords,
-        desc=("Combine raw channel coils into magnitude and phase and combine "
-              "to produce magnitude image"),
-        inputs={'coil_channels': 'in_dir'},
-        outputs={'magnitude': 'first_echo',
-                 'channel_mags': 'magnitudes_dir',
-                 'channel_phases': 'phases_dir'},
-        parameters={'channel_fname_regex': 'fname_re',
-                    'channel_real_label': 'real_label',
-                    'channel_imag_label': 'imaginary_lable'})
+    def prepare_channels(self, **kwargs):
+        pipeline = self.new_pipeline(
+            name='prepare_channels',
+            inputs=[FilesetSpec('coil_channels', multi_nifti_gz_format)],
+            outputs=[FilesetSpec('magnitude', nifti_gz_format),
+                     FilesetSpec('channel_mags', multi_nifti_gz_format),
+                     FilesetSpec('channel_phases', multi_nifti_gz_format)],
+            desc=("Convert channel signals in complex coords to polar coords "
+                  "and combine"),
+            version=1,
+            citations=[],
+            **kwargs)
+        to_polar = pipeline.create_node(ToPolarCoords(), name='to_polar')
+        pipeline.connect_input('coil_channels', to_polar, 'in_dir')
+        pipeline.connect_output('magnitude', to_polar, 'first_echo')
+        pipeline.connect_output('channel_mags', to_polar, 'magnitudes_dir')
+        pipeline.connect_output('channel_phases', to_polar, 'phases_dir')
+        to_polar.inputs.in_fname_re = self.parameter('channel_fname_regex')
+        to_polar.inputs.real_label = self.parameter('channel_real_label')
+        to_polar.inputs.imaginary_label = self.parameter('channel_imag_label')
+        return pipeline
 
     @property
     def coreg_brain_spec(self):
@@ -464,13 +483,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
         # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(self.parameter('fnirt_atlas'), 'image',
-                                   resolution=self.parameter('resolution'))
+        ref_atlas = get_atlas_path(
+            self.parameter('fnirt_atlas'), 'image',
+            resolution=self.parameter('fnirt_resolution'))
         ref_mask = get_atlas_path(
             self.parameter('fnirt_atlas'), 'mask_dilated',
-            resolution=self.parameter('resolution'))
+            resolution=self.parameter('fnirt_resolution'))
         ref_brain = get_atlas_path(self.parameter('fnirt_atlas'), 'brain',
-                                   resolution=self.parameter('resolution'))
+                                   resolution=self.parameter('fnirt_resolution'))
         # Basic reorientation to standard MNI space
         reorient = pipeline.create_node(Reorient2Std(), name='reorient',
                                         requirements=[fsl5_req])
@@ -501,7 +521,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         fnirt.inputs.intensity_mapping_model = intensity_model
         fnirt.inputs.subsampling_scheme = self.parameter('fnirt_subsampling')
         fnirt.inputs.fieldcoeff_file = True
-        fnirt.inputs.in_fwhm = [8, 6, 5, 4.5, 3, 2]
+        fnirt.inputs.in_fwhm = [8, 6, 5, 4, 3, 2]  # [8, 6, 5, 4.5, 3, 2] This threw an error because of float value @IgnorePep8
         fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
         fnirt.inputs.regularization_lambda = [300, 150, 100, 50, 40, 30]
         fnirt.inputs.apply_intensity_mapping = [1, 1, 1, 1, 1, 0]
@@ -533,7 +553,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         pipeline = self.new_pipeline(
             name='coregister_to_atlas',
-            inputs=[FilesetSpec('coreg_ref_brain', nifti_gz_format)],
+            inputs=[FilesetSpec('coreg_brain', nifti_gz_format)],
             outputs=[FilesetSpec('coreg_to_atlas', nifti_gz_format),
                      FilesetSpec('coreg_to_atlas_mat', text_matrix_format),
                      FilesetSpec('coreg_to_atlas_warp', nifti_gz_format),
@@ -550,7 +570,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         ref_brain = self.parameter('MNI_template_brain')
         ants_reg.inputs.ref_file = ref_brain
-        pipeline.connect_input('coreg_ref_brain', ants_reg, 'input_file')
+        pipeline.connect_input('coreg_brain', ants_reg, 'input_file')
 
         slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
                                       requirements=[fsl5_req])
@@ -656,7 +676,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pe_angle = output_prefix + 'pe_angle'
         dcm_info = output_prefix + 'dcm_info'
         echo_times = output_prefix + 'echo_times'
-        vox_sizes = output_prefix + 'vox_sizes'
+        voxel_sizes = output_prefix + 'voxel_sizes'
         main_field_strength = output_prefix + 'main_field_strength'
         main_field_orient = output_prefix + 'main_field_orient'
         outputs = [FieldSpec(tr, dtype=float),
@@ -666,7 +686,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                    FieldSpec(ped, dtype=str),
                    FieldSpec(pe_angle, dtype=str),
                    FieldSpec(echo_times, dtype=float),
-                   FieldSpec(vox_sizes, dtype=float),
+                   FieldSpec(voxel_sizes, dtype=float),
                    FieldSpec(main_field_strength, dtype=float),
                    FieldSpec(main_field_orient, dtype=float),
                    FilesetSpec(dcm_info, text_format)]
@@ -694,11 +714,9 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.connect_output(pe_angle, hd_extraction, 'pe_angle')
         pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
         pipeline.connect_output(echo_times, hd_extraction, 'echo_times')
-        pipeline.connect_output(vox_sizes, hd_extraction, 'vox_sizes')
-        pipeline.connect_output(main_field_strength, hd_extraction,
-                                'main_field_strength')
-        pipeline.connect_output(main_field_orient, hd_extraction,
-                                'main_field_orient')
+        pipeline.connect_output(voxel_sizes, hd_extraction, 'voxel_sizes')
+        pipeline.connect_output(main_field_strength, hd_extraction, 'B0')
+        pipeline.connect_output(main_field_orient, hd_extraction, 'H')
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):
@@ -734,56 +752,4 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             if 'align_mats' in self.data_spec_names():
                 pipeline.connect_input('align_mats', mm, 'align_mats')
         pipeline.connect_output('motion_mats', mm, 'motion_mats')
-        return pipeline
-
-    def prepare_swi_coils(self, **options):
-        """
-        Standalone coil combination code for combining the signal from
-        multiple coil channels into a single phase and magnitude images
-        """
-        pipeline = self.create_pipeline(
-            name='swi_coils_preparation',
-            inputs=[FilesetSpec('raw_coils', directory_format)],
-            outputs=[FilesetSpec('t2s', nifti_gz_format),
-                     FilesetSpec('t2s_last_echo', nifti_gz_format)],
-            description="Perform preprocessing on raw coils",
-            default_options={
-                'qsm_echo_times': [7.38, 22.14],
-                'qsm_num_channels': 32,
-                'swi_coils_filename':
-                'T2swi3d_ axial_p2_0.9_iso_COSMOS_Straight_Coil'},
-            citations=[matlab_cite],
-            version=1,
-            options=options)
-
-        # Prepare and reformat SWI_COILS for T2s only
-        # Prepared output not saved to avoid being uploaded into xnat
-        # Only required prior to QSM, so node incorporated into QSM pipeline
-        prepare = pipeline.create_node(interface=qsm.Prepare(),
-                                       name='prepare',
-                                       requirements=[matlab2015_req],
-                                       wall_time=30, memory=16000)
-        prepare.inputs.echo_times = pipeline.option('qsm_echo_times')
-        prepare.inputs.num_channels = pipeline.option('qsm_num_channels')
-        prepare.inputs.base_filename = pipeline.option('swi_coils_filename')
-        pipeline.connect_input('raw_coils', prepare, 'in_dir')
-
-        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
-                                    name='n4_bias_correction',
-                                    requirements=[ants19_req],
-                                    wall_time=60, memory=12000)
-        bias.inputs.n_iterations = [200, 200, 200, 200]
-        bias.inputs.convergence_threshold = 0.0000001
-        pipeline.connect(prepare, 'out_file_fe', bias, 'input_image')
-        pipeline.connect_output('t2s', bias, 'output_image')
-
-        bias_2 = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
-                                      name='n4_bias_correction_2',
-                                      requirements=[ants19_req],
-                                      wall_time=60, memory=12000)
-        bias_2.inputs.n_iterations = [200, 200, 200, 200]
-        bias_2.inputs.convergence_threshold = 0.0000001
-        pipeline.connect(prepare, 'out_file_le', bias_2, 'input_image')
-        pipeline.connect_output('t2s_last_echo', bias_2, 'output_image')
-
         return pipeline

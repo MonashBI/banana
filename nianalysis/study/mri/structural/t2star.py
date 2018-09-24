@@ -2,13 +2,13 @@ import os.path as op
 import re
 from arcana.study import (
     StudyMetaClass, MultiStudy, MultiStudyMetaClass, SubStudySpec)
-from arcana.data import FilesetSpec, FilesetCollection
+from arcana.data import FilesetSpec, FilesetCollection, Fileset, FieldSpec
 from nianalysis.requirement import (fsl5_req, matlab2015_req,
                                     ants19_req)
 from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import (
-    directory_format, nifti_gz_format, text_matrix_format, dicom_format)
+    nifti_gz_format, text_matrix_format, dicom_format, multi_nifti_gz_format)
 from nianalysis.interfaces import qsm
 from arcana.interfaces import utils
 from ..base import MRIStudy
@@ -32,14 +32,20 @@ def coil_sort_key(fname):
 class QsmAtlas(FilesetCollection):
 
     def __init__(self, name):
-        super().__init__(name, op.join(atlas_path,
-                                       '{}.nii.gz'.format(name)))
+        super().__init__(
+            name,
+            [Fileset.from_path(op.join(atlas_path, '{}.nii.gz'.format(name)),
+                               frequency='per_study')])
 
 
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-
+        # Set the magnitude to be generated from the prepare_channels
+        # pipeline
+        FilesetSpec('magnitude', nifti_gz_format, 'prepare_channels',
+                    desc=("Generated from separate channel signals, "
+                          "provided to 'coil_channels'.")),
         # QSM and phase processing
         FilesetSpec('swi', nifti_gz_format, 'swi_pipeline'),
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
@@ -69,14 +75,19 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='qsm_pipeline',
-            inputs=[FilesetSpec('channels', directory_format),
+            inputs=[FilesetSpec('channel_phases', multi_nifti_gz_format),
+                    FilesetSpec('channel_mags', multi_nifti_gz_format),
                     FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
-                    FilesetSpec('header_image', dicom_format)],
+                    FilesetSpec('header_image', dicom_format),
+                    FieldSpec('voxel_sizes', float),
+                    FieldSpec('echo_times', float),
+                    FieldSpec('main_field_strength', float),
+                    FieldSpec('main_field_orient', float)],
             outputs=[FilesetSpec('qsm', nifti_gz_format)],
-            description="Resolve QSM from t2star coils",
+            desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite],
             version=1,
             **nmaps)
@@ -87,7 +98,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                                        wall_time=15, memory=12000)
         erosion.inputs.kernel_shape = 'sphere'
         erosion.inputs.kernel_size = 2
-        pipeline.connect('brain_mask', erosion, 'in_file')
+        pipeline.connect_input('brain_mask', erosion, 'in_file')
 
         # Copy geometry from scanner image to QSM
         qsm_geom = pipeline.create_node(
@@ -96,8 +107,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             requirements=[fsl5_req],
             memory=4000,
             wall_time=5)
-        pipeline.connect_input('header_image', 'out_file_fe', qsm_geom,
-                               'in_file')
+        pipeline.connect_input('header_image', qsm_geom, 'in_file')
 
         # If we have multiple echoes we can combine the phase images from
         # each channel into a single image. Otherwise for single echo sequences
@@ -136,30 +146,29 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             list_phases.inputs.filter = coil_echo_filter
             # List magnitude in channel magnitudes
             list_mags = pipeline.create_node(ListDir(), name='list_mags')
-            pipeline.connect_input('channel_magnitudes', list_mags,
-                                   'directory')
+            pipeline.connect_input('channel_mags', list_mags, 'directory')
             list_phases.inputs.sort_key = coil_sort_key
             list_phases.inputs.filter = coil_echo_filter
             # Generate coil specific masks
             coil_masks = pipeline.create_map_node(
-                CoilMask(), name='coil_masks', joinfield=['in_file'])
+                CoilMask(), name='coil_masks', iterfield=['in_file'])
             pipeline.connect(dialate, 'out_file', coil_masks,
                              'whole_brain_mask')
             # Unwrap phase
             unwrap = pipeline.create_map_node(UnwrapPhase(), name='unwrap',
-                                              joinfield=['in_file'])
+                                              iterfield=['in_file'])
             pipeline.connect(list_phases, 'files', unwrap, 'in_file')
             # Background phase removal
             vsharp = pipeline.create_map_node(VSharp(), name="vsharp",
-                                              joinfield=['in_file', 'mask'])
+                                              iterfield=['in_file', 'mask'])
             pipeline.connect(coil_masks, 'out_file', vsharp, 'mask')
             vsharp.inputs.mask_manip = '{}>0'
             # Perform channel-wise QSM
-            qsm = pipeline.create_map_node(QSMiLSQR(), name='qsm',
-                                                joinfield=['in_file', 'mask'])
+            qsmrecon = pipeline.create_map_node(QSMiLSQR(), name='qsm',
+                                                iterfield=['in_file', 'mask'])
             combine_qsm = pipeline.create_node(MedianInMasks(),
                                                name='combine_qsm')
-            pipeline.connect(qsm, 'out_file', combine_qsm, 'channels')
+            pipeline.connect(qsmrecon, 'out_file', combine_qsm, 'channels')
             pipeline.connect(vsharp, 'new_mask', combine_qsm, 'channel_masks')
             pipeline.connect(dialate, 'out_file', combine_qsm,
                              'whole_brain_mask')
@@ -171,17 +180,27 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('voxel_sizes', vsharp, 'voxelsize')
         pipeline.connect(vsharp, 'out_file', qsmrecon, 'in_file')
         pipeline.connect(vsharp, 'new_mask', qsmrecon, 'mask')
-        vsharp.inputs.padsize = self.parameter('qsm_padding')
         qsmrecon.inputs.mask_manip = "{}>0"
         pipeline.connect_input('voxel_sizes', qsmrecon, 'voxelsize')
         pipeline.connect_input('echo_times', qsmrecon, 'te')
         pipeline.connect_input('main_field_strength', qsmrecon, 'B0')
-        pipeline.connect_input('main_field_orient', qsmrecon, 'voxelsize')
+        pipeline.connect_input('main_field_orient', qsmrecon, 'H')
         qsmrecon.inputs.padsize = self.parameter('qsm_padding')
         return pipeline
 
-    def swi_pipeline(self, **nmaps):
-        raise NotImplementedError
+    def swi_pipeline(self, **kwargs):
+        pipeline = self.new_pipeline(
+            name='swi',
+            inputs=[FilesetSpec('magnitude', nifti_gz_format),
+                    FilesetSpec('channel_phases', multi_nifti_gz_format)],
+            outputs=[FilesetSpec('swi', nifti_gz_format)],
+            desc=("Calculate susceptibility-weighted image from magnitude and "
+                  "phase"),
+            citations=[],
+            version=1,
+            **kwargs)
+        # Not implemented yet.
+        return pipeline
 
 
 class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
@@ -193,7 +212,8 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_data_specs = [
         # Vein analysis
-        FilesetSpec('cv_image', nifti_gz_format, 'cv_pipeline'),
+        FilesetSpec('composite_vein_image', nifti_gz_format,
+                    'composite_vein_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
         FilesetSpec('mni_template_qsm_prior', nifti_gz_format,
@@ -203,12 +223,15 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         FilesetSpec('mni_template_atlas_prior', nifti_gz_format,
                     default=QsmAtlas('VeinFrequencyPrior')),
         FilesetSpec('mni_template_vein_atlas', nifti_gz_format,
-                    default=FilesetCollection(op.abspath(
-                        op.join(atlas_path, 'VeinFrequencyMap.nii.gz'))))]
+                    default=QsmAtlas('VeinFrequencyMap'))]
 
-    def comp_vein_image_pipeline(self, **options):
+#     add_parameter_specs = [
+#         # Change the default atlast coreg tool to FNIRT
+#         SwitchSpec('t1_atlas_coreg_tool', 'fnirt', ('fnirt', 'ants'))]
 
-        pipeline = self.create_pipeline(
+    def composite_vein_pipeline(self, **kwargs):
+
+        pipeline = self.new_pipeline(
             name='comp_vein_image_pipeline',
             inputs=[FilesetSpec('t2star_qsm', nifti_gz_format),
                     FilesetSpec('t2star_swi', nifti_gz_format),
@@ -220,11 +243,11 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
                     FilesetSpec('mni_template_swi_prior', nifti_gz_format),
                     FilesetSpec('mni_template_atlas_prior', nifti_gz_format),
                     FilesetSpec('mni_template_vein_atlas', nifti_gz_format)],
-            outputs=[FilesetSpec('cv_image', nifti_gz_format)],
-            description="Compute Composite Vein Image",
+            outputs=[FilesetSpec('composite_vein_image', nifti_gz_format)],
+            desc="Compute Composite Vein Image",
             citations=[fsl_cite, matlab_cite],
             version=1,
-            options=options)
+            **kwargs)
 
         # Prepare SWI flip(flip(swi,1),2)
         flip = pipeline.create_node(interface=qsm.FlipSWI(), name='flip_swi',
@@ -299,12 +322,13 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect_input('t2star_qsm', apply_trans_v, 'reference_image')
 
         # Run CV code
-        cv_image = pipeline.create_node(interface=qsm.CVImage(),
-                                        name='cv_image',
-                                        requirements=[matlab2015_req],
-                                        wall_time=300, memory=24000)
+        cv_image = pipeline.create_node(
+            interface=qsm.CVImage(),
+            name='composite_vein_image',
+            requirements=[matlab2015_req],
+            wall_time=300, memory=24000)
         pipeline.connect_input('t2star_qsm', cv_image, 'qsm')
-        # pipeline.connect_input('swi', cv_image, 'swi')
+        # pipeline.connect_input('swi', composite_vein_image, 'swi')
         pipeline.connect(flip, 'out_file', cv_image, 'swi')
         pipeline.connect_input('t2star_brain_mask', cv_image, 'mask')
         pipeline.connect(apply_trans_q, 'output_image', cv_image, 'q_prior')
@@ -313,28 +337,27 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect(apply_trans_v, 'output_image', cv_image, 'vein_atlas')
 
         # Output final [0-1] map
-        pipeline.connect_output('cv_image', cv_image, 'out_file')
+        pipeline.connect_output('composite_vein_image', cv_image, 'out_file')
 
         return pipeline
 
-    def shmrf_pipeline(self, **options):
+    def shmrf_pipeline(self, **kwargs):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='shmrf_pipeline',
-            inputs=[FilesetSpec('cv_image', nifti_gz_format),
+            inputs=[FilesetSpec('composite_vein_image', nifti_gz_format),
                     FilesetSpec('t2star_brain_mask', nifti_gz_format)],
             outputs=[FilesetSpec('vein_mask', nifti_gz_format)],
-            description="Compute Vein Mask using ShMRF",
-            default_options={},
+            desc="Compute Vein Mask using ShMRF",
             citations=[fsl_cite, matlab_cite],
             version=1,
-            options=options)
+            **kwargs)
 
         # Run ShMRF code
         shmrf = pipeline.create_node(interface=qsm.ShMRF(), name='shmrf',
                                      requirements=[matlab2015_req],
                                      wall_time=30, memory=16000)
-        pipeline.connect_input('cv_image', shmrf, 'in_file')
+        pipeline.connect_input('composite_vein_image', shmrf, 'in_file')
         pipeline.connect_input('t2star_brain_mask', shmrf, 'mask_file')
 
         # Output vein map

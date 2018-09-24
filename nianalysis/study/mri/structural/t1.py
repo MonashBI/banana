@@ -66,12 +66,12 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
     def bet_T1(self, **options):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='BET_T1',
             inputs=[FilesetSpec('t1', nifti_gz_format)],
             outputs=[FilesetSpec('betted_T1', nifti_gz_format),
                      FilesetSpec('betted_T1_mask', nifti_gz_format)],
-            description=("python implementation of BET"),
+            desc=("python implementation of BET"),
             default_options={},
             version=1,
             citations=[fsl_cite],
@@ -94,7 +94,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def cet_T1(self, **options):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='CET_T1',
             inputs=[FilesetSpec('betted_T1', nifti_gz_format),
                     FilesetSpec(
@@ -104,7 +104,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
                             nifti_gz_format)],
             outputs=[FilesetSpec('cetted_T1_mask', nifti_gz_format),
                      FilesetSpec('cetted_T1', nifti_gz_format)],
-            description=("Construct cerebellum mask using SUIT template"),
+            desc=("Construct cerebellum mask using SUIT template"),
             default_options={
                 'SUIT_mask': self._lookup_template_mask_path('SUIT')},
             version=1,

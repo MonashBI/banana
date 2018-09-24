@@ -140,7 +140,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
         self.dict_output['start_time'] = str(start_time)
         self.dict_output['tr'] = tr
         self.dict_output['echo_times'] = echo_times
-        self.dict_output['vox_sizes'] = vox_sizes
+        self.dict_output['voxel_sizes'] = vox_sizes
         self.dict_output['H'] = b0_orient
         self.dict_output['B0'] = hd.MagneticFieldStrength
         self.dict_output['total_duration'] = str(total_duration)

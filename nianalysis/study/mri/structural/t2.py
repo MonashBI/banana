@@ -25,7 +25,7 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False)]
 
     def cet_T2s(self, **options):
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='CET_T2s',
             inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
@@ -40,7 +40,7 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('cetted_T2s_mask', nifti_gz_format),
                      FilesetSpec('cetted_T2s', nifti_gz_format),
                      FilesetSpec('cetted_T2s_last_echo', nifti_gz_format)],
-            description=("Construct cerebellum mask using SUIT template"),
+            desc=("Construct cerebellum mask using SUIT template"),
             default_options={
                 'SUIT_mask': self._lookup_template_mask_path('SUIT')},
             version=1,
@@ -108,14 +108,14 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
 
     def bet_T2s(self, **options):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='BET_T2s',
             inputs=[FilesetSpec('t2s', nifti_gz_format),
                     FilesetSpec('t2s_last_echo', nifti_gz_format)],
             outputs=[FilesetSpec('betted_T2s', nifti_gz_format),
                      FilesetSpec('betted_T2s_mask', nifti_gz_format),
                      FilesetSpec('betted_T2s_last_echo', nifti_gz_format)],
-            description=("python implementation of BET"),
+            desc=("python implementation of BET"),
             default_options={},
             version=1,
             citations=[fsl_cite],
