@@ -34,14 +34,13 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('output_fileset', nifti_gz_format, 'pipeline')]
 
     def pipeline(self):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='pipeline',
             inputs=[FilesetSpec('input_fileset', nifti_gz_format)],
             outputs=[FilesetSpec('output_fileset', nifti_gz_format)],
             desc=("A dummy pipeline used to test dicom-to-nifti "
                          "conversion method"),
-            version=1,
-            citations=[])
+            references=[])
         identity = pipeline.create_node(IdentityInterface(['field']),
                                         name='identity')
         # Connect inputs

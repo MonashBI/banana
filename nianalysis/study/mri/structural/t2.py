@@ -25,7 +25,7 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False)]
 
     def cet_T2s(self, **options):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='CET_T2s',
             inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
@@ -43,7 +43,6 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
             desc=("Construct cerebellum mask using SUIT template"),
             default_options={
                 'SUIT_mask': self._lookup_template_mask_path('SUIT')},
-            version=1,
             citations=[fsl_cite],
             options=options)
 
@@ -108,7 +107,7 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
 
     def bet_T2s(self, **options):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='BET_T2s',
             inputs=[FilesetSpec('t2s', nifti_gz_format),
                     FilesetSpec('t2s_last_echo', nifti_gz_format)],
@@ -117,7 +116,6 @@ class T2Study(MRIStudy, metaclass=StudyMetaClass):
                      FilesetSpec('betted_T2s_last_echo', nifti_gz_format)],
             desc=("python implementation of BET"),
             default_options={},
-            version=1,
             citations=[fsl_cite],
             options=options)
 

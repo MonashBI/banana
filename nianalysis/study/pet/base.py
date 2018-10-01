@@ -65,7 +65,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def _ICA_pipeline_factory(self, input_fileset, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='ICA',
             inputs=[input_fileset],
             outputs=[FilesetSpec('decomposed_file', nifti_gz_format),
@@ -73,8 +73,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('mixing_mat', text_format)],
             desc=('Decompose a 4D fileset into a set of independent '
                   'components using FastICA'),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
 
         ica = pipeline.create_node(FastICA(), name='ICA')
@@ -90,7 +89,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def Image_normalization_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='Image_registration',
             inputs=[FilesetSpec('pet_image', nifti_gz_format)],
             outputs=[FilesetSpec('registered_volume', nifti_gz_format),
@@ -98,8 +97,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('invwarp_file', nifti_gz_format),
                      FilesetSpec('affine_mat', text_matrix_format)],
             desc=('Image registration to a template using ANTs'),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
 
         reg = pipeline.create_node(AntsRegSyn(out_prefix='vol2template'),
@@ -118,15 +116,14 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def pet_data_preparation_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='pet_data_preparation',
             inputs=[FilesetSpec('pet_recon_dir', directory_format)],
             outputs=[FilesetSpec('pet_recon_dir_prepared', directory_format)],
             desc=("Given a folder with reconstructed PET data, this "
                   "pipeline will prepare the data for the motion "
                   "correction"),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
 
         prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
@@ -140,15 +137,14 @@ class PETStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def pet_time_info_extraction_pipeline(self, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='pet_info_extraction',
             inputs=[FilesetSpec('pet_data_dir', directory_format)],
             outputs=[FieldSpec('pet_end_time', dtype=float),
                      FieldSpec('pet_start_time', dtype=str),
                      FieldSpec('pet_duration', dtype=int)],
             desc=("Extract PET time info from list-mode header."),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
         time_info = pipeline.create_node(PetTimeInfo(), name='PET_time_info')
         pipeline.connect_input('pet_data_dir', time_info, 'pet_data_dir')

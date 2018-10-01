@@ -22,7 +22,7 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('zip_from_directory', zip_format, 'pipeline')]
 
     def pipeline(self):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='pipeline',
             inputs=[FilesetSpec('mrtrix', text_format),
                     FilesetSpec('nifti_gz', text_format),
@@ -36,8 +36,7 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('zip_from_directory', directory_format)],
             desc=("A pipeline that tests out various data format "
                          "conversions"),
-            version=1,
-            citations=[],)
+            references=[],)
         # Convert from DICOM to NIfTI.gz format on input
         nifti_gz_from_dicom = pipeline.create_node(
             IdentityInterface(fields=['file']), "nifti_gz_from_dicom")

@@ -39,13 +39,12 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
         ParameterSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='Extract_volume',
             inputs=[FilesetSpec('pet_volumes', nifti_gz_format)],
             outputs=[FilesetSpec('pet_image', nifti_gz_format)],
             desc=('Extract the last volume of the 4D PET timeseries'),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
 
         fslroi = pipeline.create_node(
@@ -56,15 +55,14 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def ApplyTransform_pipeline(self, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='applytransform',
             inputs=[FilesetSpec('pet_volumes', nifti_gz_format),
                     FilesetSpec('warp_file', nifti_gz_format),
                     FilesetSpec('affine_mat', text_matrix_format)],
             outputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
             desc=('Apply transformation the the 4D PET timeseries'),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
 
         merge_trans = pipeline.create_node(Merge(2), name='merge_transforms')
@@ -86,13 +84,12 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def Baseline_Removal_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='Baseline_removal',
             inputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
             outputs=[FilesetSpec('detrended_volumes', nifti_gz_format)],
             desc=('PET dual regression'),
-            citations=[],
-            version=1,
+            references=[],
             **kwargs)
 
         br = pipeline.create_node(GlobalTrendRemoval(),
@@ -103,15 +100,14 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def Dual_Regression_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='Dual_regression',
             inputs=[FilesetSpec('detrended_volumes', nifti_gz_format),
                     FilesetSpec('regression_map', nifti_gz_format)],
             outputs=[FilesetSpec('spatial_map', nifti_gz_format),
                      FilesetSpec('ts', png_format)],
             desc=('PET dual regression'),
-            citations=[],
-            version=1,
+            references=[],
             **kwargs)
 
         dr = pipeline.create_node(PETdr(), name='PET_dr')

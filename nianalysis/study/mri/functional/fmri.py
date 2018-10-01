@@ -77,7 +77,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='rsfMRI_filtering',
             inputs=[FilesetSpec('preproc', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
@@ -86,7 +86,6 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('filtered_data', nifti_gz_format),
                      FilesetSpec('mc_par', par_format)],
             desc=("Spatial and temporal rsfMRI filtering"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -125,14 +124,13 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def single_subject_melodic_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='MelodicL1',
             inputs=[FilesetSpec('filtered_data', nifti_gz_format),
                     FieldSpec('tr', float),
                     FilesetSpec('brain_mask', nifti_gz_format)],
             outputs=[FilesetSpec('melodic_ica', directory_format)],
             desc=("Single subject ICA analysis using FSL MELODIC."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -154,7 +152,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def fix_preparation_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='prepare_fix',
             inputs=[FilesetSpec('melodic_ica', directory_format),
                     FilesetSpec('filtered_data', nifti_gz_format),
@@ -169,7 +167,6 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
                      FilesetSpec('hand_label_noise', text_format)],
             desc=("Pipeline to create the right folder structure before "
                   "running FIX"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -243,7 +240,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 #             except ArcanaNameError:
 #                 continue  # Sub study doesn't have fix dir
 # 
-#         pipeline = self.new_pipeline(
+#         pipeline = self.pipeline(
 #             name='training_fix',
 #             inputs=inputs,
 #             outputs=[FilesetSpec('train_data', rfile_format)],
@@ -300,7 +297,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def fix_classification_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='fix_classification',
             inputs=[FilesetSpec('train_data', rfile_format,
                                 frequency='per_study'),
@@ -308,7 +305,6 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('labelled_components', text_format)],
             desc=("Automatic classification of noisy components from the "
                   "rsfMRI data using fsl FIX."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -327,14 +323,13 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def fix_regression_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='signal_regression',
             inputs=[FilesetSpec('fix_dir', directory_format),
                     FilesetSpec('labelled_components', text_format)],
             outputs=[FilesetSpec('cleaned_file', nifti_gz_format)],
             desc=("Regression of the noisy components from the rsfMRI data "
                   "using a python implementation equivalent to that in FIX."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -353,7 +348,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def timeseries_normalization_to_atlas_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='timeseries_normalization_to_atlas_pipeline',
             inputs=[FilesetSpec('cleaned_file', nifti_gz_format),
                     FilesetSpec('coreg_to_atlas_warp', nifti_gz_format),
@@ -362,7 +357,6 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('normalized_ts', nifti_gz_format)],
             desc=("Apply ANTs transformation to the fmri filtered file to "
                   "normalize it to MNI 2mm."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -388,12 +382,11 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
 
     def smoothing_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='smoothing_pipeline',
             inputs=[FilesetSpec('normalized_ts', nifti_gz_format)],
             outputs=[FilesetSpec('smoothed_ts', nifti_gz_format)],
             desc=("Spatial smoothing of the normalized fmri file"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -434,14 +427,13 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             except ArcanaNameError:
                 continue  # Sub study doesn't have fix dir
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='training_fix',
             inputs=inputs,
             outputs=[FilesetSpec('train_data', rfile_format)],
             desc=("Pipeline to create the training set for FIX given a group "
                   "of subjects with the hand_label_noise.txt file within "
                   "their fix_dir."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -501,7 +493,7 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 #             except ArcanaNameError:
 #                 continue  # Sub study doesn't have fix dir
 # 
-#         pipeline = self.new_pipeline(
+#         pipeline = self.pipeline(
 #             name='gather_fmri',
 #             inputs=inputs,
 #             outputs=[FilesetSpec('fmri_pre-processeing_results', directory_format)],
@@ -525,13 +517,12 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def group_melodic_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='group_melodic',
             inputs=[FilesetSpec('smoothed_ts', nifti_gz_format),
                     FieldSpec('tr', float)],
             outputs=[FilesetSpec('group_melodic', directory_format)],
             desc=("Group ICA"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         gica = pipeline.create_join_subjects_node(

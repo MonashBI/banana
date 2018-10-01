@@ -98,12 +98,11 @@ class T1T2Study(MultiStudy, metaclass=MultiStudyMetaClass):
         Masks the T1 image using the coregistered T2 brain mask as the brain
         mask from T2 is usually more reliable (using BET in any case)
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='t1_brain_extraction_pipeline',
             inputs=[FilesetSpec('t1', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format)],
             outputs=[FilesetSpec('t1_brain', nifti_gz_format)],
-            version=1,
             desc="Mask T1 with T2 brain mask",
             citations=[fsl_cite],
             **kwargs)

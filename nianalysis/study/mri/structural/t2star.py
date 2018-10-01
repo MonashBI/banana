@@ -75,7 +75,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='qsm_pipeline',
             inputs=[FilesetSpec('channel_phases', multi_nifti_gz_format),
                     FilesetSpec('channel_mags', multi_nifti_gz_format),
@@ -89,7 +89,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('qsm', nifti_gz_format)],
             desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite],
-            version=1,
             **nmaps)
 
         erosion = pipeline.create_node(interface=fsl.ErodeImage(),
@@ -125,7 +124,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             unwrap = pipeline.create_node(UnwrapPhase(), name='unwrap')
             pipeline.connect(channel_combine, 'phase', unwrap, 'in_file')
             # Remove background noise
-            vsharp = pipeline.create_node(VSharp(), name="vsharp")
+            vsharp = pipeline.add("vsharp", VSharp())
             pipeline.connect(erosion, 'out_file', vsharp, 'mask')
             vsharp.inputs.mask_manip = "imerode({}>0, ball(5))"
             # Run QSM iLSQR
@@ -189,15 +188,14 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def swi_pipeline(self, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='swi',
             inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('channel_phases', multi_nifti_gz_format)],
             outputs=[FilesetSpec('swi', nifti_gz_format)],
             desc=("Calculate susceptibility-weighted image from magnitude and "
                   "phase"),
-            citations=[],
-            version=1,
+            references=[],
             **kwargs)
         # Not implemented yet.
         return pipeline
@@ -231,7 +229,7 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def composite_vein_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='comp_vein_image_pipeline',
             inputs=[FilesetSpec('t2star_qsm', nifti_gz_format),
                     FilesetSpec('t2star_swi', nifti_gz_format),
@@ -246,7 +244,6 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
             outputs=[FilesetSpec('composite_vein_image', nifti_gz_format)],
             desc="Compute Composite Vein Image",
             citations=[fsl_cite, matlab_cite],
-            version=1,
             **kwargs)
 
         # Prepare SWI flip(flip(swi,1),2)
@@ -343,14 +340,13 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def shmrf_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='shmrf_pipeline',
             inputs=[FilesetSpec('composite_vein_image', nifti_gz_format),
                     FilesetSpec('t2star_brain_mask', nifti_gz_format)],
             outputs=[FilesetSpec('vein_mask', nifti_gz_format)],
             desc="Compute Vein Mask using ShMRF",
             citations=[fsl_cite, matlab_cite],
-            version=1,
             **kwargs)
 
         # Run ShMRF code

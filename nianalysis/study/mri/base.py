@@ -155,7 +155,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 #                     'channel_imag_label': 'imaginary_lable'})
 
     def prepare_channels(self, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='prepare_channels',
             inputs=[FilesetSpec('coil_channels', multi_nifti_gz_format)],
             outputs=[FilesetSpec('magnitude', nifti_gz_format),
@@ -163,8 +163,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('channel_phases', multi_nifti_gz_format)],
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
         to_polar = pipeline.create_node(ToPolarCoords(), name='to_polar')
         pipeline.connect_input('coil_channels', to_polar, 'in_dir')
@@ -227,14 +226,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             Name of the FilesetSpec to output as registration matrix
         """
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name=name,
             inputs=[FilesetSpec(to_reg, nifti_gz_format),
                     FilesetSpec(ref, nifti_gz_format)],
             outputs=[FilesetSpec(reg, nifti_gz_format),
                      FilesetSpec(matrix, text_matrix_format)],
             desc="Registers a MR scan against a reference image using FLIRT",
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
@@ -257,14 +255,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def _qform_transform_factory(self, name, to_reg, ref, qformed,
                                  qformed_mat, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name=name,
             inputs=[FilesetSpec(to_reg, nifti_gz_format),
                     FilesetSpec(ref, nifti_gz_format)],
             outputs=[FilesetSpec(qformed, nifti_gz_format),
                      FilesetSpec(qformed_mat, text_matrix_format)],
             desc="Registers a MR scan against a reference image",
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
@@ -287,13 +284,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='registration',
             inputs=[FilesetSpec('t1', nifti_format),
                     FilesetSpec('t2', nifti_format)],
             outputs=[FilesetSpec('t2_coreg_t1', nifti_format)],
             desc="Coregister T2-weighted images to T1",
-            version=1,
             citations=[spm_cite],
             **kwargs)
         coreg = pipeline.create_node(Coregister(), name='coreg',
@@ -319,15 +315,14 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
     def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
                                     **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name=name,
             inputs=[FilesetSpec(to_reg, nifti_gz_format),
                     FilesetSpec(ref, nifti_gz_format)],
             outputs=[FilesetSpec(reg, nifti_gz_format),
                      FilesetSpec(matrix, text_matrix_format)],
             desc="Registers a MR scan against a reference image using ANTs",
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
 
         ants_linear = pipeline.create_node(
@@ -355,13 +350,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         Generates a whole brain mask using FSL's BET command.
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='brain_extraction',
             inputs=[FilesetSpec(in_file, nifti_gz_format)],
             outputs=[FilesetSpec('brain', nifti_gz_format),
                      FilesetSpec('brain_mask', nifti_gz_format)],
             desc="Generate brain mask from mr_scan",
-            version=1,
             citations=[fsl_cite, bet_cite, bet2_cite],
             **kwargs)
         # Create mask node
@@ -391,12 +385,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                    FilesetSpec('brain_mask', nifti_gz_format)]
         if self.branch('optibet_gen_report'):
             outputs.append(FilesetSpec('optiBET_report', gif_format))
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='brain_extraction',
             inputs=[FilesetSpec(in_file, nifti_gz_format)],
             outputs=outputs,
             desc=("Modified implementation of optiBET.sh"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -470,7 +463,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         ----------
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='coregister_to_atlas',
             inputs=[FilesetSpec('preproc', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
@@ -479,7 +472,6 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         # Get the reference atlas from FSL directory
@@ -551,7 +543,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def _ants_to_atlas_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='coregister_to_atlas',
             inputs=[FilesetSpec('coreg_brain', nifti_gz_format)],
             outputs=[FilesetSpec('coreg_to_atlas', nifti_gz_format),
@@ -560,7 +552,6 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('coreg_to_atlas_report', gif_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         ants_reg = pipeline.create_node(
@@ -586,12 +577,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def segmentation_pipeline(self, img_type=2, **kwargs):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='FAST_segmentation',
             inputs=[FilesetSpec('brain', nifti_gz_format)],
             outputs=[FilesetSpec('wm_seg', nifti_gz_format)],
             desc="White matter segmentation of the reference image",
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -630,13 +620,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             New resolution of the image. If None no resampling is
             performed
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='preproc_pipeline',
             inputs=[FilesetSpec(in_file_name, nifti_gz_format)],
             outputs=[FilesetSpec('preproc', nifti_gz_format)],
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         swap = pipeline.create_node(fsl.utils.Reorient2Std(),
@@ -691,14 +680,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                    FieldSpec(main_field_orient, dtype=float),
                    FilesetSpec(dcm_info, text_format)]
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name=name,
             inputs=[FilesetSpec(dcm_in_name, dicom_format)],
             outputs=outputs,
             desc=("Pipeline to extract the most important scan "
                   "information from the image header"),
-            version=1,
-            citations=[],
+            references=[],
             **kwargs)
         hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
                                              name='hd_info_extraction')
@@ -732,12 +720,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             if 'align_mats' in self.data_spec_names():
                 inputs.append(FilesetSpec('align_mats', directory_format))
             ref = False
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
             outputs=[FilesetSpec('motion_mats', motion_mats_format)],
             desc=("Motion matrices calculation"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 

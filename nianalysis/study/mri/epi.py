@@ -49,7 +49,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def _epireg_linear_coregistration_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='linear_coreg',
             inputs=[FilesetSpec('brain', nifti_gz_format),
                     FilesetSpec('coreg_ref_brain', nifti_gz_format),
@@ -59,7 +59,6 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
                      FilesetSpec('coreg_matrix', text_matrix_format)],
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         epireg = pipeline.create_node(fsl.epi.EpiReg(), name='epireg',
@@ -77,14 +76,13 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def intrascan_alignment_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='MCFLIRT_pipeline',
             inputs=[FilesetSpec('preproc', nifti_gz_format)],
             outputs=[FilesetSpec('moco', nifti_gz_format),
                      FilesetSpec('align_mats', directory_format),
                      FilesetSpec('moco_par', par_format)],
             desc=("Intra-epi volumes alignment."),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
         mcflirt = pipeline.create_node(fsl.MCFLIRT(), name='mcflirt',
@@ -116,7 +114,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def _topup_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='preproc_pipeline',
             inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('reverse_phase', nifti_gz_format),
@@ -124,7 +122,6 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
                     FieldSpec('pe_angle', str)],
             outputs=[FilesetSpec('preproc', nifti_gz_format)],
             desc=("Topup distortion correction pipeline"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -179,14 +176,13 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     def _fugue_pipeline(self, **kwargs):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='preproc_pipeline',
             inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('field_map_mag', nifti_gz_format),
                     FilesetSpec('field_map_phase', nifti_gz_format)],
             outputs=[FilesetSpec('preproc', nifti_gz_format)],
             desc=("Fugue distortion correction pipeline"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 
@@ -232,12 +228,11 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
                   FilesetSpec('qform_mat', text_matrix_format)]
         if 'reverse_phase' not in self.input_names:
             inputs.append(FilesetSpec('align_mats', directory_format))
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='motion_mat_calculation',
             inputs=inputs,
             outputs=[FilesetSpec('motion_mats', motion_mats_format)],
             desc=("Motion matrices calculation"),
-            version=1,
             citations=[fsl_cite],
             **kwargs)
 

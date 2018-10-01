@@ -35,13 +35,12 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='segmentation',
             inputs=[FilesetSpec('magnitude', nifti_gz_format)],
             outputs=[FilesetSpec('fs_recon_all',
                                  freesurfer_recon_all_format)],
             desc="Segment white/grey matter and csf",
-            version=1,
             citations=copy(freesurfer_cites),
             **kwargs)
         # FS ReconAll node
@@ -66,14 +65,13 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
     def bet_T1(self, **options):
 
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='BET_T1',
             inputs=[FilesetSpec('t1', nifti_gz_format)],
             outputs=[FilesetSpec('betted_T1', nifti_gz_format),
                      FilesetSpec('betted_T1_mask', nifti_gz_format)],
             desc=("python implementation of BET"),
             default_options={},
-            version=1,
             citations=[fsl_cite],
             options=options)
 
@@ -94,7 +92,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def cet_T1(self, **options):
-        pipeline = self.new_pipeline(
+        pipeline = self.pipeline(
             name='CET_T1',
             inputs=[FilesetSpec('betted_T1', nifti_gz_format),
                     FilesetSpec(
@@ -107,7 +105,6 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
             desc=("Construct cerebellum mask using SUIT template"),
             default_options={
                 'SUIT_mask': self._lookup_template_mask_path('SUIT')},
-            version=1,
             citations=[fsl_cite],
             options=options)
 
