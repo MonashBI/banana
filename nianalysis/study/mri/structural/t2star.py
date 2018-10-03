@@ -96,20 +96,22 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             fsl.ErodeImage(
                 kernel_shape='sphere',
                 kernel_size=2),
+            inputs={
+                'in_file': ('brain_mask', nifti_gz_format)},
             requirements=[fsl5_req],
             wall_time=15, memory=12000)
 
-        pipeline.connect_input('brain_mask', erosion, 'in_file')
-
         # Copy geometry from scanner image to QSM
         qsm_geom = pipeline.add(
+            'qsm_copy_geometry',
             fsl.CopyGeom(),
-            name='qsm_copy_geometry',
+            inputs={
+                'in_file': ('header_image', dicom_format)},
+            outputs={
+                'out_file': ('qsm', nifti_gz_format)},
             requirements=[fsl5_req],
             memory=4000,
             wall_time=5)
-
-        pipeline.connect_input('header_image', qsm_geom, 'in_file')
 
         # If we have multiple echoes we can combine the phase images from
         # each channel into a single image. Otherwise for single echo sequences
@@ -119,28 +121,49 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             # Combine channels to produce phase and magnitude images
             channel_combine = pipeline.add(
                 'channel_combine',
-                HIPCombineChannels())
-            pipeline.connect_input('channel_mags', channel_combine, 'magnitudes_dir')
-            pipeline.connect_input('channel_phases', channel_combine, 'phases_dir')
+                HIPCombineChannels(),
+                inputs={
+                    'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
+                    'phases_dir': ('channel_phases', multi_nifti_gz_format)})
 
             # Unwrap phase using Laplacian unwrapping
             unwrap = pipeline.add(
                 'unwrap',
-                UnwrapPhase())
-            pipeline.connect(channel_combine, 'phase', unwrap, 'in_file')
+                UnwrapPhase(
+                    padsize=self.parameter('qsm_padding')),
+                inputs={
+                    'voxelsize': 'voxel_sizes'},
+                connections={
+                    'in_file': (channel_combine, 'phase')})
 
             # Remove background noise
             vsharp = pipeline.add(
                 "vsharp",
                 VSharp(
-                    mask_manip="imerode({}>0, ball(5))"))
-            pipeline.connect(erosion, 'out_file', vsharp, 'mask')
+                    mask_manip="imerode({}>0, ball(5))"),
+                inputs={
+                    'voxelsize': 'voxel_sizes'},
+                connections={
+                    'in_file': (unwrap, 'out_file'),
+                    'mask': (erosion, 'out_file')})
 
             # Run QSM iLSQR
             qsmrecon = pipeline.add(
                 'qsmrecon',
-                QSMiLSQR())
-            pipeline.connect(qsmrecon, 'out_file', qsm_geom, 'dest_file')
+                QSMiLSQR(
+                    mask_manip="{}>0",
+                    padsize=self.parameter('qsm_padding')),
+                inputs={
+                    'voxelsize': 'voxel_sizes',
+                    'te': 'echo_times',
+                    'B0': 'main_field_strength',
+                    'H': 'main_field_orient'},
+                connections={
+                    'in_file': (vsharp, 'out_file'),
+                    'mask': (vsharp, 'new_mask')})
+
+            # Connect to final node, which adds geometry from header
+            self.connect(qsmrecon, 'out_file', qsm_geom, 'dest_file')
         else:
             def coil_echo_filter(fname):
                 return re.match(r'coil_\d+_(\d+)',
@@ -149,80 +172,87 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             dialate = pipeline.add(
                 'dialate',
                 DialateMask(
-                    dialation=self.parameter('qsm_mask_dialation')))
-
-            pipeline.connect(erosion, 'out_file', dialate, 'in_file')
+                    dialation=self.parameter('qsm_mask_dialation')),
+                connections={
+                    'in_file': (erosion, 'out_file')})
 
             # List files for the phases of separate channel
             list_phases = pipeline.add(
                 'list_phases',
-                ListDir())
-
-            pipeline.connect_input('channel_phases', list_phases, 'directory')
-            list_phases.inputs.sort_key = coil_sort_key
-            list_phases.inputs.filter = coil_echo_filter
+                ListDir(
+                    sort_key=coil_sort_key,
+                    filter=coil_echo_filter),
+                inputs={
+                    'directory': ('channel_phases', multi_nifti_gz_format)})
 
             # List magnitude in channel magnitudes
             list_mags = pipeline.add(
                 'list_mags',
-                ListDir())
-            pipeline.connect_input('channel_mags', list_mags, 'directory')
-            list_phases.inputs.sort_key = coil_sort_key
-            list_phases.inputs.filter = coil_echo_filter
+                ListDir(
+                    sort_key=coil_sort_key,
+                    filter=coil_echo_filter),
+                inputs={
+                    'directory': ('channel_mags', multi_nifti_gz_format)})
 
             # Generate coil specific masks
             coil_masks = pipeline.add(
                 'coil_masks',
                 CoilMask(),
+                connections={
+                    'whole_brain_mask': (dialate, 'out_file')},
                 iterfield=['in_file'])
-            pipeline.connect(dialate, 'out_file', coil_masks,
-                             'whole_brain_mask')
 
             # Unwrap phase
             unwrap = pipeline.add(
                 'unwrap',
-                UnwrapPhase(),
+                UnwrapPhase(
+                    padsize=self.parameter('qsm_padding')),
+                inputs={
+                    'voxelsize': 'voxel_sizes'},
+                connections={
+                    'in_file': (list_phases, 'files')},
                 iterfield=['in_file'])
-            pipeline.connect(list_phases, 'files', unwrap, 'in_file')
 
             # Background phase removal
             vsharp = pipeline.add(
                 "vsharp",
-                VSharp(),
+                VSharp(
+                    mask_manip='{}>0'),
+                inputs={
+                    'voxelsize': 'voxel_sizes'},
+                connections={
+                    'mask': (coil_masks, 'out_file'),
+                    'in_file': (unwrap, 'out_file')},
                 iterfield=['in_file', 'mask'])
-            pipeline.connect(coil_masks, 'out_file', vsharp, 'mask')
-            vsharp.inputs.mask_manip = '{}>0'
 
             # Perform channel-wise QSM
             qsmrecon = pipeline.add(
                 'qsm',
-                QSMiLSQR(),
+                QSMiLSQR(
+                    mask_manip="{}>0",
+                    padsize=self.parameter('qsm_padding')),
+                inputs={
+                    'voxelsize': 'voxel_sizes',
+                    'te': 'echo_times',
+                    'B0': 'main_field_strength',
+                    'H': 'main_field_orient'},
+                connections={
+                    'in_file': (vsharp, 'out_file'),
+                    'mask': (vsharp, 'new_mask')},
                 iterfield=['in_file', 'mask'])
 
             # Combine channel QSM by taking the median
             combine_qsm = pipeline.add(
                 'combine_qsm',
-                MedianInMasks())
+                MedianInMasks(),
+                connections={
+                    'channels': (qsmrecon, 'out_file'),
+                    'channel_masks': (vsharp, 'new_mask'),
+                    'whole_brain_mask': (dialate, 'out_file')})
 
-            pipeline.connect(qsmrecon, 'out_file', combine_qsm, 'channels')
-            pipeline.connect(vsharp, 'new_mask', combine_qsm, 'channel_masks')
-            pipeline.connect(dialate, 'out_file', combine_qsm,
-                             'whole_brain_mask')
-            pipeline.connect(combine_qsm, 'out_file', qsm_geom, 'dest_file')
+            # Connect to final node, which adds geometry from header
+            self.connect(combine_qsm, 'out_file', qsm_geom, 'dest_file')
 
-        # Set common parameters and connections for QSM pipeline
-        pipeline.connect_input('voxel_sizes', unwrap, 'voxelsize')
-        unwrap.inputs.padsize = self.parameter('qsm_padding')
-        pipeline.connect(unwrap, 'out_file', vsharp, 'in_file')
-        pipeline.connect_input('voxel_sizes', vsharp, 'voxelsize')
-        pipeline.connect(vsharp, 'out_file', qsmrecon, 'in_file')
-        pipeline.connect(vsharp, 'new_mask', qsmrecon, 'mask')
-        qsmrecon.inputs.mask_manip = "{}>0"
-        pipeline.connect_input('voxel_sizes', qsmrecon, 'voxelsize')
-        pipeline.connect_input('echo_times', qsmrecon, 'te')
-        pipeline.connect_input('main_field_strength', qsmrecon, 'B0')
-        pipeline.connect_input('main_field_orient', qsmrecon, 'H')
-        qsmrecon.inputs.padsize = self.parameter('qsm_padding')
         return pipeline
 
     def swi_pipeline(self, **mods):
