@@ -28,7 +28,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.57),
         ParameterSpec('bet_g_threshold', -0.1)]
 
-    def freesurfer_pipeline(self, **kwargs):
+    def freesurfer_pipeline(self, **mods):
         """
         Segments grey matter, white matter and CSF from T1 images using
         SPM "NewSegment" function.
@@ -37,63 +37,69 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='segmentation',
-            inputs=[FilesetSpec('magnitude', nifti_gz_format)],
-            outputs=[FilesetSpec('fs_recon_all',
-                                 freesurfer_recon_all_format)],
+            modifications=mods,
             desc="Segment white/grey matter and csf",
-            citations=copy(freesurfer_cites),
-            **kwargs)
+            references=copy(freesurfer_cites))
+
         # FS ReconAll node
-        recon_all = pipeline.create_node(
-            interface=ReconAll(), name='recon_all',
+        recon_all = pipeline.add(
+            'recon_all',
+            interface=ReconAll(
+                directive='all',
+                openmp=self.processor.num_processes),
+            inputs={
+                'T1_files': ('magnitude', nifti_gz_format)},
             requirements=[freesurfer_req], wall_time=2000)
-        recon_all.inputs.directive = 'all'
-        recon_all.inputs.openmp = self.processor.num_processes
+
         # Wrapper around os.path.join
-        join = pipeline.create_node(interface=JoinPath(), name='join')
-        pipeline.connect(recon_all, 'subjects_dir', join, 'dirname')
-        pipeline.connect(recon_all, 'subject_id', join, 'filename')
-        # Connect inputs/outputs
-        pipeline.connect_input('magnitude', recon_all, 'T1_files')
-        pipeline.connect_output('fs_recon_all', join, 'path')
+        pipeline.add(
+            'join',
+            JoinPath(),
+            connections={
+                'dirname': (recon_all, 'subjects_dir'),
+                'filename': (recon_all, 'subject_id')},
+            outputs={
+                'path': ('fs_recon_all', freesurfer_recon_all_format)})
+
         return pipeline
 
-    def segmentation_pipeline(self, **kwargs):
+    def segmentation_pipeline(self, **mods):
         pipeline = super(T1Study, self).segmentation_pipeline(img_type=1,
-                                                              **kwargs)
+                                                              **mods)
         return pipeline
 
-    def bet_T1(self, **options):
+    def bet_T1(self, **mods):
 
         pipeline = self.pipeline(
             name='BET_T1',
-            inputs=[FilesetSpec('t1', nifti_gz_format)],
-            outputs=[FilesetSpec('betted_T1', nifti_gz_format),
-                     FilesetSpec('betted_T1_mask', nifti_gz_format)],
+            modifications=mods,
             desc=("python implementation of BET"),
-            default_options={},
-            citations=[fsl_cite],
-            options=options)
+            references=[fsl_cite])
 
-        bias = pipeline.create_node(interface=ants.N4BiasFieldCorrection(),
-                                    name='n4_bias_correction',
-                                    requirements=[ants19_req],
-                                    wall_time=60, memory=12000)
-        pipeline.connect_input('t1', bias, 'input_image')
+        bias = pipeline.add(
+            'n4_bias_correction',
+            ants.N4BiasFieldCorrection(),
+            inputs={
+                'input_image': ('t1', nifti_gz_format)},
+            requirements=[ants19_req],
+            wall_time=60, memory=12000)
 
-        bet = pipeline.create_node(
-            fsl.BET(frac=0.15, reduce_bias=True), name='bet',
+        pipeline.add(
+            'bet',
+            fsl.BET(frac=0.15, reduce_bias=True),
+            connections={
+                'in_file': (bias, 'output_image')},
+            outputs={
+                'out_file': ('betted_T1', nifti_gz_format),
+                'mask_file': ('betted_T1_mask', nifti_gz_format)},
             requirements=[fsl5_req], memory=8000, wall_time=45)
-
-        pipeline.connect(bias, 'output_image', bet, 'in_file')
-        pipeline.connect_output('betted_T1', bet, 'out_file')
-        pipeline.connect_output('betted_T1_mask', bet, 'mask_file')
 
         return pipeline
 
-    def cet_T1(self, **options):
+    def cet_T1(self, **mods):
         pipeline = self.pipeline(
             name='CET_T1',
+            modifications=mods,
             inputs=[FilesetSpec('betted_T1', nifti_gz_format),
                     FilesetSpec(
                 self._lookup_l_tfm_to_name('MNI'),
@@ -103,43 +109,46 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('cetted_T1_mask', nifti_gz_format),
                      FilesetSpec('cetted_T1', nifti_gz_format)],
             desc=("Construct cerebellum mask using SUIT template"),
-            default_options={
-                'SUIT_mask': self._lookup_template_mask_path('SUIT')},
-            citations=[fsl_cite],
-            options=options)
+            references=[fsl_cite])
+
+#         'SUIT_mask': self._lookup_template_mask_path('SUIT')},
+        # FIXME: Should convert to inputs
+        nl = self._lookup_nl_tfm_inv_name('MNI')
+        linear = self._lookup_l_tfm_to_name('MNI')
 
         # Initially use MNI space to warp SUIT into T1 and threshold to mask
-        merge_trans = pipeline.create_node(
-            utils.Merge(2), name='merge_transforms')
-        pipeline.connect_input(
-            self._lookup_nl_tfm_inv_name('MNI'),
-            merge_trans,
-            'in2')
-        pipeline.connect_input(
-            self._lookup_l_tfm_to_name('MNI'),
-            merge_trans,
-            'in1')
+        merge_trans = pipeline.add(
+            'merge_transforms',
+            utils.Merge(2),
+            inputs={
+                'in2': (nl, nifti_gz_format),
+                'in1': (linear, nifti_gz_format)})
 
-        apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform',
+        apply_trans = pipeline.add(
+            'ApplyTransform',
+            ants.resampling.ApplyTransforms(
+                interpolation='NearestNeighbor',
+                input_image_type=3,
+                invert_transform_flags=[True, False],
+                input_image=pipeline.option('SUIT_mask')),
+            inputs={
+                'reference_image': ('betted_T1', nifti_gz_format)},
+            connections={
+                'transforms': (merge_trans, 'out')},
             requirements=[ants19_req], memory=16000, wall_time=120)
-        apply_trans.inputs.interpolation = 'NearestNeighbor'
-        apply_trans.inputs.input_image_type = 3
-        apply_trans.inputs.invert_transform_flags = [True, False]
-        apply_trans.inputs.input_image = pipeline.option('SUIT_mask')
 
-        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect_input('betted_T1', apply_trans, 'reference_image')
-
-        maths2 = pipeline.create_node(
+        pipeline.add(
+            'maths2',
             fsl.utils.ImageMaths(
                 suffix='_optiBET_cerebellum',
                 op_string='-mas'),
-            name='mask', requirements=[fsl5_req], memory=16000, wall_time=5)
-        pipeline.connect_input('betted_T1', maths2, 'in_file')
-        pipeline.connect(apply_trans, 'output_image', maths2, 'in_file2')
-
-        pipeline.connect_output('cetted_T1', maths2, 'out_file')
-        pipeline.connect_output('cetted_T1_mask', apply_trans, 'output_image')
+            inputs={
+                'in_file': ('betted_T1', nifti_gz_format)},
+            connections={
+                'in_file2': (apply_trans, 'output_image')},
+            outputs={
+                'out_file': ('cetted_T1', nifti_gz_format),
+                'output_image': ('cetted_T1_mask', nifti_gz_format)},
+            requirements=[fsl5_req], memory=16000, wall_time=5)
 
         return pipeline
