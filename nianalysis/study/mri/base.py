@@ -140,39 +140,24 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             'channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
-# 
-#     prepare_channels = Study.pipeline_constructor(
-#         'prepare_channels',
-#         ToPolarCoords,
-#         desc=("Combine raw channel coils into magnitude and phase and combine "
-#               "to produce magnitude image"),
-#         inputs={'coil_channels': 'in_dir'},
-#         outputs={'magnitude': 'first_echo',
-#                  'channel_mags': 'magnitudes_dir',
-#                  'channel_phases': 'phases_dir'},
-#         parameters={'channel_fname_regex': 'fname_re',
-#                     'channel_real_label': 'real_label',
-#                     'channel_imag_label': 'imaginary_lable'})
 
-    def prepare_channels(self, **kwargs):
+    def prepare_channels(self, **mods):
         pipeline = self.pipeline(
-            name='prepare_channels',
-            inputs=[FilesetSpec('coil_channels', multi_nifti_gz_format)],
-            outputs=[FilesetSpec('magnitude', nifti_gz_format),
-                     FilesetSpec('channel_mags', multi_nifti_gz_format),
-                     FilesetSpec('channel_phases', multi_nifti_gz_format)],
+            'prepare_channels', mods,
             desc=("Convert channel signals in complex coords to polar coords "
-                  "and combine"),
-            references=[],
-            **kwargs)
-        to_polar = pipeline.create_node(ToPolarCoords(), name='to_polar')
-        pipeline.connect_input('coil_channels', to_polar, 'in_dir')
-        pipeline.connect_output('magnitude', to_polar, 'first_echo')
-        pipeline.connect_output('channel_mags', to_polar, 'magnitudes_dir')
-        pipeline.connect_output('channel_phases', to_polar, 'phases_dir')
-        to_polar.inputs.in_fname_re = self.parameter('channel_fname_regex')
-        to_polar.inputs.real_label = self.parameter('channel_real_label')
-        to_polar.inputs.imaginary_label = self.parameter('channel_imag_label')
+                  "and combine"))
+        pipeline.add(
+            'to_polar',
+            ToPolarCoords(
+                in_fname_re=self.parameter('channel_fname_regex'),
+                real_label=self.parameter('channel_real_label'),
+                imaginary_label=self.parameter('channel_imag_label')),
+            inputs={
+                'in_dir': ('coil_channels', multi_nifti_gz_format)},
+            outputs={
+                # 'first_echo': ('magnitude', nifti_gz_format),
+                'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
+                'phases_dir': ('channel_phases', multi_nifti_gz_format)})
         return pipeline
 
     @property
@@ -188,27 +173,27 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             name = 'brain'
         return FilesetSpec(name, nifti_gz_format)
 
-    def linear_coregistration_pipeline(self, **kwargs):
+    def linear_coregistration_pipeline(self, **mods):
         if self.branch('linear_reg_method', 'flirt'):
-            pipeline = self._flirt_factory(
+            pipeline = self._flirt_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
-                'coreg_brain', 'coreg_matrix', **kwargs)
+                'coreg_brain', 'coreg_matrix', mods)
         elif self.branch('linear_reg_method', 'ants'):
             pipeline = self._ants_linear_coreg_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
-                'coreg_brain', 'coreg_matrix', **kwargs)
+                'coreg_brain', 'coreg_matrix', mods)
         elif self.branch('linear_reg_method', 'spm'):
             raise NotImplementedError
         else:
             self.unhandled_branch('linear_reg_method')
         return pipeline
 
-    def qform_transform_pipeline(self, **kwargs):
+    def qform_transform_pipeline(self, **mods):
         return self._qform_transform_factory(
             'qform_transform', 'brain', 'coreg_ref_brain', 'qformed',
-            'qform_mat', **kwargs)
+            'qform_mat', **mods)
 
-    def _flirt_factory(self, name, to_reg, ref, reg, matrix, **kwargs):
+    def _flirt_pipeline(self, name, to_reg, ref, reg, matrix, mods):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -228,56 +213,50 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         pipeline = self.pipeline(
             name=name,
-            inputs=[FilesetSpec(to_reg, nifti_gz_format),
-                    FilesetSpec(ref, nifti_gz_format)],
-            outputs=[FilesetSpec(reg, nifti_gz_format),
-                     FilesetSpec(matrix, text_matrix_format)],
+            modifications=mods,
             desc="Registers a MR scan against a reference image using FLIRT",
-            citations=[fsl_cite],
-            **kwargs)
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req],
-                                     wall_time=5)
+            references=[fsl_cite])
 
-        # Set registration parameters
-        flirt.inputs.dof = self.parameter('flirt_degrees_of_freedom')
-        flirt.inputs.cost = self.parameter('flirt_cost_func')
-        flirt.inputs.cost_func = self.parameter('flirt_cost_func')
-        flirt.inputs.output_type = 'NIFTI_GZ'
-        # Connect inputs
-        pipeline.connect_input(to_reg, flirt, 'in_file')
-        pipeline.connect_input(ref, flirt, 'reference')
-        # Connect outputs
-        pipeline.connect_output(reg, flirt, 'out_file')
-        pipeline.connect_output(matrix, flirt,
-                                'out_matrix_file')
+        pipeline.add(
+            'flirt',
+            FLIRT(dof=self.parameter('flirt_degrees_of_freedom'),
+                  cost=self.parameter('flirt_cost_func'),
+                  cost_func=self.parameter('flirt_cost_func'),
+                  output_type='NIFTI_GZ'),
+            inputs={
+                'in_file': (to_reg, nifti_gz_format),
+                'reference': (ref, nifti_gz_format)},
+            outputs={
+                'out_file': (reg, nifti_gz_format),
+                'out_matrix_file': (matrix, text_matrix_format)},
+            requirements=[fsl5_req], wall_time=5)
+
         return pipeline
 
     def _qform_transform_factory(self, name, to_reg, ref, qformed,
-                                 qformed_mat, **kwargs):
+                                 qformed_mat, mods):
         pipeline = self.pipeline(
             name=name,
-            inputs=[FilesetSpec(to_reg, nifti_gz_format),
-                    FilesetSpec(ref, nifti_gz_format)],
-            outputs=[FilesetSpec(qformed, nifti_gz_format),
-                     FilesetSpec(qformed_mat, text_matrix_format)],
+            modifications=mods,
             desc="Registers a MR scan against a reference image",
-            citations=[fsl_cite],
-            **kwargs)
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req],
-                                     wall_time=5)
-        flirt.inputs.uses_qform = True
-        flirt.inputs.apply_xfm = True
-        # Connect inputs
-        pipeline.connect_input(to_reg, flirt, 'in_file')
-        pipeline.connect_input(ref, flirt, 'reference')
-        # Connect outputs
-        pipeline.connect_output(qformed, flirt, 'out_file')
-        pipeline.connect_output(qformed_mat, flirt, 'out_matrix_file')
+            references=[fsl_cite])
+
+        pipeline.add(
+            'flirt',
+            FLIRT(
+                uses_qform=True,
+                apply_xfm=True),
+            inputs={
+                'in_file': (to_reg, nifti_gz_format),
+                'reference': (ref, nifti_gz_format)},
+            outputs={
+                'out_file': (qformed, nifti_gz_format),
+                'out_matrix_file': (qformed_mat, text_matrix_format)},
+            requirements=[fsl5_req], wall_time=5)
+
         return pipeline
 
-    def _spm_coreg_pipeline(self, **kwargs):  # @UnusedVariable
+    def _spm_coreg_pipeline(self, **mods):  # @UnusedVariable
         """
         Coregisters T2 image to T1 image using SPM's
         "Register" method.
@@ -285,176 +264,195 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         NB: Default values come from the W2MHS toolbox
         """
         pipeline = self.pipeline(
-            name='registration',
-            inputs=[FilesetSpec('t1', nifti_format),
-                    FilesetSpec('t2', nifti_format)],
-            outputs=[FilesetSpec('t2_coreg_t1', nifti_format)],
+            'registration',
+            modifications=mods,
             desc="Coregister T2-weighted images to T1",
-            citations=[spm_cite],
-            **kwargs)
-        coreg = pipeline.create_node(Coregister(), name='coreg',
-                                     requirements=[spm12_req], wall_time=30)
-        coreg.inputs.jobtype = 'estwrite'
-        coreg.inputs.cost_function = 'nmi'
-        coreg.inputs.separation = [4, 2]
-        coreg.inputs.tolerance = [
-            0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01, 0.01, 0.001,
-            0.001, 0.001]
-        coreg.inputs.fwhm = [7, 7]
-        coreg.inputs.write_interp = 4
-        coreg.inputs.write_wrap = [0, 0, 0]
-        coreg.inputs.write_mask = False
-        coreg.inputs.out_prefix = 'r'
-        # Connect inputs
-        pipeline.connect_input('t1', coreg, 'target')
-        pipeline.connect_input('t2', coreg, 'source')
-        # Connect outputs
-        pipeline.connect_output('t2_coreg_t1', coreg, 'coregistered_source')
+            references=[spm_cite])
+
+        pipeline.add(
+            'coreg',
+            Coregister(
+                jobtype='estwrite',
+                cost_function='nmi',
+                separation=[4, 2],
+                tolerance=[0.02, 0.02, 0.02, 0.001, 0.001, 0.001, 0.01, 0.01,
+                           0.01, 0.001, 0.001, 0.001],
+                fwhm=[7, 7],
+                write_interp=4,
+                write_wrap=[0, 0, 0],
+                write_mask=False,
+                out_prefix='r'),
+            inputs={
+                'target': ('t1', nifti_format),
+                'source': ('t2', nifti_format)},
+            outputs={
+                'coregistered_source': ('t2_coreg_t1', nifti_format)},
+            requirements=[spm12_req], wall_time=30)
         return pipeline
 
     def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
-                                    **kwargs):
-
+                                    mods):
         pipeline = self.pipeline(
             name=name,
-            inputs=[FilesetSpec(to_reg, nifti_gz_format),
-                    FilesetSpec(ref, nifti_gz_format)],
-            outputs=[FilesetSpec(reg, nifti_gz_format),
-                     FilesetSpec(matrix, text_matrix_format)],
-            desc="Registers a MR scan against a reference image using ANTs",
-            references=[],
-            **kwargs)
+            modifications=mods,
+            desc="Registers a MR scan against a reference image using ANTs")
 
-        ants_linear = pipeline.create_node(
-            AntsRegSyn(num_dimensions=3, transformation='r',
-                       out_prefix='reg2hires'), name='ANTs_linear_Reg',
+        pipeline.add(
+            'ANTs_linear_Reg',
+            AntsRegSyn(
+                num_dimensions=3,
+                transformation='r',
+                out_prefix='reg2hires'),
+            inputs={
+                'ref_file': (ref, nifti_gz_format),
+                'input_file': (to_reg, nifti_gz_format)},
+            outputs={
+                'reg_file': (reg, nifti_gz_format),
+                'regmat': (matrix, text_matrix_format)},
             wall_time=10, requirements=[ants2_req])
-        pipeline.connect_input(ref, ants_linear, 'ref_file')
-        pipeline.connect_input(to_reg, ants_linear, 'input_file')
-
-        pipeline.connect_output(reg, ants_linear, 'reg_file')
-        pipeline.connect_output(matrix, ants_linear, 'regmat')
 
         return pipeline
 
-    def brain_extraction_pipeline(self, in_file='preproc', **kwargs):
+    def brain_extraction_pipeline(self, in_file='preproc', **mods):
         if self.branch('bet_method', 'fsl_bet'):
-            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file, **kwargs)
+            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file, **mods)
         elif self.branch('bet_method', 'optibet'):
-            pipeline = self._optiBET_brain_extraction_pipeline(in_file, **kwargs)
+            pipeline = self._optiBET_brain_extraction_pipeline(in_file, **mods)
         else:
             self.unhandled_branch('bet_method')
         return pipeline
 
-    def _fsl_bet_brain_extraction_pipeline(self, in_file, **kwargs):
+    def _fsl_bet_brain_extraction_pipeline(self, in_file, **mods):
         """
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.pipeline(
             name='brain_extraction',
-            inputs=[FilesetSpec(in_file, nifti_gz_format)],
-            outputs=[FilesetSpec('brain', nifti_gz_format),
-                     FilesetSpec('brain_mask', nifti_gz_format)],
+            modifications=mods,
             desc="Generate brain mask from mr_scan",
-            citations=[fsl_cite, bet_cite, bet2_cite],
-            **kwargs)
+            references=[fsl_cite, bet_cite, bet2_cite])
         # Create mask node
-        bet = pipeline.create_node(interface=fsl.BET(), name="bet",
-                                   requirements=[fsl509_req])
-        bet.inputs.mask = True
-        bet.inputs.output_type = 'NIFTI_GZ'
-        if self.parameter('bet_robust'):
-            bet.inputs.robust = True
-        if self.parameter('bet_reduce_bias'):
-            bet.inputs.reduce_bias = True
-        bet.inputs.frac = self.parameter('bet_f_threshold')
-        bet.inputs.vertical_gradient = self.parameter(
-            'bet_g_threshold')
-        # Connect inputs/outputs
-        pipeline.connect_input(in_file, bet, 'in_file')
-        pipeline.connect_output('brain', bet, 'out_file')
-        pipeline.connect_output('brain_mask', bet, 'mask_file')
+        pipeline.add(
+            "bet",
+            fsl.BET(
+                mask=True,
+                output_type='NIFTI_GZ',
+                frac=self.parameter('bet_f_threshold'),
+                vertical_gradient=self.parameter('bet_g_threshold'),
+                robust=self.parameter('bet_robust'),
+                reduce_bias=self.parameter('bet_reduce_bias')),
+            inputs={
+                'in_file': (in_file, nifti_gz_format)},
+            output={
+                'out_file': ('brain', nifti_gz_format),
+                'mask_file': ('brain_mask', nifti_gz_format)},
+            requirements=[fsl509_req])
         return pipeline
 
-    def _optiBET_brain_extraction_pipeline(self, in_file, **kwargs):
+    # FIXME: With the newly implemented name-mapping functionality 'in_file'
+    #        does not need to be passed in this way
+    def _optiBET_brain_extraction_pipeline(self, in_file, **mods):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
-
-        outputs = [FilesetSpec('brain', nifti_gz_format),
-                   FilesetSpec('brain_mask', nifti_gz_format)]
-        if self.branch('optibet_gen_report'):
-            outputs.append(FilesetSpec('optiBET_report', gif_format))
         pipeline = self.pipeline(
             name='brain_extraction',
-            inputs=[FilesetSpec(in_file, nifti_gz_format)],
-            outputs=outputs,
+            modifications=mods,
             desc=("Modified implementation of optiBET.sh"),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite])
 
-        mni_reg = pipeline.create_node(
-            AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='T12MNI', num_threads=4), name='T1_reg',
+        mni_reg = pipeline.add(
+            'T1_reg',
+            AntsRegSyn(
+                num_dimensions=3,
+                transformation='s',
+                out_prefix='T12MNI',
+                num_threads=4,
+                ref_file=self.parameter('MNI_template')),  # FIXME: should be a Study input not a parameter
+            inputs={
+                'input_file': (in_file, nifti_gz_format)},
             wall_time=25, requirements=[ants2_req])
-        mni_reg.inputs.ref_file = self.parameter('MNI_template')
-        pipeline.connect_input(in_file, mni_reg, 'input_file')
 
-        merge_trans = pipeline.create_node(Merge(2), name='merge_transforms',
-                                           wall_time=1)
-        pipeline.connect(mni_reg, 'inv_warp', merge_trans, 'in1')
-        pipeline.connect(mni_reg, 'regmat', merge_trans, 'in2')
+        merge_trans = pipeline.add(
+            'merge_transforms',
+            Merge(2),
+            connections={
+                'in1': (mni_reg, 'inv_warp'),
+                'in2': (mni_reg, 'regmat')},
+            wall_time=1)
 
-        trans_flags = pipeline.create_node(Merge(2), name='trans_flags',
-                                           wall_time=1)
-        trans_flags.inputs.in1 = False
-        trans_flags.inputs.in2 = True
+        trans_flags = pipeline.add(
+            'trans_flags',
+            Merge(2,
+                  in1=False,
+                  in2=True),
+            wall_time=1)
 
-        apply_trans = pipeline.create_node(
-            ApplyTransforms(), name='ApplyTransform', wall_time=7,
-            memory=24000, requirements=[ants2_req])
-        apply_trans.inputs.input_image = self.parameter('MNI_template_mask')
-        apply_trans.inputs.interpolation = 'NearestNeighbor'
-        apply_trans.inputs.input_image_type = 3
-        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect(trans_flags, 'out', apply_trans,
-                         'invert_transform_flags')
-        pipeline.connect_input(in_file, apply_trans, 'reference_image')
+        apply_trans = pipeline.add(
+            'ApplyTransform',
+            ApplyTransforms(
+                input_image=self.parameter('MNI_template_mask'),
+                interpolation='NearestNeighbor',
+                input_image_type=3),
+            inputs={
+                'reference_image': (in_file, nifti_gz_format)},
+            connections={
+                'transforms': (merge_trans, 'out'),
+                'invert_transform_flags': (trans_flags, 'out')},
+            wall_time=7,
+            memory=24000,
+            requirements=[ants2_req])
 
-        maths1 = pipeline.create_node(
-            fsl.ImageMaths(suffix='_optiBET_brain_mask', op_string='-bin'),
-            name='binarize', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect(apply_trans, 'output_image', maths1, 'in_file')
-        maths2 = pipeline.create_node(
-            fsl.ImageMaths(suffix='_optiBET_brain', op_string='-mas'),
-            name='mask', wall_time=5, requirements=[fsl5_req])
-        pipeline.connect_input(in_file, maths2, 'in_file')
-        pipeline.connect(maths1, 'out_file', maths2, 'in_file2')
+        maths1 = pipeline.add(
+            'binarize',
+            fsl.ImageMaths(
+                suffix='_optiBET_brain_mask',
+                op_string='-bin'),
+            connections={
+                'in_file': (apply_trans, 'output_image')},
+            outputs={
+                'out_file': ('brain_mask', nifti_gz_format)},
+            wall_time=5, requirements=[fsl5_req])
+
+        maths2 = pipeline.add(
+            'mask',
+            fsl.ImageMaths(
+                suffix='_optiBET_brain',
+                op_string='-mas'),
+            inputs={
+                in_file: ('in_file', nifti_gz_format)},
+            connections={
+                'in_file2': (maths1, 'out_file')},
+            outputs={
+                'brain': ('out_file', nifti_gz_format)},
+            wall_time=5, requirements=[fsl5_req])
+
         if self.parameter('optibet_gen_report'):
-            slices = pipeline.create_node(
-                FSLSlices(), name='slices', wall_time=5,
+            pipeline.add(
+                'slices',
+                FSLSlices(outname='optiBET_report'),
+                wall_time=5,
+                inputs={
+                    'im1': (in_file, nifti_gz_format)},
+                connections={
+                    'im2': (maths2, 'out_file')},
+                outputs={
+                    'report': ('optiBET_report', gif_format)},
                 requirements=[fsl5_req])
-            slices.inputs.outname = 'optiBET_report'
-            pipeline.connect_input(in_file, slices, 'im1')
-            pipeline.connect(maths2, 'out_file', slices, 'im2')
-            pipeline.connect_output('optiBET_report', slices, 'report')
-
-        pipeline.connect_output('brain_mask', maths1, 'out_file')
-        pipeline.connect_output('brain', maths2, 'out_file')
 
         return pipeline
 
-    def coregister_to_atlas_pipeline(self, **kwargs):
+    def coregister_to_atlas_pipeline(self, **mods):
         if self.branch('atlas_coreg_tool', 'fnirt'):
-            pipeline = self._fsl_fnirt_to_atlas_pipeline(**kwargs)
+            pipeline = self._fsl_fnirt_to_atlas_pipeline(**mods)
         elif self.branch('atlas_coreg_tool', 'ants'):
-            pipeline = self._ants_to_atlas_pipeline(**kwargs)
+            pipeline = self._ants_to_atlas_pipeline(**mods)
         else:
             self.unhandled_branch('atlas_coreg_tool')
         return pipeline
 
     # @UnusedVariable @IgnorePep8
-    def _fsl_fnirt_to_atlas_pipeline(self, **kwargs):
+    def _fsl_fnirt_to_atlas_pipeline(self, **mods):
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -465,6 +463,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='coregister_to_atlas',
+            modifications=mods,
             inputs=[FilesetSpec('preproc', nifti_gz_format),
                     FilesetSpec('brain_mask', nifti_gz_format),
                     FilesetSpec('brain', nifti_gz_format)],
@@ -472,8 +471,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite])
         # Get the reference atlas from FSL directory
         ref_atlas = get_atlas_path(
             self.parameter('fnirt_atlas'), 'image',
@@ -483,130 +481,161 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             resolution=self.parameter('fnirt_resolution'))
         ref_brain = get_atlas_path(self.parameter('fnirt_atlas'), 'brain',
                                    resolution=self.parameter('fnirt_resolution'))
+
         # Basic reorientation to standard MNI space
-        reorient = pipeline.create_node(Reorient2Std(), name='reorient',
-                                        requirements=[fsl5_req])
-        reorient.inputs.output_type = 'NIFTI_GZ'
-        reorient_mask = pipeline.create_node(
-            Reorient2Std(), name='reorient_mask', requirements=[fsl5_req])
-        reorient_mask.inputs.output_type = 'NIFTI_GZ'
+        reorient = pipeline.add(
+            'reorient',
+            Reorient2Std(
+                output_type='NIFTI_GZ'),
+            inputs={
+                'in_file': ('preproc', nifti_gz_format)},
+            requirements=[fsl5_req])
+
+        reorient_mask = pipeline.add(
+            'reorient_mask',
+            Reorient2Std(
+                output_type='NIFTI_GZ'),
+            inputs={
+                'in_file': ('brain_mask', nifti_gz_format)},
+            requirements=[fsl5_req])
+
         reorient_brain = pipeline.create_node(
-            Reorient2Std(), name='reorient_brain', requirements=[fsl5_req])
-        reorient_brain.inputs.output_type = 'NIFTI_GZ'
+            'reorient_brain',
+            Reorient2Std(
+                output_type='NIFTI_GZ'),
+            inputs={
+                'in_file': ('brain', nifti_gz_format)},
+            requirements=[fsl5_req])
+
         # Affine transformation to MNI space
-        flirt = pipeline.create_node(interface=FLIRT(), name='flirt',
-                                     requirements=[fsl5_req],
-                                     wall_time=5)
-        flirt.inputs.reference = ref_brain
-        flirt.inputs.dof = 12
-        flirt.inputs.output_type = 'NIFTI_GZ'
-        # Nonlinear transformation to MNI space
-        fnirt = pipeline.create_node(interface=FNIRT(), name='fnirt',
-                                     requirements=[fsl5_req],
-                                     wall_time=60)
-        fnirt.inputs.ref_file = ref_atlas
-        fnirt.inputs.refmask_file = ref_mask
-        fnirt.inputs.output_type = 'NIFTI_GZ'
-        intensity_model = self.parameter('fnirt_intensity_model')
-        if intensity_model is None:
-            intensity_model = 'none'
-        fnirt.inputs.intensity_mapping_model = intensity_model
-        fnirt.inputs.subsampling_scheme = self.parameter('fnirt_subsampling')
-        fnirt.inputs.fieldcoeff_file = True
-        fnirt.inputs.in_fwhm = [8, 6, 5, 4, 3, 2]  # [8, 6, 5, 4.5, 3, 2] This threw an error because of float value @IgnorePep8
-        fnirt.inputs.ref_fwhm = [8, 6, 5, 4, 2, 0]
-        fnirt.inputs.regularization_lambda = [300, 150, 100, 50, 40, 30]
-        fnirt.inputs.apply_intensity_mapping = [1, 1, 1, 1, 1, 0]
-        fnirt.inputs.max_nonlin_iter = [5, 5, 5, 5, 5, 10]
+        flirt = pipeline.add(
+            'flirt',
+            interface=FLIRT(
+                reference=ref_brain,
+                dof=12,
+                output_type='NIFTI_GZ'),
+            connections={
+                'in_file': (reorient_brain, 'out_file')},
+            requirements=[fsl5_req],
+            wall_time=5)
+
         # Apply mask if corresponding subsampling scheme is 1
         # (i.e. 1-to-1 resolution) otherwise don't.
         apply_mask = [int(s == 1)
                       for s in self.parameter('fnirt_subsampling')]
-        fnirt.inputs.apply_inmask = apply_mask
-        fnirt.inputs.apply_refmask = apply_mask
-        # Connect nodes
-        pipeline.connect(reorient_brain, 'out_file', flirt, 'in_file')
-        pipeline.connect(reorient, 'out_file', fnirt, 'in_file')
-        pipeline.connect(reorient_mask, 'out_file', fnirt, 'inmask_file')
-        pipeline.connect(flirt, 'out_matrix_file', fnirt, 'affine_file')
+        # Nonlinear transformation to MNI space
+        pipeline.add(
+            'fnirt',
+            interface=FNIRT(
+                ref_file=ref_atlas,
+                refmask_file=ref_mask,
+                output_type='NIFTI_GZ',
+                intensity_mapping_model=(
+                    self.parameter('fnirt_intensity_model')
+                    if self.parameter('fnirt_intensity_model') is not None else
+                    'none'),
+                subsampling_scheme=self.parameter('fnirt_subsampling'),
+                fieldcoeff_file=True,
+                in_fwhm=[8, 6, 5, 4, 3, 2],  # [8, 6, 5, 4.5, 3, 2] This threw an error because of float value @IgnorePep8,
+                ref_fwhm=[8, 6, 5, 4, 2, 0],
+                regularization_lambda=[300, 150, 100, 50, 40, 30],
+                apply_intensity_mapping=[1, 1, 1, 1, 1, 0],
+                max_nonlin_iter=[5, 5, 5, 5, 5, 10],
+                apply_inmask=apply_mask,
+                apply_refmask=apply_mask),
+            connections={
+                'in_file': (reorient, 'out_file'),
+                'inmask_file': (reorient_mask, 'out_file'),
+                'affine_file': (flirt, 'out_matrix_file')},
+            outputs={
+                'warped_file': ('coreg_to_atlas', nifti_gz_format),
+                'fieldcoeff_file': ('coreg_to_atlas_coeff', nifti_gz_format)},
+            requirements=[fsl5_req],
+            wall_time=60)
         # Set registration parameters
-        # TOD: Need to work out which parameters to use
-        # Connect inputs
-        pipeline.connect_input('preproc', reorient, 'in_file')
-        pipeline.connect_input('brain_mask', reorient_mask, 'in_file')
-        pipeline.connect_input('brain', reorient_brain, 'in_file')
-        # Connect outputs
-        pipeline.connect_output('coreg_to_atlas', fnirt, 'warped_file')
-        pipeline.connect_output('coreg_to_atlas_coeff', fnirt,
-                                'fieldcoeff_file')
+        # TODO: Need to work out which parameters to use
         return pipeline
 
-    def _ants_to_atlas_pipeline(self, **kwargs):
+    def _ants_to_atlas_pipeline(self, **mods):
 
         pipeline = self.pipeline(
             name='coregister_to_atlas',
-            inputs=[FilesetSpec('coreg_brain', nifti_gz_format)],
-            outputs=[FilesetSpec('coreg_to_atlas', nifti_gz_format),
-                     FilesetSpec('coreg_to_atlas_mat', text_matrix_format),
-                     FilesetSpec('coreg_to_atlas_warp', nifti_gz_format),
-                     FilesetSpec('coreg_to_atlas_report', gif_format)],
+            modifications=mods,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
-            citations=[fsl_cite],
-            **kwargs)
-        ants_reg = pipeline.create_node(
-            AntsRegSyn(num_dimensions=3, transformation='s',
-                       out_prefix='Struct2MNI', num_threads=4),
-            name='Struct2MNI_reg', wall_time=25, requirements=[ants2_req])
+            references=[fsl_cite])
 
-        ref_brain = self.parameter('MNI_template_brain')
-        ants_reg.inputs.ref_file = ref_brain
-        pipeline.connect_input('coreg_brain', ants_reg, 'input_file')
+        ants_reg = pipeline.add(
+            'Struct2MNI_reg',
+            AntsRegSyn(
+                num_dimensions=3,
+                transformation='s',
+                out_prefix='Struct2MNI',
+                num_threads=4,
+                ref_file=self.parameter('MNI_template_brain')),
+            inputs={
+                'input_file': ('coreg_brain', nifti_gz_format)},
+            outputs={
+                'reg_file': ('coreg_to_atlas', nifti_gz_format),
+                'regmat': ('coreg_to_atlas_mat', text_matrix_format),
+                'warp_file': ('coreg_to_atlas_warp', nifti_gz_format)},
+            wall_time=25, requirements=[ants2_req])
 
-        slices = pipeline.create_node(FSLSlices(), name='slices', wall_time=1,
-                                      requirements=[fsl5_req])
-        slices.inputs.outname = 'coreg_to_atlas_report'
-        slices.inputs.im1 = self.parameter('MNI_template')
-        pipeline.connect(ants_reg, 'reg_file', slices, 'im2')
-
-        pipeline.connect_output('coreg_to_atlas', ants_reg, 'reg_file')
-        pipeline.connect_output('coreg_to_atlas_mat', ants_reg, 'regmat')
-        pipeline.connect_output('coreg_to_atlas_warp', ants_reg, 'warp_file')
-        pipeline.connect_output('coreg_to_atlas_report', slices, 'report')
+        pipeline.add(
+            'slices',
+            FSLSlices(
+                outname='coreg_to_atlas_report',
+                im1=self.parameter('MNI_template')),
+            connections={
+                'im2': (ants_reg, 'reg_file')},
+            outputs={
+                'report': ('coreg_to_atlas_report', gif_format)},
+            wall_time=1, requirements=[fsl5_req])
 
         return pipeline
 
-    def segmentation_pipeline(self, img_type=2, **kwargs):
+    def segmentation_pipeline(self, img_type=2, **mods):
         pipeline = self.pipeline(
             name='FAST_segmentation',
+            modifications=mods,
             inputs=[FilesetSpec('brain', nifti_gz_format)],
             outputs=[FilesetSpec('wm_seg', nifti_gz_format)],
             desc="White matter segmentation of the reference image",
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite])
 
-        fast = pipeline.create_node(fsl.FAST(), name='fast',
-                                    requirements=[fsl509_req])
-        fast.inputs.img_type = img_type
-        fast.inputs.segments = True
-        fast.inputs.out_basename = 'Reference_segmentation'
-        pipeline.connect_input('brain', fast, 'in_files')
-        split = pipeline.create_node(Split(), name='split')
-        split.inputs.splits = [1, 1, 1]
-        split.inputs.squeeze = True
-        pipeline.connect(fast, 'tissue_class_files', split, 'inlist')
+        fast = pipeline.add(
+            'fast',
+            fsl.FAST(
+                img_type=img_type,
+                segments=True,
+                out_basename='Reference_segmentation'),
+            inputs={
+                'in_files': ('brain', nifti_gz_format)},
+            requirements=[fsl509_req]),
+
+        # Determine output field of split to use
         if img_type == 1:
-            pipeline.connect_output('wm_seg', split, 'out3')
+            split_output = 'out3'
         elif img_type == 2:
-            pipeline.connect_output('wm_seg', split, 'out2')
+            split_output = 'out2'
         else:
             raise ArcanaUsageError(
                 "'img_type' parameter can either be 1 or 2 (not {})"
                 .format(img_type))
 
+        pipeline.add(
+            'split',
+            Split(
+                splits=[1, 1, 1],
+                squeeze=True),
+            connections={
+                'inlist': (fast, 'tissue_class_files')},
+            outputs={
+                split_output: ('wm_seg', nifti_gz_format)})
+
         return pipeline
 
-    def preproc_pipeline(self, in_file_name='magnitude', **kwargs):
+    def preproc_pipeline(self, in_file_name='magnitude', **mods):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -622,40 +651,46 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='preproc_pipeline',
-            inputs=[FilesetSpec(in_file_name, nifti_gz_format)],
-            outputs=[FilesetSpec('preproc', nifti_gz_format)],
+            modifications=mods,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
-            citations=[fsl_cite],
-            **kwargs)
-        swap = pipeline.create_node(fsl.utils.Reorient2Std(),
-                                    name='fslreorient2std',
-                                    requirements=[fsl509_req])
+            references=[fsl_cite])
+
+        swap = pipeline.add(
+            'fslreorient2std',
+            fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': (in_file_name, nifti_gz_format)},
+            requirements=[fsl509_req])
 #         swap.inputs.new_dims = self.parameter('preproc_new_dims')
-        pipeline.connect_input(in_file_name, swap, 'in_file')
+
         if self.parameter('preproc_resolution') is not None:
-            resample = pipeline.create_node(MRResize(), name="resample",
-                                            requirements=[mrtrix3_req])
-            resample.inputs.voxel = self.parameter('preproc_resolution')
-            pipeline.connect(swap, 'out_file', resample, 'in_file')
-            pipeline.connect_output('preproc', resample, 'out_file')
+            resample = pipeline.add(
+                "resample",
+                MRResize(
+                    voxel=self.parameter('preproc_resolution')),
+                connections={'in_file': (swap, 'out_file')},
+                requirements=[mrtrix3_req])
+            pipeline.connect_output('preproc', resample, 'out_file',
+                                    nifti_gz_format)
         else:
-            pipeline.connect_output('preproc', swap, 'out_file')
+            pipeline.connect_output('preproc', swap, 'out_file',
+                                    nifti_gz_format)
 
         return pipeline
 
-    def header_extraction_pipeline(self, **kwargs):
+    def header_extraction_pipeline(self, **mods):
         if self.input('magnitude').format != dicom_format:
             raise ArcanaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM format ({})".format(
                     self.input('magnitude').format))
         return self.header_extraction_pipeline_factory(
-            'header_info_extraction', 'magnitude', **kwargs)
+            'header_info_extraction', 'magnitude', **mods)
 
     def header_extraction_pipeline_factory(
             self, name, dcm_in_name, multivol=False, output_prefix='',
-            **kwargs):
+            **mods):
 
         tr = output_prefix + 'tr'
         start_time = output_prefix + 'start_time'
@@ -668,75 +703,60 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         voxel_sizes = output_prefix + 'voxel_sizes'
         main_field_strength = output_prefix + 'main_field_strength'
         main_field_orient = output_prefix + 'main_field_orient'
-        outputs = [FieldSpec(tr, dtype=float),
-                   FieldSpec(start_time, dtype=str),
-                   FieldSpec(tot_duration, dtype=str),
-                   FieldSpec(real_duration, dtype=str),
-                   FieldSpec(ped, dtype=str),
-                   FieldSpec(pe_angle, dtype=str),
-                   FieldSpec(echo_times, dtype=float),
-                   FieldSpec(voxel_sizes, dtype=float),
-                   FieldSpec(main_field_strength, dtype=float),
-                   FieldSpec(main_field_orient, dtype=float),
-                   FilesetSpec(dcm_info, text_format)]
 
         pipeline = self.pipeline(
             name=name,
-            inputs=[FilesetSpec(dcm_in_name, dicom_format)],
-            outputs=outputs,
+            modifications=mods,
             desc=("Pipeline to extract the most important scan "
                   "information from the image header"),
-            references=[],
-            **kwargs)
-        hd_extraction = pipeline.create_node(DicomHeaderInfoExtraction(),
-                                             name='hd_info_extraction')
-        hd_extraction.inputs.multivol = multivol
-        pipeline.connect_input(dcm_in_name, hd_extraction, 'dicom_folder')
-        pipeline.connect_output(tr, hd_extraction, 'tr')
-        pipeline.connect_output(start_time, hd_extraction, 'start_time')
-        pipeline.connect_output(
-            tot_duration, hd_extraction, 'tot_duration')
-        pipeline.connect_output(
-            real_duration, hd_extraction, 'real_duration')
-        pipeline.connect_output(ped, hd_extraction, 'ped')
-        pipeline.connect_output(pe_angle, hd_extraction, 'pe_angle')
-        pipeline.connect_output(dcm_info, hd_extraction, 'dcm_info')
-        pipeline.connect_output(echo_times, hd_extraction, 'echo_times')
-        pipeline.connect_output(voxel_sizes, hd_extraction, 'voxel_sizes')
-        pipeline.connect_output(main_field_strength, hd_extraction, 'B0')
-        pipeline.connect_output(main_field_orient, hd_extraction, 'H')
+            references=[])
+
+        pipeline.add(
+            'hd_info_extraction',
+            DicomHeaderInfoExtraction(
+                multivol=multivol),
+            inputs={
+                'dicom_folder': (dcm_in_name, dicom_format)},
+            outputs={
+                'tr': tr,
+                'start_time': start_time,
+                'tot_duration': tot_duration,
+                'real_duration': real_duration,
+                'ped': ped,
+                'pe_angle': pe_angle,
+                'dcm_info': (dcm_info, text_format),
+                'echo_times': echo_times,
+                'voxel_sizes': voxel_sizes,
+                'B0': main_field_strength,
+                'H': main_field_orient})
+
         return pipeline
 
-    def motion_mat_pipeline(self, **kwargs):
+    def motion_mat_pipeline(self, **mods):
+
+        pipeline = self.pipeline(
+            name='motion_mat_calculation',
+            modifications=mods,
+            desc=("Motion matrices calculation"),
+            references=[fsl_cite])
+
+        mm = pipeline.add(
+            'motion_mats',
+            MotionMatCalculation(),
+            outputs={
+                'motion_mats': ('motion_mats', motion_mats_format)})
         if not self.spec('coreg_matrix').derivable:
             logger.info("Cannot derive 'coreg_matrix' for {} required for "
                         "motion matrix calculation, assuming that it "
                         "is the reference study".format(self))
-            inputs = [FilesetSpec('magnitude', dicom_format)]
-            ref = True
-        else:
-            inputs = [FilesetSpec('coreg_matrix', text_matrix_format),
-                      FilesetSpec('qform_mat', text_matrix_format)]
-            if 'align_mats' in self.data_spec_names():
-                inputs.append(FilesetSpec('align_mats', directory_format))
-            ref = False
-        pipeline = self.pipeline(
-            name='motion_mat_calculation',
-            inputs=inputs,
-            outputs=[FilesetSpec('motion_mats', motion_mats_format)],
-            desc=("Motion matrices calculation"),
-            citations=[fsl_cite],
-            **kwargs)
-
-        mm = pipeline.create_node(
-            MotionMatCalculation(), name='motion_mats')
-        if ref:
             mm.inputs.reference = True
             pipeline.connect_input('magnitude', mm, 'dummy_input')
         else:
-            pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
-            pipeline.connect_input('qform_mat', mm, 'qform_mat')
+            pipeline.connect_input('coreg_matrix', mm, 'reg_mat',
+                                   text_matrix_format)
+            pipeline.connect_input('qform_mat', mm, 'qform_mat',
+                                   text_matrix_format)
             if 'align_mats' in self.data_spec_names():
-                pipeline.connect_input('align_mats', mm, 'align_mats')
-        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+                pipeline.connect_input('align_mats', mm, 'align_mats',
+                                       directory_format)
         return pipeline
