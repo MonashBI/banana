@@ -31,11 +31,11 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('input_fileset', dicom_format),
-        FilesetSpec('output_fileset', nifti_gz_format, 'pipeline')]
+        FilesetSpec('output_fileset', nifti_gz_format, 'a_pipeline')]
 
-    def pipeline(self):
+    def a_pipeline(self):
         pipeline = self.pipeline(
-            name='pipeline',
+            name='a_pipeline',
             inputs=[FilesetSpec('input_fileset', nifti_gz_format)],
             outputs=[FilesetSpec('output_fileset', nifti_gz_format)],
             desc=("A dummy pipeline used to test dicom-to-nifti "

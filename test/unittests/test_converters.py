@@ -15,15 +15,15 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('dicom', dicom_format),
         FilesetSpec('directory', directory_format),
         FilesetSpec('zip', zip_format),
-        FilesetSpec('nifti_gz_from_dicom', text_format, 'pipeline'),
-        FilesetSpec('mrtrix_from_nifti_gz', text_format, 'pipeline'),
-        FilesetSpec('nifti_from_mrtrix', nifti_format, 'pipeline'),
-        FilesetSpec('directory_from_zip', directory_format, 'pipeline'),
-        FilesetSpec('zip_from_directory', zip_format, 'pipeline')]
+        FilesetSpec('nifti_gz_from_dicom', text_format, 'conv_pipeline'),
+        FilesetSpec('mrtrix_from_nifti_gz', text_format, 'conv_pipeline'),
+        FilesetSpec('nifti_from_mrtrix', nifti_format, 'conv_pipeline'),
+        FilesetSpec('directory_from_zip', directory_format, 'conv_pipeline'),
+        FilesetSpec('zip_from_directory', zip_format, 'conv_pipeline')]
 
-    def pipeline(self):
+    def conv_pipeline(self):
         pipeline = self.pipeline(
-            name='pipeline',
+            name='conv_pipeline',
             inputs=[FilesetSpec('mrtrix', text_format),
                     FilesetSpec('nifti_gz', text_format),
                     FilesetSpec('dicom', text_format),
@@ -72,7 +72,6 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
                                'file')
         pipeline.connect_output('zip_from_directory', zip_from_directory,
                                 'file')
-        pipeline.assert_connected()
         return pipeline
 
 

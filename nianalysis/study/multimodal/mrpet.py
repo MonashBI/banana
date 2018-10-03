@@ -342,7 +342,6 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect_output('fixed_binning_mats', binning,
                                 'average_bin_mats')
 
-        pipeline.assert_connected()
         return pipeline
 
     def pet_correction_factors_pipeline(self, **kwargs):

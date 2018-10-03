@@ -159,7 +159,6 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
             'out_matrix_file')
         pipeline.connect_output('ute2_registered', transform_ute2, 'out_file')
         pipeline.connect_output('template_to_ute_mat', convert_mat, 'out_file')
-        pipeline.assert_connected()
 
         return pipeline
 
@@ -253,7 +252,6 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
         pipeline.connect_output('bones_mask', binarize_bones, 'out_file')
         pipeline.connect_output('air_mask', binarize_air, 'out_file')
-        pipeline.assert_connected()
 
         return pipeline
 
@@ -293,7 +291,6 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
             'sute_fix_template',
             umaps_calculation,
             'sute_fix_template')
-        pipeline.assert_connected()
 
         return pipeline
 
@@ -454,7 +451,6 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
                                 'smoothed_file')
         pipeline.connect_output('sute_cont_ute', smooth_sute_cont,
                                 'smoothed_file')
-        pipeline.assert_connected()
 
         return pipeline
 

@@ -246,7 +246,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                             requirements=[mrtrix3_req])
             dwi2mask.inputs.out_file = 'brain_mask.nii.gz'
             # Gradient merge node
-            grad_fsl = pipeline.create_node(MergeTuple(2), name="grad_fsl")
+            grad_fsl = pipeline.add("grad_fsl", MergeTuple(2))
             # Connect nodes
             pipeline.connect(grad_fsl, 'out', dwi2mask, 'grad_fsl')
             # Connect inputs
@@ -256,7 +256,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             # Connect outputs
             pipeline.connect_output('brain_mask', dwi2mask, 'out_file')
             # Check inputs/outputs are connected
-            pipeline.assert_connected()
         else:
             pipeline = super(DiffusionStudy, self).brain_extraction_pipeline(
                 **kwargs)
@@ -286,7 +285,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                 [ants2_req if bias_method == 'ants' else fsl509_req]))
         bias_correct.inputs.method = bias_method
         # Gradient merge node
-        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', bias_correct, 'grad_fsl')
         # Connect to inputs
@@ -315,7 +314,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=[mrtrix3_req],
             **kwargs)
         # Convert from nifti to mrtrix format
-        grad_merge = pipeline.create_node(MergeTuple(2), name="grad_merge")
+        grad_merge = pipeline.add("grad_merge", MergeTuple(2))
         mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
         mrconvert.inputs.out_ext = '.mif'
         # Set up join nodes
@@ -382,7 +381,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         dwi2tensor = pipeline.create_node(FitTensor(), name='dwi2tensor')
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
         # Gradient merge node
-        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', dwi2tensor, 'grad_fsl')
         # Connect to inputs
@@ -451,7 +450,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                         requirements=[mrtrix3_req])
         response.inputs.algorithm = self.parameter('response_algorithm')
         # Gradient merge node
-        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
         # Connect to inputs
@@ -526,7 +525,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                        requirements=[mrtrix3_req])
         dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
         # Gradient merge node
-        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
         # Connect to inputs
@@ -583,7 +582,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             citations=[mrtrix_cite],
             **kwargs)
         # Gradient merge node
-        fsl_grads = pipeline.create_node(MergeTuple(2), name="fsl_grads")
+        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         # Extraction node
         extract_b0s = pipeline.create_node(
             ExtractDWIorB0(), name='extract_b0s',
@@ -612,7 +611,6 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         pipeline.connect(mean, 'out_file', mrconvert, 'in_file')
         # Connect outputs
         pipeline.connect_output('b0', mrconvert, 'out_file')
-        pipeline.assert_connected()
         # Check inputs/outputs are connected
         return pipeline
 
