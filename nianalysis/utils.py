@@ -1,5 +1,8 @@
-import os.path
+import os
+import os.path as op
 from arcana.exception import ArcanaError
+import nianalysis
+from nianalysis.requirement import fsl5_req
 
 
 def nth(i):
@@ -16,7 +19,7 @@ def nth(i):
 
 
 def get_fsl_reference_path():
-    return os.path.join(os.environ['FSLDIR'], 'data', 'standard')
+    return op.join(os.environ['FSLDIR'], 'data', 'standard')
 
 
 def get_atlas_path(name, fileset='brain', resolution='1mm'):
@@ -39,10 +42,10 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
                 "Invalid resolution for MNI152, '{}', can be one of '0.5mm', "
                 "'1mm' or '2mm'".format(resolution))
         if fileset == 'image':
-            path = os.path.join(get_fsl_reference_path(),
+            path = op.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}.nii.gz'.format(resolution))
         elif fileset == 'mask':
-            path = os.path.join(get_fsl_reference_path(),
+            path = op.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}_brain_mask.nii.gz'
                                 .format(resolution))
         elif fileset == 'mask_dilated':
@@ -50,11 +53,11 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
                 raise ArcanaError(
                     "Dilated MNI masks are not available for {} resolution "
                     .format(resolution))
-            path = os.path.join(get_fsl_reference_path(),
+            path = op.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}_brain_mask_dil.nii.gz'
                                 .format(resolution))
         elif fileset == 'brain':
-            path = os.path.join(get_fsl_reference_path(),
+            path = op.join(get_fsl_reference_path(),
                                 'MNI152_T1_{}_brain.nii.gz'
                                 .format(resolution))
         else:
@@ -63,4 +66,4 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
     else:
         raise ArcanaError("Unrecognised atlas name '{}'"
                               .format(name))
-    return os.path.abspath(path)
+    return op.abspath(path)

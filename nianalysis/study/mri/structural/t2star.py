@@ -21,6 +21,7 @@ from nianalysis.interfaces.custom.mask import (
     DialateMask, CoilMask, MedianInMasks)
 import nianalysis
 from arcana.parameter import ParameterSpec, SwitchSpec
+from nianalysis.atlas import QsmAtlas
 
 atlas_path = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
 

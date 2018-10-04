@@ -27,6 +27,7 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.interfaces.custom.motion_correction import (
     MotionMatCalculation)
+from nianalysis.atlas import FslAtlas
 
 logger = logging.getLogger('arcana')
 
@@ -96,15 +97,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
         # Templates
         FilesetSpec('atlas', nifti_gz_format,
-                    default=FSLAtlas('MNI152', contrast='T1', resolution=2)),
+                    default=FslAtlas('MNI152_T1',
+                                     resolution='fnirt_resolution')),
         FilesetSpec('atlas_brain', nifti_gz_format,
-                    default=FSLAtlas('MNI152', contrast='T1', resolution=2,
-                                      dataset='brain')),
+                    default=FslAtlas('MNI152_T1',
+                                     resolution='fnirt_resolution',
+                                     dataset='brain')),
         FilesetSpec('atlas_mask', nifti_gz_format,
-                    default=FSLAtlas('MNI152', contrast='T1', resolution=2,
-                                      dataset='brain_mask')),
-        FilesetSpec('fnirt_atlas', nifti_gz_format,
-                    default=FSLAtlas('MNI152'))]
+                    default=FslAtlas('MNI152_T1',
+                                     resolution='fnirt_resolution',
+                                     dataset='brain_mask'))]
 
     add_parameter_specs = [
         SwitchSpec('bet_robust', True),
@@ -113,15 +115,15 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                       desc="Only used if not 'bet_robust'"),
         ParameterSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
-
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        ParameterSpec('fnirt_resolution', '2mm'),
+        SwitchSpec('fnirt_resolution', 2, (0.5, 1, 2)),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParameterSpec('preproc_resolution', None, dtype=list),
-        SwitchSpec('linear_reg_method', 'flirt', ('flirt', 'spm', 'ants')),
+        SwitchSpec('linear_reg_method', 'flirt', ('flirt', 'spm', 'ants'),
+                   desc="The tool to use for linear registration"),
         ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
@@ -473,23 +475,9 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline = self.pipeline(
             name='coregister_to_atlas',
             modifications=mods,
-            inputs=[FilesetSpec('preproc', nifti_gz_format),
-                    FilesetSpec('brain_mask', nifti_gz_format),
-                    FilesetSpec('brain', nifti_gz_format)],
-            outputs=[FilesetSpec('coreg_to_atlas', nifti_gz_format),
-                     FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format)],
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
             references=[fsl_cite])
-        # Get the reference atlas from FSL directory
-        ref_atlas = get_atlas_path(
-            self.parameter('fnirt_atlas'), 'image',
-            resolution=self.parameter('fnirt_resolution'))
-        ref_mask = get_atlas_path(
-            self.parameter('fnirt_atlas'), 'mask_dilated',
-            resolution=self.parameter('fnirt_resolution'))
-        ref_brain = get_atlas_path(self.parameter('fnirt_atlas'), 'brain',
-                                   resolution=self.parameter('fnirt_resolution'))
 
         # Basic reorientation to standard MNI space
         reorient = pipeline.add(
@@ -520,9 +508,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         flirt = pipeline.add(
             'flirt',
             interface=FLIRT(
-                reference=ref_brain,
                 dof=12,
                 output_type='NIFTI_GZ'),
+            inputs={
+                'reference': ('atlas_brain', nifti_gz_format)},
             internal={
                 'in_file': (reorient_brain, 'out_file')},
             requirements=[fsl5_req],
@@ -536,8 +525,6 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.add(
             'fnirt',
             interface=FNIRT(
-                ref_file=ref_atlas,
-                refmask_file=ref_mask,
                 output_type='NIFTI_GZ',
                 intensity_mapping_model=(
                     self.parameter('fnirt_intensity_model')
@@ -552,6 +539,9 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 max_nonlin_iter=[5, 5, 5, 5, 5, 10],
                 apply_inmask=apply_mask,
                 apply_refmask=apply_mask),
+            inputs={
+                'ref_file': ('atlas', nifti_gz_format),
+                'refmask': ('atlas_mask', nifti_gz_format)},
             internal={
                 'in_file': (reorient, 'out_file'),
                 'inmask_file': (reorient_mask, 'out_file'),
