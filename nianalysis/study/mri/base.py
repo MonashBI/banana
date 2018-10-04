@@ -93,23 +93,29 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('real_duration', str, 'header_extraction_pipeline'),
         FieldSpec('tot_duration', str, 'header_extraction_pipeline'),
         FieldSpec('ped', str, 'header_extraction_pipeline'),
-        FieldSpec('pe_angle', str, 'header_extraction_pipeline')]
+        FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
+        # Templates
+        FilesetSpec('atlas', nifti_gz_format,
+                    default=FSLAtlas('MNI152', contrast='T1', resolution=2)),
+        FilesetSpec('atlas_brain', nifti_gz_format,
+                    default=FSLAtlas('MNI152', contrast='T1', resolution=2,
+                                      dataset='brain')),
+        FilesetSpec('atlas_mask', nifti_gz_format,
+                    default=FSLAtlas('MNI152', contrast='T1', resolution=2,
+                                      dataset='brain_mask')),
+        FilesetSpec('fnirt_atlas', nifti_gz_format,
+                    default=FSLAtlas('MNI152'))]
 
     add_parameter_specs = [
-        ParameterSpec('bet_robust', True),
+        SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),
-        ParameterSpec('bet_reduce_bias', False),
+        ParameterSpec('bet_reduce_bias', False,
+                      desc="Only used if not 'bet_robust'"),
         ParameterSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
-        ParameterSpec('MNI_template',
-                      os.path.join(atlas_path, 'MNI152_T1_2mm.nii.gz')),
-        ParameterSpec('MNI_template_brain',
-                      os.path.join(atlas_path, 'MNI152_T1_2mm_brain.nii.gz')),
-        ParameterSpec('MNI_template_mask', os.path.join(
-            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
+
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        ParameterSpec('fnirt_atlas', 'MNI152'),
         ParameterSpec('fnirt_resolution', '2mm'),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
@@ -143,7 +149,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def prepare_channels(self, **mods):
         pipeline = self.pipeline(
-            'prepare_channels', mods,
+            'prepare_channels',
+            modifications=mods,
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
         pipeline.add(
@@ -155,7 +162,6 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'in_dir': ('coil_channels', multi_nifti_gz_format)},
             outputs={
-                # 'first_echo': ('magnitude', nifti_gz_format),
                 'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
                 'phases_dir': ('channel_phases', multi_nifti_gz_format)})
         return pipeline
@@ -332,21 +338,24 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             desc="Generate brain mask from mr_scan",
             references=[fsl_cite, bet_cite, bet2_cite])
         # Create mask node
-        pipeline.add(
+        bet = pipeline.add(
             "bet",
             fsl.BET(
                 mask=True,
                 output_type='NIFTI_GZ',
                 frac=self.parameter('bet_f_threshold'),
-                vertical_gradient=self.parameter('bet_g_threshold'),
-                robust=self.parameter('bet_robust'),
-                reduce_bias=self.parameter('bet_reduce_bias')),
+                vertical_gradient=self.parameter('bet_g_threshold')),
             inputs={
                 'in_file': (in_file, nifti_gz_format)},
-            output={
+            outputs={
                 'out_file': ('brain', nifti_gz_format),
                 'mask_file': ('brain_mask', nifti_gz_format)},
             requirements=[fsl509_req])
+        # Set either robust or reduce bias
+        if self.branch('bet_robust'):
+            bet.inputs.robust = True
+        else:
+            bet.inputs.reduce_bias = self.parameter('bet_reduce_bias')
         return pipeline
 
     # FIXME: With the newly implemented name-mapping functionality 'in_file'
@@ -367,16 +376,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 num_dimensions=3,
                 transformation='s',
                 out_prefix='T12MNI',
-                num_threads=4,
-                ref_file=self.parameter('MNI_template')),  # FIXME: should be a Study input not a parameter
+                num_threads=4),
             inputs={
+                'ref_file': ('atlas', nifti_gz_format),
                 'input_file': (in_file, nifti_gz_format)},
             wall_time=25, requirements=[ants2_req])
 
         merge_trans = pipeline.add(
             'merge_transforms',
             Merge(2),
-            connections={
+            internal={
                 'in1': (mni_reg, 'inv_warp'),
                 'in2': (mni_reg, 'regmat')},
             wall_time=1)
@@ -391,12 +400,12 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         apply_trans = pipeline.add(
             'ApplyTransform',
             ApplyTransforms(
-                input_image=self.parameter('MNI_template_mask'),
                 interpolation='NearestNeighbor',
                 input_image_type=3),
             inputs={
+                'input_image': ('atlas_mask', nifti_gz_format),
                 'reference_image': (in_file, nifti_gz_format)},
-            connections={
+            internal={
                 'transforms': (merge_trans, 'out'),
                 'invert_transform_flags': (trans_flags, 'out')},
             wall_time=7,
@@ -408,7 +417,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             fsl.ImageMaths(
                 suffix='_optiBET_brain_mask',
                 op_string='-bin'),
-            connections={
+            internal={
                 'in_file': (apply_trans, 'output_image')},
             outputs={
                 'out_file': ('brain_mask', nifti_gz_format)},
@@ -421,7 +430,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 op_string='-mas'),
             inputs={
                 in_file: ('in_file', nifti_gz_format)},
-            connections={
+            internal={
                 'in_file2': (maths1, 'out_file')},
             outputs={
                 'brain': ('out_file', nifti_gz_format)},
@@ -434,7 +443,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 wall_time=5,
                 inputs={
                     'im1': (in_file, nifti_gz_format)},
-                connections={
+                internal={
                     'im2': (maths2, 'out_file')},
                 outputs={
                     'report': ('optiBET_report', gif_format)},
@@ -514,7 +523,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 reference=ref_brain,
                 dof=12,
                 output_type='NIFTI_GZ'),
-            connections={
+            internal={
                 'in_file': (reorient_brain, 'out_file')},
             requirements=[fsl5_req],
             wall_time=5)
@@ -543,7 +552,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 max_nonlin_iter=[5, 5, 5, 5, 5, 10],
                 apply_inmask=apply_mask,
                 apply_refmask=apply_mask),
-            connections={
+            internal={
                 'in_file': (reorient, 'out_file'),
                 'inmask_file': (reorient_mask, 'out_file'),
                 'affine_file': (flirt, 'out_matrix_file')},
@@ -571,10 +580,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 num_dimensions=3,
                 transformation='s',
                 out_prefix='Struct2MNI',
-                num_threads=4,
-                ref_file=self.parameter('MNI_template_brain')),
+                num_threads=4),
             inputs={
-                'input_file': ('coreg_brain', nifti_gz_format)},
+                'input_file': ('coreg_brain', nifti_gz_format),
+                'ref_file': ('atlas_brain', nifti_gz_format)},
             outputs={
                 'reg_file': ('coreg_to_atlas', nifti_gz_format),
                 'regmat': ('coreg_to_atlas_mat', text_matrix_format),
@@ -584,9 +593,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.add(
             'slices',
             FSLSlices(
-                outname='coreg_to_atlas_report',
-                im1=self.parameter('MNI_template')),
-            connections={
+                outname='coreg_to_atlas_report'),
+            inputs={
+                'im1': ('atlas', nifti_gz_format)},
+            internal={
                 'im2': (ants_reg, 'reg_file')},
             outputs={
                 'report': ('coreg_to_atlas_report', gif_format)},
@@ -628,7 +638,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             Split(
                 splits=[1, 1, 1],
                 squeeze=True),
-            connections={
+            internal={
                 'inlist': (fast, 'tissue_class_files')},
             outputs={
                 split_output: ('wm_seg', nifti_gz_format)})
@@ -669,7 +679,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 "resample",
                 MRResize(
                     voxel=self.parameter('preproc_resolution')),
-                connections={'in_file': (swap, 'out_file')},
+                internal={'in_file': (swap, 'out_file')},
                 requirements=[mrtrix3_req])
             pipeline.connect_output('preproc', resample, 'out_file',
                                     nifti_gz_format)
@@ -718,17 +728,17 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'dicom_folder': (dcm_in_name, dicom_format)},
             outputs={
-                'tr': tr,
-                'start_time': start_time,
-                'tot_duration': tot_duration,
-                'real_duration': real_duration,
-                'ped': ped,
-                'pe_angle': pe_angle,
+                'tr': (tr, float),
+                'start_time': (start_time, str),
+                'tot_duration': (tot_duration, str),
+                'real_duration': (real_duration, str),
+                'ped': (ped, str),
+                'pe_angle': (pe_angle, str),
                 'dcm_info': (dcm_info, text_format),
-                'echo_times': echo_times,
-                'voxel_sizes': voxel_sizes,
-                'B0': main_field_strength,
-                'H': main_field_orient})
+                'echo_times': (echo_times, float),
+                'voxel_sizes': (voxel_sizes, float),
+                'B0': (main_field_strength, float),
+                'H': (main_field_orient, float)})
 
         return pipeline
 

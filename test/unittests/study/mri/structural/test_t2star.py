@@ -23,6 +23,7 @@ study = T2StarT1Study(
     inputs=[
         FilesetMatch('t2star_coil_channels', zip_format, 'swi_coils_icerecon'),
         FilesetMatch('t2star_header_image', dicom_format, 'SWI_Images'),
+        FilesetMatch('t2star_swi', dicom_format, 'SWI_Images'),
         FilesetMatch('t1_magnitude', dicom_format,
                      't1_mprage_sag_p2_iso_1mm')])
 
