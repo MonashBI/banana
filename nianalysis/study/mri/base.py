@@ -4,7 +4,7 @@ from nianalysis.requirement import spm12_req
 from nianalysis.citation import spm_cite
 from nianalysis.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
-    multi_nifti_gz_format, STD_IMAGE_FORMATS)
+    multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 from arcana.study.base import Study, StudyMetaClass
 from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
@@ -45,7 +45,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                   "scan to. Should be brain extracted"),
                             optional=True),
         AcquiredFilesetSpec(
-            'coil_channels', multi_nifti_gz_format,
+            'coil_channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
                                  "coil without standardisation.")),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
@@ -93,14 +93,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
         # Templates
-        AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS,
+        AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
                             default=FslAtlas('MNI152_T1',
                                              resolution='fnirt_resolution')),
         AcquiredFilesetSpec('atlas_brain', STD_IMAGE_FORMATS,
+                            frequency='per_study',
                             default=FslAtlas('MNI152_T1',
                                              resolution='fnirt_resolution',
                                              dataset='brain')),
         AcquiredFilesetSpec('atlas_mask', STD_IMAGE_FORMATS,
+                            frequency='per_study',
                             default=FslAtlas('MNI152_T1',
                                              resolution='fnirt_resolution',
                                              dataset='brain_mask'))]
@@ -428,11 +430,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 suffix='_optiBET_brain',
                 op_string='-mas'),
             inputs={
-                in_file: ('in_file', nifti_gz_format)},
+                'in_file': (in_file, nifti_gz_format)},
             internal={
                 'in_file2': (maths1, 'out_file')},
             outputs={
-                'brain': ('out_file', nifti_gz_format)},
+                'out_file': ('brain', nifti_gz_format)},
             wall_time=5, requirements=[fsl5_req])
 
         if self.branch('optibet_gen_report'):

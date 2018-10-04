@@ -2,8 +2,7 @@ import os.path as op
 import re
 from arcana.study import (
     StudyMetaClass, MultiStudy, MultiStudyMetaClass, SubStudySpec)
-from arcana.data import (
-    FilesetSpec, FilesetCollection, Fileset, AcquiredFilesetSpec)
+from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from nianalysis.requirement import (fsl5_req, matlab2015_req,
                                     ants19_req)
 from nianalysis.citation import (
@@ -23,22 +22,13 @@ from nianalysis.interfaces.custom.mask import (
     DialateMask, CoilMask, MedianInMasks)
 import nianalysis
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.atlas import QsmAtlas
+from nianalysis.atlas import CompositeVeinAtlas
 
 atlas_path = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
 
 
 def coil_sort_key(fname):
     return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
-
-
-class QsmAtlas(FilesetCollection):
-
-    def __init__(self, name):
-        super().__init__(
-            name,
-            [Fileset.from_path(op.join(atlas_path, '{}.nii.gz'.format(name)),
-                               frequency='per_study')])
 
 
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -77,6 +67,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         # Connect combined first echo output to the magnitude data spec
         pipeline.connect_output('magnitude', pipeline.node('to_polar'),
                                 'first_echo', nifti_gz_format)
+        return pipeline
 
     def qsm_pipeline(self, **mods):
         """
@@ -272,13 +263,17 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
         AcquiredFilesetSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
-                            default=QsmAtlas('QSMPrior')),
+                            frequency='per_study',
+                            default=CompositeVeinAtlas('QSMPrior')),
         AcquiredFilesetSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
-                            default=QsmAtlas('SWIPrior')),
+                            frequency='per_study',
+                            default=CompositeVeinAtlas('SWIPrior')),
         AcquiredFilesetSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
-                            default=QsmAtlas('VeinFrequencyPrior')),
+                            frequency='per_study',
+                            default=CompositeVeinAtlas('VeinFrequencyPrior')),
         AcquiredFilesetSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
-                            default=QsmAtlas('VeinFrequencyMap'))]
+                            frequency='per_study',
+                            default=CompositeVeinAtlas('VeinFrequencyMap'))]
 
 #     add_parameter_specs = [
 #         # Change the default atlast coreg tool to FNIRT

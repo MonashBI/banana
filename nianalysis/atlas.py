@@ -8,8 +8,11 @@ from arcana.data import Fileset, FilesetCollection
 
 class BaseAtlas():
 
-    def __init__(self, name):
+    frequency = 'per_study'
+
+    def __init__(self, name=None):
         self._name = name
+        self._study = None
 
     def bind(self, study):
         self._study = study
@@ -17,21 +20,30 @@ class BaseAtlas():
 
     @property
     def study(self):
-        try:
-            return self._study
-        except AttributeError:
+        if self._study is None:
             raise ArcanaError(
                 "Can't access study property as {} has not been bound"
                 .format(self))
+        return self._study
 
     @property
     def name(self):
+        if self._name is None:
+            raise ArcanaError(
+                "Name for atlas hasn't been set, it should be set in when "
+                "it is passed as a default")
         return self._name
+
+    @name.setter
+    def name(self, name):
+        self._name = name
 
     @property
     def collection(self):
-        return FilesetCollection(self.name, [Fileset.from_path(self.path)],
-                                 frequency='per_study')
+        return FilesetCollection(
+            self.name,
+            [Fileset.from_path(self.path, frequency=self.frequency)],
+            frequency=self.frequency)
 
     @property
     def format(self):
@@ -67,9 +79,10 @@ class FslAtlas(BaseAtlas):
         Relative path to atlas directory from FSL 'data' directory
     """
 
-    def __init__(self, name, resolution=1, dataset=None,
+    def __init__(self, atlas_name, name=None, resolution=1, dataset=None,
                  sub_path=['standard']):
         super().__init__(name)
+        self._atlas_name = atlas_name
         self._resolution = resolution
         self._dataset = dataset
         self._sub_path = sub_path
@@ -78,39 +91,50 @@ class FslAtlas(BaseAtlas):
     def path(self):
         # If resolution is a string then it is assumed to be a parameter name
         # of the study
-        fsl_ver = self.study.satisfier.load(fsl5_req)
-        atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
-        self.study.satisfier.unload(fsl_ver)
-        return op.join(atlas_dir, self.name + '.nii.gz')
-
-    @property
-    def name(self):
-        "Append resolution and dataset to atlas name"
-        atlas_name = self._name
+        full_atlas_name = self._atlas_name
         if isinstance(self._resolution, str):
             res = self.study.parameter(self._resolution)
         else:
             res = self._resolution
-        atlas_name += '_{}mm'.format(res)
+        full_atlas_name += '_{}mm'.format(res)
         if self._dataset is not None:
-            atlas_name += '_' + self._dataset
-        return atlas_name
+            full_atlas_name += '_' + self._dataset
+        fsl_ver = self.study.processor.requirement_manager.load(fsl5_req)
+        atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
+        self.study.processor.requirement_manager.unload(fsl_ver)
+        return op.join(atlas_dir, full_atlas_name + '.nii.gz')
 
     def __eq__(self, other):
         return (
             super().__eq__(other) and
+            self._atlas_name == other._atlas_name and
             self._resolution == other._resolution and
             self._dataset == other._dataset and
             self._sub_path == other._sub_path)
 
 
-class QsmAtlas(BaseAtlas):
+class CompositeVeinAtlas(BaseAtlas):
     """
+    Several atlases used in the composite-vein analysis in the T2* study,
+    stored within the banana package.
 
+    Parameters
+    ----------
+    atlas_name : str
+        Base name of the atlas file (i.e. without extension) in the 'atlases'
+        directory
     """
 
     BASE_PATH = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
 
+    def __init__(self, atlas_name, name=None):
+        super().__init__(name)
+        self._atlas_name = atlas_name
+
     @property
     def path(self):  # @UnusedVariable
-        return op.join(self.BASE_PATH, self.name + '.nii.gz')
+        return op.join(self.BASE_PATH, self._atlas_name + '.nii.gz')
+
+    def __eq__(self, other):
+        return (super().__eq__(other) and
+                self._atlas_name == other._atlas_name)
