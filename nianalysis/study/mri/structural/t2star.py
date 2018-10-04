@@ -2,13 +2,15 @@ import os.path as op
 import re
 from arcana.study import (
     StudyMetaClass, MultiStudy, MultiStudyMetaClass, SubStudySpec)
-from arcana.data import FilesetSpec, FilesetCollection, Fileset, FieldSpec
+from arcana.data import (
+    FilesetSpec, FilesetCollection, Fileset, AcquiredFilesetSpec)
 from nianalysis.requirement import (fsl5_req, matlab2015_req,
                                     ants19_req)
 from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import (
-    nifti_gz_format, text_matrix_format, dicom_format, multi_nifti_gz_format)
+    nifti_gz_format, text_matrix_format, dicom_format, multi_nifti_gz_format,
+    STD_IMAGE_FORMATS)
 from nianalysis.interfaces import qsm
 from arcana.interfaces import utils
 from ..base import MRIStudy
@@ -52,7 +54,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     desc=("Quantitative susceptibility image resolved "
                                  "from T2* coil images")),
-        FilesetSpec('header_image', dicom_format, desc=(
+        AcquiredFilesetSpec('header_image', dicom_format, desc=(
             "The image that contains the header information required to "
             "perform the analysis (e.g. TE, B0, H). Alternatively, values "
             "for extracted fields can be explicitly passed as inputs to the "
@@ -269,14 +271,14 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
-        FilesetSpec('mni_template_qsm_prior', nifti_gz_format,
-                    default=QsmAtlas('QSMPrior')),
-        FilesetSpec('mni_template_swi_prior', nifti_gz_format,
-                    default=QsmAtlas('SWIPrior')),
-        FilesetSpec('mni_template_atlas_prior', nifti_gz_format,
-                    default=QsmAtlas('VeinFrequencyPrior')),
-        FilesetSpec('mni_template_vein_atlas', nifti_gz_format,
-                    default=QsmAtlas('VeinFrequencyMap'))]
+        AcquiredFilesetSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
+                            default=QsmAtlas('QSMPrior')),
+        AcquiredFilesetSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
+                            default=QsmAtlas('SWIPrior')),
+        AcquiredFilesetSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
+                            default=QsmAtlas('VeinFrequencyPrior')),
+        AcquiredFilesetSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
+                            default=QsmAtlas('VeinFrequencyMap'))]
 
 #     add_parameter_specs = [
 #         # Change the default atlast coreg tool to FNIRT

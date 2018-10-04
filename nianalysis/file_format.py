@@ -98,6 +98,9 @@ mrtrix_format = FileFormat(name='mrtrix', extension='.mif',
                                        'nifti_gz': MrtrixConverter,
                                        'analyze': MrtrixConverter})
 
+STD_IMAGE_FORMATS = [dicom_format, nifti_format, nifti_gz_format,
+                     analyze_format, mrtrix_format]
+
 multi_nifti_gz_format = FileFormat(name='multi_nifti_gz', extension=None,
                                    directory=True, within_dir_exts=['.nii.gz'],
                                    converters={'zip': UnzipConverter,

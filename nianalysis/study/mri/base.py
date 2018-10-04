@@ -4,15 +4,14 @@ from nianalysis.requirement import spm12_req
 from nianalysis.citation import spm_cite
 from nianalysis.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
-    multi_nifti_gz_format)
-from arcana.data import FilesetSpec, FieldSpec
+    multi_nifti_gz_format, STD_IMAGE_FORMATS)
+from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 from arcana.study.base import Study, StudyMetaClass
 from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from nianalysis.file_format import (
     dicom_format, text_format, gif_format)
 from nianalysis.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from nianalysis.utils import get_atlas_path
 from arcana.exception import ArcanaUsageError
 from nianalysis.interfaces.mrtrix.transform import MRResize
 from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
@@ -38,25 +37,23 @@ atlas_path = os.path.abspath(
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('coil_channels', multi_nifti_gz_format, optional=True,
-                    desc=(
-                        "Reconstructed complex image for each "
-                        "coil without standardisation.")),
-        FilesetSpec('magnitude', dicom_format,
-                    desc=("Typically the primary scan acquired from the "
-                          "scanner for the given contrast")),
+        AcquiredFilesetSpec('magnitude', STD_IMAGE_FORMATS,
+                            desc=("Typically the primary scan acquired from "
+                                  "the scanner for the given contrast")),
+        AcquiredFilesetSpec('coreg_ref_brain', STD_IMAGE_FORMATS,
+                            desc=("A reference scan to coregister the primary "
+                                  "scan to. Should be brain extracted"),
+                            optional=True),
+        AcquiredFilesetSpec(
+            'coil_channels', multi_nifti_gz_format,
+            optional=True, desc=("Reconstructed complex image for each "
+                                 "coil without standardisation.")),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
                     'prepare_channels'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
                     'prepare_channels'),
-        FilesetSpec('coreg_ref_brain', nifti_gz_format,
-                    desc=("A reference scan to coregister the primary "
-                          "scan to. Should be brain extracted"),
-                    optional=True),
         FilesetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
-        FilesetSpec('atlas', nifti_gz_format, optional=True,
-                    desc=("Atlas to register the study to")),
         FilesetSpec('preproc', nifti_gz_format, 'preproc_pipeline',
                     desc=("Performs basic preprocessing, such as realigning "
                           "image axis to a standard rotation")),
@@ -96,17 +93,17 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
         # Templates
-        FilesetSpec('atlas', nifti_gz_format,
-                    default=FslAtlas('MNI152_T1',
-                                     resolution='fnirt_resolution')),
-        FilesetSpec('atlas_brain', nifti_gz_format,
-                    default=FslAtlas('MNI152_T1',
-                                     resolution='fnirt_resolution',
-                                     dataset='brain')),
-        FilesetSpec('atlas_mask', nifti_gz_format,
-                    default=FslAtlas('MNI152_T1',
-                                     resolution='fnirt_resolution',
-                                     dataset='brain_mask'))]
+        AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS,
+                            default=FslAtlas('MNI152_T1',
+                                             resolution='fnirt_resolution')),
+        AcquiredFilesetSpec('atlas_brain', STD_IMAGE_FORMATS,
+                            default=FslAtlas('MNI152_T1',
+                                             resolution='fnirt_resolution',
+                                             dataset='brain')),
+        AcquiredFilesetSpec('atlas_mask', STD_IMAGE_FORMATS,
+                            default=FslAtlas('MNI152_T1',
+                                             resolution='fnirt_resolution',
+                                             dataset='brain_mask'))]
 
     add_parameter_specs = [
         SwitchSpec('bet_robust', True),
@@ -117,7 +114,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        SwitchSpec('fnirt_resolution', 2, (0.5, 1, 2)),
+        ParameterSpec('fnirt_resolution', 2),  # choices=(0.5, 1, 2)),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
@@ -438,7 +435,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 'brain': ('out_file', nifti_gz_format)},
             wall_time=5, requirements=[fsl5_req])
 
-        if self.parameter('optibet_gen_report'):
+        if self.branch('optibet_gen_report'):
             pipeline.add(
                 'slices',
                 FSLSlices(outname='optiBET_report'),
