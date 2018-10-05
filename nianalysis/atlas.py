@@ -1,9 +1,11 @@
 import os
 import os.path as op
+from copy import copy
 import nianalysis
 from nianalysis.requirement import fsl5_req
-from arcana.exception import ArcanaError
-from arcana.data import Fileset, FilesetCollection
+from arcana.exception import (
+    ArcanaError, ArcanaNameError, ArcanaUsageError, ArcanaDesignError)
+from arcana import Fileset, FilesetCollection, MultiStudy
 
 
 class BaseAtlas():
@@ -15,8 +17,9 @@ class BaseAtlas():
         self._study = None
 
     def bind(self, study):
-        self._study = study
-        return self
+        bound = copy(self)
+        bound._study = study
+        return bound
 
     @property
     def study(self):
@@ -91,18 +94,29 @@ class FslAtlas(BaseAtlas):
     def path(self):
         # If resolution is a string then it is assumed to be a parameter name
         # of the study
-        full_atlas_name = self._atlas_name
         if isinstance(self._resolution, str):
-            res = self.study.parameter(self._resolution)
+            resolution = self.study.parameter(self._resolution)
         else:
-            res = self._resolution
-        full_atlas_name += '_{}mm'.format(res)
+            resolution = self._resolution
+        full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
         fsl_ver = self.study.processor.requirement_manager.load(fsl5_req)
         atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
         self.study.processor.requirement_manager.unload(fsl_ver)
         return op.join(atlas_dir, full_atlas_name + '.nii.gz')
+
+    def translate(self, sub_study_spec):
+        """
+        Translate resolution parameter name if used to namespace of multi-study
+
+        Parameters
+        ----------
+        sub_study_spec : SubStudySpec
+            The sub-study that the spec belongs to
+        """
+        if isinstance(self._resolution, str):
+            self._resolution = sub_study_spec.inverse_map(self._resolution)
 
     def __eq__(self, other):
         return (
@@ -111,6 +125,11 @@ class FslAtlas(BaseAtlas):
             self._resolution == other._resolution and
             self._dataset == other._dataset and
             self._sub_path == other._sub_path)
+
+    @property
+    def _error_msg_loc(self):
+        return "'{}' FSL atlas passed to '{}' in {} ".format(
+            self._atlas_name, self.name, self.study)
 
 
 class CompositeVeinAtlas(BaseAtlas):
