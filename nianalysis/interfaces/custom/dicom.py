@@ -43,7 +43,7 @@ class DicomHeaderInfoExtractionOutputSpec(TraitedSpec):
     start_time = traits.Str(desc='Scan start time.')
     real_duration = traits.Str(desc='For 4D files, this will be the number of '
                                'volumes multiplied by the TR.')
-    tot_duration = traits.Str(
+    total_duration = traits.Str(
         desc='Scan duration as extracted from the header.')
     ped = traits.Str(desc='Phase encoding direction.')
     pe_angle = traits.Str(desc='Phase angle.')
@@ -131,7 +131,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
             echo_times = list(echo_times)
         # Get the orientation of the main magnetic field as a vector
         img_orient = np.reshape(np.asarray(hd.ImageOrientationPatient),
-                                newshape=(3, 2))
+                                newshape=(2, 3))
         b0_orient = np.cross(img_orient[0], img_orient[1])
         # Get voxel sizes
         vox_sizes = list(hd.PixelSpacing)
@@ -141,7 +141,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
         self.dict_output['tr'] = tr
         self.dict_output['echo_times'] = echo_times
         self.dict_output['voxel_sizes'] = vox_sizes
-        self.dict_output['H'] = b0_orient
+        self.dict_output['H'] = list(b0_orient)
         self.dict_output['B0'] = hd.MagneticFieldStrength
         self.dict_output['total_duration'] = str(total_duration)
         self.dict_output['real_duration'] = str(real_duration)
@@ -165,13 +165,13 @@ class DicomHeaderInfoExtraction(BaseInterface):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-
-        outputs["start_time"] = self.dict_output['start_time']
-        outputs["tr"] = self.dict_output['tr']
-        outputs["tot_duration"] = self.dict_output['total_duration']
-        outputs["real_duration"] = self.dict_output['real_duration']
-        outputs["ped"] = self.dict_output['ped']
-        outputs["pe_angle"] = self.dict_output['pe_angle']
+        outputs.update(self.dict_output)
+#         outputs["start_time"] = self.dict_output['start_time']
+#         outputs["tr"] = self.dict_output['tr']
+#         outputs["total_duration"] = self.dict_output['total_duration']
+#         outputs["real_duration"] = self.dict_output['real_duration']
+#         outputs["ped"] = self.dict_output['ped']
+#         outputs["pe_angle"] = self.dict_output['pe_angle']
         outputs["dcm_info"] = os.getcwd() + '/scan_header_info.txt'
         if self.inputs.reference:
             outputs["ref_motion_mats"] = os.getcwd() + '/reference_motion_mats'

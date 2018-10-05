@@ -139,7 +139,8 @@ class ToPolarCoords(BaseInterface):
                 mag_img = nib.Nifti1Image(mag_array, img.affine, img.header)
                 mag_path = op.join(
                     mags_dir,
-                    self.inputs.out_fname_str.format(channel_i, echo_i))
+                    self.inputs.out_fname_str.format(channel=channel_i,
+                                                     echo=echo_i))
                 echo_coil_mags.append(mag_path)
                 nib.save(mag_img, mag_path)
 
@@ -149,7 +150,8 @@ class ToPolarCoords(BaseInterface):
                                             img.header)
                 phase_path = op.join(
                     phases_dir,
-                    self.inputs.out_fname_str.format(channel_i, echo_i))
+                    self.inputs.out_fname_str.format(channel=channel_i,
+                                                     echo=echo_i))
                 echo_coil_phases.append(phase_path)
                 nib.save(phase_img, phase_path)
 

@@ -132,7 +132,7 @@ class FslAtlas(BaseAtlas):
             self._atlas_name, self.name, self.study)
 
 
-class CompositeVeinAtlas(BaseAtlas):
+class LocalAtlas(BaseAtlas):
     """
     Several atlases used in the composite-vein analysis in the T2* study,
     stored within the banana package.

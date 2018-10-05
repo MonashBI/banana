@@ -83,28 +83,31 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
         FieldSpec('tr', float, 'header_extraction_pipeline'),
-        FieldSpec('echo_times', float, 'header_extraction_pipeline'),
-        FieldSpec('voxel_sizes', float, 'header_extraction_pipeline'),
-        FieldSpec('main_field_orient', float, 'header_extraction_pipeline'),
+        FieldSpec('echo_times', float, 'header_extraction_pipeline',
+                  array=True),
+        FieldSpec('voxel_sizes', float, 'header_extraction_pipeline',
+                  array=True),
+        FieldSpec('main_field_orient', float, 'header_extraction_pipeline',
+                  array=True),
         FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
         FieldSpec('start_time', str, 'header_extraction_pipeline'),
         FieldSpec('real_duration', str, 'header_extraction_pipeline'),
-        FieldSpec('tot_duration', str, 'header_extraction_pipeline'),
+        FieldSpec('total_duration', str, 'header_extraction_pipeline'),
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
         # Templates
         AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
                             default=FslAtlas('MNI152_T1',
-                                             resolution='fnirt_resolution')),
+                                             resolution='atlas_resolution')),
         AcquiredFilesetSpec('atlas_brain', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=FslAtlas('MNI152_T1',
-                                             resolution='fnirt_resolution',
+                                             resolution='atlas_resolution',
                                              dataset='brain')),
         AcquiredFilesetSpec('atlas_mask', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=FslAtlas('MNI152_T1',
-                                             resolution='fnirt_resolution',
+                                             resolution='atlas_resolution',
                                              dataset='brain_mask'))]
 
     add_parameter_specs = [
@@ -116,7 +119,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        ParameterSpec('fnirt_resolution', 2),  # choices=(0.5, 1, 2)),
+        ParameterSpec('atlas_resolution', 2),  # choices=(0.5, 1, 2)),
         ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
@@ -693,7 +696,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         tr = output_prefix + 'tr'
         start_time = output_prefix + 'start_time'
-        tot_duration = output_prefix + 'tot_duration'
+        total_duration = output_prefix + 'total_duration'
         real_duration = output_prefix + 'real_duration'
         ped = output_prefix + 'ped'
         pe_angle = output_prefix + 'pe_angle'
@@ -719,7 +722,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'tr': (tr, float),
                 'start_time': (start_time, str),
-                'tot_duration': (tot_duration, str),
+                'total_duration': (total_duration, str),
                 'real_duration': (real_duration, str),
                 'ped': (ped, str),
                 'pe_angle': (pe_angle, str),

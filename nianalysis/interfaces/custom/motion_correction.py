@@ -1110,13 +1110,13 @@ class PetCorrectionFactor(BaseInterface):
             self.inputs.timestamps+'/frame_start_times_4PET.txt', dtype=str)
         start = dt.datetime.strptime(frame_st[0], '%H%M%S.%f')
         end = dt.datetime.strptime(frame_st[-1], '%H%M%S.%f')
-        tot_duration = (end - start).total_seconds()
+        total_duration = (end - start).total_seconds()
         corr_factors = []
         for t in range(len(frame_st) - 1):
             start = dt.datetime.strptime(frame_st[t], '%H%M%S.%f')
             end = dt.datetime.strptime(frame_st[t + 1], '%H%M%S.%f')
             d = (end - start).total_seconds()
-            corr_factors.append(d / tot_duration)
+            corr_factors.append(d / total_duration)
 
         with open('correction_factors_PET_data.txt', 'w') as f:
             for el in corr_factors:

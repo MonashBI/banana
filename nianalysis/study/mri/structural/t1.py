@@ -6,12 +6,14 @@ from nianalysis.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.interfaces import utils
 from nianalysis.file_format import (
-    freesurfer_recon_all_format, nifti_gz_format, text_matrix_format)
-from arcana.data import FilesetSpec
+    freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
+    STD_IMAGE_FORMATS)
+from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.interfaces.utils import JoinPath
 from ..base import MRIStudy
 from arcana.study.base import StudyMetaClass
 from arcana.parameter import ParameterSpec, SwitchSpec
+from nianalysis.atlas import LocalAtlas
 
 
 class T1Study(MRIStudy, metaclass=StudyMetaClass):
@@ -19,7 +21,11 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
-        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline')]
+        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        # Templates
+        AcquiredFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
+                            frequency='per_study',
+                            default=LocalAtlas('SUIT'))]
 
     add_parameter_specs = [
         SwitchSpec('bet_method', 'optibet',
@@ -100,18 +106,9 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         pipeline = self.pipeline(
             name='CET_T1',
             modifications=mods,
-            inputs=[FilesetSpec('betted_T1', nifti_gz_format),
-                    FilesetSpec(
-                self._lookup_l_tfm_to_name('MNI'),
-                text_matrix_format),
-                FilesetSpec(self._lookup_nl_tfm_inv_name('MNI'),
-                            nifti_gz_format)],
-            outputs=[FilesetSpec('cetted_T1_mask', nifti_gz_format),
-                     FilesetSpec('cetted_T1', nifti_gz_format)],
             desc=("Construct cerebellum mask using SUIT template"),
             references=[fsl_cite])
 
-#         'SUIT_mask': self._lookup_template_mask_path('SUIT')},
         # FIXME: Should convert to inputs
         nl = self._lookup_nl_tfm_inv_name('MNI')
         linear = self._lookup_l_tfm_to_name('MNI')
@@ -129,10 +126,10 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
             ants.resampling.ApplyTransforms(
                 interpolation='NearestNeighbor',
                 input_image_type=3,
-                invert_transform_flags=[True, False],
-                input_image=pipeline.option('SUIT_mask')),
+                invert_transform_flags=[True, False]),
             inputs={
-                'reference_image': ('betted_T1', nifti_gz_format)},
+                'reference_image': ('betted_T1', nifti_gz_format),
+                'input_image': ('suit_mask', nifti_gz_format)},
             connections={
                 'transforms': (merge_trans, 'out')},
             requirements=[ants19_req], memory=16000, wall_time=120)

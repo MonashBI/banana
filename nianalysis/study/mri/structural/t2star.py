@@ -22,7 +22,7 @@ from nianalysis.interfaces.custom.mask import (
     DialateMask, CoilMask, MedianInMasks)
 import nianalysis
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.atlas import CompositeVeinAtlas
+from nianalysis.atlas import LocalAtlas
 
 atlas_path = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
 
@@ -264,16 +264,16 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         # Templates
         AcquiredFilesetSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=CompositeVeinAtlas('QSMPrior')),
+                            default=LocalAtlas('QSMPrior')),
         AcquiredFilesetSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=CompositeVeinAtlas('SWIPrior')),
+                            default=LocalAtlas('SWIPrior')),
         AcquiredFilesetSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=CompositeVeinAtlas('VeinFrequencyPrior')),
+                            default=LocalAtlas('VeinFrequencyPrior')),
         AcquiredFilesetSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=CompositeVeinAtlas('VeinFrequencyMap'))]
+                            default=LocalAtlas('VeinFrequencyMap'))]
 
 #     add_parameter_specs = [
 #         # Change the default atlast coreg tool to FNIRT
