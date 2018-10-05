@@ -168,7 +168,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     @property
-    def coreg_brain_spec(self):
+    def coreg_brain_spec_name(self):
         """
         The name of the fileset after registration has been applied.
         If registration is not required, i.e. a reg_ref is not supplied
@@ -178,7 +178,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             name = 'coreg_brain'
         else:
             name = 'brain'
-        return FilesetSpec(name, nifti_gz_format)
+        return name
 
     def linear_coregistration_pipeline(self, **mods):
         if self.branch('linear_reg_method', 'flirt'):
@@ -571,7 +571,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 out_prefix='Struct2MNI',
                 num_threads=4),
             inputs={
-                'input_file': ('coreg_brain', nifti_gz_format),
+                'input_file': (self.coreg_brain_spec_name, nifti_gz_format),
                 'ref_file': ('atlas_brain', nifti_gz_format)},
             outputs={
                 'reg_file': ('coreg_to_atlas', nifti_gz_format),
