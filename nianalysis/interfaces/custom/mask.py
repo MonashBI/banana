@@ -93,7 +93,7 @@ class DialateMask(BaseMask):
         """.format(
             dialation=self.inputs.dialation,
             in_file=self.inputs.in_file,
-            out_file=self._genfilename('out_file'))
+            out_file=self._gen_filename('out_file'))
         return script
 
 
