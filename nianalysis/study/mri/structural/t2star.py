@@ -258,7 +258,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             'qsm_copy_geometry',
             fsl.CopyGeom(),
             inputs={
-                'in_file': ('header_image', dicom_format)},
+                'in_file': ('header_image', nifti_gz_format)},
             internal={
                 'dest_file': (qsm, 'out_file')},
             outputs={

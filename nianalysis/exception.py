@@ -1,7 +1,14 @@
-
-class NiAnalysisUsageError(Exception):
+class NiAnalysisError(Exception):
     pass
 
 
-class NiAnalysisMissingHeaderValue(Exception):
+class NiAnalysisUsageError(NiAnalysisError):
+    pass
+
+
+class NiAnalysisMissingHeaderValue(NiAnalysisError):
+    pass
+
+
+class NiAnalysisRuntimeError(NiAnalysisError):
     pass

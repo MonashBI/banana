@@ -174,12 +174,14 @@ class MedianInMasks(BaseMask):
             missingValues = [];
             dims = [];
 
-            channel_files = {{{channel_files}};
+            channel_files = {{{channel_files}}};
             mask_files = {{{mask_files}}};
 
+            num_channels = length(channel_files);
+
             for i=1:length(channel_files)
-                nii = load_untouch_nii(channel_files(i));
-                mask = load_untouch_nii(mask_files(i));
+                nii = load_untouch_nii(channel_files{{i}});
+                mask = load_untouch_nii(mask_files{{i}});
 
                 qsmVol(:,i) = nii.img(:).*(mask.img(:)>0)-99*(mask.img(:)==0);
                 missingValues(:,i) = mask.img(:)==0;
@@ -193,7 +195,7 @@ class MedianInMasks(BaseMask):
             qsmVol = sort(qsmVol,2);
 
             % Adjust median index (16) based on missing values
-            indVol=sub2ind(size(qsmVol),1:size(qsmVol,1),nCoils*nEchos-floor(0.5*(nCoils*nEchos-sum(missingValues,2)')));
+            indVol=sub2ind(size(qsmVol),1:size(qsmVol,1),num_channels-floor(0.5*(num_channels-sum(missingValues,2)')));
 
             % Take median value using index, resize and mask out background
             medVol=reshape(qsmVol(indVol),dims);
