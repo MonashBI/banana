@@ -17,7 +17,9 @@ from ..base import MRIStudy
 from .t1 import T1Study
 from nipype.interfaces import fsl, ants
 from arcana.interfaces.utils import ListDir
-from nianalysis.interfaces.sti import UnwrapPhase, VSharp, QSMiLSQR
+from nianalysis.interfaces.sti import (
+    UnwrapPhase, VSharp, QSMiLSQR, BatchUnwrapPhase, BatchVSharp,
+    BatchQSMiLSQR)
 from nianalysis.interfaces.custom.coils import HIPCombineChannels
 from nianalysis.interfaces.custom.mask import (
     DialateMask, CoilMask, MedianInMasks)
@@ -201,25 +203,25 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             # Unwrap phase
             unwrap = pipeline.add(
                 'unwrap',
-                UnwrapPhase(
+                BatchUnwrapPhase(
                     padsize=self.parameter('qsm_padding')),
                 inputs={
                     'voxelsize': ('voxel_sizes', float)},
                 internal={
-                    'in_file': (list_phases, 'files')},
-                iterfield=['in_file'])
+                    'in_file': (list_phases, 'files')})  #,
+                # iterfield=['in_file'])
 
             # Background phase removal
             vsharp = pipeline.add(
                 "vsharp",
-                VSharp(
+                BatchVSharp(
                     mask_manip='{}>0'),
                 inputs={
                     'voxelsize': ('voxel_sizes', float)},
                 internal={
                     'mask': (coil_masks, 'out_file'),
-                    'in_file': (unwrap, 'out_file')},
-                iterfield=['in_file', 'mask'])
+                    'in_file': (unwrap, 'out_file')})  #,
+                # iterfield=['in_file', 'mask'])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -231,7 +233,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             # Perform channel-wise QSM
             coil_qsm = pipeline.add(
                 'coil_qsmrecon',
-                QSMiLSQR(
+                BatchQSMiLSQR(
                     mask_manip="{}>0",
                     padsize=self.parameter('qsm_padding')),
                 inputs={
@@ -241,8 +243,8 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                 internal={
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
-                    'te': (first_echo_time, 'out')},
-                iterfield=['in_file', 'mask'])
+                    'te': (first_echo_time, 'out')})  #,
+                # iterfield=['in_file', 'mask'])
 
             # Combine channel QSM by taking the median
             qsm = pipeline.add(

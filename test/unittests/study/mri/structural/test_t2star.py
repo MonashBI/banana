@@ -17,10 +17,9 @@ double_echo_dir = op.join(test_data, 'double-echo')
 
 
 study = T2StarT1Study(
-    'qsm',
+    'qsm_new',
     repository=single_echo_dir,
-    processor=LinearProcessor(op.join(test_data, 'work'),
-                              clean_work_dir_between_runs=False),
+    processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
         FilesetMatch('t2star_coil_channels', zip_format, 'swi_coils_icerecon'),
         FilesetMatch('t2star_header_image', dicom_format, 'SWI_Images'),

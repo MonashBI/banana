@@ -16,7 +16,7 @@ SCRIPT_TEMPLATE = (
 
 
 def matlab_cmd(cmd):
-    return MatlabCommand(script=SCRIPT_TEMPLATE.format(cmd), mfile=True)
+    return MatlabCommand(script=SCRIPT_TEMPLATE.format(cmd=cmd), mfile=True)
 
 
 class ShMRFInputSpec(BaseInterfaceInputSpec):
