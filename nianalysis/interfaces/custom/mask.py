@@ -8,7 +8,7 @@ from nianalysis.interfaces import MATLAB_RESOURCES
 class BaseMaskInputSpec(MatlabInputSpec):
 
     in_file = File(mandatory=True, desc="Input mask to dialate")
-    out_file = File(genfile=True, desc="Name of the output file")
+
     # Need to override value in input spec to make it non-mandatory
     script = traits.Str(
         argstr='-r \"%s;exit\"',
@@ -30,6 +30,7 @@ class BaseMask(MatlabCommand):
     output_spec = BaseMaskOutputSpec
 
     def run(self, **inputs):
+        self.work_dir = inputs['cwd']
         # Set the script input of the matlab spec
         self.inputs.script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
@@ -50,18 +51,12 @@ class BaseMask(MatlabCommand):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['out_file'] = self._genfilename('out_file')
+        outputs['out_file'] = self.out_file
         return outputs
 
-    def _gen_filename(self, name):
-        if name == 'out_file':
-            if isdefined(self.inputs.out_file):
-                fname = self.inputs.out_file
-            else:
-                fname = 'out_file'
-        else:
-            assert False
-        return op.abspath(fname)
+    @property
+    def out_file(self):
+        return op.realpath(op.abspath(op.join(self.work_dir, 'out_file.nii')))
 
 
 class DialateMaskInputSpec(BaseMaskInputSpec):
@@ -87,13 +82,14 @@ class DialateMask(BaseMask):
 
             % Load whole brain mask
             mask = load_untouch_nii('{in_file}');
-            mask = mask.img > 0;
-            mask = imdilate(mask, SE > 0);
+            mask_array = mask.img > 0;
+            dialated = imdilate(mask_array, SE > 0);
+            mask.img = dialated
             save_untouch_nii(mask, '{out_file}');
         """.format(
             dialation=self.inputs.dialation,
             in_file=self.inputs.in_file,
-            out_file=self._gen_filename('out_file'))
+            out_file=self.out_file)
         return script
 
 
@@ -101,6 +97,7 @@ class CoilMaskInputSpec(BaseMaskInputSpec):
 
     dialation = traits.List((traits.Float(), traits.Float(), traits.Float),
                             desc="Size of the dialation")
+    whole_brain_mask = File(mandatory=True, desc="Whole brain mask")
 
 
 class CoilMask(BaseMask):
@@ -116,6 +113,9 @@ class CoilMask(BaseMask):
         with the keyword parameters
         """
         script = """
+            % Spherical structure element
+            SE = fspecial3('ellipsoid',[11 11 11]);
+
             mag = load_untouch_nii('{in_file}');
             whole_brain_mask = load_untouch_nii('{mask_file}');
 
@@ -129,13 +129,13 @@ class CoilMask(BaseMask):
 
             % Clip to brain whole_brain_mask region
             mask = mag;
-            mask.img = (vol .* whole_brain_mask) > 0;
+            mask.img = (vol .* whole_brain_mask.img) > 0;
 
             save_untouch_nii(mask, '{out_file}');
         """.format(
             in_file=self.inputs.in_file,
-            mask_file=self.inputs.mask,
-            out_file=self._genfilename('out_file'))
+            mask_file=self.inputs.whole_brain_mask,
+            out_file=self.out_file)
         return script
 
 
@@ -209,5 +209,5 @@ class MedianInMasks(BaseMask):
             mask_files=','.join(
                 "'{}'".format(f) for f in self.inputs.channel_masks),
             mask=self.inputs.whole_brain_mask,
-            out_file=self._genfilename('out_file'))
+            out_file=self.out_file)
         return script

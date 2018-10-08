@@ -2,7 +2,7 @@ import logging  # @IgnorePep8
 import os.path as op
 from nipype import config
 config.enable_debug_mode()
-from arcana.data import FilesetMatch  # @IgnorePep8
+from arcana import FilesetMatch, LinearProcessor  # @IgnorePep8
 # from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 
 from nianalysis.file_format import zip_format, dicom_format  # @IgnorePep8
@@ -19,7 +19,8 @@ double_echo_dir = op.join(test_data, 'double-echo')
 study = T2StarT1Study(
     'qsm',
     repository=single_echo_dir,
-    processor=op.join(test_data, 'work'),
+    processor=LinearProcessor(op.join(test_data, 'work'),
+                              clean_work_dir_between_runs=False),
     inputs=[
         FilesetMatch('t2star_coil_channels', zip_format, 'swi_coils_icerecon'),
         FilesetMatch('t2star_header_image', dicom_format, 'SWI_Images'),
@@ -27,4 +28,5 @@ study = T2StarT1Study(
         FilesetMatch('t1_magnitude', dicom_format,
                      't1_mprage_sag_p2_iso_1mm')])
 
-print(study.data('vein_mask').path(subject_id='SUBJECT', visit_id='VISIT'))
+print(study.data('vein_mask', clean_work_dir=False).path(subject_id='SUBJECT',
+                                                         visit_id='VISIT'))

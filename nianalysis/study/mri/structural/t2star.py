@@ -1,5 +1,6 @@
 import os.path as op
 import re
+from nipype.interfaces.utility import Select
 from arcana.study import (
     StudyMetaClass, MultiStudy, MultiStudyMetaClass, SubStudySpec)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
@@ -23,12 +24,32 @@ from nianalysis.interfaces.custom.mask import (
 import nianalysis
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.atlas import LocalAtlas
+from logging import getLogger
+
+logger = getLogger('nianalysis')
+
 
 atlas_path = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
 
 
 def coil_sort_key(fname):
     return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
+
+
+class CoilEchoFilter():
+
+    def __init__(self, echo):
+        self._echo = echo
+
+    def __call__(self, fname):
+        match = re.match(r'coil_\d+_(\d+)', fname)
+        if match is None:
+            logger.warning('Ignoring file ({}) found in coil directory'
+                           .format(fname))
+            include = False
+        else:
+            include = int(match.group(1)) == self._echo
+        return include
 
 
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
@@ -52,9 +73,9 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_parameter_specs = [
         SwitchSpec('qsm_dual_echo', False),
-        ParameterSpec(
-            'qsm_echo', 0,
-            desc="Which echo (by index) to use when using single echo"),
+        ParameterSpec('qsm_echo', 1,
+                      desc=("Which echo (by index starting at 1) to use when "
+                            "using single echo")),
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11])]
 
@@ -141,9 +162,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'mask': (vsharp, 'new_mask')})
 
         else:
-            def coil_echo_filter(fname):
-                return re.match(r'coil_\d+_(\d+)',
-                                fname) == self.parameter('qsm_echo')
             # Dialate eroded mask
             dialate = pipeline.add(
                 'dialate',
@@ -157,15 +175,26 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                 'list_phases',
                 ListDir(
                     sort_key=coil_sort_key,
-                    filter=coil_echo_filter),
+                    filter=CoilEchoFilter(self.parameter('qsm_echo'))),
                 inputs={
                     'directory': ('channel_phases', multi_nifti_gz_format)})
+
+            # List files for the phases of separate channel
+            list_mags = pipeline.add(
+                'list_mags',
+                ListDir(
+                    sort_key=coil_sort_key,
+                    filter=CoilEchoFilter(self.parameter('qsm_echo'))),
+                inputs={
+                    'directory': ('channel_mags', multi_nifti_gz_format)})
 
             # Generate coil specific masks
             coil_masks = pipeline.add(
                 'coil_masks',
-                CoilMask(),
+                CoilMask(
+                    dialation=self.parameter('qsm_mask_dialation')),
                 internal={
+                    'in_file': (list_mags, 'files'),
                     'whole_brain_mask': (dialate, 'out_file')},
                 iterfield=['in_file'])
 
@@ -192,6 +221,13 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'in_file': (unwrap, 'out_file')},
                 iterfield=['in_file', 'mask'])
 
+            first_echo_time = pipeline.add(
+                'first_echo',
+                Select(
+                    index=0),
+                inputs={
+                    'inlist': ('echo_times', float)})
+
             # Perform channel-wise QSM
             coil_qsm = pipeline.add(
                 'coil_qsmrecon',
@@ -200,12 +236,12 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     padsize=self.parameter('qsm_padding')),
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
-                    'te': ('echo_times', float),
                     'B0': ('main_field_strength', float),
                     'H': ('main_field_orient', float)},
                 internal={
                     'in_file': (vsharp, 'out_file'),
-                    'mask': (vsharp, 'new_mask')},
+                    'mask': (vsharp, 'new_mask'),
+                    'te': (first_echo_time, 'out')},
                 iterfield=['in_file', 'mask'])
 
             # Combine channel QSM by taking the median
