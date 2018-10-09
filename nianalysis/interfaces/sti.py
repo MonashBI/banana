@@ -271,7 +271,7 @@ class BaseBatchSTICommand(BaseSTICommand):
     def run(self, **inputs):
         # Determine batch size
         self.batch_size = None
-        for img_name in self.input_imgs:
+        for img_name, _ in self.input_imgs:
             inpt = getattr(self.inputs, img_name)
             if isinstance(inpt, list):
                 if self.batch_size is None:
@@ -280,7 +280,7 @@ class BaseBatchSTICommand(BaseSTICommand):
                     raise NiAnalysisRuntimeError(
                         "Inconsistent length of batch input lists ({} and {})"
                         .format(len(inpt), self.batch_size))
-        super(BaseBatchSTICommand, self).run(**inputs)
+        return super(BaseBatchSTICommand, self).run(**inputs)
 
     def script(self, cwd, **kwargs):
         """
@@ -290,7 +290,7 @@ class BaseBatchSTICommand(BaseSTICommand):
         script = self._set_path()
         script += self._create_param_structs()
         for i in range(self.batch_size):
-            self._process_image(cwd, index=i, **kwargs)
+            script += self._process_image(cwd, index=i, **kwargs)
         script += self._exit()
         return script
 
@@ -307,7 +307,7 @@ class BaseBatchSTICommand(BaseSTICommand):
         outputs = self._outputs().get()
         for name, _ in self.output_imgs:
             outputs[name] = []
-            for i in self.batch_size:
+            for i in range(self.batch_size):
                 outputs[name].append(op.abspath(self._output_fname(name, i)) +
                                      '.nii.gz')
         return outputs

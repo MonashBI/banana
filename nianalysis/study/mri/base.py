@@ -139,7 +139,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             "scanner")),
         ParameterSpec(
             'channel_fname_regex',
-            r'.*(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
+            r'.*_(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
             desc=("The regular expression to extract channel, echo and complex"
                   " axis from the filenames of the coils channel images")),
         ParameterSpec(
@@ -389,7 +389,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         merge_trans = pipeline.add(
             'merge_transforms',
             Merge(2),
-            internal={
+            connect={
                 'in1': (mni_reg, 'inv_warp'),
                 'in2': (mni_reg, 'regmat')},
             wall_time=1)
@@ -409,7 +409,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'input_image': ('atlas_mask', nifti_gz_format),
                 'reference_image': (in_file, nifti_gz_format)},
-            internal={
+            connect={
                 'transforms': (merge_trans, 'out'),
                 'invert_transform_flags': (trans_flags, 'out')},
             wall_time=7,
@@ -421,7 +421,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             fsl.ImageMaths(
                 suffix='_optiBET_brain_mask',
                 op_string='-bin'),
-            internal={
+            connect={
                 'in_file': (apply_trans, 'output_image')},
             outputs={
                 'out_file': ('brain_mask', nifti_gz_format)},
@@ -434,7 +434,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 op_string='-mas'),
             inputs={
                 'in_file': (in_file, nifti_gz_format)},
-            internal={
+            connect={
                 'in_file2': (maths1, 'out_file')},
             outputs={
                 'out_file': ('brain', nifti_gz_format)},
@@ -447,7 +447,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 wall_time=5,
                 inputs={
                     'im1': (in_file, nifti_gz_format)},
-                internal={
+                connect={
                     'im2': (maths2, 'out_file')},
                 outputs={
                     'report': ('optiBET_report', gif_format)},
@@ -514,7 +514,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'reference': ('atlas_brain', nifti_gz_format)},
-            internal={
+            connect={
                 'in_file': (reorient_brain, 'out_file')},
             requirements=[fsl5_req],
             wall_time=5)
@@ -544,7 +544,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'ref_file': ('atlas', nifti_gz_format),
                 'refmask': ('atlas_mask', nifti_gz_format)},
-            internal={
+            connect={
                 'in_file': (reorient, 'out_file'),
                 'inmask_file': (reorient_mask, 'out_file'),
                 'affine_file': (flirt, 'out_matrix_file')},
@@ -588,7 +588,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 outname='coreg_to_atlas_report'),
             inputs={
                 'im1': ('atlas', nifti_gz_format)},
-            internal={
+            connect={
                 'im2': (ants_reg, 'reg_file')},
             outputs={
                 'report': ('coreg_to_atlas_report', gif_format)},
@@ -630,7 +630,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             Split(
                 splits=[1, 1, 1],
                 squeeze=True),
-            internal={
+            connect={
                 'inlist': (fast, 'tissue_class_files')},
             outputs={
                 split_output: ('wm_seg', nifti_gz_format)})
@@ -671,7 +671,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 "resample",
                 MRResize(
                     voxel=self.parameter('preproc_resolution')),
-                internal={'in_file': (swap, 'out_file')},
+                connect={'in_file': (swap, 'out_file')},
                 requirements=[mrtrix3_req])
             pipeline.connect_output('preproc', resample, 'out_file',
                                     nifti_gz_format)

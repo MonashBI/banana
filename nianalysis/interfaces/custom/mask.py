@@ -7,8 +7,6 @@ from nianalysis.interfaces import MATLAB_RESOURCES
 
 class BaseMaskInputSpec(MatlabInputSpec):
 
-    in_file = File(mandatory=True, desc="Input mask to dialate")
-
     # Need to override value in input spec to make it non-mandatory
     script = traits.Str(
         argstr='-r \"%s;exit\"',
@@ -17,7 +15,7 @@ class BaseMaskInputSpec(MatlabInputSpec):
 
 
 class BaseMaskOutputSpec(TraitedSpec):
-    out_file = File(exists=True, desc="Output file")
+
     raw_output = traits.Str("Raw output of the matlab command")
 
 
@@ -25,9 +23,6 @@ class BaseMask(MatlabCommand):
     """
     Base class for MATLAB mask interfaces
     """
-
-    input_spec = BaseMaskInputSpec
-    output_spec = BaseMaskOutputSpec
 
     def run(self, **inputs):
         self.work_dir = inputs['cwd']
@@ -61,8 +56,14 @@ class BaseMask(MatlabCommand):
 
 class DialateMaskInputSpec(BaseMaskInputSpec):
 
+    in_file = File(exists=True, desc="Mask to dialate")
     dialation = traits.List((traits.Float(), traits.Float(), traits.Float),
                             desc="Size of the dialation")
+
+
+class DialateMaskOutputSpec(BaseMaskOutputSpec):
+
+    out_file = File(exists=True, desc="Dialated mask")
 
 
 class DialateMask(BaseMask):
@@ -70,6 +71,7 @@ class DialateMask(BaseMask):
     Base interface for STI classes
     """
     input_spec = DialateMaskInputSpec
+    output_spec = DialateMaskOutputSpec
 
     def script(self, **inputs):  # @UnusedVariable
         """
@@ -93,19 +95,27 @@ class DialateMask(BaseMask):
         return script
 
 
-class CoilMaskInputSpec(BaseMaskInputSpec):
+class MaskCoilsInputSpec(BaseMaskInputSpec):
+
+    masks = traits.List(File(mandatory=True), desc="Input masks")
 
     dialation = traits.List((traits.Float(), traits.Float(), traits.Float),
                             desc="Size of the dialation")
     whole_brain_mask = File(mandatory=True, desc="Whole brain mask")
 
 
-class CoilMask(BaseMask):
+class MaskCoilsOutputSpec(BaseMaskOutputSpec):
+
+    out_files = traits.List(File(exists=True), desc="Output files")
+
+
+class MaskCoils(BaseMask):
     """
     Generate coil specific masks by thresholding magnitude image
     """
 
-    input_spec = CoilMaskInputSpec
+    input_spec = MaskCoilsInputSpec
+    output_spec = MaskCoilsOutputSpec
 
     def script(self, **inputs):  # @UnusedVariable
         """
@@ -114,32 +124,50 @@ class CoilMask(BaseMask):
         """
         script = """
             % Spherical structure element
-            SE = fspecial3('ellipsoid',[11 11 11]);
+            SE = fspecial3('ellipsoid', [11 11 11]);
 
-            mag = load_untouch_nii('{in_file}');
-            whole_brain_mask = load_untouch_nii('{mask_file}');
+            % List all input files
+            mask_files = {{'{masks}'}}
 
-            % Blur to remove tissue based contrast
-            vol = convn(mag.img,SE,'same');
-            % Threshold to high-signal area
-            vol = vol>graythresh(mag.img);
-            % Remove orphaned pixels and then close holes in whole_brain_mask
-            vol = imclose(vol,SE>0)>0;
-            vol = imopen(vol,SE>0)>0;
+            % Load whole brain mask
+            whole_brain_mask = load_untouch_nii('{whole_brain_mask}');
 
-            % Clip to brain whole_brain_mask region
-            mask = mag;
-            mask.img = (vol .* whole_brain_mask.img) > 0;
+            for i=1:length(mask_files)
+                mag = load_untouch_nii(mask_files{{i}});
 
-            save_untouch_nii(mask, '{out_file}');
+                % Blur to remove tissue based contrast
+                vol = convn(mag.img, SE, 'same');
+                % Threshold to high-signal area
+                vol = vol > graythresh(mag.img);
+                % Remove orphaned pixels and then close holes in WB mask
+                vol = imclose(vol, SE > 0) > 0;
+                vol = imopen(vol, SE > 0) > 0;
+
+                % Clip to brain whole_brain_mask region
+                mask = mag;
+                mask.img = (vol .* whole_brain_mask.img) > 0;
+
+                save_untouch_nii(mask, ['{out_file_base}' num2str(i) '.nii']);
+            end
         """.format(
-            in_file=self.inputs.in_file,
-            mask_file=self.inputs.whole_brain_mask,
-            out_file=self.out_file)
+            masks="', '".join(self.inputs.masks),
+            whole_brain_mask=self.inputs.whole_brain_mask,
+            out_file_base=self.out_file_base)
         return script
 
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        base = self.out_file_base
+        outputs['out_files'] = ['{}{}.nii'.format(base, i)
+                                for i in range(1, len(self.inputs.masks) + 1)]
+        return outputs
 
-class MedianInMasksInputSpec(MatlabInputSpec):
+    @property
+    def out_file_base(self):
+        return op.realpath(op.abspath(op.join(self.work_dir, 'out_file')))
+
+
+class MedianInMasksInputSpec(BaseMaskInputSpec):
 
     channels = traits.List(File(), mandatory=True,
                            desc="Input mask to dialate")
@@ -148,10 +176,11 @@ class MedianInMasksInputSpec(MatlabInputSpec):
     whole_brain_mask = File(mandatory=True, desc="Whole brain mask")
     out_file = File(genfile=True, desc="Name of the output file")
     # Need to override value in input spec to make it non-mandatory
-    script = traits.Str(
-        argstr='-r \"%s;exit\"',
-        desc='m-code to run',
-        position=-1)
+
+
+class MedianInMasksOutputSpec(BaseMaskOutputSpec):
+
+    out_file = File(exists=True, desc="Output file")
 
 
 class MedianInMasks(BaseMask):
@@ -160,6 +189,7 @@ class MedianInMasks(BaseMask):
     that are not masked out.
     """
     input_spec = MedianInMasksInputSpec
+    output_spec = MedianInMasksOutputSpec
 
     def script(self, **inputs):  # @UnusedVariable
         """

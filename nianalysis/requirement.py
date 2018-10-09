@@ -1,4 +1,4 @@
-from arcana.requirement import (
+from arcana.environment.requirement import (
     CLIRequirement, MatlabRequirement, matlab_version_split)
 
 mrtrix0_3_req = CLIRequirement('mrtrix', min_version=(0, 3, 12),

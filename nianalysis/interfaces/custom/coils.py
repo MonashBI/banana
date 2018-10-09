@@ -16,7 +16,7 @@ logger = logging.getLogger('nianalysis')
 class ToPolarCoordsInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     in_fname_re = traits.Str(
-        r'.*(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
+        r'.*_(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
         usedefault=True, desc=(
             "Regex to extract the channel, echo and axis "
             "(i.e. real or imaginary) information from the input file name. "

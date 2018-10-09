@@ -101,9 +101,9 @@ class FslAtlas(BaseAtlas):
         full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
-        fsl_ver = self.study.processor.requirement_manager.load(fsl5_req)
+        fsl_ver = self.study.environment.load(fsl5_req)
         atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
-        self.study.processor.requirement_manager.unload(fsl_ver)
+        self.study.environment.unload(fsl_ver)
         return op.join(atlas_dir, full_atlas_name + '.nii.gz')
 
     def translate(self, sub_study_spec):
