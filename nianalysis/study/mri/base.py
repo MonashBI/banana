@@ -45,7 +45,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                   "scan to. Should be brain extracted"),
                             optional=True),
         AcquiredFilesetSpec(
-            'coil_channels', (multi_nifti_gz_format, zip_format),
+            'channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
                                  "coil without standardisation.")),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
@@ -164,7 +164,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 real_label=self.parameter('channel_real_label'),
                 imaginary_label=self.parameter('channel_imag_label')),
             inputs={
-                'in_dir': ('coil_channels', multi_nifti_gz_format)},
+                'in_dir': ('channels', multi_nifti_gz_format)},
             outputs={
                 'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
                 'phases_dir': ('channel_phases', multi_nifti_gz_format)})

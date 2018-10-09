@@ -64,7 +64,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             "Study"), optional=True),
         FilesetSpec('magnitude', nifti_gz_format, 'prepare_channels',
                     desc=("Generated from separate channel signals, "
-                          "provided to 'coil_channels'.")),
+                          "provided to 'channels'.")),
         # QSM and phase processing
         FilesetSpec('swi', nifti_gz_format, 'swi_pipeline'),
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
