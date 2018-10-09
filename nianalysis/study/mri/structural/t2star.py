@@ -274,19 +274,23 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         if 'header_image' in self.input_names:
             # Copy geometry from scanner image to QSM if separate header image
+
+            reorient_hdr = pipeline.add(
+                'reorient_header',
+                fsl.Reorient2Std(),
+                inputs={
+                    'in_file': ('header_image', nifti_gz_format)})
+
             # is provided
             pipeline.add(
                 'qsm_copy_geometry',
                 fsl.CopyGeom(),
-                inputs={
-                    'in_file': ('header_image', nifti_gz_format)},
                 connect={
+                    'in_file': (reorient_hdr, 'out_file'),
                     'dest_file': (qsm, 'out_file')},
                 outputs={
                     'out_file': ('qsm', nifti_gz_format)},
-                requirements=[fsl5_req],
-                memory=4000,
-                wall_time=5)
+                requirements=[fsl5_req])
         else:
             pipeline.connect_output('qsm', qsm, 'qsm', nifti_gz_format)
 
@@ -399,7 +403,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                 'qsm': ('qsm', nifti_gz_format),
                 'swi': ('swi', nifti_gz_format)},
             connect={
-#                 'swi': (flip, 'out_file'),
                 'q_prior': (apply_trans_q, 'output_image'),
                 's_prior': (apply_trans_s, 'output_image'),
                 'a_prior': (apply_trans_a, 'output_image'),

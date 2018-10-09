@@ -22,6 +22,7 @@ import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.custom.coils import ToPolarCoords
+from arcana.interfaces.utils import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.interfaces.custom.motion_correction import (
@@ -157,17 +158,43 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             modifications=mods,
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
+
+        # Read channel files reorient them into standard space and then write
+        # back to directory
+        list_channels = pipeline.add(
+            'list_channels',
+            ListDir(),
+            inputs={
+                'in_dir': ('channels', multi_nifti_gz_format)})
+
+        reorient = pipeline.add(
+            'reorient2std',
+            fsl.Reorient2Std(
+                output_type='NIFTI_GZ'),
+            connect={
+                'in_file': (list_channels, 'files')},
+            iterfield=['in_file'],
+            requirements=[fsl5_req])
+
+        copy_to_dir = pipeline.add(
+            'copy_to_dir',
+            CopyToDir(),
+            connect={
+                'in_files', (reorient, 'out_file'),
+                'file_names', (list_channels, 'files')})
+
         pipeline.add(
             'to_polar',
             ToPolarCoords(
                 in_fname_re=self.parameter('channel_fname_regex'),
                 real_label=self.parameter('channel_real_label'),
                 imaginary_label=self.parameter('channel_imag_label')),
-            inputs={
-                'in_dir': ('channels', multi_nifti_gz_format)},
+            connect={
+                'in_dir': (copy_to_dir, 'out_dir')},
             outputs={
                 'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
                 'phases_dir': ('channel_phases', multi_nifti_gz_format)})
+
         return pipeline
 
     @property
@@ -482,6 +509,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             references=[fsl_cite])
 
         # Basic reorientation to standard MNI space
+        # FIXME: Don't think is necessary any more since preproc should be
+        #        in standard orientation
         reorient = pipeline.add(
             'reorient',
             Reorient2Std(
