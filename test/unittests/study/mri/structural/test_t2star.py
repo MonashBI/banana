@@ -39,13 +39,7 @@ study = T2StarT1Study(
 #         FilesetSelector('t2star_header_image', dicom_format, 'SWI_Images'),
         FilesetSelector('t2star_swi', dicom_format, 'SWI_Images'),
         FilesetSelector('t1_magnitude', dicom_format,
-                        't1_mprage_sag_p2_iso_1mm')],
-    parameters=[
-        Parameter('t1_bet_method', 'fsl_bet'),
-        Parameter('t1_bet_robust', False),
-        Parameter('t1_bet_reduce_bias', True),
-        Parameter('t1_bet_f_threshold', 0.1),
-        Parameter('t1_bet_g_threshold', 0.0)])
+                        't1_mprage_sag_p2_iso_1mm')])
 
 print(study.data('t2star_channel_mags', clean_work_dir=True).path(
     subject_id='SUBJECT', visit_id='VISIT'))

@@ -32,11 +32,17 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
                             default=LocalAtlas('SUIT'))]
 
     add_parameter_specs = [
-        SwitchSpec('bet_method', 'optibet',
+        SwitchSpec('bet_method', 'fsl_bet',
                    choices=MRIStudy.parameter_spec('bet_method').choices),
+        SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', True),
-        ParameterSpec('bet_f_threshold', 0.57),
-        ParameterSpec('bet_g_threshold', -0.1)]
+        ParameterSpec('bet_f_threshold', 0.1),
+        ParameterSpec('bet_g_threshold', 0.0)]
+#         SwitchSpec('bet_method', 'optibet',
+#                    choices=MRIStudy.parameter_spec('bet_method').choices),
+#         SwitchSpec('bet_robust', True),
+#         ParameterSpec('bet_f_threshold', 0.57),
+#         ParameterSpec('bet_g_threshold', -0.1)]
 
     def freesurfer_pipeline(self, **mods):
         """

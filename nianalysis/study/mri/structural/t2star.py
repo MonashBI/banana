@@ -91,8 +91,13 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
         SwitchSpec('linear_reg_method', 'ants',
-                   MRIStudy.parameter_spec('linear_reg_method').choices)]
-    
+                   MRIStudy.parameter_spec('linear_reg_method').choices),
+        SwitchSpec('bet_method', 'fsl_bet',
+                   choices=MRIStudy.parameter_spec('bet_method').choices),
+        SwitchSpec('bet_robust', False),
+        SwitchSpec('bet_robust', False),
+        ParameterSpec('bet_f_threshold', 0.1),
+        ParameterSpec('bet_g_threshold', 0.0)]
 
 #         # Change the default atlas coreg tool to FNIRT
 #         SwitchSpec('t1_atlas_coreg_tool', 'fnirt', ('fnirt', 'ants'))]
