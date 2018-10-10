@@ -93,7 +93,9 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                       desc=("Which echo (by index starting at 1) to use when "
                             "using single echo")),
         ParameterSpec('qsm_padding', [12, 12, 12]),
-        ParameterSpec('qsm_mask_dialation', [11, 11, 11])]
+        ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
+        SwitchSpec('linear_reg_method', 'ants',
+                   MRIStudy.parameter_spec('linear_reg_method').choices)]
 
 #         # Change the default atlast coreg tool to FNIRT
 #         SwitchSpec('t1_atlas_coreg_tool', 'fnirt', ('fnirt', 'ants'))]

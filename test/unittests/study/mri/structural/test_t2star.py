@@ -44,7 +44,8 @@ study = T2StarT1Study(
         Parameter('t1_bet_method', 'fsl_bet'),
         Parameter('t1_bet_robust', False),
         Parameter('t1_bet_reduce_bias', True),
-        Parameter('t1_bet_f_threshold', 0.1)])
+        Parameter('t1_bet_f_threshold', 0.1),
+        Parameter('t1_bet_g_threshold', 0.0)])
 
 print(study.data('t2star_vein_mask', clean_work_dir=False).path(
     subject_id='SUBJECT', visit_id='VISIT'))

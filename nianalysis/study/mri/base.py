@@ -114,8 +114,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
     add_parameter_specs = [
         SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),
-        ParameterSpec('bet_reduce_bias', False,
-                      desc="Only used if not 'bet_robust'"),
+        SwitchSpec('bet_reduce_bias', False,
+                   desc="Only used if not 'bet_robust'"),
         ParameterSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),

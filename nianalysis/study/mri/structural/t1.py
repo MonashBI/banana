@@ -30,7 +30,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
     add_parameter_specs = [
         SwitchSpec('bet_method', 'optibet',
                    choices=MRIStudy.parameter_spec('bet_method').choices),
-        ParameterSpec('bet_robust', True),
+        SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.57),
         ParameterSpec('bet_g_threshold', -0.1)]
 
