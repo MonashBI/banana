@@ -92,6 +92,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
         SwitchSpec('linear_reg_method', 'ants',
                    MRIStudy.parameter_spec('linear_reg_method').choices)]
+    
 
 #         # Change the default atlas coreg tool to FNIRT
 #         SwitchSpec('t1_atlas_coreg_tool', 'fnirt', ('fnirt', 'ants'))]

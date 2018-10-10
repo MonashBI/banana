@@ -172,7 +172,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 'directory': ('channels', multi_nifti_gz_format)})
 
         if self.input_provided('header_image'):
-            # If header image is provided use stomp its geometry over the
+            # If header image is provided stomp its geometry over the
             # acquired channels
             copy_geom = pipeline.add(
                 'qsm_copy_geometry',

@@ -22,6 +22,10 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         FilesetSpec('fs_recon_all', freesurfer_recon_all_format,
                     'freesurfer_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        AcquiredFilesetSpec(
+            't2_coreg', STD_IMAGE_FORMATS, optional=True,
+            desc=("A coregistered T2 image to use in freesurfer to help "
+                  "distinguish the peel surface")),
         # Templates
         AcquiredFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
                             frequency='per_study',
@@ -66,6 +70,11 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
                 'filename': (recon_all, 'subject_id')},
             outputs={
                 'path': ('fs_recon_all', freesurfer_recon_all_format)})
+
+        if self.input_provided('t2_coreg'):
+            pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
+                                   nifti_gz_format)
+            recon_all.inputs.use_T2 = True
 
         return pipeline
 

@@ -21,8 +21,8 @@ from nianalysis.file_format import (
 from nianalysis.requirement import (
     fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
 from arcana.study.base import StudyMetaClass
-from arcana.data import FilesetSpec, FieldSpec
-from arcana.interfaces.iterators import SelectSession
+from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
+# from arcana.interfaces.iterators import SelectSession
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.study.mri.epi import EPIStudy
 from nipype.interfaces import fsl
@@ -33,7 +33,7 @@ from nianalysis.interfaces.custom.motion_correction import (
 class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('dwi_reference', nifti_gz_format, optional=True),
+        AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
         FilesetSpec('noise_residual', mrtrix_format, 'preproc_pipeline'),
@@ -96,7 +96,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    def preproc_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
+    def preproc_pipeline(self, **mods):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
@@ -106,118 +106,152 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             The phase encode direction
         """
 
-        outputs = [FilesetSpec('preproc', nifti_gz_format),
-                   FilesetSpec('grad_dirs', fsl_bvecs_format),
-                   FilesetSpec('bvalues', fsl_bvals_format),
-                   FilesetSpec('eddy_par', eddy_par_format)]
-        citations = [fsl_cite, eddy_cite, topup_cite,
-                     distort_correct_cite]
-        if self.branch('preproc_denoise'):
-            outputs.append(FilesetSpec('noise_residual', mrtrix_format))
-            citations.extend(dwidenoise_cites)
+#         outputs = [FilesetSpec('preproc', nifti_gz_format),
+#                    FilesetSpec('grad_dirs', fsl_bvecs_format),
+#                    FilesetSpec('bvalues', fsl_bvals_format),
+#                    FilesetSpec('eddy_par', eddy_par_format)]
+# If denoise
+#             outputs.append(FilesetSpec('noise_residual', mrtrix_format))
 
-        if ('dwi_reference' in self.input_names or
-                'reverse_phase' in self.input_names):
-            inputs = [FilesetSpec('magnitude', dicom_format),
-                      FieldSpec('ped', dtype=str),
-                      FieldSpec('pe_angle', dtype=str)]
-            if 'dwi_reference' in self.input_names:
-                inputs.append(FilesetSpec('dwi_reference', nifti_gz_format))
-            if 'reverse_phase' in self.input_names:
-                inputs.append(FilesetSpec('reverse_phase', nifti_gz_format))
-            distortion_correction = True
-        else:
-            inputs = [FilesetSpec('magnitude', dicom_format)]
-            distortion_correction = False
+
+#         if :
+#             inputs = [FilesetSpec('magnitude', dicom_format),
+#                       FieldSpec('ped', dtype=str),
+#                       FieldSpec('pe_angle', dtype=str)]
+#             if 'dwi_reference' in self.input_names:
+#                 inputs.append(FilesetSpec('dwi_reference', nifti_gz_format))
+#             if 'reverse_phase' in self.input_names:
+#                 inputs.append(FilesetSpec('reverse_phase', nifti_gz_format))
+#             distortion_correction = True
+#         else:
+#             inputs = [FilesetSpec('magnitude', dicom_format)]
+#             distortion_correction = False
+
+        correct_distortion = (self.input_provided('dwi_reference') or
+                              self.input_provided('reverse_phase'))
+        references = [fsl_cite, eddy_cite, topup_cite,
+                       distort_correct_cite]
+        if self.branch('preproc_denoise'):
+            references.extend(dwidenoise_cites)
 
         pipeline = self.pipeline(
             name='preprocess',
-            inputs=inputs,
-            outputs=outputs,
+            modifications=mods,
             desc=(
                 "Preprocess dMRI studies using distortion correction"),
-            citations=citations,
-            **kwargs)
+            references=references)
+
         # Denoise the dwi-scan
         if self.branch('preproc_denoise'):
             # Run denoising
-            denoise = pipeline.create_node(DWIDenoise(), name='denoise',
-                                           requirements=[mrtrix3_req])
+            denoise = pipeline.add(
+                'denoise',
+                DWIDenoise(),
+                requirements=[mrtrix3_req])
+            pipeline.connect_input('magnitude', denoise, 'in_file')
+
             # Calculate residual noise
-            subtract_operands = pipeline.create_node(Merge(2),
-                                                     name='subtract_operands')
-            subtract = pipeline.create_node(MRCalc(), name='subtract',
-                                            requirements=[mrtrix3_req])
+            subtract_operands = pipeline.add(
+                'subtract_operands',
+                Merge(2))
+            pipeline.connect_input('magnitude', subtract_operands, 'in1')
+            # connect
+            pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
+
+            subtract = pipeline.add(
+                'subtract',
+                MRCalc(),
+                requirements=[mrtrix3_req])
             subtract.inputs.operation = 'subtract'
-        dwipreproc = pipeline.create_node(
-            DWIPreproc(), name='dwipreproc',
-            requirements=[mrtrix3_req, fsl510_req], wall_time=60)
-        # FIXME: dwipreproc.inputs.eddy_parameters = '--data_is_shelled '
-        dwipreproc.inputs.no_clean_up = True
-        dwipreproc.inputs.out_file_ext = '.nii.gz'
-        dwipreproc.inputs.temp_dir = 'dwipreproc_tempdir'
-        # Create node to reorient preproc out_file
-        swap = pipeline.create_node(
-            fsl.utils.Reorient2Std(), name='fslreorient2std',
-            requirements=[fsl509_req])
-        if distortion_correction:
+            # connect
+            pipeline.connect(subtract_operands, 'out', subtract, 'operands')
+            # Output
+            pipeline.connect_output('noise_residual', subtract, 'out_file')
+        else:
+            pipeline.connect_input('magnitude', dwipreproc, 'in_file')
+
+        # Create nodes to gradients to FSL format
+        extract_grad = pipeline.add(
+            "extract_grad", ExtractFSLGradients(),
+            requirements=[mrtrix3_req])
+        # Inputs
+        pipeline.connect_input('magnitude', extract_grad, 'in_file')
+        # Connect outputs
+        pipeline.connect_output('grad_dirs', extract_grad, 'bvecs_file')
+        pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
+
+        # Preproc kwargs
+        pp_kwargs = {}
+
+        if correct_distortion:
             # Extract b=0 volumes
-            dwiextract = pipeline.create_node(
-                ExtractDWIorB0(), name='dwiextract',
+            dwiextract = pipeline.add(
+                'dwiextract',
+                ExtractDWIorB0(
+                    bzero=True,
+                    out_ext='.nii.gz'),
                 requirements=[mrtrix3_req])
-            dwiextract.inputs.bzero = True
-            dwiextract.inputs.out_ext = '.nii.gz'
+
             # Get first b=0 from dwi b=0 volumes
-            mrconvert = pipeline.create_node(MRConvert(), name="mrconvert",
-                                             requirements=[mrtrix3_req])
-            mrconvert.inputs.coord = (3, 0)
-            # Concatenate extracted forward rpe with reverse rpe
-            mrcat = pipeline.create_node(
-                MRCat(), name='mrcat', requirements=[mrtrix3_req])
-            # Create node to assign the right PED to the diffusion
-            prep_dwi = pipeline.create_node(PrepareDWI(), name='prepare_dwi')
-            # Create preprocessing node
-            dwipreproc.inputs.rpe_pair = True
-            if self.parameter('preproc_pe_dir') is not None:
-                dwipreproc.inputs.pe_dir = self.parameter('preproc_pe_dir')
-            # Create nodes to gradients to FSL format
-            extract_grad = pipeline.create_node(
-                ExtractFSLGradients(), name="extract_grad",
+            mrconvert = pipeline.add(
+                "mrconvert",
+                MRConvert(
+                    coord=(3, 0)),
                 requirements=[mrtrix3_req])
+            pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
+
+            # Concatenate extracted forward rpe with reverse rpe
+            mrcat = pipeline.add(
+                'mrcat',
+                MRCat(),
+                requirements=[mrtrix3_req])
+            pipeline.connect(mrconvert, 'out_file', mrcat, 'first_scan')
+
+            # Create node to assign the right PED to the diffusion
+            prep_dwi = pipeline.add(
+                'prepare_dwi',
+                PrepareDWI())
+            pipeline.connect_input('ped', prep_dwi, 'pe_dir')
+            pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
+
             # Connect inputs
-            if 'dwi_reference' in self.input_names:
+            if self.input_provided('dwi_reference'):
                 pipeline.connect_input('dwi_reference', mrcat, 'second_scan')
-            elif 'reverse_phase' in self.input_names:
+            elif self.input_provided('reverse_phase'):
                 pipeline.connect_input('reverse_phase', mrcat, 'second_scan')
             else:
                 assert False
             pipeline.connect_input('magnitude', dwiextract, 'in_file')
-            pipeline.connect_input('magnitude', extract_grad, 'in_file')
-        # Connect inter-nodes
-        if self.branch('preproc_denoise'):
-            pipeline.connect_input('magnitude', denoise, 'in_file')
-            pipeline.connect_input('magnitude', subtract_operands, 'in1')
-            pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
-            pipeline.connect(denoise, 'noise', subtract_operands, 'in2')
-            pipeline.connect(subtract_operands, 'out', subtract, 'operands')
-        else:
-            pipeline.connect_input('magnitude', dwipreproc, 'in_file')
-        if distortion_correction:
-            pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-            pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
-            pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
-            pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
-            pipeline.connect(dwiextract, 'out_file', mrconvert, 'in_file')
-            pipeline.connect(mrconvert, 'out_file', mrcat, 'first_scan')
-        pipeline.connect(dwipreproc, 'out_file', swap, 'in_file')
-        # Connect outputs
-        pipeline.connect_output('preproc', swap, 'out_file')
-        pipeline.connect_output('grad_dirs', extract_grad,
-                                'bvecs_file')
-        pipeline.connect_output('bvalues', extract_grad, 'bvals_file')
+
+            pp_kwargs['rpe_pair'] = True
+            if self.parameter('preproc_pe_dir') is not None:
+                pp_kwargs['pe_dir'] = self.parameter('preproc_pe_dir')
+
+        dwipreproc = pipeline.add(
+            'dwipreproc',
+            DWIPreproc(
+                no_clean_up=True,
+                out_file_ext='.nii.gz',
+                # eddy_parameters = '--data_is_shelled '  FIXME: Need to determine this programmatically
+                temp_dir='dwipreproc_tempdir',
+                **pp_kwargs),
+            requirements=[mrtrix3_req, fsl510_req], wall_time=60)
+        # Connect
+        pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
+        pipeline.connect(prep_dwi, 'pe', dwipreproc, 'pe_dir')
+        pipeline.connect(mrcat, 'out_file', dwipreproc, 'se_epi')
+        # Output
         pipeline.connect_output('eddy_par', dwipreproc, 'eddy_parameters')
-        if self.branch('preproc_denoise'):
-            pipeline.connect_output('noise_residual', subtract, 'out_file')
+
+        # Create node to reorient preproc out_file
+        swap = pipeline.add(
+            'fslreorient2std',
+            fsl.utils.Reorient2Std(),
+            requirements=[fsl509_req])
+        pipeline.connect(dwipreproc, 'out_file', swap, 'in_file')
+        # Output
+        pipeline.connect_output('preproc', swap, 'out_file')
+
         # Check inputs/outputs are connected
         return pipeline
 
@@ -239,10 +273,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                         FilesetSpec('bvalues', fsl_bvals_format)],
                 outputs=[FilesetSpec('brain_mask', nifti_gz_format)],
                 desc="Generate brain mask from b0 images",
-                    citations=[mrtrix_cite],
+                    references=[mrtrix_cite],
                 **kwargs)
             # Create mask node
-            dwi2mask = pipeline.create_node(BrainMask(), name='dwi2mask',
+            dwi2mask = pipeline.add('dwi2mask', BrainMask(),
                                             requirements=[mrtrix3_req])
             dwi2mask.inputs.out_file = 'brain_mask.nii.gz'
             # Gradient merge node
@@ -274,12 +308,12 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     FilesetSpec('bvalues', fsl_bvals_format)],
             outputs=[FilesetSpec('bias_correct', nifti_gz_format)],
             desc="Corrects for B1 field inhomogeneity",
-            citations=[fast_cite,
-                       (n4_cite if bias_method == 'ants' else fsl_cite)],
+            references=[fast_cite,
+                        (n4_cite if bias_method == 'ants' else fsl_cite)],
             **kwargs)
         # Create bias correct node
-        bias_correct = pipeline.create_node(
-            DWIBiasCorrect(), name="bias_correct",
+        bias_correct = pipeline.add(
+            "bias_correct", DWIBiasCorrect(),
             requirements=(
                 [mrtrix3_req] +
                 [ants2_req if bias_method == 'ants' else fsl509_req]))
@@ -311,26 +345,30 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                      FilesetSpec('norm_intens_wm_mask', mrtrix_format,
                                  frequency='per_study')],
             desc="Corrects for B1 field inhomogeneity",
-            citations=[mrtrix3_req],
+            references=[mrtrix3_req],
             **kwargs)
         # Convert from nifti to mrtrix format
         grad_merge = pipeline.add("grad_merge", MergeTuple(2))
-        mrconvert = pipeline.create_node(MRConvert(), name='mrconvert')
+        mrconvert = pipeline.add('mrconvert', MRConvert())
         mrconvert.inputs.out_ext = '.mif'
         # Set up join nodes
         fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
-        join_subjects = pipeline.create_join_subjects_node(
-            IdentityInterface(fields), joinfield=fields,
-            name='join_subjects')
-        join_visits = pipeline.create_join_visits_node(
-            Chain(fields), joinfield=fields,
-            name='join_visits')
+        join_subjects = pipeline.add(
+            'join_subjects',
+            IdentityInterface(fields),
+            joinsource=self.SUBJECT_ID,
+            joinfield=fields)
+        join_visits = pipeline.add(
+            'join_visits',
+            Chain(fields),
+            joinsource=self.VISIT_ID,
+            joinfield=fields)
         # Set up expand nodes
-        select = pipeline.create_node(
-            SelectSession(), name='expand')
+        select = pipeline.add(
+            'expand', SelectSession())
         # Intensity normalization
-        intensity_norm = pipeline.create_node(
-            DWIIntensityNorm(), name='dwiintensitynorm')
+        intensity_norm = pipeline.add(
+            'dwiintensitynorm', DWIIntensityNorm())
         # Connect inputs
         pipeline.connect_input('bias_correct', mrconvert, 'in_file')
         pipeline.connect_input('grad_dirs', grad_merge, 'in1')
@@ -378,7 +416,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
         # Create tensor fit node
-        dwi2tensor = pipeline.create_node(FitTensor(), name='dwi2tensor')
+        dwi2tensor = pipeline.add('dwi2tensor', FitTensor())
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
         # Gradient merge node
         fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
@@ -408,7 +446,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
         # Create tensor fit node
-        metrics = pipeline.create_node(TensorMetrics(), name='metrics',
+        metrics = pipeline.add('metrics', TensorMetrics(),
                                        requirements=[mrtrix3_req])
         metrics.inputs.out_fa = 'fa.nii.gz'
         metrics.inputs.out_adc = 'adc.nii.gz'
@@ -443,10 +481,10 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     FilesetSpec('brain_mask', nifti_gz_format)],
             outputs=outputs,
             desc=("Estimates the fibre response function"),
-            citations=[mrtrix_cite],
+            references=[mrtrix_cite],
             **kwargs)
         # Create fod fit node
-        response = pipeline.create_node(ResponseSD(), name='response',
+        response = pipeline.add('response', ResponseSD(),
                                         requirements=[mrtrix3_req])
         response.inputs.algorithm = self.parameter('response_algorithm')
         # Gradient merge node
@@ -478,15 +516,19 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                  frequency='per_study')],
             desc=(
                 "Averages the fibre response function over the project"),
-            citations=[mrtrix_cite],
+            references=[mrtrix_cite],
             **kwargs)
-        join_subjects = pipeline.create_join_subjects_node(
-            IdentityInterface(['responses']), name='join_subjects',
+        join_subjects = pipeline.add(
+            'join_subjects',
+            IdentityInterface(['responses']),
+            joinsource=self.SUBJECT_ID,
             joinfield=['responses'])
-        join_visits = pipeline.create_join_visits_node(
-            Chain(['responses']), name='join_visits', joinfield=['responses'])
-        avg_response = pipeline.create_node(AverageResponse(),
-                                            name='avg_response')
+        join_visits = pipeline.add(
+            'join_visits',
+            Chain(['responses']),
+            joinsource=self.VISIT_ID,
+            joinfield=['responses'])
+        avg_response = pipeline.add('avg_response', AverageResponse())
         # Connect inputs
         pipeline.connect_input('wm_response', join_subjects, 'responses')
         # Connect inter-nodes
@@ -515,13 +557,13 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('fod', nifti_gz_format)],
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
-            citations=[mrtrix_cite],
+            references=[mrtrix_cite],
             **kwargs)
         if self.branch('fod_algorithm', 'msmt_csd'):
             pipeline.add_input(FilesetSpec('gm_response', text_format))
             pipeline.add_input(FilesetSpec('csf_response', text_format))
         # Create fod fit node
-        dwi2fod = pipeline.create_node(EstimateFOD(), name='dwi2fod',
+        dwi2fod = pipeline.add('dwi2fod', EstimateFOD(),
                                        requirements=[mrtrix3_req])
         dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
         # Gradient merge node
@@ -550,7 +592,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                                  frequency='per_study'),
                      FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
                                  frequency='per_study')],
-            citations=[tbss_cite, fsl_cite],
+            references=[tbss_cite, fsl_cite],
             **kwargs)
         # Create TBSS workflow
         tbss = create_tbss_all(name='tbss')
@@ -579,25 +621,25 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     FilesetSpec('bvalues', fsl_bvals_format)],
             outputs=[FilesetSpec('b0', nifti_gz_format)],
             desc="Extract b0 image from a DWI study",
-            citations=[mrtrix_cite],
+            references=[mrtrix_cite],
             **kwargs)
         # Gradient merge node
         fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         # Extraction node
-        extract_b0s = pipeline.create_node(
-            ExtractDWIorB0(), name='extract_b0s',
+        extract_b0s = pipeline.add(
+            'extract_b0s', ExtractDWIorB0(),
             requirements=[mrtrix3_req])
         extract_b0s.inputs.bzero = True
         extract_b0s.inputs.quiet = True
         # FIXME: Need a registration step before the mean
         # Mean calculation node
-        mean = pipeline.create_node(MRMath(), name="mean",
+        mean = pipeline.add("mean", MRMath(),
                                     requirements=[mrtrix3_req])
         mean.inputs.axis = 3
         mean.inputs.operation = 'mean'
         mean.inputs.quiet = True
         # Convert to Nifti
-        mrconvert = pipeline.create_node(MRConvert(), name="output_conversion",
+        mrconvert = pipeline.add("output_conversion", MRConvert(),
                                          requirements=[mrtrix3_req])
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
@@ -625,17 +667,15 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                     FilesetSpec('bvalues', fsl_bvals_format)],
             outputs=[FilesetSpec('global_tracks', mrtrix_track_format)],
             desc="Extract b0 image from a DWI study",
-            citations=[mrtrix_cite],
+            references=[mrtrix_cite],
             **kwargs)
-        tck = pipeline.create_node(Tractography(),
-                                   name='tracking')
+        tck = pipeline.add('tracking', Tractography())
         tck.inputs.n_tracks = self.parameter('num_global_tracks')
         tck.inputs.cutoff = self.parameter(
             'global_tracks_cutoff')
-        mask = pipeline.create_node(DWI2Mask(), name='mask')
+        mask = pipeline.add('mask', DWI2Mask())
         # Add gradients to input image
-        fsl_grads = pipeline.create_node(MergeTuple(2),
-                                         name="fsl_grads")
+        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
         pipeline.connect(fsl_grads, 'out', mask, 'grad_fsl')
         pipeline.connect(mask, 'out_file', tck, 'seed_image')
         pipeline.connect_input('fod', tck, 'in_file')
@@ -655,11 +695,11 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                 FilesetSpec('align_mats', directory_format)],
             desc=("Generation of the affine matrices for the main dwi "
                   "sequence starting from eddy motion parameters"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        aff_mat = pipeline.create_node(AffineMatrixGeneration(),
-                                       name='gen_aff_mats')
+        aff_mat = pipeline.add('gen_aff_mats',
+                                       AffineMatrixGeneration())
         pipeline.connect_input('preproc', aff_mat, 'reference_image')
         pipeline.connect_input(
             'eddy_par', aff_mat, 'motion_parameters')
@@ -671,8 +711,8 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('low_b_dw_scan', mrtrix_format),
-        FilesetSpec('high_b_dw_scan', mrtrix_format),
+        AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),
+        AcquiredFilesetSpec('high_b_dw_scan', mrtrix_format),
         FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
         FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
         FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
@@ -701,10 +741,10 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             desc=(
                 "Concatenate low and high b-value dMRI filesets for NODDI "
                 "processing"),
-            citations=[mrtrix_cite],
+            references=[mrtrix_cite],
             **kwargs)
         # Create concatenation node
-        mrcat = pipeline.create_node(MRCat(), name='mrcat',
+        mrcat = pipeline.add('mrcat', MRCat(),
                                      requirements=[mrtrix3_req])
         mrcat.inputs.quiet = True
         # Connect inputs
@@ -752,36 +792,38 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
             desc=(
                 "Creates a ROI in which the NODDI processing will be "
                 "performed"),
-            citations=[noddi_cite],
+            references=[noddi_cite],
             **kwargs)
         # Create node to unzip the nifti files
-        unzip_bias_correct = pipeline.create_node(
-            MRConvert(), name="unzip_bias_correct",
+        unzip_bias_correct = pipeline.add(
+            "unzip_bias_correct", MRConvert(),
             requirements=[mrtrix3_req])
         unzip_bias_correct.inputs.out_ext = 'nii'
         unzip_bias_correct.inputs.quiet = True
-        unzip_mask = pipeline.create_node(MRConvert(), name="unzip_mask",
-                                          requirements=[mrtrix3_req])
+        unzip_mask = pipeline.add("unzip_mask", MRConvert(),
+                                  requirements=[mrtrix3_req])
         unzip_mask.inputs.out_ext = 'nii'
         unzip_mask.inputs.quiet = True
         # Create create-roi node
-        create_roi = pipeline.create_node(
-            CreateROI(), name='create_roi',
+        create_roi = pipeline.add(
+            'create_roi',
+            CreateROI(),
             requirements=[noddi_req, matlab2015_req],
             memory=4000)
         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
-        batch_fit = pipeline.create_node(
-            BatchNODDIFitting(), name="batch_fit",
+        batch_fit = pipeline.add(
+            "batch_fit", BatchNODDIFitting(),
             requirements=[noddi_req, matlab2015_req], wall_time=180,
             memory=8000)
         batch_fit.inputs.model = self.parameter('noddi_model')
         batch_fit.inputs.nthreads = self.processor.num_processes
         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
         # Create output node
-        save_params = pipeline.create_node(
-            SaveParamsAsNIfTI(), name="save_params",
+        save_params = pipeline.add(
+            "save_params",
+            SaveParamsAsNIfTI(),
             requirements=[noddi_req, matlab2015_req],
             memory=4000)
         save_params.inputs.output_prefix = 'params'
