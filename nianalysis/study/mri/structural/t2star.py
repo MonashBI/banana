@@ -8,9 +8,10 @@ from nianalysis.requirement import (fsl5_req, matlab2015_req,
 from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import (
-    nifti_gz_format, text_matrix_format, dicom_format, multi_nifti_gz_format,
-    STD_IMAGE_FORMATS)
-from nianalysis.interfaces import qsm
+    nifti_gz_format, nifti_format, text_matrix_format, dicom_format,
+    multi_nifti_gz_format, STD_IMAGE_FORMATS)
+from nianalysis.interfaces.custom.vein_analysis import (
+    CompositeVeinImage, ShMRF)
 from arcana.interfaces import utils
 from ..base import MRIStudy
 from nipype.interfaces import fsl, ants
@@ -400,18 +401,18 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         # Run CV code
         pipeline.add(
             'cv_image',
-            interface=qsm.CVImage(),
+            interface=CompositeVeinImage(),
             inputs={
-                'mask': ('brain_mask', nifti_gz_format),
-                'qsm': ('qsm', nifti_gz_format),
-                'swi': ('swi', nifti_gz_format)},
+                'mask': ('brain_mask', nifti_format),
+                'qsm': ('qsm', nifti_format),
+                'swi': ('swi', nifti_format)},
             connect={
                 'q_prior': (apply_trans_q, 'output_image'),
                 's_prior': (apply_trans_s, 'output_image'),
                 'a_prior': (apply_trans_a, 'output_image'),
                 'vein_atlas': (apply_trans_v, 'output_image')},
             outputs={
-                'out_file': ('composite_vein_image', nifti_gz_format)},
+                'out_file': ('composite_vein_image', nifti_format)},
             requirements=[matlab2015_req],
             wall_time=300, memory=24000)
 
@@ -428,12 +429,12 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         # Run ShMRF code
         pipeline.add(
             'shmrf',
-            qsm.ShMRF(),
+            ShMRF(),
             inputs={
-                'in_file': ('composite_vein_image', nifti_gz_format),
-                'mask_file': ('brain_mask', nifti_gz_format)},
+                'in_file': ('composite_vein_image', nifti_format),
+                'mask': ('brain_mask', nifti_format)},
             outputs={
-                'out_file': ('vein_mask', nifti_gz_format)},
+                'out_file': ('vein_mask', nifti_format)},
             requirements=[matlab2015_req],
             wall_time=30, memory=16000)
 
