@@ -2,7 +2,7 @@ import logging  # @IgnorePep8
 import os.path as op
 from nipype import config
 config.enable_debug_mode()
-from arcana import FilesetMatch, LinearProcessor  # @IgnorePep8
+from arcana import FilesetSelector, LinearProcessor  # @IgnorePep8
 # from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from arcana import MultiStudy, MultiStudyMetaClass, SubStudySpec, Parameter  # @IgnorePep8
 from nianalysis.file_format import zip_format, dicom_format  # @IgnorePep8
@@ -35,11 +35,11 @@ study = T2StarT1Study(
     repository=single_echo_dir,
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
-        FilesetMatch('t2star_channels', zip_format, 'swi_coils_icerecon'),
-        FilesetMatch('t2star_header_image', dicom_format, 'SWI_Images'),
-        FilesetMatch('t2star_swi', dicom_format, 'SWI_Images'),
-        FilesetMatch('t1_magnitude', dicom_format,
-                     't1_mprage_sag_p2_iso_1mm')],
+        FilesetSelector('t2star_channels', zip_format, 'swi_coils_icerecon'),
+        FilesetSelector('t2star_header_image', dicom_format, 'SWI_Images'),
+        FilesetSelector('t2star_swi', dicom_format, 'SWI_Images'),
+        FilesetSelector('t1_magnitude', dicom_format,
+                        't1_mprage_sag_p2_iso_1mm')],
     parameters=[
         Parameter('t1_bet_method', 'fsl_bet'),
         Parameter('t1_bet_robust', False),

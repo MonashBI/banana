@@ -22,7 +22,7 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.study.mri.structural.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from arcana.data import FilesetMatch
+from arcana.data import FilesetSelector
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from nianalysis.interfaces.custom.fmri import PrepareFIX
 from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
@@ -572,7 +572,7 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(FilesetMatch('t1_primary', dicom_format, t1, is_regex=True,
+    inputs.append(FilesetSelector('t1_primary', dicom_format, t1, is_regex=True,
                                order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
@@ -584,20 +584,20 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
                        for i in range(epi_number))
 
     for i in range(epi_number):
-        inputs.append(FilesetMatch('epi_{}_primary'.format(i),
+        inputs.append(FilesetSelector('epi_{}_primary'.format(i),
                                    dicom_format, epis, order=i, is_regex=True))
-#     inputs.extend(FilesetMatch(
+#     inputs.extend(FilesetSelector(
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
 
     if distortion_correction:
-        inputs.extend(FilesetMatch(
+        inputs.extend(FilesetSelector(
             'epi_{}_field_map_mag'.format(i), dicom_format, fm_mag,
             dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE}, is_regex=True,
             order=0)
             for i in range(epi_number))
-        inputs.extend(FilesetMatch(
+        inputs.extend(FilesetSelector(
             'epi_{}_field_map_phase'.format(i), dicom_format, fm_phase,
             dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE}, is_regex=True,
             order=0)

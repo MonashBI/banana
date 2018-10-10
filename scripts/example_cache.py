@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import errno
-from arcana.data import FilesetMatch
+from arcana.data import FilesetSelector
 from nianalysis.study.mri.structural.t2star import T2StarStudy
 from arcana.repository.xnat import XnatRepository
 from nianalysis.file_format import zip_format
@@ -28,7 +28,7 @@ with open(session_ids_path) as f:
     ids = f.read().split()
 
 PROJECT_ID = 'MRH017'
-filesets = {FilesetMatch('coils', zip_format, 'swi_coils')}
+filesets = {FilesetSelector('coils', zip_format, 'swi_coils')}
 visit_ids = visit_ids['MR01']
 
 repository = XnatRepository(cache_dir='/scratch/dq13/xnat_cache3')

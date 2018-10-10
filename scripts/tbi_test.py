@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from arcana.data import FilesetMatch
+from arcana.data import FilesetSelector
 from nianalysis.study.mri.diffusion import DiffusionStudy
 from arcana.repository.simple import DirectoryRepository
 from nianalysis.file_format import mrtrix_format

@@ -1,5 +1,5 @@
 from nianalysis.file_format import dicom_format
-from arcana.data import FilesetMatch
+from arcana.data import FilesetSelector
 from arcana.repository.xnat import XnatRepository
 
 

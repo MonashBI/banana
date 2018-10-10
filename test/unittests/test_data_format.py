@@ -10,7 +10,7 @@ from nianalysis.file_format import (dicom_format, mrtrix_format,
 from arcana.requirement import Requirement
 from arcana.node import Node
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetMatch, FilesetSpec
+from arcana.data import FilesetSelector, FilesetSpec
 
 
 dummy_req = Requirement('name-for-module-that-will-never-exist',
@@ -71,7 +71,7 @@ class TestDicom2Niix(BaseTestCase):
     def test_dcm2niix(self):
         study = self.create_study(
             DummyStudy, 'concatenate', inputs=[
-                FilesetMatch('input_fileset',
+                FilesetSelector('input_fileset',
                              dicom_format, 't2_tse_tra_p2_448')])
         list(study.data('output_fileset'))[0]
         self.assertFilesetCreated('output_fileset.nii.gz', study.name)
