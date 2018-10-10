@@ -165,7 +165,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             'list_channels',
             ListDir(),
             inputs={
-                'in_dir': ('channels', multi_nifti_gz_format)})
+                'directory': ('channels', multi_nifti_gz_format)})
 
         reorient = pipeline.add(
             'reorient2std',
@@ -180,8 +180,8 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             'copy_to_dir',
             CopyToDir(),
             connect={
-                'in_files', (reorient, 'out_file'),
-                'file_names', (list_channels, 'files')})
+                'in_files': (reorient, 'out_file'),
+                'file_names': (list_channels, 'files')})
 
         pipeline.add(
             'to_polar',

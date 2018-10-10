@@ -4,7 +4,7 @@ from nipype import config
 config.enable_debug_mode()
 from arcana import FilesetMatch, LinearProcessor  # @IgnorePep8
 # from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
-from arcana import MultiStudy, MultiStudyMetaClass, SubStudySpec  # @IgnorePep8
+from arcana import MultiStudy, MultiStudyMetaClass, SubStudySpec, Parameter  # @IgnorePep8
 from nianalysis.file_format import zip_format, dicom_format  # @IgnorePep8
 from nianalysis.study.mri.structural.t1 import T1Study  # @IgnorePep8
 from nianalysis.study.mri.structural.t2star import T2StarStudy  # @IgnorePep8
@@ -31,7 +31,7 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
 
 study = T2StarT1Study(
-    'qsm_fresh',
+    'qsm_fresh2',
     repository=single_echo_dir,
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
@@ -39,7 +39,12 @@ study = T2StarT1Study(
         FilesetMatch('t2star_header_image', dicom_format, 'SWI_Images'),
         FilesetMatch('t2star_swi', dicom_format, 'SWI_Images'),
         FilesetMatch('t1_magnitude', dicom_format,
-                     't1_mprage_sag_p2_iso_1mm')])
+                     't1_mprage_sag_p2_iso_1mm')],
+    parameters=[
+        Parameter('t1_bet_method', 'fsl_bet'),
+        Parameter('t1_bet_robust', False),
+        Parameter('t1_bet_reduce_bias', True),
+        Parameter('t1_bet_f_threshold', 0.1)])
 
-print(study.data('t2star_vein_mask', clean_work_dir=True).path(
+print(study.data('t2star_vein_mask', clean_work_dir=False).path(
     subject_id='SUBJECT', visit_id='VISIT'))

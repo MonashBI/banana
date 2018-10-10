@@ -114,7 +114,7 @@ class BaseSTICommand(MatlabCommand):
             script += "{}_img = {}_img;\n".format(
                 name, trait.header_from)
             script += "{name}_img.img = {name};\n".format(name=name)
-            script += "save_untouch_nii({}_img, '{}.nii.gz');\n".format(
+            script += "save_untouch_nii({}_img, '{}.nii');\n".format(
                 name, op.join(cwd, self._output_fname(name, **kwargs)))
         return script
 
@@ -309,7 +309,7 @@ class BaseBatchSTICommand(BaseSTICommand):
             outputs[name] = []
             for i in range(self.batch_size):
                 outputs[name].append(op.abspath(self._output_fname(name, i)) +
-                                     '.nii.gz')
+                                     '.nii')
         return outputs
 
 

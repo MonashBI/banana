@@ -125,7 +125,8 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             'mask_erosion',
             fsl.ErodeImage(
                 kernel_shape='sphere',
-                kernel_size=2),
+                kernel_size=2,
+                output_type='NIFTI'),
             inputs={
                 'in_file': ('brain_mask', nifti_gz_format)},
             requirements=[fsl5_req],
