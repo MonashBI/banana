@@ -31,7 +31,7 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
 
 study = T2StarT1Study(
-    'qsm_fresh2',
+    'qsm_final',
     repository=single_echo_dir,
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
@@ -47,5 +47,5 @@ study = T2StarT1Study(
         Parameter('t1_bet_f_threshold', 0.1),
         Parameter('t1_bet_g_threshold', 0.0)])
 
-print(study.data('t2star_vein_mask', clean_work_dir=False).path(
+print(study.data('t2star_vein_mask', clean_work_dir=True).path(
     subject_id='SUBJECT', visit_id='VISIT'))

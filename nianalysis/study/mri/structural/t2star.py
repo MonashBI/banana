@@ -8,7 +8,7 @@ from nianalysis.requirement import (fsl5_req, matlab2015_req,
 from nianalysis.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from nianalysis.file_format import (
-    nifti_gz_format, nifti_format, text_matrix_format, dicom_format,
+    nifti_gz_format, nifti_format, text_matrix_format,
     multi_nifti_gz_format, STD_IMAGE_FORMATS)
 from nianalysis.interfaces.custom.vein_analysis import (
     CompositeVeinImage, ShMRF)
@@ -58,11 +58,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         # Set the magnitude to be generated from the prepare_channels
         # pipeline
-        AcquiredFilesetSpec('header_image', dicom_format, desc=(
-            "The image that contains the header information required to "
-            "perform the analysis (e.g. TE, B0, H). Alternatively, values "
-            "for extracted fields can be explicitly passed as inputs to the "
-            "Study"), optional=True),
         FilesetSpec('magnitude', nifti_gz_format, 'prepare_channels',
                     desc=("Generated from separate channel signals, "
                           "provided to 'channels'.")),
@@ -98,7 +93,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         SwitchSpec('linear_reg_method', 'ants',
                    MRIStudy.parameter_spec('linear_reg_method').choices)]
 
-#         # Change the default atlast coreg tool to FNIRT
+#         # Change the default atlas coreg tool to FNIRT
 #         SwitchSpec('t1_atlas_coreg_tool', 'fnirt', ('fnirt', 'ants'))]
 
     def header_extraction_pipeline(self, **kwargs):
@@ -170,7 +165,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'mask': (erosion, 'out_file')})
 
             # Run QSM iLSQR
-            qsm = pipeline.add(
+            pipeline.add(
                 'qsmrecon',
                 QSMiLSQR(
                     mask_manip="{}>0",
@@ -182,7 +177,9 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'H': ('main_field_orient', float)},
                 connect={
                     'in_file': (vsharp, 'out_file'),
-                    'mask': (vsharp, 'new_mask')})
+                    'mask': (vsharp, 'new_mask')},
+                outputs={
+                    'qsm': ('qsm', nifti_format)})
 
         else:
             # Dialate eroded mask
@@ -219,7 +216,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                 connect={
                     'masks': (list_mags, 'files'),
                     'whole_brain_mask': (dialate, 'out_file')})
-            # iterfield=['in_file'])
 
             # Unwrap phase
             unwrap = pipeline.add(
@@ -230,7 +226,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'in_file': (list_phases, 'files')})
-            # iterfield=['in_file'])
 
             # Background phase removal
             vsharp = pipeline.add(
@@ -242,7 +237,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                 connect={
                     'mask': (mask_coils, 'out_files'),
                     'in_file': (unwrap, 'out_file')})
-            # iterfield=['in_file', 'mask'])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -265,39 +259,17 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')})
-            # iterfield=['in_file', 'mask'])
 
             # Combine channel QSM by taking the median coil value
-            qsm = pipeline.add(
+            pipeline.add(
                 'combine_qsm',
                 MedianInMasks(),
                 connect={
                     'channels': (coil_qsm, 'out_file'),
                     'channel_masks': (vsharp, 'new_mask'),
-                    'whole_brain_mask': (dialate, 'out_file')})
-
-        if 'header_image' in self.input_names:
-            # Copy geometry from scanner image to QSM if separate header image
-
-            reorient_hdr = pipeline.add(
-                'reorient_header',
-                fsl.Reorient2Std(),
-                inputs={
-                    'in_file': ('header_image', nifti_gz_format)})
-
-            # is provided
-            pipeline.add(
-                'qsm_copy_geometry',
-                fsl.CopyGeom(),
-                connect={
-                    'in_file': (reorient_hdr, 'out_file'),
-                    'dest_file': (qsm, 'out_file')},
+                    'whole_brain_mask': (dialate, 'out_file')},
                 outputs={
-                    'out_file': ('qsm', nifti_gz_format)},
-                requirements=[fsl5_req])
-        else:
-            pipeline.connect_output('qsm', qsm, 'qsm', nifti_gz_format)
-
+                    'out_file': ('qsm', nifti_format)})
         return pipeline
 
     def swi_pipeline(self, **mods):
@@ -310,10 +282,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             desc=("Calculate susceptibility-weighted image from magnitude and "
                   "phase"))
 
-#         inputs=[FilesetSpec('magnitude', nifti_gz_format),
-#         FilesetSpec('channel_phases', multi_nifti_gz_format)],
-#         outputs=[FilesetSpec('swi', nifti_gz_format)],
-
         return pipeline
 
     def cv_pipeline(self, **mods):
@@ -323,16 +291,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
             modifications=mods,
             desc="Compute Composite Vein Image",
             references=[fsl_cite, matlab_cite])
-
-        # Prepare SWI flip(flip(swi,1),2)
-#         flip = pipeline.add(
-#             'flip_swi',
-#             qsm.FlipSWI(),
-#             inputs={
-#                 'in_file': ('swi', nifti_gz_format),
-#                 'hdr_file': ('qsm', nifti_gz_format)},
-#             requirements=[matlab2015_req],
-#             wall_time=10, memory=16000)
 
         # Interpolate priors and atlas
         merge_trans = pipeline.add(

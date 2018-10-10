@@ -119,7 +119,20 @@ class CompositeVeinImage(BaseVein):
         mask = load_untouch_nii('{mask}');
         mask = single(mask.img)>0;
 
-        [ swi, qsm, vein_atlas, hdrInfo ] = Inputs_IO(mask, '{swi}', '{qsm}', '{vein_atlas}');
+        swi = load_untouch_nii('{swi}');
+        qsm = load_untouch_nii('{qsm}');
+        fre = load_untouch_nii('{vein_atlas}');
+
+        hdrInfo = qsm.hdr;
+        hdrInfo.dime.datatype = 64;
+        hdrInfo.dime.bitpix = 64;
+
+        swi = single(swi.img);
+        qsm = single(qsm.img);
+        fre = single(fre.img);
+
+        [ swi, qsm ] = GMM( mask, swi, qsm);
+        vein_atlas = min(0.99,max(0.01,fre));
 
         s_prior = load_untouch_nii('{s_prior}');
         q_prior = load_untouch_nii('{q_prior}');

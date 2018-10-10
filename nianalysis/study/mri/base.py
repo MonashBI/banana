@@ -49,6 +49,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             'channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
                                  "coil without standardisation.")),
+        AcquiredFilesetSpec('header_image', dicom_format, desc=(
+            "A dataset that contains correct the header information for the "
+            "acquired image. Used to copy geometry over preprocessed "
+            "channels"), optional=True),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
                     'prepare_channels'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
@@ -167,12 +171,28 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'directory': ('channels', multi_nifti_gz_format)})
 
+        if self.input_provided('header_image'):
+            # If header image is provided use stomp its geometry over the
+            # acquired channels
+            copy_geom = pipeline.add(
+                'qsm_copy_geometry',
+                fsl.CopyGeom(),
+                inputs={
+                    'in_file': ('header_image', nifti_gz_format)},
+                connect={
+                    'dest_file': (list_channels, 'files')},
+                iterfield=(['dest_file']),
+                requirements=[fsl5_req])
+            reorient_in_file = (copy_geom, 'out_file')
+        else:
+            reorient_in_file = (list_channels, 'files')
+
         reorient = pipeline.add(
-            'reorient2std',
+            'reorient_channel',
             fsl.Reorient2Std(
                 output_type='NIFTI_GZ'),
             connect={
-                'in_file': (list_channels, 'files')},
+                'in_file': reorient_in_file},
             iterfield=['in_file'],
             requirements=[fsl5_req])
 
