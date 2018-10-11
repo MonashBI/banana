@@ -25,8 +25,6 @@ class BaseSTICommand(MatlabCommand):
     Base interface for STI classes
     """
 
-    BATCH_INDEX = '(i)'
-
     def run(self, **inputs):
         # Set the script input of the matlab spec
         self.inputs.script = self.script(cwd=inputs['cwd'])

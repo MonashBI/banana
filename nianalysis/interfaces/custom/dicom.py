@@ -138,8 +138,9 @@ class DicomHeaderInfoExtraction(BaseInterface):
         vox_sizes.append(hd.SliceThickness)
         # Save extracted values to output dictionary
         self.dict_output['start_time'] = str(start_time)
-        self.dict_output['tr'] = tr
-        self.dict_output['echo_times'] = echo_times
+        self.dict_output['tr'] = float(tr) / 1000.0  # Convert to seconds
+        self.dict_output['echo_times'] = [float(t) / 1000.0  # Convert to secs
+                                          for t in echo_times]
         self.dict_output['voxel_sizes'] = vox_sizes
         self.dict_output['H'] = list(b0_orient)
         self.dict_output['B0'] = hd.MagneticFieldStrength
