@@ -22,7 +22,6 @@ from nianalysis.interfaces.sti import (
 from nianalysis.interfaces.custom.coils import HIPCombineChannels
 from nianalysis.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
-import nianalysis
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.atlas import LocalAtlas
 from logging import getLogger

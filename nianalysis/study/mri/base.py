@@ -10,6 +10,7 @@ from arcana.study.base import Study, StudyMetaClass
 from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
 from nianalysis.file_format import (
     dicom_format, text_format, gif_format)
+from nipype.interfaces.utility import IdentityInterface
 from nianalysis.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exception import ArcanaUsageError
@@ -18,7 +19,6 @@ from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
 from nianalysis.interfaces.fsl import FSLSlices
 from nianalysis.file_format import text_matrix_format
-import os
 import logging
 from nianalysis.interfaces.ants import AntsRegSyn
 from nianalysis.interfaces.custom.coils import ToPolarCoords
@@ -56,7 +56,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                     'prepare_channels'),
         FilesetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
-        FilesetSpec('preproc', nifti_gz_format, 'preproc_pipeline',
+        FilesetSpec('preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Performs basic preprocessing, such as realigning "
                           "image axis to a standard rotation")),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
@@ -113,6 +113,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                              dataset='brain_mask'))]
 
     add_parameter_specs = [
+        SwitchSpec('reorient_to_std', True),
         SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),
         SwitchSpec('bet_reduce_bias', False,
@@ -160,45 +161,55 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
 
-        # Read channel files reorient them into standard space and then write
-        # back to directory
-        list_channels = pipeline.add(
-            'list_channels',
-            ListDir(),
-            inputs={
-                'directory': ('channels', multi_nifti_gz_format)})
-
-        if self.input_provided('header_image') and False:
-            # If header image is provided stomp its geometry over the
-            # acquired channels
-            copy_geom = pipeline.add(
-                'qsm_copy_geometry',
-                fsl.CopyGeom(),
+        if (self.input_provided('header_image') or
+                self.branch('reorient_to_std')):
+            # Read channel files reorient them into standard space and then
+            # write back to directory
+            list_channels = pipeline.add(
+                'list_channels',
+                ListDir(),
                 inputs={
-                    'in_file': ('header_image', nifti_gz_format)},
+                    'directory': ('channels', multi_nifti_gz_format)})
+
+            if self.input_provided('header_image') and False:  # FIXME: either remove this step or this False statement
+                # If header image is provided stomp its geometry over the
+                # acquired channels
+                copy_geom = pipeline.add(
+                    'qsm_copy_geometry',
+                    fsl.CopyGeom(),
+                    inputs={
+                        'in_file': ('header_image', nifti_gz_format)},
+                    connect={
+                        'dest_file': (list_channels, 'files')},
+                    iterfield=(['dest_file']),
+                    requirements=[fsl5_req])
+                reorient_in_file = (copy_geom, 'out_file')
+            else:
+                reorient_in_file = (list_channels, 'files')
+
+            if self.branch('reorient_to_std'):
+                reorient = pipeline.add(
+                    'reorient_channel',
+                    fsl.Reorient2Std(
+                        output_type='NIFTI_GZ'),
+                    connect={
+                        'in_file': reorient_in_file},
+                    iterfield=['in_file'],
+                    requirements=[fsl5_req])
+                copy_to_dir_in_files = (reorient, 'out_file')
+            else:
+                copy_to_dir_in_files = reorient_in_file
+
+            copy_to_dir = pipeline.add(
+                'copy_to_dir',
+                CopyToDir(),
                 connect={
-                    'dest_file': (list_channels, 'files')},
-                iterfield=(['dest_file']),
-                requirements=[fsl5_req])
-            reorient_in_file = (copy_geom, 'out_file')
+                    'in_files': copy_to_dir_in_files,
+                    'file_names': (list_channels, 'files')})
+            to_polar_in = {'connect': {'in_dir': (copy_to_dir, 'out_dir')}}
         else:
-            reorient_in_file = (list_channels, 'files')
-
-        reorient = pipeline.add(
-            'reorient_channel',
-            fsl.Reorient2Std(
-                output_type='NIFTI_GZ'),
-            connect={
-                'in_file': reorient_in_file},
-            iterfield=['in_file'],
-            requirements=[fsl5_req])
-
-        copy_to_dir = pipeline.add(
-            'copy_to_dir',
-            CopyToDir(),
-            connect={
-                'in_files': (reorient, 'out_file'),
-                'file_names': (list_channels, 'files')})
+            to_polar_in = {'inputs':
+                           {'in_dir': ('channels', multi_nifti_gz_format)}}
 
         pipeline.add(
             'to_polar',
@@ -206,11 +217,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 in_fname_re=self.parameter('channel_fname_regex'),
                 real_label=self.parameter('channel_real_label'),
                 imaginary_label=self.parameter('channel_imag_label')),
-            connect={
-                'in_dir': (copy_to_dir, 'out_dir')},
             outputs={
                 'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
-                'phases_dir': ('channel_phases', multi_nifti_gz_format)})
+                'phases_dir': ('channel_phases', multi_nifti_gz_format)},
+            **to_polar_in)
 
         return pipeline
 
@@ -683,7 +693,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preproc_pipeline(self, in_file_name='magnitude', **mods):
+    def preprocess_pipeline(self, **mods):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -698,32 +708,46 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             performed
         """
         pipeline = self.pipeline(
-            name='preproc_pipeline',
+            name='preprocess_pipeline',
             modifications=mods,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
             references=[fsl_cite])
 
-        swap = pipeline.add(
-            'fslreorient2std',
-            fsl.utils.Reorient2Std(),
-            inputs={
-                'in_file': (in_file_name, nifti_gz_format)},
-            requirements=[fsl509_req])
-#         swap.inputs.new_dims = self.parameter('preproc_new_dims')
+        if (self.branch('reorient_to_std') or
+                self.parameter('preproc_resolution') is not None):
+            if self.branch('reorient_to_std'):
+                swap = pipeline.add(
+                    'fslreorient2std',
+                    fsl.utils.Reorient2Std(),
+                    inputs={
+                        'in_file': ('magnitude', nifti_gz_format)},
+                    requirements=[fsl509_req])
+    #         swap.inputs.new_dims = self.parameter('preproc_new_dims')
 
-        if self.parameter('preproc_resolution') is not None:
-            resample = pipeline.add(
-                "resample",
-                MRResize(
-                    voxel=self.parameter('preproc_resolution')),
-                connect={'in_file': (swap, 'out_file')},
-                requirements=[mrtrix3_req])
-            pipeline.connect_output('preproc', resample, 'out_file',
-                                    nifti_gz_format)
+            if self.parameter('preproc_resolution') is not None:
+                resample = pipeline.add(
+                    "resample",
+                    MRResize(
+                        voxel=self.parameter('preproc_resolution')),
+                    connect={'in_file': (swap, 'out_file')},
+                    requirements=[mrtrix3_req])
+                pipeline.connect_output('preproc', resample, 'out_file',
+                                        nifti_gz_format)
+            else:
+                pipeline.connect_output('preproc', swap, 'out_file',
+                                        nifti_gz_format)
         else:
-            pipeline.connect_output('preproc', swap, 'out_file',
-                                    nifti_gz_format)
+            # Don't actually do any processing just copy magnitude image to
+            # preproc
+            pipeline.add(
+                'identity',
+                IdentityInterface(
+                    ['file']),
+                inputs={
+                    'file': ('magnitude', nifti_gz_format)},
+                outputs={
+                    'file': ('preproc', nifti_gz_format)})
 
         return pipeline
 
@@ -752,7 +776,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'dicom_folder': (dcm_in_name, dicom_format)},
             outputs={
-                'tr': (tr, float),
+                'tr': ('tr', float),
                 'start_time': ('start_time', str),
                 'total_duration': ('total_duration', str),
                 'real_duration': ('real_duration', str),

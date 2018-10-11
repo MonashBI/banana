@@ -31,7 +31,7 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
 
 study = T2StarT1Study(
-    'qsm',
+    'qsm_no_flip',
     repository=single_echo_dir,
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
@@ -39,7 +39,10 @@ study = T2StarT1Study(
         FilesetSelector('t2star_header_image', dicom_format, 'SWI_Images'),
         FilesetSelector('t2star_swi', dicom_format, 'SWI_Images'),
         FilesetSelector('t1_magnitude', dicom_format,
-                        't1_mprage_sag_p2_iso_1mm')])
+                        't1_mprage_sag_p2_iso_1mm')],
+    parameters=[
+        Parameter('t2star_reorient_to_std', False),
+        Parameter('t1_reorient_to_std', False)])
 
 # print(study.data('t2star_channel_mags', clean_work_dir=True).path(
 #     subject_id='SUBJECT', visit_id='VISIT'))

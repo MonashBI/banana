@@ -102,7 +102,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preproc_pipeline(self, **kwargs):
+    def preprocess_pipeline(self, **kwargs):
 
         if ('field_map_phase' in self.input_names and
                 'field_map_mag' in self.input_names):
@@ -110,12 +110,12 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         elif 'reverse_phase' in self.input_names:
             return self._topup_pipeline(**kwargs)
         else:
-            return super(EPIStudy, self).preproc_pipeline(**kwargs)
+            return super(EPIStudy, self).preprocess_pipeline(**kwargs)
 
     def _topup_pipeline(self, **kwargs):
 
         pipeline = self.pipeline(
-            name='preproc_pipeline',
+            name='preprocess_pipeline',
             inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('reverse_phase', nifti_gz_format),
                     FieldSpec('ped', str),
@@ -177,7 +177,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
     def _fugue_pipeline(self, **kwargs):
 
         pipeline = self.pipeline(
-            name='preproc_pipeline',
+            name='preprocess_pipeline',
             inputs=[FilesetSpec('magnitude', nifti_gz_format),
                     FilesetSpec('field_map_mag', nifti_gz_format),
                     FilesetSpec('field_map_phase', nifti_gz_format)],

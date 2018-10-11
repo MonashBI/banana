@@ -36,7 +36,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
-        FilesetSpec('noise_residual', mrtrix_format, 'preproc_pipeline'),
+        FilesetSpec('noise_residual', mrtrix_format, 'preprocess_pipeline'),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline'),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline'),
@@ -48,9 +48,9 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         FilesetSpec('fod', mrtrix_format, 'fod_pipeline'),
         FilesetSpec('bias_correct', nifti_gz_format,
                     'bias_correct_pipeline'),
-        FilesetSpec('grad_dirs', fsl_bvecs_format, 'preproc_pipeline'),
-        FilesetSpec('bvalues', fsl_bvals_format, 'preproc_pipeline'),
-        FilesetSpec('eddy_par', eddy_par_format, 'preproc_pipeline'),
+        FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
+        FilesetSpec('bvalues', fsl_bvals_format, 'preprocess_pipeline'),
+        FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
         FilesetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
         FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
@@ -96,7 +96,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    def preproc_pipeline(self, **mods):  # @UnusedVariable @IgnorePep8
+    def preprocess_pipeline(self, **mods):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
