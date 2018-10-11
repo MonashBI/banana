@@ -36,13 +36,13 @@ study = T2StarT1Study(
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
         FilesetSelector('t2star_channels', zip_format, 'swi_coils_icerecon'),
-#         FilesetSelector('t2star_header_image', dicom_format, 'SWI_Images'),
+        FilesetSelector('t2star_header_image', dicom_format, 'SWI_Images'),
         FilesetSelector('t2star_swi', dicom_format, 'SWI_Images'),
         FilesetSelector('t1_magnitude', dicom_format,
                         't1_mprage_sag_p2_iso_1mm')])
 
-print(study.data('t2star_channel_mags', clean_work_dir=True).path(
-    subject_id='SUBJECT', visit_id='VISIT'))
-
-# print(study.data('t2star_vein_mask', clean_work_dir=True).path(
+# print(study.data('t2star_channel_mags', clean_work_dir=True).path(
 #     subject_id='SUBJECT', visit_id='VISIT'))
+
+print(study.data('t2star_vein_mask', clean_work_dir=True).path(
+    subject_id='SUBJECT', visit_id='VISIT'))

@@ -30,9 +30,6 @@ from logging import getLogger
 logger = getLogger('nianalysis')
 
 
-atlas_path = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
-
-
 def coil_sort_key(fname):
     return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
 
@@ -98,13 +95,6 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         SwitchSpec('bet_robust', False),
         ParameterSpec('bet_f_threshold', 0.1),
         ParameterSpec('bet_g_threshold', 0.0)]
-
-#         # Change the default atlas coreg tool to FNIRT
-#         SwitchSpec('t1_atlas_coreg_tool', 'fnirt', ('fnirt', 'ants'))]
-
-    def header_extraction_pipeline(self, **kwargs):
-        return self.header_extraction_pipeline_factory(
-            'header_info_extraction', 'header_image', **kwargs)
 
     def prepare_channels(self, **mods):
         pipeline = super().prepare_channels(**mods)

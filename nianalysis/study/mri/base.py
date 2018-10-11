@@ -31,9 +31,6 @@ from nianalysis.atlas import FslAtlas
 
 logger = logging.getLogger('arcana')
 
-atlas_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '..', '..', 'atlases'))
-
 
 class MRIStudy(Study, metaclass=StudyMetaClass):
 
@@ -171,7 +168,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'directory': ('channels', multi_nifti_gz_format)})
 
-        if self.input_provided('header_image'):
+        if self.input_provided('header_image') and False:
             # If header image is provided stomp its geometry over the
             # acquired channels
             copy_geom = pipeline.add(
@@ -731,32 +728,18 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def header_extraction_pipeline(self, **mods):
-        if self.input('magnitude').format != dicom_format:
+        if self.input_provided('header_image'):
+            dcm_in_name = 'header_image'
+        else:
+            dcm_in_name = 'magnitude'
+        if self.input(dcm_in_name).format != dicom_format:
             raise ArcanaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM format ({})".format(
                     self.input('magnitude').format))
-        return self.header_extraction_pipeline_factory(
-            'header_info_extraction', 'magnitude', **mods)
-
-    def header_extraction_pipeline_factory(
-            self, name, dcm_in_name, multivol=False, output_prefix='',
-            **mods):
-
-        tr = output_prefix + 'tr'
-        start_time = output_prefix + 'start_time'
-        total_duration = output_prefix + 'total_duration'
-        real_duration = output_prefix + 'real_duration'
-        ped = output_prefix + 'ped'
-        pe_angle = output_prefix + 'pe_angle'
-        dcm_info = output_prefix + 'dcm_info'
-        echo_times = output_prefix + 'echo_times'
-        voxel_sizes = output_prefix + 'voxel_sizes'
-        main_field_strength = output_prefix + 'main_field_strength'
-        main_field_orient = output_prefix + 'main_field_orient'
 
         pipeline = self.pipeline(
-            name=name,
+            name='header_extraction',
             modifications=mods,
             desc=("Pipeline to extract the most important scan "
                   "information from the image header"),
@@ -765,21 +748,21 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         pipeline.add(
             'hd_info_extraction',
             DicomHeaderInfoExtraction(
-                multivol=multivol),
+                multivol=False),
             inputs={
                 'dicom_folder': (dcm_in_name, dicom_format)},
             outputs={
                 'tr': (tr, float),
-                'start_time': (start_time, str),
-                'total_duration': (total_duration, str),
-                'real_duration': (real_duration, str),
-                'ped': (ped, str),
-                'pe_angle': (pe_angle, str),
-                'dcm_info': (dcm_info, text_format),
-                'echo_times': (echo_times, float),
-                'voxel_sizes': (voxel_sizes, float),
-                'B0': (main_field_strength, float),
-                'H': (main_field_orient, float)})
+                'start_time': ('start_time', str),
+                'total_duration': ('total_duration', str),
+                'real_duration': ('real_duration', str),
+                'ped': ('ped', str),
+                'pe_angle': ('pe_angle', str),
+                'dcm_info': ('dcm_info', text_format),
+                'echo_times': ('echo_times', float),
+                'voxel_sizes': ('voxel_sizes', float),
+                'B0': ('main_field_strength', float),
+                'H': ('main_field_orient', float)})
 
         return pipeline
 
