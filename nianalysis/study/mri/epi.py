@@ -34,7 +34,7 @@ class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
         FilesetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline')]
 
-    add_parameter_specs = [
+    add_param_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),

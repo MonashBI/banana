@@ -31,7 +31,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
                             frequency='per_study',
                             default=LocalAtlas('SUIT'))]
 
-    add_parameter_specs = [
+    add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',
                    choices=MRIStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),

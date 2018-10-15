@@ -78,7 +78,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
         FilesetSpec('wm_mask', mrtrix_format,
                     'global_tracking_pipeline')]
 
-    add_parameter_specs = [
+    add_param_specs = [
         ParameterSpec('multi_tissue', True),
         ParameterSpec('preproc_pe_dir', None, dtype=str),
         ParameterSpec('tbss_skel_thresh', 0.2),
@@ -724,7 +724,7 @@ class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
         FilesetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
         FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 
-    add_parameter_specs = [ParameterSpec('noddi_model',
+    add_param_specs = [ParameterSpec('noddi_model',
                                          'WatsonSHStickTortIsoV_B0'),
                            SwitchSpec('single_slice', False)]
 

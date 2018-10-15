@@ -31,7 +31,7 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
 
 study = T2StarT1Study(
-    'qsm_no_flip',
+    'qsm_corrected_times',
     repository=single_echo_dir,
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[

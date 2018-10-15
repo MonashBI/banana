@@ -112,7 +112,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                              resolution='atlas_resolution',
                                              dataset='brain_mask'))]
 
-    add_parameter_specs = [
+    add_param_specs = [
         SwitchSpec('reorient_to_std', True),
         SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),

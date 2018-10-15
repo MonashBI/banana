@@ -18,7 +18,7 @@ template_path = os.path.abspath(
 
 class PETStudy(Study, metaclass=StudyMetaClass):
 
-    add_parameter_specs = [ParameterSpec('ica_n_components', 2),
+    add_param_specs = [ParameterSpec('ica_n_components', 2),
                         ParameterSpec('ica_type', 'spatial'),
                         ParameterSpec('norm_transformation', 's'),
                         ParameterSpec('norm_dim', 3),

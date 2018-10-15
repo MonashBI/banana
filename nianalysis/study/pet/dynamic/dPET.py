@@ -30,7 +30,7 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
                     'Dual_Regression_pipeline'),
         FilesetSpec('ts', png_format, 'Dual_Regression_pipeline')]
 
-    add_parameter_specs = [
+    add_param_specs = [
         ParameterSpec('trans_template',
                    os.path.join(template_path, 'PET_template.nii.gz')),
         ParameterSpec('base_remove_th', 0),

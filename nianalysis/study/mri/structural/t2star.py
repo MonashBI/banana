@@ -79,7 +79,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                             frequency='per_study',
                             default=LocalAtlas('VeinFrequencyMap'))]
 
-    add_parameter_specs = [
+    add_param_specs = [
         SwitchSpec('qsm_dual_echo', False),
         ParameterSpec('qsm_echo', 1,
                       desc=("Which echo (by index starting at 1) to use when "

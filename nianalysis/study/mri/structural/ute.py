@@ -57,7 +57,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
         FilesetSpec('sute_cont_ute', nifti_gz_format,
                     'backwrap_to_ute_pipeline')]
 
-    add_parameter_specs = [
+    add_param_specs = [
         SwitchSpec('bet_method', 'optibet',
                    choices=MRIStudy.parameter_spec('bet_method').choices)]
 

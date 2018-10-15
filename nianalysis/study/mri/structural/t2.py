@@ -19,7 +19,7 @@ from arcana.parameter import ParameterSpec
 
 class T2Study(MRIStudy, metaclass=StudyMetaClass):
 
-    add_parameter_specs = [
+    add_param_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),
         ParameterSpec('bet_reduce_bias', False)]

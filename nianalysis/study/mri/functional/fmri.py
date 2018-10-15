@@ -63,7 +63,7 @@ class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
         FilesetSpec('smoothed_ts', nifti_gz_format,
                     'smoothing_pipeline')]
 
-    add_parameter_specs = [
+    add_param_specs = [
         ParameterSpec('component_threshold', 20),
         ParameterSpec('motion_reg', True),
         ParameterSpec('highpass', 0.01),
@@ -611,6 +611,6 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
 
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
-    dct['add_parameter_specs'] = parameter_specs
+    dct['add_param_specs'] = parameter_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     return MultiStudyMetaClass(name, (FunctionalMRIMixin,), dct), inputs, output_files
