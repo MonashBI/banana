@@ -95,14 +95,14 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.1),
         ParameterSpec('bet_g_threshold', 0.0)]
 
-    def prepare_channels(self, **mods):
-        pipeline = super().prepare_channels(**mods)
+    def prepare_channels(self, **name_maps):
+        pipeline = super().prepare_channels(**name_maps)
         # Connect combined first echo output to the magnitude data spec
         pipeline.connect_output('magnitude', pipeline.node('to_polar'),
                                 'first_echo', nifti_gz_format)
         return pipeline
 
-    def qsm_pipeline(self, **mods):
+    def qsm_pipeline(self, **name_maps):
         """
         Process dual echo data for QSM (TE=[7.38, 22.14])
 
@@ -110,7 +110,7 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='qsm_pipeline',
-            modifications=mods,
+            name_maps=name_maps,
             desc="Resolve QSM from t2star coils",
             references=[sti_cites, fsl_cite, matlab_cite])
 
@@ -267,23 +267,23 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                     'out_file': ('qsm', nifti_format)})
         return pipeline
 
-    def swi_pipeline(self, **mods):
+    def swi_pipeline(self, **name_maps):
 
         raise NotImplementedError
 
         pipeline = self.pipeline(
             name='swi',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Calculate susceptibility-weighted image from magnitude and "
                   "phase"))
 
         return pipeline
 
-    def cv_pipeline(self, **mods):
+    def cv_pipeline(self, **name_maps):
 
         pipeline = self.pipeline(
             name='cv_pipeline',
-            modifications=mods,
+            name_maps=name_maps,
             desc="Compute Composite Vein Image",
             references=[fsl_cite, matlab_cite])
 
@@ -371,11 +371,11 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def shmrf_pipeline(self, **mods):
+    def shmrf_pipeline(self, **name_maps):
 
         pipeline = self.pipeline(
             name='shmrf_pipeline',
-            modifications=mods,
+            name_maps=name_maps,
             desc="Compute Vein Mask using ShMRF",
             references=[fsl_cite, matlab_cite])
 

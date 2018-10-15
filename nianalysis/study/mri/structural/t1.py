@@ -44,7 +44,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 #         ParameterSpec('bet_f_threshold', 0.57),
 #         ParameterSpec('bet_g_threshold', -0.1)]
 
-    def freesurfer_pipeline(self, **mods):
+    def freesurfer_pipeline(self, **name_maps):
         """
         Segments grey matter, white matter and CSF from T1 images using
         SPM "NewSegment" function.
@@ -53,7 +53,7 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='segmentation',
-            modifications=mods,
+            name_maps=name_maps,
             desc="Segment white/grey matter and csf",
             references=copy(freesurfer_cites))
 
@@ -84,16 +84,16 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def segmentation_pipeline(self, **mods):
+    def segmentation_pipeline(self, **name_maps):
         pipeline = super(T1Study, self).segmentation_pipeline(img_type=1,
-                                                              **mods)
+                                                              **name_maps)
         return pipeline
 
-    def bet_T1(self, **mods):
+    def bet_T1(self, **name_maps):
 
         pipeline = self.pipeline(
             name='BET_T1',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("python implementation of BET"),
             references=[fsl_cite])
 
@@ -117,10 +117,10 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def cet_T1(self, **mods):
+    def cet_T1(self, **name_maps):
         pipeline = self.pipeline(
             name='CET_T1',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Construct cerebellum mask using SUIT template"),
             references=[fsl_cite])
 

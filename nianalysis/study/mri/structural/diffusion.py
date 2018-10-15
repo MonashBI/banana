@@ -96,7 +96,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    def preprocess_pipeline(self, **mods):  # @UnusedVariable @IgnorePep8
+    def preprocess_pipeline(self, **name_maps):  # @UnusedVariable @IgnorePep8
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
@@ -136,7 +136,7 @@ class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
 
         pipeline = self.pipeline(
             name='preprocess',
-            modifications=mods,
+            name_maps=name_maps,
             desc=(
                 "Preprocess dMRI studies using distortion correction"),
             references=references)

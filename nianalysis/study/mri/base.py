@@ -154,10 +154,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
-    def prepare_channels(self, **mods):
+    def prepare_channels(self, **name_maps):
         pipeline = self.pipeline(
             'prepare_channels',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
 
@@ -237,7 +237,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             name = 'brain'
         return name
 
-    def linear_coregistration_pipeline(self, **mods):
+    def linear_coregistration_pipeline(self, **name_maps):
         if self.branch('linear_reg_method', 'flirt'):
             pipeline = self._flirt_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
@@ -252,10 +252,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             self.unhandled_branch('linear_reg_method')
         return pipeline
 
-    def qform_transform_pipeline(self, **mods):
+    def qform_transform_pipeline(self, **name_maps):
         return self._qform_transform_factory(
             'qform_transform', 'brain', 'coreg_ref_brain', 'qformed',
-            'qform_mat', **mods)
+            'qform_mat', **name_maps)
 
     def _flirt_pipeline(self, name, to_reg, ref, reg, matrix, mods):
         """
@@ -277,7 +277,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         pipeline = self.pipeline(
             name=name,
-            modifications=mods,
+            name_maps=name_maps,
             desc="Registers a MR scan against a reference image using FLIRT",
             references=[fsl_cite])
 
@@ -301,7 +301,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                  qformed_mat, mods):
         pipeline = self.pipeline(
             name=name,
-            modifications=mods,
+            name_maps=name_maps,
             desc="Registers a MR scan against a reference image",
             references=[fsl_cite])
 
@@ -320,7 +320,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def _spm_coreg_pipeline(self, **mods):  # @UnusedVariable
+    def _spm_coreg_pipeline(self, **name_maps):  # @UnusedVariable
         """
         Coregisters T2 image to T1 image using SPM's
         "Register" method.
@@ -329,7 +329,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             'registration',
-            modifications=mods,
+            name_maps=name_maps,
             desc="Coregister T2-weighted images to T1",
             references=[spm_cite])
 
@@ -358,7 +358,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                                     mods):
         pipeline = self.pipeline(
             name=name,
-            modifications=mods,
+            name_maps=name_maps,
             desc="Registers a MR scan against a reference image using ANTs")
 
         pipeline.add(
@@ -377,22 +377,22 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def brain_extraction_pipeline(self, in_file='preproc', **mods):
+    def brain_extraction_pipeline(self, in_file='preproc', **name_maps):
         if self.branch('bet_method', 'fsl_bet'):
-            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file, **mods)
+            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file, **name_maps)
         elif self.branch('bet_method', 'optibet'):
-            pipeline = self._optiBET_brain_extraction_pipeline(in_file, **mods)
+            pipeline = self._optiBET_brain_extraction_pipeline(in_file, **name_maps)
         else:
             self.unhandled_branch('bet_method')
         return pipeline
 
-    def _fsl_bet_brain_extraction_pipeline(self, in_file, **mods):
+    def _fsl_bet_brain_extraction_pipeline(self, in_file, **name_maps):
         """
         Generates a whole brain mask using FSL's BET command.
         """
         pipeline = self.pipeline(
             name='brain_extraction',
-            modifications=mods,
+            name_maps=name_maps,
             desc="Generate brain mask from mr_scan",
             references=[fsl_cite, bet_cite, bet2_cite])
         # Create mask node
@@ -418,13 +418,13 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     # FIXME: With the newly implemented name-mapping functionality 'in_file'
     #        does not need to be passed in this way
-    def _optiBET_brain_extraction_pipeline(self, in_file, **mods):
+    def _optiBET_brain_extraction_pipeline(self, in_file, **name_maps):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
         pipeline = self.pipeline(
             name='brain_extraction',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Modified implementation of optiBET.sh"),
             references=[fsl_cite])
 
@@ -509,17 +509,17 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def coregister_to_atlas_pipeline(self, **mods):
+    def coregister_to_atlas_pipeline(self, **name_maps):
         if self.branch('atlas_coreg_tool', 'fnirt'):
-            pipeline = self._fsl_fnirt_to_atlas_pipeline(**mods)
+            pipeline = self._fsl_fnirt_to_atlas_pipeline(**name_maps)
         elif self.branch('atlas_coreg_tool', 'ants'):
-            pipeline = self._ants_to_atlas_pipeline(**mods)
+            pipeline = self._ants_to_atlas_pipeline(**name_maps)
         else:
             self.unhandled_branch('atlas_coreg_tool')
         return pipeline
 
     # @UnusedVariable @IgnorePep8
-    def _fsl_fnirt_to_atlas_pipeline(self, **mods):
+    def _fsl_fnirt_to_atlas_pipeline(self, **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -530,7 +530,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='coregister_to_atlas',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
             references=[fsl_cite])
@@ -613,11 +613,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         # TODO: Need to work out which parameters to use
         return pipeline
 
-    def _ants_to_atlas_pipeline(self, **mods):
+    def _ants_to_atlas_pipeline(self, **name_maps):
 
         pipeline = self.pipeline(
             name='coregister_to_atlas',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
             references=[fsl_cite])
@@ -652,10 +652,10 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def segmentation_pipeline(self, img_type=2, **mods):
+    def segmentation_pipeline(self, img_type=2, **name_maps):
         pipeline = self.pipeline(
             name='FAST_segmentation',
-            modifications=mods,
+            name_maps=name_maps,
             inputs=[FilesetSpec('brain', nifti_gz_format)],
             outputs=[FilesetSpec('wm_seg', nifti_gz_format)],
             desc="White matter segmentation of the reference image",
@@ -693,7 +693,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preprocess_pipeline(self, **mods):
+    def preprocess_pipeline(self, **name_maps):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -709,7 +709,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         """
         pipeline = self.pipeline(
             name='preprocess_pipeline',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
             references=[fsl_cite])
@@ -751,7 +751,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def header_extraction_pipeline(self, **mods):
+    def header_extraction_pipeline(self, **name_maps):
         if self.input_provided('header_image'):
             dcm_in_name = 'header_image'
         else:
@@ -764,7 +764,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         pipeline = self.pipeline(
             name='header_extraction',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Pipeline to extract the most important scan "
                   "information from the image header"),
             references=[])
@@ -790,11 +790,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def motion_mat_pipeline(self, **mods):
+    def motion_mat_pipeline(self, **name_maps):
 
         pipeline = self.pipeline(
             name='motion_mat_calculation',
-            modifications=mods,
+            name_maps=name_maps,
             desc=("Motion matrices calculation"),
             references=[fsl_cite])
 
