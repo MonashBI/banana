@@ -51,9 +51,9 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
-                    'prepare_channels'),
+                    'preprocess_channels'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
-                    'prepare_channels'),
+                    'preprocess_channels'),
         FilesetSpec('coreg_matrix', text_matrix_format,
                     'linear_coregistration_pipeline'),
         FilesetSpec('preproc', nifti_gz_format, 'preprocess_pipeline',
@@ -114,6 +114,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('reorient_to_std', True),
+        ParameterSpec('force_channel_flip', None, dtype=str, array=True,
+                      desc=("Forcibly flip channel inputs during preprocess "
+                            "channels to correct issues with channel recon. "
+                            "The inputs are passed directly through to FSL's "
+                            "swapdims (see fsl.SwapDimensions interface)")),
         SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.5),
         SwitchSpec('bet_reduce_bias', False,
@@ -154,15 +159,16 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
-    def prepare_channels(self, **name_maps):
+    def preprocess_channels(self, **name_maps):
         pipeline = self.pipeline(
-            'prepare_channels',
+            'preprocess_channels',
             name_maps=name_maps,
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
 
         if (self.input_provided('header_image') or
-                self.branch('reorient_to_std')):
+                self.branch('reorient_to_std') or
+                self.parameter('force_channel_flip') is not None):
             # Read channel files reorient them into standard space and then
             # write back to directory
             list_channels = pipeline.add(
@@ -196,9 +202,21 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                         'in_file': reorient_in_file},
                     iterfield=['in_file'],
                     requirements=[fsl5_req])
-                copy_to_dir_in_files = (reorient, 'out_file')
+                force_flip_in_files = (reorient, 'out_file')
             else:
-                copy_to_dir_in_files = reorient_in_file
+                force_flip_in_files = reorient_in_file
+
+            if self.parameter('force_channel_flip') is not None:
+                force_flip = pipeline.add(
+                    'flip_dims',
+                    fsl.SwapDimensions(
+                        new_dims=tuple(self.parameter('force_channel_flip'))),
+                    connect={
+                        'in_file': force_flip_in_files},
+                    iterfield=['in_file'])
+                copy_to_dir_in_files = (force_flip, 'out_file')
+            else:
+                copy_to_dir_in_files = force_flip_in_files
 
             copy_to_dir = pipeline.add(
                 'copy_to_dir',
@@ -241,11 +259,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         if self.branch('linear_reg_method', 'flirt'):
             pipeline = self._flirt_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
-                'coreg_brain', 'coreg_matrix', mods)
+                'coreg_brain', 'coreg_matrix', name_maps)
         elif self.branch('linear_reg_method', 'ants'):
             pipeline = self._ants_linear_coreg_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',
-                'coreg_brain', 'coreg_matrix', mods)
+                'coreg_brain', 'coreg_matrix', name_maps)
         elif self.branch('linear_reg_method', 'spm'):
             raise NotImplementedError
         else:
@@ -257,7 +275,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
             'qform_transform', 'brain', 'coreg_ref_brain', 'qformed',
             'qform_mat', **name_maps)
 
-    def _flirt_pipeline(self, name, to_reg, ref, reg, matrix, mods):
+    def _flirt_pipeline(self, name, to_reg, ref, reg, matrix, name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
 
@@ -298,7 +316,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def _qform_transform_factory(self, name, to_reg, ref, qformed,
-                                 qformed_mat, mods):
+                                 qformed_mat, name_maps):
         pipeline = self.pipeline(
             name=name,
             name_maps=name_maps,
@@ -355,7 +373,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
-                                    mods):
+                                    name_maps):
         pipeline = self.pipeline(
             name=name,
             name_maps=name_maps,
@@ -379,9 +397,11 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
 
     def brain_extraction_pipeline(self, in_file='preproc', **name_maps):
         if self.branch('bet_method', 'fsl_bet'):
-            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file, **name_maps)
+            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file,
+                                                               **name_maps)
         elif self.branch('bet_method', 'optibet'):
-            pipeline = self._optiBET_brain_extraction_pipeline(in_file, **name_maps)
+            pipeline = self._optiBET_brain_extraction_pipeline(in_file,
+                                                               **name_maps)
         else:
             self.unhandled_branch('bet_method')
         return pipeline

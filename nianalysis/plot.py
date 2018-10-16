@@ -120,7 +120,7 @@ class ImageDisplayMixin():
                 plt.imshow(img)
         plt.tight_layout(0.0)
 
-    def save_or_show(self, path=None, subj_id=None, visit_id=None):
+    def show(self, path=None, subj_id=None, visit_id=None):
         """
         Save current figure to file or show it
         """

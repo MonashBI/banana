@@ -51,9 +51,9 @@ class CoilEchoFilter():
 class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        # Set the magnitude to be generated from the prepare_channels
+        # Set the magnitude to be generated from the preprocess_channels
         # pipeline
-        FilesetSpec('magnitude', nifti_gz_format, 'prepare_channels',
+        FilesetSpec('magnitude', nifti_gz_format, 'preprocess_channels',
                     desc=("Generated from separate channel signals, "
                           "provided to 'channels'.")),
         # QSM and phase processing
@@ -94,8 +94,8 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.1),
         ParameterSpec('bet_g_threshold', 0.0)]
 
-    def prepare_channels(self, **name_maps):
-        pipeline = super().prepare_channels(**name_maps)
+    def preprocess_channels(self, **name_maps):
+        pipeline = super().preprocess_channels(**name_maps)
         # Connect combined first echo output to the magnitude data spec
         pipeline.connect_output('magnitude', pipeline.node('to_polar'),
                                 'first_echo', nifti_gz_format)
@@ -252,7 +252,8 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
                 connect={
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
-                    'te': (first_echo_time, 'out')})
+                    'te': (first_echo_time, 'out')},
+                wall_time=45)  # FIXME: Should be dependent on number of coils
 
             # Combine channel QSM by taking the median coil value
             pipeline.add(
