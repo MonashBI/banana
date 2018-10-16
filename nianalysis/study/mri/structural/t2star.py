@@ -1,4 +1,3 @@
-import os.path as op
 import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass

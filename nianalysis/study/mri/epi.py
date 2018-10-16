@@ -2,7 +2,7 @@ from .base import MRIStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
-from arcana.data import FilesetSpec, FieldSpec
+from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
 from nianalysis.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     par_format, motion_mats_format)
@@ -19,14 +19,21 @@ from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
 
 
+from .base import STD_IMAGE_FORMATS
+
+
 class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('coreg_ref_preproc', nifti_gz_format, optional=True),
-        FilesetSpec('coreg_ref_wmseg', nifti_gz_format, optional=True),
-        FilesetSpec('reverse_phase', nifti_gz_format, optional=True),
-        FilesetSpec('field_map_mag', nifti_gz_format, optional=True),
-        FilesetSpec('field_map_phase', nifti_gz_format, optional=True),
+        AcquiredFilesetSpec('coreg_ref_preproc', STD_IMAGE_FORMATS,
+                            optional=True),
+        AcquiredFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
+                            optional=True),
+        AcquiredFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
+        AcquiredFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
+                            optional=True),
+        AcquiredFilesetSpec('field_map_phase', STD_IMAGE_FORMATS,
+                            optional=True),
         FilesetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
         FilesetSpec('align_mats', directory_format,

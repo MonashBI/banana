@@ -171,7 +171,7 @@ class MRIStudy(Study, metaclass=StudyMetaClass):
                 inputs={
                     'directory': ('channels', multi_nifti_gz_format)})
 
-            if self.input_provided('header_image') and False:  # FIXME: either remove this step or this False statement
+            if self.input_provided('header_image'):
                 # If header image is provided stomp its geometry over the
                 # acquired channels
                 copy_geom = pipeline.add(
