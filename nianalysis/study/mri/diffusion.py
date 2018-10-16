@@ -24,13 +24,13 @@ from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 # from arcana.interfaces.iterators import SelectSession
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.study.mri.epi import EPIStudy
+from nianalysis.study.mri.epi import EpiStudy
 from nipype.interfaces import fsl
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 
 
-class DiffusionStudy(EPIStudy, metaclass=StudyMetaClass):
+class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),

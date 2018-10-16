@@ -1,4 +1,4 @@
-from ..base import MRIStudy
+from ..base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
@@ -26,7 +26,7 @@ from nianalysis.interfaces.custom.motion_correction import (
 from arcana.parameter import ParameterSpec, SwitchSpec
 
 
-class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
+class UTEStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('umap', dicom_format),
@@ -59,7 +59,7 @@ class UTEStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('bet_method', 'optibet',
-                   choices=MRIStudy.parameter_spec('bet_method').choices)]
+                   choices=MriStudy.parameter_spec('bet_method').choices)]
 
     template_path = '/home/jakubb/template/template_template0.nii.gz'
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'

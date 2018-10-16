@@ -32,7 +32,7 @@ from nianalysis.atlas import FslAtlas
 logger = logging.getLogger('arcana')
 
 
-class MRIStudy(Study, metaclass=StudyMetaClass):
+class MriStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('magnitude', STD_IMAGE_FORMATS,

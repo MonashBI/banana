@@ -17,9 +17,9 @@ import os
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.parameter import ParameterSpec
-from nianalysis.study.mri.epi import EPIStudy
+from nianalysis.study.mri.epi import EpiStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.study.mri.structural.t1 import T1Study
+from nianalysis.study.mri.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from arcana.data import FilesetSelector
@@ -41,7 +41,7 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class FunctionalMRIStudy(EPIStudy, metaclass=StudyMetaClass):
+class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('train_data', rfile_format, optional=True,
@@ -579,7 +579,7 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
                         't1_preproc': 'coreg_ref_preproc',
                         'train_data': 'train_data'})
 
-    study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMRIStudy,
+    study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMriStudy,
                                     epi_refspec)
                        for i in range(epi_number))
 

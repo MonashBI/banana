@@ -12,7 +12,7 @@ from nianalysis.file_format import (
 from nianalysis.interfaces.custom.vein_analysis import (
     CompositeVeinImage, ShMRF)
 from arcana.interfaces import utils
-from ..base import MRIStudy
+from .base import MriStudy
 from nipype.interfaces import fsl, ants
 from arcana.interfaces.utils import ListDir
 from nianalysis.interfaces.sti import (
@@ -48,7 +48,7 @@ class CoilEchoFilter():
         return include
 
 
-class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
+class T2StarStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         # Set the magnitude to be generated from the preprocess_channels
@@ -86,9 +86,9 @@ class T2StarStudy(MRIStudy, metaclass=StudyMetaClass):
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
         SwitchSpec('linear_reg_method', 'ants',
-                   MRIStudy.parameter_spec('linear_reg_method').choices),
+                   MriStudy.parameter_spec('linear_reg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
-                   choices=MRIStudy.parameter_spec('bet_method').choices),
+                   choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', False),
         ParameterSpec('bet_f_threshold', 0.1),

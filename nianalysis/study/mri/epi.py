@@ -1,4 +1,4 @@
-from .base import MRIStudy
+from .base import MriStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
@@ -22,7 +22,7 @@ from nipype.interfaces.fsl.preprocess import BET, FUGUE
 from .base import STD_IMAGE_FORMATS
 
 
-class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
+class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('coreg_ref_preproc', STD_IMAGE_FORMATS,

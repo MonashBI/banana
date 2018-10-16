@@ -10,13 +10,13 @@ from nianalysis.file_format import (
     STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.interfaces.utils import JoinPath
-from ..base import MRIStudy
+from ..base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.atlas import LocalAtlas
 
 
-class T1Study(MRIStudy, metaclass=StudyMetaClass):
+class T1Study(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('fs_recon_all', freesurfer_recon_all_format,
@@ -33,13 +33,13 @@ class T1Study(MRIStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',
-                   choices=MRIStudy.parameter_spec('bet_method').choices),
+                   choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
         ParameterSpec('bet_f_threshold', 0.1),
         ParameterSpec('bet_g_threshold', 0.0)]
 #         SwitchSpec('bet_method', 'optibet',
-#                    choices=MRIStudy.parameter_spec('bet_method').choices),
+#                    choices=MriStudy.parameter_spec('bet_method').choices),
 #         SwitchSpec('bet_robust', True),
 #         ParameterSpec('bet_f_threshold', 0.57),
 #         ParameterSpec('bet_g_threshold', -0.1)]

@@ -3,7 +3,7 @@ from nipype import config
 config.enable_debug_mode()
 from arcana.data import FilesetSelector  # @IgnorePep8
 from nianalysis.file_format import nifti_gz_format  # @IgnorePep8
-from nianalysis.study.mri.base import MRIStudy  # @IgnorePep8
+from nianalysis.study.mri.base import MriStudy  # @IgnorePep8
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from arcana.study import (  # @IgnorePep8
     MultiStudy, MultiStudyMetaClass, SubStudySpec)
@@ -12,8 +12,8 @@ from arcana.study import (  # @IgnorePep8
 class TestCoregStudy(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_sub_study_specs = [
-        SubStudySpec('ref', MRIStudy),
-        SubStudySpec('tocoreg', MRIStudy,
+        SubStudySpec('ref', MriStudy),
+        SubStudySpec('tocoreg', MriStudy,
                      {'ref_brain': 'coreg_ref'})]
 
 
