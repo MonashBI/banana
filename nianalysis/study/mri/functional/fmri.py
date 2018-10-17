@@ -16,7 +16,7 @@ from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.study.mri.epi import EpiStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nianalysis.study.mri.t1 import T1Study
@@ -28,7 +28,6 @@ from nianalysis.interfaces.custom.fmri import PrepareFIX
 from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exception import ArcanaNameError
-from arcana.interfaces.utils import CopyToDir
 
 logger = logging.getLogger('nianalysis')
 
@@ -72,7 +71,8 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
                                               'MNI152_T1_2mm.nii.gz')),
         ParameterSpec('MNI_template_mask', op.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        ParameterSpec('linear_reg_method', 'ants'),
+        SwitchSpec('linear_reg_method', 'ants',
+                   ('flirt', 'spm', 'ants', 'epireg')),
         ParameterSpec('group_ica_components', 15)]
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
@@ -221,6 +221,33 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect_output('fix_dir', prep_fix, 'fix_dir')
         pipeline.connect_output('hand_label_noise', prep_fix,
                                 'hand_label_file')
+
+        return pipeline
+    
+     def fix_classification_pipeline(self, **kwargs):
+
+        pipeline = self.create_pipeline(
+            name='fix_classification',
+            inputs=[DatasetSpec('train_data', rfile_format,
+                                frequency='per_project'),
+                    DatasetSpec('fix_dir', directory_format)],
+            outputs=[DatasetSpec('labelled_components', text_format)],
+            desc=("Automatic classification of noisy components from the "
+                  "rsfMRI data using fsl FIX."),
+            version=1,
+            citations=[fsl_cite],
+            **kwargs)
+
+        fix = pipeline.create_node(FSLFIX(), name="fix", wall_time=30,
+                                   requirements=[fsl509_req, fix_req])
+        pipeline.connect_input("fix_dir", fix, "feat_dir")
+        pipeline.connect_input("train_data", fix, "train_data")
+        fix.inputs.component_threshold = self.parameter(
+            'component_threshold')
+        fix.inputs.motion_reg = self.parameter('motion_reg')
+        fix.inputs.classification = True
+
+        pipeline.connect_output('labelled_components', fix, 'label_file')
 
         return pipeline
 
@@ -546,8 +573,8 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
 
-def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
-                            fm_phase=None, run_regression=False):
+def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
+                            fm_mag=None, fm_phase=None, run_regression=False):
 
     inputs = []
     dct = {}
@@ -578,6 +605,16 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref_preproc',
                         'train_data': 'train_data'})
+    study_specs.append(SubStudySpec('epi_0', FunctionalMRIStudy, epi_refspec))
+    if epi_number > 1:
+        epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
+                            't1_preproc': 'coreg_ref_preproc',
+                            'train_data': 'train_data',
+                            'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
+                            'epi_0_coreg_to_atlas_mat': 'coreg_to_atlas_mat'})
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMRIStudy,
+                                        epi_refspec)
+                           for i in range(1, epi_number))
 
     study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMriStudy,
                                     epi_refspec)
@@ -590,6 +627,8 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
+        parameter_specs.append(
+            ParameterSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
         inputs.extend(FilesetSelector(
@@ -613,4 +652,5 @@ def create_fmri_study_class(name, t1, epis, epi_number, fm_mag=None,
     dct['add_data_specs'] = data_specs
     dct['add_param_specs'] = parameter_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    return MultiStudyMetaClass(name, (FunctionalMRIMixin,), dct), inputs, output_files
+    return (MultiStudyMetaClass(name, (FunctionalMRIMixin,), dct), inputs,
+            output_files)

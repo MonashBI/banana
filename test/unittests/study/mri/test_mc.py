@@ -3,7 +3,7 @@ config.enable_debug_mode()
 from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 # from nianalysis.study.multimodal.test_motion_detection import (  # @IgnorePep8 @Reimport
 #     MotionDetection, inputs)
-from mc_pipeline.generate_mc_pipeline import create_motion_correction_class  # @IgnorePep8 @Reimport
+from nianalysis.study.multimodal.mrpet import create_motion_correction_class  # @IgnorePep8 @Reimport
 
 
 ref = 'ref'

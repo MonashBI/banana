@@ -5,7 +5,7 @@ from nianalysis.file_format import (
 from nianalysis.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, CreateMocoSeries, FixedBinning,
-    UmapAlign2Reference)
+    UmapAlign2Reference, ReorientUmap)
 from nianalysis.citation import fsl_cite
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
@@ -22,7 +22,7 @@ from nianalysis.study.pet.base import PETStudy
 from nianalysis.interfaces.custom.pet import (
     CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
     PETFovCropping)
-from arcana.option import OptionSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 import os
 from nianalysis.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
@@ -43,12 +43,12 @@ logger.addHandler(handler)
 logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 reference_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../',
+    os.path.join(os.path.dirname(__file__), '../../',
                  'reference_data'))
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), '../',
-                 'templates'))
+    os.path.join(os.path.dirname(__file__).split('nianalysis')[0],
+                 'nianalysis', 'nianalysis', 'templates'))
 
 
 class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
@@ -99,6 +99,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     'motion_framing_pipeline'),
         FilesetSpec('mean_displacement_plot', png_format,
                     'plot_mean_displacement_pipeline'),
+        DatasetSpec('rotation_plot', png_format,
+                    'plot_mean_displacement_pipeline'),
+        DatasetSpec('translation_plot', png_format,
+                    'plot_mean_displacement_pipeline'),
         FilesetSpec('average_mats', directory_format,
                     'frame_mean_transformation_mats_pipeline'),
         FilesetSpec('correction_factors', text_format,
@@ -120,27 +124,28 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         FieldSpec('pet_start_time', dtype=str,
                   pipeline_name='pet_header_extraction_pipeline')]
 
-    add_option_specs = [OptionSpec('framing_th', 2.0),
-                        OptionSpec('framing_temporal_th', 30.0),
-                        OptionSpec('framing_duration', 0),
-                        OptionSpec('md_framing', True),
-                        OptionSpec('align_pct', False),
-                        OptionSpec('align_fixed_binning', False),
-                        OptionSpec('moco_template', os.path.join(
-                            reference_path, 'moco_template.IMA')),
-                        OptionSpec('PET_template_MNI', os.path.join(
-                            template_path, 'PET_template_MNI.nii.gz')),
-                        OptionSpec('fixed_binning_n_frames', 0),
-                        OptionSpec('pet_offset', 0),
-                        OptionSpec('fixed_binning_bin_len', 60),
-                        OptionSpec('crop_xmin', 100),
-                        OptionSpec('crop_xsize', 130),
-                        OptionSpec('crop_ymin', 100),
-                        OptionSpec('crop_ysize', 130),
-                        OptionSpec('crop_zmin', 20),
-                        OptionSpec('crop_zsize', 100),
-                        OptionSpec('PET2MNI_reg', False),
-                        OptionSpec('dynamic_pet_mc', False)]
+    add_parameter_specs = [
+        ParameterSpec('framing_th', 2.0),
+        ParameterSpec('framing_temporal_th', 30.0),
+        ParameterSpec('framing_duration', 0),
+        ParameterSpec('md_framing', True),
+        ParameterSpec('align_pct', False),
+        ParameterSpec('align_fixed_binning', False),
+        ParameterSpec('moco_template', os.path.join(
+            reference_path, 'moco_template.IMA')),
+        ParameterSpec('PET_template_MNI', os.path.join(
+            template_path, 'PET_template_MNI.nii.gz')),
+        ParameterSpec('fixed_binning_n_frames', 0),
+        ParameterSpec('pet_offset', 0),
+        ParameterSpec('fixed_binning_bin_len', 60),
+        ParameterSpec('crop_xmin', 100),
+        ParameterSpec('crop_xsize', 130),
+        ParameterSpec('crop_ymin', 100),
+        ParameterSpec('crop_ysize', 130),
+        ParameterSpec('crop_zmin', 20),
+        ParameterSpec('crop_zsize', 100),
+        ParameterSpec('PET2MNI_reg', False),
+        ParameterSpec('dynamic_pet_mc', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
         inputs = [FilesetSpec('ref_brain', nifti_gz_format)]
@@ -290,8 +295,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                                'false_indexes')
         pipeline.connect_input('frame_start_times', plot_md,
                                'frame_start_times')
+        pipeline.connect_input('motion_par_rc', plot_md,
+                               'motion_par_rc')
         pipeline.connect_output('mean_displacement_plot', plot_md,
                                 'mean_disp_plot')
+        pipeline.connect_output('rotation_plot', plot_md,
+                                'rot_plot')
+        pipeline.connect_output('translation_plot', plot_md,
+                                'trans_plot')
         return pipeline
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
@@ -378,6 +389,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             **kwargs)
 
         list_niftis = pipeline.create_node(ListDir(), name='list_niftis')
+        reorient_niftis = pipeline.create_node(
+            ReorientUmap(), name='reorient_niftis', requirements=[mrtrix3_req])
+
         nii2dicom = pipeline.create_map_node(
             Nii2Dicom(), name='nii2dicom',
             iterfield=['in_file'], wall_time=20)
@@ -387,12 +401,15 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         copy2dir = pipeline.create_node(CopyToDir(), name='copy2dir')
         copy2dir.inputs.extension = 'Frame'
         # Connect nodes
-        pipeline.connect(list_niftis, 'files', nii2dicom, 'in_file')
+        pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
+        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom,
+                         'in_file')
         pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
         pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
         # Connect inputs
         pipeline.connect_input('umaps_align2ref', list_niftis, 'directory')
         pipeline.connect_input('umap', list_dicoms, 'directory')
+        pipeline.connect_input('umap', reorient_niftis, 'umap')
         # Connect outputs
         pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
 
@@ -408,18 +425,16 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             inputs.append(FilesetSpec('umap', nifti_gz_format))
             outputs.append(FilesetSpec('umaps_align2ref', directory_format))
         pipeline = self.pipeline(
-            name='static_frame2ref_alignment',
+            name='umap_realignment',
             inputs=inputs,
             outputs=outputs,
-            desc=("Pipeline to create an affine mat to align each "
-                  "detected frame to the reference. If umap is provided"
-                  ", it will be also aligned to match the head position"
-                  " in each frame and improve the static PET image "
-                  "quality."),
+            desc=("Pipeline to align the original umap (if provided)"
+                  "to match the head position in each frame and improve the "
+                  "static PET image quality."),
             citations=[fsl_cite],
             **kwargs)
         frame_align = pipeline.create_node(
-            UmapAlign2Reference(), name='static_frame2ref_alignment',
+            UmapAlign2Reference(), name='umap2ref_alignment',
             requirements=[fsl509_req])
         frame_align.inputs.pct = self.parameter('align_pct')
         pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
@@ -434,7 +449,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
     def create_moco_series_pipeline(self, **kwargs):
-
+        """This pipeline is probably wrong as we still do not know how to
+        import back the new moco series into the scanner. This was just a first
+        attempt.
+        """
         pipeline = self.pipeline(
             name='create_moco_series',
             inputs=[FilesetSpec('start_times', text_format),
@@ -498,7 +516,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         inputs = [FilesetSpec('pet_data_prepared', directory_format),
                   FilesetSpec('ref_brain', nifti_gz_format),
                   FilesetSpec('mean_displacement_plot', png_format)]
-        if self.option_spec('dynamic_pet_mc').value:
+        if self.parameter_spec('dynamic_pet_mc').value:
             inputs.append(FilesetSpec('fixed_binning_mats', directory_format))
             outputs = [FilesetSpec('dynamic_motion_correction_results',
                                    directory_format)]
@@ -701,7 +719,8 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    option_specs = [OptionSpec('ref_preproc_resolution', [1])]
+    parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
+    switch_specs = []
     if struct2align is not None:
         struct_image = struct2align.split('/')[-1].split('.')[0]
 
@@ -716,7 +735,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 FilesetSelector('struct2align', nifti_gz_format, struct_image))
     if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
         output_data = 'dynamic_motion_correction_results'
-        option_specs.append(OptionSpec('dynamic_pet_mc', True))
+        parameter_specs.append(ParameterSpec('dynamic_pet_mc', True))
         if struct2align is not None:
             inputs.append(
                 FilesetSelector('struct2align', nifti_gz_format, struct_image))
@@ -814,9 +833,9 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         dwi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                            'ref_preproc': 'coreg_ref_preproc'})
         if dmris_main:
-            option_specs.extend(
-                OptionSpec('dwi_{}_brain_extract_method'.format(i), 'fsl')
-                for i in range(len(dmris_main)))
+            switch_specs.extend(
+                SwitchSpec('dwi_{}_brain_extract_method'.format(i), 'fsl',
+                           ('mrtrix', 'fsl')) for i in range(len(dmris_main)))
         if dmris_main and not dmris_opposite:
             logger.warning(
                 'No opposite phase encoding direction b0 provided. DWI '
@@ -900,7 +919,8 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    dct['add_option_specs'] = option_specs
+    dct['add_parameter_specs'] = parameter_specs
+    dct['add_switch_specs'] = switch_specs
     return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
             output_data)
 
@@ -913,7 +933,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    option_specs = [OptionSpec('ref_preproc_resolution', [1])]
+    parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
         inputs.append(FilesetSelector('pet_data_dir', directory_format,
@@ -1053,5 +1073,5 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_sub_study_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    dct['add_option_specs'] = option_specs
+    dct['add_param_specs'] = parameter_specs
     return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs

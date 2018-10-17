@@ -154,8 +154,8 @@ motion_mats_format = FileFormat(
 
 # General image formats
 gif_format = FileFormat(name='gif', extension='.gif')
-png_format = FileFormat(name='portable-network-graphics',
-                        extension='.png')
+png_format = FileFormat(name='png', extension='.png')
+jpg_format = FileFormat(name='jpg', extension='.jpg')
 
 # PET formats
 list_mode_format = FileFormat(name='pet_list_mode', extension='.bf')

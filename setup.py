@@ -23,7 +23,7 @@ setup(
         'A collection of "Arcana" (http://arcana.readthedocs.io) Study '
         'classes implementing NeuroImaging analysis workflows'),
     long_description=open('README.rst').read(),
-    install_requires=['arcana>=0.2.3',
+    install_requires=['arcana>=0.2.4',
                       'pydicom>=1.0'],
     classifiers=[
         "Development Status :: 4 - Beta",

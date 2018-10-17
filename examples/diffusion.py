@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os.path as op
-from arcana import DatasetMatch, XnatRepository, SlurmRunner
+from arcana import FilesetSelector, XnatRepository, SlurmProcessor
 from nianalysis.study.mri.structural.diffusion import DiffusionStudy
 from nianalysis.file_format import dicom_format
 
@@ -11,12 +11,13 @@ study = DiffusionStudy(
         project_id='MRH017',
         server='https://mbi-xnat.erc.monash.edu.au',
         cache_dir=op.expanduser('~/cache')),
-    runner=SlurmRunner(work_dir=op.expanduser('~/work')),
-    inputs={'primary': DatasetMatch('R-L ep2d_diff.*', dicom_format, is_regex=True),
-            'reverse_phase': DatasetMatch('L-R ep2d_diff.*', dicom_format, is_regex=True)},
-    parameters={'num_wb_tracks': 1e8},
-    switches={'toolchain': 'mrtrix'})
+    processor=SlurmProcessor(work_dir=op.expanduser('~/work')),
+    inputs={'primary': FilesetSelector('R-L ep2d_diff.*', dicom_format, is_regex=True),
+            'reverse_phase': FilesetSelector('L-R ep2d_diff.*', dicom_format, is_regex=True)},
+    parameters={'num_wb_tracks': 1e8, 'toolchain': 'mrtrix'})
 
 # Generate whole brain tracks and return path to cached dataset
-wb_tracks = study.data('whole_brain_tracks')
-print("Whole brain tracks are available at '{}'".format(wb_tracks.path))
+wb_tcks = study.data('whole_brain_tracks')
+for sess_tcks in wb_tcks:
+    print("Performed whole-brain tractography for {}:{} session, the results are stored at '{}'"
+          .format(sess_tcks.subject_id, sess_tcks.visit_id, sess_tracks.path))

@@ -375,6 +375,7 @@ class MRCalcInputSpec(CommandLineInputSpec):
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
+    out_ext = traits.Str(desc='Extention of the output file.')
 
     operation = traits.Enum(
         'abs', 'neg', 'sqrt', 'exp', 'log', 'log10', 'cos', 'sin', 'tan',
@@ -418,8 +419,11 @@ class MRCalc(CommandLine):
         if isdefined(self.inputs.out_file):
             filename = self.inputs.out_file
         else:
-            _, ext = split_extension(
-                os.path.basename(self.inputs.operands[0]))
+            if isdefined(self.inputs.out_ext):
+                ext = self.inputs.out_ext
+            else:
+                _, ext = split_extension(
+                    os.path.basename(self.inputs.operands[0]))
             filename = os.getcwd()
             for op in self.inputs.operands:
                 try:
@@ -435,6 +439,9 @@ class ExtractFSLGradientsInputSpec(CommandLineInputSpec):
     in_file = traits.Either(
         File, Directory, exists=True, argstr='%s', mandatory=True, position=0,
         desc="Diffusion weighted images with graident info")
+    out_file = traits.File(
+        'out.mif', usedefault=True, argstr='%s', position=-1,
+        desc="Dummy output file, which isn't used.")
     bvecs_file = File(genfile=True, argstr='-export_grad_fsl %s', position=1,
                       desc=("Extracted gradient encoding directions in FSL "
                             "format"))
@@ -454,7 +461,7 @@ class ExtractFSLGradients(CommandLine):
     """
     Extracts the gradient information in MRtrix format from a DWI image
     """
-    _cmd = 'mrinfo'
+    _cmd = 'mrconvert'
     input_spec = ExtractFSLGradientsInputSpec
     output_spec = ExtractFSLGradientsOutputSpec
 

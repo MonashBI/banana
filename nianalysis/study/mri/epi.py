@@ -1,75 +1,72 @@
-from ..base import MriStudy
+from .base import MRIStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
-from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
+from arcana.dataset import DatasetSpec, FieldSpec
 from nianalysis.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
-    par_format, motion_mats_format)
+    par_format, motion_mats_format, dicom_format)
 from nianalysis.citation import fsl_cite
 from nipype.interfaces import fsl
 from nianalysis.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
 from nianalysis.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
-from arcana.parameter import ParameterSpec
+from arcana.parameter import ParameterSpec, SwitchSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
+from nianalysis.interfaces.custom.fmri import FieldMapTimeInfo
 
 
-from nianalysis.file_format import STD_IMAGE_FORMATS
-
-
-class EpiStudy(MriStudy, metaclass=StudyMetaClass):
+class EPIStudy(MRIStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('coreg_ref_preproc', STD_IMAGE_FORMATS,
-                            optional=True),
-        AcquiredFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
-                            optional=True),
-        AcquiredFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
-        AcquiredFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
-                            optional=True),
-        AcquiredFilesetSpec('field_map_phase', STD_IMAGE_FORMATS,
-                            optional=True),
-        FilesetSpec('moco', nifti_gz_format,
+        DatasetSpec('coreg_ref_preproc', nifti_gz_format, optional=True),
+        DatasetSpec('coreg_ref_wmseg', nifti_gz_format, optional=True),
+        DatasetSpec('reverse_phase', nifti_gz_format, optional=True),
+        DatasetSpec('field_map_mag', nifti_gz_format, optional=True),
+        DatasetSpec('field_map_phase', nifti_gz_format, optional=True),
+        DatasetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
-        FilesetSpec('align_mats', directory_format,
+        DatasetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
-        FilesetSpec('moco_par', par_format,
+        DatasetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline'),
         FieldSpec('field_map_delta_te', float,
                   'field_map_time_info_pipeline')]
 
-    add_param_specs = [
+    add_parameter_specs = [
         ParameterSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('fugue_echo_spacing', 0.000275),
-        ParameterSpec('linear_reg_method', 'epireg')]
+        ParameterSpec('fugue_echo_spacing', 0.000275)]
+
+    add_switch_specs = [
+        SwitchSpec('linear_reg_method', 'epireg',
+                   choices=('flirt', 'spm', 'ants', 'epireg'))]
 
     def linear_coregistration_pipeline(self, **kwargs):
         if self.branch('linear_reg_method', 'epireg'):
             return self._epireg_linear_coregistration_pipeline(**kwargs)
         else:
-            return super(EpiStudy, self).linear_coregistration_pipeline(
+            return super(EPIStudy, self).linear_coregistration_pipeline(
                 **kwargs)
 
     def _epireg_linear_coregistration_pipeline(self, **kwargs):
 
-            # inputs=[FilesetSpec('brain', nifti_gz_format),
-            #         FilesetSpec('coreg_ref_brain', nifti_gz_format),
-            #         FilesetSpec('coreg_ref_preproc', nifti_gz_format),
-            #         FilesetSpec('coreg_ref_wmseg', nifti_gz_format)],
-            # outputs=[FilesetSpec('coreg_brain', nifti_gz_format),
-            #          FilesetSpec('coreg_matrix', text_matrix_format)],
-
-        pipeline = self.pipeline(
+        pipeline = self.create_pipeline(
             name='linear_coreg',
+            inputs=[DatasetSpec('brain', nifti_gz_format),
+                    DatasetSpec('coreg_ref_brain', nifti_gz_format),
+                    DatasetSpec('coreg_ref_preproc', nifti_gz_format),
+                    DatasetSpec('coreg_ref_wmseg', nifti_gz_format)],
+            outputs=[DatasetSpec('coreg_brain', nifti_gz_format),
+                     DatasetSpec('coreg_matrix', text_matrix_format)],
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
+            version=1,
             citations=[fsl_cite],
             **kwargs)
         epireg = pipeline.create_node(fsl.epi.EpiReg(), name='epireg',
@@ -87,18 +84,18 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def intrascan_alignment_pipeline(self, **kwargs):
 
-         # inputs=[FilesetSpec('preproc', nifti_gz_format)],
-         #   outputs=[FilesetSpec('moco', nifti_gz_format),
-         #            FilesetSpec('align_mats', directory_format),
-         #            FilesetSpec('moco_par', par_format)],
-
-        pipeline = self.pipeline(
+        pipeline = self.create_pipeline(
             name='MCFLIRT_pipeline',
+            inputs=[DatasetSpec('preproc', nifti_gz_format)],
+            outputs=[DatasetSpec('moco', nifti_gz_format),
+                     DatasetSpec('align_mats', directory_format),
+                     DatasetSpec('moco_par', par_format)],
             desc=("Intra-epi volumes alignment."),
+            version=1,
             citations=[fsl_cite],
             **kwargs)
-        mcflirt = pipeline.add('mcflirt', fsl.MCFLIRT(),
-                               requirements=[fsl509_req])
+        mcflirt = pipeline.create_node(fsl.MCFLIRT(), name='mcflirt',
+                                       requirements=[fsl509_req])
         mcflirt.inputs.ref_vol = 0
         mcflirt.inputs.save_mats = True
         mcflirt.inputs.save_plots = True
@@ -108,7 +105,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.connect_output('moco', mcflirt, 'out_file')
         pipeline.connect_output('moco_par', mcflirt, 'par_file')
 
-        merge = pipeline.add('merge', MergeListMotionMat())
+        merge = pipeline.create_node(MergeListMotionMat(), name='merge')
         pipeline.connect(mcflirt, 'mat_file', merge, 'file_list')
         pipeline.connect_output('align_mats', merge, 'out_dir')
 
@@ -133,7 +130,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preprocess_pipeline(self, **kwargs):
+    def preproc_pipeline(self, **kwargs):
 
         if ('field_map_phase' in self.input_names and
                 'field_map_mag' in self.input_names):
@@ -141,27 +138,26 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         elif 'reverse_phase' in self.input_names:
             return self._topup_pipeline(**kwargs)
         else:
-            return super(EpiStudy, self).preprocess_pipeline(**kwargs)
+            return super(EPIStudy, self).preproc_pipeline(**kwargs)
 
     def _topup_pipeline(self, **kwargs):
 
-#            inputs=[FilesetSpec('magnitude', nifti_gz_format),
-#                    FilesetSpec('reverse_phase', nifti_gz_format),
-#                    FieldSpec('ped', str),
-#                    FieldSpec('pe_angle', str)],
-#            outputs=[FilesetSpec('preproc', nifti_gz_format)],
-
-
-        pipeline = self.pipeline(
-            name='preprocess_pipeline',
+        pipeline = self.create_pipeline(
+            name='preproc_pipeline',
+            inputs=[DatasetSpec('primary', nifti_gz_format),
+                    DatasetSpec('reverse_phase', nifti_gz_format),
+                    FieldSpec('ped', str),
+                    FieldSpec('pe_angle', str)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Topup distortion correction pipeline"),
+            version=1,
             citations=[fsl_cite],
             **kwargs)
 
         reorient_epi_in = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_epi_in',
             requirements=[fsl509_req])
-        pipeline.connect_input('magnitude', reorient_epi_in, 'in_file')
+        pipeline.connect_input('primary', reorient_epi_in, 'in_file')
 
         reorient_epi_opposite = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_epi_opposite',
@@ -209,22 +205,22 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def _fugue_pipeline(self, **kwargs):
 
-#            inputs=[FilesetSpec('magnitude', nifti_gz_format),
-#                    FilesetSpec('field_map_mag', nifti_gz_format),
-#                    FilesetSpec('field_map_phase', nifti_gz_format)],
-#            outputs=[FilesetSpec('preproc', nifti_gz_format)],
-
-
-        pipeline = self.pipeline(
-            name='preprocess_pipeline',
+        pipeline = self.create_pipeline(
+            name='preproc_pipeline',
+            inputs=[DatasetSpec('primary', nifti_gz_format),
+                    DatasetSpec('field_map_mag', nifti_gz_format),
+                    DatasetSpec('field_map_phase', nifti_gz_format),
+                    FieldSpec('field_map_delta_te', float)],
+            outputs=[DatasetSpec('preproc', nifti_gz_format)],
             desc=("Fugue distortion correction pipeline"),
-            references=[fsl_cite],
+            version=1,
+            citations=[fsl_cite],
             **kwargs)
 
         reorient_epi_in = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_epi_in',
             requirements=[fsl509_req])
-        pipeline.connect_input('magnitude', reorient_epi_in, 'in_file')
+        pipeline.connect_input('primary', reorient_epi_in, 'in_file')
         fm_mag_reorient = pipeline.create_node(
             fsl.utils.Reorient2Std(), name='reorient_fm_mag',
             requirements=[fsl509_req])
@@ -261,16 +257,16 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def motion_mat_pipeline(self, **kwargs):
 
-#        inputs = [FilesetSpec('coreg_matrix', text_matrix_format),
-#                  FilesetSpec('qform_mat', text_matrix_format)]
-#            inputs=inputs,
-#            outputs=[FilesetSpec('motion_mats', motion_mats_format)],
-        
-#        if 'reverse_phase' not in self.input_names:
-#            inputs.append(FilesetSpec('align_mats', directory_format))
-        pipeline = self.pipeline(
+        inputs = [DatasetSpec('coreg_matrix', text_matrix_format),
+                  DatasetSpec('qform_mat', text_matrix_format)]
+        if 'reverse_phase' not in self.input_names:
+            inputs.append(DatasetSpec('align_mats', directory_format))
+        pipeline = self.create_pipeline(
             name='motion_mat_calculation',
+            inputs=inputs,
+            outputs=[DatasetSpec('motion_mats', motion_mats_format)],
             desc=("Motion matrices calculation"),
+            version=1,
             citations=[fsl_cite],
             **kwargs)
 

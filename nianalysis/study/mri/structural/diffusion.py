@@ -45,7 +45,9 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetSpec('csf_response', text_format, 'response_pipeline'),
         FilesetSpec('avg_response', text_format,
                     'average_response_pipeline'),
-        FilesetSpec('fod', mrtrix_format, 'fod_pipeline'),
+        DatasetSpec('wm_odf', mrtrix_format, 'fod_pipeline'),
+        DatasetSpec('gm_odf', mrtrix_format, 'fod_pipeline'),
+        DatasetSpec('csf_odf', mrtrix_format, 'fod_pipeline'),
         FilesetSpec('bias_correct', nifti_gz_format,
                     'bias_correct_pipeline'),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
@@ -90,11 +92,16 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
         ParameterSpec('global_tracks_cutoff', 0.05),
         SwitchSpec('preproc_denoise', False),
         SwitchSpec('response_algorithm', 'tax',
-                      ('tax', 'dhollander', 'msmt_5tt')),
+                   ('tax', 'dhollander', 'msmt_5tt')),
         SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd')),
         SwitchSpec('brain_extract_method', 'mrtrix',
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
+    
+    @property
+    def multi_tissue(self):
+        return self.branch('response_algorithm',
+                           ('msmt_5tt', 'dhollander'))    
 
     def preprocess_pipeline(self, **name_maps):  # @UnusedVariable @IgnorePep8
         """
@@ -513,7 +520,9 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('brain_mask', response, 'in_mask')
         # Connect to outputs
         pipeline.connect_output('wm_response', response, 'wm_file')
-        if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
+        if self.multi_tissue:
+            response.inputs.gm_file = 'gm.txt'
+            response.inputs.csf_file = 'csf.txt'
             pipeline.connect_output('gm_response', response, 'gm_file')
             pipeline.connect_output('csf_response', response, 'csf_file')
         # Check inputs/output are connected
@@ -596,7 +605,15 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('wm_response', dwi2fod, 'wm_txt')
         pipeline.connect_input('brain_mask', dwi2fod, 'mask_file')
         # Connect to outputs
-        pipeline.connect_output('fod', dwi2fod, 'wm_odf')
+        pipeline.connect_output('wm_odf', dwi2fod, 'wm_odf')
+        # If multi-tissue 
+        if self.multi_tissue:
+            pipeline.connect_input('gm_response', dwi2fod, 'gm_txt')
+            pipeline.connect_input('csf_response', dwi2fod, 'csf_txt')
+            dwi2fod.inputs.gm_odf = 'gm.mif'
+            dwi2fod.inputs.csf_odf = 'csf.mif'
+            pipeline.connect_output('gm_odf', dwi2fod, 'gm_odf')
+            pipeline.connect_output('csf_odf', dwi2fod, 'csf_odf')
         # Check inputs/output are connected
         return pipeline
 
