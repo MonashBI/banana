@@ -14,3 +14,5 @@ __pycache__
 /banana/atlases
 /banana/templates
 /.gitlab-ci.yml
+/build
+/dist

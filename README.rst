@@ -1,9 +1,9 @@
-NiAnalysis
-==========
+Banana
+======
 
-A collection of Arcana_ *Study* classes that implement various neuroimaging
-analysis workflows, which can be used to process datasets in XNAT or local
-(i.e. directory) repositories.
+Biomedical imAgiNg ANAlysis (Banana): a collection of biomedical imaging analysis workflows
+implemented in the Arcana_ framework, which can be used to analyse complete study
+datasets in XNAT, BIDS or plain-directory repositories.
 
 Dependencies
 -----------------
@@ -12,11 +12,12 @@ Core
 ~~~~
 
 * arcana
+* nibabel
 * pydicom
 
 Both of these are available on PyPI and can be installed with::
 
-    $ pip install -e <path-to-nianalysis-repo>
+    $ pip install banana
 
 
 Pipelines
@@ -35,4 +36,4 @@ format conversions so are typically required.
 * Freesurfer (https://surfer.nmr.mgh.harvard.edu)
 * AFNI (https://afni.nimh.nih.gov)
 
-.. _Arcana: http://github.com/monashbiomedicalimaging/arcana
+.. _Arcana: http://arcana.readthedocs.io
