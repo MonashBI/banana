@@ -1,5 +1,5 @@
 from arcana.study.base import StudyMetaClass
-from ..base import MriStudy
+from .base import MriStudy
 from arcana.parameter import ParameterSpec
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
@@ -12,7 +12,7 @@ from nianalysis.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format)
 from arcana.data import FilesetSpec
 from arcana.interfaces.utils import JoinPath
-from ..base import MriStudy
+from .base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.parameter import ParameterSpec
 

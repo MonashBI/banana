@@ -1,4 +1,4 @@
-from ..base import MriStudy
+from .base import MriStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)

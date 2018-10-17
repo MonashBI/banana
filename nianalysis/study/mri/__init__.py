@@ -1,3 +1,4 @@
+from .base import MriStudy
 from .diffusion import DiffusionStudy
 from .t1 import T1Study
 from .t2 import T2Study

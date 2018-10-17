@@ -1,4 +1,4 @@
-from ..base import MriStudy
+from .base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
