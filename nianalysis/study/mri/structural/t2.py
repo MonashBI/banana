@@ -1,5 +1,5 @@
 from arcana.study.base import StudyMetaClass
-from .base import MriStudy
+from ..base import MriStudy
 from arcana.parameter import ParameterSpec
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll

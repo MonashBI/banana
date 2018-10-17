@@ -10,7 +10,7 @@ from nianalysis.file_format import (
     STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.interfaces.utils import JoinPath
-from .base import MriStudy
+from ..base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.parameter import ParameterSpec, SwitchSpec
 from nianalysis.atlas import LocalAtlas

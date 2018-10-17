@@ -12,7 +12,7 @@ from nianalysis.file_format import (
 from nianalysis.interfaces.custom.vein_analysis import (
     CompositeVeinImage, ShMRF)
 from arcana.interfaces import utils
-from .base import MriStudy
+from ..base import MriStudy
 from nipype.interfaces import fsl, ants
 from arcana.interfaces.utils import ListDir
 from nianalysis.interfaces.sti import (

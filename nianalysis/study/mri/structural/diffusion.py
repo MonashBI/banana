@@ -24,7 +24,7 @@ from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 # from arcana.interfaces.iterators import SelectSession
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.study.mri.epi import EpiStudy
+from .epi import EpiStudy
 from nipype.interfaces import fsl
 from nianalysis.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
