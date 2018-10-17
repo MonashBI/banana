@@ -1,4 +1,4 @@
-from ..base import MriStudy
+from .base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
@@ -26,7 +26,7 @@ from nianalysis.interfaces.custom.motion_correction import (
 from arcana.parameter import ParameterSpec, SwitchSpec
 
 
-class UTEStudy(MriStudy, metaclass=StudyMetaClass):
+class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('umap', dicom_format),

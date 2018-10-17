@@ -177,6 +177,18 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 inputs={
                     'directory': ('channels', multi_nifti_gz_format)})
 
+            if self.parameter('force_channel_flip') is not None:
+                force_flip = pipeline.add(
+                    'flip_dims',
+                    fsl.SwapDimensions(
+                        new_dims=tuple(self.parameter('force_channel_flip'))),
+                    connect={
+                        'in_file': (list_channels, 'files')},
+                    iterfield=['in_file'])
+                geom_dest_file = (force_flip, 'out_file')
+            else:
+                geom_dest_file = (list_channels, 'files')
+
             if self.input_provided('header_image'):
                 # If header image is provided stomp its geometry over the
                 # acquired channels
@@ -186,12 +198,12 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     inputs={
                         'in_file': ('header_image', nifti_gz_format)},
                     connect={
-                        'dest_file': (list_channels, 'files')},
+                        'dest_file': geom_dest_file},
                     iterfield=(['dest_file']),
                     requirements=[fsl5_req])
                 reorient_in_file = (copy_geom, 'out_file')
             else:
-                reorient_in_file = (list_channels, 'files')
+                reorient_in_file = geom_dest_file
 
             if self.branch('reorient_to_std'):
                 reorient = pipeline.add(
@@ -202,21 +214,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                         'in_file': reorient_in_file},
                     iterfield=['in_file'],
                     requirements=[fsl5_req])
-                force_flip_in_files = (reorient, 'out_file')
+                copy_to_dir_in_files = (reorient, 'out_file')
             else:
-                force_flip_in_files = reorient_in_file
-
-            if self.parameter('force_channel_flip') is not None:
-                force_flip = pipeline.add(
-                    'flip_dims',
-                    fsl.SwapDimensions(
-                        new_dims=tuple(self.parameter('force_channel_flip'))),
-                    connect={
-                        'in_file': force_flip_in_files},
-                    iterfield=['in_file'])
-                copy_to_dir_in_files = (force_flip, 'out_file')
-            else:
-                copy_to_dir_in_files = force_flip_in_files
+                copy_to_dir_in_files = reorient_in_file
 
             copy_to_dir = pipeline.add(
                 'copy_to_dir',

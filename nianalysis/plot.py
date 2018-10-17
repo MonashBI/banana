@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import subprocess as sp
 from nianalysis.exception import NiAnalysisUsageError
+from nianalysis.file_format import nifti_gz_format, nifti_format, dicom_format
 
 
 class ImageDisplayMixin():
@@ -49,8 +50,15 @@ class ImageDisplayMixin():
                                                    row_kwargs)):
             array = fileset.get_array()
             header = fileset.get_header()
-            # FIXME: Only works for NIfTI, should be more general
-            vox = header['pixdim'][1:4]
+            if fileset.format in (nifti_format, nifti_gz_format):
+                vox = header['pixdim'][1:4]
+            elif fileset.format == dicom_format:
+                vox = [float(v) for v in header.PixelSpacing]
+                vox.append(float(header.SliceThickness))
+            else:
+                raise NiAnalysisUsageError(
+                    "'{}' format images are not supported for display slice "
+                    .format(fileset.format))
             rkwargs = copy(rkwargs)
             rkwargs.update(kwargs)
             try:
@@ -135,8 +143,9 @@ class ImageDisplayMixin():
             plt.savefig(base + ext)
 
     def _display_mid_slices(self, array, vox_sizes, fig, grid_spec,
-                            row_index, padding=1, vmax=None,
-                            vmax_percentile=98, offset=None):
+                            row_index, padding=1, vmax=None, vmin=None,
+                            vmax_percentile=98, vmin_percentile=2,
+                            offset=None):
         # Guard agains NaN
         array[np.isnan(array)] = 0.0
         # Crop black-space around array
@@ -149,25 +158,28 @@ class ImageDisplayMixin():
         if vmax is None:
             assert vmax_percentile is not None
             vmax = np.percentile(array, vmax_percentile)
+        if vmin is None:
+            assert vmin_percentile is not None
+            vmin = np.percentile(array, vmin_percentile)
 
         # Function to plot a slice
         def display_slice(slce, index, aspect):
             axis = fig.add_subplot(grid_spec[index])
             axis.get_xaxis().set_visible(False)
             axis.get_yaxis().set_visible(False)
-            padded_slce = self.pad_to_size(slce, (padded_size,
-                                                   padded_size))
+            pad_vert = int(np.round(padded_size / aspect))
+            padded_slce = self.pad_to_size(slce, (pad_vert, padded_size))
             plt.imshow(padded_slce,
                        interpolation='bilinear',
                        cmap='gray', aspect=aspect,
-                       vmin=0, vmax=vmax)
+                       vmin=vmin, vmax=vmax)
         # Display slices
         display_slice(np.squeeze(array[-1:0:-1, -1:0:-1, centre[2]]).T,
-                      row_index * 3, vox_sizes[0] / vox_sizes[1])
+                      row_index * 3, vox_sizes[1] / vox_sizes[0])
         display_slice(np.squeeze(array[-1:0:-1, centre[1], -1:0:-1]).T,
-                      row_index * 3 + 1, vox_sizes[0] / vox_sizes[2])
+                      row_index * 3 + 1, vox_sizes[2] / vox_sizes[0])
         display_slice(np.squeeze(array[centre[0], -1:0:-1, -1:0:-1]).T,
-                      row_index * 3 + 2, vox_sizes[1] / vox_sizes[2])
+                      row_index * 3 + 2, vox_sizes[2] / vox_sizes[1])
 
     @classmethod
     def crop(cls, array, border=0):

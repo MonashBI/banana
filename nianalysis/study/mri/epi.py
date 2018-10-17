@@ -51,7 +51,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         if self.branch('linear_reg_method', 'epireg'):
             return self._epireg_linear_coregistration_pipeline(**kwargs)
         else:
-            return super(EPIStudy, self).linear_coregistration_pipeline(
+            return super(EpiStudy, self).linear_coregistration_pipeline(
                 **kwargs)
 
     def _epireg_linear_coregistration_pipeline(self, **kwargs):
@@ -117,7 +117,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         elif 'reverse_phase' in self.input_names:
             return self._topup_pipeline(**kwargs)
         else:
-            return super(EPIStudy, self).preprocess_pipeline(**kwargs)
+            return super(EpiStudy, self).preprocess_pipeline(**kwargs)
 
     def _topup_pipeline(self, **kwargs):
 

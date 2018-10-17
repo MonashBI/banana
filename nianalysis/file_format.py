@@ -1,5 +1,9 @@
 from copy import deepcopy, copy
 from abc import ABCMeta, abstractmethod
+import os
+import os.path as op
+import pydicom
+import numpy as np
 from arcana.node import Node
 from arcana.data.file_format import FileFormat, Converter
 from nianalysis.interfaces.mrtrix import MRConvert
@@ -52,7 +56,7 @@ class MrtrixConverter(Converter):
 
 
 # =====================================================================
-# # Custom loader functions for different image types
+# Custom loader functions for different image types
 # =====================================================================
 
 
@@ -64,6 +68,19 @@ def nifti_header_loader(path):
     return dict(nibabel.load(path).get_header())
 
 
+def dicom_array_loader(path):
+    dcm_files = [f for f in os.listdir(path) if f.endswith('.dcm')]
+    image_stack = []
+    for fname in dcm_files:
+        image_stack.append(pydicom.dcmread(op.join(path, fname)).pixel_array)
+    return np.asarray(image_stack)
+
+
+def dicom_header_loader(path):
+    dcm_files = [f for f in os.listdir(path) if f.endswith('.dcm')]
+    return pydicom.dcmread(op.join(path, dcm_files[0]))
+
+
 # =====================================================================
 # All Data Formats
 # =====================================================================
@@ -72,7 +89,9 @@ def nifti_header_loader(path):
 # NeuroImaging data formats
 dicom_format = FileFormat(name='dicom', extension=None,
                           directory=True, within_dir_exts=['.dcm'],
-                          alternate_names=['secondary'])
+                          alternate_names=['secondary'],
+                          array_loader=dicom_array_loader,
+                          header_loader=dicom_header_loader)
 nifti_format = FileFormat(name='nifti', extension='.nii',
                           converters={'dicom': Dcm2niixConverter,
                                       'analyze': MrtrixConverter,
