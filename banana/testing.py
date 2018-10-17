@@ -15,7 +15,7 @@ from arcana.repository.xnat import (
     XnatRepository, special_char_re, lower)
 from arcana.exception import ArcanaMissingDataException
 from arcana.utils import split_extension
-import nianalysis
+import banana
 from arcana.utils import classproperty
 from arcana.processor import LinearProcessor
 from arcana.exception import ArcanaError
@@ -49,7 +49,7 @@ class BaseTestCase(TestCase):
     # the package directory. Note this will not work when Arcana
     # is installed by a package manager.
     BASE_TEST_DIR = os.path.abspath(os.path.join(
-        os.path.dirname(nianalysis.__file__), '..', 'test'))
+        os.path.dirname(banana.__file__), '..', 'test'))
 
     @classproperty
     @classmethod

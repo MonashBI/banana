@@ -1,10 +1,10 @@
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec
-from nianalysis.file_format import (list_mode_format, directory_format)
-from nianalysis.study.pet.base import PETStudy
-from nianalysis.interfaces.custom.pet import (
+from banana.file_format import (list_mode_format, directory_format)
+from banana.study.pet.base import PETStudy
+from banana.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
-from nianalysis.requirement import stir_req
+from banana.requirement import stir_req
 
 
 class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):

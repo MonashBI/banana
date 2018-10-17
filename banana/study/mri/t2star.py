@@ -2,30 +2,30 @@ import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
-from nianalysis.requirement import (fsl5_req, matlab2015_req,
+from banana.requirement import (fsl5_req, matlab2015_req,
                                     ants19_req)
-from nianalysis.citation import (
+from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
-from nianalysis.file_format import (
+from banana.file_format import (
     nifti_gz_format, nifti_format, text_matrix_format,
     multi_nifti_gz_format, STD_IMAGE_FORMATS)
-from nianalysis.interfaces.custom.vein_analysis import (
+from banana.interfaces.custom.vein_analysis import (
     CompositeVeinImage, ShMRF)
 from arcana.interfaces import utils
 from .base import MriStudy
 from nipype.interfaces import fsl, ants
 from arcana.interfaces.utils import ListDir
-from nianalysis.interfaces.sti import (
+from banana.interfaces.sti import (
     UnwrapPhase, VSharp, QSMiLSQR, BatchUnwrapPhase, BatchVSharp,
     BatchQSMiLSQR)
-from nianalysis.interfaces.custom.coils import HIPCombineChannels
-from nianalysis.interfaces.custom.mask import (
+from banana.interfaces.custom.coils import HIPCombineChannels
+from banana.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.atlas import LocalAtlas
+from banana.atlas import LocalAtlas
 from logging import getLogger
 
-logger = getLogger('nianalysis')
+logger = getLogger('banana')
 
 
 def coil_sort_key(fname):

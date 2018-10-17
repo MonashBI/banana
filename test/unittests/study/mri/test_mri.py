@@ -2,9 +2,9 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.data import FilesetSelector  # @IgnorePep8
-from nianalysis.file_format import nifti_gz_format  # @IgnorePep8
-from nianalysis.study.mri.base import MriStudy  # @IgnorePep8
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from banana.file_format import nifti_gz_format  # @IgnorePep8
+from banana.study.mri.base import MriStudy  # @IgnorePep8
+from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from arcana.study import (  # @IgnorePep8
     MultiStudy, MultiStudyMetaClass, SubStudySpec)
 

@@ -4,7 +4,7 @@ import glob
 import shutil
 import errno
 import subprocess as sp
-from nianalysis.interfaces.custom.dicom import DicomHeaderInfoExtraction
+from banana.interfaces.custom.dicom import DicomHeaderInfoExtraction
 import numpy as np
 import re
 import datetime as dt

@@ -1,33 +1,33 @@
 from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
-from nianalysis.requirement import spm12_req
-from nianalysis.citation import spm_cite
-from nianalysis.file_format import (
+from banana.requirement import spm12_req
+from banana.citation import spm_cite
+from banana.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
     multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 from arcana.study.base import Study, StudyMetaClass
-from nianalysis.citation import fsl_cite, bet_cite, bet2_cite
-from nianalysis.file_format import (
+from banana.citation import fsl_cite, bet_cite, bet2_cite
+from banana.file_format import (
     dicom_format, text_format, gif_format)
 from nipype.interfaces.utility import IdentityInterface
-from nianalysis.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
+from banana.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exception import ArcanaUsageError
-from nianalysis.interfaces.mrtrix.transform import MRResize
-from nianalysis.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
+from banana.interfaces.mrtrix.transform import MRResize
+from banana.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
-from nianalysis.interfaces.fsl import FSLSlices
-from nianalysis.file_format import text_matrix_format
+from banana.interfaces.fsl import FSLSlices
+from banana.file_format import text_matrix_format
 import logging
-from nianalysis.interfaces.ants import AntsRegSyn
-from nianalysis.interfaces.custom.coils import ToPolarCoords
+from banana.interfaces.ants import AntsRegSyn
+from banana.interfaces.custom.coils import ToPolarCoords
 from arcana.interfaces.utils import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.interfaces.custom.motion_correction import (
+from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from nianalysis.atlas import FslAtlas
+from banana.atlas import FslAtlas
 
 logger = logging.getLogger('arcana')
 

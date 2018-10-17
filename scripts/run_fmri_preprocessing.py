@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from nianalysis.study.mri.functional.fmri import create_fmri_study_class
+from banana.study.mri.functional.fmri import create_fmri_study_class
 from arcana.repository.xnat import XnatRepository
 from arcana.processor.linear import LinearProcessor
 import os.path

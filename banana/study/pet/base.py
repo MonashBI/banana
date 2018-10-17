@@ -1,13 +1,13 @@
 from arcana.study.base import Study, StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec
-from nianalysis.file_format import (nifti_gz_format, text_format,
+from banana.file_format import (nifti_gz_format, text_format,
                                     text_matrix_format, directory_format)
-from nianalysis.interfaces.sklearn import FastICA
-from nianalysis.interfaces.ants import AntsRegSyn
+from banana.interfaces.sklearn import FastICA
+from banana.interfaces.ants import AntsRegSyn
 import os
-from nianalysis.requirement import fsl509_req, mrtrix3_req
-from nianalysis.interfaces.custom.pet import PreparePetDir
-from nianalysis.interfaces.custom.dicom import PetTimeInfo
+from banana.requirement import fsl509_req, mrtrix3_req
+from banana.interfaces.custom.pet import PreparePetDir
+from banana.interfaces.custom.dicom import PetTimeInfo
 from arcana.parameter import ParameterSpec
 
 

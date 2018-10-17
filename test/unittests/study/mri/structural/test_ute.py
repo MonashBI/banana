@@ -2,10 +2,10 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.data import FilesetSelector  # @IgnorePep8
-from nianalysis.study.mri.structural.ute import UTEStudy  # @IgnorePep8
-from nianalysis.file_format import (  # @IgnorePep8
+from banana.study.mri.structural.ute import UTEStudy  # @IgnorePep8
+from banana.file_format import (  # @IgnorePep8
     dicom_format, nifti_gz_format, text_matrix_format)
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8
+from banana.testing import BaseTestCase as TestCase  # @IgnorePep8
 
 
 class TestUTE(TestCase):

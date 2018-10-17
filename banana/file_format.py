@@ -6,10 +6,10 @@ import pydicom
 import numpy as np
 from arcana.node import Node
 from arcana.data.file_format import FileFormat, Converter
-from nianalysis.interfaces.mrtrix import MRConvert
-from nianalysis.requirement import (
+from banana.interfaces.mrtrix import MRConvert
+from banana.requirement import (
     dcm2niix_req, mrtrix3_req)
-from nianalysis.interfaces.converters import Dcm2niix  # @UnusedImport
+from banana.interfaces.converters import Dcm2niix  # @UnusedImport
 import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format.standard import (

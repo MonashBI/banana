@@ -9,8 +9,8 @@ import nibabel as nib
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File,
     Directory, isdefined)
-from nianalysis.exception import NiAnalysisUsageError
-logger = logging.getLogger('nianalysis')
+from banana.exception import bananaUsageError
+logger = logging.getLogger('banana')
 
 
 class ToPolarCoordsInputSpec(BaseInterfaceInputSpec):
@@ -255,17 +255,17 @@ class HIPCombineChannels(BaseInterface):
             dct[match.group('channel')][match.group('echo')] = op.join(dpath,
                                                                        fname)
         if len(mag_paths) != len(phase_paths):
-            raise NiAnalysisUsageError(
+            raise bananaUsageError(
                 "Mismatching number of channels between magnitude and phase "
                 "channels")
         hip = None
         for chann_i in mag_paths:
             if len(mag_paths[chann_i]) != 2:
-                raise NiAnalysisUsageError(
+                raise bananaUsageError(
                     "Expected exactly two echos for channel magnitude {}, "
                     "found {}".format(chann_i, len(mag_paths[chann_i])))
             if len(phase_paths[chann_i]) != 2:
-                raise NiAnalysisUsageError(
+                raise bananaUsageError(
                     "Expected exactly two echos for channel magnitude {}, "
                     "found {}".format(chann_i, len(phase_paths[chann_i])))
             mag1 = nib.load(mag_paths[chann_i][0])

@@ -1,6 +1,6 @@
 from arcana import DirectoryRepository, LinearProcessor, FilesetSelector
-from nianalysis.study.mri.structural.diffusion import DiffusionStudy
-from nianalysis.file_format import dicom_format
+from banana.study.mri.structural.diffusion import DiffusionStudy
+from banana.file_format import dicom_format
 import os.path as op
 
 test_dir = op.join(op.dirname(__file__), '..', 'test', 'data',

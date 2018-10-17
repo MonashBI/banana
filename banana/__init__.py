@@ -1,5 +1,5 @@
 """
-NiAnalysis
+banana
 
 Copyright (c) 2012-2018 Thomas G. Close, Monash Biomedical Imaging,
 Monash University, Melbourne, Australia

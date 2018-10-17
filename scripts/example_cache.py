@@ -2,9 +2,9 @@
 import os.path
 import errno
 from arcana.data import FilesetSelector
-from nianalysis.study.mri.structural.t2star import T2StarStudy
+from banana.study.mri.structural.t2star import T2StarStudy
 from arcana.repository.xnat import XnatRepository
-from nianalysis.file_format import zip_format
+from banana.file_format import zip_format
 import argparse
 import pickle as pkl
 

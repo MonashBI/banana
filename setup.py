@@ -5,8 +5,7 @@ from setuptools import setup, find_packages
 PACKAGE_NAME = 'banana'
 
 # Get version from module inside package
-sys.path.insert(0, os.path.join(os.path.dirname(__file__),
-                                PACKAGE_NAME))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), PACKAGE_NAME))
 from package_info import __version__  # @UnresolvedImport @IgnorePep8
 sys.path.pop(0)
 
@@ -17,11 +16,12 @@ setup(
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
     packages=find_packages(),
-    url='https://github.com/MonashBI/banana',
+    url='https://github.com/MonashBI/{}'.format(PACKAGE_NAME),
     license='The Apache Software Licence 2.0',
     description=(
-        'A collection of "Arcana" (http://arcana.readthedocs.io) Study '
-        'classes implementing NeuroImaging analysis workflows'),
+        'Biomedical imAgiNg ANAlysis (Banana): A collection biomedical '
+        'imaging analysis workflows implemented in the Arcana '
+        '(arcana.readthedocs.io) framework'),
     long_description=open('README.rst').read(),
     install_requires=['arcana>=0.2.4',
                       'pydicom>=1.0'],

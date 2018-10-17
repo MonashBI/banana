@@ -2,7 +2,7 @@ import os
 from arcana.testing import BaseTestCase
 import tempfile
 from nipype.pipeline import Node
-from nianalysis.interfaces.custom.coils import CombineCoils
+from banana.interfaces.custom.coils import CombineCoils
 
 
 class TestMRCalcInterface(BaseTestCase):

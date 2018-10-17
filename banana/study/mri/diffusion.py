@@ -2,23 +2,23 @@ from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
-from nianalysis.interfaces.mrtrix import (
+from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
 from nipype.workflows.dmri.fsl.tbss import create_tbss_all
-from nianalysis.interfaces.noddi import (
+from banana.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
-from nianalysis.interfaces.mrtrix import MRConvert, ExtractFSLGradients
+from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from arcana.interfaces.utils import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
-from nianalysis.citation import (
+from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
-from nianalysis.file_format import (
+from banana.file_format import (
     mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format,
     mrtrix_track_format)
-from nianalysis.requirement import (
+from banana.requirement import (
     fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
@@ -26,7 +26,7 @@ from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 from arcana.parameter import ParameterSpec, SwitchSpec
 from .epi import EpiStudy
 from nipype.interfaces import fsl
-from nianalysis.interfaces.custom.motion_correction import (
+from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 
 

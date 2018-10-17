@@ -7,8 +7,8 @@ import tempfile
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import subprocess as sp
-from nianalysis.exception import NiAnalysisUsageError
-from nianalysis.file_format import nifti_gz_format, nifti_format, dicom_format
+from banana.exception import bananaUsageError
+from banana.file_format import nifti_gz_format, nifti_format, dicom_format
 
 
 class ImageDisplayMixin():
@@ -36,7 +36,7 @@ class ImageDisplayMixin():
         if row_kwargs is None:
             row_kwargs = repeat({})
         elif not n_rows == len(row_kwargs):
-            raise NiAnalysisUsageError(
+            raise bananaUsageError(
                 "Length of row_kwargs ({}) needs to "
                 "match length of filesets ({})"
                 .format(len(row_kwargs), n_rows))
@@ -56,7 +56,7 @@ class ImageDisplayMixin():
                 vox = [float(v) for v in header.PixelSpacing]
                 vox.append(float(header.SliceThickness))
             else:
-                raise NiAnalysisUsageError(
+                raise bananaUsageError(
                     "'{}' format images are not supported for display slice "
                     .format(fileset.format))
             rkwargs = copy(rkwargs)
@@ -64,8 +64,8 @@ class ImageDisplayMixin():
             try:
                 self._display_mid_slices(array, vox, fig, gs, i,
                                          offset=offset, **rkwargs)
-            except NiAnalysisUsageError as e:
-                raise NiAnalysisUsageError(
+            except bananaUsageError as e:
+                raise bananaUsageError(
                     str(e) + " displaying {}".format(fileset.path))
         # Remove space around figure
         plt.tight_layout(0.0)
@@ -209,7 +209,7 @@ class ImageDisplayMixin():
         if offset is not None:
             centre += np.array(offset, dtype=int)
             if np.any(centre < 0) or np.any(centre > array.shape):
-                raise NiAnalysisUsageError(
+                raise bananaUsageError(
                     "Specified offset ({}) is larger than the "
                     "dimension of the image / 2 ({})"
                     .format(offset, array.shape // 2))

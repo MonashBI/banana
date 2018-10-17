@@ -2,7 +2,7 @@ import os.path as op
 from nipype.interfaces.matlab import MatlabCommand, MatlabInputSpec
 from nipype.interfaces.base import TraitedSpec, traits, File
 
-from nianalysis.interfaces import MATLAB_RESOURCES
+from banana.interfaces import MATLAB_RESOURCES
 
 
 class BaseVeinInputSpec(MatlabInputSpec):

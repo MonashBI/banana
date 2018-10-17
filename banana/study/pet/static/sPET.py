@@ -1,8 +1,8 @@
 from ..base import PETStudy
 from arcana.data import FilesetSpec
 from arcana.study.base import StudyMetaClass
-from nianalysis.interfaces.custom.pet import SUVRCalculation
-from nianalysis.file_format import (nifti_gz_format)
+from banana.interfaces.custom.pet import SUVRCalculation
+from banana.file_format import (nifti_gz_format)
 import os
 
 template_path = os.path.abspath(

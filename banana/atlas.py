@@ -1,8 +1,8 @@
 import os
 import os.path as op
 from copy import copy
-import nianalysis
-from nianalysis.requirement import fsl5_req
+import banana
+from banana.requirement import fsl5_req
 from arcana.exception import (
     ArcanaError, ArcanaNameError, ArcanaUsageError, ArcanaDesignError)
 from arcana import Fileset, FilesetCollection, MultiStudy
@@ -144,7 +144,7 @@ class LocalAtlas(BaseAtlas):
         directory
     """
 
-    BASE_PATH = op.abspath(op.join(op.dirname(nianalysis.__file__), 'atlases'))
+    BASE_PATH = op.abspath(op.join(op.dirname(banana.__file__), 'atlases'))
 
     def __init__(self, atlas_name, name=None):
         super().__init__(name)

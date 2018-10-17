@@ -2,9 +2,9 @@
 import os.path
 import shutil
 from arcana.data import FilesetSelector
-from nianalysis.study.mri.diffusion import NODDIStudy
+from banana.study.mri.diffusion import NODDIStudy
 from arcana.repository.simple import DirectoryRepository
-from nianalysis.file_format import mrtrix_format
+from banana.file_format import mrtrix_format
 
 repository_path = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'noddi'))

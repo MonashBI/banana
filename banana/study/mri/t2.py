@@ -4,11 +4,11 @@ from arcana.parameter import ParameterSpec
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.interfaces.utils import DummyReconAll as ReconAll
-from nianalysis.requirement import freesurfer_req, ants19_req, fsl5_req
-from nianalysis.citation import freesurfer_cites, fsl_cite
+from banana.requirement import freesurfer_req, ants19_req, fsl5_req
+from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.interfaces import utils
-from nianalysis.file_format import (
+from banana.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format)
 from arcana.data import FilesetSpec
 from arcana.interfaces.utils import JoinPath

@@ -1,7 +1,7 @@
 from arcana.testing import BaseTestCase, BaseMultiSubjectTestCase
 from arcana.study.base import Study, StudyMetaClass
 from arcana.data import FilesetSpec, FilesetSelector
-from nianalysis.file_format import (
+from banana.file_format import (
     dicom_format)
 
 

@@ -1,5 +1,5 @@
 from arcana.data import FilesetSpec, FilesetSelector
-from nianalysis.file_format import (
+from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
 from arcana.study.base import Study, StudyMetaClass

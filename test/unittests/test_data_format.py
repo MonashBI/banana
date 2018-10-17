@@ -5,7 +5,7 @@ from arcana.interfaces.mrtrix import MRConvert
 from arcana.exception import ArcanaModulesNotInstalledException
 from arcana.data.file_format import (
     Converter)
-from nianalysis.file_format import (dicom_format, mrtrix_format,
+from banana.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.requirement import Requirement
 from arcana.node import Node

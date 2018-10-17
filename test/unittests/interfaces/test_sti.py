@@ -2,8 +2,8 @@ import os.path as op
 from arcana.testing import BaseTestCase
 import tempfile
 from nipype.pipeline.engine import Node
-from nianalysis.interfaces.sti import MRPhaseUnwrap
-# from nianalysis.requirement import sti_req
+from banana.interfaces.sti import MRPhaseUnwrap
+# from banana.requirement import sti_req
 
 
 class TestMRCalcInterface(BaseTestCase):

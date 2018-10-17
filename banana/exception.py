@@ -1,14 +1,14 @@
-class NiAnalysisError(Exception):
+class bananaError(Exception):
     pass
 
 
-class NiAnalysisUsageError(NiAnalysisError):
+class bananaUsageError(bananaError):
     pass
 
 
-class NiAnalysisMissingHeaderValue(NiAnalysisError):
+class bananaMissingHeaderValue(bananaError):
     pass
 
 
-class NiAnalysisRuntimeError(NiAnalysisError):
+class bananaRuntimeError(bananaError):
     pass

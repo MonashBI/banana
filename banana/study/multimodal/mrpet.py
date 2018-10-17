@@ -1,35 +1,35 @@
 from arcana.data import FilesetSpec, FieldSpec
-from nianalysis.file_format import (
+from banana.file_format import (
     nifti_gz_format, directory_format, text_format, png_format, dicom_format,
     text_matrix_format)
-from nianalysis.interfaces.custom.motion_correction import (
+from banana.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, CreateMocoSeries, FixedBinning,
     UmapAlign2Reference, ReorientUmap)
-from nianalysis.citation import fsl_cite
+from banana.citation import fsl_cite
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from nianalysis.study.mri.epi import EPIStudy
-from nianalysis.study.mri.structural.t1 import T1Study
-from nianalysis.study.mri.structural.t2 import T2Study
+from banana.study.mri.epi import EPIStudy
+from banana.study.mri.structural.t1 import T1Study
+from banana.study.mri.structural.t2 import T2Study
 from nipype.interfaces.utility import Merge
-from nianalysis.study.mri.structural.diffusion import DiffusionStudy
-from nianalysis.requirement import fsl509_req, mrtrix3_req, ants2_req
+from banana.study.mri.structural.diffusion import DiffusionStudy
+from banana.requirement import fsl509_req, mrtrix3_req, ants2_req
 from arcana.exception import ArcanaNameError
 from arcana.data import FilesetSelector
 import logging
-from nianalysis.study.pet.base import PETStudy
-from nianalysis.interfaces.custom.pet import (
+from banana.study.pet.base import PETStudy
+from banana.interfaces.custom.pet import (
     CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
     PETFovCropping)
 from arcana.parameter import ParameterSpec, SwitchSpec
 import os
-from nianalysis.interfaces.converters import Nii2Dicom
+from banana.interfaces.converters import Nii2Dicom
 from arcana.interfaces.utils import CopyToDir, ListDir, dicom_fname_sort_key
 from nipype.interfaces.fsl.preprocess import FLIRT
 import nipype.interfaces.fsl as fsl
 from nipype.interfaces.fsl.utils import ImageMaths
-from nianalysis.interfaces.ants import AntsRegSyn
+from banana.interfaces.ants import AntsRegSyn
 from nipype.interfaces.ants.resampling import ApplyTransforms
 
 
@@ -47,8 +47,8 @@ reference_path = os.path.abspath(
                  'reference_data'))
 
 template_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__).split('nianalysis')[0],
-                 'nianalysis', 'nianalysis', 'templates'))
+    os.path.join(os.path.dirname(__file__).split('banana')[0],
+                 'banana', 'banana', 'templates'))
 
 
 class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):

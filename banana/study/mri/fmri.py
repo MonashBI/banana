@@ -1,35 +1,35 @@
 from nipype.interfaces.fsl.model import MELODIC
 from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
-from nianalysis.interfaces.fsl import (FSLFIX, FSLFixTraining,
+from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
                                        SignalRegression, PrepareFIXTraining)
 from arcana.data import FilesetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
-from nianalysis.requirement import (fsl5_req, afni_req, fix_req,
+from banana.requirement import (fsl5_req, afni_req, fix_req,
                                     fsl509_req, fsl510_req, ants2_req, c3d_req)
-from nianalysis.citation import fsl_cite
-from nianalysis.file_format import (
+from banana.citation import fsl_cite
+from banana.file_format import (
     nifti_gz_format, rfile_format, directory_format,
     zip_format, text_matrix_format, par_format, text_format, dicom_format)
-from nianalysis.interfaces.afni import Tproject
+from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.study.mri.epi import EpiStudy
+from banana.study.mri.epi import EpiStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from nianalysis.study.mri.t1 import T1Study
+from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from arcana.data import FilesetSelector
 from nipype.interfaces.afni.preprocess import BlurToFWHM
-from nianalysis.interfaces.custom.fmri import PrepareFIX
-from nianalysis.interfaces.c3d import ANTs2FSLMatrixConversion
+from banana.interfaces.custom.fmri import PrepareFIX
+from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exception import ArcanaNameError
 
-logger = logging.getLogger('nianalysis')
+logger = logging.getLogger('banana')
 
 
 atlas_path = op.abspath(

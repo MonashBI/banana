@@ -7,21 +7,21 @@ from nipype.interfaces.fsl.maths import (
     UnaryMaths, BinaryMaths, MultiImageMaths, Threshold)
 from nipype.interfaces.spm.preprocess import NewSegment
 from nipype.interfaces.utility.base import Select
-from nianalysis.interfaces.umap_calc import CoreUmapCalc
-from nianalysis.interfaces.converters import Nii2Dicom
-from nianalysis.interfaces.mrtrix.utils import MRConvert
+from banana.interfaces.umap_calc import CoreUmapCalc
+from banana.interfaces.converters import Nii2Dicom
+from banana.interfaces.mrtrix.utils import MRConvert
 from arcana.interfaces.utils import (
     CopyToDir, ListDir, dicom_fname_sort_key)
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from nianalysis.citation import (
+from banana.citation import (
     fsl_cite, spm_cite, matlab_cite)
-from nianalysis.file_format import (
+from banana.file_format import (
     dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
     directory_format, text_format)
-from nianalysis.requirement import (
+from banana.requirement import (
     fsl5_req, spm12_req, matlab2015_req)
-from nianalysis.interfaces.custom.motion_correction import (
+from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from arcana.parameter import ParameterSpec, SwitchSpec
 

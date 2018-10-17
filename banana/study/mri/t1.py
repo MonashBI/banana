@@ -1,11 +1,11 @@
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.interfaces.utils import DummyReconAll as ReconAll
-from nianalysis.requirement import freesurfer_req, ants19_req, fsl5_req
-from nianalysis.citation import freesurfer_cites, fsl_cite
+from banana.requirement import freesurfer_req, ants19_req, fsl5_req
+from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.interfaces import utils
-from nianalysis.file_format import (
+from banana.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
@@ -13,7 +13,7 @@ from arcana.interfaces.utils import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.parameter import ParameterSpec, SwitchSpec
-from nianalysis.atlas import LocalAtlas
+from banana.atlas import LocalAtlas
 
 
 class T1Study(MriStudy, metaclass=StudyMetaClass):

@@ -1,5 +1,5 @@
 from nipype.interfaces.matlab import MatlabCommand
-import nianalysis.interfaces
+import banana.interfaces
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File,
     Directory)
@@ -11,7 +11,7 @@ SCRIPT_TEMPLATE = (
     "set_param(0,'CharacterEncoding','UTF-8');\n"
     "addpath(genpath('{}'));\n"
     "{{cmd}};\n"
-    "exit;\n").format(op.join(nianalysis.interfaces.RESOURCES_DIR, 'matlab',
+    "exit;\n").format(op.join(banana.interfaces.RESOURCES_DIR, 'matlab',
                               'qsm'))
 
 

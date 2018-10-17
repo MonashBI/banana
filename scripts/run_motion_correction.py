@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-from nianalysis.study.multimodal.mrpet import create_motion_correction_class
+from banana.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProcessor
 from arcana.repository.simple import DirectoryRepository
-from nianalysis.motion_correction_utils import (
+from banana.motion_correction_utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl

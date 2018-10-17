@@ -1,8 +1,8 @@
 import os
 import os.path as op
 from arcana.exception import ArcanaError
-import nianalysis
-from nianalysis.requirement import fsl5_req
+import banana
+from banana.requirement import fsl5_req
 
 
 def nth(i):

@@ -1,16 +1,16 @@
 from .base import MriStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
-from nianalysis.interfaces.custom.motion_correction import (
+from banana.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
-from nianalysis.file_format import (
+from banana.file_format import (
     nifti_gz_format, text_matrix_format, directory_format,
     par_format, motion_mats_format)
-from nianalysis.citation import fsl_cite
+from banana.citation import fsl_cite
 from nipype.interfaces import fsl
-from nianalysis.requirement import fsl509_req
+from banana.requirement import fsl509_req
 from arcana.study.base import StudyMetaClass
-from nianalysis.interfaces.custom.motion_correction import (
+from banana.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
 from arcana.parameter import ParameterSpec
 from nipype.interfaces.utility import Merge as merge_lists
@@ -19,7 +19,7 @@ from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
 
 
-from nianalysis.file_format import STD_IMAGE_FORMATS
+from banana.file_format import STD_IMAGE_FORMATS
 
 
 class EpiStudy(MriStudy, metaclass=StudyMetaClass):
