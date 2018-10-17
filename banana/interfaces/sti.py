@@ -2,7 +2,7 @@ from itertools import groupby, chain
 from operator import itemgetter
 from nipype.interfaces.matlab import MatlabCommand, MatlabInputSpec
 from nipype.interfaces.base import TraitedSpec, traits, File
-from banana.exception import bananaRuntimeError
+from banana.exception import BananaRuntimeError
 import os.path as op
 from banana.interfaces import MATLAB_RESOURCES
 
@@ -275,7 +275,7 @@ class BaseBatchSTICommand(BaseSTICommand):
                 if self.batch_size is None:
                     self.batch_size = len(inpt)
                 elif self.batch_size != len(inpt):
-                    raise bananaRuntimeError(
+                    raise BananaRuntimeError(
                         "Inconsistent length of batch input lists ({} and {})"
                         .format(len(inpt), self.batch_size))
         return super(BaseBatchSTICommand, self).run(**inputs)

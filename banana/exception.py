@@ -1,14 +1,14 @@
-class bananaError(Exception):
+class BananaError(Exception):
     pass
 
 
-class bananaUsageError(bananaError):
+class BananaUsageError(BananaError):
     pass
 
 
-class bananaMissingHeaderValue(bananaError):
+class BananaMissingHeaderValue(BananaError):
     pass
 
 
-class bananaRuntimeError(bananaError):
+class BananaRuntimeError(BananaError):
     pass

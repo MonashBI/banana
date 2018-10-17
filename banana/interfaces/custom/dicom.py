@@ -13,7 +13,7 @@ import nibabel as nib
 from arcana.utils import split_extension
 import nibabel.nicom.csareader as csareader
 from logging import getLogger
-from banana.exception import bananaMissingHeaderValue
+from banana.exception import BananaMissingHeaderValue
 
 
 logger = getLogger('banana')
@@ -115,7 +115,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
             try:
                 start_time = str(hd.AcquisitionDateTime)[8:]
             except AttributeError:
-                raise bananaMissingHeaderValue(
+                raise BananaMissingHeaderValue(
                     'No acquisition time found for this scan.')
         # Get echo times
         num_echoes = hd.EchoTrainLength
