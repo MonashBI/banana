@@ -1,4 +1,4 @@
-from nianalysis.study.mri.functional.dynamic_fc_to_dump import DynamicFC
+from banana.study.mri.functional.dynamic_fc_to_dump import DynamicFC
 
 d = ('/Volumes/Project/pet/rsfPET/fMRI_analysis/'
      'rsfMRI_dual_regression_ica_80comp/')

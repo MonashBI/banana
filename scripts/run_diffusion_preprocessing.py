@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import os.path
 import errno
-from nianalysis.study.mri.structural.diffusion import DiffusionStudy
+from banana.study.mri.structural.diffusion import DiffusionStudy
 from arcana.repository.xnat import XnatRepository
-from nianalysis.file_format import dicom_format
+from banana.file_format import dicom_format
 import logging
 import argparse
 from arcana.dataset.match import DatasetMatch
@@ -32,7 +32,7 @@ if __name__ == "__main__":
         if e.errno != errno.EEXIST:
             raise
 
-    logger = logging.getLogger('NiAnalysis')
+    logger = logging.getLogger('banana')
     logger.setLevel(logging.DEBUG)
     # Stream Handler
     handler = logging.StreamHandler()

@@ -2,9 +2,9 @@ import os.path
 from arcana.testing import BaseTestCase
 import tempfile
 from arcana.node import Node
-from nianalysis.interfaces.mrtrix import MRCalc
-from nianalysis.requirement import mrtrix3_req
-from nianalysis.interfaces.mrtrix.utils import ExtractFSLGradients
+from banana.interfaces.mrtrix import MRCalc
+from banana.requirement import mrtrix3_req
+from banana.interfaces.mrtrix.utils import ExtractFSLGradients
 
 
 class TestMRCalcInterface(BaseTestCase):

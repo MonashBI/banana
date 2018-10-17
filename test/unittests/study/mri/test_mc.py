@@ -1,9 +1,9 @@
 from nipype import config
 config.enable_debug_mode()
-from nianalysis.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
-# from nianalysis.study.multimodal.test_motion_detection import (  # @IgnorePep8 @Reimport
+from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+# from banana.study.multimodal.test_motion_detection import (  # @IgnorePep8 @Reimport
 #     MotionDetection, inputs)
-from nianalysis.study.multimodal.mrpet import create_motion_correction_class  # @IgnorePep8 @Reimport
+from banana.study.multimodal.mrpet import create_motion_correction_class  # @IgnorePep8 @Reimport
 
 
 ref = 'ref'
@@ -16,6 +16,14 @@ dmris = [['dwi_main', '0'], ['dwi_opposite', '-1']]
 
 class TestMC(TestCase):
 
+#     def test_epi_mc(self):
+#  
+#         study = self.create_study(
+#             MotionDetection, 'MotionDetection', inputs=inputs,
+#             enforce_inputs=False)
+#         study.data('motion_detection_output')
+#         self.assertFilesetCreated('motion_detection_output', study.name)
+
     def test_motion_correction(self):
 
         MotionCorrection, inputs, out_data = create_motion_correction_class(
@@ -26,4 +34,4 @@ class TestMC(TestCase):
             MotionCorrection, 'MotionCorrection', inputs=inputs,
             enforce_inputs=False)
         study.data(out_data)
-        self.assertDatasetCreated(out_data, study.name)
+        self.assertFilesetCreated(out_data, study.name)

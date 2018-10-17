@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 import os.path
 import errno
-from arcana.dataset import DatasetMatch
-from nianalysis.study.mri.structural.t2star import T2StarStudy
+from arcana.data import FilesetSelector
+from banana.study.mri.structural.t2star import T2StarStudy
 from arcana.repository.xnat import XnatRepository
-from nianalysis.file_format import zip_format
+from banana.file_format import zip_format
 import argparse
 import pickle as pkl
 
@@ -28,7 +28,7 @@ with open(session_ids_path) as f:
     ids = f.read().split()
 
 PROJECT_ID = 'MRH017'
-datasets = {DatasetMatch('coils', zip_format, 'swi_coils')}
+filesets = {FilesetSelector('coils', zip_format, 'swi_coils')}
 visit_ids = visit_ids['MR01']
 
 repository = XnatRepository(cache_dir='/scratch/dq13/xnat_cache3')
@@ -42,11 +42,11 @@ else:
         project = pkl.load(f)   
 
 
-repository.cache(PROJECT_ID, datasets.values(), subject_ids=ids, visit_ids=visit_ids)
+repository.cache(PROJECT_ID, filesets.values(), subject_ids=ids, visit_ids=visit_ids)
     
 study = T2StarStudy(
     name='qsm',
-    project_id=PROJECT_ID, repository=repository, input_datasets=datasets)
+    project_id=PROJECT_ID, repository=repository, input_filesets=filesets)
 study.qsm_pipeline().submit(subject_ids=ids, visit_ids=visit_ids,
                             work_dir=WORK_PATH, email='tom.close@monash.edu',
                             project=project)

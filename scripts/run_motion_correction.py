@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-from nianalysis.study.multimodal.mrpet import create_motion_correction_class
+from banana.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
-# from arcana.runner import MultiProcRunner
-from arcana.repository.local import LocalRepository
-from nianalysis.motion_correction_utils import (
+# from arcana.processor import MultiProcProcessor
+from arcana.repository.simple import DirectoryRepository
+from banana.motion_correction_utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
-from arcana.runner.linear import LinearRunner
+from arcana.processor.linear import LinearProcessor
 import shutil
 
 
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    repository = LocalRepository(args.input_dir+'/work_dir')
+    repository = DirectoryRepository(args.input_dir+'/work_dir')
     work_dir = os.path.join(args.input_dir, 'motion_detection_cache')
     WORK_PATH = work_dir
     try:
@@ -216,7 +216,7 @@ if __name__ == "__main__":
             raise
 
     study = MotionCorrection(name='MotionCorrection',
-                             runner=LinearRunner(WORK_PATH),
+                             processor=LinearProcessor(WORK_PATH),
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])

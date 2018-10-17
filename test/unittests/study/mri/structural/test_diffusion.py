@@ -2,13 +2,13 @@
 import os.path
 from nipype import config
 config.enable_debug_mode()
-from arcana.dataset import DatasetMatch  # @IgnorePep8
-from nianalysis.study.mri.structural.diffusion import (  # @IgnorePep8
+from arcana.data import FilesetSelector  # @IgnorePep8
+from banana.study.mri.structural.diffusion import (  # @IgnorePep8
     DiffusionStudy, NODDIStudy)
-from nianalysis.file_format import (  # @IgnorePep8
+from banana.file_format import (  # @IgnorePep8
     mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
     text_format)
-from nianalysis.testing import BaseTestCase, BaseMultiSubjectTestCase  # @IgnorePep8 @Reimport
+from banana.testing import BaseTestCase, BaseMultiSubjectTestCase  # @IgnorePep8 @Reimport
 
 
 class TestDiffusion(BaseTestCase):
@@ -16,63 +16,63 @@ class TestDiffusion(BaseTestCase):
     def test_preprocess(self):
         study = self.create_study(
             DiffusionStudy, 'preprocess', [
-                DatasetMatch('primary', mrtrix_format, 'r_l_dwi_b700_30'),
-                DatasetMatch('dwi_reference', mrtrix_format, 'l_r_dwi_b0_6')])
-        preproc = study.data('preproc')[0]
+                FilesetSelector('magnitude', mrtrix_format, 'r_l_dwi_b700_30'),
+                FilesetSelector('dwi_reference', mrtrix_format, 'l_r_dwi_b0_6')])
+        preproc = list(study.data('preproc'))[0]
         self.assertTrue(os.path.exists(preproc.path))
 
     def test_extract_b0(self):
         study = self.create_study(
             DiffusionStudy, 'extract_b0', [
-                DatasetMatch('preproc', nifti_gz_format, 'preproc'),
-                DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
-                DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
+                FilesetSelector('preproc', nifti_gz_format, 'preproc'),
+                FilesetSelector('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
+                FilesetSelector('bvalues', fsl_bvals_format, 'bvalues')])
         study.extract_b0_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('primary.nii.gz', study.name)
+        self.assertFilesetCreated('primary.nii.gz', study.name)
 
     def test_bias_correct(self):
         study = self.create_study(
             DiffusionStudy, 'bias_correct', [
-                DatasetMatch('preproc', nifti_gz_format, 'preproc'),
-                DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
-                DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
+                FilesetSelector('preproc', nifti_gz_format, 'preproc'),
+                FilesetSelector('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
+                FilesetSelector('bvalues', fsl_bvals_format, 'bvalues')])
         study.bias_correct_pipeline(mask_tool='mrtrix').run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('bias_correct.nii.gz', study.name)
+        self.assertFilesetCreated('bias_correct.nii.gz', study.name)
 
     def test_tensor(self):
         study = self.create_study(
             DiffusionStudy, 'tensor', [
-                DatasetMatch('bias_correct', nifti_gz_format, 'bias_correct'),
-                DatasetMatch('brain_mask', nifti_gz_format, 'brain_mask'),
-                DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
-                DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
+                FilesetSelector('bias_correct', nifti_gz_format, 'bias_correct'),
+                FilesetSelector('brain_mask', nifti_gz_format, 'brain_mask'),
+                FilesetSelector('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
+                FilesetSelector('bvalues', fsl_bvals_format, 'bvalues')])
         study.tensor_pipeline().run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('tensor.nii.gz', study.name)
+        self.assertFilesetCreated('tensor.nii.gz', study.name)
 
     def test_response(self):
         study = self.create_study(
             DiffusionStudy, 'response', [
-                DatasetMatch('bias_correct', nifti_gz_format, 'bias_correct'),
-                DatasetMatch('brain_mask', nifti_gz_format, 'brain_mask'),
-                DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
-                DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
+                FilesetSelector('bias_correct', nifti_gz_format, 'bias_correct'),
+                FilesetSelector('brain_mask', nifti_gz_format, 'brain_mask'),
+                FilesetSelector('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
+                FilesetSelector('bvalues', fsl_bvals_format, 'bvalues')])
         study.response_pipeline().run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('response.txt', study.name)
+        self.assertFilesetCreated('response.txt', study.name)
 
     def test_fod(self):
         study = self.create_study(
             DiffusionStudy, 'fod', [
-                DatasetMatch('bias_correct', nifti_gz_format, 'bias_correct'),
-                DatasetMatch('brain_mask', nifti_gz_format, 'brain_mask'),
-                DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
-                DatasetMatch('response', text_format, 'response'),
-                DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
+                FilesetSelector('bias_correct', nifti_gz_format, 'bias_correct'),
+                FilesetSelector('brain_mask', nifti_gz_format, 'brain_mask'),
+                FilesetSelector('grad_dirs', fsl_bvecs_format, 'gradient_dirs'),
+                FilesetSelector('response', text_format, 'response'),
+                FilesetSelector('bvalues', fsl_bvals_format, 'bvalues')])
         study.fod_pipeline().run(
             work_dir=self.work_dir)
-        self.assertDatasetCreated('fod.mif', study.name)
+        self.assertFilesetCreated('fod.mif', study.name)
 
 
 class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
@@ -80,31 +80,31 @@ class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
     def test_intensity_normalization(self):
         study = self.create_study(
             DiffusionStudy, 'intens_norm', [
-                DatasetMatch('bias_correct', nifti_gz_format, 'biascorrect'),
-                DatasetMatch('brain_mask', nifti_gz_format, 'brainmask'),
-                DatasetMatch('grad_dirs', fsl_bvecs_format, 'gradientdirs'),
-                DatasetMatch('bvalues', fsl_bvals_format, 'bvalues')])
+                FilesetSelector('bias_correct', nifti_gz_format, 'biascorrect'),
+                FilesetSelector('brain_mask', nifti_gz_format, 'brainmask'),
+                FilesetSelector('grad_dirs', fsl_bvecs_format, 'gradientdirs'),
+                FilesetSelector('bvalues', fsl_bvals_format, 'bvalues')])
         study.intensity_normalisation_pipeline().run(
             work_dir=self.work_dir)
         for subject_id in self.subject_ids:
             for visit_id in self.visit_ids(subject_id):
-                self.assertDatasetCreated('norm_intensity.mif', study.name,
+                self.assertFilesetCreated('norm_intensity.mif', study.name,
                                           subject=subject_id, visit=visit_id)
-        self.assertDatasetCreated(
+        self.assertFilesetCreated(
             'norm_intens_fa_template.mif', study.name,
-            frequency='per_project')
-        self.assertDatasetCreated(
+            frequency='per_study')
+        self.assertFilesetCreated(
             'norm_intens_wm_mask.mif', study.name,
-            frequency='per_project')
+            frequency='per_study')
 
     def test_average_response(self):
         study = self.create_study(
             DiffusionStudy, 'response', {
-                DatasetMatch('response', text_format, 'response')})
+                FilesetSelector('response', text_format, 'response')})
         study.average_response_pipeline().run(work_dir=self.work_dir)
         for subject_id in self.subject_ids:
             for visit_id in self.visit_ids(subject_id):
-                self.assertDatasetCreated('avg_response.txt', study.name,
+                self.assertFilesetCreated('avg_response.txt', study.name,
                                           subject=subject_id, visit=visit_id)
 
 
@@ -113,20 +113,20 @@ class TestNODDI(BaseTestCase):
     def test_concatenate(self):
         study = self.create_study(
             NODDIStudy, 'concatenate', inputs=[
-                DatasetMatch('low_b_dw_scan', mrtrix_format, 'r_l_dwi_b700_30'),
-                DatasetMatch('high_b_dw_scan', mrtrix_format, 'r_l_dwi_b2000_60')])
+                FilesetSelector('low_b_dw_scan', mrtrix_format, 'r_l_dwi_b700_30'),
+                FilesetSelector('high_b_dw_scan', mrtrix_format, 'r_l_dwi_b2000_60')])
         study.concatenate_pipeline().run(work_dir=self.work_dir)
-        self.assertDatasetCreated('dwi_scan.mif', study.name)
+        self.assertFilesetCreated('dwi_scan.mif', study.name)
         # TODO: More thorough testing required
 
 #     def test_noddi_fitting(self, nthreads=6):
 #         study = self.create_study(
 #             NODDIStudy, 'noddi', inputs=[
-#                 DatasetMatch('preproc', mrtrix_format, 'noddi_dwi'),
-#                 DatasetMatch('brain_mask', analyze_format, 'roi_mask'),
-#                 'grad_dirs': Dataset('noddi_gradient_directions',
+#                 FilesetSelector('preproc', mrtrix_format, 'noddi_dwi'),
+#                 FilesetSelector('brain_mask', analyze_format, 'roi_mask'),
+#                 'grad_dirs': Fileset('noddi_gradient_directions',
 #                                      fsl_bvecs_format),
-#                 DatasetMatch('bvalues', fsl_bvals_format, 'noddi_bvalues')})
+#                 FilesetSelector('bvalues', fsl_bvals_format, 'noddi_bvalues')})
 #         study.noddi_fitting_pipeline(nthreads=nthreads).run(
 #             work_dir=self.work_dir)
 #         for out_name, mean, stdev in [('ficvf', 1e-5, 1e-2),

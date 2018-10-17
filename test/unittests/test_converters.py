@@ -1,5 +1,5 @@
-from arcana.dataset import DatasetSpec, DatasetMatch
-from nianalysis.file_format import (
+from arcana.data import FilesetSpec, FilesetSelector
+from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
 from arcana.study.base import Study, StudyMetaClass
@@ -10,34 +10,33 @@ from nipype.interfaces.utility import IdentityInterface
 class ConversionStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('mrtrix', text_format),
-        DatasetSpec('nifti_gz', text_format),
-        DatasetSpec('dicom', dicom_format),
-        DatasetSpec('directory', directory_format),
-        DatasetSpec('zip', zip_format),
-        DatasetSpec('nifti_gz_from_dicom', text_format, 'pipeline'),
-        DatasetSpec('mrtrix_from_nifti_gz', text_format, 'pipeline'),
-        DatasetSpec('nifti_from_mrtrix', nifti_format, 'pipeline'),
-        DatasetSpec('directory_from_zip', directory_format, 'pipeline'),
-        DatasetSpec('zip_from_directory', zip_format, 'pipeline')]
+        FilesetSpec('mrtrix', text_format),
+        FilesetSpec('nifti_gz', text_format),
+        FilesetSpec('dicom', dicom_format),
+        FilesetSpec('directory', directory_format),
+        FilesetSpec('zip', zip_format),
+        FilesetSpec('nifti_gz_from_dicom', text_format, 'conv_pipeline'),
+        FilesetSpec('mrtrix_from_nifti_gz', text_format, 'conv_pipeline'),
+        FilesetSpec('nifti_from_mrtrix', nifti_format, 'conv_pipeline'),
+        FilesetSpec('directory_from_zip', directory_format, 'conv_pipeline'),
+        FilesetSpec('zip_from_directory', zip_format, 'conv_pipeline')]
 
-    def pipeline(self):
-        pipeline = self.create_pipeline(
-            name='pipeline',
-            inputs=[DatasetSpec('mrtrix', text_format),
-                    DatasetSpec('nifti_gz', text_format),
-                    DatasetSpec('dicom', text_format),
-                    DatasetSpec('directory', directory_format),
-                    DatasetSpec('zip', directory_format)],
-            outputs=[DatasetSpec('nifti_gz_from_dicom', text_format),
-                     DatasetSpec('mrtrix_from_nifti_gz', text_format),
-                     DatasetSpec('nifti_from_mrtrix', text_format),
-                     DatasetSpec('directory_from_zip', directory_format),
-                     DatasetSpec('zip_from_directory', directory_format)],
+    def conv_pipeline(self):
+        pipeline = self.pipeline(
+            name='conv_pipeline',
+            inputs=[FilesetSpec('mrtrix', text_format),
+                    FilesetSpec('nifti_gz', text_format),
+                    FilesetSpec('dicom', text_format),
+                    FilesetSpec('directory', directory_format),
+                    FilesetSpec('zip', directory_format)],
+            outputs=[FilesetSpec('nifti_gz_from_dicom', text_format),
+                     FilesetSpec('mrtrix_from_nifti_gz', text_format),
+                     FilesetSpec('nifti_from_mrtrix', text_format),
+                     FilesetSpec('directory_from_zip', directory_format),
+                     FilesetSpec('zip_from_directory', directory_format)],
             desc=("A pipeline that tests out various data format "
                          "conversions"),
-            version=1,
-            citations=[],)
+            references=[],)
         # Convert from DICOM to NIfTI.gz format on input
         nifti_gz_from_dicom = pipeline.create_node(
             IdentityInterface(fields=['file']), "nifti_gz_from_dicom")
@@ -73,7 +72,6 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
                                'file')
         pipeline.connect_output('zip_from_directory', zip_from_directory,
                                 'file')
-        pipeline.assert_connected()
         return pipeline
 
 
@@ -82,23 +80,23 @@ class TestFormatConversions(BaseTestCase):
     def test_pipeline_prerequisites(self):
         study = self.create_study(
             ConversionStudy, 'conversion', [
-                DatasetMatch('mrtrix', text_format, 'mrtrix'),
-                DatasetMatch('nifti_gz', text_format,
+                FilesetSelector('mrtrix', text_format, 'mrtrix'),
+                FilesetSelector('nifti_gz', text_format,
                              'nifti_gz'),
-                DatasetMatch('dicom', dicom_format,
+                FilesetSelector('dicom', dicom_format,
                              't1_mprage_sag_p2_iso_1_ADNI'),
-                DatasetMatch('directory', directory_format,
+                FilesetSelector('directory', directory_format,
                              't1_mprage_sag_p2_iso_1_ADNI'),
-                DatasetMatch('zip', zip_format, 'zip')])
+                FilesetSelector('zip', zip_format, 'zip')])
         study.data('nifti_gz_from_dicom')
         study.data('mrtrix_from_nifti_gz')
         study.data('nifti_from_mrtrix')
         study.data('directory_from_zip')
         study.data('zip_from_directory')
-        self.assertDatasetCreated('nifti_gz_from_dicom.nii.gz',
+        self.assertFilesetCreated('nifti_gz_from_dicom.nii.gz',
                                   study.name)
-        self.assertDatasetCreated('mrtrix_from_nifti_gz.mif',
+        self.assertFilesetCreated('mrtrix_from_nifti_gz.mif',
                                   study.name)
-        self.assertDatasetCreated('nifti_from_mrtrix.nii', study.name)
-        self.assertDatasetCreated('directory_from_zip', study.name)
-        self.assertDatasetCreated('zip_from_directory.zip', study.name)
+        self.assertFilesetCreated('nifti_from_mrtrix.nii', study.name)
+        self.assertFilesetCreated('directory_from_zip', study.name)
+        self.assertFilesetCreated('zip_from_directory.zip', study.name)

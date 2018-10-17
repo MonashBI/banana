@@ -1,0 +1,225 @@
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=mex 2012.6.30)  7 OCT 2013 19:05
+entering extended mode
+ restricted \write18 enabled.
+ %&-line parsing enabled.
+**eig3volume.c
+(./eig3volume.c
+This is MeX  Version 1.05  18 XII 1993  (B. Jackowski & M. Ry\'cko)
+! You can't use `macro parameter character #' in vertical mode.
+l.1 #
+     include "mex.h"
+? 
+! You can't use `macro parameter character #' in horizontal mode.
+l.2 #
+     include "math.h"
+? 
+! You can't use `macro parameter character #' in horizontal mode.
+l.3 #
+     ifdef MAX
+? 
+! You can't use `macro parameter character #' in horizontal mode.
+l.4 #
+     undef MAX
+? 
+! You can't use `macro parameter character #' in horizontal mode.
+l.5 #
+     endif
+? 
+! You can't use `macro parameter character #' in horizontal mode.
+l.6 #
+     define MAX(a, b) ((a)>(b)?(a):(b))
+? 
+! You can't use `macro parameter character #' in horizontal mode.
+l.7 #
+     define n 3
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.19 _
+      _inline double absd(double val){ if(val>0){ return val;} else { return...
+
+? 
+! Missing { inserted.
+<to be read again> 
+                   _
+l.19 __
+       inline double absd(double val){ if(val>0){ return val;} else { return...
+
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.20 
+     
+? 
+! Missing } inserted.
+<inserted text> 
+                }
+<to be read again> 
+                   $
+<to be read again> 
+                   \par 
+l.20 
+     
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.207 void eigen_
+                 decomposition(double A[n][n], double V[n][n], double d[n]) {
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.220 
+      
+? 
+! Missing } inserted.
+<inserted text> 
+                }
+<to be read again> 
+                   $
+<to be read again> 
+                   \par 
+l.220 
+      
+? 
+! Interruption.
+<to be read again> 
+                   $
+<to be read again> 
+                   \par 
+l.220 
+      
+? 
+
+Overfull \hbox (470.6663pt too wide) in paragraph at lines 207--220
+[]\tenrm void eigen$[]\teni ecomposition\tenrm (\teni doubleA\tenrm [\teni n\te
+nrm ][\teni n\tenrm ]\teni ; doubleV\tenrm [\teni n\tenrm ][\teni n\tenrm ]\ten
+i ; doubled\tenrm [\teni n\tenrm ])[]$ |
+
+\hbox(7.5+2.5)x469.75499, glue set - 1.0
+.\hbox(0.0+0.0)x20.0
+.\tenrm v
+.\kern-0.27779
+.\tenrm o
+.\tenrm i
+.etc.
+
+! Misplaced alignment tab character &.
+l.223     if((da[0]>=da[1])&
+                            &(da[0]>da[2]))
+? 
+! Misplaced alignment tab character &.
+l.223     if((da[0]>=da[1])&&
+                             (da[0]>da[2]))
+? 
+! Misplaced alignment tab character &.
+l.229     else if((da[1]>=da[0])&
+                                 &(da[1]>da[2]))
+? 
+! Misplaced alignment tab character &.
+l.229     else if((da[1]>=da[0])&&
+                                  (da[1]>da[2]))
+? 
+
+Overfull \hbox (25.63492pt too wide) in paragraph at lines 221--241
+[]\tenrm /* Sort the eigen va-lues and vec-tors by abs eigen va-lue */ da[0]=ab
+sd(d[0]); da[1]=absd(d[1]); da[2]=absd(d[2]);|
+
+\hbox(7.5+2.5)x469.75499, glue set - 1.0
+.\hbox(0.0+0.0)x20.0
+.\tenrm /
+.\tenrm *
+.\glue 3.33333 plus 1.66666 minus 1.11111
+.\tenrm S
+.etc.
+
+[1]
+! Too many }'s.
+l.243 }
+       
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.250     float *Dxx_
+                     f, *Dxy_f, *Dxz_f, *Dyy_f, *Dyz_f, *Dzz_f;
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.252 
+      
+? 
+
+Overfull \hbox (43.23912pt too wide) in paragraph at lines 250--252
+[]\tenrm float *Dxx$[]\teni ; \tensy ^^C\teni Dxy[]; \tensy ^^C\teni Dxz[]; \te
+nsy ^^C\teni Dyy[]; \tensy ^^C\teni Dyz[]; \tensy ^^C\teni Dzz[]\tenrm ; \teni 
+float \tensy ^^C \teni Dvecx[]; \tensy ^^C\teni Dvecy[]; \tensy ^^C\teni Dvecz[
+]; \tensy ^^C\teni Deiga[]; \tensy ^^C\teni Deigb[]; \tensy ^^C\teni Deigc[]\te
+nrm ;$ |
+
+\hbox(7.5+2.86108)x469.75499, glue set - 1.0
+.\hbox(0.0+0.0)x20.0
+.\tenrm ^^M (ligature fl)
+.\tenrm o
+.\tenrm a
+.\tenrm t
+.etc.
+
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.253     mwSize output_
+                        dims[2]={1, 3};
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.257 
+      
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   _
+l.282     if(mxGetClassID(prhs[0])==mxDOUBLE_
+                                             CLASS) {
+? 
+! Missing $ inserted.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.290 
+      
+? 
+! Emergency stop.
+<inserted text> 
+                $
+<to be read again> 
+                   \par 
+l.290 
+      
+End of file on the terminal!
+
+Output written on eig3volume.dvi (1 page, 5864 bytes).

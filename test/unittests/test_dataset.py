@@ -1,15 +1,15 @@
 from arcana.testing import BaseTestCase, BaseMultiSubjectTestCase
 from arcana.study.base import Study, StudyMetaClass
-from arcana.dataset import DatasetSpec, DatasetMatch
-from nianalysis.file_format import (
+from arcana.data import FilesetSpec, FilesetSelector
+from banana.file_format import (
     dicom_format)
 
 
 class TestMatchStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        DatasetSpec('gre_phase', dicom_format),
-        DatasetSpec('gre_mag', dicom_format)]
+        FilesetSpec('gre_phase', dicom_format),
+        FilesetSpec('gre_mag', dicom_format)]
 
     def dummy_pipeline1(self):
         pass
@@ -18,7 +18,7 @@ class TestMatchStudy(Study, metaclass=StudyMetaClass):
         pass
 
 
-class TestDatasetMatching(BaseMultiSubjectTestCase):
+class TestFilesetSelectoring(BaseMultiSubjectTestCase):
     pass
 
 
@@ -29,10 +29,10 @@ class TestDicomTagMatch(BaseTestCase):
     PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
     MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
     DICOM_MATCH = [
-        DatasetMatch('gre_phase', dicom_format, GRE_PATTERN,
+        FilesetSelector('gre_phase', dicom_format, GRE_PATTERN,
                      dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE},
                      is_regex=True),
-        DatasetMatch('gre_mag', dicom_format, GRE_PATTERN,
+        FilesetSelector('gre_mag', dicom_format, GRE_PATTERN,
                      dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE},
                      is_regex=True)]
 
@@ -40,8 +40,8 @@ class TestDicomTagMatch(BaseTestCase):
         study = self.create_study(
             TestMatchStudy, 'test_dicom',
             inputs=self.DICOM_MATCH)
-        phase = study.data('gre_phase')[0]
-        mag = study.data('gre_mag')[0]
+        phase = list(study.data('gre_phase'))[0]
+        mag = list(study.data('gre_mag'))[0]
         self.assertEqual(phase.name, 'gre_field_mapping_3mm_phase')
         self.assertEqual(mag.name, 'gre_field_mapping_3mm_mag')
 
@@ -49,13 +49,13 @@ class TestDicomTagMatch(BaseTestCase):
         study = self.create_study(
             TestMatchStudy, 'test_dicom',
             inputs=[
-                DatasetMatch('gre_phase', dicom_format,
+                FilesetSelector('gre_phase', dicom_format,
                              pattern=self.GRE_PATTERN, order=1,
                              is_regex=True),
-                DatasetMatch('gre_mag', dicom_format,
+                FilesetSelector('gre_mag', dicom_format,
                              pattern=self.GRE_PATTERN, order=0,
                              is_regex=True)])
-        phase = study.data('gre_phase')[0]
-        mag = study.data('gre_mag')[0]
+        phase = list(study.data('gre_phase'))[0]
+        mag = list(study.data('gre_mag'))[0]
         self.assertEqual(phase.name, 'gre_field_mapping_3mm_phase')
         self.assertEqual(mag.name, 'gre_field_mapping_3mm_mag')
