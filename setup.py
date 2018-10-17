@@ -2,7 +2,7 @@ import sys
 import os.path
 from setuptools import setup, find_packages
 
-PACKAGE_NAME = 'nianalysis'
+PACKAGE_NAME = 'banana'
 
 # Get version from module inside package
 sys.path.insert(0, os.path.join(os.path.dirname(__file__),
@@ -17,7 +17,7 @@ setup(
     author='Tom G. Close',
     author_email='tom.g.close@gmail.com',
     packages=find_packages(),
-    url='https://github.com/monashbiomedicalimaging/nianalysis',
+    url='https://github.com/MonashBI/banana',
     license='The Apache Software Licence 2.0',
     description=(
         'A collection of "Arcana" (http://arcana.readthedocs.io) Study '

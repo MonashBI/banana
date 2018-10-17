@@ -10,7 +10,7 @@
 *.swp 
 .settings/
 __pycache__
-/nianalysis.egg-info/
-/nianalysis/atlases
-/nianalysis/templates
+/banana.egg-info/
+/banana/atlases
+/banana/templates
 /.gitlab-ci.yml
