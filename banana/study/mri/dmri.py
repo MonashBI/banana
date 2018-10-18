@@ -30,7 +30,7 @@ from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 
 
-class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
+class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
@@ -97,11 +97,11 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
         SwitchSpec('brain_extract_method', 'mrtrix',
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
-    
+
     @property
     def multi_tissue(self):
         return self.branch('response_algorithm',
-                           ('msmt_5tt', 'dhollander'))    
+                           ('msmt_5tt', 'dhollander'))
 
     def preprocess_pipeline(self, **name_maps):  # @UnusedVariable @IgnorePep8
         """
@@ -295,7 +295,7 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
                 requirements=[mrtrix3_req])
 
         else:
-            pipeline = super(DiffusionStudy, self).brain_extraction_pipeline(
+            pipeline = super(DmriStudy, self).brain_extraction_pipeline(
                 **name_maps)
         return pipeline
 
@@ -757,7 +757,7 @@ class DiffusionStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class NODDIStudy(DiffusionStudy, metaclass=StudyMetaClass):
+class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),

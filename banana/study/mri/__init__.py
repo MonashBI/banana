@@ -1,5 +1,5 @@
 from .base import MriStudy
-from .dmri import DiffusionStudy
+from .dmri import DmriStudy
 from .t1 import T1Study
 from .t2 import T2Study
 from .t2star import T2starStudy
