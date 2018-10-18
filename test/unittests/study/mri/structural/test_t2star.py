@@ -7,7 +7,7 @@ from arcana import FilesetSelector, LinearProcessor  # @IgnorePep8
 from arcana import MultiStudy, MultiStudyMetaClass, SubStudySpec, Parameter  # @IgnorePep8
 from banana.file_format import zip_format, dicom_format  # @IgnorePep8
 from banana.study.mri.structural.t1 import T1Study  # @IgnorePep8
-from banana.study.mri.structural.t2star import T2StarStudy  # @IgnorePep8
+from banana.study.mri.structural.t2star import T2starStudy  # @IgnorePep8
 
 
 logger = logging.getLogger('arcana')
@@ -24,7 +24,7 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         SubStudySpec(
             't1', T1Study),
         SubStudySpec(
-            't2star', T2StarStudy,
+            't2star', T2starStudy,
             name_map={'t1_brain': 'coreg_ref_brain',
                       't1_coreg_to_atlas_mat': 'coreg_to_atlas_mat',
                       't1_coreg_to_atlas_warp': 'coreg_to_atlas_warp'})]

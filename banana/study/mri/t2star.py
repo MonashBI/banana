@@ -48,7 +48,7 @@ class CoilEchoFilter():
         return include
 
 
-class T2StarStudy(MriStudy, metaclass=StudyMetaClass):
+class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         # Set the magnitude to be generated from the preprocess_channels
