@@ -85,6 +85,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                             "using single echo")),
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
+        ParameterSpec('qsm_erosion_size', 2),
         SwitchSpec('linear_reg_method', 'ants',
                    MriStudy.parameter_spec('linear_reg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
@@ -117,7 +118,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             'mask_erosion',
             fsl.ErodeImage(
                 kernel_shape='sphere',
-                kernel_size=2,
+                kernel_size=self.parameter('qsm_erosion_size'),
                 output_type='NIFTI'),
             inputs={
                 'in_file': ('brain_mask', nifti_gz_format)},
