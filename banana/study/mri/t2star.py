@@ -85,7 +85,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                             "using single echo")),
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
-        ParameterSpec('qsm_erosion_size', 2),
+        ParameterSpec('qsm_erosion_size', 10),
         SwitchSpec('linear_reg_method', 'ants',
                    MriStudy.parameter_spec('linear_reg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
