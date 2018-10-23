@@ -24,3 +24,7 @@ from .file_format import registered_file_formats
 
 # Should be set explicitly in all FSL interfaces, but this squashes the warning
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
+
+# Import all Study classes into package root
+from .study import (  # @IgnorePep8
+    MriStudy, DmriStudy, T1Study, T2Study, T2starStudy, EpiStudy)
