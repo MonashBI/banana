@@ -116,7 +116,7 @@ class FslAtlas(BaseAtlas):
             The sub-study that the spec belongs to
         """
         if isinstance(self._resolution, str):
-            self._resolution = sub_study_spec.inverse_map(self._resolution)
+            self._resolution = sub_study_spec.map(self._resolution)
 
     def __eq__(self, other):
         return (
