@@ -19,12 +19,14 @@ setup(
     url='https://github.com/MonashBI/{}'.format(PACKAGE_NAME),
     license='The Apache Software Licence 2.0',
     description=(
-        'Biomedical imAgiNg ANAlysis (Banana): A collection biomedical '
+        'Biomedical imAgiNg ANAlysis (Banana): biomedical '
         'imaging analysis workflows implemented in the Arcana '
-        '(arcana.readthedocs.io) framework'),
+        'framework (arcana.readthedocs.io)'),
     long_description=open('README.rst').read(),
-    install_requires=['arcana>=0.2.4',
-                      'pydicom>=1.0'],
+    install_requires=['arcana>=0.2.5',
+                      'pydicom>=1.0',
+                      'nibabel>=2.3.0',
+                      'sklearn'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
@@ -34,5 +36,6 @@ setup(
         "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
         "Topic :: Scientific/Engineering :: Medical Science Apps."])
