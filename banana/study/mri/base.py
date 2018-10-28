@@ -166,7 +166,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
 
-        if (self.input_provided('header_image') or
+        if (self.provided('header_image') or
                 self.branch('reorient_to_std') or
                 self.parameter('force_channel_flip') is not None):
             # Read channel files reorient them into standard space and then
@@ -189,7 +189,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             else:
                 geom_dest_file = (list_channels, 'files')
 
-            if self.input_provided('header_image'):
+            if self.provided('header_image'):
                 # If header image is provided stomp its geometry over the
                 # acquired channels
                 copy_geom = pipeline.add(
@@ -772,7 +772,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def header_extraction_pipeline(self, **name_maps):
-        if self.input_provided('header_image'):
+        if self.provided('header_image'):
             dcm_in_name = 'header_image'
         else:
             dcm_in_name = 'magnitude'

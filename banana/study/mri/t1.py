@@ -77,7 +77,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'path': ('fs_recon_all', freesurfer_recon_all_format)})
 
-        if self.input_provided('t2_coreg'):
+        if self.provided('t2_coreg'):
             pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
                                    nifti_gz_format)
             recon_all.inputs.use_T2 = True

@@ -172,8 +172,8 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         # Preproc kwargs
         dwipreproc_kwargs = {}
 
-        if (self.input_provided('dwi_reference') or
-                self.input_provided('reverse_phase')):
+        if (self.provided('dwi_reference') or
+                self.provided('reverse_phase')):
             # Extract b=0 volumes
             dwiextract = pipeline.add(
                 'dwiextract',
@@ -199,7 +199,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 MRCat(),
                 inputs={
                     'second_scan': ((
-                        'dwi_reference' if self.input_provided('dwi_reference')
+                        'dwi_reference' if self.provided('dwi_reference')
                         else 'reverse_phase'), mrtrix_format)},
                 connect={
                     'first_scan': (mrconvert, 'out_file')},
