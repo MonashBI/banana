@@ -1,8 +1,11 @@
 import os
 import os.path as op
+import re
 from arcana.environment.requirement import (
-    CliRequirement, MatlabPackageRequirement,
+    CliRequirement, MatlabPackageRequirement, PythonPackageRequirement,
     matlab_req)  # @UnusedImport
+from arcana.exception import (
+    ArcanaRequirementNotFoundError, ArcanaRequirementVersionNotDectableError)
 
 # Command line requirements
 
@@ -15,18 +18,15 @@ afni_req = CliRequirement('afni', test_cmd='afni')
 stir_req = CliRequirement('stir', test_cmd='stir_math', version_switch=None)
 c3d_req = CliRequirement('c3d', test_cmd='c3d', version_switch=None)
 
-# Matlab package requirements
-
-spm_req = MatlabPackageRequirement('spm', test_func=None)
-noddi_req = MatlabPackageRequirement('noddi'),
-niftimatlab_req = MatlabPackageRequirement('niftimatlib')
-sti_req = MatlabPackageRequirement('sti')
-
 
 class FSLRequirement(CliRequirement):
+    """
+    Since FSL doesn't have a convenient '--version' switch we can use, we need
+    to interrogate the FSLDIR to find the fslversion
+    """
 
     def __init__(self):
-        super().__init__('fsl', None)
+        super().__init__('fsl', 'fslinfo', version_switch=None)
 
     def detect_version(self):
         """
@@ -35,12 +35,57 @@ class FSLRequirement(CliRequirement):
 
         Note that this doesn't pick up the micro release
         """
-        with open(op.join(os.getenv('FSLDIR'), 'etc', 'fslversion'), 'r') as f:
+        try:
+            fsl_dir = os.environ['FSLDIR']
+        except KeyError:
+            raise ArcanaRequirementNotFoundError(
+                "Could not find FSL, 'FSLDIR' environment variable is not set")
+        with open(op.join(fsl_dir, 'etc', 'fslversion'), 'r') as f:
             contents = f.read()
         return self.parse_version(contents.strip())
 
 
+# Create an instance of the FSLRequirement class
 fsl_req = FSLRequirement()
+
+
+# Matlab package requirements
+
+class SpmRequirement(MatlabPackageRequirement):
+
+    def __init__(self):
+        super().__init__('spm', test_func='spm_authors')
+
+    def parse_help_text(self, help_text):
+        match = re.search(
+            r'Copyright \(C\) [\d\-\, ]*(?<!\d)(\d+) Wellcome Trust Centre',
+            help_text)
+        if match is None:
+            raise ArcanaRequirementVersionNotDectableError(
+                "Could not parse year of copyright from spm_authors in order "
+                "to determine the version of {}".format(self))
+        copyright_year = match.group(1)
+        if copyright_year == '2010':
+            version = 8
+        elif copyright_year == '2012':
+            version = 12
+        else:
+            raise ArcanaRequirementVersionNotDectableError(
+                "Do not know the version of SPM corresponding to the year of "
+                "copyright of {}".format(copyright_year))
+        return version
+
+
+spm_req = SpmRequirement()
+sti_req = MatlabPackageRequirement('sti', test_func='V_SHARP')
+# noddi_req = MatlabPackageRequirement('noddi')
+
+
+# Python package requirements
+
+sklearn_req = PythonPackageRequirement('sklearn')
+pydicom_req = PythonPackageRequirement('pydicom')
+scipy_req = PythonPackageRequirement('scipy')
 
 # mrtrix0_3_req = CliRequirement('mrtrix', min_version=(0, 3, 12),
 #                                max_version=(0, 3, 15), test_cmd='mrconvert')
@@ -77,8 +122,3 @@ fsl_req = FSLRequirement()
 # matlab2015_req = Requirement('matlab', min_version=(2015, 'a'),
 #                                 version_split=matlab_version_split,
 #                                 test_cmd='matlab')
-
-if __name__ == '__main__':
-
-    for req in (mrtrix_req):  #, fsl_req, ants_req, freesurfer_req, matlab_req, noddi_req, niftimatlab_req, dcm2niix_req, fix_req, afni_req, stir_req, c3d_req):
-        print('{}: {}'.format(req.detect_version()))

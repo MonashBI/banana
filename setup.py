@@ -25,8 +25,7 @@ setup(
     long_description=open('README.rst').read(),
     install_requires=['arcana>=0.2.6',
                       'pydicom>=1.0',
-                      'nibabel>=2.3.0',
-                      'sklearn'],
+                      'nibabel>=2.3.0'],
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
