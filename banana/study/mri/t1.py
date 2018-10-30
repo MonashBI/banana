@@ -1,7 +1,7 @@
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.interfaces.utils import DummyReconAll as ReconAll
-from banana.requirement import freesurfer_req, ants_req, fsl_req
+from banana.requirement import freesurfer_req('5.3'), ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.interfaces import utils
@@ -65,7 +65,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 openmp=self.processor.num_processes),
             inputs={
                 'T1_files': ('magnitude', nifti_gz_format)},
-            requirements=[freesurfer_req], wall_time=2000)
+            requirements=[freesurfer_req('5.3')], wall_time=2000)
 
         # Wrapper around os.path.join
         pipeline.add(
@@ -102,7 +102,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             ants.N4BiasFieldCorrection(),
             inputs={
                 'input_image': ('t1', nifti_gz_format)},
-            requirements=[ants19_req],
+            requirements=[ants_req('1.9')],
             wall_time=60, memory=12000)
 
         pipeline.add(
@@ -113,7 +113,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('betted_T1', nifti_gz_format),
                 'mask_file': ('betted_T1_mask', nifti_gz_format)},
-            requirements=[fsl5_req], memory=8000, wall_time=45)
+            requirements=[fsl_req('5.0.8')], memory=8000, wall_time=45)
 
         return pipeline
 
@@ -147,7 +147,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('suit_mask', nifti_gz_format)},
             connections={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants19_req], memory=16000, wall_time=120)
+            requirements=[ants_req('1.9')], memory=16000, wall_time=120)
 
         pipeline.add(
             'maths2',
@@ -161,6 +161,6 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('cetted_T1', nifti_gz_format),
                 'output_image': ('cetted_T1_mask', nifti_gz_format)},
-            requirements=[fsl5_req], memory=16000, wall_time=5)
+            requirements=[fsl_req('5.0.8')], memory=16000, wall_time=5)
 
         return pipeline

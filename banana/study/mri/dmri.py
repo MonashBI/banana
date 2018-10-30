@@ -137,7 +137,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             outputs={
                 'bvecs_file': ('grad_dirs', fsl_bvecs_format),
                 'bvals_file': ('bvalues', fsl_bvals_format)},
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
 
         # Denoise the dwi-scan
         if self.branch('preproc_denoise'):
@@ -147,7 +147,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 DWIDenoise(),
                 inputs={
                     'in_file': ('magnitude', nifti_gz_format)},
-                requirements=[mrtrix3_req])
+                requirements=[mrtrix_req('3.0')])
 
             # Calculate residual noise
             subtract_operands = pipeline.add(
@@ -167,7 +167,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     'operands': (subtract_operands, 'out')},
                 outputs={
                     'out_file': ('noise_residual', mrtrix_format)},
-                requirements=[mrtrix3_req])
+                requirements=[mrtrix_req('3.0')])
 
         # Preproc kwargs
         dwipreproc_kwargs = {}
@@ -182,7 +182,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     out_ext='.nii.gz'),
                 inputs={
                     'in_file': ('magnitude', dicom_format)},
-                requirements=[mrtrix3_req])
+                requirements=[mrtrix_req('3.0')])
 
             # Get first b=0 from dwi b=0 volumes
             mrconvert = pipeline.add(
@@ -191,7 +191,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     coord=(3, 0)),
                 connect={
                     'in_file': (dwiextract, 'out_file')},
-                requirements=[mrtrix3_req])
+                requirements=[mrtrix_req('3.0')])
 
             # Concatenate extracted forward rpe with reverse rpe
             mrcat = pipeline.add(
@@ -203,7 +203,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                         else 'reverse_phase'), mrtrix_format)},
                 connect={
                     'first_scan': (mrconvert, 'out_file')},
-                requirements=[mrtrix3_req])
+                requirements=[mrtrix_req('3.0')])
 
             # Create node to assign the right PED to the diffusion
             prep_dwi = pipeline.add(
@@ -234,7 +234,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 'se_epi': (mrcat, 'out_file')},
             outputs={
                 'eddy_parameters': ('eddy_par', eddy_par_format)},
-            requirements=[mrtrix3_req, fsl510_req], wall_time=60)
+            requirements=[mrtrix_req('3.0'), fsl_req('5.0.10')], wall_time=60)
         if self.branch('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
         else:
@@ -251,7 +251,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 'in_file': (dwipreproc, 'out_file')},
             outputs={
                 'out_file': ('preproc', nifti_gz_format)},
-            requirements=[fsl509_req])
+            requirements=[fsl_req('5.0.9')])
 
         return pipeline
 
@@ -292,7 +292,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     'grad_fsl': (grad_fsl, 'out')},
                 outputs={
                     'out_file': ('brain_mask', nifti_gz_format)},
-                requirements=[mrtrix3_req])
+                requirements=[mrtrix_req('3.0')])
 
         else:
             pipeline = super(DmriStudy, self).brain_extraction_pipeline(
@@ -321,8 +321,8 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         bias_correct = pipeline.add(
             "bias_correct", DWIBiasCorrect(),
             requirements=(
-                [mrtrix3_req] +
-                [ants2_req if bias_method == 'ants' else fsl509_req]))
+                [mrtrix_req('3.0')] +
+                [ants_req('2.0') if bias_method == 'ants' else fsl_req('5.0.9')]))
         bias_correct.inputs.method = bias_method
         # Gradient merge node
         fsl_grads = pipeline.add(
@@ -354,7 +354,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.pipeline(
             name='intensity_normalization',
             desc="Corrects for B1 field inhomogeneity",
-            references=[mrtrix3_req],
+            references=[mrtrix_req('3.0')],
             name_maps=name_maps)
         # Convert from nifti to mrtrix format
         grad_merge = pipeline.add("grad_merge", MergeTuple(2))
@@ -463,7 +463,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         metrics = pipeline.add(
             'metrics',
             TensorMetrics(),
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
         metrics.inputs.out_fa = 'fa.nii.gz'
         metrics.inputs.out_adc = 'adc.nii.gz'
         # Connect to inputs
@@ -505,7 +505,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         response = pipeline.add(
             'response',
             ResponseSD(),
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
         response.inputs.algorithm = self.parameter('response_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.add(
@@ -592,7 +592,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         dwi2fod = pipeline.add(
             'dwi2fod',
             EstimateFOD(),
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
         dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
         # Gradient merge node
         fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
@@ -666,7 +666,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         # Extraction node
         extract_b0s = pipeline.add(
             'extract_b0s', ExtractDWIorB0(),
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
         extract_b0s.inputs.bzero = True
         extract_b0s.inputs.quiet = True
         # FIXME: Need a registration step before the mean
@@ -674,13 +674,13 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         mean = pipeline.add(
             "mean",
             MRMath(),
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
         mean.inputs.axis = 3
         mean.inputs.operation = 'mean'
         mean.inputs.quiet = True
         # Convert to Nifti
         mrconvert = pipeline.add("output_conversion", MRConvert(),
-                                         requirements=[mrtrix3_req])
+                                         requirements=[mrtrix_req('3.0')])
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect inputs
@@ -795,7 +795,7 @@ class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
             name_maps=name_maps)
         # Create concatenation node
         mrcat = pipeline.add('mrcat', MRCat(),
-                                     requirements=[mrtrix3_req])
+                                     requirements=[mrtrix_req('3.0')])
         mrcat.inputs.quiet = True
         # Connect inputs
         pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
@@ -847,25 +847,25 @@ class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
         # Create node to unzip the nifti files
         unzip_bias_correct = pipeline.add(
             "unzip_bias_correct", MRConvert(),
-            requirements=[mrtrix3_req])
+            requirements=[mrtrix_req('3.0')])
         unzip_bias_correct.inputs.out_ext = 'nii'
         unzip_bias_correct.inputs.quiet = True
         unzip_mask = pipeline.add("unzip_mask", MRConvert(),
-                                  requirements=[mrtrix3_req])
+                                  requirements=[mrtrix_req('3.0')])
         unzip_mask.inputs.out_ext = 'nii'
         unzip_mask.inputs.quiet = True
         # Create create-roi node
         create_roi = pipeline.add(
             'create_roi',
             CreateROI(),
-            requirements=[noddi_req, matlab2015_req],
+            requirements=[noddi_req, matlab_req('R2015a')],
             memory=4000)
         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
         # Create batch-fitting node
         batch_fit = pipeline.add(
             "batch_fit", BatchNODDIFitting(),
-            requirements=[noddi_req, matlab2015_req], wall_time=180,
+            requirements=[noddi_req, matlab_req('R2015a')], wall_time=180,
             memory=8000)
         batch_fit.inputs.model = self.parameter('noddi_model')
         batch_fit.inputs.nthreads = self.processor.num_processes
@@ -874,7 +874,7 @@ class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
         save_params = pipeline.add(
             "save_params",
             SaveParamsAsNIfTI(),
-            requirements=[noddi_req, matlab2015_req],
+            requirements=[noddi_req, matlab_req('R2015a')],
             memory=4000)
         save_params.inputs.output_prefix = 'params'
         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')

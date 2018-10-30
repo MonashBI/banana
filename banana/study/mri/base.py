@@ -199,7 +199,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     connect={
                         'dest_file': geom_dest_file},
                     iterfield=(['dest_file']),
-                    requirements=[fsl5_req])
+                    requirements=[fsl_req('5.0.8')])
                 reorient_in_file = (copy_geom, 'out_file')
             else:
                 reorient_in_file = geom_dest_file
@@ -212,7 +212,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     connect={
                         'in_file': reorient_in_file},
                     iterfield=['in_file'],
-                    requirements=[fsl5_req])
+                    requirements=[fsl_req('5.0.8')])
                 copy_to_dir_in_files = (reorient, 'out_file')
             else:
                 copy_to_dir_in_files = reorient_in_file
@@ -310,7 +310,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'out_file': (reg, nifti_gz_format),
                 'out_matrix_file': (matrix, text_matrix_format)},
-            requirements=[fsl5_req], wall_time=5)
+            requirements=[fsl_req('5.0.8')], wall_time=5)
 
         return pipeline
 
@@ -333,7 +333,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'out_file': (qformed, nifti_gz_format),
                 'out_matrix_file': (qformed_mat, text_matrix_format)},
-            requirements=[fsl5_req], wall_time=5)
+            requirements=[fsl_req('5.0.8')], wall_time=5)
 
         return pipeline
 
@@ -368,7 +368,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'source': ('t2', nifti_format)},
             outputs={
                 'coregistered_source': ('t2_coreg_t1', nifti_format)},
-            requirements=[spm12_req], wall_time=30)
+            requirements=[spm_req(12)], wall_time=30)
         return pipeline
 
     def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
@@ -390,7 +390,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'reg_file': (reg, nifti_gz_format),
                 'regmat': (matrix, text_matrix_format)},
-            wall_time=10, requirements=[ants2_req])
+            wall_time=10, requirements=[ants_req('2.0')])
 
         return pipeline
 
@@ -427,7 +427,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('brain', nifti_gz_format),
                 'mask_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl509_req])
+            requirements=[fsl_req('5.0.9')])
         # Set either robust or reduce bias
         if self.branch('bet_robust'):
             bet.inputs.robust = True
@@ -457,7 +457,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'ref_file': ('atlas', nifti_gz_format),
                 'input_file': (in_file, nifti_gz_format)},
-            wall_time=25, requirements=[ants2_req])
+            wall_time=25, requirements=[ants_req('2.0')])
 
         merge_trans = pipeline.add(
             'merge_transforms',
@@ -487,7 +487,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'invert_transform_flags': (trans_flags, 'out')},
             wall_time=7,
             memory=24000,
-            requirements=[ants2_req])
+            requirements=[ants_req('2.0')])
 
         maths1 = pipeline.add(
             'binarize',
@@ -498,7 +498,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file': (apply_trans, 'output_image')},
             outputs={
                 'out_file': ('brain_mask', nifti_gz_format)},
-            wall_time=5, requirements=[fsl5_req])
+            wall_time=5, requirements=[fsl_req('5.0.8')])
 
         maths2 = pipeline.add(
             'mask',
@@ -511,7 +511,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file2': (maths1, 'out_file')},
             outputs={
                 'out_file': ('brain', nifti_gz_format)},
-            wall_time=5, requirements=[fsl5_req])
+            wall_time=5, requirements=[fsl_req('5.0.8')])
 
         if self.branch('optibet_gen_report'):
             pipeline.add(
@@ -524,7 +524,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'im2': (maths2, 'out_file')},
                 outputs={
                     'report': ('optiBET_report', gif_format)},
-                requirements=[fsl5_req])
+                requirements=[fsl_req('5.0.8')])
 
         return pipeline
 
@@ -563,7 +563,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('preproc', nifti_gz_format)},
-            requirements=[fsl5_req])
+            requirements=[fsl_req('5.0.8')])
 
         reorient_mask = pipeline.add(
             'reorient_mask',
@@ -571,7 +571,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl5_req])
+            requirements=[fsl_req('5.0.8')])
 
         reorient_brain = pipeline.create_node(
             'reorient_brain',
@@ -579,7 +579,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('brain', nifti_gz_format)},
-            requirements=[fsl5_req])
+            requirements=[fsl_req('5.0.8')])
 
         # Affine transformation to MNI space
         flirt = pipeline.add(
@@ -591,7 +591,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'reference': ('atlas_brain', nifti_gz_format)},
             connect={
                 'in_file': (reorient_brain, 'out_file')},
-            requirements=[fsl5_req],
+            requirements=[fsl_req('5.0.8')],
             wall_time=5)
 
         # Apply mask if corresponding subsampling scheme is 1
@@ -626,7 +626,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'warped_file': ('coreg_to_atlas', nifti_gz_format),
                 'fieldcoeff_file': ('coreg_to_atlas_coeff', nifti_gz_format)},
-            requirements=[fsl5_req],
+            requirements=[fsl_req('5.0.8')],
             wall_time=60)
         # Set registration parameters
         # TODO: Need to work out which parameters to use
@@ -655,7 +655,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'reg_file': ('coreg_to_atlas', nifti_gz_format),
                 'regmat': ('coreg_to_atlas_mat', text_matrix_format),
                 'warp_file': ('coreg_to_atlas_warp', nifti_gz_format)},
-            wall_time=25, requirements=[ants2_req])
+            wall_time=25, requirements=[ants_req('2.0')])
 
         pipeline.add(
             'slices',
@@ -667,7 +667,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'im2': (ants_reg, 'reg_file')},
             outputs={
                 'report': ('coreg_to_atlas_report', gif_format)},
-            wall_time=1, requirements=[fsl5_req])
+            wall_time=1, requirements=[fsl_req('5.0.8')])
 
         return pipeline
 
@@ -688,7 +688,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 out_basename='Reference_segmentation'),
             inputs={
                 'in_files': ('brain', nifti_gz_format)},
-            requirements=[fsl509_req]),
+            requirements=[fsl_req('5.0.9')]),
 
         # Determine output field of split to use
         if img_type == 1:
@@ -741,7 +741,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     fsl.utils.Reorient2Std(),
                     inputs={
                         'in_file': ('magnitude', nifti_gz_format)},
-                    requirements=[fsl509_req])
+                    requirements=[fsl_req('5.0.9')])
     #         swap.inputs.new_dims = self.parameter('preproc_new_dims')
 
             if self.parameter('preproc_resolution') is not None:
@@ -750,7 +750,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     MRResize(
                         voxel=self.parameter('preproc_resolution')),
                     connect={'in_file': (swap, 'out_file')},
-                    requirements=[mrtrix3_req])
+                    requirements=[mrtrix_req('3.0')])
                 pipeline.connect_output('preproc', resample, 'out_file',
                                         nifti_gz_format)
             else:
