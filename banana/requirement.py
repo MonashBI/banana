@@ -11,12 +11,12 @@ from arcana.exception import (
 
 mrtrix_req = CliRequirement('mrtrix', test_cmd='mrinfo')
 ants_req = CliRequirement('ants', test_cmd='antsRegistration')
-dcm2niix_req('1.0.2') = CliRequirement('dcm2niix', test_cmd='dcm2niix')
-freesurfer_req('5.3') = CliRequirement('freesurfer', test_cmd='recon-all')
-fix_req('1.0') = CliRequirement('fix', test_cmd='fix', version_switch='')
-afni_req('16.2.10') = CliRequirement('afni', test_cmd='afni')
-stir_req('3.0') = CliRequirement('stir', test_cmd='stir_math', version_switch=None)
-c3d_req('1.1.0') = CliRequirement('c3d', test_cmd='c3d', version_switch=None)
+dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
+freesurfer_req = CliRequirement('freesurfer', test_cmd='recon-all')
+fix_req = CliRequirement('fix', test_cmd='fix', version_switch='')
+afni_req = CliRequirement('afni', test_cmd='afni')
+stir_req = CliRequirement('stir', test_cmd='stir_math', version_switch=None)
+c3d_req = CliRequirement('c3d', test_cmd='c3d', version_switch=None)
 
 
 class FSLRequirement(CliRequirement):
