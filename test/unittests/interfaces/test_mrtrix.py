@@ -3,7 +3,7 @@ from arcana.testing import BaseTestCase
 import tempfile
 from arcana.node import Node
 from banana.interfaces.mrtrix import MRCalc
-from banana.requirement import mrtrix_req('3.0')
+from banana.requirement import mrtrix_req.v('3.0')
 from banana.interfaces.mrtrix.utils import ExtractFSLGradients
 
 
@@ -14,7 +14,7 @@ class TestMRCalcInterface(BaseTestCase):
         tmp_dir = tempfile.mkdtemp()
         out_file = os.path.join(tmp_dir, 'out_file.mif')
         mrcalc = Node(MRCalc(), name='mrcalc',
-                      requirements=[mrtrix_req('3.0')])
+                      requirements=[mrtrix_req.v('3.0')])
         mrcalc.inputs.operands = [os.path.join(self.session_dir,
                                                'threes.mif'),
                                   os.path.join(self.session_dir,

@@ -121,7 +121,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 output_type='NIFTI'),
             inputs={
                 'in_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl_req('5.0.8')],
+            requirements=[fsl_req.v('5.0.8')],
             wall_time=15, memory=12000)
 
         # If we have multiple echoes we can combine the phase images from
@@ -313,7 +313,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req('1.9')],
+            requirements=[ants_req.v('1.9')],
             memory=16000, wall_time=30)
 
         apply_trans_s = pipeline.add(
@@ -327,7 +327,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req('1.9')], memory=16000, wall_time=30)
+            requirements=[ants_req.v('1.9')], memory=16000, wall_time=30)
 
         apply_trans_a = pipeline.add(
             'ApplyTransform_A_Prior',
@@ -340,7 +340,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('mni_template_atlas_prior', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req('1.9')],
+            requirements=[ants_req.v('1.9')],
             memory=16000, wall_time=30)
 
         apply_trans_v = pipeline.add(
@@ -354,7 +354,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req('1.9')],
+            requirements=[ants_req.v('1.9')],
             memory=16000, wall_time=30)
 
         # Run CV code
@@ -372,7 +372,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'vein_atlas': (apply_trans_v, 'output_image')},
             outputs={
                 'out_file': ('composite_vein_image', nifti_format)},
-            requirements=[matlab_req('R2015a')],
+            requirements=[matlab_req.v('R2015a')],
             wall_time=300, memory=24000)
 
         return pipeline
@@ -394,7 +394,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'mask': ('brain_mask', nifti_format)},
             outputs={
                 'out_file': ('vein_mask', nifti_format)},
-            requirements=[matlab_req('R2015a')],
+            requirements=[matlab_req.v('R2015a')],
             wall_time=30, memory=16000)
 
         return pipeline

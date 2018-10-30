@@ -101,7 +101,7 @@ class FslAtlas(BaseAtlas):
         full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
-        fsl_ver = self.study.environment.load(fsl_req('5.0.8'))
+        fsl_ver = self.study.environment.load(fsl_req.v('5.0.8'))
         atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
         self.study.environment.unload(fsl_ver)
         return op.join(atlas_dir, full_atlas_name + '.nii.gz')
