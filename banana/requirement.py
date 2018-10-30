@@ -9,11 +9,11 @@ from arcana.environment.requirement import (
 mrtrix_req = CliRequirement('mrtrix', test_cmd='mrinfo')
 ants_req = CliRequirement('ants', test_cmd='antsRegistration')
 dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
-# freesurfer_req = CliRequirement('freesurfer', test_cmd='recon-all')
-# fix_req = CliRequirement('fix', test_cmd='fix')
-# afni_req = CliRequirement('afni', test_cmd='afni')
-# stir_req = CliRequirement('stir', test_cmd='stir_math')
-# c3d_req = CliRequirement('c3d', test_cmd='c3d', version_switch=None)
+freesurfer_req = CliRequirement('freesurfer', test_cmd='recon-all')
+fix_req = CliRequirement('fix', test_cmd='fix')
+afni_req = CliRequirement('afni', test_cmd='afni')
+stir_req = CliRequirement('stir', test_cmd='stir_math', version_switch=None)
+c3d_req = CliRequirement('c3d', test_cmd='c3d', version_switch=None)
 
 # Matlab package requirements
 
