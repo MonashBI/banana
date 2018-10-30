@@ -8,7 +8,7 @@ from banana.file_format import (
     par_format, motion_mats_format)
 from banana.citation import fsl_cite
 from nipype.interfaces import fsl
-from banana.requirement import fsl509_req
+from banana.requirement import fsl_req
 from arcana.study.base import StudyMetaClass
 from banana.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)

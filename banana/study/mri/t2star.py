@@ -2,8 +2,7 @@ import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
-from banana.requirement import (fsl5_req, matlab2015_req,
-                                    ants19_req)
+from banana.requirement import (fsl_req, matlab_req, ants_req)
 from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from banana.file_format import (
@@ -146,7 +145,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
-                    'in_file': (channel_combine, 'phase')})
+                    'in_file': (channel_combine, 'phase')},
+                requirements=[sti_req])
 
             # Remove background noise
             vsharp = pipeline.add(
@@ -157,7 +157,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'in_file': (unwrap, 'out_file'),
-                    'mask': (erosion, 'out_file')})
+                    'mask': (erosion, 'out_file')},
+                requirements=[sti_req])
 
             # Run QSM iLSQR
             pipeline.add(
@@ -174,7 +175,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask')},
                 outputs={
-                    'qsm': ('qsm', nifti_format)})
+                    'qsm': ('qsm', nifti_format)},
+                requirements=[sti_req])
 
         else:
             # Dialate eroded mask
@@ -220,7 +222,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
-                    'in_file': (list_phases, 'files')})
+                    'in_file': (list_phases, 'files')},
+                requirements=[sti_req])
 
             # Background phase removal
             vsharp = pipeline.add(
@@ -231,7 +234,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'mask': (mask_coils, 'out_files'),
-                    'in_file': (unwrap, 'out_file')})
+                    'in_file': (unwrap, 'out_file')},
+                requirements=[sti_req])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -254,6 +258,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
+                requirements=[sti_req],
                 wall_time=45)  # FIXME: Should be dependent on number of coils
 
             # Combine channel QSM by taking the median coil value

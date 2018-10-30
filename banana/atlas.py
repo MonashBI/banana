@@ -2,7 +2,7 @@ import os
 import os.path as op
 from copy import copy
 import banana
-from banana.requirement import fsl5_req
+from banana.requirement import fsl_req
 from arcana.exception import (
     ArcanaError, ArcanaNameError, ArcanaUsageError, ArcanaDesignError)
 from arcana import Fileset, FilesetCollection, MultiStudy

@@ -1,7 +1,7 @@
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.interfaces.utils import DummyReconAll as ReconAll
-from banana.requirement import freesurfer_req, ants19_req, fsl5_req
+from banana.requirement import freesurfer_req, ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.interfaces import utils

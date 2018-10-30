@@ -19,7 +19,7 @@ from banana.file_format import (
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format,
     mrtrix_track_format)
 from banana.requirement import (
-    fsl509_req, mrtrix3_req, ants2_req, matlab2015_req, noddi_req, fsl510_req)
+    fsl_req, mrtrix_req, ants_req, matlab_req, noddi_req)
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 # from arcana.interfaces.iterators import SelectSession

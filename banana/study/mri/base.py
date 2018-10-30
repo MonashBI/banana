@@ -1,6 +1,5 @@
 from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
-from banana.requirement import spm12_req
 from banana.citation import spm_cite
 from banana.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
@@ -11,7 +10,7 @@ from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
     dicom_format, text_format, gif_format)
 from nipype.interfaces.utility import IdentityInterface
-from banana.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
+from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exception import ArcanaUsageError
 from banana.interfaces.mrtrix.transform import MRResize
