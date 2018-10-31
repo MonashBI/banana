@@ -57,7 +57,10 @@ class C3dRequirement(CliRequirement):
 
 class AfniVersion(Version):
 
-    regex = re.compile(r'\(Version AFNI_([\d\.]+)\)')
+    regex = re.compile(r'AFNI_([\d\.]+)')
+
+    def __str__(self):
+        return 'AFNI_{}'.format(super().__str__())
 
 
 mrtrix_req = CliRequirement('mrtrix', test_cmd='mrinfo')
@@ -67,8 +70,6 @@ freesurfer_req = CliRequirement('freesurfer', test_cmd='recon-all')
 fix_req = CliRequirement('fix', test_cmd='fix')
 afni_req = CliRequirement('afni', test_cmd='afni', version_cls=AfniVersion)
 fsl_req = FSLRequirement('fsl', test_cmd='fslinfo')
-
-
 c3d_req = C3dRequirement('c3d', test_cmd='c3d')
 
 # Matlab package requirements
