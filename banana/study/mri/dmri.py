@@ -19,7 +19,7 @@ from banana.file_format import (
     nifti_format, text_format, dicom_format, eddy_par_format, directory_format,
     mrtrix_track_format)
 from banana.requirement import (
-    fsl_req, mrtrix_req, ants_req, matlab_req, noddi_req)
+    fsl_req, mrtrix_req, ants_req, matlab_req)
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 # from arcana.interfaces.iterators import SelectSession
@@ -234,7 +234,8 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 'se_epi': (mrcat, 'out_file')},
             outputs={
                 'eddy_parameters': ('eddy_par', eddy_par_format)},
-            requirements=[mrtrix_req.v('3.0'), fsl_req.v('5.0.10')], wall_time=60)
+            requirements=[mrtrix_req.v('3.0'), fsl_req.v('5.0.10')],
+            wall_time=60)
         if self.branch('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', dwipreproc, 'in_file')
         else:
@@ -758,150 +759,150 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
-
-    add_data_specs = [
-        AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),
-        AcquiredFilesetSpec('high_b_dw_scan', mrtrix_format),
-        FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
-        FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('fibredirs_xvec', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('fibredirs_yvec', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('fibredirs_zvec', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('fmin', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
-        FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
-
-    add_param_specs = [ParameterSpec('noddi_model',
-                                         'WatsonSHStickTortIsoV_B0'),
-                           SwitchSpec('single_slice', False)]
-
-    def concatenate_pipeline(self, **name_maps):  # @UnusedVariable
-        """
-        Concatenates two dMRI filesets (with different b-values) along the
-        DW encoding (4th) axis
-        """
-#             inputs=[FilesetSpec('low_b_dw_scan', mrtrix_format),
-#                     FilesetSpec('high_b_dw_scan', mrtrix_format)],
-#             outputs=[FilesetSpec('dwi_scan', mrtrix_format)],
-        pipeline = self.pipeline(
-            name='concatenation',
-
-            desc=(
-                "Concatenate low and high b-value dMRI filesets for NODDI "
-                "processing"),
-            references=[mrtrix_cite],
-            name_maps=name_maps)
-        # Create concatenation node
-        mrcat = pipeline.add('mrcat', MRCat(),
-                                     requirements=[mrtrix_req.v('3.0')])
-        mrcat.inputs.quiet = True
-        # Connect inputs
-        pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
-        pipeline.connect_input('high_b_dw_scan', mrcat, 'second_scan')
-        # Connect outputs
-        pipeline.connect_output('dwi_scan', mrcat, 'out_file')
-        # Check inputs/outputs are connected
-        return pipeline
-
-    def noddi_fitting_pipeline(self, **name_maps):  # @UnusedVariable
-        """
-        Creates a ROI in which the NODDI processing will be performed
-
-        Parameters
-        ----------
-        single_slice: Int
-            If provided the processing is only performed on a single slice
-            (for testing)
-        noddi_model: Str
-            Name of the NODDI model to use for the fitting
-        nthreads: Int
-            Number of processes to use
-        """
-        pipeline_name = 'noddi_fitting'
-        inputs = [FilesetSpec('bias_correct', nifti_gz_format),
-                  FilesetSpec('grad_dirs', fsl_bvecs_format),
-                  FilesetSpec('bvalues', fsl_bvals_format)]
-        if self.branch('single_slice'):
-            inputs.append(FilesetSpec('eroded_mask', nifti_gz_format))
-        else:
-            inputs.append(FilesetSpec('brain_mask', nifti_gz_format))
-        pipeline = self.pipeline(
-            name=pipeline_name,
-            inputs=inputs,
-            outputs=[FilesetSpec('ficvf', nifti_format),
-                     FilesetSpec('odi', nifti_format),
-                     FilesetSpec('fiso', nifti_format),
-                     FilesetSpec('fibredirs_xvec', nifti_format),
-                     FilesetSpec('fibredirs_yvec', nifti_format),
-                     FilesetSpec('fibredirs_zvec', nifti_format),
-                     FilesetSpec('fmin', nifti_format),
-                     FilesetSpec('kappa', nifti_format),
-                     FilesetSpec('error_code', nifti_format)],
-            desc=(
-                "Creates a ROI in which the NODDI processing will be "
-                "performed"),
-            references=[noddi_cite],
-            name_maps=name_maps)
-        # Create node to unzip the nifti files
-        unzip_bias_correct = pipeline.add(
-            "unzip_bias_correct", MRConvert(),
-            requirements=[mrtrix_req.v('3.0')])
-        unzip_bias_correct.inputs.out_ext = 'nii'
-        unzip_bias_correct.inputs.quiet = True
-        unzip_mask = pipeline.add("unzip_mask", MRConvert(),
-                                  requirements=[mrtrix_req.v('3.0')])
-        unzip_mask.inputs.out_ext = 'nii'
-        unzip_mask.inputs.quiet = True
-        # Create create-roi node
-        create_roi = pipeline.add(
-            'create_roi',
-            CreateROI(),
-            requirements=[noddi_req, matlab_req.v('R2015a')],
-            memory=4000)
-        pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
-        pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
-        # Create batch-fitting node
-        batch_fit = pipeline.add(
-            "batch_fit", BatchNODDIFitting(),
-            requirements=[noddi_req, matlab_req.v('R2015a')], wall_time=180,
-            memory=8000)
-        batch_fit.inputs.model = self.parameter('noddi_model')
-        batch_fit.inputs.nthreads = self.processor.num_processes
-        pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
-        # Create output node
-        save_params = pipeline.add(
-            "save_params",
-            SaveParamsAsNIfTI(),
-            requirements=[noddi_req, matlab_req.v('R2015a')],
-            memory=4000)
-        save_params.inputs.output_prefix = 'params'
-        pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
-        pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')
-        pipeline.connect(unzip_mask, 'out_file', save_params,
-                         'brain_mask_file')
-        # Connect inputs
-        pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
-        if pipeline.branch('single_slice'):
-            pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
-        else:
-            pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
-        pipeline.connect_input('grad_dirs', batch_fit, 'bvecs_file')
-        pipeline.connect_input('bvalues', batch_fit, 'bvals_file')
-        # Connect outputs
-        pipeline.connect_output('ficvf', save_params, 'ficvf')
-        pipeline.connect_output('odi', save_params, 'odi')
-        pipeline.connect_output('fiso', save_params, 'fiso')
-        pipeline.connect_output('fibredirs_xvec', save_params,
-                                'fibredirs_xvec')
-        pipeline.connect_output('fibredirs_yvec', save_params,
-                                'fibredirs_yvec')
-        pipeline.connect_output('fibredirs_zvec', save_params,
-                                'fibredirs_zvec')
-        pipeline.connect_output('fmin', save_params, 'fmin')
-        pipeline.connect_output('kappa', save_params, 'kappa')
-        pipeline.connect_output('error_code', save_params, 'error_code')
-        # Check inputs/outputs are connected
-        return pipeline
+# class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
+# 
+#     add_data_specs = [
+#         AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),
+#         AcquiredFilesetSpec('high_b_dw_scan', mrtrix_format),
+#         FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
+#         FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('fibredirs_xvec', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('fibredirs_yvec', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('fibredirs_zvec', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('fmin', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
+#         FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
+# 
+#     add_param_specs = [ParameterSpec('noddi_model',
+#                                          'WatsonSHStickTortIsoV_B0'),
+#                            SwitchSpec('single_slice', False)]
+# 
+#     def concatenate_pipeline(self, **name_maps):  # @UnusedVariable
+#         """
+#         Concatenates two dMRI filesets (with different b-values) along the
+#         DW encoding (4th) axis
+#         """
+# #             inputs=[FilesetSpec('low_b_dw_scan', mrtrix_format),
+# #                     FilesetSpec('high_b_dw_scan', mrtrix_format)],
+# #             outputs=[FilesetSpec('dwi_scan', mrtrix_format)],
+#         pipeline = self.pipeline(
+#             name='concatenation',
+# 
+#             desc=(
+#                 "Concatenate low and high b-value dMRI filesets for NODDI "
+#                 "processing"),
+#             references=[mrtrix_cite],
+#             name_maps=name_maps)
+#         # Create concatenation node
+#         mrcat = pipeline.add('mrcat', MRCat(),
+#                                      requirements=[mrtrix_req.v('3.0')])
+#         mrcat.inputs.quiet = True
+#         # Connect inputs
+#         pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
+#         pipeline.connect_input('high_b_dw_scan', mrcat, 'second_scan')
+#         # Connect outputs
+#         pipeline.connect_output('dwi_scan', mrcat, 'out_file')
+#         # Check inputs/outputs are connected
+#         return pipeline
+# 
+#     def noddi_fitting_pipeline(self, **name_maps):  # @UnusedVariable
+#         """
+#         Creates a ROI in which the NODDI processing will be performed
+# 
+#         Parameters
+#         ----------
+#         single_slice: Int
+#             If provided the processing is only performed on a single slice
+#             (for testing)
+#         noddi_model: Str
+#             Name of the NODDI model to use for the fitting
+#         nthreads: Int
+#             Number of processes to use
+#         """
+#         pipeline_name = 'noddi_fitting'
+#         inputs = [FilesetSpec('bias_correct', nifti_gz_format),
+#                   FilesetSpec('grad_dirs', fsl_bvecs_format),
+#                   FilesetSpec('bvalues', fsl_bvals_format)]
+#         if self.branch('single_slice'):
+#             inputs.append(FilesetSpec('eroded_mask', nifti_gz_format))
+#         else:
+#             inputs.append(FilesetSpec('brain_mask', nifti_gz_format))
+#         pipeline = self.pipeline(
+#             name=pipeline_name,
+#             inputs=inputs,
+#             outputs=[FilesetSpec('ficvf', nifti_format),
+#                      FilesetSpec('odi', nifti_format),
+#                      FilesetSpec('fiso', nifti_format),
+#                      FilesetSpec('fibredirs_xvec', nifti_format),
+#                      FilesetSpec('fibredirs_yvec', nifti_format),
+#                      FilesetSpec('fibredirs_zvec', nifti_format),
+#                      FilesetSpec('fmin', nifti_format),
+#                      FilesetSpec('kappa', nifti_format),
+#                      FilesetSpec('error_code', nifti_format)],
+#             desc=(
+#                 "Creates a ROI in which the NODDI processing will be "
+#                 "performed"),
+#             references=[noddi_cite],
+#             name_maps=name_maps)
+#         # Create node to unzip the nifti files
+#         unzip_bias_correct = pipeline.add(
+#             "unzip_bias_correct", MRConvert(),
+#             requirements=[mrtrix_req.v('3.0')])
+#         unzip_bias_correct.inputs.out_ext = 'nii'
+#         unzip_bias_correct.inputs.quiet = True
+#         unzip_mask = pipeline.add("unzip_mask", MRConvert(),
+#                                   requirements=[mrtrix_req.v('3.0')])
+#         unzip_mask.inputs.out_ext = 'nii'
+#         unzip_mask.inputs.quiet = True
+#         # Create create-roi node
+#         create_roi = pipeline.add(
+#             'create_roi',
+#             CreateROI(),
+#             requirements=[noddi_req, matlab_req.v('R2015a')],
+#             memory=4000)
+#         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
+#         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
+#         # Create batch-fitting node
+#         batch_fit = pipeline.add(
+#             "batch_fit", BatchNODDIFitting(),
+#             requirements=[noddi_req, matlab_req.v('R2015a')], wall_time=180,
+#             memory=8000)
+#         batch_fit.inputs.model = self.parameter('noddi_model')
+#         batch_fit.inputs.nthreads = self.processor.num_processes
+#         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
+#         # Create output node
+#         save_params = pipeline.add(
+#             "save_params",
+#             SaveParamsAsNIfTI(),
+#             requirements=[noddi_req, matlab_req.v('R2015a')],
+#             memory=4000)
+#         save_params.inputs.output_prefix = 'params'
+#         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
+#         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')
+#         pipeline.connect(unzip_mask, 'out_file', save_params,
+#                          'brain_mask_file')
+#         # Connect inputs
+#         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
+#         if pipeline.branch('single_slice'):
+#             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
+#         else:
+#             pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
+#         pipeline.connect_input('grad_dirs', batch_fit, 'bvecs_file')
+#         pipeline.connect_input('bvalues', batch_fit, 'bvals_file')
+#         # Connect outputs
+#         pipeline.connect_output('ficvf', save_params, 'ficvf')
+#         pipeline.connect_output('odi', save_params, 'odi')
+#         pipeline.connect_output('fiso', save_params, 'fiso')
+#         pipeline.connect_output('fibredirs_xvec', save_params,
+#                                 'fibredirs_xvec')
+#         pipeline.connect_output('fibredirs_yvec', save_params,
+#                                 'fibredirs_yvec')
+#         pipeline.connect_output('fibredirs_zvec', save_params,
+#                                 'fibredirs_zvec')
+#         pipeline.connect_output('fmin', save_params, 'fmin')
+#         pipeline.connect_output('kappa', save_params, 'kappa')
+#         pipeline.connect_output('error_code', save_params, 'error_code')
+#         # Check inputs/outputs are connected
+#         return pipeline

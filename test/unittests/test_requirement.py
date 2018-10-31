@@ -1,7 +1,7 @@
 # from unittest import TestCase
 from arcana.environment import Requirement
 from arcana.exception import (
-    ArcanaRequirementNotFoundError, ArcanaRequirementVersionNotDectableError)
+    ArcanaRequirementNotFoundError, ArcanaVersionNotDectableError)
 import banana.requirement
 
 
@@ -14,8 +14,8 @@ for req in requirement_attrs:
     try:
         version = req.detect_version()
     except ArcanaRequirementNotFoundError:
-        print("Could not find match for {}".format(req))
-    except ArcanaRequirementVersionNotDectableError:
+        print("Could not find a version of {}".format(req))
+    except ArcanaVersionNotDectableError:
         print("No version information is available for {}".format(req))
     else:
         print("Found {} version for {}".format(version, req))

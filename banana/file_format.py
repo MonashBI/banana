@@ -8,12 +8,12 @@ from arcana.node import Node
 from arcana.data.file_format import FileFormat, Converter
 from banana.interfaces.mrtrix import MRConvert
 from banana.requirement import (
-    dcm2niix_req.v('1.0.2'), mrtrix_req)
+    dcm2niix_req, mrtrix_req)
 from banana.interfaces.converters import Dcm2niix  # @UnusedImport
 import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format.standard import (
-    text_format, directory_format, zip_format, targz_format,
+    text_format, directory_format, zip_format, targz_format,  # @UnusedImport
     UnzipConverter, UnTarGzConverter)  # @UnusedImport
 
 
@@ -33,7 +33,7 @@ class ImageFileFormat(FileFormat, ABCMeta):
 
 class Dcm2niixConverter(Converter):
 
-    requirements = [dcm2niix_req.v('1.0.2')(1, 1)]
+    requirements = [dcm2niix_req.v('1.1')]
 
     def get_node(self, name):
         convert_node = Node(Dcm2niix(), name=name,
