@@ -17,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .package_info import __version__
+from .pkg_info import __version__
 import os
 # Ensure all file_formats are registered with Arcana
 from .file_format import registered_file_formats

@@ -6,7 +6,7 @@ PACKAGE_NAME = 'banana'
 
 # Get version from module inside package
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), PACKAGE_NAME))
-from package_info import __version__  # @UnresolvedImport @IgnorePep8
+from pkg_info import __version__  # @UnresolvedImport @IgnorePep8
 sys.path.pop(0)
 
 
