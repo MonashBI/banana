@@ -861,14 +861,14 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #             'create_roi',
 #             CreateROI(),
 #             requirements=[noddi_req, matlab_req.v('R2015a')],
-#             memory=4000)
+#             mem_gb=4)
 #         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
 #         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
 #         # Create batch-fitting node
 #         batch_fit = pipeline.add(
 #             "batch_fit", BatchNODDIFitting(),
 #             requirements=[noddi_req, matlab_req.v('R2015a')], wall_time=180,
-#             memory=8000)
+#             mem_gb=8)
 #         batch_fit.inputs.model = self.parameter('noddi_model')
 #         batch_fit.inputs.nthreads = self.processor.num_processes
 #         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
@@ -877,7 +877,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #             "save_params",
 #             SaveParamsAsNIfTI(),
 #             requirements=[noddi_req, matlab_req.v('R2015a')],
-#             memory=4000)
+#             mem_gb=4)
 #         save_params.inputs.output_prefix = 'params'
 #         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
 #         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')

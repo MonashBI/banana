@@ -103,7 +103,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             inputs={
                 'input_image': ('t1', nifti_gz_format)},
             requirements=[ants_req.v('1.9')],
-            wall_time=60, memory=12000)
+            wall_time=60, mem_gb=12)
 
         pipeline.add(
             'bet',
@@ -113,7 +113,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('betted_T1', nifti_gz_format),
                 'mask_file': ('betted_T1_mask', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], memory=8000, wall_time=45)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
 
         return pipeline
 
@@ -147,7 +147,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('suit_mask', nifti_gz_format)},
             connections={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req.v('1.9')], memory=16000, wall_time=120)
+            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
 
         pipeline.add(
             'maths2',
@@ -161,6 +161,6 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('cetted_T1', nifti_gz_format),
                 'output_image': ('cetted_T1_mask', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], memory=16000, wall_time=5)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
 
         return pipeline

@@ -19,7 +19,7 @@ import banana
 from arcana.utils import classproperty
 from arcana.processor import LinearProcessor
 from arcana.exception import ArcanaError
-from arcana.node import ArcanaNodeMixin
+from arcana.environment.node import NodeMixin
 from arcana.exception import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
@@ -28,7 +28,7 @@ from arcana.repository.directory import (
     SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
 logger = logging.getLogger('arcana')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
 handler.setFormatter(formatter)
@@ -283,7 +283,7 @@ class BaseTestCase(TestCase):
                         subject=None, visit=None,
                         frequency='per_session'):
             try:
-                ArcanaNodeMixin.load_module('mrtrix')
+                NodeMixin.load_module('mrtrix')
             except ArcanaModulesNotInstalledException:
                 pass
             val = float(sp.check_output(

@@ -61,7 +61,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
 
         apply_trans = pipeline.create_node(
             ants.resampling.ApplyTransforms(), name='ApplyTransform',
-            requirements=[ants_req.v('1.9')], memory=16000, wall_time=120)
+            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         apply_trans.inputs.invert_transform_flags = [True, True, False]
@@ -73,7 +73,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         # Combine masks
         maths1 = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_optiBET_masks', op_string='-mas'),
-            name='combine_masks', requirements=[fsl_req.v('5.0.8')], memory=16000,
+            name='combine_masks', requirements=[fsl_req.v('5.0.8')], mem_gb=16,
             wall_time=5)
         pipeline.connect_input('betted_T2s_mask', maths1, 'in_file')
         pipeline.connect(apply_trans, 'output_image', maths1, 'in_file2')
@@ -83,7 +83,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
             fsl.utils.ImageMaths(
                 suffix='_optiBET_cerebellum',
                 op_string='-mas'),
-            name='mask_t2s', requirements=[fsl_req.v('5.0.8')], memory=16000,
+            name='mask_t2s', requirements=[fsl_req.v('5.0.8')], mem_gb=16,
             wall_time=5)
         pipeline.connect_input('betted_T2s', maths2, 'in_file')
         pipeline.connect(maths1, 'output_image', maths2, 'in_file2')
@@ -93,7 +93,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
                 suffix='_optiBET_cerebellum',
                 op_string='-mas'),
             name='mask_t2s_last_echo', requirements=[fsl_req.v('5.0.8')],
-            memory=16000, wall_time=5)
+            mem_gb=16, wall_time=5)
         pipeline.connect_input('betted_T2s_last_echo', maths3, 'in_file')
         pipeline.connect(maths1, 'output_image', maths3, 'in_file2')
 
@@ -121,14 +121,14 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
 
         bet = pipeline.create_node(
             fsl.BET(frac=0.1, mask=True), name='bet',
-            requirements=[fsl_req.v('5.0.8')], memory=8000, wall_time=45)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
         pipeline.connect_input('t2s', bet, 'in_file')
         pipeline.connect_output('betted_T2s', bet, 'out_file')
         pipeline.connect_output('betted_T2s_mask', bet, 'mask_file')
 
         maths = pipeline.create_node(
             fsl.utils.ImageMaths(suffix='_BET_brain', op_string='-mas'),
-            name='mask', requirements=[fsl_req.v('5.0.8')], memory=16000, wall_time=5)
+            name='mask', requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
         pipeline.connect_input('t2s_last_echo', maths, 'in_file')
         pipeline.connect(bet, 'mask_file', maths, 'in_file2')
         pipeline.connect_output('betted_T2s_last_echo', maths, 'out_file')

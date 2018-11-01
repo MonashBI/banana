@@ -486,7 +486,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'transforms': (merge_trans, 'out'),
                 'invert_transform_flags': (trans_flags, 'out')},
             wall_time=7,
-            memory=24000,
+            mem_gb=24,
             requirements=[ants_req.v('2.0')])
 
         maths1 = pipeline.add(
