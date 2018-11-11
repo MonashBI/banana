@@ -12,7 +12,7 @@ from banana.file_format import (
 from nipype.interfaces.utility import IdentityInterface
 from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from arcana.exception import ArcanaUsageError
+from arcana.exceptions import ArcanaUsageError
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
@@ -21,7 +21,7 @@ from banana.file_format import text_matrix_format
 import logging
 from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.custom.coils import ToPolarCoords
-from arcana.interfaces.utils import ListDir, CopyToDir
+from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.parameter import ParameterSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (

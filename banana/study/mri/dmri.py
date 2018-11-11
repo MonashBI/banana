@@ -9,7 +9,7 @@ from nipype.workflows.dmri.fsl.tbss import create_tbss_all
 from banana.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
-from arcana.interfaces.utils import MergeTuple, Chain
+from arcana.utils.interfaces import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
 from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,

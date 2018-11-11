@@ -1,8 +1,8 @@
 from unittest import TestCase
 from nipype.interfaces.utility import IdentityInterface
-from arcana.testing import BaseTestCase
+from arcana.utils.testing import BaseTestCase
 from banana.interfaces.mrtrix import MRConvert
-from arcana.exception import ArcanaModulesNotInstalledException
+from arcana.exceptions import ArcanaModulesNotInstalledException
 from banana.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.study.base import Study, StudyMetaClass

@@ -13,7 +13,7 @@ from banana.interfaces.custom.vein_analysis import (
 from arcana.interfaces import utils
 from .base import MriStudy
 from nipype.interfaces import fsl, ants
-from arcana.interfaces.utils import ListDir
+from arcana.utils.interfaces import ListDir
 from banana.interfaces.sti import (
     UnwrapPhase, VSharp, QSMiLSQR, BatchUnwrapPhase, BatchVSharp,
     BatchQSMiLSQR)

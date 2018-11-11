@@ -1,6 +1,6 @@
 # from unittest import TestCase
 from arcana.environment import Requirement
-from arcana.exception import (
+from arcana.exceptions import (
     ArcanaRequirementNotFoundError, ArcanaVersionNotDectableError)
 import banana.requirement
 

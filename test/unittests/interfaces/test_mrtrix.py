@@ -1,5 +1,5 @@
 import os.path
-from arcana.testing import BaseTestCase
+from arcana.utils.testing import BaseTestCase
 import tempfile
 from arcana.node import Node
 from banana.interfaces.mrtrix import MRCalc

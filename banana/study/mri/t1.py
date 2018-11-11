@@ -1,6 +1,6 @@
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
-# from arcana.interfaces.utils import DummyReconAll as ReconAll
+# from arcana.utils.interfaces import DummyReconAll as ReconAll
 from banana.requirement import freesurfer_req, ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
@@ -9,7 +9,7 @@ from banana.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
-from arcana.interfaces.utils import JoinPath
+from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.parameter import ParameterSpec, SwitchSpec

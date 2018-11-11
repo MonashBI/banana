@@ -1,5 +1,5 @@
 import os.path as op
-from arcana.testing import BaseTestCase
+from arcana.utils.testing import BaseTestCase
 import tempfile
 from nipype.pipeline.engine import Node
 from banana.interfaces.sti import MRPhaseUnwrap

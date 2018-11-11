@@ -9,7 +9,7 @@ from arcana.environment.requirement import (
     PythonPackageRequirement,
     matlab_req)  # @UnusedImport
 from arcana.utils import run_matlab_cmd
-from arcana.exception import (
+from arcana.exceptions import (
     ArcanaRequirementNotFoundError, ArcanaVersionNotDectableError)
 
 # Command line requirements

@@ -3,7 +3,7 @@ from nipype.interfaces.base import (
     BaseInterface, File, TraitedSpec, traits, isdefined,
     BaseInterfaceInputSpec)
 from nipype.interfaces.matlab import MatlabCommand
-from arcana.exception import ArcanaError
+from arcana.exceptions import ArcanaError
 from arcana.utils import split_extension
 
 

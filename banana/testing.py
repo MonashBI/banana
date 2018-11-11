@@ -13,14 +13,14 @@ import logging
 import xnat
 from arcana.repository.xnat import (
     XnatRepository, special_char_re, lower)
-from arcana.exception import ArcanaMissingDataException
+from arcana.exceptions import ArcanaMissingDataException
 from arcana.utils import split_extension
 import banana
 from arcana.utils import classproperty
 from arcana.processor import LinearProcessor
-from arcana.exception import ArcanaError
+from arcana.exceptions import ArcanaError
 from arcana.environment.node import NodeMixin
-from arcana.exception import (
+from arcana.exceptions import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
 from arcana.repository.directory import (

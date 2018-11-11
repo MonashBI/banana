@@ -3,7 +3,7 @@ from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
 from arcana.study.base import Study, StudyMetaClass
-from arcana.testing import BaseTestCase
+from arcana.utils.testing import BaseTestCase
 from nipype.interfaces.utility import IdentityInterface
 
 
