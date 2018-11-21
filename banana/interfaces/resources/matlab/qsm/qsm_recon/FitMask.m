@@ -2,7 +2,7 @@ function FitMask(inputFile, initialMaskFile, outputFile)
 
 %maskFile = 'test_suit_right_dentate_in_qsm.nii.gz';
 %qsmFile = 'optibet_t1p04_params.nii.gz';
-%addpath(genpath('/Users/philward/git/banana/banana/interfaces/resources/matlab/qsm'));
+%addpath(genpath('/Users/philward/git/NiAnalysis/nianalysis/interfaces/resources/matlab/qsm'));
 graphDisplay = false;
 
 initialMask = load_untouch_nii(initialMaskFile);
