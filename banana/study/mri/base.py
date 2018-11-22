@@ -37,10 +37,19 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         AcquiredFilesetSpec('magnitude', STD_IMAGE_FORMATS,
                             desc=("Typically the primary scan acquired from "
                                   "the scanner for the given contrast")),
-        AcquiredFilesetSpec('coreg_ref_brain', STD_IMAGE_FORMATS,
-                            desc=("A reference scan to coregister the primary "
-                                  "scan to. Should be brain extracted"),
-                            optional=True),
+        AcquiredFilesetSpec(
+            'coreg_ref', STD_IMAGE_FORMATS,
+            desc=("A reference scan to coregister the primary scan to. Should "
+                  "be brain extracted"),
+            optional=True),
+        AcquiredFilesetSpec(
+            'coreg_ref_brain', STD_IMAGE_FORMATS,
+            desc=("A brain-extracted reference scan to coregister a brain-"
+                  "extracted scan to. Note that the output of the "
+                  "registration coreg_brain can also be derived by brain "
+                  "extracting the output of coregistration performed "
+                  "before brain extraction if 'coreg_ref' is provided"),
+            optional=True),
         AcquiredFilesetSpec(
             'channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
@@ -54,7 +63,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('channel_phases', multi_nifti_gz_format,
                     'preprocess_channels'),
         FilesetSpec('coreg_matrix', text_matrix_format,
-                    'linear_coregistration_pipeline'),
+                    'linear_brain_coreg_pipeline'),
         FilesetSpec('preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Performs basic preprocessing, such as realigning "
                           "image axis to a standard rotation")),
@@ -63,7 +72,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="Mask of the brain"),
         FilesetSpec('coreg_brain', nifti_gz_format,
-                    'linear_coregistration_pipeline',
+                    'linear_brain_coreg_pipeline',
                     desc="Brain coregistered to the coreg_ref_brain"),
         FilesetSpec('coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
@@ -91,9 +100,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('main_field_orient', float, 'header_extraction_pipeline',
                   array=True),
         FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
-        FieldSpec('start_time', str, 'header_extraction_pipeline'),
-        FieldSpec('real_duration', str, 'header_extraction_pipeline'),
-        FieldSpec('total_duration', str, 'header_extraction_pipeline'),
+        FieldSpec('start_time', float, 'header_extraction_pipeline'),
+        FieldSpec('real_duration', float, 'header_extraction_pipeline'),
+        FieldSpec('total_duration', float, 'header_extraction_pipeline'),
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
         # Templates
@@ -254,7 +263,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name = 'brain'
         return name
 
-    def linear_coregistration_pipeline(self, **name_maps):
+    def linear_brain_coreg_pipeline(self, **name_maps):
         if self.branch('linear_reg_method', 'flirt'):
             pipeline = self._flirt_pipeline(
                 'linear_coreg', 'brain', 'coreg_ref_brain',

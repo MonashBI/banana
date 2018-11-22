@@ -64,14 +64,14 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 directive='all',
                 openmp=self.processor.num_processes),
             inputs={
-                'T1_files': ('magnitude', nifti_gz_format)},
+                'T1_files': ('preproc', nifti_gz_format)},
             requirements=[freesurfer_req.v('5.3')], wall_time=2000)
 
         # Wrapper around os.path.join
         pipeline.add(
             'join',
             JoinPath(),
-            connections={
+            connect={
                 'dirname': (recon_all, 'subjects_dir'),
                 'filename': (recon_all, 'subject_id')},
             outputs={

@@ -421,7 +421,7 @@ class BaseMultiSubjectTestCase(BaseTestCase):
                         project_dir, subj_id, visit_id)
                     with open(os.path.join(session_dir, FIELDS_FNAME),
                               'w') as f:
-                        json.dump(visit_fields, f)
+                        json.dump(visit_fields, f, indent=2)
 
     def _extract_ids(self, name):
         parts = name.split('_')
@@ -551,7 +551,7 @@ def download_all_filesets(download_dir, server, session_id, overwrite=True,
             # determine type
             fields[name] = value
         with open(os.path.join(download_dir, FIELDS_FNAME), 'w') as f:
-            json.dump(fields, f)
+            json.dump(fields, f, indent=2)
 
 
 def download_fileset(download_path, server, user, password, session_id,

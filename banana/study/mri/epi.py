@@ -50,39 +50,35 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('fugue_echo_spacing', 0.000275),
         ParameterSpec('linear_reg_method', 'epireg')]
 
-    def linear_coregistration_pipeline(self, **kwargs):
+    def linear_brain_coreg_pipeline(self, **kwargs):
         if self.branch('linear_reg_method', 'epireg'):
-            return self._epireg_linear_coregistration_pipeline(**kwargs)
+            return self._epireg_linear_brain_coreg_pipeline(**kwargs)
         else:
-            return super(EpiStudy, self).linear_coregistration_pipeline(
+            return super(EpiStudy, self).linear_brain_coreg_pipeline(
                 **kwargs)
 
-    def _epireg_linear_coregistration_pipeline(self, **kwargs):
-
-            # inputs=[FilesetSpec('brain', nifti_gz_format),
-            #         FilesetSpec('coreg_ref_brain', nifti_gz_format),
-            #         FilesetSpec('coreg_ref_preproc', nifti_gz_format),
-            #         FilesetSpec('coreg_ref_wmseg', nifti_gz_format)],
-            # outputs=[FilesetSpec('coreg_brain', nifti_gz_format),
-            #          FilesetSpec('coreg_matrix', text_matrix_format)],
+    def _epireg_linear_brain_coreg_pipeline(self, **kwargs):
 
         pipeline = self.pipeline(
             name='linear_coreg',
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
-        epireg = pipeline.create_node(fsl.epi.EpiReg(), name='epireg',
-                                      requirements=[fsl_req.v('5.0.9')])
+        pipeline.add(
+            'epireg',
+            fsl.epi.EpiReg(
+                out_base='epireg2ref'),
+            inputs={
+                'epi': ('brain', nifti_gz_format),
+                't1_brain': ('coreg_ref_brain', nifti_gz_format),
+                't1_head': ('coreg_ref_preproc', nifti_gz_format),
+                'wmseg': ('wmseg', nifti_gz_format)},
+            outputs={
+                'out_file': ('coreg_brain', nifti_gz_format),
+                'epi2str_mat': ('coreg_matrix', text_matrix_format)},
+            requirements=[fsl_req.v('5.0.9')])
 
-        epireg.inputs.out_base = 'epireg2ref'
-        pipeline.connect_input('brain', epireg, 'epi')
-        pipeline.connect_input('coreg_ref_brain', epireg, 't1_brain')
-        pipeline.connect_input('coreg_ref_preproc', epireg, 't1_head')
-        pipeline.connect_input('coreg_ref_wmseg', epireg, 'wmseg')
-
-        pipeline.connect_output('coreg_brain', epireg, 'out_file')
-        pipeline.connect_output('coreg_matrix', epireg, 'epi2str_mat')
         return pipeline
 
     def intrascan_alignment_pipeline(self, **kwargs):
