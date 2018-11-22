@@ -77,6 +77,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     desc=("Either brain-extracted image coregistered to "
                           "'coreg_ref_brain' or a brain extraction of coreg")),
         FilesetSpec('coreg_matrix', text_matrix_format,
+                    'coreg_pipeline'),
+        FilesetSpec('coreg_brain_matrix', text_matrix_format,
                     'coreg_brain_pipeline'),
         FilesetSpec('coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
@@ -108,7 +110,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('real_duration', float, 'header_extraction_pipeline'),
         FieldSpec('total_duration', float, 'header_extraction_pipeline'),
         FieldSpec('ped', str, 'header_extraction_pipeline'),
-        FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
+        FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
         AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
                             default=FslAtlas('MNI152_T1',
@@ -358,7 +360,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'reference': ('coreg_ref', nifti_gz_format)},
             outputs={
                 'out_file': ('coreg', nifti_gz_format),
-                'out_matrix_file': ('flirt', text_matrix_format)},
+                'out_matrix_file': ('coreg_matrix', text_matrix_format)},
             requirements=[fsl_req.v('5.0.8')], wall_time=5)
 
         return pipeline
