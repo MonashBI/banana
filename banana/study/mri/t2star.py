@@ -2,7 +2,7 @@ import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
-from banana.requirement import (fsl_req, matlab_req, ants_req)
+from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
 from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from banana.file_format import (
@@ -10,9 +10,10 @@ from banana.file_format import (
     multi_nifti_gz_format, STD_IMAGE_FORMATS)
 from banana.interfaces.custom.vein_analysis import (
     CompositeVeinImage, ShMRF)
-from arcana.interfaces import utils
+from arcana.utils.interfaces import Merge
 from .base import MriStudy
 from nipype.interfaces import fsl, ants
+from arcana.utils import get_class_info
 from arcana.utils.interfaces import ListDir
 from banana.interfaces.sti import (
     UnwrapPhase, VSharp, QSMiLSQR, BatchUnwrapPhase, BatchVSharp,
@@ -20,15 +21,24 @@ from banana.interfaces.sti import (
 from banana.interfaces.custom.coils import HIPCombineChannels
 from banana.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana.study import ParameterSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 from logging import getLogger
 
 logger = getLogger('banana')
 
 
-def coil_sort_key(fname):
-    return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
+class CoilSortKey():
+
+    def __call__(self, fname):
+        return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
+
+    @property
+    def prov(self):
+        return {'type': get_class_info(type(self))}
+
+
+coil_sort_key = CoilSortKey()
 
 
 class CoilEchoFilter():
@@ -45,6 +55,11 @@ class CoilEchoFilter():
         else:
             include = int(match.group(1)) == self._echo
         return include
+
+    @property
+    def prov(self):
+        return {'type': get_class_info(type(self)),
+                'echo': self._echo}
 
 
 class T2starStudy(MriStudy, metaclass=StudyMetaClass):
@@ -146,7 +161,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'in_file': (channel_combine, 'phase')},
-                requirements=[sti_req])
+                requirements=[sti_req.v(2.2)])
 
             # Remove background noise
             vsharp = pipeline.add(
@@ -158,7 +173,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 connect={
                     'in_file': (unwrap, 'out_file'),
                     'mask': (erosion, 'out_file')},
-                requirements=[sti_req])
+                requirements=[sti_req.v(2.2)])
 
             # Run QSM iLSQR
             pipeline.add(
@@ -176,7 +191,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'mask': (vsharp, 'new_mask')},
                 outputs={
                     'qsm': ('qsm', nifti_format)},
-                requirements=[sti_req])
+                requirements=[sti_req.v(2.2)])
 
         else:
             # Dialate eroded mask
@@ -223,7 +238,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'in_file': (list_phases, 'files')},
-                requirements=[sti_req])
+                requirements=[sti_req.v(2.2)])
 
             # Background phase removal
             vsharp = pipeline.add(
@@ -235,7 +250,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 connect={
                     'mask': (mask_coils, 'out_files'),
                     'in_file': (unwrap, 'out_file')},
-                requirements=[sti_req])
+                requirements=[sti_req.v(2.2)])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -258,7 +273,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
-                requirements=[sti_req],
+                requirements=[sti_req.v(2.2)],
                 wall_time=45)  # FIXME: Should be dependent on number of coils
 
             # Combine channel QSM by taking the median coil value
@@ -296,10 +311,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Interpolate priors and atlas
         merge_trans = pipeline.add(
             'merge_transforms',
-            utils.Merge(3),
+            Merge(3),
             inputs={
                 'in1': ('coreg_matrix', text_matrix_format),
-                'in2': ('coreg_to_atlas_mat', text_matrix_format),  # Ideally T1
+                'in2': ('coreg_to_atlas_mat', text_matrix_format),  # Ideal. T1
                 'in3': ('coreg_to_atlas_warp', nifti_gz_format)})  # Ideally T1
 
         apply_trans_q = pipeline.add(

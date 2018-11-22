@@ -35,7 +35,7 @@ class Dcm2niixConverter(Converter):
     interface = Dcm2niix(compression='y')
     input = 'input_dir'
     output = 'converted'
-    requirements = [dcm2niix_req.v('1.1')]
+    requirements = [dcm2niix_req.v('1.0.2')]
 
 
 class MrtrixConverter(Converter):

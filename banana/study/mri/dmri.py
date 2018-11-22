@@ -23,7 +23,7 @@ from banana.requirement import (
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 # from arcana.interfaces.iterators import SelectSession
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana.study import ParameterSpec, SwitchSpec
 from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (

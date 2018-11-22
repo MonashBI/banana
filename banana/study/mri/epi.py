@@ -12,7 +12,7 @@ from banana.requirement import fsl_req
 from arcana.study.base import StudyMetaClass
 from banana.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
-from arcana.parameter import ParameterSpec
+from arcana.study import ParameterSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap

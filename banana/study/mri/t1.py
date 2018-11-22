@@ -4,7 +4,7 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 from banana.requirement import freesurfer_req, ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
-from arcana.interfaces import utils
+from arcana.utils.interfaces import Merge
 from banana.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     STD_IMAGE_FORMATS)
@@ -12,7 +12,7 @@ from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana.study import ParameterSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 
 
@@ -131,7 +131,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         # Initially use MNI space to warp SUIT into T1 and threshold to mask
         merge_trans = pipeline.add(
             'merge_transforms',
-            utils.Merge(2),
+            Merge(2),
             inputs={
                 'in2': (nl, nifti_gz_format),
                 'in1': (linear, nifti_gz_format)})

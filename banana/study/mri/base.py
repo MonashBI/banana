@@ -23,7 +23,7 @@ from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.custom.coils import ToPolarCoords
 from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana import ParameterSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.atlas import FslAtlas

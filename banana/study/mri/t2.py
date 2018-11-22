@@ -1,20 +1,20 @@
 from arcana.study.base import StudyMetaClass
 from .base import MriStudy
-from arcana.parameter import ParameterSpec
+from arcana.study import ParameterSpec
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.utils.interfaces import DummyReconAll as ReconAll
 from banana.requirement import freesurfer_req, ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
-from arcana.interfaces import utils
+from arcana.utils.interfaces import Merge
 from banana.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format)
 from arcana.data import FilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
-from arcana.parameter import ParameterSpec
+from arcana.study import ParameterSpec
 
 
 class T2Study(MriStudy, metaclass=StudyMetaClass):
@@ -48,7 +48,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
 
         # Initially use MNI space to warp SUIT mask into T2s space
         merge_trans = pipeline.create_node(
-            utils.Merge(3), name='merge_transforms')
+            Merge(3), name='merge_transforms')
         pipeline.connect_input(
             self._lookup_nl_tfm_inv_name('SUIT'),
             merge_trans,
