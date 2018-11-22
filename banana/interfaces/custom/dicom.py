@@ -111,7 +111,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
         # Read header from first DICOM file in list
         hd = pydicom.read_file(list_dicom[0])
         try:
-            start_time = str(hd.AcquisitionTime)
+            start_time = hd.AcquisitionTime
         except AttributeError:
             try:
                 start_time = str(hd.AcquisitionDateTime)[8:]
@@ -138,15 +138,15 @@ class DicomHeaderInfoExtraction(BaseInterface):
         vox_sizes = list(hd.PixelSpacing)
         vox_sizes.append(hd.SliceThickness)
         # Save extracted values to output dictionary
-        self.dict_output['start_time'] = start_time
+        self.dict_output['start_time'] = float(start_time)
         self.dict_output['tr'] = float(tr) / 1000.0  # Convert to seconds
         self.dict_output['echo_times'] = [float(t) / 1000.0  # Convert to secs
                                           for t in echo_times]
         self.dict_output['voxel_sizes'] = vox_sizes
         self.dict_output['H'] = list(b0_orient)
         self.dict_output['B0'] = hd.MagneticFieldStrength
-        self.dict_output['total_duration'] = total_duration
-        self.dict_output['real_duration'] = real_duration
+        self.dict_output['total_duration'] = float(total_duration)
+        self.dict_output['real_duration'] = float(real_duration)
         self.dict_output['ped'] = ped
         self.dict_output['pe_angle'] = str(phase_offset)
         keys = ['start_time', 'tr', 'total_duration', 'real_duration', 'ped',
