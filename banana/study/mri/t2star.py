@@ -100,8 +100,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
         ParameterSpec('qsm_erosion_size', 10),
-        SwitchSpec('linear_reg_method', 'ants',
-                   MriStudy.parameter_spec('linear_reg_method').choices),
+        SwitchSpec('linear_coreg_method', 'ants',
+                   MriStudy.parameter_spec('linear_coreg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
@@ -122,7 +122,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='qsm_pipeline',
             name_maps=name_maps,
             desc="Resolve QSM from t2star coils",
@@ -292,7 +292,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         raise NotImplementedError
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='swi',
             name_maps=name_maps,
             desc=("Calculate susceptibility-weighted image from magnitude and "
@@ -302,7 +302,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     def cv_pipeline(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='cv_pipeline',
             name_maps=name_maps,
             desc="Compute Composite Vein Image",
@@ -394,7 +394,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     def shmrf_pipeline(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='shmrf_pipeline',
             name_maps=name_maps,
             desc="Compute Vein Mask using ShMRF",

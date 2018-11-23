@@ -121,7 +121,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         if self.branch('preproc_denoise'):
             references.extend(dwidenoise_cites)
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='preprocess',
             name_maps=name_maps,
             desc=(
@@ -268,7 +268,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         """
 
         if self.branch('brain_extract_method', 'mrtrix'):
-            pipeline = self.pipeline(
+            pipeline = self.new_pipeline(
                 'brain_extraction',
                 desc="Generate brain mask from b0 images",
                 references=[mrtrix_cite],
@@ -312,7 +312,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #             outputs=[FilesetSpec('bias_correct', nifti_gz_format)],
 
         bias_method = self.parameter('bias_correct_method')
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='bias_correct',
             desc="Corrects for B1 field inhomogeneity",
             references=[fast_cite,
@@ -353,7 +353,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                                  frequency='per_study'),
 #                      FilesetSpec('norm_intens_wm_mask', mrtrix_format,
 #                                  frequency='per_study')],
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='intensity_normalization',
             desc="Corrects for B1 field inhomogeneity",
             references=[mrtrix_req.v('3.0')],
@@ -422,7 +422,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                     FilesetSpec('brain_mask', nifti_gz_format)],
 #             outputs=[FilesetSpec('tensor', nifti_gz_format)],
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='tensor',
             desc=("Estimates the apparent diffusion tensor in each "
                   "voxel"),
@@ -456,7 +456,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                     FilesetSpec('brain_mask', nifti_gz_format)],
 #             outputs=[FilesetSpec('fa', nifti_gz_format),
 #                      FilesetSpec('adc', nifti_gz_format)],
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='fa',
             desc=("Calculates the FA and ADC from a tensor image"),
             references=[],
@@ -498,7 +498,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                     FilesetSpec('brain_mask', nifti_gz_format)],
 #             outputs=outputs,
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='response',
             desc=("Estimates the fibre response function"),
             references=[mrtrix_cite],
@@ -539,7 +539,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #             inputs=[FilesetSpec('wm_response', text_format)],
 #             outputs=[FilesetSpec('avg_response', text_format,
 #                                  frequency='per_study')],
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='average_response',
             desc=(
                 "Averages the fibre response function over the project"),
@@ -581,7 +581,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                     FilesetSpec('wm_response', text_format),
 #                     FilesetSpec('brain_mask', nifti_gz_format)],
 #             outputs=[FilesetSpec('fod', nifti_gz_format)],
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='fod',
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
@@ -629,7 +629,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                                  frequency='per_study'),
 #                      FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
 #                                  frequency='per_study')],
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='tbss',
             references=[tbss_cite, fsl_cite],
             name_maps=name_maps)
@@ -658,7 +658,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                     FilesetSpec('grad_dirs', fsl_bvecs_format),
 #                     FilesetSpec('bvalues', fsl_bvals_format)],
 #             outputs=[FilesetSpec('b0', nifti_gz_format)],
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='extract_b0',
             desc="Extract b0 image from a DWI study",
             references=[mrtrix_cite],
@@ -708,7 +708,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #                 FilesetSpec('bvalues', fsl_bvals_format)],
 #         outputs=[FilesetSpec('global_tracks', mrtrix_track_format)],
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='global_tracking',
             desc="Extract b0 image from a DWI study",
             references=[mrtrix_cite],
@@ -742,7 +742,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #             outputs=[
 #                 FilesetSpec('align_mats', directory_format)],
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='affine_mat_generation',
             desc=("Generation of the affine matrices for the main dwi "
                   "sequence starting from eddy motion parameters"),
@@ -787,7 +787,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 # #             inputs=[FilesetSpec('low_b_dw_scan', mrtrix_format),
 # #                     FilesetSpec('high_b_dw_scan', mrtrix_format)],
 # #             outputs=[FilesetSpec('dwi_scan', mrtrix_format)],
-#         pipeline = self.pipeline(
+#         pipeline = self.new_pipeline(
 #             name='concatenation',
 # 
 #             desc=(
@@ -829,7 +829,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 #             inputs.append(FilesetSpec('eroded_mask', nifti_gz_format))
 #         else:
 #             inputs.append(FilesetSpec('brain_mask', nifti_gz_format))
-#         pipeline = self.pipeline(
+#         pipeline = self.new_pipeline(
 #             name=pipeline_name,
 #             inputs=inputs,
 #             outputs=[FilesetSpec('ficvf', nifti_format),

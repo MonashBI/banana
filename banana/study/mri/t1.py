@@ -51,7 +51,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='segmentation',
             name_maps=name_maps,
             desc="Segment white/grey matter and csf",
@@ -91,7 +91,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
 
     def bet_T1(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='BET_T1',
             name_maps=name_maps,
             desc=("python implementation of BET"),
@@ -118,7 +118,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def cet_T1(self, **name_maps):
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='CET_T1',
             name_maps=name_maps,
             desc=("Construct cerebellum mask using SUIT template"),

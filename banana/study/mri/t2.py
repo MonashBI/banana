@@ -25,7 +25,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False)]
 
     def cet_T2s(self, **options):
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='CET_T2s',
             inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
@@ -107,7 +107,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
 
     def bet_T2s(self, **options):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='BET_T2s',
             inputs=[FilesetSpec('t2s', nifti_gz_format),
                     FilesetSpec('t2s_last_echo', nifti_gz_format)],

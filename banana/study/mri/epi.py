@@ -48,10 +48,10 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('fugue_echo_spacing', 0.000275),
-        ParameterSpec('linear_reg_method', 'epireg')]
+        ParameterSpec('linear_coreg_method', 'epireg')]
 
     def linear_brain_coreg_pipeline(self, **kwargs):
-        if self.branch('linear_reg_method', 'epireg'):
+        if self.branch('linear_coreg_method', 'epireg'):
             return self._epireg_linear_brain_coreg_pipeline(**kwargs)
         else:
             return super(EpiStudy, self).linear_brain_coreg_pipeline(
@@ -59,7 +59,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def _epireg_linear_brain_coreg_pipeline(self, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='linear_coreg',
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
@@ -88,7 +88,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
          #            FilesetSpec('align_mats', directory_format),
          #            FilesetSpec('moco_par', par_format)],
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='MCFLIRT_pipeline',
             desc=("Intra-epi volumes alignment."),
             citations=[fsl_cite],
@@ -148,7 +148,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 #            outputs=[FilesetSpec('preproc', nifti_gz_format)],
 
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Topup distortion correction pipeline"),
             citations=[fsl_cite],
@@ -211,7 +211,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 #            outputs=[FilesetSpec('preproc', nifti_gz_format)],
 
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Fugue distortion correction pipeline"),
             references=[fsl_cite],
@@ -264,7 +264,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         
 #        if 'reverse_phase' not in self.input_names:
 #            inputs.append(FilesetSpec('align_mats', directory_format))
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             desc=("Motion matrices calculation"),
             citations=[fsl_cite],
