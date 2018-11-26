@@ -152,8 +152,8 @@ class PrepareDWIInputSpec(BaseInterfaceInputSpec):
 
     pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction, i.e. '
                         'if ROW or COL.')
-    ped_polarity = traits.Str(mandatory=True, desc='phase encoding direction '
-                              'polarity, i.e. if + or - ROW for example.')
+    ped_polarity = traits.Float(mandatory=True, desc='phase encoding direction '
+                                'polarity, i.e. if + or - ROW for example.')
     dwi = File(exists=True, desc='First diffusion image. Can '
                'be with multiple directions or b0.')
     dwi1 = File(exists=True, desc='Second diffusion image. Can'
@@ -182,7 +182,7 @@ class PrepareDWI(BaseInterface):
 
         self.dict_output = {}
         pe_dir = self.inputs.pe_dir
-        ped_polarity = float(self.inputs.ped_polarity)
+        ped_polarity = self.inputs.ped_polarity
         topup = self.inputs.topup
         if isdefined(self.inputs.dwi) and isdefined(self.inputs.dwi1):
             dwi = nib.load(self.inputs.dwi)
@@ -204,7 +204,7 @@ class PrepareDWI(BaseInterface):
                 im2save = nib.Nifti1Image(dwi1_b0, affine=ref.affine)
                 nib.save(im2save, 'b0.nii.gz')
                 self.dict_output['main'] = self.inputs.dwi
-                self.dict_output['secondary'] = os.getcwd()+'/b0.nii.gz'
+                self.dict_output['secondary'] = os.getcwd() + '/b0.nii.gz'
 
         if np.sign(ped_polarity) == 1:
             if pe_dir == 'ROW':

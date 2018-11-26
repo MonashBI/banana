@@ -304,7 +304,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 name='linear_coreg_brain',
                 input_map={'preproc': 'brain',
                            'coreg_ref': 'coreg_ref_brain'},
-                output_map={'coreg': 'coreg_brain'})
+                output_map={'coreg': 'coreg_brain'},
+                name_maps=name_maps)
         elif self.provided('coreg_ref'):
             pipeline = self.brain_extraction_pipeline(
                 name='linear_coreg_brain',
@@ -340,19 +341,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
     def _flirt_linear_coreg_pipeline(self, **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
-
-        Parameters
-        ----------
-        name : str
-            Name for the generated pipeline
-        to_reg : str
-            Name of the FilesetSpec to register
-        ref : str
-            Name of the FilesetSpec to use as a reference
-        reg : str
-            Name of the FilesetSpec to output as registered image
-        matrix : str
-            Name of the FilesetSpec to output as registration matrix
         """
 
         pipeline = self.new_pipeline(
@@ -378,6 +366,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def _ants_linear_coreg_pipeline(self, **name_maps):
+        """
+        Registers a MR scan to a refernce MR scan using ANTS's linear_reg
+        command
+        """
+
         pipeline = self.new_pipeline(
             name='linear_coreg',
             name_maps=name_maps,
@@ -402,8 +395,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     def _spm_linear_coreg_pipeline(self, **name_maps):  # @UnusedVariable
         """
-        Coregisters T2 image to T1 image using SPM's
-        "Register" method.
+        Coregisters T2 image to T1 image using SPM's "Register" method.
 
         NB: Default values come from the W2MHS toolbox
         """
@@ -487,8 +479,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             bet.inputs.reduce_bias = self.parameter('bet_reduce_bias')
         return pipeline
 
-    # FIXME: With the newly implemented name-mapping functionality 'in_file'
-    #        does not need to be passed in this way
     def _optiBET_brain_extraction_pipeline(self, **name_maps):
         """
         Generates a whole brain mask using a modified optiBET approach.
@@ -793,7 +783,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     MRResize(
                         voxel=self.parameter('preproc_resolution')),
                     connect={'in_file': (swap, 'out_file')},
-                    requirements=[mrtrix_req.v('3.0')])
+                    requirements=[mrtrix_req.v('3.0rc3')])
                 pipeline.connect_output('preproc', resample, 'out_file',
                                         nifti_gz_format)
             else:
