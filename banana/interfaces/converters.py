@@ -7,7 +7,7 @@ import pydicom
 import nibabel as nib
 from arcana.utils import split_extension
 import re
-from arcana.exception import ArcanaError
+from arcana.exceptions import ArcanaError
 import numpy as np
 from nipype.utils.filemanip import split_filename
 

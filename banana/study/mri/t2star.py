@@ -2,8 +2,7 @@ import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
-from banana.requirement import (fsl5_req, matlab2015_req,
-                                    ants19_req)
+from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
 from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from banana.file_format import (
@@ -11,25 +10,35 @@ from banana.file_format import (
     multi_nifti_gz_format, STD_IMAGE_FORMATS)
 from banana.interfaces.custom.vein_analysis import (
     CompositeVeinImage, ShMRF)
-from arcana.interfaces import utils
+from arcana.utils.interfaces import Merge
 from .base import MriStudy
 from nipype.interfaces import fsl, ants
-from arcana.interfaces.utils import ListDir
+from arcana.utils import get_class_info
+from arcana.utils.interfaces import ListDir
 from banana.interfaces.sti import (
     UnwrapPhase, VSharp, QSMiLSQR, BatchUnwrapPhase, BatchVSharp,
     BatchQSMiLSQR)
 from banana.interfaces.custom.coils import HIPCombineChannels
 from banana.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana.study import ParameterSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 from logging import getLogger
 
 logger = getLogger('banana')
 
 
-def coil_sort_key(fname):
-    return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
+class CoilSortKey():
+
+    def __call__(self, fname):
+        return re.match(r'coil_(\d+)_\d+\.nii\.gz', fname).group(1)
+
+    @property
+    def prov(self):
+        return {'type': get_class_info(type(self))}
+
+
+coil_sort_key = CoilSortKey()
 
 
 class CoilEchoFilter():
@@ -46,6 +55,11 @@ class CoilEchoFilter():
         else:
             include = int(match.group(1)) == self._echo
         return include
+
+    @property
+    def prov(self):
+        return {'type': get_class_info(type(self)),
+                'echo': self._echo}
 
 
 class T2starStudy(MriStudy, metaclass=StudyMetaClass):
@@ -86,8 +100,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('qsm_padding', [12, 12, 12]),
         ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
         ParameterSpec('qsm_erosion_size', 10),
-        SwitchSpec('linear_reg_method', 'ants',
-                   MriStudy.parameter_spec('linear_reg_method').choices),
+        SwitchSpec('linear_coreg_method', 'ants',
+                   MriStudy.parameter_spec('linear_coreg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
@@ -108,7 +122,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the STI-Suite
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='qsm_pipeline',
             name_maps=name_maps,
             desc="Resolve QSM from t2star coils",
@@ -122,8 +136,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 output_type='NIFTI'),
             inputs={
                 'in_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl5_req],
-            wall_time=15, memory=12000)
+            requirements=[fsl_req.v('5.0.8')],
+            wall_time=15, mem_gb=12)
 
         # If we have multiple echoes we can combine the phase images from
         # each channel into a single image. Otherwise for single echo sequences
@@ -146,7 +160,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
-                    'in_file': (channel_combine, 'phase')})
+                    'in_file': (channel_combine, 'phase')},
+                requirements=[sti_req.v(2.2)])
 
             # Remove background noise
             vsharp = pipeline.add(
@@ -157,7 +172,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'in_file': (unwrap, 'out_file'),
-                    'mask': (erosion, 'out_file')})
+                    'mask': (erosion, 'out_file')},
+                requirements=[sti_req.v(2.2)])
 
             # Run QSM iLSQR
             pipeline.add(
@@ -174,7 +190,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask')},
                 outputs={
-                    'qsm': ('qsm', nifti_format)})
+                    'qsm': ('qsm', nifti_format)},
+                requirements=[sti_req.v(2.2)])
 
         else:
             # Dialate eroded mask
@@ -220,7 +237,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
-                    'in_file': (list_phases, 'files')})
+                    'in_file': (list_phases, 'files')},
+                requirements=[sti_req.v(2.2)])
 
             # Background phase removal
             vsharp = pipeline.add(
@@ -231,7 +249,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float)},
                 connect={
                     'mask': (mask_coils, 'out_files'),
-                    'in_file': (unwrap, 'out_file')})
+                    'in_file': (unwrap, 'out_file')},
+                requirements=[sti_req.v(2.2)])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -254,6 +273,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
+                requirements=[sti_req.v(2.2)],
                 wall_time=45)  # FIXME: Should be dependent on number of coils
 
             # Combine channel QSM by taking the median coil value
@@ -272,7 +292,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         raise NotImplementedError
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='swi',
             name_maps=name_maps,
             desc=("Calculate susceptibility-weighted image from magnitude and "
@@ -282,7 +302,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     def cv_pipeline(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='cv_pipeline',
             name_maps=name_maps,
             desc="Compute Composite Vein Image",
@@ -291,10 +311,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Interpolate priors and atlas
         merge_trans = pipeline.add(
             'merge_transforms',
-            utils.Merge(3),
+            Merge(3),
             inputs={
                 'in1': ('coreg_matrix', text_matrix_format),
-                'in2': ('coreg_to_atlas_mat', text_matrix_format),  # Ideally T1
+                'in2': ('coreg_to_atlas_mat', text_matrix_format),  # Ideal. T1
                 'in3': ('coreg_to_atlas_warp', nifti_gz_format)})  # Ideally T1
 
         apply_trans_q = pipeline.add(
@@ -308,8 +328,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants19_req],
-            memory=16000, wall_time=30)
+            requirements=[ants_req.v('1.9')],
+            mem_gb=16, wall_time=30)
 
         apply_trans_s = pipeline.add(
             'ApplyTransform_S_Prior',
@@ -322,7 +342,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants19_req], memory=16000, wall_time=30)
+            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=30)
 
         apply_trans_a = pipeline.add(
             'ApplyTransform_A_Prior',
@@ -335,8 +355,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('mni_template_atlas_prior', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants19_req],
-            memory=16000, wall_time=30)
+            requirements=[ants_req.v('1.9')],
+            mem_gb=16, wall_time=30)
 
         apply_trans_v = pipeline.add(
             'ApplyTransform_V_Atlas',
@@ -349,8 +369,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants19_req],
-            memory=16000, wall_time=30)
+            requirements=[ants_req.v('1.9')],
+            mem_gb=16, wall_time=30)
 
         # Run CV code
         pipeline.add(
@@ -367,14 +387,14 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'vein_atlas': (apply_trans_v, 'output_image')},
             outputs={
                 'out_file': ('composite_vein_image', nifti_format)},
-            requirements=[matlab2015_req],
-            wall_time=300, memory=24000)
+            requirements=[matlab_req.v('R2015a')],
+            wall_time=300, mem_gb=24)
 
         return pipeline
 
     def shmrf_pipeline(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='shmrf_pipeline',
             name_maps=name_maps,
             desc="Compute Vein Mask using ShMRF",
@@ -389,7 +409,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'mask': ('brain_mask', nifti_format)},
             outputs={
                 'out_file': ('vein_mask', nifti_format)},
-            requirements=[matlab2015_req],
-            wall_time=30, memory=16000)
+            requirements=[matlab_req.v('R2015a')],
+            wall_time=30, mem_gb=16)
 
         return pipeline

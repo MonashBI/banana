@@ -1,6 +1,5 @@
 from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
-from banana.requirement import spm12_req
 from banana.citation import spm_cite
 from banana.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
@@ -11,9 +10,9 @@ from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
     dicom_format, text_format, gif_format)
 from nipype.interfaces.utility import IdentityInterface
-from banana.requirement import fsl5_req, mrtrix3_req, fsl509_req, ants2_req
+from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from arcana.exception import ArcanaUsageError
+from arcana.exceptions import ArcanaUsageError
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
@@ -22,9 +21,9 @@ from banana.file_format import text_matrix_format
 import logging
 from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.custom.coils import ToPolarCoords
-from arcana.interfaces.utils import ListDir, CopyToDir
+from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana import ParameterSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.atlas import FslAtlas
@@ -38,10 +37,19 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         AcquiredFilesetSpec('magnitude', STD_IMAGE_FORMATS,
                             desc=("Typically the primary scan acquired from "
                                   "the scanner for the given contrast")),
-        AcquiredFilesetSpec('coreg_ref_brain', STD_IMAGE_FORMATS,
-                            desc=("A reference scan to coregister the primary "
-                                  "scan to. Should be brain extracted"),
-                            optional=True),
+        AcquiredFilesetSpec(
+            'coreg_ref', STD_IMAGE_FORMATS,
+            desc=("A reference scan to coregister the primary scan to. Should "
+                  "not be brain extracted"),
+            optional=True),
+        AcquiredFilesetSpec(
+            'coreg_ref_brain', STD_IMAGE_FORMATS,
+            desc=("A brain-extracted reference scan to coregister a brain-"
+                  "extracted scan to. Note that the output of the "
+                  "registration coreg_brain can also be derived by brain "
+                  "extracting the output of coregistration performed "
+                  "before brain extraction if 'coreg_ref' is provided"),
+            optional=True),
         AcquiredFilesetSpec(
             'channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
@@ -54,8 +62,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'preprocess_channels'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
                     'preprocess_channels'),
-        FilesetSpec('coreg_matrix', text_matrix_format,
-                    'linear_coregistration_pipeline'),
         FilesetSpec('preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Performs basic preprocessing, such as realigning "
                           "image axis to a standard rotation")),
@@ -63,9 +69,18 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     desc="The brain masked image"),
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="Mask of the brain"),
+        FilesetSpec('coreg', nifti_gz_format,
+                    'linear_coreg_pipeline',
+                    desc="Head image coregistered to 'coreg_ref'"),
         FilesetSpec('coreg_brain', nifti_gz_format,
-                    'linear_coregistration_pipeline',
-                    desc="Brain coregistered to the coreg_ref_brain"),
+                    'coreg_brain_pipeline',
+                    desc=("Either brain-extracted image coregistered to "
+                          "'coreg_ref_brain' or a brain extraction of a "
+                          "coregistered (incl. skull) image")),
+        FilesetSpec('coreg_matrix', text_matrix_format,
+                    'coreg_matrix_pipeline'),
+        FilesetSpec('coreg_brain_matrix', text_matrix_format,
+                    'coreg_brain_pipeline'),
         FilesetSpec('coreg_to_atlas', nifti_gz_format,
                     'coregister_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format,
@@ -92,11 +107,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('main_field_orient', float, 'header_extraction_pipeline',
                   array=True),
         FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
-        FieldSpec('start_time', str, 'header_extraction_pipeline'),
-        FieldSpec('real_duration', str, 'header_extraction_pipeline'),
-        FieldSpec('total_duration', str, 'header_extraction_pipeline'),
+        FieldSpec('start_time', float, 'header_extraction_pipeline'),
+        FieldSpec('real_duration', float, 'header_extraction_pipeline'),
+        FieldSpec('total_duration', float, 'header_extraction_pipeline'),
         FieldSpec('ped', str, 'header_extraction_pipeline'),
-        FieldSpec('pe_angle', str, 'header_extraction_pipeline'),
+        FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
         AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
                             default=FslAtlas('MNI152_T1',
@@ -132,7 +147,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParameterSpec('preproc_resolution', None, dtype=list),
-        SwitchSpec('linear_reg_method', 'flirt', ('flirt', 'spm', 'ants'),
+        SwitchSpec('linear_coreg_method', 'flirt', ('flirt', 'spm', 'ants'),
                    desc="The tool to use for linear registration"),
         ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
@@ -160,7 +175,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "filename"))]
 
     def preprocess_channels(self, **name_maps):
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             'preprocess_channels',
             name_maps=name_maps,
             desc=("Convert channel signals in complex coords to polar coords "
@@ -200,7 +215,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     connect={
                         'dest_file': geom_dest_file},
                     iterfield=(['dest_file']),
-                    requirements=[fsl5_req])
+                    requirements=[fsl_req.v('5.0.8')])
                 reorient_in_file = (copy_geom, 'out_file')
             else:
                 reorient_in_file = geom_dest_file
@@ -213,7 +228,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     connect={
                         'in_file': reorient_in_file},
                     iterfield=['in_file'],
-                    requirements=[fsl5_req])
+                    requirements=[fsl_req.v('5.0.8')])
                 copy_to_dir_in_files = (reorient, 'out_file')
             else:
                 copy_to_dir_in_files = reorient_in_file
@@ -243,58 +258,93 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     @property
-    def coreg_brain_spec_name(self):
+    def brain_spec_name(self):
         """
-        The name of the fileset after registration has been applied.
-        If registration is not required, i.e. a reg_ref is not supplied
-        then it is simply the 'brain' fileset.
+        The name of the brain extracted image after registration has been
+        applied if registration is specified by supplying 'coreg_ref' or
+        'coreg_ref_brain' optional inputs.
         """
-        if 'coreg_ref_brain' in self.input_names:
+        if self.provided('coreg_ref') or self.provided('coreg_ref_brain'):
             name = 'coreg_brain'
         else:
             name = 'brain'
         return name
 
-    def linear_coregistration_pipeline(self, **name_maps):
-        if self.branch('linear_reg_method', 'flirt'):
-            pipeline = self._flirt_pipeline(
-                'linear_coreg', 'brain', 'coreg_ref_brain',
-                'coreg_brain', 'coreg_matrix', name_maps)
-        elif self.branch('linear_reg_method', 'ants'):
-            pipeline = self._ants_linear_coreg_pipeline(
-                'linear_coreg', 'brain', 'coreg_ref_brain',
-                'coreg_brain', 'coreg_matrix', name_maps)
-        elif self.branch('linear_reg_method', 'spm'):
-            raise NotImplementedError
+    def linear_coreg_pipeline(self, **name_maps):
+        if self.branch('linear_coreg_method', 'flirt'):
+            pipeline = self._flirt_pipeline(**name_maps)
+        elif self.branch('linear_coreg_method', 'ants'):
+            pipeline = self._ants_linear_coreg_pipeline(**name_maps)
+        elif self.branch('linear_coreg_method', 'spm'):
+            pipeline = self._spm_linear_coreg_pipeline(**name_maps)
         else:
-            self.unhandled_branch('linear_reg_method')
+            self.unhandled_branch('linear_coreg_method')
         return pipeline
 
-    def qform_transform_pipeline(self, **name_maps):
-        return self._qform_transform_factory(
-            'qform_transform', 'brain', 'coreg_ref_brain', 'qformed',
-            'qform_mat', **name_maps)
+    def brain_extraction_pipeline(self, **name_maps):
+        if self.branch('bet_method', 'fsl_bet'):
+            pipeline = self._bet_brain_extraction_pipeline(**name_maps)
+        elif self.branch('bet_method', 'optibet'):
+            pipeline = self._optiBET_brain_extraction_pipeline(**name_maps)
+        else:
+            self.unhandled_branch('bet_method')
+        return pipeline
 
-    def _flirt_pipeline(self, name, to_reg, ref, reg, matrix, name_maps):
+    def coreg_brain_pipeline(self, **name_maps):
+        """
+        Coregistered + brain-extracted images can be derived in 2-ways. If an
+        explicit brain-extracted reference is provided to
+        'coreg_ref_brain' then that is used to coregister a brain extracted
+        image against. Alternatively, if only a skull-included reference is
+        provided then the registration is performed with skulls-included and
+        then brain extraction is performed after
+        """
+        if self.provided('coreg_ref_brain'):
+            pipeline = self.linear_coreg_pipeline(
+                name='linear_coreg_brain',
+                input_map={'preproc': 'brain',
+                           'coreg_ref': 'coreg_ref_brain'},
+                output_map={'coreg': 'coreg_brain'},
+                name_maps=name_maps)
+        elif self.provided('coreg_ref'):
+            pipeline = self.brain_extraction_pipeline(
+                name='linear_coreg_brain',
+                input_map={'preproc': 'coreg'},
+                output_map={'brain': 'coreg_brain'},
+                name_maps=name_maps)
+        else:
+            raise ArcanaUsageError(
+                "Either 'coreg_ref' or 'coreg_ref_brain' needs to be provided "
+                "in order to derive coreg_brain")
+        return pipeline
+
+    def coreg_matrix_pipeline(self, **name_maps):
+        if self.provided('coreg_ref_brain'):
+            pipeline = self.coreg_brain_pipeline(**name_maps)
+        elif self.provided('coreg_ref'):
+            pipeline = self.linear_coreg_pipeline(**name_maps)
+        else:
+            raise ArcanaUsageError(
+                "'coreg_matrix' can only be derived if 'coreg_ref' or "
+                "'coreg_ref_brain' is provided to {}".format(self))
+        return pipeline
+
+    def coregister_to_atlas_pipeline(self, **name_maps):
+        if self.branch('atlas_coreg_tool', 'fnirt'):
+            pipeline = self._fnirt_to_atlas_pipeline(**name_maps)
+        elif self.branch('atlas_coreg_tool', 'ants'):
+            pipeline = self._ants_to_atlas_pipeline(**name_maps)
+        else:
+            self.unhandled_branch('atlas_coreg_tool')
+        return pipeline
+
+    def _flirt_linear_coreg_pipeline(self, **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
-
-        Parameters
-        ----------
-        name : str
-            Name for the generated pipeline
-        to_reg : str
-            Name of the FilesetSpec to register
-        ref : str
-            Name of the FilesetSpec to use as a reference
-        reg : str
-            Name of the FilesetSpec to output as registered image
-        matrix : str
-            Name of the FilesetSpec to output as registration matrix
         """
 
-        pipeline = self.pipeline(
-            name=name,
+        pipeline = self.new_pipeline(
+            name='linear_reg',
             name_maps=name_maps,
             desc="Registers a MR scan against a reference image using FLIRT",
             references=[fsl_cite])
@@ -306,47 +356,51 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   cost_func=self.parameter('flirt_cost_func'),
                   output_type='NIFTI_GZ'),
             inputs={
-                'in_file': (to_reg, nifti_gz_format),
-                'reference': (ref, nifti_gz_format)},
+                'in_file': ('preproc', nifti_gz_format),
+                'reference': ('coreg_ref', nifti_gz_format)},
             outputs={
-                'out_file': (reg, nifti_gz_format),
-                'out_matrix_file': (matrix, text_matrix_format)},
-            requirements=[fsl5_req], wall_time=5)
+                'out_file': ('coreg', nifti_gz_format),
+                'out_matrix_file': ('coreg_matrix', text_matrix_format)},
+            requirements=[fsl_req.v('5.0.8')], wall_time=5)
 
         return pipeline
 
-    def _qform_transform_factory(self, name, to_reg, ref, qformed,
-                                 qformed_mat, name_maps):
-        pipeline = self.pipeline(
-            name=name,
+    def _ants_linear_coreg_pipeline(self, **name_maps):
+        """
+        Registers a MR scan to a refernce MR scan using ANTS's linear_reg
+        command
+        """
+
+        pipeline = self.new_pipeline(
+            name='linear_coreg',
             name_maps=name_maps,
-            desc="Registers a MR scan against a reference image",
-            references=[fsl_cite])
+            desc="Registers a MR scan against a reference image using ANTs")
 
         pipeline.add(
-            'flirt',
-            FLIRT(
-                uses_qform=True,
-                apply_xfm=True),
+            'ANTs_linear_Reg',
+            AntsRegSyn(
+                num_dimensions=3,
+                transformation='r',
+                out_prefix='reg2hires'),
             inputs={
-                'in_file': (to_reg, nifti_gz_format),
-                'reference': (ref, nifti_gz_format)},
+                'ref_file': ('coreg_ref', nifti_gz_format),
+                'input_file': ('preproc', nifti_gz_format)},
             outputs={
-                'out_file': (qformed, nifti_gz_format),
-                'out_matrix_file': (qformed_mat, text_matrix_format)},
-            requirements=[fsl5_req], wall_time=5)
+                'reg_file': ('coreg', nifti_gz_format),
+                'regmat': ('coreg_matrix', text_matrix_format)},
+            wall_time=10,
+            requirements=[ants_req.v('2.0')])
 
         return pipeline
 
-    def _spm_coreg_pipeline(self, **name_maps):  # @UnusedVariable
+    def _spm_linear_coreg_pipeline(self, **name_maps):  # @UnusedVariable
         """
-        Coregisters T2 image to T1 image using SPM's
-        "Register" method.
+        Coregisters T2 image to T1 image using SPM's "Register" method.
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.pipeline(
-            'registration',
+        pipeline = self.new_pipeline(
+            'linear_coreg',
             name_maps=name_maps,
             desc="Coregister T2-weighted images to T1",
             references=[spm_cite])
@@ -365,52 +419,41 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 write_mask=False,
                 out_prefix='r'),
             inputs={
-                'target': ('t1', nifti_format),
-                'source': ('t2', nifti_format)},
+                'target': ('coreg_ref', nifti_format),
+                'source': ('preproc', nifti_format)},
             outputs={
-                'coregistered_source': ('t2_coreg_t1', nifti_format)},
-            requirements=[spm12_req], wall_time=30)
+                'coregistered_source': ('coreg', nifti_format)},
+            requirements=[spm_req.v(12)],
+            wall_time=30)
         return pipeline
 
-    def _ants_linear_coreg_pipeline(self, name, to_reg, ref, reg, matrix,
-                                    name_maps):
-        pipeline = self.pipeline(
-            name=name,
+    def qform_transform_pipeline(self, **name_maps):
+        pipeline = self.new_pipeline(
+            name='qform_transform',
             name_maps=name_maps,
-            desc="Registers a MR scan against a reference image using ANTs")
+            desc="Registers a MR scan against a reference image",
+            references=[fsl_cite])
 
         pipeline.add(
-            'ANTs_linear_Reg',
-            AntsRegSyn(
-                num_dimensions=3,
-                transformation='r',
-                out_prefix='reg2hires'),
+            'flirt',
+            FLIRT(
+                uses_qform=True,
+                apply_xfm=True),
             inputs={
-                'ref_file': (ref, nifti_gz_format),
-                'input_file': (to_reg, nifti_gz_format)},
+                'in_file': ('brain', nifti_gz_format),
+                'reference': ('coreg_ref_brain', nifti_gz_format)},
             outputs={
-                'reg_file': (reg, nifti_gz_format),
-                'regmat': (matrix, text_matrix_format)},
-            wall_time=10, requirements=[ants2_req])
+                'out_file': ('qformed', nifti_gz_format),
+                'out_matrix_file': ('qform_mat', text_matrix_format)},
+            requirements=[fsl_req.v('5.0.8')], wall_time=5)
 
         return pipeline
 
-    def brain_extraction_pipeline(self, in_file='preproc', **name_maps):
-        if self.branch('bet_method', 'fsl_bet'):
-            pipeline = self._fsl_bet_brain_extraction_pipeline(in_file,
-                                                               **name_maps)
-        elif self.branch('bet_method', 'optibet'):
-            pipeline = self._optiBET_brain_extraction_pipeline(in_file,
-                                                               **name_maps)
-        else:
-            self.unhandled_branch('bet_method')
-        return pipeline
-
-    def _fsl_bet_brain_extraction_pipeline(self, in_file, **name_maps):
+    def _bet_brain_extraction_pipeline(self, **name_maps):
         """
         Generates a whole brain mask using FSL's BET command.
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='brain_extraction',
             name_maps=name_maps,
             desc="Generate brain mask from mr_scan",
@@ -424,11 +467,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 frac=self.parameter('bet_f_threshold'),
                 vertical_gradient=self.parameter('bet_g_threshold')),
             inputs={
-                'in_file': (in_file, nifti_gz_format)},
+                'in_file': ('preproc', nifti_gz_format)},
             outputs={
                 'out_file': ('brain', nifti_gz_format),
                 'mask_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl509_req])
+            requirements=[fsl_req.v('5.0.9')])
         # Set either robust or reduce bias
         if self.branch('bet_robust'):
             bet.inputs.robust = True
@@ -436,13 +479,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             bet.inputs.reduce_bias = self.parameter('bet_reduce_bias')
         return pipeline
 
-    # FIXME: With the newly implemented name-mapping functionality 'in_file'
-    #        does not need to be passed in this way
-    def _optiBET_brain_extraction_pipeline(self, in_file, **name_maps):
+    def _optiBET_brain_extraction_pipeline(self, **name_maps):
         """
         Generates a whole brain mask using a modified optiBET approach.
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='brain_extraction',
             name_maps=name_maps,
             desc=("Modified implementation of optiBET.sh"),
@@ -457,8 +498,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 num_threads=4),
             inputs={
                 'ref_file': ('atlas', nifti_gz_format),
-                'input_file': (in_file, nifti_gz_format)},
-            wall_time=25, requirements=[ants2_req])
+                'input_file': ('preproc', nifti_gz_format)},
+            wall_time=25, requirements=[ants_req.v('2.0')])
 
         merge_trans = pipeline.add(
             'merge_transforms',
@@ -482,13 +523,13 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 input_image_type=3),
             inputs={
                 'input_image': ('atlas_mask', nifti_gz_format),
-                'reference_image': (in_file, nifti_gz_format)},
+                'reference_image': ('preproc', nifti_gz_format)},
             connect={
                 'transforms': (merge_trans, 'out'),
                 'invert_transform_flags': (trans_flags, 'out')},
             wall_time=7,
-            memory=24000,
-            requirements=[ants2_req])
+            mem_gb=24,
+            requirements=[ants_req.v('2.0')])
 
         maths1 = pipeline.add(
             'binarize',
@@ -499,7 +540,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file': (apply_trans, 'output_image')},
             outputs={
                 'out_file': ('brain_mask', nifti_gz_format)},
-            wall_time=5, requirements=[fsl5_req])
+            wall_time=5, requirements=[fsl_req.v('5.0.8')])
 
         maths2 = pipeline.add(
             'mask',
@@ -507,12 +548,12 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 suffix='_optiBET_brain',
                 op_string='-mas'),
             inputs={
-                'in_file': (in_file, nifti_gz_format)},
+                'in_file': ('preproc', nifti_gz_format)},
             connect={
                 'in_file2': (maths1, 'out_file')},
             outputs={
                 'out_file': ('brain', nifti_gz_format)},
-            wall_time=5, requirements=[fsl5_req])
+            wall_time=5, requirements=[fsl_req.v('5.0.8')])
 
         if self.branch('optibet_gen_report'):
             pipeline.add(
@@ -520,26 +561,17 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 FSLSlices(outname='optiBET_report'),
                 wall_time=5,
                 inputs={
-                    'im1': (in_file, nifti_gz_format)},
+                    'im1': ('preproc', nifti_gz_format)},
                 connect={
                     'im2': (maths2, 'out_file')},
                 outputs={
                     'report': ('optiBET_report', gif_format)},
-                requirements=[fsl5_req])
+                requirements=[fsl_req.v('5.0.8')])
 
-        return pipeline
-
-    def coregister_to_atlas_pipeline(self, **name_maps):
-        if self.branch('atlas_coreg_tool', 'fnirt'):
-            pipeline = self._fsl_fnirt_to_atlas_pipeline(**name_maps)
-        elif self.branch('atlas_coreg_tool', 'ants'):
-            pipeline = self._ants_to_atlas_pipeline(**name_maps)
-        else:
-            self.unhandled_branch('atlas_coreg_tool')
         return pipeline
 
     # @UnusedVariable @IgnorePep8
-    def _fsl_fnirt_to_atlas_pipeline(self, **name_maps):
+    def _fnirt_to_atlas_pipeline(self, **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
@@ -548,7 +580,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ----------
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='coregister_to_atlas',
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
@@ -564,7 +596,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('preproc', nifti_gz_format)},
-            requirements=[fsl5_req])
+            requirements=[fsl_req.v('5.0.8')])
 
         reorient_mask = pipeline.add(
             'reorient_mask',
@@ -572,7 +604,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl5_req])
+            requirements=[fsl_req.v('5.0.8')])
 
         reorient_brain = pipeline.create_node(
             'reorient_brain',
@@ -580,7 +612,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('brain', nifti_gz_format)},
-            requirements=[fsl5_req])
+            requirements=[fsl_req.v('5.0.8')])
 
         # Affine transformation to MNI space
         flirt = pipeline.add(
@@ -592,7 +624,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'reference': ('atlas_brain', nifti_gz_format)},
             connect={
                 'in_file': (reorient_brain, 'out_file')},
-            requirements=[fsl5_req],
+            requirements=[fsl_req.v('5.0.8')],
             wall_time=5)
 
         # Apply mask if corresponding subsampling scheme is 1
@@ -627,7 +659,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'warped_file': ('coreg_to_atlas', nifti_gz_format),
                 'fieldcoeff_file': ('coreg_to_atlas_coeff', nifti_gz_format)},
-            requirements=[fsl5_req],
+            requirements=[fsl_req.v('5.0.8')],
             wall_time=60)
         # Set registration parameters
         # TODO: Need to work out which parameters to use
@@ -635,7 +667,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     def _ants_to_atlas_pipeline(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='coregister_to_atlas',
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
@@ -650,13 +682,13 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 out_prefix='Struct2MNI',
                 num_threads=4),
             inputs={
-                'input_file': (self.coreg_brain_spec_name, nifti_gz_format),
+                'input_file': (self.brain_spec_name, nifti_gz_format),
                 'ref_file': ('atlas_brain', nifti_gz_format)},
             outputs={
                 'reg_file': ('coreg_to_atlas', nifti_gz_format),
                 'regmat': ('coreg_to_atlas_mat', text_matrix_format),
                 'warp_file': ('coreg_to_atlas_warp', nifti_gz_format)},
-            wall_time=25, requirements=[ants2_req])
+            wall_time=25, requirements=[ants_req.v('2.0')])
 
         pipeline.add(
             'slices',
@@ -668,12 +700,12 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'im2': (ants_reg, 'reg_file')},
             outputs={
                 'report': ('coreg_to_atlas_report', gif_format)},
-            wall_time=1, requirements=[fsl5_req])
+            wall_time=1, requirements=[fsl_req.v('5.0.8')])
 
         return pipeline
 
     def segmentation_pipeline(self, img_type=2, **name_maps):
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='FAST_segmentation',
             name_maps=name_maps,
             inputs=[FilesetSpec('brain', nifti_gz_format)],
@@ -689,7 +721,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 out_basename='Reference_segmentation'),
             inputs={
                 'in_files': ('brain', nifti_gz_format)},
-            requirements=[fsl509_req]),
+            requirements=[fsl_req.v('5.0.9')]),
 
         # Determine output field of split to use
         if img_type == 1:
@@ -727,7 +759,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             New resolution of the image. If None no resampling is
             performed
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             name_maps=name_maps,
             desc=("Dimensions swapping to ensure that all the images "
@@ -742,7 +774,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     fsl.utils.Reorient2Std(),
                     inputs={
                         'in_file': ('magnitude', nifti_gz_format)},
-                    requirements=[fsl509_req])
+                    requirements=[fsl_req.v('5.0.9')])
     #         swap.inputs.new_dims = self.parameter('preproc_new_dims')
 
             if self.parameter('preproc_resolution') is not None:
@@ -751,7 +783,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     MRResize(
                         voxel=self.parameter('preproc_resolution')),
                     connect={'in_file': (swap, 'out_file')},
-                    requirements=[mrtrix3_req])
+                    requirements=[mrtrix_req.v('3.0rc3')])
                 pipeline.connect_output('preproc', resample, 'out_file',
                                         nifti_gz_format)
             else:
@@ -782,7 +814,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 "is provided in DICOM format ({})".format(
                     self.input('magnitude').format))
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='header_extraction',
             name_maps=name_maps,
             desc=("Pipeline to extract the most important scan "
@@ -812,7 +844,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     def motion_mat_pipeline(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             name_maps=name_maps,
             desc=("Motion matrices calculation"),

@@ -13,14 +13,14 @@ import logging
 import xnat
 from arcana.repository.xnat import (
     XnatRepository, special_char_re, lower)
-from arcana.exception import ArcanaMissingDataException
+from arcana.exceptions import ArcanaMissingDataException
 from arcana.utils import split_extension
 import banana
 from arcana.utils import classproperty
 from arcana.processor import LinearProcessor
-from arcana.exception import ArcanaError
-from arcana.node import ArcanaNodeMixin
-from arcana.exception import (
+from arcana.exceptions import ArcanaError
+from arcana.environment.node import NodeMixin
+from arcana.exceptions import (
     ArcanaModulesNotInstalledException)
 from traceback import format_exc
 from arcana.repository.directory import (
@@ -28,7 +28,7 @@ from arcana.repository.directory import (
     SUMMARY_NAME as LOCAL_SUMMARY_NAME, FIELDS_FNAME)
 
 logger = logging.getLogger('arcana')
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
 handler.setFormatter(formatter)
@@ -283,7 +283,7 @@ class BaseTestCase(TestCase):
                         subject=None, visit=None,
                         frequency='per_session'):
             try:
-                ArcanaNodeMixin.load_module('mrtrix')
+                NodeMixin.load_module('mrtrix')
             except ArcanaModulesNotInstalledException:
                 pass
             val = float(sp.check_output(
@@ -421,7 +421,7 @@ class BaseMultiSubjectTestCase(BaseTestCase):
                         project_dir, subj_id, visit_id)
                     with open(os.path.join(session_dir, FIELDS_FNAME),
                               'w') as f:
-                        json.dump(visit_fields, f)
+                        json.dump(visit_fields, f, indent=2)
 
     def _extract_ids(self, name):
         parts = name.split('_')
@@ -551,7 +551,7 @@ def download_all_filesets(download_dir, server, session_id, overwrite=True,
             # determine type
             fields[name] = value
         with open(os.path.join(download_dir, FIELDS_FNAME), 'w') as f:
-            json.dump(fields, f)
+            json.dump(fields, f, indent=2)
 
 
 def download_fileset(download_path, server, user, password, session_id,

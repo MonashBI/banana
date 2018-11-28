@@ -1,18 +1,18 @@
 from copy import copy
 from nipype.interfaces.freesurfer.preprocess import ReconAll
-# from arcana.interfaces.utils import DummyReconAll as ReconAll
-from banana.requirement import freesurfer_req, ants19_req, fsl5_req
+# from arcana.utils.interfaces import DummyReconAll as ReconAll
+from banana.requirement import freesurfer_req, ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
-from arcana.interfaces import utils
+from arcana.utils.interfaces import Merge
 from banana.file_format import (
     freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
     STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
-from arcana.interfaces.utils import JoinPath
+from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
-from arcana.parameter import ParameterSpec, SwitchSpec
+from arcana.study import ParameterSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 
 
@@ -51,7 +51,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
 
         NB: Default values come from the W2MHS toolbox
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='segmentation',
             name_maps=name_maps,
             desc="Segment white/grey matter and csf",
@@ -64,14 +64,14 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 directive='all',
                 openmp=self.processor.num_processes),
             inputs={
-                'T1_files': ('magnitude', nifti_gz_format)},
-            requirements=[freesurfer_req], wall_time=2000)
+                'T1_files': ('preproc', nifti_gz_format)},
+            requirements=[freesurfer_req.v('5.3')], wall_time=2000)
 
         # Wrapper around os.path.join
         pipeline.add(
             'join',
             JoinPath(),
-            connections={
+            connect={
                 'dirname': (recon_all, 'subjects_dir'),
                 'filename': (recon_all, 'subject_id')},
             outputs={
@@ -91,7 +91,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
 
     def bet_T1(self, **name_maps):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='BET_T1',
             name_maps=name_maps,
             desc=("python implementation of BET"),
@@ -102,8 +102,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             ants.N4BiasFieldCorrection(),
             inputs={
                 'input_image': ('t1', nifti_gz_format)},
-            requirements=[ants19_req],
-            wall_time=60, memory=12000)
+            requirements=[ants_req.v('1.9')],
+            wall_time=60, mem_gb=12)
 
         pipeline.add(
             'bet',
@@ -113,12 +113,12 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('betted_T1', nifti_gz_format),
                 'mask_file': ('betted_T1_mask', nifti_gz_format)},
-            requirements=[fsl5_req], memory=8000, wall_time=45)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
 
         return pipeline
 
     def cet_T1(self, **name_maps):
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='CET_T1',
             name_maps=name_maps,
             desc=("Construct cerebellum mask using SUIT template"),
@@ -131,7 +131,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         # Initially use MNI space to warp SUIT into T1 and threshold to mask
         merge_trans = pipeline.add(
             'merge_transforms',
-            utils.Merge(2),
+            Merge(2),
             inputs={
                 'in2': (nl, nifti_gz_format),
                 'in1': (linear, nifti_gz_format)})
@@ -147,7 +147,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('suit_mask', nifti_gz_format)},
             connections={
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants19_req], memory=16000, wall_time=120)
+            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
 
         pipeline.add(
             'maths2',
@@ -161,6 +161,6 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'out_file': ('cetted_T1', nifti_gz_format),
                 'output_image': ('cetted_T1_mask', nifti_gz_format)},
-            requirements=[fsl5_req], memory=16000, wall_time=5)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
 
         return pipeline

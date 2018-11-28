@@ -1,5 +1,5 @@
 import os
-from arcana.testing import BaseTestCase
+from arcana.utils.testing import BaseTestCase
 import tempfile
 from nipype.pipeline import Node
 from banana.interfaces.custom.coils import CombineCoils

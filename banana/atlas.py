@@ -2,8 +2,8 @@ import os
 import os.path as op
 from copy import copy
 import banana
-from banana.requirement import fsl5_req
-from arcana.exception import (
+from banana.requirement import fsl_req
+from arcana.exceptions import (
     ArcanaError, ArcanaNameError, ArcanaUsageError, ArcanaDesignError)
 from arcana import Fileset, FilesetCollection, MultiStudy
 
@@ -101,9 +101,15 @@ class FslAtlas(BaseAtlas):
         full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
-        fsl_ver = self.study.environment.load(fsl5_req)
+        try:
+            fsl_ver = self.study.environment.load(fsl_req.v('5.0.8'))
+        except AttributeError:
+            pass
         atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
-        self.study.environment.unload(fsl_ver)
+        try:
+            self.study.environment.unload(fsl_ver)
+        except AttributeError:
+            pass
         return op.join(atlas_dir, full_atlas_name + '.nii.gz')
 
     def translate(self, sub_study_spec):

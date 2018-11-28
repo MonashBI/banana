@@ -1,4 +1,4 @@
-from arcana.testing import BaseTestCase, BaseMultiSubjectTestCase
+from arcana.utils.testing import BaseTestCase, BaseMultiSubjectTestCase
 from arcana.study.base import Study, StudyMetaClass
 from arcana.data import FilesetSpec, FilesetSelector
 from banana.file_format import (

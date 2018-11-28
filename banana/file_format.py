@@ -4,16 +4,15 @@ import os
 import os.path as op
 import pydicom
 import numpy as np
-from arcana.node import Node
 from arcana.data.file_format import FileFormat, Converter
 from banana.interfaces.mrtrix import MRConvert
 from banana.requirement import (
-    dcm2niix_req, mrtrix3_req)
+    dcm2niix_req, mrtrix_req)
 from banana.interfaces.converters import Dcm2niix  # @UnusedImport
 import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format.standard import (
-    text_format, directory_format, zip_format, targz_format,
+    text_format, directory_format, zip_format, targz_format,  # @UnusedImport
     UnzipConverter, UnTarGzConverter)  # @UnusedImport
 
 
@@ -33,26 +32,23 @@ class ImageFileFormat(FileFormat, ABCMeta):
 
 class Dcm2niixConverter(Converter):
 
-    requirements = [dcm2niix_req]
-
-    def get_node(self, name):
-        convert_node = Node(Dcm2niix(), name=name,
-                            requirements=self.requirements,
-                            wall_time=20)
-        convert_node.inputs.compression = 'y'
-        return convert_node, 'input_dir', 'converted'
+    interface = Dcm2niix(compression='y')
+    input = 'input_dir'
+    output = 'converted'
+    requirements = [dcm2niix_req.v('1.0.2')]
 
 
 class MrtrixConverter(Converter):
 
-    requirements = [mrtrix3_req]
+    input = 'in_file'
+    output = 'out_file'
+    requirements = [mrtrix_req.v(3)]
 
-    def get_node(self, name):
-        convert_node = Node(MRConvert(), name=name,
-                            requirements=self.requirements)
-        convert_node.inputs.out_ext = self._output_format.extension
-        convert_node.inputs.quiet = True
-        return convert_node, 'in_file', 'out_file'
+    @property
+    def interface(self):
+        return MRConvert(
+            out_ext=self.output_format.extension,
+            quiet=True)
 
 
 # =====================================================================
