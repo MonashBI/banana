@@ -728,7 +728,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             MergeTuple(2))
         pipeline.connect(fsl_grads, 'out', mask, 'grad_fsl')
         pipeline.connect(mask, 'out_file', tck, 'seed_image')
-        pipeline.connect_input('fod', tck, 'in_file')
+        pipeline.connect_input('wm_odf', tck, 'in_file')
         pipeline.connect_input('bias_correct', mask, 'in_file')
         pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
         pipeline.connect_input('bvalues', fsl_grads, 'in2')

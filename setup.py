@@ -23,7 +23,7 @@ setup(
         'imaging analysis workflows implemented in the Arcana '
         'framework (arcana.readthedocs.io)'),
     long_description=open('README.rst').read(),
-    install_requires=['arcana>=0.2.6',
+    install_requires=['arcana>=0.2.8',
                       'pydicom>=1.0',
                       'nibabel>=2.3.0'],
     classifiers=[
