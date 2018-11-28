@@ -9,7 +9,7 @@ from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.utils.interfaces import Merge
 from banana.file_format import (
-    freesurfer_recon_all_format, nifti_gz_format, text_matrix_format)
+    nifti_gz_format, text_matrix_format)
 from arcana.data import FilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
