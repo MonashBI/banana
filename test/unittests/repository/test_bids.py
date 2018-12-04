@@ -10,13 +10,8 @@ class TestBids(TestCase):
     test_dataset = op.join(BaseTestCase.test_data_dir, 'reference', 'bids',
                             'ds000114')
 
-    def ref_tree(self):
-        return Tree.construct()
-
     def test_project_info(self):
         repo = BidsRepository(self.test_dataset)
         tree = repo.tree()
-        self.assertEqual(
-            tree, self.ref_tree(),
-            "Generated project doesn't match reference:{}"
-            .format(tree.find_mismatch(self.ref_tree())))
+        self.assertEqual(len(list(tree.subjects)), 10)
+        self.assertEqual(len(list(tree.visits)), 2)
