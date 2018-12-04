@@ -98,6 +98,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
+    bids_defaults = {
+        'magnitude': BidsSelector()}
+
     @property
     def multi_tissue(self):
         return self.branch('response_algorithm',

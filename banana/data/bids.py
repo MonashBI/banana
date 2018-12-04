@@ -5,6 +5,11 @@ from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
 
 
+class BaseBidsFileset(BaseFileset):
+
+    pass
+
+
 class BidsFileset(Fileset):
     """
     A representation of a fileset within the repository.
@@ -60,7 +65,7 @@ class BidsFileset(Fileset):
         return self._task
 
 
-class BidsMatch(FilesetSelector):
+class BidsSelector(FilesetSelector):
     """
     A match object for matching filesets from their 'bids_attr'
     attribute
@@ -69,7 +74,7 @@ class BidsMatch(FilesetSelector):
     ----------
     name : str
         Name of the fileset
-    type : str
+    task : str
         Type of the fileset
     modality : str
         Modality of the filesets
@@ -79,18 +84,18 @@ class BidsMatch(FilesetSelector):
         Run number of the fileset
     """
 
-    def __init__(self, name, type, modality, format, run=None):  # @ReservedAssignment @IgnorePep8
+    def __init__(self, name, task, modality, format, run=None):  # @ReservedAssignment @IgnorePep8
         FilesetSelector.__init__(
             self, name, format, pattern=None, frequency='per_session',   # @ReservedAssignment @IgnorePep8
             id=None, order=run, dicom_tags=None, is_regex=False,
             from_study=None)
-        self._type = type
+        self._task = task
         self._modality = modality
         self._run = run
 
     @property
-    def type(self):
-        return self._type
+    def task(self):
+        return self._task
 
     @property
     def modality(self):
@@ -103,38 +108,38 @@ class BidsMatch(FilesetSelector):
     def _filtered_matches(self, node):
         matches = [
             d for d in node.filesets
-            if (d.bids_attr.entities['type'] == self.type and
+            if (d.bids_attr.entities['task'] == self.task and
                 d.bids_attr.entities['modality'] == self.modality)]
         if not matches:
             raise ArcanaSelectorError(
                 "No BIDS filesets for subject={}, visit={} match "
-                "modality '{}' and type '{}' found:\n{}"
+                "modality '{}' and task '{}' found:\n{}"
                 .format(node.subject_id, node.visit_id, self.modality,
-                        self.type, '\n'.join(
+                        self.task, '\n'.join(
                             sorted(d.name for d in node.filesets))))
         return matches
 
     def __eq__(self, other):
         return (FilesetSelector.__eq__(self, other) and
-                self.type == other.type and
+                self.task == other.task and
                 self.modality == other.modality and
                 self.run == other.run)
 
     def __hash__(self):
         return (FilesetSelector.__hash__(self) ^
-                hash(self.type) ^
+                hash(self.task) ^
                 hash(self.modality) ^
                 hash(self.run))
 
     def initkwargs(self):
         dct = FilesetSelector.initkwargs(self)
-        dct['type'] = self.type
+        dct['task'] = self.task
         dct['modality'] = self.modality
         dct['run'] = self.run
         return dct
 
 
-class BidsAssociatedMatch(FilesetSelector):
+class BidsAssociatedSelector(FilesetSelector):
     """
     A match object for matching BIDS filesets that are associated with
     another BIDS filesets (e.g. field-maps, bvecs, bvals)
