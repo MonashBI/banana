@@ -10,6 +10,7 @@ from arcana.pipeline import Record
 from arcana.exceptions import ArcanaUsageError
 from arcana.repository import DirectoryRepository, Tree
 import banana.file_format  # @UnusedImport
+from banana.data.bids import BidsFileset
 
 
 logger = logging.getLogger('arcana')
@@ -75,25 +76,34 @@ class BidsRepository(DirectoryRepository):
         all_subjects = self.layout.get_subjects()
         all_visits = self.layout.get_sessions()
         for item in self.layout.get(return_type='object'):
-            if isinstance(item, grabbit.File):
-                if item.filename.startswith('.'):
-                    continue  # Ignore hidden file
+            if not hasattr(item, 'entities') or not item.entities.get('type',
+                                                                      False):
+                logger.warning("Skipping unrecognised file '{}' in BIDS tree"
+                               .format(op.join(item.dirname, item.filename)))
+                continue  # Ignore hidden file
             try:
                 subject_ids = [item.entities['subject']]
             except KeyError:
+                # If item exists in top-levels of in the directory structure
+                # it is inferred to exist for all subjects in the tree
                 subject_ids = all_subjects
             try:
                 visit_ids = [item.entities['session']]
             except KeyError:
+                # If item exists in top-levels of in the directory structure
+                # it is inferred to exist for all visits in the tree
                 visit_ids = all_visits
-            bids_attrs = {'type': item.entities['type']}
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
-                    filesets.append(Fileset.from_path(
-                        op.join(item.dirname, item.filename),
-                        frequency='per_session',
+                    fileset = BidsFileset(
+                        name=item.entities['type'],
+                        path=op.join(item.dirname, item.filename),
                         subject_id=subject_id, visit_id=visit_id,
-                        repository=self, bids_attrs=bids_attrs))
+                        repository=self,
+                        modality=item.entities.get('modality', None),
+                        run=item.entities.get('run', None),
+                        task=item.entities.get('task', None))
+                    filesets.append(fileset)
         return filesets, fields, records
 
     def fileset_path(self, item, fname=None):

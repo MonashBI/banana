@@ -1,51 +1,63 @@
 from arcana.exceptions import ArcanaSelectorError, ArcanaUsageError
 from arcana.data.selector import FilesetSelector
+from arcana.data.item import Fileset
+from arcana.data.file_format import FileFormat
+from arcana.utils import split_extension
 
 
-class BidsAttrs(object):
+class BidsFileset(Fileset):
+    """
+    A representation of a fileset within the repository.
 
-    def __init__(self, type=None, modality=None, run=None, metadata=None,  # @ReservedAssignment @IgnorePep8
-                 field_maps=None, bvec=None, bval=None, desc=None):
-        self._type = type
+    Parameters
+    ----------
+    name : str
+        The name of the fileset
+    path : str | None
+        The path to the fileset on the local system
+    subject_id : int | str | None
+        The id of the subject which the fileset belongs to
+    visit_id : int | str | None
+        The id of the visit which the fileset belongs to
+    repository : BaseRepository
+        The repository which the fileset is stored
+    modality : str
+        The BIDS modality
+    run : str
+        The BIDS run
+    task : str
+        The BIDS task
+    checksums : dict[str, str]
+        A checksums of all files within the fileset in a dictionary sorted by
+        relative file paths
+    """
+
+    def __init__(self, name, path, subject_id, visit_id, repository,
+                 modality=None, run=None, task=None, checksums=None):
+        super().__init__(
+            name=name,
+            format=FileFormat.by_ext(split_extension(path)[1]),
+            frequency='per_session',
+            path=path,
+            subject_id=subject_id,
+            visit_id=visit_id,
+            repository=repository,
+            checksums=checksums)
         self._modality = modality
         self._run = run
-        self._metadata = metadata
-        self._bval = bval
-        self._bvec = bvec
-        self._field_maps = field_maps
-        self._desc = desc
+        self._task = task
 
     @property
-    def type(self):
-        return self._type
-
-    @property
-    def mode(self):
-        return self._mode
+    def modality(self):
+        return self._modality
 
     @property
     def run(self):
         return self._run
 
     @property
-    def metadata(self):
-        return self._metadata
-
-    @property
-    def bval(self):
-        return self._bval
-
-    @property
-    def bvec(self):
-        return self._bvec
-
-    @property
-    def field_maps(self):
-        return self._field_maps
-
-    @property
-    def desc(self):
-        return self._desc
+    def task(self):
+        return self._task
 
 
 class BidsMatch(FilesetSelector):

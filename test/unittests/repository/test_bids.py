@@ -2,7 +2,7 @@ import os.path as op
 from unittest import TestCase  # @IgnorePep8
 from arcana.repository import Tree
 from banana.repository.bids import BidsRepository
-from arcana.utils.testing import BaseTestCase
+from banana.utils.testing import BaseTestCase
 
 
 class TestBids(TestCase):
@@ -19,4 +19,4 @@ class TestBids(TestCase):
         self.assertEqual(
             tree, self.ref_tree(),
             "Generated project doesn't match reference:{}"
-            .format(tree.find_mismatch(self.local_tree)))
+            .format(tree.find_mismatch(self.ref_tree())))
