@@ -1,9 +1,9 @@
 Banana
 ======
 
-Biomedical imAgiNg ANAlysis (Banana): a collection of biomedical imaging analysis workflows
-implemented in the Arcana_ framework, which can be used to analyse complete study
-datasets in XNAT, BIDS or plain-directory repositories.
+Biomedical ANAlysis iN Arcana (Banana): a collection of biomedical analysis workflows
+implemented in the Arcana_ framework, which can be used to analyse study
+datasets stored in XNAT, BIDS or plain-directory repositories.
 
 Dependencies
 -----------------
