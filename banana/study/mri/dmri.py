@@ -28,6 +28,7 @@ from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
+from banana.bids import BidsSelector
 
 
 class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
@@ -98,8 +99,8 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    bids_defaults = {
-        'magnitude': BidsSelector()}
+#     default_bids_inputs = {
+#         'magnitude': BidsSelector()}
 
     @property
     def multi_tissue(self):

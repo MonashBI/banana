@@ -9,7 +9,7 @@ import nibabel as nib
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File,
     Directory, isdefined)
-from banana.exception import BananaUsageError
+from banana.exceptions import BananaUsageError
 logger = logging.getLogger('banana')
 
 
