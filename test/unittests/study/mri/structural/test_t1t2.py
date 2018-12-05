@@ -13,8 +13,8 @@ class TestT1T2Study(BaseTestCase):
     def test_t2_registration_pipeline(self):
         study = self.create_study(
             T1T2Study, 't2_registration', inputs=[
-                FilesetSelector('t1', nifti_gz_format, 'mprage'),
-                FilesetSelector('t2', nifti_gz_format, 'flair')])
+                FilesetSelector('t1', 'mprage', nifti_gz_format),
+                FilesetSelector('t2', 'flair', nifti_gz_format)])
         study.t2_registration_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('t2_coreg.nii.gz', study.name)
 
@@ -22,16 +22,16 @@ class TestT1T2Study(BaseTestCase):
     def test_freesurfer_pipeline(self):
         study = self.create_study(
             T1T2Study, 'freesurfer', inputs=[
-                FilesetSelector('t1', nifti_gz_format, 'mprage'),
-                FilesetSelector('t2', nifti_gz_format, 'flair')])
+                FilesetSelector('t1', 'mprage', nifti_gz_format),
+                FilesetSelector('t2', 'flair', nifti_gz_format)])
         study.freesurfer_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('fs_recon_all.fs.zip')
 
     def test_brain_extraction_pipelines(self):
         study = self.create_study(
             T1T2Study, 'brain_mask', inputs=[
-                FilesetSelector('t1', nifti_gz_format, 'mprage'),
-                FilesetSelector('t2', nifti_gz_format, 'flair'),
+                FilesetSelector('t1', 'mprage', nifti_gz_format),
+                FilesetSelector('t2', 'flair', nifti_gz_format),
                 FilesetSelector('manual_wmh_mask', nifti_gz_format,
                              'manual_wmh_mask')])
         study.t1_brain_extraction_pipeline().run(work_dir=self.work_dir)

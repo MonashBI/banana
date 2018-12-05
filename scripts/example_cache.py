@@ -28,7 +28,7 @@ with open(session_ids_path) as f:
     ids = f.read().split()
 
 PROJECT_ID = 'MRH017'
-filesets = {FilesetSelector('coils', zip_format, 'swi_coils')}
+filesets = {FilesetSelector('coils', 'swi_coils', zip_format)}
 visit_ids = visit_ids['MR01']
 
 repository = XnatRepository(cache_dir='/scratch/dq13/xnat_cache3')

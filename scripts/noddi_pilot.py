@@ -29,6 +29,6 @@ study = NODDIStudy(
                      'r_l_noddi_b700_30_directions'),
         FilesetSelector('high_b_dw_scan', mrtrix_format,
                      'r_l_noddi_b2000_60_directions'),
-        FilesetSelector('forward_rpe', mrtrix_format, 'r_l_noddi_b0_6'),
-        FilesetSelector('reverse_rpe', mrtrix_format, 'l_r_noddi_b0_6')])
+        FilesetSelector('forward_rpe', 'r_l_noddi_b0_6', mrtrix_format),
+        FilesetSelector('reverse_rpe', 'l_r_noddi_b0_6', mrtrix_format)])
 study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)

@@ -5,12 +5,50 @@ from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
 
 
-class BaseBidsFileset(BaseFileset):
+class BaseBids(object):
 
-    pass
+    def __init__(self, modality, run, task):
+        self._modality = modality
+        self._run = run
+        self._task = task
+
+    def __eq__(self, other):
+        return (self.type == other.type and
+                self.task == other.task and
+                self.modality == other.modality and
+                self.run == other.run)
+
+    def __hash__(self):
+        return (hash(self.type) ^
+                hash(self.task) ^
+                hash(self.modality) ^
+                hash(self.run))
+
+    def initkwargs(self):
+        dct = {}
+        dct['task'] = self.task
+        dct['modality'] = self.modality
+        dct['run'] = self.run
+        return dct
+
+    @property
+    def type(self):
+        return self.name
+
+    @property
+    def modality(self):
+        return self._modality
+
+    @property
+    def run(self):
+        return self._run
+
+    @property
+    def task(self):
+        return self._task
 
 
-class BidsFileset(Fileset):
+class BidsFileset(Fileset, BaseBids):
     """
     A representation of a fileset within the repository.
 
@@ -37,10 +75,11 @@ class BidsFileset(Fileset):
         relative file paths
     """
 
-    def __init__(self, name, path, subject_id, visit_id, repository,
+    def __init__(self, type, path, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
                  modality=None, run=None, task=None, checksums=None):
-        super().__init__(
-            name=name,
+        Fileset.__init__(
+            self,
+            name=type,
             format=FileFormat.by_ext(split_extension(path)[1]),
             frequency='per_session',
             path=path,
@@ -48,34 +87,20 @@ class BidsFileset(Fileset):
             visit_id=visit_id,
             repository=repository,
             checksums=checksums)
-        self._modality = modality
-        self._run = run
-        self._task = task
-
-    @property
-    def modality(self):
-        return self._modality
-
-    @property
-    def run(self):
-        return self._run
-
-    @property
-    def task(self):
-        return self._task
+        BaseBids.__init__(modality, run, task)
 
 
-class BidsSelector(FilesetSelector):
+class BidsSelector(FilesetSelector, BaseBids):
     """
     A match object for matching filesets from their 'bids_attr'
     attribute
 
     Parameters
     ----------
-    name : str
-        Name of the fileset
-    task : str
+    type : str
         Type of the fileset
+    task : str
+        The task the fileset belongs to
     modality : str
         Modality of the filesets
     format : FileFormat
@@ -84,58 +109,36 @@ class BidsSelector(FilesetSelector):
         Run number of the fileset
     """
 
-    def __init__(self, name, task, modality, format, run=None):  # @ReservedAssignment @IgnorePep8
+    def __init__(self, type, format, task=None, modality=None, run=None):  # @ReservedAssignment @IgnorePep8
         FilesetSelector.__init__(
-            self, name, format, pattern=None, frequency='per_session',   # @ReservedAssignment @IgnorePep8
-            id=None, order=run, dicom_tags=None, is_regex=False,
+            self, type, format, pattern=None, frequency='per_session',   # @ReservedAssignment @IgnorePep8
+            id=None, dicom_tags=None, is_regex=False,
             from_study=None)
-        self._task = task
-        self._modality = modality
-        self._run = run
-
-    @property
-    def task(self):
-        return self._task
-
-    @property
-    def modality(self):
-        return self._modality
-
-    @property
-    def run(self):
-        return self.order
+        BaseBids.__init__(modality, run, task)
 
     def _filtered_matches(self, node):
-        matches = [
-            d for d in node.filesets
-            if (d.bids_attr.entities['task'] == self.task and
-                d.bids_attr.entities['modality'] == self.modality)]
+        matches = [f for f in node.filesets if BaseBids.__eq__(self, f)]
         if not matches:
             raise ArcanaSelectorError(
-                "No BIDS filesets for subject={}, visit={} match "
-                "modality '{}' and task '{}' found:\n{}"
-                .format(node.subject_id, node.visit_id, self.modality,
-                        self.task, '\n'.join(
-                            sorted(d.name for d in node.filesets))))
+                "No BIDS filesets for {} match {} found:\n{}"
+                .format(node, self, '\n'.join(str(f) for f in node.filesets)))
         return matches
+
+    def __repr__(self):
+        return "{}(type={}, task={}, modality={})".format(
+            self.__class__.__name__, self.type, self.task, self.modality)
 
     def __eq__(self, other):
         return (FilesetSelector.__eq__(self, other) and
-                self.task == other.task and
-                self.modality == other.modality and
-                self.run == other.run)
+                BaseBids.__eq__(self, other))
 
     def __hash__(self):
         return (FilesetSelector.__hash__(self) ^
-                hash(self.task) ^
-                hash(self.modality) ^
-                hash(self.run))
+                BaseBids.__hash__(self))
 
     def initkwargs(self):
         dct = FilesetSelector.initkwargs(self)
-        dct['task'] = self.task
-        dct['modality'] = self.modality
-        dct['run'] = self.run
+        dct.update(BaseBids.initkwargs(self))
         return dct
 
 

@@ -22,7 +22,7 @@ class TestMRI(TestCase):
     def test_coreg_and_brain_mask(self):
         study = self.create_study(
             TestCoregStudy, 'coreg_and_mask_study', inputs=[
-                FilesetSelector('ref_primary', nifti_gz_format, 'mprage'),
+                FilesetSelector('ref_primary', 'mprage', nifti_gz_format),
                 FilesetSelector('tocoreg_primary', nifti_gz_format,
                              'flair')])
         coreg_brain = list(study.data('tocoreg_coreg_brain'))[0]

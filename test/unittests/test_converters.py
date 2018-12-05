@@ -80,14 +80,14 @@ class TestFormatConversions(BaseTestCase):
     def test_pipeline_prerequisites(self):
         study = self.create_study(
             ConversionStudy, 'conversion', [
-                FilesetSelector('mrtrix', text_format, 'mrtrix'),
+                FilesetSelector('mrtrix', 'mrtrix', text_format),
                 FilesetSelector('nifti_gz', text_format,
                              'nifti_gz'),
                 FilesetSelector('dicom', dicom_format,
                              't1_mprage_sag_p2_iso_1_ADNI'),
                 FilesetSelector('directory', directory_format,
                              't1_mprage_sag_p2_iso_1_ADNI'),
-                FilesetSelector('zip', zip_format, 'zip')])
+                FilesetSelector('zip', 'zip', zip_format)])
         study.data('nifti_gz_from_dicom')
         study.data('mrtrix_from_nifti_gz')
         study.data('nifti_from_mrtrix')

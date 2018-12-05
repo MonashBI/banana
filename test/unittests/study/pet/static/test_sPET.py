@@ -12,8 +12,8 @@ class TestsPET(BaseTestCase):
     def test_suvr(self):
         study = self.create_study(
             StaticPETStudy, 'suvr', inputs=[
-                FilesetSelector('registered_volume', nifti_gz_format, 'suvr_registered_volume'),
-                FilesetSelector('base_mask', nifti_gz_format, 'cerebellum_mask')])
+                FilesetSelector('registered_volume', 'suvr_registered_volume', nifti_gz_format),
+                FilesetSelector('base_mask', 'cerebellum_mask', nifti_gz_format)])
         study.suvr_pipeline().run(work_dir=self.work_dir, plugin='Linear')
         self.assertFilesetCreated('SUVR_image.nii.gz', study.name)
 #         self.assertFilesetCreated('t.png', study.name)
