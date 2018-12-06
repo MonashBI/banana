@@ -23,9 +23,12 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
         desc="Output preprocessed filename")
     out_file_ext = traits.Str(
         desc='Specify the extention for the final output')
+    rpe_none = traits.Bool(
+        mandatory=False, argstr='-rpe_none',
+        desc=("No reverse phase encoded reference image provided"))
     rpe_pair = traits.Bool(
         mandatory=False, argstr="-rpe_pair",
-        desc=("forward reverse Provide a pair of images to use for "
+        desc=("Provide a pair of images to use for "
               "inhomogeneity field estimation; note that the FIRST of these "
               "two images must have the same phase"))
     rpe_header = traits.Bool(

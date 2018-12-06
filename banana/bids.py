@@ -18,20 +18,24 @@ logger = logging.getLogger('arcana')
 
 class BaseBidsFileset(object):
 
-    def __init__(self, modality, task):
+    def __init__(self, type, modality, task):  # @ReservedAssignment
         self._modality = modality
+        self._type = type
         self._task = task
 
     def __eq__(self, other):
-        return (self.task == other.task and
+        return (self.type == other.type and
+                self.task == other.task and
                 self.modality == other.modality)
 
     def __hash__(self):
-        return (hash(self.task) ^
+        return (hash(self.type) ^
+                hash(self.task) ^
                 hash(self.modality))
 
     def initkwargs(self):
         dct = {}
+        dct['type'] = self.type
         dct['task'] = self.task
         dct['modality'] = self.modality
         return dct
@@ -43,6 +47,10 @@ class BaseBidsFileset(object):
     @property
     def task(self):
         return self._task
+
+    @property
+    def type(self):
+        return self._type
 
 
 class BidsFileset(Fileset, BaseBidsFileset):
@@ -70,11 +78,11 @@ class BidsFileset(Fileset, BaseBidsFileset):
         relative file paths
     """
 
-    def __init__(self, type, path, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
+    def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
                  modality=None, task=None, checksums=None):
         Fileset.__init__(
             self,
-            name=type,
+            name=op.basename(path),
             format=FileFormat.by_ext(split_extension(path)[1]),
             frequency='per_session',
             path=path,
@@ -82,17 +90,20 @@ class BidsFileset(Fileset, BaseBidsFileset):
             visit_id=visit_id,
             repository=repository,
             checksums=checksums)
-        BaseBidsFileset.__init__(self, modality, task)
+        BaseBidsFileset.__init__(self, type, modality, task)
 
-    @property
-    def type(self):
-        return self.name
+    def __repr__(self):
+        return ("{}(type={}, task={}, modality={}, format={}, subj={}, vis={})"
+                .format(self.__class__.__name__, self.type, self.task,
+                        self.modality, self.format.name, self.subject_id,
+                        self.visit_id))
 
 
 class BidsSelector(FilesetSelector, BaseBidsFileset):
     """
-    A match object for matching filesets from their 'bids_attr'
-    attribute
+    A match object for matching filesets from their BIDS attributes and file
+    format. If any of the provided attributes are None, then that attribute
+    is omitted from the match
 
     Parameters
     ----------
@@ -100,27 +111,27 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
         Name of the spec to match
     type : str
         Type of the fileset
+    format : FileFormat
+        The file format of the fileset to match
     task : str
         The task the fileset belongs to
     modality : str
         Modality of the filesets
-    format : FileFormat
-        The file format of the fileset to match
     """
 
-    def __init__(self, name, type, task=None, modality=None, format=None):  # @ReservedAssignment @IgnorePep8
+    def __init__(self, name, type, format=None, task=None, modality=None):  # @ReservedAssignment @IgnorePep8
         FilesetSelector.__init__(
             self, name, pattern=None, format=format, frequency='per_session',   # @ReservedAssignment @IgnorePep8
             id=None, dicom_tags=None, is_regex=False, from_study=None)
-        BaseBidsFileset.__init__(self, modality, task)
-        self._type = name
+        BaseBidsFileset.__init__(self, type, modality, task)
 
     def _filtered_matches(self, node):
         matches = [
             f for f in node.filesets
             if (self.type == f.type and
                 (self.modality is None or self.modality == f.modality) and
-                (self.task is None or self.task == f.task))]
+                (self.task is None or self.task == f.task) and
+                (self.format is None or self.format == f.format))]
         if not matches:
             raise ArcanaSelectorMissingMatchError(
                 "No BIDS filesets for {} match {} found:\n{}"
@@ -139,14 +150,13 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
         return (FilesetSelector.__hash__(self) ^
                 BaseBidsFileset.__hash__(self))
 
-    @property
-    def type(self):
-        return self._type
-
     def initkwargs(self):
         dct = FilesetSelector.initkwargs(self)
         dct.update(BaseBidsFileset.initkwargs(self))
         return dct
+
+    def _check_args(self):
+        pass  # Disable check for either pattern or ID in base class
 
 
 class BidsRepository(DirectoryRepository):
@@ -163,7 +173,7 @@ class BidsRepository(DirectoryRepository):
     type = 'bids'
 
     def __init__(self, root_dir):
-        self._root_dir = root_dir
+        DirectoryRepository.__init__(self, root_dir, 2)
         self._layout = BIDSLayout(root_dir)
 
     @property
@@ -177,11 +187,8 @@ class BidsRepository(DirectoryRepository):
     def __repr__(self):
         return "BidsRepository(root_dir='{}')".format(self.root_dir)
 
-    def __eq__(self, other):
-        try:
-            return self.root_dir == other.root_dir
-        except AttributeError:
-            return False
+    def __hash__(self):
+        return super().__hash__()
 
     def find_data(self, subject_ids=None, visit_ids=None):
         """
@@ -229,8 +236,8 @@ class BidsRepository(DirectoryRepository):
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
                     fileset = BidsFileset(
-                        type=item.entities['type'],
                         path=op.join(item.dirname, item.filename),
+                        type=item.entities['type'],
                         subject_id=subject_id, visit_id=visit_id,
                         repository=self,
                         modality=item.entities.get('modality', None),
