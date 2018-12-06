@@ -32,7 +32,7 @@ class TestBids(TestCase):
 
     def test_project_info(self):
         tree = self.repo.tree()
-        self.assertEqual(len(list(tree.subjects)), 10)
+        self.assertEqual(len(list(tree.subjects)), 2)
         self.assertEqual(len(list(tree.visits)), 2)
 
     def test_bids_selector(self):
