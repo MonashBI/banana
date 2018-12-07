@@ -20,7 +20,6 @@ from banana.file_format import (
     mrtrix_track_format)
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req, matlab_req)
-from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 # from arcana.interfaces.iterators import SelectSession
 from arcana.study import ParameterSpec, SwitchSpec
@@ -30,6 +29,7 @@ from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.bids import BidsSelector
 from arcana.exceptions import ArcanaDesignError
+from banana.study import StudyMetaClass
 
 
 class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
@@ -100,8 +100,12 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-#     default_bids_inputs = {
-#         'magnitude': BidsSelector()}
+    bids_inputs = [BidsSelector(name='magnitude', type='dwi',
+                                format=nifti_gz_format),
+                   BidsSelector(name='bvalues', type='dwi',
+                                format=fsl_bvals_format),
+                   BidsSelector(name='grad_dirs', type='dwi',
+                                format=fsl_bvecs_format)]
 
     @property
     def multi_tissue(self):

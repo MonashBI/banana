@@ -5,7 +5,7 @@ from banana.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
     multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
-from arcana.study.base import Study, StudyMetaClass
+from banana.study import Study, StudyMetaClass
 from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
     dicom_format, text_format, gif_format)
