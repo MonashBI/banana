@@ -41,6 +41,9 @@ class BaseAtlas():
     def name(self, name):
         self._name = name
 
+    def __hash__(self):
+        return hash(self.name)
+
     @property
     def collection(self):
         return FilesetCollection(
@@ -88,7 +91,8 @@ class FslAtlas(BaseAtlas):
         self._atlas_name = atlas_name
         self._resolution = resolution
         self._dataset = dataset
-        self._sub_path = sub_path
+        self._sub_path = tuple(sub_path.split('/') if isinstance(sub_path, str)
+                               else sub_path)
 
     @property
     def path(self):
@@ -132,6 +136,13 @@ class FslAtlas(BaseAtlas):
             self._dataset == other._dataset and
             self._sub_path == other._sub_path)
 
+    def __hash__(self):
+        return (super().__hash__() ^
+                hash(self._atlas_name) ^
+                hash(self._resolution) ^
+                hash(self._dataset) ^
+                hash(self._sub_path))
+
     @property
     def _error_msg_loc(self):
         return "'{}' FSL atlas passed to '{}' in {} ".format(
@@ -163,3 +174,7 @@ class LocalAtlas(BaseAtlas):
     def __eq__(self, other):
         return (super().__eq__(other) and
                 self._atlas_name == other._atlas_name)
+
+    def __hash__(self):
+        return (super().__hash__() ^
+                hash(self._atlas_name))
