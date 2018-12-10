@@ -128,7 +128,8 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
     def _filtered_matches(self, node):
         matches = [
             f for f in node.filesets
-            if (self.type == f.type and
+            if (isinstance(f, BidsFileset) and
+                self.type == f.type and
                 (self.modality is None or self.modality == f.modality) and
                 (self.task is None or self.task == f.task) and
                 (self.format is None or self.format == f.format))]
@@ -139,8 +140,9 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
         return matches
 
     def __repr__(self):
-        return "{}(type={}, task={}, modality={})".format(
-            self.__class__.__name__, self.type, self.task, self.modality)
+        return "{}(type={}, format={}, modality={}, task={})".format(
+            self.__class__.__name__, self.type, self.format.name,
+            self.modality, self.task)
 
     def __eq__(self, other):
         return (FilesetSelector.__eq__(self, other) and
@@ -161,8 +163,7 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
 
 class BidsRepository(DirectoryRepository):
     """
-    An 'Repository' class for directories on the local file system organised
-    into sub-directories by subject and then visit.
+    A repository class for BIDS datasets
 
     Parameters
     ----------
@@ -211,8 +212,6 @@ class BidsRepository(DirectoryRepository):
             the repository
         """
         filesets = []
-        fields = []
-        records = []
         all_subjects = self.layout.get_subjects()
         all_visits = self.layout.get_sessions()
         for item in self.layout.get(return_type='object'):
@@ -243,6 +242,11 @@ class BidsRepository(DirectoryRepository):
                         modality=item.entities.get('modality', None),
                         task=item.entities.get('task', None))
                     filesets.append(fileset)
+        # Get derived filesets, fields and records using the same method using
+        # the method in the DirectoryRepository base class
+        derived_filesets, fields, records = super().find_data(
+            subject_ids=subject_ids, visit_ids=visit_ids)
+        filesets.extend(derived_filesets)
         return filesets, fields, records
 
     def fileset_path(self, item, fname=None):
@@ -267,6 +271,14 @@ class BidsRepository(DirectoryRepository):
         if not op.exists(sess_dir):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
         return op.join(sess_dir, fname)
+
+    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # @UnusedVariable @IgnorePep8
+        if len(path_parts) != 4 or path_parts[0] != 'derivatives':
+            return None
+        from_study, subj, sess = path_parts[1:]
+        subj_id = subj[len('sub-'):]
+        visit_id = sess[len('sess-'):]
+        return subj_id, visit_id, from_study
 
 
 class BidsAssociatedSelector(FilesetSelector):

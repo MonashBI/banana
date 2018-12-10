@@ -72,6 +72,13 @@ class FreesurferRequirement(CliRequirement):
         return re.match(r'freesurfer-.*-v(.*)', contents).group(1)
 
 
+class MrtrixRequirement(CliRequirement):
+
+    def detect_version_str(self):
+        version_str = super().detect_version_str()
+        return re.match(r'== mrinfo (.*) ==', version_str).group(1)
+
+
 class AfniVersion(Version):
 
     regex = re.compile(r'AFNI_([\d\.]+)')
@@ -80,7 +87,7 @@ class AfniVersion(Version):
         return 'AFNI_{}'.format(super().__str__())
 
 
-mrtrix_req = CliRequirement('mrtrix', test_cmd='mrinfo')
+mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')
 ants_req = CliRequirement('ants', test_cmd='antsRegistration')
 dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
 freesurfer_req = FreesurferRequirement('freesurfer', test_cmd='recon-all')

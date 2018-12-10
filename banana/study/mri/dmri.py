@@ -100,12 +100,12 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    bids_inputs = [BidsSelector(name='magnitude', type='dwi',
-                                format=nifti_gz_format),
-                   BidsSelector(name='bvalues', type='dwi',
-                                format=fsl_bvals_format),
-                   BidsSelector(name='grad_dirs', type='dwi',
-                                format=fsl_bvecs_format)]
+    default_bids_inputs = [BidsSelector(name='magnitude', type='dwi',
+                                        format=nifti_gz_format),
+                           BidsSelector(name='bvalues', type='dwi',
+                                        format=fsl_bvals_format),
+                           BidsSelector(name='grad_dirs', type='dwi',
+                                        format=fsl_bvecs_format)]
 
     @property
     def multi_tissue(self):

@@ -3,6 +3,7 @@ import tempfile
 import shutil
 import logging
 from unittest import TestCase  # @IgnorePep8
+from arcana.processor import LinearProcessor, DEFAULT_PROV_IGNORE
 from banana.bids import BidsRepository
 from banana.utils.testing import BaseTestCase
 from banana.study import DmriStudy
@@ -19,7 +20,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 class TestBids(TestCase):
 
     test_dataset = op.join(BaseTestCase.test_data_dir, 'reference', 'bids',
-                               'ds000114-reduced')
+                               'ds000114-preproc')
 
     def setUp(self):
         self.repo = BidsRepository(self.test_dataset)
@@ -37,6 +38,9 @@ class TestBids(TestCase):
         study = DmriStudy(
             'test_dmri',
             repository=self.repo,
-            processor=self.work_dir,
+            processor=LinearProcessor(
+                self.work_dir,
+                prov_ignore=DEFAULT_PROV_IGNORE + [
+                    'workflow/nodes/.*/requirements/.*/version']),
             parameters={'preproc_pe_dir': 'RL'})
         study.data('tensor')
