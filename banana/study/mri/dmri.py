@@ -27,7 +27,7 @@ from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
-from banana.bids import BidsSelector
+from banana.bids import BidsSelector, BidsAssociatedSelector
 from arcana.exceptions import ArcanaDesignError
 from banana.study import StudyMetaClass
 
@@ -100,12 +100,16 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    default_bids_inputs = [BidsSelector(name='magnitude', type='dwi',
-                                        format=nifti_gz_format),
-                           BidsSelector(name='bvalues', type='dwi',
-                                        format=fsl_bvals_format),
-                           BidsSelector(name='grad_dirs', type='dwi',
-                                        format=fsl_bvecs_format)]
+    mag_selector = BidsSelector(
+        spec_name='magnitude', type='dwi', format=nifti_gz_format)
+
+    default_bids_inputs = [mag_selector,
+                           BidsAssociatedSelector(
+                               spec_name='bvalues', primary=mag_selector,
+                               association='bval', format=fsl_bvals_format),
+                           BidsAssociatedSelector(
+                               spec_name='grad_dirs', primary=mag_selector,
+                               association='bvec', format=fsl_bvecs_format)]
 
     @property
     def multi_tissue(self):
