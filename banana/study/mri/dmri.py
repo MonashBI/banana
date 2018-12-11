@@ -100,16 +100,21 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    mag_selector = BidsSelector(
+    primary_selector = BidsSelector(
         spec_name='magnitude', type='dwi', format=nifti_gz_format)
 
-    default_bids_inputs = [mag_selector,
+    default_bids_inputs = [primary_selector,
                            BidsAssociatedSelector(
-                               spec_name='bvalues', primary=mag_selector,
+                               spec_name='bvalues', primary=primary_selector,
                                association='bval', format=fsl_bvals_format),
                            BidsAssociatedSelector(
-                               spec_name='grad_dirs', primary=mag_selector,
-                               association='bvec', format=fsl_bvecs_format)]
+                               spec_name='grad_dirs', primary=primary_selector,
+                               association='bvec', format=fsl_bvecs_format),
+                           BidsAssociatedSelector(
+                               spec_name='reverse_phase',
+                               primary=primary_selector,
+                               association='epi', format=nifti_gz_format,
+                               drop_if_missing=True)]
 
     @property
     def multi_tissue(self):
