@@ -29,8 +29,8 @@ class BidsRepository(DirectoryRepository):
 
     type = 'bids'
 
-    def __init__(self, root_dir):
-        DirectoryRepository.__init__(self, root_dir, 2)
+    def __init__(self, root_dir, **kwargs):
+        DirectoryRepository.__init__(self, root_dir, depth=2, **kwargs)
         self._layout = BIDSLayout(root_dir)
 
     @property
