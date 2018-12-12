@@ -10,7 +10,7 @@ from arcana.environment.requirement import (
     matlab_req)  # @UnusedImport
 from arcana.utils import run_matlab_cmd
 from arcana.exceptions import (
-    ArcanaRequirementNotFoundError, ArcanaVersionNotDectableError)
+    ArcanaRequirementNotFoundError, ArcanaVersionNotDetectableError)
 
 # Command line requirements
 
@@ -50,7 +50,7 @@ class C3dRequirement(CliRequirement):
             version_str = elem_bodies[
                 elem_bodies.index('CFBundleShortVersionString') + 1]
         else:
-            raise ArcanaVersionNotDectableError(
+            raise ArcanaVersionNotDetectableError(
                 "Can't detect c3d version on Windows")
         return version_str
 
@@ -109,7 +109,7 @@ class SpmRequirement(MatlabPackageRequirement):
             r'Copyright \(C\) [\d\-\, ]*(?<!\d)(\d+) Wellcome Trust Centre',
             help_text)
         if match is None:
-            raise ArcanaVersionNotDectableError(
+            raise ArcanaVersionNotDetectableError(
                 "Could not parse year of copyright from spm_authors in order "
                 "to determine the version of {}".format(self))
         copyright_year = match.group(1)
@@ -118,7 +118,7 @@ class SpmRequirement(MatlabPackageRequirement):
         elif copyright_year == '2012':
             version = 12
         else:
-            raise ArcanaVersionNotDectableError(
+            raise ArcanaVersionNotDetectableError(
                 "Do not know the version of SPM corresponding to the year of "
                 "copyright of {}".format(copyright_year))
         return version
@@ -134,11 +134,11 @@ class StiRequirement(MatlabPackageRequirement):
         pkg_root = op.join(op.dirname(cmd_path), '..')
         readmes = [f for f in os.listdir(pkg_root) if 'readme' in f.lower()]
         if not readmes:
-            raise ArcanaVersionNotDectableError(
+            raise ArcanaVersionNotDetectableError(
                 "Did not find a README in STI package root ({})"
                 .format(pkg_root))
         elif len(readmes) > 1:
-            raise ArcanaVersionNotDectableError(
+            raise ArcanaVersionNotDetectableError(
                 "Found multiple READMEs in STI package root ({})"
                 .format(pkg_root))
         readme_path = op.join(pkg_root, readmes[0])
