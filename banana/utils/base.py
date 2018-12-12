@@ -1,5 +1,6 @@
 import os
 import os.path as op
+from banana.exceptions import BananaError
 
 
 def nth(i):
@@ -35,7 +36,7 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
         # MNI ICBM 152 non-linear 6th Generation Symmetric Average Brain
         # Stereotaxic Registration Model (http://nist.mni.mcgill.ca/?p=858)
         if resolution not in ['0.5mm', '1mm', '2mm']:
-            raise ArcanaError(
+            raise BananaError(
                 "Invalid resolution for MNI152, '{}', can be one of '0.5mm', "
                 "'1mm' or '2mm'".format(resolution))
         if fileset == 'image':
@@ -47,7 +48,7 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
                                 .format(resolution))
         elif fileset == 'mask_dilated':
             if resolution != '2mm':
-                raise ArcanaError(
+                raise BananaError(
                     "Dilated MNI masks are not available for {} resolution "
                     .format(resolution))
             path = op.join(get_fsl_reference_path(),
@@ -58,9 +59,9 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
                                 'MNI152_T1_{}_brain.nii.gz'
                                 .format(resolution))
         else:
-            raise ArcanaError("Unrecognised fileset '{}'"
+            raise BananaError("Unrecognised fileset '{}'"
                                   .format(fileset))
     else:
-        raise ArcanaError("Unrecognised atlas name '{}'"
+        raise BananaError("Unrecognised atlas name '{}'"
                               .format(name))
     return op.abspath(path)

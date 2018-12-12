@@ -55,6 +55,30 @@ class C3dRequirement(CliRequirement):
         return version_str
 
 
+class FreesurferRequirement(CliRequirement):
+
+    def detect_version_str(self):
+        """
+        The version that recon-all spits out doesn't match that of Freesurfer
+        itself so we take it from the build-stamp.txt file instead
+        """
+        try:
+            fs_dir = os.environ['FREESURFER_HOME']
+        except KeyError:
+            raise ArcanaRequirementNotFoundError(
+                "Could not find FSL, 'FSLDIR' environment variable is not set")
+        with open(op.join(fs_dir, 'build-stamp.txt'), 'r') as f:
+            contents = f.read()
+        return re.match(r'freesurfer-.*-v(.*)', contents).group(1)
+
+
+class MrtrixRequirement(CliRequirement):
+
+    def detect_version_str(self):
+        version_str = super().detect_version_str()
+        return re.match(r'== mrinfo (.*) ==', version_str).group(1)
+
+
 class AfniVersion(Version):
 
     regex = re.compile(r'AFNI_([\d\.]+)')
@@ -63,10 +87,10 @@ class AfniVersion(Version):
         return 'AFNI_{}'.format(super().__str__())
 
 
-mrtrix_req = CliRequirement('mrtrix', test_cmd='mrinfo')
+mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')
 ants_req = CliRequirement('ants', test_cmd='antsRegistration')
 dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
-freesurfer_req = CliRequirement('freesurfer', test_cmd='recon-all')
+freesurfer_req = FreesurferRequirement('freesurfer', test_cmd='recon-all')
 fix_req = CliRequirement('fix', test_cmd='fix')
 afni_req = CliRequirement('afni', test_cmd='afni', version_cls=AfniVersion)
 fsl_req = FSLRequirement('fsl', test_cmd='fslinfo')

@@ -2,7 +2,7 @@ from itertools import groupby, chain
 from operator import itemgetter
 from nipype.interfaces.matlab import MatlabCommand, MatlabInputSpec
 from nipype.interfaces.base import TraitedSpec, traits, File
-from banana.exception import BananaRuntimeError
+from banana.exceptions import BananaRuntimeError
 import os.path as op
 from banana.interfaces import MATLAB_RESOURCES
 

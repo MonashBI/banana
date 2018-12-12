@@ -126,8 +126,9 @@ mrtrix_track_format = FileFormat(name='mrtrix_track', extension='.tck')
 
 # Tabular formats
 rfile_format = FileFormat(name='rdata', extension='.RData')
+tsv_format = FileFormat(name='tab_separated', extension='.tsv')
 # matlab_format = FileFormat(name='matlab', extension='.mat')
-csv_format = FileFormat(name='comma-separated_file', extension='.csv')
+csv_format = FileFormat(name='comma_separated', extension='.csv')
 text_matrix_format = FileFormat(name='text_matrix', extension='.mat')
 
 # Diffusion gradient-table data formats
@@ -138,8 +139,6 @@ mrtrix_grad_format = FileFormat(name='mrtrix_grad', extension='.b')
 # Tool-specific formats
 eddy_par_format = FileFormat(name='eddy_par',
                              extension='.eddy_parameters')
-freesurfer_recon_all_format = FileFormat(name='fs_recon_all',
-                                         directory=True)
 ica_format = FileFormat(name='ica', extension='.ica', directory=True)
 par_format = FileFormat(name='parameters', extension='.par')
 motion_mats_format = FileFormat(

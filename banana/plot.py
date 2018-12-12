@@ -7,7 +7,7 @@ import tempfile
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import subprocess as sp
-from banana.exception import BananaUsageError
+from banana.exceptions import BananaUsageError
 from banana.file_format import nifti_gz_format, nifti_format, dicom_format
 
 

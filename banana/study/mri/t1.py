@@ -6,8 +6,7 @@ from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.utils.interfaces import Merge
 from banana.file_format import (
-    freesurfer_recon_all_format, nifti_gz_format, text_matrix_format,
-    STD_IMAGE_FORMATS)
+    nifti_gz_format, zip_format, STD_IMAGE_FORMATS, directory_format)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
@@ -19,8 +18,7 @@ from banana.atlas import LocalAtlas
 class T1Study(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('fs_recon_all', freesurfer_recon_all_format,
-                    'freesurfer_pipeline'),
+        FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
         AcquiredFilesetSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
@@ -67,6 +65,11 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'T1_files': ('preproc', nifti_gz_format)},
             requirements=[freesurfer_req.v('5.3')], wall_time=2000)
 
+        if self.provided('t2_coreg'):
+            pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
+                                   nifti_gz_format)
+            recon_all.inputs.use_T2 = True
+
         # Wrapper around os.path.join
         pipeline.add(
             'join',
@@ -75,12 +78,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'dirname': (recon_all, 'subjects_dir'),
                 'filename': (recon_all, 'subject_id')},
             outputs={
-                'path': ('fs_recon_all', freesurfer_recon_all_format)})
-
-        if self.provided('t2_coreg'):
-            pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
-                                   nifti_gz_format)
-            recon_all.inputs.use_T2 = True
+                'path': ('fs_recon_all', directory_format)})
 
         return pipeline
 

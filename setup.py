@@ -6,7 +6,7 @@ PACKAGE_NAME = 'banana'
 
 # Get version from module inside package
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), PACKAGE_NAME))
-from pkg_info import __version__  # @UnresolvedImport @IgnorePep8
+from __about__ import __version__  # @UnresolvedImport @IgnorePep8
 sys.path.pop(0)
 
 
@@ -19,8 +19,8 @@ setup(
     url='https://github.com/MonashBI/{}'.format(PACKAGE_NAME),
     license='The Apache Software Licence 2.0',
     description=(
-        'Biomedical imAgiNg ANAlysis (Banana): biomedical '
-        'imaging analysis workflows implemented in the Arcana '
+        'Biomedical ANAlysis iN Arcana (Banana): biomedical '
+        'analysis workflows implemented in the Arcana '
         'framework (arcana.readthedocs.io)'),
     long_description=open('README.rst').read(),
     install_requires=['arcana>=0.2.8',

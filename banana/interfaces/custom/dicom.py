@@ -13,7 +13,7 @@ import nibabel as nib
 from arcana.utils import split_extension
 import nibabel.nicom.csareader as csareader
 from logging import getLogger
-from banana.exception import BananaMissingHeaderValue
+from banana.exceptions import BananaMissingHeaderValue
 
 
 logger = getLogger('banana')
