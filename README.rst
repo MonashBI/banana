@@ -1,9 +1,9 @@
 Banana
 ======
 
-Biomedical ANAlysis iN Arcana (Banana): a collection of biomedical analysis workflows
-implemented in the Arcana_ framework, which can be used to analyse study
-datasets stored in XNAT, BIDS or plain-directory repositories.
+Biomedical ANAlysis iN Arcana (Banana): a collection of biomedical analysis
+workflows implemented in the Arcana_ framework, which can be used to analyse
+study datasets stored in XNAT, BIDS or plain-directory repositories.
 
 Dependencies
 -----------------
@@ -17,7 +17,7 @@ Core
 
 Both of these are available on PyPI and can be installed with::
 
-    $ pip install banana
+    $ pip3 install banana
 
 
 Pipelines
