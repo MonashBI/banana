@@ -1,6 +1,17 @@
 Banana
 ======
 
+.. image:: https://img.shields.io/pypi/pyversions/banana.svg
+  :target: https://pypi.python.org/pypi/banana/
+  :alt: Supported Python versions
+.. image:: https://img.shields.io/pypi/v/banana.svg
+  :target: https://pypi.python.org/pypi/banana/
+  :alt: Latest Version    
+.. image:: https://readthedocs.org/projects/banana/badge/?version=latest
+  :target: http://banana.readthedocs.io/en/latest/?badge=latest
+  :alt: Documentation Status
+
+
 Biomedical ANAlysis iN Arcana (Banana): a collection of biomedical analysis
 workflows implemented in the Arcana_ framework, which can be used to analyse
 study datasets stored in XNAT, BIDS or plain-directory repositories.
