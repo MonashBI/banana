@@ -238,10 +238,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 inputs={
                     'in_files': copy_to_dir_in_files,
                     'file_names': (list_channels, 'files')})
-            to_polar_in = {'connect': {'in_dir': (copy_to_dir, 'out_dir')}}
+            to_polar_in_dir = (copy_to_dir, 'out_dir')
         else:
-            to_polar_in = {'inputs':
-                           {'in_dir': ('channels', multi_nifti_gz_format)}}
+            to_polar_in_dir = ('channels', multi_nifti_gz_format)
 
         pipeline.add(
             'to_polar',
@@ -249,10 +248,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 in_fname_re=self.parameter('channel_fname_regex'),
                 real_label=self.parameter('channel_real_label'),
                 imaginary_label=self.parameter('channel_imag_label')),
+            inputs={
+                'in_dir': to_polar_in_dir},
             outputs={
                 'channel_mags': ('magnitudes_dir', multi_nifti_gz_format),
-                'channel_phases': ('phases_dir', multi_nifti_gz_format)},
-            **to_polar_in)
+                'channel_phases': ('phases_dir', multi_nifti_gz_format)})
 
         return pipeline
 

@@ -157,13 +157,11 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     'grad_dirs': ('bvecs_file', fsl_bvecs_format),
                     'bvalues': ('bvals_file', fsl_bvals_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
-            grad_fsl_kwargs = {
-                'connect': {'in1': (extract_grad, 'bvecs_file'),
-                            'in2': (extract_grad, 'bvals_file')}}
+            grad_fsl_inputs = {'in1': (extract_grad, 'bvecs_file'),
+                               'in2': (extract_grad, 'bvals_file')}
         elif self.provided('grad_dirs') and self.provided('bvalues'):
-            grad_fsl_kwargs = {
-                'inputs': {'in1': ('grad_dirs', fsl_bvecs_format),
-                           'in2': ('bvalues', fsl_bvals_format)}}
+            grad_fsl_inputs = {'in1': ('grad_dirs', fsl_bvecs_format),
+                               'in2': ('bvalues', fsl_bvals_format)}
         else:
             raise ArcanaDesignError(
                 "Either input 'magnitude' image needs to be in DICOM format "
@@ -174,7 +172,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         grad_fsl = pipeline.add(
             "grad_fsl",
             MergeTuple(2),
-            **grad_fsl_kwargs)
+            inputs=grad_fsl_inputs)
 
         # Denoise the dwi-scan
         if self.branch('preproc_denoise'):
