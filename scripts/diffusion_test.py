@@ -1,12 +1,12 @@
 from arcana import DirectoryRepository, LinearProcessor, FilesetSelector
-from banana.study.mri.structural.diffusion import DiffusionStudy
+from banana.study.mri.structural.diffusion import DmriStudy
 from banana.file_format import dicom_format
 import os.path as op
 
 test_dir = op.join(op.dirname(__file__), '..', 'test', 'data',
                    'diffusion-test')
 
-study = DiffusionStudy(
+study = DmriStudy(
     'diffusion',
     DirectoryRepository(op.join(test_dir, 'study')),
     LinearProcessor(op.join(test_dir, 'work')),

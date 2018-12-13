@@ -1,13 +1,13 @@
 from arcana.study.base import StudyMetaClass
 from arcana.data import FilesetSpec, FieldSpec
 from banana.file_format import (list_mode_format, directory_format)
-from banana.study.pet.base import PETStudy
+from banana.study.pet.base import PetStudy
 from banana.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
 from banana.requirement import stir_req
 
 
-class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
+class PETPCAMotionDetectionStudy(PetStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('list_mode', list_mode_format),
@@ -50,7 +50,7 @@ class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
         ssrb = pipeline.add(
             'ssrb',
             SSRB(),
-            requirements=[stir_req])
+            requirements=[stir_req.v('3.0')])
         pipeline.connect(unlisting, 'pet_sinogram', ssrb, 'unlisted_sinogram')
 
         merge = pipeline.create_join_node( MergeUnlistingOutputs(), joinsource='unlisting', joinfield=['sinograms'], name='merge_sinograms')

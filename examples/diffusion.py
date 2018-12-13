@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import os.path as op
 from arcana import FilesetSelector, XnatRepository, SlurmProcessor
-from nianalysis.study.mri.structural.diffusion import DiffusionStudy
+from nianalysis.study.mri.structural.diffusion import DmriStudy
 from nianalysis.file_format import dicom_format
 
 # Create study object that accesses MBI's XNAT and submits jobs to the SLURM scheduler
-study = DiffusionStudy(
+study = DmriStudy(
     name='example_diffusion',
     repository=XnatRepository(
         project_id='MRH017',

@@ -1,4 +1,4 @@
-from arcana.mri import DiffusionStudy
+from arcana.mri import DmriStudy
 from argparse import ArgumentParser
 import os
 
@@ -13,6 +13,6 @@ parser.add_argument('--working_dir', type=str, default=None,
                     help=("The directory where the intermediate files are "
                           "stored"))
 args = parser.parse_args()
-processor = DiffusionStudy('tclose', os.environ['DARIS_PASSWORD'])
+processor = DmriStudy('tclose', os.environ['DARIS_PASSWORD'])
 processor.process(args.input_image, args.output_dir,
                   working_dir=args.working_dir)

@@ -5,10 +5,10 @@ from banana.file_format import (nifti_gz_format, text_format,
 from banana.interfaces.sklearn import FastICA
 from banana.interfaces.ants import AntsRegSyn
 import os
-from banana.requirement import fsl_req.v('5.0.9'), mrtrix3_req
+from banana.requirement import fsl_req, mrtrix_req
 from banana.interfaces.custom.pet import PreparePetDir
 from banana.interfaces.custom.dicom import PetTimeInfo
-from arcana.parameter import ParameterSpec
+from arcana.study import ParameterSpec
 
 
 template_path = os.path.abspath(
@@ -16,15 +16,15 @@ template_path = os.path.abspath(
                  'arcana', 'reference_data'))
 
 
-class PETStudy(Study, metaclass=StudyMetaClass):
+class PetStudy(Study, metaclass=StudyMetaClass):
 
     add_param_specs = [ParameterSpec('ica_n_components', 2),
                         ParameterSpec('ica_type', 'spatial'),
                         ParameterSpec('norm_transformation', 's'),
                         ParameterSpec('norm_dim', 3),
                         ParameterSpec('norm_template',
-                                   os.path.join(template_path,
-                                                'PET_template.nii.gz')),
+                                      os.path.join(template_path,
+                                                   'PET_template.nii.gz')),
                         ParameterSpec('crop_xmin', 100),
                         ParameterSpec('crop_xsize', 130),
                         ParameterSpec('crop_ymin', 100),
@@ -138,7 +138,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
         prep_dir = pipeline.add(
             'prepare_pet',
             PreparePetDir(),
-            requirements=[mrtrix3_req, fsl_req.v('5.0.9')])
+            requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('5.0.9')])
         prep_dir.inputs.image_orientation_check = self.parameter(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')

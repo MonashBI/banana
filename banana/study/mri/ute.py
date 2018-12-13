@@ -1,6 +1,6 @@
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
-from arcana.data import FilesetSpec, FieldSpec
+from arcana.data import FilesetSpec
 from nipype.interfaces.fsl.preprocess import FLIRT, ApplyXFM
 from nipype.interfaces.fsl.utils import ConvertXFM, Smooth
 from nipype.interfaces.fsl.maths import (
@@ -8,22 +8,14 @@ from nipype.interfaces.fsl.maths import (
 from nipype.interfaces.spm.preprocess import NewSegment
 from nipype.interfaces.utility.base import Select
 from banana.interfaces.umap_calc import CoreUmapCalc
-from banana.interfaces.converters import Nii2Dicom
 from banana.interfaces.mrtrix.utils import MRConvert
-from arcana.interfaces.utils import (
-    CopyToDir, ListDir, dicom_fname_sort_key)
-from arcana.study.multi import (
-    MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from banana.citation import (
     fsl_cite, spm_cite, matlab_cite)
 from banana.file_format import (
-    dicom_format, nifti_gz_format, nifti_format, text_matrix_format,
-    directory_format, text_format)
+    dicom_format, nifti_gz_format, text_matrix_format)
 from banana.requirement import (
-    fsl_req.v('5.0.10'), spm12_req, matlab2015_req)
-from banana.interfaces.custom.motion_correction import (
-    MotionMatCalculation)
-from arcana.parameter import ParameterSpec, SwitchSpec
+    fsl_req, spm_req, matlab_req)
+from arcana.study import SwitchSpec
 
 
 class UteStudy(MriStudy, metaclass=StudyMetaClass):
@@ -65,12 +57,12 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
     tpm_path = '/environment/packages/spm/12/tpm/head_tpm.nii'
 
     def header_extraction_pipeline(self, **kwargs):
-        return (super(UTEStudy, self).
+        return (super(UteStudy, self).
                 header_extraction_pipeline_factory(
                     'magnitude', **kwargs))
 
     def umap_dcm2nii_conversion_pipeline(self, **kwargs):
-        return super(UTEStudy, self).dcm2nii_conversion_pipeline_factory(
+        return super(UteStudy, self).dcm2nii_conversion_pipeline_factory(
             'umap_dcm2nii', 'umap', **kwargs)
 
     def registration_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
@@ -190,7 +182,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         segmentation = pipeline.add(
             'ute1_registered_segmentation',
             NewSegment(),
-            requirements=[matlab2015_req, spm12_req],
+            requirements=[matlab_req.v('R2015'), spm_req.v('12')],
             wall_time=480)
         pipeline.connect_input(
             'ute1_registered',
@@ -302,7 +294,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         umaps_calculation = pipeline.add(
             'umaps_calculation_based_on_masks_and_r2star',
             CoreUmapCalc(),
-            requirements=[matlab2015_req],
+            requirements=[matlab_req.v('R2015')],
             wall_time=20)
         pipeline.connect_input(
             'ute1_registered',

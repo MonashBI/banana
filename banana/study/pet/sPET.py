@@ -1,4 +1,4 @@
-from ..base import PETStudy
+from .base import PetStudy
 from arcana.data import FilesetSpec
 from arcana.study.base import StudyMetaClass
 from banana.interfaces.custom.pet import SUVRCalculation
@@ -10,7 +10,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference_data'))
 
 
-class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
+class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('pet_image', nifti_gz_format),
@@ -22,7 +22,6 @@ class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
 #             inputs=[FilesetSpec('registered_volume', nifti_gz_format),
 #                     FilesetSpec('base_mask', nifti_gz_format)],
 #             outputs=[FilesetSpec('SUVR_image', nifti_gz_format)],
-
 
         pipeline = self.new_pipeline(
             name='SUVR',

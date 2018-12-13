@@ -7,7 +7,7 @@ import os
 from argparse import ArgumentParser
 import matplotlib.image as img
 import matplotlib.pyplot as plt
-from banana.study.mri.structural.diffusion import DiffusionStudy
+from banana.study.mri.structural.diffusion import DmriStudy
 
 parser = ArgumentParser()
 parser.add_argument('workflow', type=str,
@@ -26,7 +26,7 @@ args = parser.parse_args()
 if args.work_dir is not None:
     os.chdir(args.work_dir)
 # Create workflow
-workflow, _, _ = getattr(DiffusionStudy, args.workflow + '_workflow')()
+workflow, _, _ = getattr(DmriStudy, args.workflow + '_workflow')()
 # Write workflow
 workflow.write_graph(graph2use=args.style)
 # Plot worfklow

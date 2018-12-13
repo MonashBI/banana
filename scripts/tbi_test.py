@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from arcana.data import FilesetSelector
-from banana.study.mri.diffusion import DiffusionStudy
+from banana.study.mri.diffusion import DmriStudy
 from arcana.repository.simple import DirectoryRepository
 from banana.file_format import mrtrix_format
 
@@ -16,7 +16,7 @@ DATASET_NAME = 'tbi_test'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-study = DiffusionStudy(
+study = DmriStudy(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
     repository=DirectoryRepository(repository_path),
