@@ -415,8 +415,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             ReorientUmap(),
             requirements=[mrtrix_req.v('3.0rc3')])
 
-        nii2dicom = pipeline.create_map_node(
-            Nii2Dicom(), name='nii2dicom',
+        nii2dicom = pipeline.add(
+            'nii2dicom',
+            Nii2Dicom(),
             iterfield=['in_file'],
             wall_time=20)
 #         nii2dicom.inputs.extension = 'Frame'
@@ -606,16 +607,18 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect_input('ref_brain', check_pet,
                                'reference')
         if not dynamic:
-            pet_mc = pipeline.create_map_node(
-                PetImageMotionCorrection(), name='pet_mc',
+            pet_mc = pipeline.add(
+                'pet_mc',
+                PetImageMotionCorrection(), 
                 requirements=[fsl_req.v('5.0.9')],
                 iterfield=['corr_factor', 'pet_image', 'motion_mat'])
             pipeline.connect(check_pet, 'corr_factors', pet_mc, 'corr_factor')
         else:
-            pet_mc = pipeline.create_map_node(
-                PetImageMotionCorrection(), name='pet_mc',
-                requirements=[fsl_req.v('5.0.9')], iterfield=['pet_image',
-                                                              'motion_mat'])
+            pet_mc = pipeline.add(
+                'pet_mc',
+                PetImageMotionCorrection(), 
+                requirements=[fsl_req.v('5.0.9')],
+                iterfield=['pet_image', 'motion_mat'])
         pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
         pipeline.connect(check_pet, 'pet2ref_mat', pet_mc, 'pet2ref_mat')

@@ -204,6 +204,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         # Preproc kwargs
         preproc_kwargs = {}
+        preproc_inputs = {'grad_fsl': (grad_fsl, 'out')}
 
         if (self.provided('dwi_reference') or
                 self.provided('reverse_phase')):
@@ -248,11 +249,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             preproc_kwargs['rpe_pair'] = True
 
             distortion_correction = True
-            preproc_conns = {'connect': {'se_epi': (mrcat, 'out_file')}}
+            preproc_inputs['se_epi'] = (mrcat, 'out_file')
         else:
             distortion_correction = False
             preproc_kwargs['rpe_none'] = True
-            preproc_conns = {}
 
         if self.parameter('preproc_pe_dir') is not None:
             preproc_kwargs['pe_dir'] = self.parameter('preproc_pe_dir')
@@ -266,13 +266,11 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 # eddy_parameters = '--data_is_shelled '
                 temp_dir='dwipreproc_tempdir',
                 **preproc_kwargs),
-            inputs={
-                'grad_fsl': (grad_fsl, 'out')},
+            inputs=preproc_inputs,
             outputs={
                 'eddy_par': ('eddy_parameters', eddy_par_format)},
             requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('5.0.10')],
-            wall_time=60,
-            **preproc_conns)
+            wall_time=60)
         if self.branch('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', preproc, 'in_file')
         else:

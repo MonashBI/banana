@@ -53,7 +53,11 @@ class PETPCAMotionDetectionStudy(PetStudy, metaclass=StudyMetaClass):
             requirements=[stir_req.v('3.0')])
         pipeline.connect(unlisting, 'pet_sinogram', ssrb, 'unlisted_sinogram')
 
-        merge = pipeline.create_join_node( MergeUnlistingOutputs(), joinsource='unlisting', joinfield=['sinograms'], name='merge_sinograms')
+        merge = pipeline.add(
+            'merge_sinograms',
+            MergeUnlistingOutputs(),
+            joinsource='unlisting',
+            joinfield=['sinograms'])
         pipeline.connect(ssrb, 'ssrb_sinograms', merge, 'sinograms')
         pipeline.connect_output('ssrb_sinograms', merge, 'sinogram_folder')
 

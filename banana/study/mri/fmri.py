@@ -76,14 +76,13 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 
-        
 #             inputs=[FilesetSpec('preproc', nifti_gz_format),
 #                     FilesetSpec('brain_mask', nifti_gz_format),
 #                     FilesetSpec('coreg_ref_brain', nifti_gz_format),
 #                     FieldSpec('tr', float)],
 #             outputs=[FilesetSpec('filtered_data', nifti_gz_format),
 #                      FilesetSpec('mc_par', par_format)],
-        
+
         pipeline = self.new_pipeline(
             name='rsfMRI_filtering',
             desc=("Spatial and temporal rsfMRI filtering"),
@@ -128,6 +127,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect(filt, 'out_file', add_mean, 'in_file')
         pipeline.connect(meanfunc, 'out_file', add_mean, 'in_file2')
 
+        #output
         pipeline.connect_output('filtered_data', add_mean, 'out_file')
         pipeline.connect_output('mc_par', afni_mc, 'oned_file')
 
@@ -162,6 +162,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('tr', mel, 'tr_sec')
         pipeline.connect_input('filtered_data', mel, 'in_files')
 
+        #output
         pipeline.connect_output('melodic_ica', mel, 'out_dir')
 
         return pipeline
@@ -247,9 +248,9 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect(struct2epi, 'out_file', prep_fix, 't12epi_mat')
         pipeline.connect(meanfunc, 'out_file', prep_fix, 'epi_mean')
 
+        #output
         pipeline.connect_output('fix_dir', prep_fix, 'fix_dir')
-        pipeline.connect_output('hand_label_noise', prep_fix,
-                                'hand_label_file')
+        pipeline.connect_output('hand_label_noise', prep_fix, 'hand_label_file')
 
         return pipeline
 
@@ -281,111 +282,10 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         fix.inputs.motion_reg = self.parameter('motion_reg')
         fix.inputs.classification = True
 
+        #output
         pipeline.connect_output('labelled_components', fix, 'label_file')
 
         return pipeline
-
-#     def fix_training_pipeline(self, **kwargs):
-# 
-#         inputs = []
-#         sub_study_names = []
-#         for sub_study_spec in self.sub_study_specs():
-#             try:
-#                 spec = self.data_spec(sub_study_spec.inverse_map('fix_dir'))
-#                 spec._format = directory_format
-#                 inputs.append(spec)
-#                 inputs.append(
-#                     self.data_spec(sub_study_spec.inverse_map(
-#                         'hand_label_noise')))
-#                 sub_study_names.append(sub_study_spec.name)
-#             except ArcanaNameError:
-#                 continue  # Sub study doesn't have fix dir
-# 
-#         pipeline = self.new_pipeline(
-#             name='training_fix',
-#             inputs=inputs,
-#             outputs=[FilesetSpec('train_data', rfile_format)],
-#             desc=("Pipeline to create the training set for FIX given a group "
-#                   "of subjects with the hand_label_noise.txt file within "
-#                   "their fix_dir."),
-#             version=1,
-#             citations=[fsl_cite],
-#             **kwargs)
-# 
-#         num_fix_dirs = len(sub_study_names)
-#         merge_fix_dirs = pipeline.create_node(NiPypeMerge(num_fix_dirs),
-#                                               name='merge_fix_dirs')
-#         merge_label_files = pipeline.create_node(NiPypeMerge(num_fix_dirs),
-#                                                  name='merge_label_files')
-#         for i, sub_study_name in enumerate(sub_study_names, start=1):
-#             spec = self.sub_study_spec(sub_study_name)
-#             pipeline.connect_input(
-#                 spec.inverse_map('fix_dir'), merge_fix_dirs, 'in{}'.format(i))
-#             pipeline.connect_input(
-#                 spec.inverse_map('hand_label_noise'), merge_label_files,
-#                 'in{}'.format(i))
-# 
-#         merge_visits = pipeline.create_join_visits_node(
-#             IdentityInterface(['list_dir', 'list_label_files']),
-#             joinfield=['list_dir', 'list_label_files'], name='merge_visits')
-#         merge_subjects = pipeline.create_join_subjects_node(
-#             NiPypeMerge(2), joinfield=['in1', 'in2'], name='merge_subjects')
-#         merge_subjects.inputs.ravel_inputs = True
-# 
-#         prepare_training = pipeline.create_node(PrepareFIXTraining(),
-#                                                 name='prepare_training')
-#         prepare_training.inputs.epi_number = num_fix_dirs
-#         pipeline.connect(merge_fix_dirs, 'out', merge_visits, 'list_dir')
-#         pipeline.connect(merge_visits, 'list_dir', merge_subjects, 'in1')
-#         pipeline.connect(merge_label_files, 'out', merge_visits,
-#                          'list_label_files')
-#         pipeline.connect(merge_visits, 'list_label_files', merge_subjects,
-#                          'in2')
-#         pipeline.connect(merge_subjects, 'out', prepare_training,
-#                          'inputs_list')
-# 
-#         fix_training = pipeline.create_node(
-#             FSLFixTraining(), name='fix_training',
-#             wall_time=240, requirements=[fix_req.v('1.0')])
-#         fix_training.inputs.outname = 'FIX_training_set'
-#         fix_training.inputs.training = True
-#         pipeline.connect(prepare_training, 'prepared_dirs', fix_training,
-#                          'list_dir')
-# 
-#         pipeline.connect_output('train_data', fix_training, 'training_set')
-# 
-#         return pipeline
-# 
-#     def fix_classification_pipeline(self, **kwargs):
-# 
-# 
-# #             inputs=[FilesetSpec('train_data', rfile_format,
-# #                                 frequency='per_study'),
-# #                     FilesetSpec('fix_dir', directory_format)],
-# #             outputs=[FilesetSpec('labelled_components', text_format)],
-# 
-#         pipeline = self.new_pipeline(
-#             name='fix_classification',
-#             desc=("Automatic classification of noisy components from the "
-#                   "rsfMRI data using fsl FIX."),
-#             citations=[fsl_cite],
-#             **kwargs)
-# 
-#         fix = pipeline.add(
-#             "fix",
-#             FSLFIX(),
-#             wall_time=30,
-#             requirements=[fsl_req.v('5.0.9'), fix_req.v('1.0')])
-#         pipeline.connect_input("fix_dir", fix, "feat_dir")
-#         pipeline.connect_input("train_data", fix, "train_data")
-#         fix.inputs.component_threshold = self.parameter(
-#             'component_threshold')
-#         fix.inputs.motion_reg = self.parameter('motion_reg')
-#         fix.inputs.classification = True
-# 
-#         pipeline.connect_output('labelled_components', fix, 'label_file')
-# 
-#         return pipeline
 
     def fix_regression_pipeline(self, **kwargs):
 
@@ -412,6 +312,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         signal_reg.inputs.motion_regression = self.parameter('motion_reg')
         signal_reg.inputs.highpass = self.parameter('highpass')
 
+        #output
         pipeline.connect_output('cleaned_file', signal_reg, 'output')
 
         return pipeline
@@ -453,6 +354,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
         pipeline.connect_input('cleaned_file', apply_trans, 'input_image')
 
+        #output
         pipeline.connect_output('normalized_ts', apply_trans, 'output_image')
 
         return pipeline
@@ -479,6 +381,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         smooth.inputs.mask = self.parameter('MNI_template_mask')
         pipeline.connect_input('normalized_ts', smooth, 'in_file')
 
+        #output
         pipeline.connect_output('smoothed_ts', smooth, 'out_file')
 
         return pipeline
@@ -508,8 +411,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 sub_study_names.append(sub_study_spec.name)
             except ArcanaNameError:
                 continue  # Sub study doesn't have fix dir
-            
-        
+
 #             inputs=inputs,
 #             outputs=[FilesetSpec('train_data', rfile_format)],
 
@@ -536,11 +438,16 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 spec.inverse_map('hand_label_noise'), merge_label_files,
                 'in{}'.format(i))
 
-        merge_visits = pipeline.create_join_visits_node(
-            IdentityInterface(['list_dir', 'list_label_files']),
+        merge_visits = pipeline.add(
+            IdentityInterface(
+                ['list_dir', 'list_label_files']),
+            joinsource=self.SUBJECT_ID,
             joinfield=['list_dir', 'list_label_files'], name='merge_visits')
-        merge_subjects = pipeline.create_join_subjects_node(
-            NiPypeMerge(2), joinfield=['in1', 'in2'], name='merge_subjects')
+        merge_subjects = pipeline.add(
+            NiPypeMerge(2),
+            joinsource=self.SUBJECT_ID,
+            joinfield=['in1', 'in2'],
+            name='merge_subjects')
         merge_subjects.inputs.ravel_inputs = True
 
         prepare_training = pipeline.add(
@@ -566,12 +473,13 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect(prepare_training, 'prepared_dirs', fix_training,
                          'list_dir')
 
+        #output
         pipeline.connect_output('train_data', fix_training, 'training_set')
 
         return pipeline
-    
+
 #     def gather_fmri_result_pipeline(self, **kwargs):
-# 
+#
 #         inputs = []
 #         sub_study_names = []
 #         for sub_study_spec in self.sub_study_specs():
@@ -581,7 +489,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 #                 sub_study_names.append(sub_study_spec.name)
 #             except ArcanaNameError:
 #                 continue  # Sub study doesn't have fix dir
-# 
+#
 #         pipeline = self.new_pipeline(
 #             name='gather_fmri',
 #             inputs=inputs,
@@ -615,8 +523,11 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Group ICA"),
             citations=[fsl_cite],
             **kwargs)
-        gica = pipeline.create_join_subjects_node(
-            MELODIC(), joinfield=['in_files'], name='gica',
+        gica = pipeline.add(
+            MELODIC(),
+            joinsource=self.SUBJECT_ID,
+            joinfield=['in_files'],
+            name='gica',
             requirements=[fsl_req.v('5.0.10')],
             wall_time=7200)
         gica.inputs.no_bet = True
@@ -632,6 +543,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline.connect_input('smoothed_ts', gica, 'in_files')
         pipeline.connect_input('tr', gica, 'tr_sec')
 
+        #output
         pipeline.connect_output('group_melodic', gica, 'out_dir')
 
         return pipeline
@@ -663,8 +575,8 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(FilesetSelector('t1_primary', dicom_format, t1, is_regex=True,
-                               order=0))
+    inputs.append(FilesetSelector('t1_primary', t1, dicom_format,
+                                  is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref_preproc',
@@ -685,8 +597,9 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
                        for i in range(epi_number))
 
     for i in range(epi_number):
-        inputs.append(FilesetSelector('epi_{}_primary'.format(i),
-                                   dicom_format, epis, order=i, is_regex=True))
+        inputs.append(FilesetSelector(
+            'epi_{}_primary'.format(i), epis, dicom_format, order=i,
+            is_regex=True))
 #     inputs.extend(FilesetSelector(
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
@@ -696,12 +609,12 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
 
     if distortion_correction:
         inputs.extend(FilesetSelector(
-            'epi_{}_field_map_mag'.format(i), dicom_format, fm_mag,
+            'epi_{}_field_map_mag'.format(i), fm_mag, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE}, is_regex=True,
             order=0)
             for i in range(epi_number))
         inputs.extend(FilesetSelector(
-            'epi_{}_field_map_phase'.format(i), dicom_format, fm_phase,
+            'epi_{}_field_map_phase'.format(i), fm_phase, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE}, is_regex=True,
             order=0)
             for i in range(epi_number))
