@@ -65,7 +65,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def _ICA_pipeline_factory(self, input_fileset, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='ICA',
             inputs=[input_fileset],
             outputs=[FilesetSpec('decomposed_file', nifti_gz_format),
@@ -76,7 +76,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        ica = pipeline.create_node(FastICA(), name='ICA')
+        ica = pipeline.add('ICA', FastICA())
         ica.inputs.n_components = self.parameter('ica_n_components')
         ica.inputs.ica_type = self.parameter('ica_type')
         pipeline.connect_input('registered_volumes', ica, 'volume')
@@ -89,7 +89,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def Image_normalization_pipeline(self, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='Image_registration',
             inputs=[FilesetSpec('pet_image', nifti_gz_format)],
             outputs=[FilesetSpec('registered_volume', nifti_gz_format),
@@ -100,8 +100,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        reg = pipeline.create_node(AntsRegSyn(out_prefix='vol2template'),
-                                   name='ANTs')
+        reg = pipeline.add('ANTs', AntsRegSyn(out_prefix='vol2template'))
         reg.inputs.num_dimensions = self.parameter('norm_dim')
         reg.inputs.num_threads = self.processor.num_processes
         reg.inputs.transformation = self.parameter('norm_transformation')
@@ -116,7 +115,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
 
     def pet_data_preparation_pipeline(self, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='pet_data_preparation',
             inputs=[FilesetSpec('pet_recon_dir', directory_format)],
             outputs=[FilesetSpec('pet_recon_dir_prepared', directory_format)],
@@ -126,8 +125,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        prep_dir = pipeline.create_node(PreparePetDir(), name='prepare_pet',
-                                        requirements=[mrtrix3_req, fsl509_req])
+        prep_dir = pipeline.add('prepare_pet', PreparePetDir(), requirements=[mrtrix3_req, fsl509_req])
         prep_dir.inputs.image_orientation_check = self.parameter(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
@@ -137,7 +135,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def pet_time_info_extraction_pipeline(self, **kwargs):
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='pet_info_extraction',
             inputs=[FilesetSpec('pet_data_dir', directory_format)],
             outputs=[FieldSpec('pet_end_time', dtype=float),
@@ -146,7 +144,7 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             desc=("Extract PET time info from list-mode header."),
             references=[],
             **kwargs)
-        time_info = pipeline.create_node(PetTimeInfo(), name='PET_time_info')
+        time_info = pipeline.add('PET_time_info', PetTimeInfo())
         pipeline.connect_input('pet_data_dir', time_info, 'pet_data_dir')
         pipeline.connect_output('pet_end_time', time_info, 'pet_end_time')
         pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')

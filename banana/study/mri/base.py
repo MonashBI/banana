@@ -602,7 +602,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file': ('brain_mask', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.8')])
 
-        reorient_brain = pipeline.create_node(
+        reorient_brain = pipeline.add(
             'reorient_brain',
             Reorient2Std(
                 output_type='NIFTI_GZ'),

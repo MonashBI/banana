@@ -80,7 +80,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         Parameters
         ----------
         """
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='registration_pipeline',
             inputs=[FilesetSpec('ute_echo1', dicom_format),
                     FilesetSpec('ute_echo2', dicom_format)],
@@ -92,20 +92,18 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             citations=(fsl_cite),
             **kwargs)
 
-        echo1_conv = pipeline.create_node(MRConvert(), name='echo1_conv')
+        echo1_conv = pipeline.add('echo1_conv', MRConvert())
         echo1_conv.inputs.out_ext = '.nii.gz'
 
         pipeline.connect_input('ute_echo1', echo1_conv, 'in_file')
 
-        echo2_conv = pipeline.create_node(MRConvert(), name='echo2_conv')
+        echo2_conv = pipeline.add('echo2_conv', MRConvert())
         echo2_conv.inputs.out_ext = '.nii.gz'
 
         pipeline.connect_input('ute_echo2', echo2_conv, 'in_file')
 
         # Create registration node
-        registration = pipeline.create_node(
-            FLIRT(), name='ute1_registration',
-            requirements=[fsl5_req], wall_time=180)
+        registration = pipeline.add('ute1_registration', FLIRT(), requirements=[fsl5_req], wall_time=180)
 
         pipeline.connect(
             echo1_conv,
@@ -122,9 +120,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         registration.inputs.cost_func = 'corratio'
 
         # Inverse matrix conversion
-        convert_mat = pipeline.create_node(
-            ConvertXFM(), name='inverse_matrix_conversion',
-            requirements=[fsl5_req], wall_time=10)
+        convert_mat = pipeline.add('inverse_matrix_conversion', ConvertXFM(), requirements=[fsl5_req], wall_time=10)
         pipeline.connect(
             registration,
             'out_matrix_file',
@@ -133,9 +129,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         convert_mat.inputs.invert_xfm = True
 
         # UTE_echo_2 transformation
-        transform_ute2 = pipeline.create_node(
-            ApplyXFM(), name='transform_t2',
-            requirements=[fsl5_req], wall_time=10)
+        transform_ute2 = pipeline.add('transform_t2', ApplyXFM(), requirements=[fsl5_req], wall_time=10)
         pipeline.connect(
             registration,
             'out_matrix_file',
@@ -164,7 +158,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     def segmentation_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='ute1_segmentation',
             inputs=[FilesetSpec('ute1_registered', nifti_format)],
             outputs=[FilesetSpec('air_mask', nifti_gz_format),
@@ -173,9 +167,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             citations=(spm_cite, matlab_cite),
             **kwargs)
 
-        segmentation = pipeline.create_node(
-            NewSegment(), name='ute1_registered_segmentation',
-            requirements=[matlab2015_req, spm12_req], wall_time=480)
+        segmentation = pipeline.add('ute1_registered_segmentation', NewSegment(), requirements=[matlab2015_req, spm12_req], wall_time=480)
         pipeline.connect_input(
             'ute1_registered',
             segmentation,
@@ -195,9 +187,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             tissue5,
             tissue6]
 
-        select_bones_pm = pipeline.create_node(
-            Select(), name='select_bones_pm_from_SPM_new_segmentation',
-            requirements=[], wall_time=5)
+        select_bones_pm = pipeline.add('select_bones_pm_from_SPM_new_segmentation', Select(), requirements=[], wall_time=5)
         pipeline.connect(
             segmentation,
             'native_class_images',
@@ -205,9 +195,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             'inlist')
         select_bones_pm.inputs.index = 3
 
-        select_air_pm = pipeline.create_node(
-            Select(), name='select_air_pm_from_SPM_new_segmentation',
-            requirements=[], wall_time=5)
+        select_air_pm = pipeline.add('select_air_pm_from_SPM_new_segmentation', Select(), requirements=[], wall_time=5)
 
         pipeline.connect(
             segmentation,
@@ -216,17 +204,13 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             'inlist')
         select_air_pm.inputs.index = 5
 
-        threshold_bones = pipeline.create_node(
-            Threshold(), name='bones_probabilistic_map_thresholding',
-            requirements=[fsl5_req], wall_time=5)
+        threshold_bones = pipeline.add('bones_probabilistic_map_thresholding', Threshold(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(select_bones_pm, 'out', threshold_bones, 'in_file')
         threshold_bones.inputs.output_type = "NIFTI_GZ"
         threshold_bones.inputs.direction = 'below'
         threshold_bones.inputs.thresh = 0.2
 
-        binarize_bones = pipeline.create_node(
-            UnaryMaths(), name='bones_probabilistic_map_binarization',
-            requirements=[fsl5_req], wall_time=5)
+        binarize_bones = pipeline.add('bones_probabilistic_map_binarization', UnaryMaths(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
             threshold_bones,
             'out_file',
@@ -235,17 +219,13 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         binarize_bones.inputs.output_type = "NIFTI_GZ"
         binarize_bones.inputs.operation = 'bin'
 
-        threshold_air = pipeline.create_node(
-            Threshold(), name='air_probabilistic_maps_thresholding',
-            requirements=[fsl5_req], wall_time=5)
+        threshold_air = pipeline.add('air_probabilistic_maps_thresholding', Threshold(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(select_air_pm, 'out', threshold_air, 'in_file')
         threshold_air.inputs.output_type = "NIFTI_GZ"
         threshold_air.inputs.direction = 'below'
         threshold_air.inputs.thresh = 0.1
 
-        binarize_air = pipeline.create_node(
-            UnaryMaths(), name='air_probabilistic_map_binarization',
-            requirements=[fsl5_req], wall_time=5)
+        binarize_air = pipeline.add('air_probabilistic_map_binarization', UnaryMaths(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(threshold_air, 'out_file', binarize_air, 'in_file')
         binarize_air.inputs.output_type = "NIFTI_GZ"
         binarize_air.inputs.operation = 'bin'
@@ -257,7 +237,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     def umaps_calculation_pipeline(self, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='core_umaps_calculation',
             inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
                     FilesetSpec('ute2_registered', nifti_gz_format),
@@ -269,9 +249,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             citations=(matlab_cite),
             **kwargs)
 
-        umaps_calculation = pipeline.create_node(
-            CoreUmapCalc(), name='umaps_calculation_based_on_masks_and_r2star',
-            requirements=[matlab2015_req], wall_time=20)
+        umaps_calculation = pipeline.add('umaps_calculation_based_on_masks_and_r2star', CoreUmapCalc(), requirements=[matlab2015_req], wall_time=20)
         pipeline.connect_input(
             'ute1_registered',
             umaps_calculation,
@@ -296,7 +274,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     def backwrap_to_ute_pipeline(self, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='backwrap_to_ute',
             inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
                     FilesetSpec('ute_echo1', dicom_format),
@@ -310,17 +288,15 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             citations=(matlab_cite),
             **kwargs)
 
-        echo1_conv = pipeline.create_node(MRConvert(), name='echo1_conv')
+        echo1_conv = pipeline.add('echo1_conv', MRConvert())
         echo1_conv.inputs.out_ext = '.nii.gz'
         pipeline.connect_input('ute_echo1', echo1_conv, 'in_file')
 
-        umap_conv = pipeline.create_node(MRConvert(), name='umap_conv')
+        umap_conv = pipeline.add('umap_conv', MRConvert())
         umap_conv.inputs.out_ext = '.nii.gz'
         pipeline.connect_input('umap_ute', umap_conv, 'in_file')
 
-        zero_template_mask = pipeline.create_node(
-            BinaryMaths(), name='zero_template_mask',
-            requirements=[fsl5_req], wall_time=3)
+        zero_template_mask = pipeline.add('zero_template_mask', BinaryMaths(), requirements=[fsl5_req], wall_time=3)
         pipeline.connect_input(
             'ute1_registered',
             zero_template_mask,
@@ -329,9 +305,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         zero_template_mask.inputs.operand_value = 0
         zero_template_mask.inputs.output_type = 'NIFTI_GZ'
 
-        region_template_mask = pipeline.create_node(
-            FLIRT(), name='region_template_mask',
-            requirements=[fsl5_req], wall_time=5)
+        region_template_mask = pipeline.add('region_template_mask', FLIRT(), requirements=[fsl5_req], wall_time=5)
         region_template_mask.inputs.apply_xfm = True
         region_template_mask.inputs.bgvalue = 1
         region_template_mask.inputs.interp = 'nearestneighbour'
@@ -349,10 +323,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('template_to_ute_mat', region_template_mask,
                                'in_matrix_file')
 
-        fill_in_umap = pipeline.create_node(MultiImageMaths(),
-                                            name='fill_in_umap',
-                                            requirements=[fsl5_req],
-                                            wall_time=3)
+        fill_in_umap = pipeline.add('fill_in_umap', MultiImageMaths(), requirements=[fsl5_req], wall_time=3)
         fill_in_umap.inputs.op_string = "-mul %s "
         fill_in_umap.inputs.output_type = 'NIFTI_GZ'
         pipeline.connect(region_template_mask, 'out_file',
@@ -363,9 +334,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             fill_in_umap,
             'operand_files')
 
-        sute_fix_ute_space = pipeline.create_node(
-            FLIRT(), name='sute_fix_ute_space',
-            requirements=[fsl5_req], wall_time=5)
+        sute_fix_ute_space = pipeline.add('sute_fix_ute_space', FLIRT(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
             echo1_conv,
             'out_file',
@@ -379,9 +348,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         sute_fix_ute_space.inputs.bgvalue = 0
         sute_fix_ute_space.inputs.output_type = 'NIFTI_GZ'
 
-        sute_cont_ute_space = pipeline.create_node(
-            FLIRT(), name='sute_cont_ute_space',
-            requirements=[fsl5_req], wall_time=5)
+        sute_cont_ute_space = pipeline.add('sute_cont_ute_space', FLIRT(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
             echo1_conv,
             'out_file',
@@ -395,9 +362,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         sute_cont_ute_space.inputs.bgvalue = 0
         sute_cont_ute_space.inputs.output_type = 'NIFTI_GZ'
 
-        sute_fix_ute_background = pipeline.create_node(
-            MultiImageMaths(), name='sute_fix_ute_background',
-            requirements=[fsl5_req], wall_time=5)
+        sute_fix_ute_background = pipeline.add('sute_fix_ute_background', MultiImageMaths(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
             sute_fix_ute_space,
             'out_file',
@@ -411,9 +376,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             sute_fix_ute_background,
             'operand_files')
 
-        sute_cont_ute_background = pipeline.create_node(
-            MultiImageMaths(), name='sute_cont_ute_background',
-            requirements=[fsl5_req], wall_time=5)
+        sute_cont_ute_background = pipeline.add('sute_cont_ute_background', MultiImageMaths(), requirements=[fsl5_req], wall_time=5)
         pipeline.connect(
             sute_cont_ute_space,
             'out_file',
@@ -427,9 +390,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             sute_cont_ute_background,
             'operand_files')
 
-        smooth_sute_fix = pipeline.create_node(
-            Smooth(), name='smooth_sute_fix',
-            requirements=[fsl5_req], wall_time=5)
+        smooth_sute_fix = pipeline.add('smooth_sute_fix', Smooth(), requirements=[fsl5_req], wall_time=5)
         smooth_sute_fix.inputs.sigma = 2.
         pipeline.connect(
             sute_fix_ute_background,
@@ -437,9 +398,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             smooth_sute_fix,
             'in_file')
 
-        smooth_sute_cont = pipeline.create_node(
-            Smooth(), name='smooth_sute_cont',
-            requirements=[fsl5_req], wall_time=5)
+        smooth_sute_cont = pipeline.add('smooth_sute_cont', Smooth(), requirements=[fsl5_req], wall_time=5)
         smooth_sute_cont.inputs.sigma = 2.
         pipeline.connect(
             sute_cont_ute_background,
@@ -456,7 +415,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
 #     def conversion_to_dicom_pipeline(self, **kwargs):
 #
-#         pipeline = self.pipeline(
+#         pipeline = self.new_pipeline(
 #             name='conversion_to_dicom',
 #             inputs=[FilesetSpec('sute_cont_ute', nifti_gz_format),
 #                     FilesetSpec('sute_fix_ute', nifti_gz_format),
@@ -484,7 +443,7 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 #             Nii2Dicom(), name='fix_nii2dicom', iterfield=['in_file',
 #                                                           'reference_dicom'],
 #             wall_time=20)
-#         list_dicoms = pipeline.create_node(ListDir(), name='list_dicoms')
+#         list_dicoms = pipeline.add('list_dicoms', ListDir())
 #         list_dicoms.inputs.sort_key = dicom_fname_sort_key
 #         cont_copy2dir = pipeline.create_node(CopyToDir(),
 #                                              name='cont_copy2dir')

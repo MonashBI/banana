@@ -19,7 +19,7 @@ class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
 
     def sinogram_unlisting_pipeline(self, **kwargs):
 
-        pipeline = self.pipeline(
+        pipeline = self.new_pipeline(
             name='prepare_sinogram',
             inputs=[FilesetSpec('list_mode', list_mode_format),
                     FieldSpec('time_offset', int),
@@ -32,25 +32,19 @@ class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        prepare_inputs = pipeline.create_node(PrepareUnlistingInputs(),
-                                              name='prepare_inputs')
+        prepare_inputs = pipeline.add('prepare_inputs', PrepareUnlistingInputs())
         pipeline.connect_input('list_mode', prepare_inputs, 'list_mode')
         pipeline.connect_input('time_offset', prepare_inputs, 'time_offset')
         pipeline.connect_input('num_frames', prepare_inputs, 'num_frames')
         pipeline.connect_input('temporal_length', prepare_inputs,
                                'temporal_len')
-        unlisting = pipeline.create_node(
-            PETListModeUnlisting(), iterfield=['list_inputs'],
-            name='unlisting')
+        unlisting = pipeline.add('unlisting', PETListModeUnlisting(), iterfield=['list_inputs'])
         pipeline.connect(prepare_inputs, 'out', unlisting, 'list_inputs')
 
-        ssrb = pipeline.create_node(
-            SSRB(), name='ssrb', requirements=[stir_req])
+        ssrb = pipeline.add('ssrb', SSRB(), requirements=[stir_req])
         pipeline.connect(unlisting, 'pet_sinogram', ssrb, 'unlisted_sinogram')
 
-        merge = pipeline.create_join_node(
-            MergeUnlistingOutputs(), joinsource='unlisting',
-            joinfield=['sinograms'], name='merge_sinograms')
+        merge = pipeline.create_join_node( MergeUnlistingOutputs(), joinsource='unlisting', joinfield=['sinograms'], name='merge_sinograms')
         pipeline.connect(ssrb, 'ssrb_sinograms', merge, 'sinograms')
         pipeline.connect_output('ssrb_sinograms', merge, 'sinogram_folder')
 
