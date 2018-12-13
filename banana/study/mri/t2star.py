@@ -322,7 +322,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
-            mem_gb=16, wall_time=30)
+            mem_gb=16,
+            wall_time=30)
 
         apply_trans_s = pipeline.add(
             'ApplyTransform_S_Prior',
@@ -334,7 +335,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('mni_template_swi_prior', nifti_gz_format),
                 'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=30)
+            requirements=[ants_req.v('1.9')], mem_gb=16,
+            wall_time=30)
 
         apply_trans_a = pipeline.add(
             'ApplyTransform_A_Prior',
@@ -347,7 +349,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'input_image': ('mni_template_atlas_prior', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
-            mem_gb=16, wall_time=30)
+            mem_gb=16,
+            wall_time=30)
 
         apply_trans_v = pipeline.add(
             'ApplyTransform_V_Atlas',
@@ -360,7 +363,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
-            mem_gb=16, wall_time=30)
+            mem_gb=16,
+            wall_time=30)
 
         # Run CV code
         pipeline.add(

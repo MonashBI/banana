@@ -63,7 +63,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 openmp=self.processor.num_processes),
             inputs={
                 'T1_files': ('preproc', nifti_gz_format)},
-            requirements=[freesurfer_req.v('5.3')], wall_time=2000)
+            requirements=[freesurfer_req.v('5.3')],
+            wall_time=2000)
 
         if self.provided('t2_coreg'):
             pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
@@ -111,7 +112,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'betted_T1': ('out_file', nifti_gz_format),
                 'betted_T1_mask': ('mask_file', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=8,
+            wall_time=45)
 
         return pipeline
 
@@ -144,7 +146,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'reference_image': ('betted_T1', nifti_gz_format),
                 'input_image': ('suit_mask', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
+            requirements=[ants_req.v('1.9')], mem_gb=16,
+            wall_time=120)
 
         pipeline.add(
             'maths2',
@@ -157,6 +160,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'cetted_T1': ('out_file', nifti_gz_format),
                 'cetted_T1_mask': ('output_image', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+            wall_time=5)
 
         return pipeline

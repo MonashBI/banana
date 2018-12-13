@@ -30,7 +30,9 @@ class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        suvr = pipeline.add('SUVR', SUVRCalculation())
+        suvr = pipeline.add(
+            'SUVR',
+            SUVRCalculation())
         pipeline.connect_input('registered_volume', suvr, 'volume')
         pipeline.connect_input('base_mask', suvr, 'base_mask')
         pipeline.connect_output('SUVR_image', suvr, 'SUVR_file')

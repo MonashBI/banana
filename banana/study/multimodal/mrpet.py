@@ -14,7 +14,7 @@ from banana.study.mri.structural.t1 import T1Study
 from banana.study.mri.structural.t2 import T2Study
 from nipype.interfaces.utility import Merge
 from banana.study.mri.structural.diffusion import DiffusionStudy
-from banana.requirement import fsl509_req, mrtrix3_req, ants2_req
+from banana.requirement import fsl_req.v('5.0.9'), mrtrix3_req, ants_req.v('2')
 from arcana.exception import ArcanaNameError
 from arcana.data import FilesetSelector
 import logging
@@ -189,10 +189,18 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             **kwargs)
 
         num_motion_mats = len(sub_study_names)
-        merge_motion_mats = pipeline.add('merge_motion_mats', Merge(num_motion_mats))
-        merge_tr = pipeline.add('merge_tr', Merge(num_motion_mats))
-        merge_start_time = pipeline.add('merge_start_time', Merge(num_motion_mats))
-        merge_real_duration = pipeline.add('merge_real_duration', Merge(num_motion_mats))
+        merge_motion_mats = pipeline.add(
+            'merge_motion_mats',
+            Merge(num_motion_mats))
+        merge_tr = pipeline.add(
+            'merge_tr',
+            Merge(num_motion_mats))
+        merge_start_time = pipeline.add(
+            'merge_start_time',
+            Merge(num_motion_mats))
+        merge_real_duration = pipeline.add(
+            'merge_real_duration',
+            Merge(num_motion_mats))
 
         for i, sub_study_name in enumerate(sub_study_names, start=1):
             spec = self.sub_study_spec(sub_study_name)
@@ -209,7 +217,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 spec.inverse_map('real_duration'), merge_real_duration,
                 'in{}'.format(i))
 
-        md = pipeline.add('scan_time_info', MeanDisplacementCalculation())
+        md = pipeline.add(
+            'scan_time_info',
+            MeanDisplacementCalculation())
         md.inputs.input_names = input_names
         pipeline.connect(merge_motion_mats, 'out', md, 'motion_mats')
         pipeline.connect(merge_tr, 'out', md, 'trs')
@@ -252,7 +262,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
 
-        framing = pipeline.add('motion_framing', MotionFraming())
+        framing = pipeline.add(
+            'motion_framing',
+            MotionFraming())
         framing.inputs.motion_threshold = self.parameter('framing_th')
         framing.inputs.temporal_threshold = self.parameter(
             'framing_temporal_th')
@@ -287,7 +299,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
 
-        plot_md = pipeline.add('plot_md', PlotMeanDisplacementRC())
+        plot_md = pipeline.add(
+            'plot_md',
+            PlotMeanDisplacementRC())
         plot_md.inputs.framing = self.parameter('md_framing')
         pipeline.connect_input('mean_displacement_rc', plot_md,
                                'mean_disp_rc')
@@ -319,7 +333,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
 
-        average = pipeline.add('mats_averaging', AffineMatAveraging())
+        average = pipeline.add(
+            'mats_averaging',
+            AffineMatAveraging())
         pipeline.connect_input('frame_vol_numbers', average,
                                'frame_vol_numbers')
         pipeline.connect_input('mats4average', average,
@@ -344,7 +360,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   "This will be the input for the dynamic motion correction."),
             citations=[fsl_cite], **kwargs)
 
-        binning = pipeline.add('fixed_binning', FixedBinning())
+        binning = pipeline.add(
+            'fixed_binning',
+            FixedBinning())
         pipeline.connect_input('start_times', binning, 'start_times')
         pipeline.connect_input('pet_start_time', binning, 'pet_start_time')
         pipeline.connect_input('pet_duration', binning, 'pet_duration')
@@ -372,7 +390,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
 
-        corr_factors = pipeline.add('pet_corr_factors', PetCorrectionFactor())
+        corr_factors = pipeline.add(
+            'pet_corr_factors',
+            PetCorrectionFactor())
         pipeline.connect_input('timestamps', corr_factors,
                                'timestamps')
         pipeline.connect_output('correction_factors', corr_factors,
@@ -394,16 +414,26 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=(),
             **kwargs)
 
-        list_niftis = pipeline.add('list_niftis', ListDir())
-        reorient_niftis = pipeline.add('reorient_niftis', ReorientUmap(), requirements=[mrtrix3_req])
+        list_niftis = pipeline.add(
+            'list_niftis',
+            ListDir())
+        reorient_niftis = pipeline.add(
+            'reorient_niftis',
+            ReorientUmap(),
+            requirements=[mrtrix3_req])
 
         nii2dicom = pipeline.create_map_node(
             Nii2Dicom(), name='nii2dicom',
-            iterfield=['in_file'], wall_time=20)
+            iterfield=['in_file'],
+            wall_time=20)
 #         nii2dicom.inputs.extension = 'Frame'
-        list_dicoms = pipeline.add('list_dicoms', ListDir())
+        list_dicoms = pipeline.add(
+            'list_dicoms',
+            ListDir())
         list_dicoms.inputs.sort_key = dicom_fname_sort_key
-        copy2dir = pipeline.add('copy2dir', CopyToDir())
+        copy2dir = pipeline.add(
+            'copy2dir',
+            CopyToDir())
         copy2dir.inputs.extension = 'Frame'
         # Connect nodes
         pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
@@ -438,7 +468,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   "static PET image quality."),
             citations=[fsl_cite],
             **kwargs)
-        frame_align = pipeline.add('umap2ref_alignment', UmapAlign2Reference(), requirements=[fsl509_req])
+        frame_align = pipeline.add(
+            'umap2ref_alignment',
+            UmapAlign2Reference(),
+            requirements=[fsl_req.v('5.0.9')])
         frame_align.inputs.pct = self.parameter('align_pct')
         pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
                                'ute_regmat')
@@ -470,7 +503,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
 
-        moco = pipeline.add('create_moco_series', CreateMocoSeries())
+        moco = pipeline.add(
+            'create_moco_series',
+            CreateMocoSeries())
         pipeline.connect_input('start_times', moco, 'start_times')
         pipeline.connect_input('motion_par', moco, 'motion_par')
         moco.inputs.moco_template = self.parameter('moco_template')
@@ -501,12 +536,16 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
 
-        merge_inputs = pipeline.add('merge_inputs', Merge(len(inputs)))
+        merge_inputs = pipeline.add(
+            'merge_inputs',
+            Merge(len(inputs)))
         for i, fileset in enumerate(inputs, start=1):
             pipeline.connect_input(
                 fileset.name, merge_inputs, 'in{}'.format(i))
 
-        copy2dir = pipeline.add('copy2dir', CopyToDir())
+        copy2dir = pipeline.add(
+            'copy2dir',
+            CopyToDir())
         pipeline.connect(merge_inputs, 'out', copy2dir, 'in_files')
 
         pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
@@ -548,11 +587,17 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   "motion detection pipeline"),
             citations=[fsl_cite],
             **kwargs)
-        check_pet = pipeline.add('check_pet_data', CheckPetMCInputs(), requirements=[fsl509_req, mrtrix3_req])
+        check_pet = pipeline.add(
+            'check_pet_data',
+            CheckPetMCInputs(),
+            requirements=[fsl_req.v('5.0.9'), mrtrix3_req])
         pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
 
         if StructAlignment:
-            struct_reg = pipeline.add('ref2structural_reg', FLIRT(), requirements=[fsl509_req])
+            struct_reg = pipeline.add(
+                'ref2structural_reg',
+                FLIRT(),
+                requirements=[fsl_req.v('5.0.9')])
             pipeline.connect_input('ref_brain', struct_reg, 'reference')
             pipeline.connect_input('struct2align', struct_reg, 'in_file')
             struct_reg.inputs.dof = 6
@@ -571,13 +616,13 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if not dynamic:
             pet_mc = pipeline.create_map_node(
                 PetImageMotionCorrection(), name='pet_mc',
-                requirements=[fsl509_req],
+                requirements=[fsl_req.v('5.0.9')],
                 iterfield=['corr_factor', 'pet_image', 'motion_mat'])
             pipeline.connect(check_pet, 'corr_factors', pet_mc, 'corr_factor')
         else:
             pet_mc = pipeline.create_map_node(
                 PetImageMotionCorrection(), name='pet_mc',
-                requirements=[fsl509_req], iterfield=['pet_image',
+                requirements=[fsl_req.v('5.0.9')], iterfield=['pet_image',
                                                       'motion_mat'])
         pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
         pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
@@ -592,23 +637,36 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             mni_reg = False
 
         if dynamic:
-            merge_mc = pipeline.add('merge_pet_mc', fsl.Merge(), requirements=[fsl509_req])
+            merge_mc = pipeline.add(
+                'merge_pet_mc',
+                fsl.Merge(),
+                requirements=[fsl_req.v('5.0.9')])
             merge_mc.inputs.dimension = 't'
-            merge_no_mc = pipeline.add('merge_pet_no_mc', fsl.Merge(), requirements=[fsl509_req])
+            merge_no_mc = pipeline.add(
+                'merge_pet_no_mc',
+                fsl.Merge(),
+                requirements=[fsl_req.v('5.0.9')])
             merge_no_mc.inputs.dimension = 't'
             pipeline.connect(pet_mc, 'pet_mc_image', merge_mc, 'in_files')
             pipeline.connect(pet_mc, 'pet_no_mc_image', merge_no_mc,
                              'in_files')
         else:
-            static_mc = pipeline.add('static_mc_generation', StaticPETImageGeneration(), requirements=[fsl509_req])
+            static_mc = pipeline.add(
+                'static_mc_generation',
+                StaticPETImageGeneration(),
+                requirements=[fsl_req.v('5.0.9')])
             pipeline.connect(pet_mc, 'pet_mc_image', static_mc,
                              'pet_mc_images')
             pipeline.connect(pet_mc, 'pet_no_mc_image', static_mc,
                              'pet_no_mc_images')
-        merge_outputs = pipeline.add('merge_outputs', Merge(3))
+        merge_outputs = pipeline.add(
+            'merge_outputs',
+            Merge(3))
         pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in1')
         if not StructAlignment:
-            cropping = pipeline.add('pet_cropping', PETFovCropping())
+            cropping = pipeline.add(
+                'pet_cropping',
+                PETFovCropping())
             cropping.inputs.x_min = self.parameter('crop_xmin')
             cropping.inputs.x_size = self.parameter('crop_xsize')
             cropping.inputs.y_min = self.parameter('crop_ymin')
@@ -621,7 +679,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             else:
                 pipeline.connect(static_mc, 'static_mc', cropping, 'pet_image')
 
-            cropping_no_mc = pipeline.add('pet_no_mc_cropping', PETFovCropping())
+            cropping_no_mc = pipeline.add(
+                'pet_no_mc_cropping',
+                PETFovCropping())
             cropping_no_mc.inputs.x_min = self.parameter('crop_xmin')
             cropping_no_mc.inputs.x_size = self.parameter('crop_xsize')
             cropping_no_mc.inputs.y_min = self.parameter('crop_ymin')
@@ -637,23 +697,38 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
             if mni_reg:
                 if dynamic:
-                    t_mean = pipeline.add('PET_temporal_mean', ImageMaths(), requirements=[fsl509_req])
+                    t_mean = pipeline.add(
+                        'PET_temporal_mean',
+                        ImageMaths(),
+                        requirements=[fsl_req.v('5.0.9')])
                     t_mean.inputs.op_string = '-Tmean'
                     pipeline.connect(cropping, 'pet_cropped', t_mean,
                                      'in_file')
-                reg_tmean2MNI = pipeline.add('reg2MNI', AntsRegSyn(num_dimensions=3, transformation='s', out_prefix='reg2MNI', num_threads=4), wall_time=25, requirements=[ants2_req])
+                reg_tmean2MNI = pipeline.add(
+                    'reg2MNI',
+                    AntsRegSyn(num_dimensions=3, transformation='s', out_prefix='reg2MNI', num_threads=4),
+                    wall_time=25,
+                    requirements=[ants_req.v('2')])
                 reg_tmean2MNI.inputs.ref_file = self.parameter(
                     'PET_template_MNI')
                 if dynamic:
                     pipeline.connect(t_mean, 'out_file', reg_tmean2MNI,
                                      'input_file')
 
-                    merge_trans = pipeline.add('merge_transforms', Merge(2), wall_time=1)
+                    merge_trans = pipeline.add(
+                        'merge_transforms',
+                        Merge(2),
+                        wall_time=1)
                     pipeline.connect(reg_tmean2MNI, 'warp_file', merge_trans,
                                      'in1')
                     pipeline.connect(reg_tmean2MNI, 'regmat', merge_trans,
                                      'in2')
-                    apply_trans = pipeline.add('apply_trans', ApplyTransforms(), wall_time=7, memory=24000, requirements=[ants2_req])
+                    apply_trans = pipeline.add(
+                        'apply_trans',
+                        ApplyTransforms(),
+                        wall_time=7,
+                        mem_gb=24,
+                        requirements=[ants_req.v('2')])
                     apply_trans.inputs.reference_image = self.parameter(
                         'PET_template_MNI')
                     apply_trans.inputs.interpolation = 'Linear'
@@ -686,7 +761,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 #         pipeline.connect(merge_mc_ps, 'merged_file', mcflirt, 'in_file')
 #         mcflirt.inputs.cost = 'normmi'
 
-        copy2dir = pipeline.add('copy2dir', CopyToDir())
+        copy2dir = pipeline.add(
+            'copy2dir',
+            CopyToDir())
         pipeline.connect(merge_outputs, 'out', copy2dir, 'in_files')
         if dynamic:
             pipeline.connect_output('dynamic_motion_correction_results',

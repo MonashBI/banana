@@ -5,7 +5,7 @@ from banana.file_format import (nifti_gz_format, text_format,
 from banana.interfaces.sklearn import FastICA
 from banana.interfaces.ants import AntsRegSyn
 import os
-from banana.requirement import fsl509_req, mrtrix3_req
+from banana.requirement import fsl_req.v('5.0.9'), mrtrix3_req
 from banana.interfaces.custom.pet import PreparePetDir
 from banana.interfaces.custom.dicom import PetTimeInfo
 from arcana.parameter import ParameterSpec
@@ -78,7 +78,9 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        ica = pipeline.add('ICA', FastICA())
+        ica = pipeline.add(
+            'ICA',
+            FastICA())
         ica.inputs.n_components = self.parameter('ica_n_components')
         ica.inputs.ica_type = self.parameter('ica_type')
         pipeline.connect_input('registered_volumes', ica, 'volume')
@@ -104,7 +106,9 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        reg = pipeline.add('ANTs', AntsRegSyn(out_prefix='vol2template'))
+        reg = pipeline.add(
+            'ANTs',
+            AntsRegSyn(out_prefix='vol2template'))
         reg.inputs.num_dimensions = self.parameter('norm_dim')
         reg.inputs.num_threads = self.processor.num_processes
         reg.inputs.transformation = self.parameter('norm_transformation')
@@ -131,7 +135,10 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        prep_dir = pipeline.add('prepare_pet', PreparePetDir(), requirements=[mrtrix3_req, fsl509_req])
+        prep_dir = pipeline.add(
+            'prepare_pet',
+            PreparePetDir(),
+            requirements=[mrtrix3_req, fsl_req.v('5.0.9')])
         prep_dir.inputs.image_orientation_check = self.parameter(
             'image_orientation_check')
         pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
@@ -152,7 +159,9 @@ class PETStudy(Study, metaclass=StudyMetaClass):
             desc=("Extract PET time info from list-mode header."),
             references=[],
             **kwargs)
-        time_info = pipeline.add('PET_time_info', PetTimeInfo())
+        time_info = pipeline.add(
+            'PET_time_info',
+            PetTimeInfo())
         pipeline.connect_input('pet_data_dir', time_info, 'pet_data_dir')
         pipeline.connect_output('pet_end_time', time_info, 'pet_end_time')
         pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')

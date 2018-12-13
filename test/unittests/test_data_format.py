@@ -31,7 +31,9 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
             desc=("A dummy pipeline used to test dicom-to-nifti "
                          "conversion method"),
             references=[])
-        identity = pipeline.add('identity', IdentityInterface(['field']))
+        identity = pipeline.add(
+            'identity',
+            IdentityInterface(['field']))
         # Connect inputs
         pipeline.connect_input('input_fileset', identity, 'field')
         # Connect outputs

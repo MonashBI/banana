@@ -360,7 +360,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'coreg': ('out_file', nifti_gz_format),
                 'coreg_matrix': ('out_matrix_file', text_matrix_format)},
-            requirements=[fsl_req.v('5.0.8')], wall_time=5)
+            requirements=[fsl_req.v('5.0.8')],
+            wall_time=5)
 
         return pipeline
 
@@ -444,7 +445,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'qformed': ('out_file', nifti_gz_format),
                 'qform_mat': ('out_matrix_file', text_matrix_format)},
-            requirements=[fsl_req.v('5.0.8')], wall_time=5)
+            requirements=[fsl_req.v('5.0.8')],
+            wall_time=5)
 
         return pipeline
 
@@ -498,7 +500,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             inputs={
                 'ref_file': ('atlas', nifti_gz_format),
                 'input_file': ('preproc', nifti_gz_format)},
-            wall_time=25, requirements=[ants_req.v('2.0')])
+            wall_time=25,
+            requirements=[ants_req.v('2.0')])
 
         merge_trans = pipeline.add(
             'merge_transforms',
@@ -538,7 +541,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file': (apply_trans, 'output_image')},
             outputs={
                 'brain_mask': ('out_file', nifti_gz_format)},
-            wall_time=5, requirements=[fsl_req.v('5.0.8')])
+            wall_time=5,
+            requirements=[fsl_req.v('5.0.8')])
 
         maths2 = pipeline.add(
             'mask',
@@ -550,7 +554,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file2': (maths1, 'out_file')},
             outputs={
                 'brain': ('out_file', nifti_gz_format)},
-            wall_time=5, requirements=[fsl_req.v('5.0.8')])
+            wall_time=5,
+            requirements=[fsl_req.v('5.0.8')])
 
         if self.branch('optibet_gen_report'):
             pipeline.add(
@@ -682,7 +687,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'coreg_to_atlas': ('reg_file', nifti_gz_format),
                 'coreg_to_atlas_mat': ('regmat', text_matrix_format),
                 'coreg_to_atlas_warp': ('warp_file', nifti_gz_format)},
-            wall_time=25, requirements=[ants_req.v('2.0')])
+            wall_time=25,
+            requirements=[ants_req.v('2.0')])
 
         pipeline.add(
             'slices',
@@ -693,7 +699,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'im2': (ants_reg, 'reg_file')},
             outputs={
                 'coreg_to_atlas_report': ('report', gif_format)},
-            wall_time=1, requirements=[fsl_req.v('5.0.8')])
+            wall_time=1,
+            requirements=[fsl_req.v('5.0.8')])
 
         return pipeline
 

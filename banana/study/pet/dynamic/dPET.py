@@ -49,7 +49,9 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        fslroi = pipeline.add('fslroi', ExtractROI(roi_file='vol.nii.gz', t_min=79, t_size=1))
+        fslroi = pipeline.add(
+            'fslroi',
+            ExtractROI(roi_file='vol.nii.gz', t_min=79, t_size=1))
         pipeline.connect_input('pet_volumes', fslroi, 'in_file')
         pipeline.connect_output('pet_image', fslroi, 'roi_file')
         return pipeline
@@ -67,11 +69,15 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        merge_trans = pipeline.add('merge_transforms', Merge(2))
+        merge_trans = pipeline.add(
+            'merge_transforms',
+            Merge(2))
         pipeline.connect_input('warp_file', merge_trans, 'in1')
         pipeline.connect_input('affine_mat', merge_trans, 'in2')
 
-        apply_trans = pipeline.add('ApplyTransform', ApplyTransforms())
+        apply_trans = pipeline.add(
+            'ApplyTransform',
+            ApplyTransforms())
         apply_trans.inputs.reference_image = self.parameter(
             'trans_template')
         apply_trans.inputs.interpolation = 'Linear'
@@ -95,7 +101,9 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        br = pipeline.add('Baseline_removal', GlobalTrendRemoval())
+        br = pipeline.add(
+            'Baseline_removal',
+            GlobalTrendRemoval())
         pipeline.connect_input('registered_volumes', br, 'volume')
         pipeline.connect_output('detrended_volumes', br, 'detrended_file')
         return pipeline
@@ -114,7 +122,9 @@ class DynamicPETStudy(PETStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        dr = pipeline.add('PET_dr', PETdr())
+        dr = pipeline.add(
+            'PET_dr',
+            PETdr())
         dr.inputs.threshold = self.parameter('regress_th')
         dr.inputs.binarize = self.parameter('regress_binarize')
         pipeline.connect_input('detrended_volumes', dr, 'volume')

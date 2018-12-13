@@ -395,8 +395,12 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[mrtrix_req.v('3.0rc3')],
             name_maps=name_maps)
         # Convert from nifti to mrtrix format
-        grad_merge = pipeline.add("grad_merge", MergeTuple(2))
-        mrconvert = pipeline.add('mrconvert', MRConvert())
+        grad_merge = pipeline.add(
+            "grad_merge",
+            MergeTuple(2))
+        mrconvert = pipeline.add(
+            'mrconvert',
+            MRConvert())
         mrconvert.inputs.out_ext = '.mif'
         # Set up join nodes
         fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
@@ -470,7 +474,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             FitTensor())
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
         # Gradient merge node
-        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', dwi2tensor, 'grad_fsl')
         # Connect to inputs
@@ -591,7 +597,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             Chain(['responses']),
             joinsource=self.VISIT_ID,
             joinfield=['responses'])
-        avg_response = pipeline.add('avg_response', AverageResponse())
+        avg_response = pipeline.add(
+            'avg_response',
+            AverageResponse())
         # Connect inputs
         pipeline.connect_input('wm_response', join_subjects, 'responses')
         # Connect inter-nodes
@@ -633,7 +641,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             requirements=[mrtrix_req.v('3.0rc3')])
         dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
         # Gradient merge node
-        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
         # Connect to inputs
@@ -700,7 +710,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[mrtrix_cite],
             name_maps=name_maps)
         # Gradient merge node
-        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
         # Extraction node
         extract_b0s = pipeline.add(
             'extract_b0s', ExtractDWIorB0(),
@@ -717,8 +729,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         mean.inputs.operation = 'mean'
         mean.inputs.quiet = True
         # Convert to Nifti
-        mrconvert = pipeline.add("output_conversion", MRConvert(),
-                                         requirements=[mrtrix_req.v('3.0rc3')])
+        mrconvert = pipeline.add(
+            "output_conversion",
+            MRConvert(),
+            requirements=[mrtrix_req.v('3.0rc3')])
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect inputs
@@ -785,8 +799,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[fsl_cite],
             name_maps=name_maps)
 
-        aff_mat = pipeline.add('gen_aff_mats',
-                                       AffineMatrixGeneration())
+        aff_mat = pipeline.add(
+            'gen_aff_mats',
+            AffineMatrixGeneration())
         pipeline.connect_input('preproc', aff_mat, 'reference_image')
         pipeline.connect_input(
             'eddy_par', aff_mat, 'motion_parameters')
