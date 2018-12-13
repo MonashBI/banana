@@ -19,11 +19,13 @@ class StaticPETStudy(PETStudy, metaclass=StudyMetaClass):
 
     def suvr_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('registered_volume', nifti_gz_format),
+#                     FilesetSpec('base_mask', nifti_gz_format)],
+#             outputs=[FilesetSpec('SUVR_image', nifti_gz_format)],
+
+
         pipeline = self.new_pipeline(
             name='SUVR',
-            inputs=[FilesetSpec('registered_volume', nifti_gz_format),
-                    FilesetSpec('base_mask', nifti_gz_format)],
-            outputs=[FilesetSpec('SUVR_image', nifti_gz_format)],
             desc=('Calculate SUVR image'),
             references=[],
             **kwargs)

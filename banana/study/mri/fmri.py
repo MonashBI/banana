@@ -40,7 +40,7 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
+class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('train_data', rfile_format, optional=True,
@@ -77,14 +77,16 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 
+        
+#             inputs=[FilesetSpec('preproc', nifti_gz_format),
+#                     FilesetSpec('brain_mask', nifti_gz_format),
+#                     FilesetSpec('coreg_ref_brain', nifti_gz_format),
+#                     FieldSpec('tr', float)],
+#             outputs=[FilesetSpec('filtered_data', nifti_gz_format),
+#                      FilesetSpec('mc_par', par_format)],
+        
         pipeline = self.new_pipeline(
             name='rsfMRI_filtering',
-            inputs=[FilesetSpec('preproc', nifti_gz_format),
-                    FilesetSpec('brain_mask', nifti_gz_format),
-                    FilesetSpec('coreg_ref_brain', nifti_gz_format),
-                    FieldSpec('tr', float)],
-            outputs=[FilesetSpec('filtered_data', nifti_gz_format),
-                     FilesetSpec('mc_par', par_format)],
             desc=("Spatial and temporal rsfMRI filtering"),
             citations=[fsl_cite],
             **kwargs)
@@ -118,12 +120,14 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def single_subject_melodic_pipeline(self, **kwargs):
 
+
+#             inputs=[FilesetSpec('filtered_data', nifti_gz_format),
+#                     FieldSpec('tr', float),
+#                     FilesetSpec('brain_mask', nifti_gz_format)],
+#             outputs=[FilesetSpec('melodic_ica', directory_format)],
+
         pipeline = self.new_pipeline(
             name='MelodicL1',
-            inputs=[FilesetSpec('filtered_data', nifti_gz_format),
-                    FieldSpec('tr', float),
-                    FilesetSpec('brain_mask', nifti_gz_format)],
-            outputs=[FilesetSpec('melodic_ica', directory_format)],
             desc=("Single subject ICA analysis using FSL MELODIC."),
             citations=[fsl_cite],
             **kwargs)
@@ -145,19 +149,21 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def fix_preparation_pipeline(self, **kwargs):
 
+
+#             inputs=[FilesetSpec('melodic_ica', directory_format),
+#                     FilesetSpec('filtered_data', nifti_gz_format),
+#                     FilesetSpec('coreg_to_atlas_mat', text_matrix_format),
+#                     FilesetSpec('coreg_matrix', text_matrix_format),
+#                     FilesetSpec('preproc', nifti_gz_format),
+#                     FilesetSpec('brain', nifti_gz_format),
+#                     FilesetSpec('coreg_ref_brain', nifti_gz_format),
+#                     FilesetSpec('mc_par', par_format),
+#                     FilesetSpec('brain_mask', nifti_gz_format)],
+#             outputs=[FilesetSpec('fix_dir', directory_format),
+#                      FilesetSpec('hand_label_noise', text_format)],
+
         pipeline = self.new_pipeline(
             name='prepare_fix',
-            inputs=[FilesetSpec('melodic_ica', directory_format),
-                    FilesetSpec('filtered_data', nifti_gz_format),
-                    FilesetSpec('coreg_to_atlas_mat', text_matrix_format),
-                    FilesetSpec('coreg_matrix', text_matrix_format),
-                    FilesetSpec('preproc', nifti_gz_format),
-                    FilesetSpec('brain', nifti_gz_format),
-                    FilesetSpec('coreg_ref_brain', nifti_gz_format),
-                    FilesetSpec('mc_par', par_format),
-                    FilesetSpec('brain_mask', nifti_gz_format)],
-            outputs=[FilesetSpec('fix_dir', directory_format),
-                     FilesetSpec('hand_label_noise', text_format)],
             desc=("Pipeline to create the right folder structure before "
                   "running FIX"),
             citations=[fsl_cite],
@@ -210,12 +216,14 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def fix_classification_pipeline(self, **kwargs):
 
+
+#             inputs=[DatasetSpec('train_data', rfile_format,
+#                                 frequency='per_project'),
+#                     DatasetSpec('fix_dir', directory_format)],
+#             outputs=[DatasetSpec('labelled_components', text_format)],
+
         pipeline = self.create_pipeline(
             name='fix_classification',
-            inputs=[DatasetSpec('train_data', rfile_format,
-                                frequency='per_project'),
-                    DatasetSpec('fix_dir', directory_format)],
-            outputs=[DatasetSpec('labelled_components', text_format)],
             desc=("Automatic classification of noisy components from the "
                   "rsfMRI data using fsl FIX."),
             version=1,
@@ -307,12 +315,14 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def fix_classification_pipeline(self, **kwargs):
 
+
+#             inputs=[FilesetSpec('train_data', rfile_format,
+#                                 frequency='per_study'),
+#                     FilesetSpec('fix_dir', directory_format)],
+#             outputs=[FilesetSpec('labelled_components', text_format)],
+
         pipeline = self.new_pipeline(
             name='fix_classification',
-            inputs=[FilesetSpec('train_data', rfile_format,
-                                frequency='per_study'),
-                    FilesetSpec('fix_dir', directory_format)],
-            outputs=[FilesetSpec('labelled_components', text_format)],
             desc=("Automatic classification of noisy components from the "
                   "rsfMRI data using fsl FIX."),
             citations=[fsl_cite],
@@ -333,11 +343,13 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def fix_regression_pipeline(self, **kwargs):
 
+
+#             inputs=[FilesetSpec('fix_dir', directory_format),
+#                     FilesetSpec('labelled_components', text_format)],
+#             outputs=[FilesetSpec('cleaned_file', nifti_gz_format)],
+
         pipeline = self.new_pipeline(
             name='signal_regression',
-            inputs=[FilesetSpec('fix_dir', directory_format),
-                    FilesetSpec('labelled_components', text_format)],
-            outputs=[FilesetSpec('cleaned_file', nifti_gz_format)],
             desc=("Regression of the noisy components from the rsfMRI data "
                   "using a python implementation equivalent to that in FIX."),
             citations=[fsl_cite],
@@ -356,13 +368,15 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def timeseries_normalization_to_atlas_pipeline(self, **kwargs):
 
+
+#             inputs=[FilesetSpec('cleaned_file', nifti_gz_format),
+#                     FilesetSpec('coreg_to_atlas_warp', nifti_gz_format),
+#                     FilesetSpec('coreg_to_atlas_mat', text_matrix_format),
+#                     FilesetSpec('coreg_matrix', text_matrix_format)],
+#             outputs=[FilesetSpec('normalized_ts', nifti_gz_format)],
+
         pipeline = self.new_pipeline(
             name='timeseries_normalization_to_atlas_pipeline',
-            inputs=[FilesetSpec('cleaned_file', nifti_gz_format),
-                    FilesetSpec('coreg_to_atlas_warp', nifti_gz_format),
-                    FilesetSpec('coreg_to_atlas_mat', text_matrix_format),
-                    FilesetSpec('coreg_matrix', text_matrix_format)],
-            outputs=[FilesetSpec('normalized_ts', nifti_gz_format)],
             desc=("Apply ANTs transformation to the fmri filtered file to "
                   "normalize it to MNI 2mm."),
             citations=[fsl_cite],
@@ -387,10 +401,12 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def smoothing_pipeline(self, **kwargs):
 
+
+#             inputs=[FilesetSpec('normalized_ts', nifti_gz_format)],
+#             outputs=[FilesetSpec('smoothed_ts', nifti_gz_format)],
+
         pipeline = self.new_pipeline(
             name='smoothing_pipeline',
-            inputs=[FilesetSpec('normalized_ts', nifti_gz_format)],
-            outputs=[FilesetSpec('smoothed_ts', nifti_gz_format)],
             desc=("Spatial smoothing of the normalized fmri file"),
             citations=[fsl_cite],
             **kwargs)
@@ -406,7 +422,7 @@ class FunctionalMriStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
+class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('train_data', rfile_format, 'fix_training_pipeline',
@@ -430,11 +446,13 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 sub_study_names.append(sub_study_spec.name)
             except ArcanaNameError:
                 continue  # Sub study doesn't have fix dir
+            
+        
+#             inputs=inputs,
+#             outputs=[FilesetSpec('train_data', rfile_format)],
 
         pipeline = self.new_pipeline(
             name='training_fix',
-            inputs=inputs,
-            outputs=[FilesetSpec('train_data', rfile_format)],
             desc=("Pipeline to create the training set for FIX given a group "
                   "of subjects with the hand_label_noise.txt file within "
                   "their fix_dir."),
@@ -516,11 +534,12 @@ class FunctionalMRIMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def group_melodic_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('smoothed_ts', nifti_gz_format),
+#                     FieldSpec('tr', float)],
+#             outputs=[FilesetSpec('group_melodic', directory_format)],
+
         pipeline = self.new_pipeline(
             name='group_melodic',
-            inputs=[FilesetSpec('smoothed_ts', nifti_gz_format),
-                    FieldSpec('tr', float)],
-            outputs=[FilesetSpec('group_melodic', directory_format)],
             desc=("Group ICA"),
             citations=[fsl_cite],
             **kwargs)
@@ -577,18 +596,18 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref_preproc',
                         'train_data': 'train_data'})
-    study_specs.append(SubStudySpec('epi_0', FunctionalMRIStudy, epi_refspec))
+    study_specs.append(SubStudySpec('epi_0', FmriStudy, epi_refspec))
     if epi_number > 1:
         epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                             't1_preproc': 'coreg_ref_preproc',
                             'train_data': 'train_data',
                             'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
                             'epi_0_coreg_to_atlas_mat': 'coreg_to_atlas_mat'})
-        study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMRIStudy,
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), FmriStudy,
                                         epi_refspec)
                            for i in range(1, epi_number))
 
-    study_specs.extend(SubStudySpec('epi_{}'.format(i), FunctionalMriStudy,
+    study_specs.extend(SubStudySpec('epi_{}'.format(i), FmriStudy,
                                     epi_refspec)
                        for i in range(epi_number))
 
@@ -624,5 +643,5 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
     dct['add_data_specs'] = data_specs
     dct['add_param_specs'] = parameter_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    return (MultiStudyMetaClass(name, (FunctionalMRIMixin,), dct), inputs,
+    return (MultiStudyMetaClass(name, (FmriMixin,), dct), inputs,
             output_files)

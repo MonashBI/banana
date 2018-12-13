@@ -168,19 +168,21 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             except ArcanaNameError:
                 continue  # Sub study doesn't have motion mat
 
+#             inputs=inputs,
+#             outputs=[FilesetSpec('mean_displacement', text_format),
+#                      FilesetSpec('mean_displacement_rc', text_format),
+#                      FilesetSpec('mean_displacement_consecutive', text_format),
+#                      FilesetSpec('start_times', text_format),
+#                      FilesetSpec('motion_par_rc', text_format),
+#                      FilesetSpec('motion_par', text_format),
+#                      FilesetSpec('offset_indexes', text_format),
+#                      FilesetSpec('mats4average', text_format),
+#                      FilesetSpec('severe_motion_detection_report',
+#                                  text_format)],
+
+
         pipeline = self.new_pipeline(
             name='mean_displacement_calculation',
-            inputs=inputs,
-            outputs=[FilesetSpec('mean_displacement', text_format),
-                     FilesetSpec('mean_displacement_rc', text_format),
-                     FilesetSpec('mean_displacement_consecutive', text_format),
-                     FilesetSpec('start_times', text_format),
-                     FilesetSpec('motion_par_rc', text_format),
-                     FilesetSpec('motion_par', text_format),
-                     FilesetSpec('offset_indexes', text_format),
-                     FilesetSpec('mats4average', text_format),
-                     FilesetSpec('severe_motion_detection_report',
-                                 text_format)],
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
             citations=[fsl_cite],
@@ -237,12 +239,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if 'pet_data_dir' in self.input_names:
             inputs.append(FieldSpec('pet_start_time', str))
             inputs.append(FieldSpec('pet_end_time', str))
+#             inputs=inputs,
+#             outputs=[FilesetSpec('frame_start_times', text_format),
+#                      FilesetSpec('frame_vol_numbers', text_format),
+#                      FilesetSpec('timestamps', directory_format)],
+            
+            
         pipeline = self.new_pipeline(
             name='motion_framing',
-            inputs=inputs,
-            outputs=[FilesetSpec('frame_start_times', text_format),
-                     FilesetSpec('frame_vol_numbers', text_format),
-                     FilesetSpec('timestamps', directory_format)],
             desc=("Calculate when the head movement exceeded a "
                   "predefined threshold (default 2mm)."),
             citations=[fsl_cite],
@@ -271,12 +275,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def plot_mean_displacement_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('mean_displacement_rc', text_format),
+#                     FilesetSpec('offset_indexes', text_format),
+#                     FilesetSpec('frame_start_times', text_format)],
+#             outputs=[FilesetSpec('mean_displacement_plot', png_format)],
+
+
         pipeline = self.new_pipeline(
             name='plot_mean_displacement',
-            inputs=[FilesetSpec('mean_displacement_rc', text_format),
-                    FilesetSpec('offset_indexes', text_format),
-                    FilesetSpec('frame_start_times', text_format)],
-            outputs=[FilesetSpec('mean_displacement_plot', png_format)],
             desc=("Plot the mean displacement real clock"),
             citations=[fsl_cite],
             **kwargs)
@@ -301,11 +307,13 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
 
+# 
+#             inputs=[FilesetSpec('mats4average', text_format),
+#                     FilesetSpec('frame_vol_numbers', text_format)],
+#             outputs=[FilesetSpec('average_mats', directory_format)],
+
         pipeline = self.new_pipeline(
             name='frame_mean_transformation_mats',
-            inputs=[FilesetSpec('mats4average', text_format),
-                    FilesetSpec('frame_vol_numbers', text_format)],
-            outputs=[FilesetSpec('average_mats', directory_format)],
             desc=("Average all the transformation mats within each "
                   "detected frame."),
             citations=[fsl_cite],
@@ -322,13 +330,15 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def fixed_binning_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('start_times', text_format),
+#                     FieldSpec('pet_start_time', str),
+#                     FieldSpec('pet_duration', int),
+#                     FilesetSpec('mats4average', text_format)],
+#             outputs=[FilesetSpec('fixed_binning_mats', directory_format)],
+
         pipeline = self.new_pipeline(
             name='fixed_binning',
-            inputs=[FilesetSpec('start_times', text_format),
-                    FieldSpec('pet_start_time', str),
-                    FieldSpec('pet_duration', int),
-                    FilesetSpec('mats4average', text_format)],
-            outputs=[FilesetSpec('fixed_binning_mats', directory_format)],
+            
             desc=("Pipeline to generate average motion matrices for "
                   "each bin in a dynamic PET reconstruction experiment."
                   "This will be the input for the dynamic motion correction."),
@@ -350,10 +360,12 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def pet_correction_factors_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('timestamps', directory_format)],
+#             outputs=[FilesetSpec('correction_factors', text_format)],
+
+
         pipeline = self.new_pipeline(
             name='pet_correction_factors',
-            inputs=[FilesetSpec('timestamps', directory_format)],
-            outputs=[FilesetSpec('correction_factors', text_format)],
             desc=("Pipeline to calculate the correction factors to "
                   "account for frame duration when averaging the PET "
                   "frames to create the static PET image"),
@@ -369,11 +381,13 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def nifti2dcm_conversion_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('umaps_align2ref', directory_format),
+#                     FilesetSpec('umap', dicom_format)],
+#             outputs=[FilesetSpec('umap_aligned_dicoms', directory_format)],
+
+
         pipeline = self.new_pipeline(
             name='conversion_to_dicom',
-            inputs=[FilesetSpec('umaps_align2ref', directory_format),
-                    FilesetSpec('umap', dicom_format)],
-            outputs=[FilesetSpec('umap_aligned_dicoms', directory_format)],
             desc=(
                 "Conversing aligned umap from nifti to dicom format - "
                 "parallel implementation"),
@@ -442,11 +456,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         import back the new moco series into the scanner. This was just a first
         attempt.
         """
+        
+#             inputs=[FilesetSpec('start_times', text_format),
+#                     FilesetSpec('motion_par', text_format)],
+#             outputs=[FilesetSpec('moco_series', directory_format)],
+        
+        
         pipeline = self.new_pipeline(
             name='create_moco_series',
-            inputs=[FilesetSpec('start_times', text_format),
-                    FilesetSpec('motion_par', text_format)],
-            outputs=[FilesetSpec('moco_series', directory_format)],
             desc=("Pipeline to generate a moco_series that can be then "
                   "imported back in the scanner and used to correct the"
                   " pet data"),
@@ -472,11 +489,13 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             inputs.append(FilesetSpec('umap_ref_preproc', nifti_gz_format))
             inputs.append(
                 FilesetSpec('umap_aligned_dicoms', directory_format))
+# 
+#             inputs=inputs,
+#             outputs=[FilesetSpec('motion_detection_output', directory_format)],
 
         pipeline = self.new_pipeline(
             name='gather_motion_detection_outputs',
-            inputs=inputs,
-            outputs=[FilesetSpec('motion_detection_output', directory_format)],
+
             desc=("Pipeline to gather together all the outputs from "
                   "the motion detection pipeline."),
             citations=[fsl_cite],

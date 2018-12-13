@@ -698,11 +698,12 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def segmentation_pipeline(self, img_type=2, **name_maps):
+#             inputs=[FilesetSpec('brain', nifti_gz_format)],
+#             outputs=[FilesetSpec('wm_seg', nifti_gz_format)],
+
         pipeline = self.new_pipeline(
             name='FAST_segmentation',
             name_maps=name_maps,
-            inputs=[FilesetSpec('brain', nifti_gz_format)],
-            outputs=[FilesetSpec('wm_seg', nifti_gz_format)],
             desc="White matter segmentation of the reference image",
             references=[fsl_cite])
 

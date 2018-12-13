@@ -25,21 +25,23 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False)]
 
     def cet_T2s(self, **options):
+#                     inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
+#                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
+#                     FilesetSpec('betted_T2s_last_echo', nifti_gz_format),
+#                     FilesetSpec(
+#                 self._lookup_nl_tfm_inv_name('SUIT'),
+#                 nifti_gz_format),
+#                 FilesetSpec(
+#                 self._lookup_l_tfm_to_name('SUIT'),
+#                 text_matrix_format),
+#                 FilesetSpec('T2s_to_T1_mat', text_matrix_format)],
+#             outputs=[FilesetSpec('cetted_T2s_mask', nifti_gz_format),
+#                      FilesetSpec('cetted_T2s', nifti_gz_format),
+#                      FilesetSpec('cetted_T2s_last_echo', nifti_gz_format)],
+
+        
         pipeline = self.new_pipeline(
             name='CET_T2s',
-            inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
-                    FilesetSpec('betted_T2s_mask', nifti_gz_format),
-                    FilesetSpec('betted_T2s_last_echo', nifti_gz_format),
-                    FilesetSpec(
-                self._lookup_nl_tfm_inv_name('SUIT'),
-                nifti_gz_format),
-                FilesetSpec(
-                self._lookup_l_tfm_to_name('SUIT'),
-                text_matrix_format),
-                FilesetSpec('T2s_to_T1_mat', text_matrix_format)],
-            outputs=[FilesetSpec('cetted_T2s_mask', nifti_gz_format),
-                     FilesetSpec('cetted_T2s', nifti_gz_format),
-                     FilesetSpec('cetted_T2s_last_echo', nifti_gz_format)],
             desc=("Construct cerebellum mask using SUIT template"),
             default_options={
                 'SUIT_mask': self._lookup_template_mask_path('SUIT')},
@@ -92,13 +94,15 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
 
     def bet_T2s(self, **options):
 
+#             inputs=[FilesetSpec('t2s', nifti_gz_format),
+#                     FilesetSpec('t2s_last_echo', nifti_gz_format)],
+#             outputs=[FilesetSpec('betted_T2s', nifti_gz_format),
+#                      FilesetSpec('betted_T2s_mask', nifti_gz_format),
+#                      FilesetSpec('betted_T2s_last_echo', nifti_gz_format)],
+
+
         pipeline = self.new_pipeline(
             name='BET_T2s',
-            inputs=[FilesetSpec('t2s', nifti_gz_format),
-                    FilesetSpec('t2s_last_echo', nifti_gz_format)],
-            outputs=[FilesetSpec('betted_T2s', nifti_gz_format),
-                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
-                     FilesetSpec('betted_T2s_last_echo', nifti_gz_format)],
             desc=("python implementation of BET"),
             default_options={},
             citations=[fsl_cite],

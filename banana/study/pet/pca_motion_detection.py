@@ -19,13 +19,15 @@ class PETPCAMotionDetectionStudy(PETStudy, metaclass=StudyMetaClass):
 
     def sinogram_unlisting_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('list_mode', list_mode_format),
+#                     FieldSpec('time_offset', int),
+#                     FieldSpec('temporal_length', float),
+#                     FieldSpec('num_frames', int)],
+#             outputs=[FilesetSpec('ssrb_sinograms', directory_format)],
+
+
         pipeline = self.new_pipeline(
             name='prepare_sinogram',
-            inputs=[FilesetSpec('list_mode', list_mode_format),
-                    FieldSpec('time_offset', int),
-                    FieldSpec('temporal_length', float),
-                    FieldSpec('num_frames', int)],
-            outputs=[FilesetSpec('ssrb_sinograms', directory_format)],
             desc=('Unlist pet listmode data into several sinograms and '
                          'perform ssrb compression to prepare data for motion '
                          'detection using PCA pipeline.'),

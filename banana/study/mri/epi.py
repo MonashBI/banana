@@ -112,10 +112,12 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def field_map_time_info_pipeline(self, **kwargs):
 
+#             inputs=[DatasetSpec('field_map_mag', dicom_format)],
+#             outputs=[FieldSpec('field_map_delta_te', float)],
+
+
         pipeline = self.create_pipeline(
             name='field_map_time_info_pipeline',
-            inputs=[DatasetSpec('field_map_mag', dicom_format)],
-            outputs=[FieldSpec('field_map_delta_te', float)],
             desc=("Pipeline to extract delta TE from field map "
                   "images, if provided"),
             version=1,

@@ -80,14 +80,16 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         Parameters
         ----------
         """
+        
+#             inputs=[FilesetSpec('ute_echo1', dicom_format),
+#                     FilesetSpec('ute_echo2', dicom_format)],
+#             outputs=[FilesetSpec('ute1_registered', nifti_format),
+#                      FilesetSpec('ute2_registered', nifti_gz_format),
+#                      FilesetSpec('template_to_ute_mat', text_matrix_format),
+#                      FilesetSpec('ute_to_template_mat', text_matrix_format)],
+        
         pipeline = self.new_pipeline(
             name='registration_pipeline',
-            inputs=[FilesetSpec('ute_echo1', dicom_format),
-                    FilesetSpec('ute_echo2', dicom_format)],
-            outputs=[FilesetSpec('ute1_registered', nifti_format),
-                     FilesetSpec('ute2_registered', nifti_gz_format),
-                     FilesetSpec('template_to_ute_mat', text_matrix_format),
-                     FilesetSpec('ute_to_template_mat', text_matrix_format)],
             desc="Register ute images to the template",
             citations=(fsl_cite),
             **kwargs)
@@ -158,11 +160,13 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     def segmentation_pipeline(self, **kwargs):  # @UnusedVariable @IgnorePep8
 
+
+#             inputs=[FilesetSpec('ute1_registered', nifti_format)],
+#             outputs=[FilesetSpec('air_mask', nifti_gz_format),
+#                      FilesetSpec('bones_mask', nifti_gz_format)],
+
         pipeline = self.new_pipeline(
             name='ute1_segmentation',
-            inputs=[FilesetSpec('ute1_registered', nifti_format)],
-            outputs=[FilesetSpec('air_mask', nifti_gz_format),
-                     FilesetSpec('bones_mask', nifti_gz_format)],
             desc="Segmentation of the first echo UTE image",
             citations=(spm_cite, matlab_cite),
             **kwargs)
@@ -237,14 +241,16 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     def umaps_calculation_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
+#                     FilesetSpec('ute2_registered', nifti_gz_format),
+#                     FilesetSpec('air_mask', nifti_gz_format),
+#                     FilesetSpec('bones_mask', nifti_gz_format)],
+#             outputs=[FilesetSpec('sute_cont_template', nifti_gz_format),
+#                      FilesetSpec('sute_fix_template', nifti_gz_format)],
+
+
         pipeline = self.new_pipeline(
             name='core_umaps_calculation',
-            inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
-                    FilesetSpec('ute2_registered', nifti_gz_format),
-                    FilesetSpec('air_mask', nifti_gz_format),
-                    FilesetSpec('bones_mask', nifti_gz_format)],
-            outputs=[FilesetSpec('sute_cont_template', nifti_gz_format),
-                     FilesetSpec('sute_fix_template', nifti_gz_format)],
             desc="Umaps calculation in the template space",
             citations=(matlab_cite),
             **kwargs)
@@ -274,16 +280,18 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
 
     def backwrap_to_ute_pipeline(self, **kwargs):
 
+#             inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
+#                     FilesetSpec('ute_echo1', dicom_format),
+#                     FilesetSpec('umap_ute', dicom_format),
+#                     FilesetSpec('template_to_ute_mat', text_matrix_format),
+#                     FilesetSpec('sute_cont_template', nifti_gz_format),
+#                     FilesetSpec('sute_fix_template', nifti_gz_format)],
+#             outputs=[FilesetSpec('sute_cont_ute', nifti_gz_format),
+#                      FilesetSpec('sute_fix_ute', nifti_gz_format)],
+
+
         pipeline = self.new_pipeline(
             name='backwrap_to_ute',
-            inputs=[FilesetSpec('ute1_registered', nifti_gz_format),
-                    FilesetSpec('ute_echo1', dicom_format),
-                    FilesetSpec('umap_ute', dicom_format),
-                    FilesetSpec('template_to_ute_mat', text_matrix_format),
-                    FilesetSpec('sute_cont_template', nifti_gz_format),
-                    FilesetSpec('sute_fix_template', nifti_gz_format)],
-            outputs=[FilesetSpec('sute_cont_ute', nifti_gz_format),
-                     FilesetSpec('sute_fix_ute', nifti_gz_format)],
             desc="Moving umaps back to the UTE space",
             citations=(matlab_cite),
             **kwargs)
