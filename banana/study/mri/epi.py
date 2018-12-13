@@ -75,8 +75,8 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 't1_head': ('coreg_ref_preproc', nifti_gz_format),
                 'wmseg': ('wmseg', nifti_gz_format)},
             outputs={
-                'out_file': ('coreg_brain', nifti_gz_format),
-                'epi2str_mat': ('coreg_matrix', text_matrix_format)},
+                'coreg_brain': ('out_file', nifti_gz_format),
+                'coreg_matrix': ('epi2str_mat', text_matrix_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline

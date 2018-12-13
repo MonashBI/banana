@@ -74,11 +74,11 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'join',
             JoinPath(),
-            connect={
+            inputs={
                 'dirname': (recon_all, 'subjects_dir'),
                 'filename': (recon_all, 'subject_id')},
             outputs={
-                'path': ('fs_recon_all', directory_format)})
+                'fs_recon_all': ('path', directory_format)})
 
         return pipeline
 
@@ -109,8 +109,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             inputs={
                 'in_file': (bias, 'output_image')},
             outputs={
-                'out_file': ('betted_T1', nifti_gz_format),
-                'mask_file': ('betted_T1_mask', nifti_gz_format)},
+                'betted_T1': ('out_file', nifti_gz_format),
+                'betted_T1_mask': ('mask_file', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
 
         return pipeline
@@ -155,8 +155,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 'in_file': ('betted_T1', nifti_gz_format),
                 'in_file2': (apply_trans, 'output_image')},
             outputs={
-                'out_file': ('cetted_T1', nifti_gz_format),
-                'output_image': ('cetted_T1_mask', nifti_gz_format)},
+                'cetted_T1': ('out_file', nifti_gz_format),
+                'cetted_T1_mask': ('output_image', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
 
         return pipeline

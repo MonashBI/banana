@@ -279,7 +279,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'channel_masks': (vsharp, 'new_mask'),
                     'whole_brain_mask': (dialate, 'out_file')},
                 outputs={
-                    'out_file': ('qsm', nifti_format)})
+                    'qsm': ('out_file', nifti_format)})
         return pipeline
 
     def swi_pipeline(self, **name_maps):
@@ -319,8 +319,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False]),
             inputs={
                 'input_image': ('mni_template_qsm_prior', nifti_gz_format),
-                'reference_image': ('qsm', nifti_gz_format)},
-            connect={
+                'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
             mem_gb=16, wall_time=30)
@@ -333,8 +332,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False]),
             inputs={
                 'input_image': ('mni_template_swi_prior', nifti_gz_format),
-                'reference_image': ('qsm', nifti_gz_format)},
-            connect={
+                'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=30)
 
@@ -346,8 +344,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False],),
             inputs={
                 'reference_image': ('qsm', nifti_gz_format),
-                'input_image': ('mni_template_atlas_prior', nifti_gz_format)},
-            connect={
+                'input_image': ('mni_template_atlas_prior', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
             mem_gb=16, wall_time=30)
@@ -360,8 +357,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False]),
             inputs={
                 'input_image': ('mni_template_vein_atlas', nifti_gz_format),
-                'reference_image': ('qsm', nifti_gz_format)},
-            connect={
+                'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
             mem_gb=16, wall_time=30)
@@ -373,14 +369,13 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             inputs={
                 'mask': ('brain_mask', nifti_format),
                 'qsm': ('qsm', nifti_format),
-                'swi': ('swi', nifti_format)},
-            connect={
+                'swi': ('swi', nifti_format),
                 'q_prior': (apply_trans_q, 'output_image'),
                 's_prior': (apply_trans_s, 'output_image'),
                 'a_prior': (apply_trans_a, 'output_image'),
                 'vein_atlas': (apply_trans_v, 'output_image')},
             outputs={
-                'out_file': ('composite_vein_image', nifti_format)},
+                'composite_vein_image': ('out_file', nifti_format)},
             requirements=[matlab_req.v('R2015a')],
             wall_time=300, mem_gb=24)
 
@@ -402,7 +397,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'in_file': ('composite_vein_image', nifti_format),
                 'mask': ('brain_mask', nifti_format)},
             outputs={
-                'out_file': ('vein_mask', nifti_format)},
+                'vein_mask': ('out_file', nifti_format)},
             requirements=[matlab_req.v('R2015a')],
             wall_time=30, mem_gb=16)
 

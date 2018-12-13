@@ -154,8 +154,8 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'in_file': ('magnitude', dicom_format)},
                 outputs={
-                    'bvecs_file': ('grad_dirs', fsl_bvecs_format),
-                    'bvals_file': ('bvalues', fsl_bvals_format)},
+                    'grad_dirs': ('bvecs_file', fsl_bvecs_format),
+                    'bvalues': ('bvals_file', fsl_bvals_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
             grad_fsl_kwargs = {
                 'connect': {'in1': (extract_grad, 'bvecs_file'),
@@ -201,7 +201,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'operands': (subtract_operands, 'out')},
                 outputs={
-                    'out_file': ('noise_residual', mrtrix_format)},
+                    'noise_residual': ('out_file', mrtrix_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
         # Preproc kwargs
@@ -268,10 +268,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 # eddy_parameters = '--data_is_shelled '
                 temp_dir='dwipreproc_tempdir',
                 **preproc_kwargs),
-            connect={
+            inputs={
                 'grad_fsl': (grad_fsl, 'out')},
             outputs={
-                'eddy_parameters': ('eddy_par', eddy_par_format)},
+                'eddy_par': ('eddy_parameters', eddy_par_format)},
             requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('5.0.10')],
             wall_time=60,
             **preproc_conns)
@@ -287,10 +287,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'fslreorient2std',
             fsl.utils.Reorient2Std(),
-            connect={
+            inputs={
                 'in_file': (preproc, 'out_file')},
             outputs={
-                'out_file': ('preproc', nifti_gz_format)},
+                'preproc': ('out_file', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
@@ -330,7 +330,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     'in_file': ('preproc', nifti_gz_format),
                     'grad_fsl': (grad_fsl, 'out')},
                 outputs={
-                    'out_file': ('brain_mask', nifti_gz_format)},
+                    'brain_mask': ('out_file', nifti_gz_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
         else:
