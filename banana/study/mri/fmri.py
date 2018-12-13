@@ -91,23 +91,23 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         afni_mc = pipeline.add(
             'AFNI_MC',
-            Volreg(),
+            Volreg(
+                zpad=1,
+                out_file='rsfmri_mc.nii.gz',
+                oned_file='prefiltered_func_data_mcf.par'),
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
-        afni_mc.inputs.zpad = 1
-        afni_mc.inputs.out_file = 'rsfmri_mc.nii.gz'
-        afni_mc.inputs.oned_file = 'prefiltered_func_data_mcf.par'
         pipeline.connect_input('preproc', afni_mc, 'in_file')
 
         filt = pipeline.add(
             'Tproject',
-            Tproject(),
+            Tproject(
+                stopband=(0, 0.01),
+                polort=3,
+                blur=3,
+                out_file='filtered_func_data.nii.gz'),
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
-        filt.inputs.stopband = (0, 0.01)
-        filt.inputs.polort = 3
-        filt.inputs.blur = 3
-        filt.inputs.out_file = 'filtered_func_data.nii.gz'
         pipeline.connect_input('tr', filt, 'delta_t')
         pipeline.connect(afni_mc, 'out_file', filt, 'in_file')
         pipeline.connect_input('brain_mask', filt, 'mask')
@@ -149,16 +149,16 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         mel = pipeline.add(
             'melodic_L1',
-            MELODIC(),
+            MELODIC(
+                no_bet=True,
+                bg_threshold=self.parameter('brain_thresh_percent'),
+                report=True,
+                out_stats=True,
+                mm_thresh=0.5,
+                out_dir='melodic_ica'),
             wall_time=15,
             requirements=[fsl_req.v('5.0.10')])
-        mel.inputs.no_bet = True
         pipeline.connect_input('brain_mask', mel, 'mask')
-        mel.inputs.bg_threshold = self.parameter('brain_thresh_percent')
-        mel.inputs.report = True
-        mel.inputs.out_stats = True
-        mel.inputs.mm_thresh = 0.5
-        mel.inputs.out_dir = 'melodic_ica'
         pipeline.connect_input('tr', mel, 'tr_sec')
         pipeline.connect_input('filtered_data', mel, 'in_files')
 
@@ -191,19 +191,19 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         struct_ants2fsl = pipeline.add(
             'struct_ants2fsl',
-            ANTs2FSLMatrixConversion(),
+            ANTs2FSLMatrixConversion(
+                ras2fsl=True,
+                reference_file=self.parameter('MNI_template')),
             requirements=[c3d_req.v('1.1.0')])
-        struct_ants2fsl.inputs.ras2fsl = True
-        struct_ants2fsl.inputs.reference_file = self.parameter('MNI_template')
         pipeline.connect_input('coreg_to_atlas_mat', struct_ants2fsl,
                                'itk_file')
         pipeline.connect_input('coreg_ref_brain', struct_ants2fsl,
                                'source_file')
         epi_ants2fsl = pipeline.add(
             'epi_ants2fsl',
-            ANTs2FSLMatrixConversion(),
+            ANTs2FSLMatrixConversion(
+                ras2fsl=True),
             requirements=[c3d_req.v('1.1.0')])
-        epi_ants2fsl.inputs.ras2fsl = True
         pipeline.connect_input('brain', epi_ants2fsl, 'source_file')
         pipeline.connect_input('coreg_matrix', epi_ants2fsl, 'itk_file')
         pipeline.connect_input('coreg_ref_brain', epi_ants2fsl,
@@ -211,18 +211,18 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         MNI2t1 = pipeline.add(
             'MNI2t1',
-            ConvertXFM(),
+            ConvertXFM(
+                invert_xfm=True),
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
-        MNI2t1.inputs.invert_xfm = True
         pipeline.connect(struct_ants2fsl, 'fsl_matrix', MNI2t1, 'in_file')
 
         struct2epi = pipeline.add(
             'struct2epi',
-            ConvertXFM(),
+            ConvertXFM(
+                invert_xfm=True),
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
-        struct2epi.inputs.invert_xfm = True
         pipeline.connect(epi_ants2fsl, 'fsl_matrix', struct2epi, 'in_file')
 
         meanfunc = pipeline.add(
@@ -272,15 +272,14 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         fix = pipeline.add(
             "fix",
-            FSLFIX(),
+            FSLFIX(
+                component_threshold=self.parameter('component_threshold'),
+                motion_reg=self.parameter('motion_reg'),
+                classification=True),
             wall_time=30,
             requirements=[fsl_req.v('5.0.9'), fix_req.v('1.0')])
         pipeline.connect_input("fix_dir", fix, "feat_dir")
         pipeline.connect_input("train_data", fix, "train_data")
-        fix.inputs.component_threshold = self.parameter(
-            'component_threshold')
-        fix.inputs.motion_reg = self.parameter('motion_reg')
-        fix.inputs.classification = True
 
         #output
         pipeline.connect_output('labelled_components', fix, 'label_file')
@@ -303,14 +302,14 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         signal_reg = pipeline.add(
             "signal_reg",
-            SignalRegression(),
+            SignalRegression(
+                motion_regression=self.parameter('motion_reg'),
+                highpass=self.parameter('highpass')),
             wall_time=30,
             requirements=[fsl_req.v('5.0.9'), fix_req.v('1.0')])
         pipeline.connect_input("fix_dir", signal_reg, "fix_dir")
         pipeline.connect_input("labelled_components", signal_reg,
                                "labelled_components")
-        signal_reg.inputs.motion_regression = self.parameter('motion_reg')
-        signal_reg.inputs.highpass = self.parameter('highpass')
 
         #output
         pipeline.connect_output('cleaned_file', signal_reg, 'output')
@@ -343,14 +342,13 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         apply_trans = pipeline.add(
             'ApplyTransform',
-            ApplyTransforms(),
+            ApplyTransforms(
+                reference_image=self.parameter('MNI_template'),
+                interpolation='Linear',
+                input_image_type=3),
             wall_time=7,
             mem_gb=24,
             requirements=[ants_req.v('2')])
-        ref_brain = self.parameter('MNI_template')
-        apply_trans.inputs.reference_image = ref_brain
-        apply_trans.inputs.interpolation = 'Linear'
-        apply_trans.inputs.input_image_type = 3
         pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
         pipeline.connect_input('cleaned_file', apply_trans, 'input_image')
 
@@ -373,12 +371,12 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         smooth = pipeline.add(
             '3dBlurToFWHM',
-            BlurToFWHM(),
+            BlurToFWHM(
+                fwhm=5,
+                out_file='smoothed_ts.nii.gz',
+                mask=self.parameter('MNI_template_mask')),
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
-        smooth.inputs.fwhm = 5
-        smooth.inputs.out_file = 'smoothed_ts.nii.gz'
-        smooth.inputs.mask = self.parameter('MNI_template_mask')
         pipeline.connect_input('normalized_ts', smooth, 'in_file')
 
         #output
@@ -443,17 +441,19 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 ['list_dir', 'list_label_files']),
             joinsource=self.SUBJECT_ID,
             joinfield=['list_dir', 'list_label_files'], name='merge_visits')
+
         merge_subjects = pipeline.add(
-            NiPypeMerge(2),
+            NiPypeMerge(
+                2,
+                ravel_inputs=True),
             joinsource=self.SUBJECT_ID,
             joinfield=['in1', 'in2'],
             name='merge_subjects')
-        merge_subjects.inputs.ravel_inputs = True
 
         prepare_training = pipeline.add(
             'prepare_training',
-            PrepareFIXTraining())
-        prepare_training.inputs.epi_number = num_fix_dirs
+            PrepareFIXTraining(
+                epi_number=num_fix_dirs))
         pipeline.connect(merge_fix_dirs, 'out', merge_visits, 'list_dir')
         pipeline.connect(merge_visits, 'list_dir', merge_subjects, 'in1')
         pipeline.connect(merge_label_files, 'out', merge_visits,
@@ -465,11 +465,11 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         fix_training = pipeline.add(
             'fix_training',
-            FSLFixTraining(),
+            FSLFixTraining(
+                outname='FIX_training_set',
+                training=True),
             wall_time=240,
             requirements=[fix_req.v('1.0')])
-        fix_training.inputs.outname = 'FIX_training_set'
-        fix_training.inputs.training = True
         pipeline.connect(prepare_training, 'prepared_dirs', fix_training,
                          'list_dir')
 
@@ -524,22 +524,22 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             **kwargs)
         gica = pipeline.add(
-            MELODIC(),
+            MELODIC(
+                no_bet=True,
+                bg_threshold=self.parameter('brain_thresh_percent'),
+                bg_image=self.parameter('MNI_template'),
+                dim=self.parameter('group_ica_components'),
+                report=True,
+                out_stats=True,
+                mm_thresh=0.5,
+                sep_vn=True,
+                mask=self.parameter('MNI_template_mask'),
+                out_dir='group_melodic.ica'),
             joinsource=self.SUBJECT_ID,
             joinfield=['in_files'],
             name='gica',
             requirements=[fsl_req.v('5.0.10')],
             wall_time=7200)
-        gica.inputs.no_bet = True
-        gica.inputs.bg_threshold = self.parameter('brain_thresh_percent')
-        gica.inputs.bg_image = self.parameter('MNI_template')
-        gica.inputs.dim = self.parameter('group_ica_components')
-        gica.inputs.report = True
-        gica.inputs.out_stats = True
-        gica.inputs.mm_thresh = 0.5
-        gica.inputs.sep_vn = True
-        gica.inputs.mask = self.parameter('MNI_template_mask')
-        gica.inputs.out_dir = 'group_melodic.ica'
         pipeline.connect_input('smoothed_ts', gica, 'in_files')
         pipeline.connect_input('tr', gica, 'tr_sec')
 
