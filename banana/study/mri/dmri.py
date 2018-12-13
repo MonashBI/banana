@@ -107,15 +107,20 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                            BidsAssociatedSelector(
                                spec_name='bvalues',
                                primary=primary_bids_selector,
-                               association='bval', format=fsl_bvals_format),
+                               association='grads',
+                               type='bval',
+                               format=fsl_bvals_format),
                            BidsAssociatedSelector(
                                spec_name='grad_dirs',
                                primary=primary_bids_selector,
-                               association='bvec', format=fsl_bvecs_format),
+                               association='grads',
+                               type='bvec',
+                               format=fsl_bvecs_format),
                            BidsAssociatedSelector(
                                spec_name='reverse_phase',
                                primary=primary_bids_selector,
-                               association='epi', format=nifti_gz_format,
+                               association='epi',
+                               format=nifti_gz_format,
                                drop_if_missing=True)]
 
     @property

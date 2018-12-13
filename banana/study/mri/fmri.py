@@ -3,7 +3,7 @@ from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
                                        SignalRegression, PrepareFIXTraining)
-from arcana.data import FilesetSpec
+from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.study.base import StudyMetaClass
 from banana.requirement import (
     afni_req, fix_req, fsl_req, ants_req, c3d_req)
@@ -43,8 +43,8 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('train_data', rfile_format, optional=True,
-                    frequency='per_study'),
+        AcquiredFilesetSpec('train_data', rfile_format, optional=True,
+                            frequency='per_study'),
         FilesetSpec('hand_label_noise', text_format,
                     'fix_preparation_pipeline'),
         FilesetSpec('labelled_components', text_format,
@@ -80,12 +80,15 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssociatedSelector(
-                               spec_name='field_map_mag',
-                               association='magnitude',
+                               spec_name='field_map_phase',
+                               primary=primary_bids_selector,
+                               association='phasediff',
                                format=nifti_gz_format),
                            BidsAssociatedSelector(
-                               spec_name='field_map_phase',
+                               spec_name='field_map_mag',
+                               primary=primary_bids_selector,
                                association='phasediff',
+                               type='magnitude',
                                format=nifti_gz_format)]
 
     def rsfMRI_filtering_pipeline(self, **kwargs):

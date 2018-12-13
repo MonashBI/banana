@@ -309,16 +309,15 @@ class BidsAssociatedSelector(FilesetSelector):
         The name of the association between the fileset to match and the
         primary fileset, can be one of 'bvec', 'bval', 'phase1', 'phase2',
         'phasediff', 'epi' or 'fieldmap'
-    fieldmap_order : int
+    type : int
         If there are more than one field-maps associated with the primary
         fileset, which one to return
     """
 
-    VALID_ASSOCIATIONS = ('bvec', 'bval', 'phase1', 'phase2', 'phasediff',
-                          'epi', 'fieldmap')
+    VALID_ASSOCIATIONS = ('grads', 'phase', 'phasediff', 'epi', 'fieldmap')
 
-    def __init__(self, spec_name, primary, association, format=None,   # @ReservedAssignment @IgnorePep8
-                 fieldmap_order=0, **kwargs):
+    def __init__(self, spec_name, primary, association, type=None, format=None,   # @ReservedAssignment @IgnorePep8
+                 **kwargs):
         FilesetSelector.__init__(self, spec_name, format,
                                  frequency='per_session', **kwargs)
         self._primary = primary
@@ -328,37 +327,37 @@ class BidsAssociatedSelector(FilesetSelector):
                 "can be one of '{}'".format(
                     association, "', '".join(self.VALID_ASSOCIATIONS)))
         self._association = association
-        self._fieldmap_order = fieldmap_order
+        self._type = type
 
     def __eq__(self, other):
         return (FilesetSelector.__eq__(self, other) and
                 self.primary == other.primary and
                 self.format == other.format and
                 self.association == other.association and
-                self.fieldmap_type == other.fieldmap_type)
+                self._type == other._type)
 
     def __hash__(self):
         return (FilesetSelector.__hash__(self) ^
                 hash(self.primary) ^
                 hash(self.format) ^
                 hash(self.association) ^
-                hash(self.fieldmap_order))
+                hash(self._type))
 
     def initkwargs(self):
         dct = FilesetSelector.initkwargs(self)
         dct['primary'] = self.primary
         dct['format'] = self.primary
         dct['association'] = self.association
-        dct['fieldmap_order'] = self.fieldmap_order
+        dct['type'] = self._type
         return dct
 
     def __repr__(self):
         return ("{}(spec_name={}, primary={}, format={}, association={}, "
-                "fieldmap_order={})".format(
+                "type={})".format(
                     type(self).__name__,
                     self.spec_name, self.primary,
                     self._format.name if self._format is not None else None,
-                    self.association, self.fieldmap_order))
+                    self.association, self.type))
 
     def bind(self, study, spec_name=None, **kwargs):
         # We need to access a bound primary selector when matching the
@@ -379,8 +378,8 @@ class BidsAssociatedSelector(FilesetSelector):
         return self._association
 
     @property
-    def fieldmap_order(self):
-        return self._fieldmap_order
+    def type(self):
+        return self._type if self._type is not None else self.association
 
     @property
     def task(self):
@@ -393,27 +392,32 @@ class BidsAssociatedSelector(FilesetSelector):
     def match_node(self, node):
         primary_match = self.primary.match_node(node)
         layout = self.primary.repository.layout
-        if self.association == 'bvec':
-            path = layout.get_bvec(primary_match.path)
-        elif self.association == 'bval':
-            path = layout.get_bval(primary_match.path)
+        if self.association == 'grads':
+            if self.type == 'bvec':
+                path = layout.get_bvec(primary_match.path)
+            elif self.type == 'bval':
+                path = layout.get_bval(primary_match.path)
+            else:
+                raise ArcanaUsageError(
+                    "'{}' is not a valid type for '{}' associations"
+                    .format(self.type, self.association))
         else:
             fieldmaps = layout.get_fieldmap(primary_match.path,
                                             return_list=True)
-            if not len(fieldmaps):
-                raise ArcanaSelectorMissingMatchError(
-                    "No matches for field-map '{}' associated with {}"
-                    .format(self.association, primary_match))
             try:
-                fieldmap = fieldmaps[self.fieldmap_order]
-            except IndexError:
+                fieldmap = next(f for f in fieldmaps
+                                     if f['type'] == self.association)
+            except StopIteration:
                 raise ArcanaSelectorMissingMatchError(
-                    "Index of field-map ({}) is outside range of available "
-                    "field-maps ({}) for {}"
-                    .format(self.fieldmap_order,
-                            ', '.join(str(f) for f in fieldmaps),
-                            primary_match))
-            path = fieldmap[self.association]
+                    "No \"{}\" field-maps associated with {} (found {})"
+                    .format(self.association, primary_match,
+                            ', '.join(f['type'] for f in fieldmaps)))
+            try:
+                path = fieldmap[self.type]
+            except KeyError:
+                raise ArcanaUsageError(
+                    "'{}' is not a valid type for '{}' associations"
+                    .format(self.type, self.association))
         return Fileset.from_path(path, format=self._format,
                                  repository=self.primary.repository,
                                  subject_id=node.subject_id,
