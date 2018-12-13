@@ -880,7 +880,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     if epis:
         epi_refspec = ref_spec.copy()
         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
-                            'ref_preproc': 'coreg_ref_preproc'})
+                            'ref_preproc': 'coreg_ref'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiStudy,
                                         epi_refspec)
                            for i in range(len(epis)))
@@ -895,7 +895,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         dmris_opposite = [x for x in dmris if x[-1] == '-1']
         dwi_refspec = ref_spec.copy()
         dwi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
-                           'ref_preproc': 'coreg_ref_preproc'})
+                           'ref_preproc': 'coreg_ref'})
         if dmris_main:
             switch_specs.extend(
                 SwitchSpec('dwi_{}_brain_extract_method'.format(i), 'fsl',
@@ -1044,7 +1044,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if epis:
         epi_refspec = ref_spec.copy()
         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
-                            'ref_preproc': 'coreg_ref_preproc'})
+                            'ref_preproc': 'coreg_ref'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiStudy,
                                         epi_refspec)
                            for i in range(len(epis)))
@@ -1059,7 +1059,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         dmris_opposite = [x for x in dmris if x[-1] == '-1']
         b0_refspec = ref_spec.copy()
         b0_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
-                           'ref_preproc': 'coreg_ref_preproc'})
+                           'ref_preproc': 'coreg_ref'})
         if dmris_main and not dmris_opposite:
             logger.warning(
                 'No opposite phase encoding direction b0 provided. DWI '

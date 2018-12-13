@@ -24,8 +24,6 @@ from banana.file_format import STD_IMAGE_FORMATS
 class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('coreg_ref_preproc', STD_IMAGE_FORMATS,
-                            optional=True),
         AcquiredFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
                             optional=True),
         AcquiredFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
@@ -71,7 +69,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
             inputs={
                 'epi': ('brain', nifti_gz_format),
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
-                't1_head': ('coreg_ref_preproc', nifti_gz_format),
+                't1_head': ('coreg_ref', nifti_gz_format),
                 'wmseg': ('wmseg', nifti_gz_format)},
             outputs={
                 'coreg_brain': ('out_file', nifti_gz_format),

@@ -100,19 +100,21 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    primary_selector = BidsSelector(
+    primary_bids_selector = BidsSelector(
         spec_name='magnitude', type='dwi', format=nifti_gz_format)
 
-    default_bids_inputs = [primary_selector,
+    default_bids_inputs = [primary_bids_selector,
                            BidsAssociatedSelector(
-                               spec_name='bvalues', primary=primary_selector,
+                               spec_name='bvalues',
+                               primary=primary_bids_selector,
                                association='bval', format=fsl_bvals_format),
                            BidsAssociatedSelector(
-                               spec_name='grad_dirs', primary=primary_selector,
+                               spec_name='grad_dirs',
+                               primary=primary_bids_selector,
                                association='bvec', format=fsl_bvecs_format),
                            BidsAssociatedSelector(
                                spec_name='reverse_phase',
-                               primary=primary_selector,
+                               primary=primary_bids_selector,
                                association='epi', format=nifti_gz_format,
                                drop_if_missing=True)]
 

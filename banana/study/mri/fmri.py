@@ -27,6 +27,7 @@ from banana.interfaces.custom.fmri import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
+from banana.bids import BidsSelector, BidsAssociatedSelector
 
 logger = logging.getLogger('banana')
 
@@ -73,6 +74,19 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         SwitchSpec('linear_reg_method', 'ants',
                    ('flirt', 'spm', 'ants', 'epireg')),
         ParameterSpec('group_ica_components', 15)]
+
+    primary_bids_selector = BidsSelector(
+        spec_name='magnitude', type='fmri', format=nifti_gz_format)
+
+    default_bids_inputs = [primary_bids_selector,
+                           BidsAssociatedSelector(
+                               spec_name='field_map_mag',
+                               association='magnitude',
+                               format=nifti_gz_format),
+                           BidsAssociatedSelector(
+                               spec_name='field_map_phase',
+                               association='phasediff',
+                               format=nifti_gz_format)]
 
     def rsfMRI_filtering_pipeline(self, **kwargs):
 
@@ -530,12 +544,12 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
                                   is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
-                        't1_preproc': 'coreg_ref_preproc',
+                        't1_preproc': 'coreg_ref',
                         'train_data': 'train_data'})
     study_specs.append(SubStudySpec('epi_0', FmriStudy, epi_refspec))
     if epi_number > 1:
         epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
-                            't1_preproc': 'coreg_ref_preproc',
+                            't1_preproc': 'coreg_ref',
                             'train_data': 'train_data',
                             'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
                             'epi_0_coreg_to_atlas_mat': 'coreg_to_atlas_mat'})
