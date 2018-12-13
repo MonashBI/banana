@@ -236,7 +236,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             copy_to_dir = pipeline.add(
                 'copy_to_dir',
                 CopyToDir(),
-                connect={
+                inputs={
                     'in_files': copy_to_dir_in_files,
                     'file_names': (list_channels, 'files')})
             to_polar_in = {'connect': {'in_dir': (copy_to_dir, 'out_dir')}}
@@ -561,8 +561,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 FSLSlices(outname='optiBET_report'),
                 wall_time=5,
                 inputs={
-                    'im1': ('preproc', nifti_gz_format)},
-                connect={
+                    'im1': ('preproc', nifti_gz_format),
                     'im2': (maths2, 'out_file')},
                 outputs={
                     'report': ('optiBET_report', gif_format)},

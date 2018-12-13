@@ -106,7 +106,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'bet',
             fsl.BET(frac=0.15, reduce_bias=True),
-            connections={
+            inputs={
                 'in_file': (bias, 'output_image')},
             outputs={
                 'out_file': ('betted_T1', nifti_gz_format),
@@ -142,8 +142,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, False]),
             inputs={
                 'reference_image': ('betted_T1', nifti_gz_format),
-                'input_image': ('suit_mask', nifti_gz_format)},
-            connections={
+                'input_image': ('suit_mask', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
 
@@ -153,8 +152,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 suffix='_optiBET_cerebellum',
                 op_string='-mas'),
             inputs={
-                'in_file': ('betted_T1', nifti_gz_format)},
-            connections={
+                'in_file': ('betted_T1', nifti_gz_format),
                 'in_file2': (apply_trans, 'output_image')},
             outputs={
                 'out_file': ('cetted_T1', nifti_gz_format),

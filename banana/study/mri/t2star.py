@@ -158,8 +158,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 UnwrapPhase(
                     padsize=self.parameter('qsm_padding')),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'in_file': (channel_combine, 'phase')},
                 requirements=[sti_req.v(2.2)])
 
@@ -169,8 +168,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 VSharp(
                     mask_manip="imerode({}>0, ball(5))"),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'in_file': (unwrap, 'out_file'),
                     'mask': (erosion, 'out_file')},
                 requirements=[sti_req.v(2.2)])
@@ -185,8 +183,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float),
                     'te': ('echo_times', float),
                     'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float)},
-                connect={
+                    'H': ('main_field_orient', float),
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask')},
                 outputs={
@@ -199,7 +196,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'dialate',
                 DialateMask(
                     dialation=self.parameter('qsm_mask_dialation')),
-                connect={
+                inputs={
                     'in_file': (erosion, 'out_file')})
 
             # List files for the phases of separate channel
@@ -225,7 +222,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'mask_coils',
                 MaskCoils(
                     dialation=self.parameter('qsm_mask_dialation')),
-                connect={
+                inputs={
                     'masks': (list_mags, 'files'),
                     'whole_brain_mask': (dialate, 'out_file')})
 
@@ -235,8 +232,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 BatchUnwrapPhase(
                     padsize=self.parameter('qsm_padding')),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'in_file': (list_phases, 'files')},
                 requirements=[sti_req.v(2.2)])
 
@@ -246,8 +242,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 BatchVSharp(
                     mask_manip='{}>0'),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'mask': (mask_coils, 'out_files'),
                     'in_file': (unwrap, 'out_file')},
                 requirements=[sti_req.v(2.2)])
@@ -268,8 +263,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
                     'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float)},
-                connect={
+                    'H': ('main_field_orient', float),
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
@@ -280,7 +274,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             pipeline.add(
                 'combine_qsm',
                 MedianInMasks(),
-                connect={
+                inputs={
                     'channels': (coil_qsm, 'out_file'),
                     'channel_masks': (vsharp, 'new_mask'),
                     'whole_brain_mask': (dialate, 'out_file')},

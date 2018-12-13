@@ -191,15 +191,14 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 'subtract_operands',
                 Merge(2),
                 inputs={
-                    'in1': ('magnitude', nifti_gz_format)},
-                connect={
+                    'in1': ('magnitude', nifti_gz_format),
                     'in2': (denoise, 'noise')})
 
             pipeline.add(
                 'subtract',
                 MRCalc(
                     operation='subtract'),
-                connect={
+                inputs={
                     'operands': (subtract_operands, 'out')},
                 outputs={
                     'out_file': ('noise_residual', mrtrix_format)},
@@ -225,7 +224,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 "mrconvert",
                 MRConvert(
                     coord=(3, 0)),
-                connect={
+                inputs={
                     'in_file': (dwiextract, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -236,8 +235,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'second_scan': ((
                         'dwi_reference' if self.provided('dwi_reference')
-                        else 'reverse_phase'), mrtrix_format)},
-                connect={
+                        else 'reverse_phase'), mrtrix_format),
                     'first_scan': (mrconvert, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -329,8 +327,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 BrainMask(
                     out_file='brain_mask.nii.gz'),
                 inputs={
-                    'in_file': ('preproc', nifti_gz_format)},
-                connect={
+                    'in_file': ('preproc', nifti_gz_format),
                     'grad_fsl': (grad_fsl, 'out')},
                 outputs={
                     'out_file': ('brain_mask', nifti_gz_format)},
