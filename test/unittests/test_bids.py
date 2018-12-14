@@ -54,5 +54,5 @@ class TestBids(TestCase):
                 self.work_dir,
                 prov_ignore=DEFAULT_PROV_IGNORE + [
                     'workflow/nodes/.*/requirements/.*/version']),
-            parameters={'preproc_pe_dir': 'RL'})
-        study.data('tensor')
+            bids_task='covertverbgeneration')
+        study.data('melodic_ica')

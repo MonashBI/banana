@@ -76,28 +76,30 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         ParameterSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsSelector(
-        spec_name='magnitude', type='fmri', format=nifti_gz_format)
+        spec_name='magnitude', type='bold', format=nifti_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssociatedSelector(
                                spec_name='field_map_phase',
                                primary=primary_bids_selector,
                                association='phasediff',
-                               format=nifti_gz_format),
+                               format=nifti_gz_format,
+                               drop_if_missing=True),
                            BidsAssociatedSelector(
                                spec_name='field_map_mag',
                                primary=primary_bids_selector,
                                association='phasediff',
                                type='magnitude',
-                               format=nifti_gz_format)]
+                               format=nifti_gz_format,
+                               drop_if_missing=True)]
 
-    def rsfMRI_filtering_pipeline(self, **kwargs):
+    def rsfMRI_filtering_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='rsfMRI_filtering',
             desc=("Spatial and temporal rsfMRI filtering"),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         afni_mc = pipeline.add(
             'AFNI_MC',
@@ -146,13 +148,13 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def single_subject_melodic_pipeline(self, **kwargs):
+    def single_subject_melodic_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='MelodicL1',
             desc=("Single subject ICA analysis using FSL MELODIC."),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         pipeline.add(
             'melodic_L1',
@@ -174,14 +176,14 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def fix_preparation_pipeline(self, **kwargs):
+    def fix_preparation_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='prepare_fix',
             desc=("Pipeline to create the right folder structure before "
                   "running FIX"),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         struct_ants2fsl = pipeline.add(
             'struct_ants2fsl',
@@ -249,15 +251,15 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def fix_classification_pipeline(self, **kwargs):
+    def fix_classification_pipeline(self, **name_maps):
 
         pipeline = self.create_pipeline(
             name='fix_classification',
             desc=("Automatic classification of noisy components from the "
                   "rsfMRI data using fsl FIX."),
             version=1,
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         pipeline.add(
             "fix",
@@ -275,14 +277,14 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def fix_regression_pipeline(self, **kwargs):
+    def fix_regression_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='signal_regression',
             desc=("Regression of the noisy components from the rsfMRI data "
                   "using a python implementation equivalent to that in FIX."),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         pipeline.add(
             "signal_reg",
@@ -299,14 +301,14 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def timeseries_normalization_to_atlas_pipeline(self, **kwargs):
+    def timeseries_normalization_to_atlas_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='timeseries_normalization_to_atlas_pipeline',
             desc=("Apply ANTs transformation to the fmri filtered file to "
                   "normalize it to MNI 2mm."),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         merge_trans = pipeline.add(
             'merge_transforms',
@@ -334,13 +336,13 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def smoothing_pipeline(self, **kwargs):
+    def smoothing_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='smoothing_pipeline',
             desc=("Spatial smoothing of the normalized fmri file"),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         pipeline.add(
             '3dBlurToFWHM',
@@ -367,7 +369,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 #                     'gather_fmri_result_pipeline'),
         FilesetSpec('group_melodic', directory_format, 'group_melodic_pipeline')]
 
-    def fix_training_pipeline(self, **kwargs):
+    def fix_training_pipeline(self, **name_maps):
 
         inputs = []
         sub_study_names = []
@@ -391,8 +393,8 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to create the training set for FIX given a group "
                   "of subjects with the hand_label_noise.txt file within "
                   "their fix_dir."),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
 
         num_fix_dirs = len(sub_study_names)
         merge_fix_dirs = pipeline.add(
@@ -450,7 +452,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         return pipeline
 
-#     def gather_fmri_result_pipeline(self, **kwargs):
+#     def gather_fmri_result_pipeline(self, **name_maps):
 #
 #         inputs = []
 #         sub_study_names = []
@@ -468,7 +470,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 #             outputs=[FilesetSpec('fmri_pre-processeing_results', directory_format)],
 #             desc=("Pipeline to gather together all the pre-processed fMRI images"),
 #             version=1,
-#             citations=[fsl_cite],
+#             references=[fsl_cite],
 #             **kwargs)
 # 
 #         merge_inputs = pipeline.create_node(NiPypeMerge(len(inputs)),
@@ -484,13 +486,13 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 #         pipeline.connect_output('fmri_pre-processeing_results', copy2dir, 'out_dir')
 #         return pipeline
 
-    def group_melodic_pipeline(self, **kwargs):
+    def group_melodic_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='group_melodic',
             desc=("Group ICA"),
-            citations=[fsl_cite],
-            **kwargs)
+            references=[fsl_cite],
+            name_maps=name_maps)
         pipeline.add(
             MELODIC(
                 no_bet=True,

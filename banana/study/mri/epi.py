@@ -1,22 +1,23 @@
 from .base import MriStudy
 from nipype.interfaces.fsl import TOPUP, ApplyTOPUP
-from banana.interfaces.custom.motion_correction import (
-    PrepareDWI, GenTopupConfigFiles)
-from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
-from banana.file_format import (
-    nifti_gz_format, text_matrix_format, directory_format,
-    par_format, motion_mats_format)
-from banana.citation import fsl_cite
 from nipype.interfaces import fsl
-from banana.requirement import fsl_req
-from arcana.study.base import StudyMetaClass
-from banana.interfaces.custom.motion_correction import (
-    MergeListMotionMat, MotionMatCalculation)
-from arcana.study import ParameterSpec
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
+from arcana.study import ParameterSpec, SwitchSpec
+from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
+from arcana.study.base import StudyMetaClass
+from banana.citation import fsl_cite
+from banana.requirement import fsl_req
+from banana.interfaces.custom.motion_correction import (
+    PrepareDWI, GenTopupConfigFiles)
+from banana.file_format import (
+    nifti_gz_format, text_matrix_format, directory_format,
+    par_format, motion_mats_format, dicom_format)
+from banana.interfaces.custom.fmri import FieldMapTimeInfo
+from banana.interfaces.custom.motion_correction import (
+    MergeListMotionMat, MotionMatCalculation)
 
 from banana.file_format import STD_IMAGE_FORMATS
 
@@ -41,7 +42,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                   'field_map_time_info_pipeline')]
 
     add_param_specs = [
-        ParameterSpec('bet_robust', True),
+        SwitchSpec('bet_robust', True),
         ParameterSpec('bet_f_threshold', 0.2),
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('fugue_echo_spacing', 0.000275),
@@ -80,55 +81,53 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def intrascan_alignment_pipeline(self, **kwargs):
 
-         # inputs=[FilesetSpec('preproc', nifti_gz_format)],
-         #   outputs=[FilesetSpec('moco', nifti_gz_format),
-         #            FilesetSpec('align_mats', directory_format),
-         #            FilesetSpec('moco_par', par_format)],
-
         pipeline = self.new_pipeline(
             name='MCFLIRT_pipeline',
             desc=("Intra-epi volumes alignment."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
         mcflirt = pipeline.add(
             'mcflirt',
-            fsl.MCFLIRT(),
+            fsl.MCFLIRT(
+                ref_vol=0,
+                save_mats=True,
+                save_plots=True,
+                output_type='NIFTI_GZ',
+                out_file='moco.nii.gz'),
+            inputs={
+                'in_file': ('preproc', nifti_gz_format)},
+            outputs={
+                'moco': ('out_file', nifti_gz_format),
+                'moco_par': ('par_file', par_format)},
             requirements=[fsl_req.v('5.0.9')])
-        mcflirt.inputs.ref_vol = 0
-        mcflirt.inputs.save_mats = True
-        mcflirt.inputs.save_plots = True
-        mcflirt.inputs.output_type = 'NIFTI_GZ'
-        mcflirt.inputs.out_file = 'moco.nii.gz'
-        pipeline.connect_input('preproc', mcflirt, 'in_file')
-        pipeline.connect_output('moco', mcflirt, 'out_file')
-        pipeline.connect_output('moco_par', mcflirt, 'par_file')
 
-        merge = pipeline.add(
+        pipeline.add(
             'merge',
-            MergeListMotionMat())
-        pipeline.connect(mcflirt, 'mat_file', merge, 'file_list')
-        pipeline.connect_output('align_mats', merge, 'out_dir')
+            MergeListMotionMat(),
+            inputs={
+                'file_list': (mcflirt, 'mat_file')},
+            outputs={
+                'align_mats': ('out_dir', directory_format)})
 
         return pipeline
 
     def field_map_time_info_pipeline(self, **kwargs):
-
-#             inputs=[DatasetSpec('field_map_mag', dicom_format)],
-#             outputs=[FieldSpec('field_map_delta_te', float)],
 
         pipeline = self.create_pipeline(
             name='field_map_time_info_pipeline',
             desc=("Pipeline to extract delta TE from field map "
                   "images, if provided"),
             version=1,
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        delta_te = pipeline.add(
+        pipeline.add(
             'extract_delta_te',
-            FieldMapTimeInfo())
-        pipeline.connect_input('field_map_mag', delta_te, 'fm_mag')
-        pipeline.connect_output('field_map_delta_te', delta_te, 'delta_te')
+            FieldMapTimeInfo(),
+            inputs={
+                'fm_mag': ('field_map_mag', dicom_format)},
+            outputs={
+                'field_map_delta_te': ('delta_te', float)})
 
         return pipeline
 
@@ -144,90 +143,88 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def _topup_pipeline(self, **kwargs):
 
-#            inputs=[FilesetSpec('magnitude', nifti_gz_format),
-#                    FilesetSpec('reverse_phase', nifti_gz_format),
-#                    FieldSpec('ped', str),
-#                    FieldSpec('pe_angle', str)],
-#            outputs=[FilesetSpec('preproc', nifti_gz_format)],
-
         pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Topup distortion correction pipeline"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
         reorient_epi_in = pipeline.add(
             'reorient_epi_in',
             fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('magnitude', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
-        pipeline.connect_input(
-            'magnitude',
-            reorient_epi_in,
-            'in_file')
 
         reorient_epi_opposite = pipeline.add(
             'reorient_epi_opposite',
             fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('reverse_phase', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
-        pipeline.connect_input('reverse_phase', reorient_epi_opposite,
-                               'in_file')
+
         prep_dwi = pipeline.add(
             'prepare_dwi',
-            PrepareDWI())
-        prep_dwi.inputs.topup = True
-        pipeline.connect_input('ped', prep_dwi, 'pe_dir')
-        pipeline.connect_input('pe_angle', prep_dwi, 'ped_polarity')
-        pipeline.connect(reorient_epi_in, 'out_file', prep_dwi, 'dwi')
-        pipeline.connect(reorient_epi_opposite, 'out_file', prep_dwi,
-                         'dwi1')
+            PrepareDWI(
+                topup=True),
+            inputs={
+                'pe_dir': ('ped', str),
+                'ped_polarity': ('pe_angle', str),
+                'dwi': (reorient_epi_in, 'out_file'),
+                'dwi1': (reorient_epi_opposite, 'out_file')})
+
         ped = pipeline.add(
             'gen_config',
-            GenTopupConfigFiles())
-        pipeline.connect(prep_dwi, 'pe', ped, 'ped')
+            GenTopupConfigFiles(),
+            inputs={
+                'ped': (prep_dwi, 'pe')})
+
         merge_outputs = pipeline.add(
             'merge_files',
-            merge_lists(2))
-        pipeline.connect(prep_dwi, 'main', merge_outputs, 'in1')
-        pipeline.connect(prep_dwi, 'secondary', merge_outputs, 'in2')
+            merge_lists(2),
+            inputs={
+                'in1': (prep_dwi, 'main'),
+                'in2': (prep_dwi, 'secondary')})
+
         merge = pipeline.add(
             'fsl_merge',
-            fsl_merge(),
+            fsl_merge(
+                dimension='t'),
+            inputs={
+                'in_files': (merge_outputs, 'out')},
             requirements=[fsl_req.v('5.0.9')])
-        merge.inputs.dimension = 't'
-        pipeline.connect(merge_outputs, 'out', merge, 'in_files')
+
         topup = pipeline.add(
             'topup',
             TOPUP(),
+            inputs={
+                'in_file': (merge, 'merged_file'),
+                'encoding_file': (ped, 'config_file')},
             requirements=[fsl_req.v('5.0.9')])
-        pipeline.connect(merge, 'merged_file', topup, 'in_file')
-        pipeline.connect(ped, 'config_file', topup, 'encoding_file')
+
         in_apply_tp = pipeline.add(
             'in_apply_tp',
-            merge_lists(1))
-        pipeline.connect(reorient_epi_in, 'out_file', in_apply_tp, 'in1')
-        apply_topup = pipeline.add(
-            'applytopup',
-            ApplyTOPUP(),
-            requirements=[fsl_req.v('5.0.9')])
-        apply_topup.inputs.method = 'jac'
-        apply_topup.inputs.in_index = [1]
-        pipeline.connect(in_apply_tp, 'out', apply_topup, 'in_files')
-        pipeline.connect(
-            ped, 'apply_topup_config', apply_topup, 'encoding_file')
-        pipeline.connect(topup, 'out_movpar', apply_topup,
-                         'in_topup_movpar')
-        pipeline.connect(
-            topup, 'out_fieldcoef', apply_topup, 'in_topup_fieldcoef')
+            merge_lists(1),
+            inputs={
+                'in1': (reorient_epi_in, 'out_file')})
 
-        pipeline.connect_output('preproc', apply_topup, 'out_corrected')
+        pipeline.add(
+            'applytopup',
+            ApplyTOPUP(
+                method='jac',
+                in_index=[1]),
+            inputs={
+                'in_files': (in_apply_tp, 'out'),
+                'encoding_file': (ped, 'apply_topup_config'),
+                'in_topup_movpar': (topup, 'out_movpar'),
+                'in_topup_fieldcoef': (topup, 'out_fieldcoef')},
+            outputs={
+                'preproc': ('out_corrected', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.9')])
+
         return pipeline
 
     def _fugue_pipeline(self, **kwargs):
-
-#            inputs=[FilesetSpec('magnitude', nifti_gz_format),
-#                    FilesetSpec('field_map_mag', nifti_gz_format),
-#                    FilesetSpec('field_map_phase', nifti_gz_format)],
-#            outputs=[FilesetSpec('preproc', nifti_gz_format)],
 
         pipeline = self.new_pipeline(
             name='preprocess_pipeline',
@@ -238,72 +235,79 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         reorient_epi_in = pipeline.add(
             'reorient_epi_in',
             fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('magnitude', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
-        pipeline.connect_input('magnitude', reorient_epi_in, 'in_file')
+
         fm_mag_reorient = pipeline.add(
             'reorient_fm_mag',
             fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('field_map_mag', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
-        pipeline.connect_input('field_map_mag', fm_mag_reorient, 'in_file')
+
         fm_phase_reorient = pipeline.add(
             'reorient_fm_phase',
             fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('field_map_phase', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
-        pipeline.connect_input('field_map_phase', fm_phase_reorient,
-                               'in_file')
+
         bet = pipeline.add(
             "bet",
-            BET(),
+            BET(
+                robust=True),
+            inputs={
+                'in_file': (fm_mag_reorient, 'out_file')},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
-        bet.inputs.robust = True
-        pipeline.connect(fm_mag_reorient, 'out_file', bet, 'in_file')
+
         create_fmap = pipeline.add(
             "prepfmap",
-            PrepareFieldmap(),
+            PrepareFieldmap(
+                # delta_TE=2.46
+            ),
+            inputs={
+                'delta_TE': ('field_map_delta_te', float),
+                "in_magnitude": (bet, "out_file"),
+                'in_phase': (fm_phase_reorient, 'out_file')},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
-#         create_fmap.inputs.delta_TE = 2.46
-        pipeline.connect_input('field_map_delta_te', create_fmap,
-                               'delta_TE')
-        pipeline.connect(bet, "out_file", create_fmap, "in_magnitude")
-        pipeline.connect(fm_phase_reorient, 'out_file', create_fmap,
-                         'in_phase')
 
-        fugue = pipeline.add(
+        pipeline.add(
             'fugue',
-            FUGUE(),
+            FUGUE(
+                unwarp_direction='x',
+                dwell_time=self.parameter('fugue_echo_spacing'),
+                unwarped_file='example_func.nii.gz'),
+            inputs={
+                'fmap_in_file': (create_fmap, 'out_fieldmap'),
+                'in_file': (reorient_epi_in, 'out_file')},
+            outputs={
+                'preproc': ('unwarped_file', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
-        fugue.inputs.unwarp_direction = 'x'
-        fugue.inputs.dwell_time = self.parameter('fugue_echo_spacing')
-        fugue.inputs.unwarped_file = 'example_func.nii.gz'
-        pipeline.connect(create_fmap, 'out_fieldmap', fugue, 'fmap_in_file')
-        pipeline.connect(reorient_epi_in, 'out_file', fugue, 'in_file')
-        pipeline.connect_output('preproc', fugue, 'unwarped_file')
+
         return pipeline
 
     def motion_mat_pipeline(self, **kwargs):
 
-#        inputs = [FilesetSpec('coreg_matrix', text_matrix_format),
-#                  FilesetSpec('qform_mat', text_matrix_format)]
-#            inputs=inputs,
-#            outputs=[FilesetSpec('motion_mats', motion_mats_format)],
-
-#        if 'reverse_phase' not in self.input_names:
-#            inputs.append(FilesetSpec('align_mats', directory_format))
         pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             desc=("Motion matrices calculation"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
         mm = pipeline.add(
             'motion_mats',
-            MotionMatCalculation())
-        pipeline.connect_input('coreg_matrix', mm, 'reg_mat')
-        pipeline.connect_input('qform_mat', mm, 'qform_mat')
+            MotionMatCalculation(),
+            inputs={
+                'reg_mat': ('coreg_matrix', text_matrix_format),
+                'qform_mat': ('qform_mat', text_matrix_format)},
+            outputs={
+                'motion_mats': ('motion_mats', motion_mats_format)})
         if 'reverse_phase' not in self.input_names:
-            pipeline.connect_input('align_mats', mm, 'align_mats')
-        pipeline.connect_output('motion_mats', mm, 'motion_mats')
+            pipeline.connect_input('align_mats', mm, 'align_mats',
+                                   directory_format)
+
         return pipeline
