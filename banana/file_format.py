@@ -13,7 +13,7 @@ import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format.standard import (
     text_format, directory_format, zip_format, targz_format,  # @UnusedImport
-    UnzipConverter, UnTarGzConverter)  # @UnusedImport
+    UnzipConverter, UnTarGzConverter, IdentityConverter)  # @UnusedImport
 
 
 class ImageFileFormat(FileFormat, ABCMeta):
@@ -88,6 +88,15 @@ dicom_format = FileFormat(name='dicom', extension=None,
                           alternate_names=['secondary'],
                           array_loader=dicom_array_loader,
                           header_loader=dicom_header_loader)
+# We create the extended Nifti format here so they don't get registered, as
+# their extension would clash with plain nifti
+# FIXME: Should be able to detect presence of side-cars when determining
+#        format
+niftix_gz_format = FileFormat(name='nifti_gz_ext', extension='.nii.gz',
+                              side_cars={'json': '.json'},
+                              converters={'dicom': Dcm2niixConverter},
+                              array_loader=nifti_array_loader,
+                              header_loader=nifti_header_loader)
 nifti_format = FileFormat(name='nifti', extension='.nii',
                           converters={'dicom': Dcm2niixConverter,
                                       'analyze': MrtrixConverter,
@@ -99,10 +108,12 @@ nifti_gz_format = FileFormat(name='nifti_gz', extension='.nii.gz',
                              converters={'dicom': Dcm2niixConverter,
                                          'nifti': MrtrixConverter,
                                          'analyze': MrtrixConverter,
-                                         'mrtrix': MrtrixConverter},
+                                         'mrtrix': MrtrixConverter,
+                                         'nifti_gz_ext': IdentityConverter},
                              array_loader=nifti_array_loader,
                              header_loader=nifti_header_loader)
 analyze_format = FileFormat(name='analyze', extension='.img',
+                            side_cars={'header': '.hdr'},
                             converters={'dicom': MrtrixConverter,
                                         'nifti': MrtrixConverter,
                                         'nifti_gz': MrtrixConverter,
@@ -170,6 +181,7 @@ for file_format in copy(globals()).values():
     if isinstance(file_format, FileFormat):
         FileFormat.register(file_format)
         registered_file_formats.append(file_format.name)
+
 
 # Since the conversion from DICOM->NIfTI is unfortunately slightly
 # different between MRConvert and Dcm2niix, these data formats can
