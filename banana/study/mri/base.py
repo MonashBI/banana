@@ -8,13 +8,14 @@ from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
 from banana.study import Study, StudyMetaClass
 from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
-    dicom_format, text_format, gif_format)
+    dicom_format, text_format, gif_format, niftix_gz_format)
 from nipype.interfaces.utility import IdentityInterface
 from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exceptions import ArcanaUsageError
 from banana.interfaces.mrtrix.transform import MRResize
-from banana.interfaces.custom.dicom import (DicomHeaderInfoExtraction)
+from banana.interfaces.custom.dicom import (
+    DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
 from nipype.interfaces.utility import Split, Merge
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format
@@ -806,15 +807,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     def header_extraction_pipeline(self, **name_maps):
-        if self.provided('header_image'):
-            dcm_in_name = 'header_image'
-        else:
-            dcm_in_name = 'magnitude'
-        if self.input(dcm_in_name).format != dicom_format:
-            raise ArcanaUsageError(
-                "Can only extract header info if 'magnitude' fileset "
-                "is provided in DICOM format ({})".format(
-                    self.input('magnitude').format))
 
         pipeline = self.new_pipeline(
             name='header_extraction',
@@ -823,24 +815,59 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "information from the image header"),
             references=[])
 
-        pipeline.add(
-            'hd_info_extraction',
-            DicomHeaderInfoExtraction(
-                multivol=False),
-            inputs={
-                'dicom_folder': (dcm_in_name, dicom_format)},
-            outputs={
-                'tr': ('tr', float),
-                'start_time': ('start_time', str),
-                'total_duration': ('total_duration', str),
-                'real_duration': ('real_duration', str),
-                'ped': ('ped', str),
-                'pe_angle': ('pe_angle', str),
-                'dcm_info': ('dcm_info', text_format),
-                'echo_times': ('echo_times', float),
-                'voxel_sizes': ('voxel_sizes', float),
-                'main_field_strength': ('B0', float),
-                'main_field_orient': ('H', float)})
+        if self.provided('header_image'):
+            dcm_in_name = 'header_image'
+        else:
+            dcm_in_name = 'magnitude'
+
+        input_format = self.input(dcm_in_name).format
+
+        if input_format == dicom_format:
+
+            pipeline.add(
+                'hd_info_extraction',
+                DicomHeaderInfoExtraction(
+                    multivol=False),
+                inputs={
+                    'dicom_folder': (dcm_in_name, dicom_format)},
+                outputs={
+                    'tr': ('tr', float),
+                    'start_time': ('start_time', str),
+                    'total_duration': ('total_duration', str),
+                    'real_duration': ('real_duration', str),
+                    'ped': ('ped', str),
+                    'pe_angle': ('pe_angle', str),
+                    'dcm_info': ('dcm_info', text_format),
+                    'echo_times': ('echo_times', float),
+                    'voxel_sizes': ('voxel_sizes', float),
+                    'main_field_strength': ('B0', float),
+                    'main_field_orient': ('H', float)})
+
+        elif input_format == niftix_gz_format:
+
+            pipeline.add(
+                'hd_info_extraction',
+                NiftixHeaderInfoExtraction(
+                    multivol=False),
+                inputs={
+                    'in_file': (dcm_in_name, dicom_format)},
+                outputs={
+                    'tr': ('tr', float),
+                    'start_time': ('start_time', str),
+                    'total_duration': ('total_duration', str),
+                    'real_duration': ('real_duration', str),
+                    'ped': ('ped', str),
+                    'pe_angle': ('pe_angle', str),
+                    'dcm_info': ('dcm_info', text_format),
+                    'echo_times': ('echo_times', float),
+                    'voxel_sizes': ('voxel_sizes', float),
+                    'main_field_strength': ('B0', float),
+                    'main_field_orient': ('H', float)})
+        else:
+            raise ArcanaUsageError(
+                "Can only extract header info if 'magnitude' fileset "
+                "is provided in DICOM or extended NIfTI format (provided {})"
+                .format(self.input(dcm_in_name).format))
 
         return pipeline
 

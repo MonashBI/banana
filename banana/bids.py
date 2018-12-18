@@ -1,3 +1,9 @@
+import os
+import json
+import os.path as op
+import stat
+import logging
+from bids.layout import BIDSLayout
 from arcana.exceptions import (
     ArcanaSelectorMissingMatchError, ArcanaUsageError)
 from banana.exceptions import BananaUsageError
@@ -5,16 +11,13 @@ from arcana.data.selector import FilesetSelector
 from arcana.data.item import Fileset
 from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
-import os
-import os.path as op
-import stat
-import logging
-from bids.layout import BIDSLayout
 from arcana.repository import DirectoryRepository
-import banana.file_format  # @UnusedImport
+from banana.file_format import nifti_gz_format, niftix_gz_format
 
 
 logger = logging.getLogger('arcana')
+
+BIDS_NIFTI = (nifti_gz_format, niftix_gz_format)
 
 
 class BidsRepository(DirectoryRepository):
@@ -36,6 +39,18 @@ class BidsRepository(DirectoryRepository):
     @property
     def root_dir(self):
         return self._root_dir
+
+    @property
+    def derivatives_dir(self):
+        return op.join(self.root_dir, 'derivatives')
+
+    @property
+    def metadata_dir(self):
+        """
+        A temporary dir where we write out combined JSON side cars to include
+        in extended nifti filesets
+        """
+        return op.join(self.derivatives_dir, '.metadata')
 
     @property
     def layout(self):
@@ -71,6 +86,10 @@ class BidsRepository(DirectoryRepository):
         all_subjects = self.layout.get_subjects()
         all_visits = self.layout.get_sessions()
         for item in self.layout.get(return_type='object'):
+            if item.path.startswith(self.derivatives_dir):
+                # We handle derivatives using the DirectoryRepository base
+                # class methods
+                continue
             if not hasattr(item, 'entities') or not item.entities.get('type',
                                                                       False):
                 logger.warning("Skipping unrecognised file '{}' in BIDS tree"
@@ -90,13 +109,29 @@ class BidsRepository(DirectoryRepository):
                 visit_ids = all_visits
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
+                    side_cars = {}
+                    metadata = self.layout.get_metadata(item.path)
+                    if metadata and not item.path.endswith('.json'):
+                        # Write out the combined JSON side cars to a temporary
+                        # file to include in extended NIfTI filesets
+                        metadata_path = op.join(
+                            self.metadata_dir,
+                            'sub-{}'.format(subject_id),
+                            'ses-{}'.format(visit_id),
+                            item.filename + '.json')
+                        os.makedirs(op.dirname(metadata_path), exist_ok=True)
+                        if not op.exists(metadata_path):
+                            with open(metadata_path, 'w') as f:
+                                json.dump(metadata, f)
+                        side_cars['json'] = metadata_path
                     fileset = BidsFileset(
                         path=op.join(item.dirname, item.filename),
                         type=item.entities['type'],
                         subject_id=subject_id, visit_id=visit_id,
                         repository=self,
                         modality=item.entities.get('modality', None),
-                        task=item.entities.get('task', None))
+                        task=item.entities.get('task', None),
+                        side_cars=side_cars)
                     filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
         # the method in the DirectoryRepository base class
@@ -199,20 +234,26 @@ class BidsFileset(Fileset, BaseBidsFileset):
     checksums : dict[str, str]
         A checksums of all files within the fileset in a dictionary sorted by
         relative file paths
+    side_cars : dict[str, str]
+        A dictionary containing a mapping from a side car name to path of the
+        file
     """
 
     def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
-                 modality=None, task=None, checksums=None):
+                 modality=None, task=None, checksums=None, side_cars=None):
+        extensions = [split_extension(path)[1]] + sorted(
+            split_extension(p)[1] for p in side_cars.values())
         Fileset.__init__(
             self,
             name=op.basename(path),
-            format=FileFormat.by_ext(split_extension(path)[1]),
+            format=FileFormat.by_ext(extensions),
             frequency='per_session',
             path=path,
             subject_id=subject_id,
             visit_id=visit_id,
             repository=repository,
-            checksums=checksums)
+            checksums=checksums,
+            side_cars=side_cars)
         BaseBidsFileset.__init__(self, type, modality, task)
 
     def __repr__(self):
@@ -234,8 +275,8 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
         Name of the spec to match
     type : str
         Type of the fileset
-    format : FileFormat
-        The file format of the fileset to match
+    valid_formats : FileFormat | list(FileFormat)
+        The file format of the fileset to match, or a list of valid formats
     task : str
         The task the fileset belongs to
     modality : str
@@ -245,8 +286,8 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
     def __init__(self, spec_name, type, format=None, task=None, modality=None,  # @ReservedAssignment @IgnorePep8
                  **kwargs):
         FilesetSelector.__init__(
-            self, spec_name, pattern=None, format=format, frequency='per_session',   # @ReservedAssignment @IgnorePep8
-            **kwargs)
+            self, spec_name, pattern=None, format=format,
+            frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
         BaseBidsFileset.__init__(self, type, modality, task)
 
     def _filtered_matches(self, node):

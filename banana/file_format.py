@@ -88,10 +88,6 @@ dicom_format = FileFormat(name='dicom', extension=None,
                           alternate_names=['secondary'],
                           array_loader=dicom_array_loader,
                           header_loader=dicom_header_loader)
-# We create the extended Nifti format here so they don't get registered, as
-# their extension would clash with plain nifti
-# FIXME: Should be able to detect presence of side-cars when determining
-#        format
 niftix_gz_format = FileFormat(name='nifti_gz_ext', extension='.nii.gz',
                               side_cars={'json': '.json'},
                               converters={'dicom': Dcm2niixConverter},
@@ -125,7 +121,7 @@ mrtrix_format = FileFormat(name='mrtrix', extension='.mif',
                                        'analyze': MrtrixConverter})
 
 STD_IMAGE_FORMATS = [dicom_format, nifti_format, nifti_gz_format,
-                     analyze_format, mrtrix_format]
+                     niftix_gz_format, analyze_format, mrtrix_format]
 
 multi_nifti_gz_format = FileFormat(name='multi_nifti_gz', extension=None,
                                    directory=True, within_dir_exts=['.nii.gz'],

@@ -9,7 +9,7 @@ from banana.requirement import (
     afni_req, fix_req, fsl_req, ants_req, c3d_req)
 from banana.citation import fsl_cite
 from banana.file_format import (
-    nifti_gz_format, rfile_format, directory_format,
+    nifti_gz_format, niftix_gz_format, rfile_format, directory_format,
     zip_format, par_format, text_format, dicom_format, text_matrix_format)
 from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
@@ -76,7 +76,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         ParameterSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsSelector(
-        spec_name='magnitude', type='bold', format=nifti_gz_format)
+        spec_name='magnitude', type='bold', format=niftix_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssociatedSelector(

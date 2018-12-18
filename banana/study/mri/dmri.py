@@ -15,9 +15,9 @@ from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from banana.file_format import (
-    mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
-    nifti_format, text_format, dicom_format, eddy_par_format, directory_format,
-    mrtrix_track_format)
+    mrtrix_format, nifti_gz_format, niftix_gz_format, fsl_bvecs_format,
+    fsl_bvals_format, nifti_format, text_format, dicom_format, eddy_par_format,
+    directory_format, mrtrix_track_format)
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req, matlab_req)
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
@@ -101,7 +101,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
     primary_bids_selector = BidsSelector(
-        spec_name='magnitude', type='dwi', format=nifti_gz_format)
+        spec_name='magnitude', type='dwi', format=niftix_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssociatedSelector(
