@@ -50,7 +50,7 @@ class BidsRepository(DirectoryRepository):
         A temporary dir where we write out combined JSON side cars to include
         in extended nifti filesets
         """
-        return op.join(self.derivatives_dir, '.metadata')
+        return op.join(self.derivatives_dir, '__metadata__')
 
     @property
     def layout(self):

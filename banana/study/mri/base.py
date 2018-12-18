@@ -850,7 +850,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 NiftixHeaderInfoExtraction(
                     multivol=False),
                 inputs={
-                    'in_file': (dcm_in_name, dicom_format)},
+                    'in_file': (dcm_in_name, nifti_gz_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
