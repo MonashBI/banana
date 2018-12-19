@@ -636,30 +636,33 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                   " voxel"),
             references=[mrtrix_cite],
             name_maps=name_maps)
+
         if self.branch('fod_algorithm', 'msmt_csd'):
             pipeline.add_input(FilesetSpec('gm_response', text_format))
             pipeline.add_input(FilesetSpec('csf_response', text_format))
+
+        # Gradient merge node
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
+        # Connect to inputs
+        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
+        pipeline.connect_input('bvalues', fsl_grads, 'in2')
+
         # Create fod fit node
         dwi2fod = pipeline.add(
             'dwi2fod',
             EstimateFOD(),
             requirements=[mrtrix_req.v('3.0rc3')])
         dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
-        # Gradient merge node
-        fsl_grads = pipeline.add(
-            "fsl_grads",
-            MergeTuple(2))
-        # Connect nodes
-        pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
-        # Connect to inputs
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
         pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
         pipeline.connect_input('wm_response', dwi2fod, 'wm_txt')
         pipeline.connect_input('brain_mask', dwi2fod, 'mask_file')
+        # Connect nodes
+        pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
         # Connect to outputs
         pipeline.connect_output('wm_odf', dwi2fod, 'wm_odf')
-        # If multi-tissue 
+        # If multi-tissue
         if self.multi_tissue:
             pipeline.connect_input('gm_response', dwi2fod, 'gm_txt')
             pipeline.connect_input('csf_response', dwi2fod, 'csf_txt')

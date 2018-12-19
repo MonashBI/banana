@@ -272,7 +272,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     def linear_coreg_pipeline(self, **name_maps):
         if self.branch('linear_coreg_method', 'flirt'):
-            pipeline = self._flirt_pipeline(**name_maps)
+            pipeline = self._flirt_linear_coreg_pipeline(**name_maps)
         elif self.branch('linear_coreg_method', 'ants'):
             pipeline = self._ants_linear_coreg_pipeline(**name_maps)
         elif self.branch('linear_coreg_method', 'spm'):
