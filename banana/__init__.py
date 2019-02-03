@@ -27,4 +27,4 @@ os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 
 # Import all Study classes into package root
 # from .study import (  # @IgnorePep8
-#     MriStudy, DmriStudy, T1Study, T2Study, T2starStudy, EpiStudy)
+#     MriStudy, DwiStudy, T1Study, T2Study, T2starStudy, EpiStudy)
