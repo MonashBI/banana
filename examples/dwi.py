@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
 import os.path as op
-from arcana import FilesetSelector, DirectoryRepository, SlurmProcessor
+from arcana import (
+    FilesetSelector, DirectoryRepository, LinearProcessor, StaticEnvironment)
 from banana.study.mri.dwi import DwiStudy
 from banana.file_format import dicom_format
 
 study = DwiStudy(
     name='example_diffusion',
-    directory=DirectoryRepository(
-        op.join(op.expanduser('~'), 'Downloads', 'test-dir')),
-    processor=SlurmProcessor(work_dir=op.expanduser('~/work')),
-    inputs={'primary': FilesetSelector('R-L ep2d_diff.*', dicom_format,
-                                       is_regex=True),
-            'reverse_phase': FilesetSelector('L-R ep2d_diff.*', dicom_format,
-                                             is_regex=True)},
-    parameters={'num_wb_tracks': 1e8, 'toolchain': 'mrtrix'})
+    repository=DirectoryRepository(
+        op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),
+    processor=LinearProcessor(work_dir=op.expanduser('~/work')),
+    environment=StaticEnvironment(),
+    inputs=[FilesetSelector('magnitude', 'R_L.*', dicom_format, is_regex=True),
+            FilesetSelector('reverse_phase', 'L_R.*', dicom_format,
+                            is_regex=True)],
+    parameters={'num_global_tracks': int(1e6)})
 
 # Generate whole brain tracks and return path to cached dataset
-wb_tcks = study.data('whole_brain_tracks')
+wb_tcks = study.data('global_tracks')
 for sess_tcks in wb_tcks:
     print("Performed whole-brain tractography for {}:{} session, the results "
           "are stored at '{}'"
