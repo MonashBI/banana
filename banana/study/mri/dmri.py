@@ -28,7 +28,7 @@ from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.bids import BidsSelector, BidsAssociatedSelector
-from arcana.exceptions import ArcanaDesignError
+from banana.exceptions import BananaUsageError
 from banana.study import StudyMetaClass
 
 
@@ -170,7 +170,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             grad_fsl_inputs = {'in1': ('grad_dirs', fsl_bvecs_format),
                                'in2': ('bvalues', fsl_bvals_format)}
         else:
-            raise ArcanaDesignError(
+            raise BananaUsageError(
                 "Either input 'magnitude' image needs to be in DICOM format "
                 "or gradient directions and b-values need to be explicitly "
                 "provided to {}".format(self))
