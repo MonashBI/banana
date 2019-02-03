@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os.path
 import errno
-from banana.study.mri.structural.diffusion import DiffusionStudy
+from banana.study.mri.structural.diffusion import DwiStudy
 from arcana.repository.xnat import XnatRepository
 from banana.file_format import dicom_format
 import logging
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         DatasetMatch('dwi_reference', dicom_format,
                      'L-R_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2')]
 
-    study = DiffusionStudy(
+    study = DwiStudy(
         name=args.study_name,
         repository=XnatRepository(
             project_id='MRH060', server='https://mbi-xnat.erc.monash.edu.au',

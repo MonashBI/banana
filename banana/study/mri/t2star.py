@@ -158,8 +158,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 UnwrapPhase(
                     padsize=self.parameter('qsm_padding')),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'in_file': (channel_combine, 'phase')},
                 requirements=[sti_req.v(2.2)])
 
@@ -169,8 +168,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 VSharp(
                     mask_manip="imerode({}>0, ball(5))"),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'in_file': (unwrap, 'out_file'),
                     'mask': (erosion, 'out_file')},
                 requirements=[sti_req.v(2.2)])
@@ -185,8 +183,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float),
                     'te': ('echo_times', float),
                     'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float)},
-                connect={
+                    'H': ('main_field_orient', float),
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask')},
                 outputs={
@@ -199,7 +196,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'dialate',
                 DialateMask(
                     dialation=self.parameter('qsm_mask_dialation')),
-                connect={
+                inputs={
                     'in_file': (erosion, 'out_file')})
 
             # List files for the phases of separate channel
@@ -225,7 +222,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'mask_coils',
                 MaskCoils(
                     dialation=self.parameter('qsm_mask_dialation')),
-                connect={
+                inputs={
                     'masks': (list_mags, 'files'),
                     'whole_brain_mask': (dialate, 'out_file')})
 
@@ -235,8 +232,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 BatchUnwrapPhase(
                     padsize=self.parameter('qsm_padding')),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'in_file': (list_phases, 'files')},
                 requirements=[sti_req.v(2.2)])
 
@@ -246,8 +242,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 BatchVSharp(
                     mask_manip='{}>0'),
                 inputs={
-                    'voxelsize': ('voxel_sizes', float)},
-                connect={
+                    'voxelsize': ('voxel_sizes', float),
                     'mask': (mask_coils, 'out_files'),
                     'in_file': (unwrap, 'out_file')},
                 requirements=[sti_req.v(2.2)])
@@ -268,8 +263,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
                     'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float)},
-                connect={
+                    'H': ('main_field_orient', float),
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
@@ -280,12 +274,12 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             pipeline.add(
                 'combine_qsm',
                 MedianInMasks(),
-                connect={
+                inputs={
                     'channels': (coil_qsm, 'out_file'),
                     'channel_masks': (vsharp, 'new_mask'),
                     'whole_brain_mask': (dialate, 'out_file')},
                 outputs={
-                    'out_file': ('qsm', nifti_format)})
+                    'qsm': ('out_file', nifti_format)})
         return pipeline
 
     def swi_pipeline(self, **name_maps):
@@ -325,11 +319,11 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False]),
             inputs={
                 'input_image': ('mni_template_qsm_prior', nifti_gz_format),
-                'reference_image': ('qsm', nifti_gz_format)},
-            connect={
+                'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
-            mem_gb=16, wall_time=30)
+            mem_gb=16,
+            wall_time=30)
 
         apply_trans_s = pipeline.add(
             'ApplyTransform_S_Prior',
@@ -339,10 +333,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False]),
             inputs={
                 'input_image': ('mni_template_swi_prior', nifti_gz_format),
-                'reference_image': ('qsm', nifti_gz_format)},
-            connect={
+                'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=30)
+            requirements=[ants_req.v('1.9')], mem_gb=16,
+            wall_time=30)
 
         apply_trans_a = pipeline.add(
             'ApplyTransform_A_Prior',
@@ -352,11 +346,11 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False],),
             inputs={
                 'reference_image': ('qsm', nifti_gz_format),
-                'input_image': ('mni_template_atlas_prior', nifti_gz_format)},
-            connect={
+                'input_image': ('mni_template_atlas_prior', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
-            mem_gb=16, wall_time=30)
+            mem_gb=16,
+            wall_time=30)
 
         apply_trans_v = pipeline.add(
             'ApplyTransform_V_Atlas',
@@ -366,11 +360,11 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, True, False]),
             inputs={
                 'input_image': ('mni_template_vein_atlas', nifti_gz_format),
-                'reference_image': ('qsm', nifti_gz_format)},
-            connect={
+                'reference_image': ('qsm', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             requirements=[ants_req.v('1.9')],
-            mem_gb=16, wall_time=30)
+            mem_gb=16,
+            wall_time=30)
 
         # Run CV code
         pipeline.add(
@@ -379,14 +373,13 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             inputs={
                 'mask': ('brain_mask', nifti_format),
                 'qsm': ('qsm', nifti_format),
-                'swi': ('swi', nifti_format)},
-            connect={
+                'swi': ('swi', nifti_format),
                 'q_prior': (apply_trans_q, 'output_image'),
                 's_prior': (apply_trans_s, 'output_image'),
                 'a_prior': (apply_trans_a, 'output_image'),
                 'vein_atlas': (apply_trans_v, 'output_image')},
             outputs={
-                'out_file': ('composite_vein_image', nifti_format)},
+                'composite_vein_image': ('out_file', nifti_format)},
             requirements=[matlab_req.v('R2015a')],
             wall_time=300, mem_gb=24)
 
@@ -408,7 +401,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'in_file': ('composite_vein_image', nifti_format),
                 'mask': ('brain_mask', nifti_format)},
             outputs={
-                'out_file': ('vein_mask', nifti_format)},
+                'vein_mask': ('out_file', nifti_format)},
             requirements=[matlab_req.v('R2015a')],
             wall_time=30, mem_gb=16)
 

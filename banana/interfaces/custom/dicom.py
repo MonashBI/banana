@@ -1,15 +1,14 @@
-
-
-from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
-                                    traits, TraitedSpec, Directory, File,
-                                    isdefined)
 import numpy as np
 import glob
+import json
 import pydicom
 from nipype.utils.filemanip import split_filename
 import datetime as dt
 import os.path
 import nibabel as nib
+from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
+                                    traits, TraitedSpec, Directory, File,
+                                    isdefined)
 from arcana.utils import split_extension
 import nibabel.nicom.csareader as csareader
 from logging import getLogger
@@ -189,6 +188,58 @@ class DicomHeaderInfoExtraction(BaseInterface):
         pedp = csa_tr['tags']['PhaseEncodingDirectionPositive']['items'][0]
         sign = PEDP_TO_SIGN[pedp]
         return sign, inplane_pe_dir
+
+
+class NiftixHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
+
+    in_file = File(exists=True, desc="The main nifti file")
+    in_json = File(exists=True,
+                   desc='JSON side-car file containing additional header info',
+                   mandatory=True)
+
+
+class NiftixHeaderInfoExtractionOutputSpec(TraitedSpec):
+
+    tr = traits.Float(desc='Repetition time.')
+    echo_times = traits.List(traits.Float(), desc='Echo times')
+    voxel_sizes = traits.List(traits.Float(), desc="Voxel sizes")
+    H = traits.List((traits.Float(), traits.Float(), traits.Float),
+                    desc="Main magnetic field ")
+    B0 = traits.Float(desc="Main magnetic field strength")
+    start_time = traits.Float(desc='Scan start time.')
+    real_duration = traits.Float(
+        desc=('For 4D files, this will be the number of '
+              'volumes multiplied by the TR.'))
+    total_duration = traits.Float(
+        desc='Scan duration as extracted from the header.')
+    ped = traits.Str(desc='Phase encoding direction.')
+    pe_angle = traits.Str(desc='Phase angle.')
+    ref_motion_mats = Directory(desc='folder with the reference motion mats')
+
+
+class NiftixHeaderInfoExtraction(BaseInterface):
+
+    input_spec = NiftixHeaderInfoExtractionInputSpec
+    output_spec = NiftixHeaderInfoExtractionOutputSpec
+
+    def _list_outputs(self):
+
+        outputs = self._outputs().get()
+        with open(self.inputs.in_json) as f:
+            dct = json.load(f)
+        # Save extracted values to output dictionary
+        outputs['start_time'] = float(start_time)
+        outputs['tr'] = dct['RepetitionTime']
+        outputs['echo_times'] = [dct['EchoTime']]
+        outputs['voxel_sizes'] = vox_sizes
+        outputs['H'] = list(b0_orient)
+        outputs['B0'] = hd.MagneticFieldStrength
+        outputs['total_duration'] = float(total_duration)
+        outputs['real_duration'] = float(real_duration)
+        outputs['ped'] = ped
+        outputs['pe_angle'] = str(phase_offset)
+
+        return outputs
 
 
 class ScanTimesInfoInputSpec(BaseInterfaceInputSpec):

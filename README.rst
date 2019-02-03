@@ -26,7 +26,7 @@ Core
 * nibabel
 * pydicom
 
-Both of these are available on PyPI and can be installed with::
+All of these are available on PyPI and can be installed with::
 
     $ pip3 install banana
 

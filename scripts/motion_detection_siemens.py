@@ -24,7 +24,7 @@ class create_motion_detection:
         if os.path.isdir(input_dir):
             try:
                 with open(cache_input_path, 'r') as f:
-                    ref, ref_type, t1s, epis, t2s, dmris = pkl.load(f)
+                    ref, ref_type, t1s, epis, t2s, dwis = pkl.load(f)
                 cached_inputs = True
             except IOError as e:
                 if e.errno == errno.ENOENT:
@@ -34,15 +34,15 @@ class create_motion_detection:
             scans = local_motion_detection(input_dir, pet_dir=pet_dir)
             list_inputs = guess_scan_type(scans, input_dir)
             if not list_inputs:
-                ref, ref_type, t1s, epis, t2s, dmris = inputs_generation(
+                ref, ref_type, t1s, epis, t2s, dwis = inputs_generation(
                     scans, input_dir, siemens=True)
-                list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
+                list_inputs = [ref, ref_type, t1s, epis, t2s, dwis]
             else:
-                ref, ref_type, t1s, epis, t2s, dmris = list_inputs
+                ref, ref_type, t1s, epis, t2s, dwis = list_inputs
             with open(cache_input_path, 'w') as f:
                 pkl.dump(list_inputs, f)
 
-        return ref, ref_type, t1s, epis, t2s, dmris
+        return ref, ref_type, t1s, epis, t2s, dwis
 
 
 if __name__ == "__main__":
@@ -54,10 +54,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
     input_dir = args.input_dir
     md = create_motion_detection(input_dir)
-    ref, ref_type, t1s, epis, t2s, dmris = md.create_md()
+    ref, ref_type, t1s, epis, t2s, dwis = md.create_md()
 
     MotionDetection, inputs = create_motion_detection_class(
-        'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
+        'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dwis=dwis,
         epis=epis)
 
     sub_id = 'work_sub_dir'

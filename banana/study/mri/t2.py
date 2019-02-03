@@ -25,21 +25,23 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False)]
 
     def cet_T2s(self, **options):
+#                     inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
+#                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
+#                     FilesetSpec('betted_T2s_last_echo', nifti_gz_format),
+#                     FilesetSpec(
+#                 self._lookup_nl_tfm_inv_name('SUIT'),
+#                 nifti_gz_format),
+#                 FilesetSpec(
+#                 self._lookup_l_tfm_to_name('SUIT'),
+#                 text_matrix_format),
+#                 FilesetSpec('T2s_to_T1_mat', text_matrix_format)],
+#             outputs=[FilesetSpec('cetted_T2s_mask', nifti_gz_format),
+#                      FilesetSpec('cetted_T2s', nifti_gz_format),
+#                      FilesetSpec('cetted_T2s_last_echo', nifti_gz_format)],
+
+        
         pipeline = self.new_pipeline(
             name='CET_T2s',
-            inputs=[FilesetSpec('betted_T2s', nifti_gz_format),
-                    FilesetSpec('betted_T2s_mask', nifti_gz_format),
-                    FilesetSpec('betted_T2s_last_echo', nifti_gz_format),
-                    FilesetSpec(
-                self._lookup_nl_tfm_inv_name('SUIT'),
-                nifti_gz_format),
-                FilesetSpec(
-                self._lookup_l_tfm_to_name('SUIT'),
-                text_matrix_format),
-                FilesetSpec('T2s_to_T1_mat', text_matrix_format)],
-            outputs=[FilesetSpec('cetted_T2s_mask', nifti_gz_format),
-                     FilesetSpec('cetted_T2s', nifti_gz_format),
-                     FilesetSpec('cetted_T2s_last_echo', nifti_gz_format)],
             desc=("Construct cerebellum mask using SUIT template"),
             default_options={
                 'SUIT_mask': self._lookup_template_mask_path('SUIT')},
@@ -47,8 +49,9 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
             options=options)
 
         # Initially use MNI space to warp SUIT mask into T2s space
-        merge_trans = pipeline.create_node(
-            Merge(3), name='merge_transforms')
+        merge_trans = pipeline.add(
+            'merge_transforms',
+            Merge(3))
         pipeline.connect_input(
             self._lookup_nl_tfm_inv_name('SUIT'),
             merge_trans,
@@ -59,9 +62,11 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
             'in2')
         pipeline.connect_input('T2s_to_T1_mat', merge_trans, 'in1')
 
-        apply_trans = pipeline.create_node(
-            ants.resampling.ApplyTransforms(), name='ApplyTransform',
-            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
+        apply_trans = pipeline.add(
+            'ApplyTransform',
+            ants.resampling.ApplyTransforms(),
+            requirements=[ants_req.v('1.9')], mem_gb=16,
+            wall_time=120)
         apply_trans.inputs.interpolation = 'NearestNeighbor'
         apply_trans.inputs.input_image_type = 3
         apply_trans.inputs.invert_transform_flags = [True, True, False]
@@ -71,29 +76,28 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         pipeline.connect_input('betted_T2s', apply_trans, 'reference_image')
 
         # Combine masks
-        maths1 = pipeline.create_node(
+        maths1 = pipeline.add(
+            'combine_masks',
             fsl.utils.ImageMaths(suffix='_optiBET_masks', op_string='-mas'),
-            name='combine_masks', requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
             wall_time=5)
         pipeline.connect_input('betted_T2s_mask', maths1, 'in_file')
         pipeline.connect(apply_trans, 'output_image', maths1, 'in_file2')
 
         # Mask out t2s image
-        maths2 = pipeline.create_node(
-            fsl.utils.ImageMaths(
-                suffix='_optiBET_cerebellum',
-                op_string='-mas'),
-            name='mask_t2s', requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+        maths2 = pipeline.add(
+            'mask_t2s',
+            fsl.utils.ImageMaths( suffix='_optiBET_cerebellum', op_string='-mas'),
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
             wall_time=5)
         pipeline.connect_input('betted_T2s', maths2, 'in_file')
         pipeline.connect(maths1, 'output_image', maths2, 'in_file2')
 
-        maths3 = pipeline.create_node(
-            fsl.utils.ImageMaths(
-                suffix='_optiBET_cerebellum',
-                op_string='-mas'),
-            name='mask_t2s_last_echo', requirements=[fsl_req.v('5.0.8')],
-            mem_gb=16, wall_time=5)
+        maths3 = pipeline.add(
+            'mask_t2s_last_echo',
+            fsl.utils.ImageMaths( suffix='_optiBET_cerebellum', op_string='-mas'),
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+            wall_time=5)
         pipeline.connect_input('betted_T2s_last_echo', maths3, 'in_file')
         pipeline.connect(maths1, 'output_image', maths3, 'in_file2')
 
@@ -107,28 +111,34 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
 
     def bet_T2s(self, **options):
 
+#             inputs=[FilesetSpec('t2s', nifti_gz_format),
+#                     FilesetSpec('t2s_last_echo', nifti_gz_format)],
+#             outputs=[FilesetSpec('betted_T2s', nifti_gz_format),
+#                      FilesetSpec('betted_T2s_mask', nifti_gz_format),
+#                      FilesetSpec('betted_T2s_last_echo', nifti_gz_format)],
+
+
         pipeline = self.new_pipeline(
             name='BET_T2s',
-            inputs=[FilesetSpec('t2s', nifti_gz_format),
-                    FilesetSpec('t2s_last_echo', nifti_gz_format)],
-            outputs=[FilesetSpec('betted_T2s', nifti_gz_format),
-                     FilesetSpec('betted_T2s_mask', nifti_gz_format),
-                     FilesetSpec('betted_T2s_last_echo', nifti_gz_format)],
             desc=("python implementation of BET"),
             default_options={},
             citations=[fsl_cite],
             options=options)
 
-        bet = pipeline.create_node(
-            fsl.BET(frac=0.1, mask=True), name='bet',
-            requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
+        bet = pipeline.add(
+            'bet',
+            fsl.BET(frac=0.1, mask=True),
+            requirements=[fsl_req.v('5.0.8')], mem_gb=8,
+            wall_time=45)
         pipeline.connect_input('t2s', bet, 'in_file')
         pipeline.connect_output('betted_T2s', bet, 'out_file')
         pipeline.connect_output('betted_T2s_mask', bet, 'mask_file')
 
-        maths = pipeline.create_node(
+        maths = pipeline.add(
+            'mask',
             fsl.utils.ImageMaths(suffix='_BET_brain', op_string='-mas'),
-            name='mask', requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+            wall_time=5)
         pipeline.connect_input('t2s_last_echo', maths, 'in_file')
         pipeline.connect(bet, 'mask_file', maths, 'in_file2')
         pipeline.connect_output('betted_T2s_last_echo', maths, 'out_file')

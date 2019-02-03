@@ -52,7 +52,7 @@ class RunMotionCorrection:
         if os.path.isdir(input_dir):
             try:
                 with open(cache_input_path, 'rb') as f:
-                    (ref, ref_type, t1s, epis, t2s, dmris, pd,
+                    (ref, ref_type, t1s, epis, t2s, dwis, pd,
                      pr) = pkl.load(f)
                 working_dir = (
                     input_dir+'/work_dir/work_sub_dir/work_session_dir/')
@@ -68,7 +68,7 @@ class RunMotionCorrection:
                         shutil.rmtree(working_dir+'/pet_data_reconstructed')
                     shutil.copytree(pet_recon, working_dir +
                                     '/pet_data_reconstructed')
-                    list_inputs = [ref, ref_type, t1s, epis, t2s, dmris, pd,
+                    list_inputs = [ref, ref_type, t1s, epis, t2s, dwis, pd,
                                    pet_recon]
                     with open(cache_input_path, 'wb') as f:
                         pkl.dump(list_inputs, f)
@@ -83,12 +83,12 @@ class RunMotionCorrection:
                                            struct2align=struct2align)
             list_inputs = guess_scan_type(scans, input_dir)
             if not list_inputs:
-                ref, ref_type, t1s, epis, t2s, dmris = (
+                ref, ref_type, t1s, epis, t2s, dwis = (
                     inputs_generation(scans, input_dir, siemens=True))
-                list_inputs = [ref, ref_type, t1s, epis, t2s, dmris]
+                list_inputs = [ref, ref_type, t1s, epis, t2s, dwis]
             else:
                 print(list_inputs)
-                ref, ref_type, t1s, epis, t2s, dmris = (
+                ref, ref_type, t1s, epis, t2s, dwis = (
                     list_inputs)
             if pet_dir is not None:
                 list_inputs.append(pet_dir)
@@ -101,7 +101,7 @@ class RunMotionCorrection:
             with open(cache_input_path, 'wb') as f:
                 pkl.dump(list_inputs, f)
 
-        return ref, ref_type, t1s, epis, t2s, dmris
+        return ref, ref_type, t1s, epis, t2s, dwis
 
 
 if __name__ == "__main__":
@@ -195,10 +195,10 @@ if __name__ == "__main__":
         crop_coordinates=args.cropping_coordinates, mni_reg=args.mni_reg,
         static_len=args.static_pet_len, pct_umap=args.continuos_umap)
 
-    ref, ref_type, t1s, epis, t2s, dmris = mc.create_motion_correction_inputs()
+    ref, ref_type, t1s, epis, t2s, dwis = mc.create_motion_correction_inputs()
 
     MotionCorrection, inputs, out_data = create_motion_correction_class(
-        'MotionCorrection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
+        'MotionCorrection', ref, ref_type, t1s=t1s, t2s=t2s, dwis=dwis,
         epis=epis, umap_ref=args.umap_ref, umap=args.umap,
         pet_data_dir=args.pet_list_mode_dir, dynamic=args.dynamic,
         pet_recon_dir=args.pet_reconstructed_dir,

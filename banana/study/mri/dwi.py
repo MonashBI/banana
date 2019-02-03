@@ -5,7 +5,7 @@ from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
 from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
-from nipype.workflows.dmri.fsl.tbss import create_tbss_all
+# from nipype.workflows.dwi.fsl.tbss import create_tbss_all
 from banana.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
@@ -15,9 +15,9 @@ from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
 from banana.file_format import (
-    mrtrix_format, nifti_gz_format, fsl_bvecs_format, fsl_bvals_format,
-    nifti_format, text_format, dicom_format, eddy_par_format, directory_format,
-    mrtrix_track_format)
+    mrtrix_format, nifti_gz_format, niftix_gz_format, fsl_bvecs_format,
+    fsl_bvals_format, nifti_format, text_format, dicom_format, eddy_par_format,
+    directory_format, mrtrix_track_format)
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req, matlab_req)
 from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
@@ -28,11 +28,11 @@ from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.bids import BidsSelector, BidsAssociatedSelector
-from arcana.exceptions import ArcanaDesignError
+from banana.exceptions import BananaUsageError
 from banana.study import StudyMetaClass
 
 
-class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
+class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
@@ -57,14 +57,14 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
         FilesetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
-        FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
-                    frequency='per_study'),
-        FilesetSpec('tbss_proj_fa', nifti_gz_format, 'tbss_pipeline',
-                    frequency='per_study'),
-        FilesetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
-                    frequency='per_study'),
-        FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
-                    'tbss_pipeline', frequency='per_study'),
+#         FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
+#                     frequency='per_study'),
+#         FilesetSpec('tbss_proj_fa', nifti_gz_format, 'tbss_pipeline',
+#                     frequency='per_study'),
+#         FilesetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
+#                     frequency='per_study'),
+#         FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
+#                     'tbss_pipeline', frequency='per_study'),
         FilesetSpec('brain', nifti_gz_format,
                     'brain_extraction_pipeline'),
         FilesetSpec('brain_mask', nifti_gz_format,
@@ -100,20 +100,27 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    primary_selector = BidsSelector(
-        spec_name='magnitude', type='dwi', format=nifti_gz_format)
+    primary_bids_selector = BidsSelector(
+        spec_name='magnitude', type='dwi', format=niftix_gz_format)
 
-    default_bids_inputs = [primary_selector,
+    default_bids_inputs = [primary_bids_selector,
                            BidsAssociatedSelector(
-                               spec_name='bvalues', primary=primary_selector,
-                               association='bval', format=fsl_bvals_format),
+                               spec_name='bvalues',
+                               primary=primary_bids_selector,
+                               association='grads',
+                               type='bval',
+                               format=fsl_bvals_format),
                            BidsAssociatedSelector(
-                               spec_name='grad_dirs', primary=primary_selector,
-                               association='bvec', format=fsl_bvecs_format),
+                               spec_name='grad_dirs',
+                               primary=primary_bids_selector,
+                               association='grads',
+                               type='bvec',
+                               format=fsl_bvecs_format),
                            BidsAssociatedSelector(
                                spec_name='reverse_phase',
-                               primary=primary_selector,
-                               association='epi', format=nifti_gz_format,
+                               primary=primary_bids_selector,
+                               association='epi',
+                               format=nifti_gz_format,
                                drop_if_missing=True)]
 
     @property
@@ -154,18 +161,16 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'in_file': ('magnitude', dicom_format)},
                 outputs={
-                    'bvecs_file': ('grad_dirs', fsl_bvecs_format),
-                    'bvals_file': ('bvalues', fsl_bvals_format)},
+                    'grad_dirs': ('bvecs_file', fsl_bvecs_format),
+                    'bvalues': ('bvals_file', fsl_bvals_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
-            grad_fsl_kwargs = {
-                'connect': {'in1': (extract_grad, 'bvecs_file'),
-                            'in2': (extract_grad, 'bvals_file')}}
+            grad_fsl_inputs = {'in1': (extract_grad, 'bvecs_file'),
+                               'in2': (extract_grad, 'bvals_file')}
         elif self.provided('grad_dirs') and self.provided('bvalues'):
-            grad_fsl_kwargs = {
-                'inputs': {'in1': ('grad_dirs', fsl_bvecs_format),
-                           'in2': ('bvalues', fsl_bvals_format)}}
+            grad_fsl_inputs = {'in1': ('grad_dirs', fsl_bvecs_format),
+                               'in2': ('bvalues', fsl_bvals_format)}
         else:
-            raise ArcanaDesignError(
+            raise BananaUsageError(
                 "Either input 'magnitude' image needs to be in DICOM format "
                 "or gradient directions and b-values need to be explicitly "
                 "provided to {}".format(self))
@@ -174,7 +179,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         grad_fsl = pipeline.add(
             "grad_fsl",
             MergeTuple(2),
-            **grad_fsl_kwargs)
+            inputs=grad_fsl_inputs)
 
         # Denoise the dwi-scan
         if self.branch('preproc_denoise'):
@@ -191,22 +196,22 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 'subtract_operands',
                 Merge(2),
                 inputs={
-                    'in1': ('magnitude', nifti_gz_format)},
-                connect={
+                    'in1': ('magnitude', nifti_gz_format),
                     'in2': (denoise, 'noise')})
 
             pipeline.add(
                 'subtract',
                 MRCalc(
                     operation='subtract'),
-                connect={
+                inputs={
                     'operands': (subtract_operands, 'out')},
                 outputs={
-                    'out_file': ('noise_residual', mrtrix_format)},
+                    'noise_residual': ('out_file', mrtrix_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
         # Preproc kwargs
         preproc_kwargs = {}
+        preproc_inputs = {'grad_fsl': (grad_fsl, 'out')}
 
         if (self.provided('dwi_reference') or
                 self.provided('reverse_phase')):
@@ -225,7 +230,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 "mrconvert",
                 MRConvert(
                     coord=(3, 0)),
-                connect={
+                inputs={
                     'in_file': (dwiextract, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -236,8 +241,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'second_scan': ((
                         'dwi_reference' if self.provided('dwi_reference')
-                        else 'reverse_phase'), mrtrix_format)},
-                connect={
+                        else 'reverse_phase'), mrtrix_format),
                     'first_scan': (mrconvert, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -252,11 +256,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             preproc_kwargs['rpe_pair'] = True
 
             distortion_correction = True
-            preproc_conns = {'connect': {'se_epi': (mrcat, 'out_file')}}
+            preproc_inputs['se_epi'] = (mrcat, 'out_file')
         else:
             distortion_correction = False
             preproc_kwargs['rpe_none'] = True
-            preproc_conns = {}
 
         if self.parameter('preproc_pe_dir') is not None:
             preproc_kwargs['pe_dir'] = self.parameter('preproc_pe_dir')
@@ -270,13 +273,11 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 # eddy_parameters = '--data_is_shelled '
                 temp_dir='dwipreproc_tempdir',
                 **preproc_kwargs),
-            connect={
-                'grad_fsl': (grad_fsl, 'out')},
+            inputs=preproc_inputs,
             outputs={
-                'eddy_parameters': ('eddy_par', eddy_par_format)},
+                'eddy_par': ('eddy_parameters', eddy_par_format)},
             requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('5.0.10')],
-            wall_time=60,
-            **preproc_conns)
+            wall_time=60)
         if self.branch('preproc_denoise'):
             pipeline.connect(denoise, 'out_file', preproc, 'in_file')
         else:
@@ -289,10 +290,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'fslreorient2std',
             fsl.utils.Reorient2Std(),
-            connect={
+            inputs={
                 'in_file': (preproc, 'out_file')},
             outputs={
-                'out_file': ('preproc', nifti_gz_format)},
+                'preproc': ('out_file', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
@@ -329,15 +330,14 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 BrainMask(
                     out_file='brain_mask.nii.gz'),
                 inputs={
-                    'in_file': ('preproc', nifti_gz_format)},
-                connect={
+                    'in_file': ('preproc', nifti_gz_format),
                     'grad_fsl': (grad_fsl, 'out')},
                 outputs={
-                    'out_file': ('brain_mask', nifti_gz_format)},
+                    'brain_mask': ('out_file', nifti_gz_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
         else:
-            pipeline = super(DmriStudy, self).brain_extraction_pipeline(
+            pipeline = super(DwiStudy, self).brain_extraction_pipeline(
                 **name_maps)
         return pipeline
 
@@ -400,8 +400,12 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[mrtrix_req.v('3.0rc3')],
             name_maps=name_maps)
         # Convert from nifti to mrtrix format
-        grad_merge = pipeline.add("grad_merge", MergeTuple(2))
-        mrconvert = pipeline.add('mrconvert', MRConvert())
+        grad_merge = pipeline.add(
+            "grad_merge",
+            MergeTuple(2))
+        mrconvert = pipeline.add(
+            'mrconvert',
+            MRConvert())
         mrconvert.inputs.out_ext = '.mif'
         # Set up join nodes
         fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
@@ -475,7 +479,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             FitTensor())
         dwi2tensor.inputs.out_file = 'dti.nii.gz'
         # Gradient merge node
-        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
         # Connect nodes
         pipeline.connect(fsl_grads, 'out', dwi2tensor, 'grad_fsl')
         # Connect to inputs
@@ -596,7 +602,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             Chain(['responses']),
             joinsource=self.VISIT_ID,
             joinfield=['responses'])
-        avg_response = pipeline.add('avg_response', AverageResponse())
+        avg_response = pipeline.add(
+            'avg_response',
+            AverageResponse())
         # Connect inputs
         pipeline.connect_input('wm_response', join_subjects, 'responses')
         # Connect inter-nodes
@@ -628,28 +636,33 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                   " voxel"),
             references=[mrtrix_cite],
             name_maps=name_maps)
+
         if self.branch('fod_algorithm', 'msmt_csd'):
             pipeline.add_input(FilesetSpec('gm_response', text_format))
             pipeline.add_input(FilesetSpec('csf_response', text_format))
+
+        # Gradient merge node
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
+        # Connect to inputs
+        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
+        pipeline.connect_input('bvalues', fsl_grads, 'in2')
+
         # Create fod fit node
         dwi2fod = pipeline.add(
             'dwi2fod',
             EstimateFOD(),
             requirements=[mrtrix_req.v('3.0rc3')])
         dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
-        # Gradient merge node
-        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
-        # Connect nodes
-        pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
-        # Connect to inputs
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
         pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
         pipeline.connect_input('wm_response', dwi2fod, 'wm_txt')
         pipeline.connect_input('brain_mask', dwi2fod, 'mask_file')
+        # Connect nodes
+        pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
         # Connect to outputs
         pipeline.connect_output('wm_odf', dwi2fod, 'wm_odf')
-        # If multi-tissue 
+        # If multi-tissue
         if self.multi_tissue:
             pipeline.connect_input('gm_response', dwi2fod, 'gm_txt')
             pipeline.connect_input('csf_response', dwi2fod, 'csf_txt')
@@ -660,35 +673,35 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         # Check inputs/output are connected
         return pipeline
 
-    def tbss_pipeline(self, **name_maps):  # @UnusedVariable
-
-#             inputs=[FilesetSpec('fa', nifti_gz_format)],
-#             outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
-#                      FilesetSpec('tbss_proj_fa', nifti_gz_format,
-#                                  frequency='per_study'),
-#                      FilesetSpec('tbss_skeleton', nifti_gz_format,
-#                                  frequency='per_study'),
-#                      FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
-#                                  frequency='per_study')],
-        pipeline = self.new_pipeline(
-            name='tbss',
-            references=[tbss_cite, fsl_cite],
-            name_maps=name_maps)
-        # Create TBSS workflow
-        tbss = create_tbss_all(name='tbss')
-        # Connect inputs
-        pipeline.connect_input('fa', tbss, 'inputnode.fa_list')
-        # Connect outputs
-        pipeline.connect_output('tbss_mean_fa', tbss,
-                                'outputnode.meanfa_file')
-        pipeline.connect_output('tbss_proj_fa', tbss,
-                                'outputnode.projectedfa_file')
-        pipeline.connect_output('tbss_skeleton', tbss,
-                                'outputnode.skeleton_file')
-        pipeline.connect_output('tbss_skeleton_mask', tbss,
-                                'outputnode.skeleton_mask')
-        # Check inputs/output are connected
-        return pipeline
+#     def tbss_pipeline(self, **name_maps):  # @UnusedVariable
+# 
+# #             inputs=[FilesetSpec('fa', nifti_gz_format)],
+# #             outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
+# #                      FilesetSpec('tbss_proj_fa', nifti_gz_format,
+# #                                  frequency='per_study'),
+# #                      FilesetSpec('tbss_skeleton', nifti_gz_format,
+# #                                  frequency='per_study'),
+# #                      FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
+# #                                  frequency='per_study')],
+#         pipeline = self.new_pipeline(
+#             name='tbss',
+#             references=[tbss_cite, fsl_cite],
+#             name_maps=name_maps)
+#         # Create TBSS workflow
+# #         tbss = create_tbss_all(name='tbss')
+#         # Connect inputs
+#         pipeline.connect_input('fa', tbss, 'inputnode.fa_list')
+#         # Connect outputs
+#         pipeline.connect_output('tbss_mean_fa', tbss,
+#                                 'outputnode.meanfa_file')
+#         pipeline.connect_output('tbss_proj_fa', tbss,
+#                                 'outputnode.projectedfa_file')
+#         pipeline.connect_output('tbss_skeleton', tbss,
+#                                 'outputnode.skeleton_file')
+#         pipeline.connect_output('tbss_skeleton_mask', tbss,
+#                                 'outputnode.skeleton_mask')
+#         # Check inputs/output are connected
+#         return pipeline
 
     def extract_b0_pipeline(self, **name_maps):  # @UnusedVariable
         """
@@ -705,7 +718,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[mrtrix_cite],
             name_maps=name_maps)
         # Gradient merge node
-        fsl_grads = pipeline.add("fsl_grads", MergeTuple(2))
+        fsl_grads = pipeline.add(
+            "fsl_grads",
+            MergeTuple(2))
         # Extraction node
         extract_b0s = pipeline.add(
             'extract_b0s', ExtractDWIorB0(),
@@ -722,8 +737,10 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         mean.inputs.operation = 'mean'
         mean.inputs.quiet = True
         # Convert to Nifti
-        mrconvert = pipeline.add("output_conversion", MRConvert(),
-                                         requirements=[mrtrix_req.v('3.0rc3')])
+        mrconvert = pipeline.add(
+            "output_conversion",
+            MRConvert(),
+            requirements=[mrtrix_req.v('3.0rc3')])
         mrconvert.inputs.out_ext = '.nii.gz'
         mrconvert.inputs.quiet = True
         # Connect inputs
@@ -790,8 +807,9 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[fsl_cite],
             name_maps=name_maps)
 
-        aff_mat = pipeline.add('gen_aff_mats',
-                                       AffineMatrixGeneration())
+        aff_mat = pipeline.add(
+            'gen_aff_mats',
+            AffineMatrixGeneration())
         pipeline.connect_input('preproc', aff_mat, 'reference_image')
         pipeline.connect_input(
             'eddy_par', aff_mat, 'motion_parameters')
@@ -800,7 +818,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-# class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
+# class NODDIStudy(DwiStudy, metaclass=StudyMetaClass):
 # 
 #     add_data_specs = [
 #         AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),

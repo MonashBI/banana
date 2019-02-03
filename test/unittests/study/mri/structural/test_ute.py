@@ -2,7 +2,7 @@
 from nipype import config
 config.enable_debug_mode()
 from arcana.data import FilesetSelector  # @IgnorePep8
-from banana.study.mri.structural.ute import UTEStudy  # @IgnorePep8
+from banana.study.mri.structural.ute import UteStudy  # @IgnorePep8
 from banana.file_format import (  # @IgnorePep8
     dicom_format, nifti_gz_format, text_matrix_format)
 from banana.testing import BaseTestCase as TestCase  # @IgnorePep8
@@ -12,7 +12,7 @@ class TestUTE(TestCase):
     '''
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'registration', {
+            UteStudy, 'registration', {
                 FilesetSelector('ute_echo1', 'ute_echo1', dicom_format),
                 FilesetSelector('ute_echo2', 'ute_echo2', dicom_format),
                 FilesetSelector('umap_ute', 'umap_ute', dicom_format)})
@@ -23,7 +23,7 @@ class TestUTE(TestCase):
     
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'segmentation', {
+            UteStudy, 'segmentation', {
                 FilesetSelector('ute1_registered', 'ute1_registered', nifti_gz_format),})
         study.segmentation_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('air_mask.nii.gz', study.name)
@@ -31,7 +31,7 @@ class TestUTE(TestCase):
     
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'umap_creation', {
+            UteStudy, 'umap_creation', {
                 FilesetSelector('ute1_registered', 'ute1_registered', nifti_gz_format),
                 FilesetSelector('ute2_registered', 'ute2_registered', nifti_gz_format),
                 FilesetSelector('air_mask', 'air_mask', nifti_gz_format),
@@ -42,7 +42,7 @@ class TestUTE(TestCase):
     
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'backwrap', {
+            UteStudy, 'backwrap', {
                 'ute1_registered':Fileset('ute1_registered', nifti_gz_format),
                 'ute_echo1':Fileset('ute_echo1', dicom_format),
                 'umap_ute':Fileset('umap_ute', dicom_format),
@@ -56,7 +56,7 @@ class TestUTE(TestCase):
     
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'conversion', {
+            UteStudy, 'conversion', {
                 'sute_cont_ute':Fileset('sute_cont_ute', nifti_gz_format),
                 'sute_fix_ute':Fileset('sute_fix_ute', nifti_gz_format),
                 FilesetSelector('umap_ute', 'umap_ute', dicom_format)})
@@ -69,7 +69,7 @@ class TestUTE(TestCase):
 
     def test_ute(self):
         study = self.create_study(
-            UTEStudy, 'pipeline', {
+            UteStudy, 'pipeline', {
                 FilesetSelector('ute_echo1', 'ute_echo1', dicom_format),
                 FilesetSelector('ute_echo2', 'ute_echo2', dicom_format),
                 FilesetSelector('umap_ute', 'umap_ute', dicom_format)})

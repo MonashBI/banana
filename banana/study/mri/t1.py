@@ -63,7 +63,8 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 openmp=self.processor.num_processes),
             inputs={
                 'T1_files': ('preproc', nifti_gz_format)},
-            requirements=[freesurfer_req.v('5.3')], wall_time=2000)
+            requirements=[freesurfer_req.v('5.3')],
+            wall_time=2000)
 
         if self.provided('t2_coreg'):
             pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
@@ -74,11 +75,11 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'join',
             JoinPath(),
-            connect={
+            inputs={
                 'dirname': (recon_all, 'subjects_dir'),
                 'filename': (recon_all, 'subject_id')},
             outputs={
-                'path': ('fs_recon_all', directory_format)})
+                'fs_recon_all': ('path', directory_format)})
 
         return pipeline
 
@@ -106,12 +107,13 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'bet',
             fsl.BET(frac=0.15, reduce_bias=True),
-            connections={
+            inputs={
                 'in_file': (bias, 'output_image')},
             outputs={
-                'out_file': ('betted_T1', nifti_gz_format),
-                'mask_file': ('betted_T1_mask', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], mem_gb=8, wall_time=45)
+                'betted_T1': ('out_file', nifti_gz_format),
+                'betted_T1_mask': ('mask_file', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.8')], mem_gb=8,
+            wall_time=45)
 
         return pipeline
 
@@ -142,10 +144,10 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 invert_transform_flags=[True, False]),
             inputs={
                 'reference_image': ('betted_T1', nifti_gz_format),
-                'input_image': ('suit_mask', nifti_gz_format)},
-            connections={
+                'input_image': ('suit_mask', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
-            requirements=[ants_req.v('1.9')], mem_gb=16, wall_time=120)
+            requirements=[ants_req.v('1.9')], mem_gb=16,
+            wall_time=120)
 
         pipeline.add(
             'maths2',
@@ -153,12 +155,12 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                 suffix='_optiBET_cerebellum',
                 op_string='-mas'),
             inputs={
-                'in_file': ('betted_T1', nifti_gz_format)},
-            connections={
+                'in_file': ('betted_T1', nifti_gz_format),
                 'in_file2': (apply_trans, 'output_image')},
             outputs={
-                'out_file': ('cetted_T1', nifti_gz_format),
-                'output_image': ('cetted_T1_mask', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], mem_gb=16, wall_time=5)
+                'cetted_T1': ('out_file', nifti_gz_format),
+                'cetted_T1_mask': ('output_image', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+            wall_time=5)
 
         return pipeline
