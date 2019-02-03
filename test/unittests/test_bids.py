@@ -6,7 +6,7 @@ from unittest import TestCase  # @IgnorePep8
 from arcana.processor import LinearProcessor, DEFAULT_PROV_IGNORE
 from banana.bids import BidsRepository
 from banana.utils.testing import BaseTestCase
-from banana.study import DmriStudy, FmriStudy
+from banana.study import DwiStudy, FmriStudy
 
 
 wf_logger = logging.getLogger('nipype.workflow')
@@ -34,9 +34,9 @@ class TestBids(TestCase):
         self.assertEqual(len(list(tree.subjects)), 2)
         self.assertEqual(len(list(tree.visits)), 2)
 
-    def test_bids_dmri(self):
-        study = DmriStudy(
-            'test_dmri',
+    def test_bids_dwi(self):
+        study = DwiStudy(
+            'test_dwi',
             repository=self.repo,
             processor=LinearProcessor(
                 self.work_dir,

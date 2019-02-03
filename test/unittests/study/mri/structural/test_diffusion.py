@@ -4,7 +4,7 @@ from nipype import config
 config.enable_debug_mode()
 from arcana.data import FilesetSelector  # @IgnorePep8
 from banana.study.mri.structural.diffusion import (  # @IgnorePep8
-    DmriStudy, NODDIStudy)
+    DwiStudy, NODDIStudy)
 from banana.file_format import (  # @IgnorePep8
     mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
     text_format)
@@ -15,7 +15,7 @@ class TestDiffusion(BaseTestCase):
 
     def test_preprocess(self):
         study = self.create_study(
-            DmriStudy, 'preprocess', [
+            DwiStudy, 'preprocess', [
                 FilesetSelector('magnitude', 'r_l_dwi_b700_30', mrtrix_format),
                 FilesetSelector('dwi_reference', 'l_r_dwi_b0_6', mrtrix_format)])
         preproc = list(study.data('preproc'))[0]
@@ -23,7 +23,7 @@ class TestDiffusion(BaseTestCase):
 
     def test_extract_b0(self):
         study = self.create_study(
-            DmriStudy, 'extract_b0', [
+            DwiStudy, 'extract_b0', [
                 FilesetSelector('preproc', 'preproc', nifti_gz_format),
                 FilesetSelector('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
                 FilesetSelector('bvalues', 'bvalues', fsl_bvals_format)])
@@ -32,7 +32,7 @@ class TestDiffusion(BaseTestCase):
 
     def test_bias_correct(self):
         study = self.create_study(
-            DmriStudy, 'bias_correct', [
+            DwiStudy, 'bias_correct', [
                 FilesetSelector('preproc', 'preproc', nifti_gz_format),
                 FilesetSelector('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
                 FilesetSelector('bvalues', 'bvalues', fsl_bvals_format)])
@@ -42,7 +42,7 @@ class TestDiffusion(BaseTestCase):
 
     def test_tensor(self):
         study = self.create_study(
-            DmriStudy, 'tensor', [
+            DwiStudy, 'tensor', [
                 FilesetSelector('bias_correct', 'bias_correct', nifti_gz_format),
                 FilesetSelector('brain_mask', 'brain_mask', nifti_gz_format),
                 FilesetSelector('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
@@ -53,7 +53,7 @@ class TestDiffusion(BaseTestCase):
 
     def test_response(self):
         study = self.create_study(
-            DmriStudy, 'response', [
+            DwiStudy, 'response', [
                 FilesetSelector('bias_correct', 'bias_correct', nifti_gz_format),
                 FilesetSelector('brain_mask', 'brain_mask', nifti_gz_format),
                 FilesetSelector('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
@@ -64,7 +64,7 @@ class TestDiffusion(BaseTestCase):
 
     def test_fod(self):
         study = self.create_study(
-            DmriStudy, 'fod', [
+            DwiStudy, 'fod', [
                 FilesetSelector('bias_correct', 'bias_correct', nifti_gz_format),
                 FilesetSelector('brain_mask', 'brain_mask', nifti_gz_format),
                 FilesetSelector('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
@@ -79,7 +79,7 @@ class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
 
     def test_intensity_normalization(self):
         study = self.create_study(
-            DmriStudy, 'intens_norm', [
+            DwiStudy, 'intens_norm', [
                 FilesetSelector('bias_correct', 'biascorrect', nifti_gz_format),
                 FilesetSelector('brain_mask', 'brainmask', nifti_gz_format),
                 FilesetSelector('grad_dirs', 'gradientdirs', fsl_bvecs_format),
@@ -99,7 +99,7 @@ class TestMultiSubjectDiffusion(BaseMultiSubjectTestCase):
 
     def test_average_response(self):
         study = self.create_study(
-            DmriStudy, 'response', {
+            DwiStudy, 'response', {
                 FilesetSelector('response', 'response', text_format)})
         study.average_response_pipeline().run(work_dir=self.work_dir)
         for subject_id in self.subject_ids:

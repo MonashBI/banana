@@ -5,7 +5,7 @@ from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
 from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
-from nipype.workflows.dmri.fsl.tbss import create_tbss_all
+from nipype.workflows.dwi.fsl.tbss import create_tbss_all
 from banana.interfaces.noddi import (
     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
@@ -32,7 +32,7 @@ from banana.exceptions import BananaUsageError
 from banana.study import StudyMetaClass
 
 
-class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
+class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
@@ -337,7 +337,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 requirements=[mrtrix_req.v('3.0rc3')])
 
         else:
-            pipeline = super(DmriStudy, self).brain_extraction_pipeline(
+            pipeline = super(DwiStudy, self).brain_extraction_pipeline(
                 **name_maps)
         return pipeline
 
@@ -818,7 +818,7 @@ class DmriStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-# class NODDIStudy(DmriStudy, metaclass=StudyMetaClass):
+# class NODDIStudy(DwiStudy, metaclass=StudyMetaClass):
 # 
 #     add_data_specs = [
 #         AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),

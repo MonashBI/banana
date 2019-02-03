@@ -155,26 +155,26 @@ def inputs_generation(scan_description, input_dir, siemens=False):
                 " main diffusion images): ").split()
     dwi = [scan_description[int(i)-1] for i in dwi]
     if dwi:
-        dmris, unused_b0 = dwi_type_assignment(input_dir, dwi)
-        if len(dmris) < len(dwi):
+        dwis, unused_b0 = dwi_type_assignment(input_dir, dwi)
+        if len(dwis) < len(dwi):
             raise Exception('The following DWI scan cannot be recognized as b0'
                             'or main diffusion scan. Please remove it from the'
                             'input directory or assign it to others:\n{}'
                             .format(' '.join(x for x in dwi if x not in
-                                             dmris)))
+                                             dwis)))
         else:
             print ('The DWI images provided were assigned to the following '
                    'types: \n')
-            for dmri in dmris:
-                if dmri[-1] == '0':
+            for dwi in dwis:
+                if dwi[-1] == '0':
                     print(('main diffusion image with multiple directions: '
-                           '{}'.format(dmri[0])))
-                elif dmri[-1] == '1':
+                           '{}'.format(dwi[0])))
+                elif dwi[-1] == '1':
                     print(('b0 image with same phase encoding direction '
-                           'respect to the main dwi: {}'.format(dmri[0])))
-                elif dmri[-1] == '-1':
+                           'respect to the main dwi: {}'.format(dwi[0])))
+                elif dwi[-1] == '-1':
                     print(('b0 image with opposite phase encoding direction '
-                           'respect to the main dwi: {}'.format(dmri[0])))
+                           'respect to the main dwi: {}'.format(dwi[0])))
             print('\n')
     if not siemens:
         utes = input("Please select the UTE scans: ").split()
@@ -196,9 +196,9 @@ def inputs_generation(scan_description, input_dir, siemens=False):
         t2s = t2s+unused_b0
 
     if siemens:
-        return ref, ref_type, t1s, epis, t2s, dmris
+        return ref, ref_type, t1s, epis, t2s, dwis
     else:
-        return ref, ref_type, t1s, epis, t2s, dmris, utes, umaps
+        return ref, ref_type, t1s, epis, t2s, dwis, utes, umaps
 
 
 def guess_scan_type(scans, input_dir):
@@ -246,7 +246,7 @@ def guess_scan_type(scans, input_dir):
                 t2s.append(scan)
                 if 'gre' not in sequence_name:
                     res_t2.append([scan, float(hd.PixelSpacing[0])])
-    dmris, unused_b0 = dwi_type_assignment(input_dir, dwi_scans)
+    dwis, unused_b0 = dwi_type_assignment(input_dir, dwi_scans)
     if unused_b0:
         print(('The following b0 images have different phase encoding '
                'direction respect to the main diffusion and/or the ped '
@@ -283,18 +283,18 @@ def guess_scan_type(scans, input_dir):
             for epi in epis:
                 print(('{}'.format(epi)))
             print('\n')
-        if dmris:
+        if dwis:
             print ('The following scans were identified as DWI: \n')
-            for dmri in dmris:
-                if dmri[-1] == '0':
+            for dwi in dwis:
+                if dwi[-1] == '0':
                     print(('main diffusion image with multiple directions: '
-                           '{}'.format(dmri[0])))
-                elif dmri[-1] == '1':
+                           '{}'.format(dwi[0])))
+                elif dwi[-1] == '1':
                     print(('b0 image with same phase encoding direction '
-                           'respect to the main dwi: {}'.format(dmri[0])))
-                elif dmri[-1] == '-1':
+                           'respect to the main dwi: {}'.format(dwi[0])))
+                elif dwi[-1] == '-1':
                     print(('b0 image with opposite phase encoding direction '
-                           'respect to the main dwi: {}'.format(dmri[0])))
+                           'respect to the main dwi: {}'.format(dwi[0])))
             print('\n')
         if t2s:
             print ('The following scans were identified as not belonging to '
@@ -303,7 +303,7 @@ def guess_scan_type(scans, input_dir):
                 print(('{}'.format(t2)))
             print('\n')
 
-        assigned = [ref]+t1s+t2s+[x[0] for x in dmris]+epis
+        assigned = [ref]+t1s+t2s+[x[0] for x in dwis]+epis
         not_assigned = [x for x in scans if x not in assigned]
         if not_assigned:
             print (
@@ -320,7 +320,7 @@ def guess_scan_type(scans, input_dir):
             "If it is not correct then you will be prompted to manually group "
             "all the scans into the different classes: ").split()
         if check_guess[0] == 'yes':
-            inputs = [ref, ref_type, t1s, epis, t2s, dmris]
+            inputs = [ref, ref_type, t1s, epis, t2s, dwis]
         else:
             inputs = []
     else:
@@ -332,14 +332,14 @@ def guess_scan_type(scans, input_dir):
     return inputs
 
 
-def dwi_type_assignment(input_dir, dmri_images):
+def dwi_type_assignment(input_dir, dwi_images):
 
     main_dwi = []
     b0 = []
-    dmris = []
+    dwis = []
     unused_b0 = []
 
-    for dwi in dmri_images:
+    for dwi in dwi_images:
         cmd = 'mrinfo {0}'.format(input_dir+'/'+dwi)
         info = (sp.check_output(cmd, shell=True)).decode('utf-8')
         info = info.strip().split('\n')
@@ -373,15 +373,15 @@ def dwi_type_assignment(input_dir, dmri_images):
 
     for i in range(len(main_dwi)):
         if main_dwi[i][2]:
-            dmris.append([main_dwi[i][0], '0'])
+            dwis.append([main_dwi[i][0], '0'])
         ped_main = main_dwi[i][2]
         for j in range(len(b0)):
             ped_b0 = b0[j][2]
             if ped_b0 == ped_main:
                 if main_dwi[i][1] == b0[j][1] and (j == i or j == i+1):
-                    dmris.append([b0[j][0], '1'])
+                    dwis.append([b0[j][0], '1'])
                 elif main_dwi[i][1] != b0[j][1] and (j == i or j == i+1):
-                    dmris.append([b0[j][0], '-1'])
+                    dwis.append([b0[j][0], '-1'])
             else:
                 unused_b0.append(b0[j][0])
 #         if not b0_found:
@@ -390,7 +390,7 @@ def dwi_type_assignment(input_dir, dmri_images):
 #                 'DWI and the provided b0 images is not the '
 #                 'same! Please check.')
 
-    return dmris, unused_b0
+    return dwis, unused_b0
 
 
 def check_image_type(input_dir, scans):

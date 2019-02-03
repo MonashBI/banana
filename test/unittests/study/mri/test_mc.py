@@ -11,7 +11,7 @@ ref_type = 't1'
 t1s = ['ute']
 t2s = ['t2']
 epis = ['epi']
-dmris = [['dwi_main', '0'], ['dwi_opposite', '-1']]
+dwis = [['dwi_main', '0'], ['dwi_opposite', '-1']]
 
 
 class TestMC(TestCase):
@@ -27,7 +27,7 @@ class TestMC(TestCase):
     def test_motion_correction(self):
 
         MotionCorrection, inputs, out_data = create_motion_correction_class(
-            'MotionCorrection', ref, ref_type, t1s=t1s, t2s=t2s, dmris=dmris,
+            'MotionCorrection', ref, ref_type, t1s=t1s, t2s=t2s, dwis=dwis,
             epis=epis)
 
         study = self.create_study(

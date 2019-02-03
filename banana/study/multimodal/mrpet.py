@@ -13,7 +13,7 @@ from banana.study.mri.epi import EpiStudy
 from banana.study.mri.t1 import T1Study
 from banana.study.mri.t2 import T2Study
 from nipype.interfaces.utility import Merge
-from banana.study.mri.dmri import DmriStudy
+from banana.study.mri.dwi import DwiStudy
 from banana.requirement import fsl_req, mrtrix_req, ants_req
 from arcana.exceptions import ArcanaNameError
 from arcana.data import FilesetSelector
@@ -774,7 +774,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
 
 def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
-                                   t2s=None, dmris=None, epis=None,
+                                   t2s=None, dwis=None, epis=None,
                                    umap=None, dynamic=False, umap_ref=None,
                                    pet_data_dir=None, pet_recon_dir=None,
                                    struct2align=None):
@@ -888,84 +888,84 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
             FilesetSelector('epi_{}_primary'.format(i), epi_scan, dicom_format)
             for i, epi_scan in enumerate(epis))
         run_pipeline = True
-    if dmris:
+    if dwis:
         unused_dwi = []
-        dmris_main = [x for x in dmris if x[-1] == '0']
-        dmris_ref = [x for x in dmris if x[-1] == '1']
-        dmris_opposite = [x for x in dmris if x[-1] == '-1']
+        dwis_main = [x for x in dwis if x[-1] == '0']
+        dwis_ref = [x for x in dwis if x[-1] == '1']
+        dwis_opposite = [x for x in dwis if x[-1] == '-1']
         dwi_refspec = ref_spec.copy()
         dwi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                            'ref_preproc': 'coreg_ref'})
-        if dmris_main:
+        if dwis_main:
             switch_specs.extend(
                 SwitchSpec('dwi_{}_brain_extract_method'.format(i), 'fsl',
-                           ('mrtrix', 'fsl')) for i in range(len(dmris_main)))
-        if dmris_main and not dmris_opposite:
+                           ('mrtrix', 'fsl')) for i in range(len(dwis_main)))
+        if dwis_main and not dwis_opposite:
             logger.warning(
                 'No opposite phase encoding direction b0 provided. DWI '
                 'motion correction will be performed without distortion '
                 'correction. THIS IS SUB-OPTIMAL!')
             study_specs.extend(
-                SubStudySpec('dwi_{}'.format(i), DmriStudy, dwi_refspec)
-                for i in range(len(dmris_main)))
+                SubStudySpec('dwi_{}'.format(i), DwiStudy, dwi_refspec)
+                for i in range(len(dwis_main)))
             inputs.extend(
                 FilesetSelector('dwi_{}_primary'.format(i),
-                                dmris_main_scan[0], dicom_format)
-                for i, dmris_main_scan in enumerate(dmris_main))
-        if dmris_main and dmris_opposite:
+                                dwis_main_scan[0], dicom_format)
+                for i, dwis_main_scan in enumerate(dwis_main))
+        if dwis_main and dwis_opposite:
             study_specs.extend(
-                SubStudySpec('dwi_{}'.format(i), DmriStudy, dwi_refspec)
-                for i in range(len(dmris_main)))
+                SubStudySpec('dwi_{}'.format(i), DwiStudy, dwi_refspec)
+                for i in range(len(dwis_main)))
             inputs.extend(
                 FilesetSelector(
                     'dwi_{}_primary'.format(i),
-                    dmris_main[i][0],
+                    dwis_main[i][0],
                     dicom_format)
-                for i in range(len(dmris_main)))
-            if len(dmris_main) <= len(dmris_opposite):
+                for i in range(len(dwis_main)))
+            if len(dwis_main) <= len(dwis_opposite):
                 inputs.extend(
                     FilesetSelector('dwi_{}_dwi_reference'.format(i),
-                                    dmris_opposite[i][0], dicom_format)
-                    for i in range(len(dmris_main)))
+                                    dwis_opposite[i][0], dicom_format)
+                    for i in range(len(dwis_main)))
             else:
                 inputs.extend(FilesetSelector('dwi_{}_dwi_reference'.format(i),
-                                              dmris_opposite[0][0],
+                                              dwis_opposite[0][0],
                                               dicom_format)
-                              for i in range(len(dmris_main)))
-        if dmris_opposite and dmris_main and not dmris_ref:
+                              for i in range(len(dwis_main)))
+        if dwis_opposite and dwis_main and not dwis_ref:
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EpiStudy, dwi_refspec)
-                for i in range(len(dmris_opposite)))
+                for i in range(len(dwis_opposite)))
             inputs.extend(FilesetSelector('b0_{}_primary'.format(i),
-                                          dmris_opposite[i][0], dicom_format)
-                          for i in range(len(dmris_opposite)))
-            if len(dmris_opposite) <= len(dmris_main):
+                                          dwis_opposite[i][0], dicom_format)
+                          for i in range(len(dwis_opposite)))
+            if len(dwis_opposite) <= len(dwis_main):
                 inputs.extend(FilesetSelector('b0_{}_reverse_phase'.format(i),
-                                              dmris_main[i][0], dicom_format)
-                              for i in range(len(dmris_opposite)))
+                                              dwis_main[i][0], dicom_format)
+                              for i in range(len(dwis_opposite)))
             else:
                 inputs.extend(FilesetSelector('b0_{}_reverse_phase'.format(i),
-                                              dmris_main[0][0], dicom_format)
-                              for i in range(len(dmris_opposite)))
-        elif dmris_opposite and dmris_ref:
-            min_index = min(len(dmris_opposite), len(dmris_ref))
+                                              dwis_main[0][0], dicom_format)
+                              for i in range(len(dwis_opposite)))
+        elif dwis_opposite and dwis_ref:
+            min_index = min(len(dwis_opposite), len(dwis_ref))
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EpiStudy, dwi_refspec)
                 for i in range(min_index * 2))
             inputs.extend(
                 FilesetSelector('b0_{}_primary'.format(i), scan[0],
                                 dicom_format)
-                for i, scan in enumerate(dmris_opposite[:min_index] +
-                                         dmris_ref[:min_index]))
+                for i, scan in enumerate(dwis_opposite[:min_index] +
+                                         dwis_ref[:min_index]))
             inputs.extend(
                 FilesetSelector('b0_{}_reverse_phase'.format(i), scan[0],
                                 dicom_format)
-                for i, scan in enumerate(dmris_ref[:min_index] +
-                                         dmris_opposite[:min_index]))
-            unused_dwi = [scan for scan in dmris_ref[min_index:] +
-                          dmris_opposite[min_index:]]
-        elif dmris_opposite or dmris_ref:
-            unused_dwi = [scan for scan in dmris_ref + dmris_opposite]
+                for i, scan in enumerate(dwis_ref[:min_index] +
+                                         dwis_opposite[:min_index]))
+            unused_dwi = [scan for scan in dwis_ref[min_index:] +
+                          dwis_opposite[min_index:]]
+        elif dwis_opposite or dwis_ref:
+            unused_dwi = [scan for scan in dwis_ref + dwis_opposite]
         if unused_dwi:
             logger.info(
                 'The following scans:\n{}\nwere not assigned during the DWI '
@@ -996,7 +996,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
 
 
 def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
-                                  t2s=None, dmris=None, epis=None,
+                                  t2s=None, dwis=None, epis=None,
                                   pet_data_dir=None):
 
     inputs = []
@@ -1052,78 +1052,78 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
             FilesetSelector('epi_{}_primary'.format(i), epi_scan, dicom_format)
             for i, epi_scan in enumerate(epis))
         run_pipeline = True
-    if dmris:
+    if dwis:
         unused_dwi = []
-        dmris_main = [x for x in dmris if x[-1] == '0']
-        dmris_ref = [x for x in dmris if x[-1] == '1']
-        dmris_opposite = [x for x in dmris if x[-1] == '-1']
+        dwis_main = [x for x in dwis if x[-1] == '0']
+        dwis_ref = [x for x in dwis if x[-1] == '1']
+        dwis_opposite = [x for x in dwis if x[-1] == '-1']
         b0_refspec = ref_spec.copy()
         b0_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                            'ref_preproc': 'coreg_ref'})
-        if dmris_main and not dmris_opposite:
+        if dwis_main and not dwis_opposite:
             logger.warning(
                 'No opposite phase encoding direction b0 provided. DWI '
                 'motion correction will be performed without distortion '
                 'correction. THIS IS SUB-OPTIMAL!')
             study_specs.extend(
-                SubStudySpec('dwi_{}'.format(i), DmriStudy, ref_spec)
-                for i in range(len(dmris_main)))
+                SubStudySpec('dwi_{}'.format(i), DwiStudy, ref_spec)
+                for i in range(len(dwis_main)))
             inputs.extend(
                 FilesetSelector('dwi_{}_primary'.format(i),
-                                dmris_main_scan[0], dicom_format)
-                for i, dmris_main_scan in enumerate(dmris_main))
-        if dmris_main and dmris_opposite:
+                                dwis_main_scan[0], dicom_format)
+                for i, dwis_main_scan in enumerate(dwis_main))
+        if dwis_main and dwis_opposite:
             study_specs.extend(
-                SubStudySpec('dwi_{}'.format(i), DmriStudy, ref_spec)
-                for i in range(len(dmris_main)))
+                SubStudySpec('dwi_{}'.format(i), DwiStudy, ref_spec)
+                for i in range(len(dwis_main)))
             inputs.extend(
                 FilesetSelector(
-                    'dwi_{}_primary'.format(i), dmris_main[i][0], dicom_format)
-                for i in range(len(dmris_main)))
-            if len(dmris_main) <= len(dmris_opposite):
+                    'dwi_{}_primary'.format(i), dwis_main[i][0], dicom_format)
+                for i in range(len(dwis_main)))
+            if len(dwis_main) <= len(dwis_opposite):
                 inputs.extend(FilesetSelector('dwi_{}_dwi_reference'.format(i),
-                                              dmris_opposite[i][0],
+                                              dwis_opposite[i][0],
                                               dicom_format)
-                              for i in range(len(dmris_main)))
+                              for i in range(len(dwis_main)))
             else:
                 inputs.extend(FilesetSelector('dwi_{}_dwi_reference'.format(i),
-                                              dmris_opposite[0][0],
+                                              dwis_opposite[0][0],
                                               dicom_format)
-                              for i in range(len(dmris_main)))
-        if dmris_opposite and dmris_main and not dmris_ref:
+                              for i in range(len(dwis_main)))
+        if dwis_opposite and dwis_main and not dwis_ref:
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EpiStudy, b0_refspec)
-                for i in range(len(dmris_opposite)))
+                for i in range(len(dwis_opposite)))
             inputs.extend(FilesetSelector('b0_{}_primary'.format(i),
-                                          dmris_opposite[i][0], dicom_format)
-                          for i in range(len(dmris_opposite)))
-            if len(dmris_opposite) <= len(dmris_main):
+                                          dwis_opposite[i][0], dicom_format)
+                          for i in range(len(dwis_opposite)))
+            if len(dwis_opposite) <= len(dwis_main):
                 inputs.extend(FilesetSelector('b0_{}_reverse_phase'.format(i),
-                                              dmris_main[i][0], dicom_format)
-                              for i in range(len(dmris_opposite)))
+                                              dwis_main[i][0], dicom_format)
+                              for i in range(len(dwis_opposite)))
             else:
                 inputs.extend(FilesetSelector('b0_{}_reverse_phase'.format(i),
-                                              dmris_main[0][0], dicom_format)
-                              for i in range(len(dmris_opposite)))
-        elif dmris_opposite and dmris_ref:
-            min_index = min(len(dmris_opposite), len(dmris_ref))
+                                              dwis_main[0][0], dicom_format)
+                              for i in range(len(dwis_opposite)))
+        elif dwis_opposite and dwis_ref:
+            min_index = min(len(dwis_opposite), len(dwis_ref))
             study_specs.extend(
                 SubStudySpec('b0_{}'.format(i), EpiStudy, b0_refspec)
                 for i in range(min_index * 2))
             inputs.extend(
                 FilesetSelector('b0_{}_primary'.format(i),
                                 scan[0], dicom_format)
-                for i, scan in enumerate(dmris_opposite[:min_index] +
-                                         dmris_ref[:min_index]))
+                for i, scan in enumerate(dwis_opposite[:min_index] +
+                                         dwis_ref[:min_index]))
             inputs.extend(
                 FilesetSelector('b0_{}_reverse_phase'.format(i),
                                 scan[0], dicom_format)
-                for i, scan in enumerate(dmris_ref[:min_index] +
-                                         dmris_opposite[:min_index]))
-            unused_dwi = [scan for scan in dmris_ref[min_index:] +
-                          dmris_opposite[min_index:]]
-        elif dmris_opposite or dmris_ref:
-            unused_dwi = [scan for scan in dmris_ref + dmris_opposite]
+                for i, scan in enumerate(dwis_ref[:min_index] +
+                                         dwis_opposite[:min_index]))
+            unused_dwi = [scan for scan in dwis_ref[min_index:] +
+                          dwis_opposite[min_index:]]
+        elif dwis_opposite or dwis_ref:
+            unused_dwi = [scan for scan in dwis_ref + dwis_opposite]
         if unused_dwi:
             logger.info(
                 'The following scans:\n{}\nwere not assigned during the DWI '
