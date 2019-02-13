@@ -665,36 +665,6 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         # Check inputs/output are connected
         return pipeline
 
-#     def tbss_pipeline(self, **name_maps):  # @UnusedVariable
-#
-# #             inputs=[FilesetSpec('fa', nifti_gz_format)],
-# #             outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
-# #                      FilesetSpec('tbss_proj_fa', nifti_gz_format,
-# #                                  frequency='per_study'),
-# #                      FilesetSpec('tbss_skeleton', nifti_gz_format,
-# #                                  frequency='per_study'),
-# #                      FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
-# #                                  frequency='per_study')],
-#         pipeline = self.new_pipeline(
-#             name='tbss',
-#             references=[tbss_cite, fsl_cite],
-#             name_maps=name_maps)
-#         # Create TBSS workflow
-# #         tbss = create_tbss_all(name='tbss')
-#         # Connect inputs
-#         pipeline.connect_input('fa', tbss, 'inputnode.fa_list')
-#         # Connect outputs
-#         pipeline.connect_output('tbss_mean_fa', tbss,
-#                                 'outputnode.meanfa_file')
-#         pipeline.connect_output('tbss_proj_fa', tbss,
-#                                 'outputnode.projectedfa_file')
-#         pipeline.connect_output('tbss_skeleton', tbss,
-#                                 'outputnode.skeleton_file')
-#         pipeline.connect_output('tbss_skeleton_mask', tbss,
-#                                 'outputnode.skeleton_mask')
-#         # Check inputs/output are connected
-#         return pipeline
-
     def extract_b0_pipeline(self, **name_maps):  # @UnusedVariable
         """
         Extracts the b0 images from a DWI study and takes their mean
@@ -806,6 +776,36 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'align_mats': ('affine_matrices', directory_format)})
 
         return pipeline
+
+#     def tbss_pipeline(self, **name_maps):  # @UnusedVariable
+#
+# #             inputs=[FilesetSpec('fa', nifti_gz_format)],
+# #             outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
+# #                      FilesetSpec('tbss_proj_fa', nifti_gz_format,
+# #                                  frequency='per_study'),
+# #                      FilesetSpec('tbss_skeleton', nifti_gz_format,
+# #                                  frequency='per_study'),
+# #                      FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
+# #                                  frequency='per_study')],
+#         pipeline = self.new_pipeline(
+#             name='tbss',
+#             references=[tbss_cite, fsl_cite],
+#             name_maps=name_maps)
+#         # Create TBSS workflow
+# #         tbss = create_tbss_all(name='tbss')
+#         # Connect inputs
+#         pipeline.connect_input('fa', tbss, 'inputnode.fa_list')
+#         # Connect outputs
+#         pipeline.connect_output('tbss_mean_fa', tbss,
+#                                 'outputnode.meanfa_file')
+#         pipeline.connect_output('tbss_proj_fa', tbss,
+#                                 'outputnode.projectedfa_file')
+#         pipeline.connect_output('tbss_skeleton', tbss,
+#                                 'outputnode.skeleton_file')
+#         pipeline.connect_output('tbss_skeleton_mask', tbss,
+#                                 'outputnode.skeleton_mask')
+#         # Check inputs/output are connected
+#         return pipeline
 
 
 # class NODDIStudy(DwiStudy, metaclass=StudyMetaClass):
