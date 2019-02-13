@@ -1,7 +1,8 @@
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSpec, FieldSpec
-from banana.file_format import (nifti_gz_format, text_format,
-                                    text_matrix_format, directory_format)
+from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
+from banana.file_format import (
+    nifti_gz_format, text_format, text_matrix_format, directory_format,
+    list_mode_format)
 from banana.interfaces.sklearn import FastICA
 from banana.interfaces.ants import AntsRegSyn
 import os
@@ -9,6 +10,9 @@ from banana.requirement import fsl_req, mrtrix_req
 from banana.interfaces.custom.pet import PreparePetDir
 from banana.interfaces.custom.dicom import PetTimeInfo
 from arcana.study import ParameterSpec
+from banana.interfaces.custom.pet import (
+    PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
+from banana.requirement import stir_req
 
 
 template_path = os.path.abspath(
@@ -36,6 +40,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('registered_volumes', nifti_gz_format, optional=True),
         FilesetSpec('pet_image', nifti_gz_format, optional=True),
+        AcquiredFilesetSpec('list_mode', list_mode_format),
         FilesetSpec('pet_data_dir', directory_format),
         FilesetSpec('pet_recon_dir', directory_format),
         FilesetSpec('pet_recon_dir_prepared', directory_format,
@@ -56,7 +61,12 @@ class PetStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('pet_end_time', dtype=str,
                   pipeline_name='pet_time_info_extraction_pipeline'),
         FieldSpec('pet_start_time', dtype=str,
-                  pipeline_name='pet_time_info_extraction_pipeline')]
+                  pipeline_name='pet_time_info_extraction_pipeline'),
+        FieldSpec('time_offset', int),
+        FieldSpec('temporal_length', float),
+        FieldSpec('num_frames', int),
+        FilesetSpec('ssrb_sinograms', directory_format,
+                    'sinogram_unlisting_pipeline')]
 
     def ICA_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(
@@ -69,7 +79,6 @@ class PetStudy(Study, metaclass=StudyMetaClass):
 #             outputs=[FilesetSpec('decomposed_file', nifti_gz_format),
 #                      FilesetSpec('timeseries', nifti_gz_format),
 #                      FilesetSpec('mixing_mat', text_format)],
-
 
         pipeline = self.new_pipeline(
             name='ICA',
@@ -166,4 +175,50 @@ class PetStudy(Study, metaclass=StudyMetaClass):
         pipeline.connect_output('pet_end_time', time_info, 'pet_end_time')
         pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')
         pipeline.connect_output('pet_duration', time_info, 'pet_duration')
+        return pipeline
+
+    def sinogram_unlisting_pipeline(self, **kwargs):
+
+#             inputs=[FilesetSpec('list_mode', list_mode_format),
+#                     FieldSpec('time_offset', int),
+#                     FieldSpec('temporal_length', float),
+#                     FieldSpec('num_frames', int)],
+#             outputs=[FilesetSpec('ssrb_sinograms', directory_format)],
+
+
+        pipeline = self.new_pipeline(
+            name='prepare_sinogram',
+            desc=('Unlist pet listmode data into several sinograms and '
+                         'perform ssrb compression to prepare data for motion '
+                         'detection using PCA pipeline.'),
+            references=[],
+            **kwargs)
+
+        prepare_inputs = pipeline.add(
+            'prepare_inputs',
+            PrepareUnlistingInputs())
+        pipeline.connect_input('list_mode', prepare_inputs, 'list_mode')
+        pipeline.connect_input('time_offset', prepare_inputs, 'time_offset')
+        pipeline.connect_input('num_frames', prepare_inputs, 'num_frames')
+        pipeline.connect_input('temporal_length', prepare_inputs,
+                               'temporal_len')
+        unlisting = pipeline.add(
+            'unlisting',
+            PETListModeUnlisting(), iterfield=['list_inputs'])
+        pipeline.connect(prepare_inputs, 'out', unlisting, 'list_inputs')
+
+        ssrb = pipeline.add(
+            'ssrb',
+            SSRB(),
+            requirements=[stir_req.v('3.0')])
+        pipeline.connect(unlisting, 'pet_sinogram', ssrb, 'unlisted_sinogram')
+
+        merge = pipeline.add(
+            'merge_sinograms',
+            MergeUnlistingOutputs(),
+            joinsource='unlisting',
+            joinfield=['sinograms'])
+        pipeline.connect(ssrb, 'ssrb_sinograms', merge, 'sinograms')
+        pipeline.connect_output('ssrb_sinograms', merge, 'sinogram_folder')
+
         return pipeline
