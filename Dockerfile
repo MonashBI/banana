@@ -31,5 +31,5 @@ ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$FSLDIR
 RUN echo ". /etc/fsl/5.0/fsl.sh" >> /root/.bashrc
 
 # Install NiAnalysis and prerequisite pipelines
-RUN pip install git+https://github.com/mbi-image/nianalysis.git
+RUN pip3 install banana
 ENV PATH /packages/dcm2niix/build/bin:/packages/mrtrix/bin:$PATH
