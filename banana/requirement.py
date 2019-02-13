@@ -87,6 +87,14 @@ class AfniVersion(Version):
         return 'AFNI_{}'.format(super().__str__())
 
 
+class StirRequirement(CliRequirement):
+
+    def detect_version_str(self):
+        raise ArcanaVersionNotDetectableError(
+            "Can't automatically detect version of STIR as it isn't saved in "
+            "the build process")
+
+
 mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')
 ants_req = CliRequirement('ants', test_cmd='antsRegistration')
 dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
@@ -95,6 +103,7 @@ fix_req = CliRequirement('fix', test_cmd='fix')
 afni_req = CliRequirement('afni', test_cmd='afni', version_cls=AfniVersion)
 fsl_req = FSLRequirement('fsl', test_cmd='fslinfo')
 c3d_req = C3dRequirement('c3d', test_cmd='c3d')
+stir_req = StirRequirement('stir', test_cmd='SSRB')
 
 # Matlab package requirements
 

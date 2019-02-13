@@ -3,8 +3,8 @@ from banana.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProcessor
-from arcana.repository.simple import DirectoryRepository
-from banana.motion_correction_utils import (
+from arcana.repository.directory import DirectoryRepository
+from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
