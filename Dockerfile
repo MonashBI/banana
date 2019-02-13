@@ -2,7 +2,7 @@ FROM neurodebian:xenial
 
 RUN apt-get update; apt-get install -y git g++ python python-numpy \
     libeigen3-dev zlib1g-dev libqt4-opengl-dev libgl1-mesa-dev \
-    libfftw3-dev libtiff5-dev python-pip vim wget cmake fsl-5.0
+    libfftw3-dev libtiff5-dev python3-pip vim wget cmake fsl-5.0
 
 # Install Dcm2niix and MRtrix for format conversion
 
