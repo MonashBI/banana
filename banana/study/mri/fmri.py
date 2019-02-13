@@ -22,6 +22,7 @@ from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from arcana.data import FilesetSelector
+from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from banana.interfaces.custom.fmri import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
@@ -360,33 +361,33 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
+class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
+    """
+    A mixin class used for studies with an array of fMRI scans. Can be used to
+    perform combined analysis over the array
+    """
 
     add_data_specs = [
         FilesetSpec('train_data', rfile_format, 'fix_training_pipeline',
                     frequency='per_study'),
-#         FilesetSpec('fmri_pre-processeing_results', directory_format,
-#                     'gather_fmri_result_pipeline'),
-        FilesetSpec('group_melodic', directory_format, 'group_melodic_pipeline')]
+        FilesetSpec('fmri_pre-processeing_results', directory_format,
+                    'gather_fmri_result_pipeline'),
+        FilesetSpec('group_melodic', directory_format,
+                    'group_melodic_pipeline')]
+
+    @classmethod
+    def fmri_sub_studies(cls):
+        # Detect fMRI sub-studies
+        fmri_sub_studies = []
+        for sub_study_spec in cls.sub_study_specs():
+            try:
+                cls.data_spec(sub_study_spec.inverse_map('fix_dir'))
+            except ArcanaNameError:
+                continue  # Sub study is not a Fmri study
+            else:
+                fmri_sub_studies.append(sub_study_spec.name)
 
     def fix_training_pipeline(self, **name_maps):
-
-        inputs = []
-        sub_study_names = []
-        for sub_study_spec in self.sub_study_specs():
-            try:
-                spec = self.data_spec(sub_study_spec.inverse_map('fix_dir'))
-                spec._format = directory_format
-                inputs.append(spec)
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map(
-                        'hand_label_noise')))
-                sub_study_names.append(sub_study_spec.name)
-            except ArcanaNameError:
-                continue  # Sub study doesn't have fix dir
-
-#             inputs=inputs,
-#             outputs=[FilesetSpec('train_data', rfile_format)],
 
         pipeline = self.new_pipeline(
             name='training_fix',
@@ -396,20 +397,21 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             references=[fsl_cite],
             name_maps=name_maps)
 
-        num_fix_dirs = len(sub_study_names)
+        num_fix_dirs = len(self.fmri_sub_studies())
         merge_fix_dirs = pipeline.add(
             'merge_fix_dirs',
             NiPypeMerge(num_fix_dirs))
         merge_label_files = pipeline.add(
             'merge_label_files',
             NiPypeMerge(num_fix_dirs))
-        for i, sub_study_name in enumerate(sub_study_names, start=1):
+        for i, sub_study_name in enumerate(self.fmri_sub_studies(), start=1):
             spec = self.sub_study_spec(sub_study_name)
             pipeline.connect_input(
-                spec.inverse_map('fix_dir'), merge_fix_dirs, 'in{}'.format(i))
+                spec.inverse_map('fix_dir'), merge_fix_dirs, 'in{}'.format(i),
+                directory_format)
             pipeline.connect_input(
                 spec.inverse_map('hand_label_noise'), merge_label_files,
-                'in{}'.format(i))
+                'in{}'.format(i), text_format)
 
         merge_visits = pipeline.add(
             IdentityInterface(
@@ -452,39 +454,34 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         return pipeline
 
-#     def gather_fmri_result_pipeline(self, **name_maps):
-#
-#         inputs = []
-#         sub_study_names = []
-#         for sub_study_spec in self.sub_study_specs():
-#             try:
-#                 inputs.append(
-#                     self.data_spec(sub_study_spec.inverse_map('smoothed_ts')))
-#                 sub_study_names.append(sub_study_spec.name)
-#             except ArcanaNameError:
-#                 continue  # Sub study doesn't have fix dir
-#
-#         pipeline = self.new_pipeline(
-#             name='gather_fmri',
-#             inputs=inputs,
-#             outputs=[FilesetSpec('fmri_pre-processeing_results', directory_format)],
-#             desc=("Pipeline to gather together all the pre-processed fMRI images"),
-#             version=1,
-#             references=[fsl_cite],
-#             **kwargs)
-# 
-#         merge_inputs = pipeline.create_node(NiPypeMerge(len(inputs)),
-#                                             name='merge_inputs')
-#         for i, sub_study_name in enumerate(sub_study_names, start=1):
-#             spec = self.sub_study_spec(sub_study_name)
-#             pipeline.connect_input(
-#                 spec.inverse_map('smoothed_ts'), merge_inputs, 'in{}'.format(i))
-# 
-#         copy2dir = pipeline.add('copy2dir', CopyToDir())
-#                 'in_files': (merge_inputs, 'out'),
-# 
-#         pipeline.connect_output('fmri_pre-processeing_results', copy2dir, 'out_dir')
-#         return pipeline
+    def gather_fmri_result_pipeline(self, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='gather_fmri',
+            desc=("Pipeline to gather together all the pre-processed "
+                  "fMRI images"),
+            version=1,
+            references=[fsl_cite],
+            name_maps=name_maps)
+
+        merge_inputs = pipeline.add(
+            'merge_inputs',
+            NiPypeMerge(len(self.fmri_sub_studies())))
+        for i, sub_study_name in enumerate(self.fmri_sub_studies(), start=1):
+            spec = self.sub_study_spec(sub_study_name)
+            pipeline.connect_input(
+                spec.inverse_map('smoothed_ts'),
+                merge_inputs, 'in{}'.format(i), nifti_gz_format)
+
+        pipeline.add(
+            'copy2dir',
+            CopyToDir(),
+            inputs={
+                'in_files': (merge_inputs, 'out')},
+            outputs={
+                'fmri_pre-processeing_results': ('out_dir', directory_format)})
+
+        return pipeline
 
     def group_melodic_pipeline(self, **name_maps):
 
@@ -493,6 +490,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Group ICA"),
             references=[fsl_cite],
             name_maps=name_maps)
+
         pipeline.add(
             MELODIC(
                 no_bet=True,
@@ -519,7 +517,7 @@ class FmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         return pipeline
 
 
-def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
+def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                             fm_mag=None, fm_phase=None, run_regression=False):
 
     inputs = []
@@ -599,5 +597,5 @@ def create_fmri_study_class(name, t1, epis, epi_number, echo_spacing,
     dct['add_data_specs'] = data_specs
     dct['add_param_specs'] = parameter_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    return (MultiStudyMetaClass(name, (FmriMixin,), dct), inputs,
+    return (MultiStudyMetaClass(name, (MultiFmriMixin,), dct), inputs,
             output_files)

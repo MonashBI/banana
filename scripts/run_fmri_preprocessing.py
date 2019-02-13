@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from banana.study.mri.functional.fmri import create_fmri_study_class
+from banana.study.mri.functional.fmri import create_multi_fmri_class
 from arcana.repository.xnat import XnatRepository
 from arcana.processor.linear import LinearProcessor
 import os.path
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                         'used with fsl FIX.', default=False)
     args = parser.parse_args()
 
-    fMRI, inputs, output_files = create_fmri_study_class(
+    fMRI, inputs, output_files = create_multi_fmri_class(
             'fMRI', args.hires_structural, args.fmri, args.fmri_order,
             args.fmri_echo_spacing, fm_mag=args.field_map_mag,
             fm_phase=args.field_map_phase,
