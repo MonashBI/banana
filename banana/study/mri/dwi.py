@@ -57,14 +57,6 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
         FilesetSpec('align_mats', directory_format,
                     'intrascan_alignment_pipeline'),
-#         FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
-#                     frequency='per_study'),
-#         FilesetSpec('tbss_proj_fa', nifti_gz_format, 'tbss_pipeline',
-#                     frequency='per_study'),
-#         FilesetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
-#                     frequency='per_study'),
-#         FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
-#                     'tbss_pipeline', frequency='per_study'),
         FilesetSpec('brain', nifti_gz_format,
                     'brain_extraction_pipeline'),
         FilesetSpec('brain_mask', nifti_gz_format,
@@ -80,7 +72,16 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetSpec('global_tracks', mrtrix_track_format,
                     'global_tracking_pipeline'),
         FilesetSpec('wm_mask', mrtrix_format,
-                    'global_tracking_pipeline')]
+                    'global_tracking_pipeline')
+        # FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
+        #             frequency='per_study'),
+        # FilesetSpec('tbss_proj_fa', nifti_gz_format, 'tbss_pipeline',
+        #             frequency='per_study'),
+        # FilesetSpec('tbss_skeleton', nifti_gz_format, 'tbss_pipeline',
+        #             frequency='per_study'),
+        # FilesetSpec('tbss_skeleton_mask', nifti_gz_format,
+        #             'tbss_pipeline', frequency='per_study'),
+        ]  # @IgnorePep8
 
     add_param_specs = [
         ParameterSpec('multi_tissue', True),
@@ -128,7 +129,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         return self.branch('response_algorithm',
                            ('msmt_5tt', 'dhollander'))
 
-    def preprocess_pipeline(self, **name_maps):  # @UnusedVariable @IgnorePep8
+    def preprocess_pipeline(self, **name_maps):
         """
         Performs a series of FSL preprocessing steps, including Eddy and Topup
 
@@ -298,7 +299,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def brain_extraction_pipeline(self, **name_maps):  # @UnusedVariable @IgnorePep8
+    def brain_extraction_pipeline(self, **name_maps):
         """
         Generates a whole brain mask using MRtrix's 'dwi2mask' command
 
@@ -341,119 +342,121 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 **name_maps)
         return pipeline
 
-    def bias_correct_pipeline(self, **name_maps):  # @UnusedVariable @IgnorePep8
+    def bias_correct_pipeline(self, **name_maps):
         """
         Corrects B1 field inhomogeneities
         """
 
-#             inputs=[FilesetSpec('preproc', nifti_gz_format),
-#                     FilesetSpec('brain_mask', nifti_gz_format),
-#                     FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                     FilesetSpec('bvalues', fsl_bvals_format)],
-#             outputs=[FilesetSpec('bias_correct', nifti_gz_format)],
-
-        bias_method = self.parameter('bias_correct_method')
         pipeline = self.new_pipeline(
             name='bias_correct',
             desc="Corrects for B1 field inhomogeneity",
             references=[fast_cite,
-                        (n4_cite if bias_method == 'ants' else fsl_cite)],
+                        (n4_cite
+                         if self.parameter('bias_correct_method') == 'ants'
+                         else fsl_cite)],
             name_maps=name_maps)
-        # Create bias correct node
-        bias_correct = pipeline.add(
-            "bias_correct", DWIBiasCorrect(),
-            requirements=(
-                [mrtrix_req.v('3.0rc3')] +
-                [ants_req.v('2.0')
-                 if bias_method == 'ants' else fsl_req.v('5.0.9')]))
-        bias_correct.inputs.method = bias_method
+
         # Gradient merge node
         fsl_grads = pipeline.add(
             "fsl_grads",
-            MergeTuple(2))
-        # Connect nodes
-        pipeline.connect(fsl_grads, 'out', bias_correct, 'grad_fsl')
-        # Connect to inputs
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
-        pipeline.connect_input('preproc', bias_correct, 'in_file')
-        pipeline.connect_input('brain_mask', bias_correct, 'mask')
-        # Connect to outputs
-        pipeline.connect_output('bias_correct', bias_correct, 'out_file')
-        # Check inputs/output are connected
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
+
+        # Create bias correct node
+        pipeline.add(
+            "bias_correct",
+            DWIBiasCorrect(
+                method=self.parameter('bias_correct_method')),
+            inputs={
+                'grad_fsl': (fsl_grads, 'out'),  # internal
+                'in_file': ('preproc', nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format)},
+            outputs={
+                'bias_correct': ('out_file', nifti_gz_format)},
+            requirements=(
+                [mrtrix_req.v('3.0rc3'),
+                 (ants_req.v('2.0')
+                  if self.parameter('bias_correct_method') == 'ants'
+                  else fsl_req.v('5.0.9'))]))
+
         return pipeline
 
     def intensity_normalisation_pipeline(self, **name_maps):
 
-#             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
-#                     FilesetSpec('brain_mask', nifti_gz_format),
-#                     FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                     FilesetSpec('bvalues', fsl_bvals_format)],
-#             outputs=[FilesetSpec('norm_intensity', mrtrix_format),
-#                      FilesetSpec('norm_intens_fa_template', mrtrix_format,
-#                                  frequency='per_study'),
-#                      FilesetSpec('norm_intens_wm_mask', mrtrix_format,
-#                                  frequency='per_study')],
         pipeline = self.new_pipeline(
             name='intensity_normalization',
             desc="Corrects for B1 field inhomogeneity",
             references=[mrtrix_req.v('3.0rc3')],
             name_maps=name_maps)
+
         # Convert from nifti to mrtrix format
         grad_merge = pipeline.add(
             "grad_merge",
-            MergeTuple(2))
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
+
         mrconvert = pipeline.add(
             'mrconvert',
-            MRConvert())
-        mrconvert.inputs.out_ext = '.mif'
+            MRConvert(
+                out_ext='.mif'),
+            inputs={
+                'in_file': ('bias_correct', nifti_gz_format),
+                'grad_fsl': (grad_merge, 'out')})
+
         # Set up join nodes
         fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
         join_subjects = pipeline.add(
             'join_subjects',
-            IdentityInterface(fields),
+            IdentityInterface(
+                fields),
+            inputs={
+                'masks': ('brain_mask', nifti_gz_format),
+                'dwis': (mrconvert, 'out_file')},
             joinsource=self.SUBJECT_ID,
             joinfield=fields)
-        join_visits = pipeline.add(
-            'join_visits',
-            Chain(fields),
-            joinsource=self.VISIT_ID,
-            joinfield=fields)
-        # Set up expand nodes
-        select = pipeline.add(
-            'expand', SelectSession())
-        # Intensity normalization
-        intensity_norm = pipeline.add(
-            'dwiintensitynorm', DWIIntensityNorm())
-        # Connect inputs
-        pipeline.connect_input('bias_correct', mrconvert, 'in_file')
-        pipeline.connect_input('grad_dirs', grad_merge, 'in1')
-        pipeline.connect_input('bvalues', grad_merge, 'in2')
         pipeline.connect_subject_id(join_subjects, 'subject_ids')
         pipeline.connect_visit_id(join_subjects, 'visit_ids')
+
+        join_visits = pipeline.add(
+            'join_visits',
+            Chain(
+                fields),
+            inputs={
+                'dwis': (join_subjects, 'dwis'),
+                'masks': (join_subjects, 'masks'),
+                'subject_ids': (join_subjects, 'subject_ids'),
+                'visit_ids': (join_subjects, 'visit_ids')},
+            joinsource=self.VISIT_ID,
+            joinfield=fields)
+
+        # Intensity normalization
+        intensity_norm = pipeline.add(
+            'dwiintensitynorm',
+            DWIIntensityNorm(),
+            inputs={
+                'in_files': (join_visits, 'dwis'),
+                'masks': (join_visits, 'masks')},
+            outputs={
+                'norm_intens_fa_template': ('fa_template', mrtrix_format),
+                'norm_intens_wm_mask': ('wm_mask', mrtrix_format)})
+
+        # Set up expand nodes
+        select = pipeline.add(
+            'expand', SelectSession(),
+            inputs={
+                'subject_ids': (join_visits, 'subject_ids'),
+                'visit_ids': (join_visits, 'visit_ids'),
+                'items': (intensity_norm, 'out_files')},
+            outputs={
+                'norm_intensity': ('item', mrtrix_format)})
         pipeline.connect_subject_id(select, 'subject_id')
         pipeline.connect_visit_id(select, 'visit_id')
-        pipeline.connect_input('brain_mask', join_subjects, 'masks')
-        # Internal connections
-        pipeline.connect(grad_merge, 'out', mrconvert, 'grad_fsl')
-        pipeline.connect(mrconvert, 'out_file', join_subjects, 'dwis')
-        pipeline.connect(join_subjects, 'dwis', join_visits, 'dwis')
-        pipeline.connect(join_subjects, 'masks', join_visits, 'masks')
-        pipeline.connect(join_subjects, 'subject_ids', join_visits,
-                         'subject_ids')
-        pipeline.connect(join_subjects, 'visit_ids', join_visits,
-                         'visit_ids')
-        pipeline.connect(join_visits, 'dwis', intensity_norm, 'in_files')
-        pipeline.connect(join_visits, 'masks', intensity_norm, 'masks')
-        pipeline.connect(join_visits, 'subject_ids', select, 'subject_ids')
-        pipeline.connect(join_visits, 'visit_ids', select, 'visit_ids')
-        pipeline.connect(intensity_norm, 'out_files', select, 'items')
-        # Connect outputs
-        pipeline.connect_output('norm_intensity', select, 'item')
-        pipeline.connect_output('norm_intens_fa_template', intensity_norm,
-                                'fa_template')
-        pipeline.connect_output('norm_intens_wm_mask', intensity_norm,
-                                'wm_mask')
+
+        # Connect inputs
         return pipeline
 
     def tensor_pipeline(self, **name_maps):  # @UnusedVariable
@@ -461,37 +464,33 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
 
-#             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
-#                     FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                     FilesetSpec('bvalues', fsl_bvals_format),
-#                     FilesetSpec('brain_mask', nifti_gz_format)],
-#             outputs=[FilesetSpec('tensor', nifti_gz_format)],
-
         pipeline = self.new_pipeline(
             name='tensor',
             desc=("Estimates the apparent diffusion tensor in each "
                   "voxel"),
             references=[],
             name_maps=name_maps)
-        # Create tensor fit node
-        dwi2tensor = pipeline.add(
-            'dwi2tensor',
-            FitTensor())
-        dwi2tensor.inputs.out_file = 'dti.nii.gz'
+
         # Gradient merge node
         fsl_grads = pipeline.add(
             "fsl_grads",
-            MergeTuple(2))
-        # Connect nodes
-        pipeline.connect(fsl_grads, 'out', dwi2tensor, 'grad_fsl')
-        # Connect to inputs
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
-        pipeline.connect_input('bias_correct', dwi2tensor, 'in_file')
-        pipeline.connect_input('brain_mask', dwi2tensor, 'in_mask')
-        # Connect to outputs
-        pipeline.connect_output('tensor', dwi2tensor, 'out_file')
-        # Check inputs/output are connected
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
+
+        # Create tensor fit node
+        pipeline.add(
+            'dwi2tensor',
+            FitTensor(
+                out_file='dti.nii.gz'),
+            inputs={
+                'grad_fsl': (fsl_grads, 'out'),
+                'in_file': ('bias_correct', nifti_gz_format),
+                'in_mask': ('brain_mask', nifti_gz_format)},
+            outputs={
+                'tensor': ('out_file', nifti_gz_format)})
+
         return pipeline
 
     def tensor_metrics_pipeline(self, **name_maps):  # @UnusedVariable
@@ -499,29 +498,26 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
 
-#             inputs=[FilesetSpec('tensor', nifti_gz_format),
-#                     FilesetSpec('brain_mask', nifti_gz_format)],
-#             outputs=[FilesetSpec('fa', nifti_gz_format),
-#                      FilesetSpec('adc', nifti_gz_format)],
         pipeline = self.new_pipeline(
             name='fa',
             desc=("Calculates the FA and ADC from a tensor image"),
             references=[],
             name_maps=name_maps)
+
         # Create tensor fit node
-        metrics = pipeline.add(
+        pipeline.add(
             'metrics',
-            TensorMetrics(),
+            TensorMetrics(
+                out_fa='fa.nii.gz',
+                out_adc='adc.nii.gz'),
+            inputs={
+                'in_file': ('tensor', nifti_gz_format),
+                'in_mask': ('brain_mask', nifti_gz_format)},
+            outputs={
+                'fa': ('out_fa', nifti_gz_format),
+                'adc': ('out_adc', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
-        metrics.inputs.out_fa = 'fa.nii.gz'
-        metrics.inputs.out_adc = 'adc.nii.gz'
-        # Connect to inputs
-        pipeline.connect_input('tensor', metrics, 'in_file')
-        pipeline.connect_input('brain_mask', metrics, 'in_mask')
-        # Connect to outputs
-        pipeline.connect_output('fa', metrics, 'out_fa')
-        pipeline.connect_output('adc', metrics, 'out_adc')
-        # Check inputs/output are connected
+
         return pipeline
 
     def response_pipeline(self, **name_maps):  # @UnusedVariable
@@ -534,47 +530,43 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         response_algorithm : str
             Algorithm used to estimate the response
         """
-#         outputs = [FilesetSpec('wm_response', text_format)]
-#         if self.branch('response_algorithm', ('dhollander', 'msmt_5tt')):
-#             outputs.append(FilesetSpec('gm_response', text_format))
-#             outputs.append(FilesetSpec('csf_response', text_format))
-
-#             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
-#                     FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                     FilesetSpec('bvalues', fsl_bvals_format),
-#                     FilesetSpec('brain_mask', nifti_gz_format)],
-#             outputs=outputs,
 
         pipeline = self.new_pipeline(
             name='response',
             desc=("Estimates the fibre response function"),
             references=[mrtrix_cite],
             name_maps=name_maps)
-        # Create fod fit node
-        response = pipeline.add(
-            'response',
-            ResponseSD(),
-            requirements=[mrtrix_req.v('3.0rc3')])
-        response.inputs.algorithm = self.parameter('response_algorithm')
+
         # Gradient merge node
         fsl_grads = pipeline.add(
             "fsl_grads",
-            MergeTuple(2))
-        # Connect nodes
-        pipeline.connect(fsl_grads, 'out', response, 'grad_fsl')
-        # Connect to inputs
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
-        pipeline.connect_input('bias_correct', response, 'in_file')
-        pipeline.connect_input('brain_mask', response, 'in_mask')
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
+
+        # Create fod fit node
+        response = pipeline.add(
+            'response',
+            ResponseSD(
+                algorithm=self.parameter('response_algorithm')),
+            inputs={
+                'grad_fsl': (fsl_grads, 'out'),
+                'in_file': ('bias_correct', nifti_gz_format),
+                'in_mask': ('brain_mask', nifti_gz_format)},
+            outputs={
+                'wm_response': ('wm_file', text_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
         # Connect to outputs
-        pipeline.connect_output('wm_response', response, 'wm_file')
         if self.multi_tissue:
-            response.inputs.gm_file = 'gm.txt'
-            response.inputs.csf_file = 'csf.txt'
-            pipeline.connect_output('gm_response', response, 'gm_file')
-            pipeline.connect_output('csf_response', response, 'csf_file')
-        # Check inputs/output are connected
+            response.inputs.gm_file = 'gm.txt',
+            response.inputs.csf_file = 'csf.txt',
+            pipeline.connect_output('gm_response', response, 'gm_file',
+                                    text_format)
+            pipeline.connect_output('csf_response', response, 'csf_file',
+                                    text_format)
+
         return pipeline
 
     def average_response_pipeline(self, **name_maps):
@@ -583,36 +575,38 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         project
         """
 
-#             inputs=[FilesetSpec('wm_response', text_format)],
-#             outputs=[FilesetSpec('avg_response', text_format,
-#                                  frequency='per_study')],
         pipeline = self.new_pipeline(
             name='average_response',
             desc=(
                 "Averages the fibre response function over the project"),
             references=[mrtrix_cite],
             name_maps=name_maps)
+
         join_subjects = pipeline.add(
             'join_subjects',
             IdentityInterface(['responses']),
+            inputs={
+                'responses': ('wm_response', text_format)},
+            outputs={},
             joinsource=self.SUBJECT_ID,
             joinfield=['responses'])
+
         join_visits = pipeline.add(
             'join_visits',
             Chain(['responses']),
+            inputs={
+                'responses': (join_subjects, 'responses')},
             joinsource=self.VISIT_ID,
             joinfield=['responses'])
-        avg_response = pipeline.add(
+
+        pipeline.add(
             'avg_response',
-            AverageResponse())
-        # Connect inputs
-        pipeline.connect_input('wm_response', join_subjects, 'responses')
-        # Connect inter-nodes
-        pipeline.connect(join_subjects, 'responses', join_visits, 'responses')
-        pipeline.connect(join_visits, 'responses', avg_response, 'in_files')
-        # Connect outputs
-        pipeline.connect_output('avg_response', avg_response, 'out_file')
-        # Check inputs/output are connected
+            AverageResponse(),
+            inputs={
+                'in_files': (join_visits, 'responses')},
+            outputs={
+                'avg_response': ('out_file', text_format)})
+
         return pipeline
 
     def fod_pipeline(self, **name_maps):  # @UnusedVariable
@@ -624,12 +618,6 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         ----------
         """
 
-#             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
-#                     FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                     FilesetSpec('bvalues', fsl_bvals_format),
-#                     FilesetSpec('wm_response', text_format),
-#                     FilesetSpec('brain_mask', nifti_gz_format)],
-#             outputs=[FilesetSpec('fod', nifti_gz_format)],
         pipeline = self.new_pipeline(
             name='fod',
             desc=("Estimates the fibre orientation distribution in each"
@@ -644,37 +632,41 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         # Gradient merge node
         fsl_grads = pipeline.add(
             "fsl_grads",
-            MergeTuple(2))
-        # Connect to inputs
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
 
         # Create fod fit node
         dwi2fod = pipeline.add(
             'dwi2fod',
-            EstimateFOD(),
+            EstimateFOD(
+                algorithm=self.parameter('fod_algorithm')),
+            inputs={
+                'in_file': ('bias_correct', nifti_gz_format),
+                'wm_txt': ('wm_response', text_format),
+                'mask_file': ('brain_mask', nifti_gz_format),
+                'grad_fsl': (fsl_grads, 'out')},
+            outputs={
+                'wm_odf': ('wm_odf', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
-        dwi2fod.inputs.algorithm = self.parameter('fod_algorithm')
-        pipeline.connect_input('bias_correct', dwi2fod, 'in_file')
-        pipeline.connect_input('wm_response', dwi2fod, 'wm_txt')
-        pipeline.connect_input('brain_mask', dwi2fod, 'mask_file')
-        # Connect nodes
-        pipeline.connect(fsl_grads, 'out', dwi2fod, 'grad_fsl')
-        # Connect to outputs
-        pipeline.connect_output('wm_odf', dwi2fod, 'wm_odf')
-        # If multi-tissue
+
         if self.multi_tissue:
-            pipeline.connect_input('gm_response', dwi2fod, 'gm_txt')
-            pipeline.connect_input('csf_response', dwi2fod, 'csf_txt')
-            dwi2fod.inputs.gm_odf = 'gm.mif'
-            dwi2fod.inputs.csf_odf = 'csf.mif'
-            pipeline.connect_output('gm_odf', dwi2fod, 'gm_odf')
-            pipeline.connect_output('csf_odf', dwi2fod, 'csf_odf')
+            dwi2fod.inputs.gm_odf = 'gm.mif',
+            dwi2fod.inputs.csf_odf = 'csf.mif',
+            pipeline.connect_input('gm_response', dwi2fod, 'gm_txt',
+                                   text_format),
+            pipeline.connect_input('csf_response', dwi2fod, 'csf_txt',
+                                   text_format),
+            pipeline.connect_output('gm_odf', dwi2fod, 'gm_odf',
+                                    nifti_gz_format),
+            pipeline.connect_output('csf_odf', dwi2fod, 'csf_odf',
+                                    nifti_gz_format),
         # Check inputs/output are connected
         return pipeline
 
 #     def tbss_pipeline(self, **name_maps):  # @UnusedVariable
-# 
+#
 # #             inputs=[FilesetSpec('fa', nifti_gz_format)],
 # #             outputs=[FilesetSpec('tbss_mean_fa', nifti_gz_format),
 # #                      FilesetSpec('tbss_proj_fa', nifti_gz_format,
@@ -708,97 +700,94 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         Extracts the b0 images from a DWI study and takes their mean
         """
 
-#             inputs=[FilesetSpec('bias_correct', nifti_gz_format),
-#                     FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                     FilesetSpec('bvalues', fsl_bvals_format)],
-#             outputs=[FilesetSpec('b0', nifti_gz_format)],
         pipeline = self.new_pipeline(
             name='extract_b0',
             desc="Extract b0 image from a DWI study",
             references=[mrtrix_cite],
             name_maps=name_maps)
+
         # Gradient merge node
         fsl_grads = pipeline.add(
             "fsl_grads",
-            MergeTuple(2))
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
+
         # Extraction node
         extract_b0s = pipeline.add(
-            'extract_b0s', ExtractDWIorB0(),
+            'extract_b0s',
+            ExtractDWIorB0(
+                bzero=True,
+                quiet=True),
+            inputs={
+                'grad_fsl': (fsl_grads, 'out'),
+                'in_file': ('bias_correct', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
-        extract_b0s.inputs.bzero = True
-        extract_b0s.inputs.quiet = True
+
         # FIXME: Need a registration step before the mean
         # Mean calculation node
         mean = pipeline.add(
             "mean",
-            MRMath(),
+            MRMath(
+                axis=3,
+                operation='mean',
+                quiet=True),
+            inputs={
+                'in_files': (extract_b0s, 'out_file')},
             requirements=[mrtrix_req.v('3.0rc3')])
-        mean.inputs.axis = 3
-        mean.inputs.operation = 'mean'
-        mean.inputs.quiet = True
+
         # Convert to Nifti
-        mrconvert = pipeline.add(
+        pipeline.add(
             "output_conversion",
-            MRConvert(),
+            MRConvert(
+                out_ext='.nii.gz',
+                quiet=True),
+            inputs={
+                'in_file': (mean, 'out_file')},
+            outputs={
+                'b0': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
-        mrconvert.inputs.out_ext = '.nii.gz'
-        mrconvert.inputs.quiet = True
-        # Connect inputs
-        pipeline.connect_input('bias_correct', extract_b0s, 'in_file')
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
-        # Connect between nodes
-        pipeline.connect(extract_b0s, 'out_file', mean, 'in_files')
-        pipeline.connect(fsl_grads, 'out', extract_b0s, 'grad_fsl')
-        pipeline.connect(mean, 'out_file', mrconvert, 'in_file')
-        # Connect outputs
-        pipeline.connect_output('b0', mrconvert, 'out_file')
-        # Check inputs/outputs are connected
+
         return pipeline
 
     def global_tracking_pipeline(self, **name_maps):
-
-#         inputs=[FilesetSpec('fod', mrtrix_format),
-#                 FilesetSpec('bias_correct', nifti_gz_format),
-#                 FilesetSpec('brain_mask', nifti_gz_format),
-#                 FilesetSpec('wm_response', text_format),
-#                 FilesetSpec('grad_dirs', fsl_bvecs_format),
-#                 FilesetSpec('bvalues', fsl_bvals_format)],
-#         outputs=[FilesetSpec('global_tracks', mrtrix_track_format)],
 
         pipeline = self.new_pipeline(
             name='global_tracking',
             desc="Extract b0 image from a DWI study",
             references=[mrtrix_cite],
             name_maps=name_maps)
-        tck = pipeline.add(
-            'tracking',
-            Tractography())
-        tck.inputs.n_tracks = self.parameter('num_global_tracks')
-        tck.inputs.cutoff = self.parameter(
-            'global_tracks_cutoff')
-        mask = pipeline.add(
-            'mask',
-            DWI2Mask())
+
         # Add gradients to input image
         fsl_grads = pipeline.add(
             "fsl_grads",
-            MergeTuple(2))
-        pipeline.connect(fsl_grads, 'out', mask, 'grad_fsl')
-        pipeline.connect(mask, 'out_file', tck, 'seed_image')
-        pipeline.connect_input('wm_odf', tck, 'in_file')
-        pipeline.connect_input('bias_correct', mask, 'in_file')
-        pipeline.connect_input('grad_dirs', fsl_grads, 'in1')
-        pipeline.connect_input('bvalues', fsl_grads, 'in2')
-        pipeline.connect_output('global_tracks', tck, 'out_file')
+            MergeTuple(2),
+            inputs={
+                'in1': ('grad_dirs', fsl_bvecs_format),
+                'in2': ('bvalues', fsl_bvals_format)})
+
+        mask = pipeline.add(
+            'mask',
+            DWI2Mask(),
+            inputs={
+                'grad_fsl': (fsl_grads, 'out'),
+                'in_file': ('bias_correct', nifti_gz_format)})
+
+        pipeline.add(
+            'tracking',
+            Tractography(
+                n_tracks=self.parameter('num_global_tracks'),
+                cutoff=self.parameter('global_tracks_cutoff')),
+            inputs={
+                'seed_image': (mask, 'out_file'),
+                'in_file': ('wm_odf', mrtrix_format)},
+            outputs={
+                'global_tracks': ('out_file', mrtrix_track_format)})
+
         return pipeline
 
     def intrascan_alignment_pipeline(self, **name_maps):
-
-#             inputs=[FilesetSpec('preproc', nifti_gz_format),
-#                     FilesetSpec('eddy_par', eddy_par_format)],
-#             outputs=[
-#                 FilesetSpec('align_mats', directory_format)],
 
         pipeline = self.new_pipeline(
             name='affine_mat_generation',
@@ -807,14 +796,15 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             references=[fsl_cite],
             name_maps=name_maps)
 
-        aff_mat = pipeline.add(
+        pipeline.add(
             'gen_aff_mats',
-            AffineMatrixGeneration())
-        pipeline.connect_input('preproc', aff_mat, 'reference_image')
-        pipeline.connect_input(
-            'eddy_par', aff_mat, 'motion_parameters')
-        pipeline.connect_output(
-            'align_mats', aff_mat, 'affine_matrices')
+            AffineMatrixGeneration(),
+            inputs={
+                'reference_image': ('preproc', nifti_gz_format),
+                'motion_parameters': ('eddy_par', eddy_par_format)},
+            outputs={
+                'align_mats': ('affine_matrices', directory_format)})
+
         return pipeline
 
 
@@ -857,10 +847,10 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #         # Create concatenation node
 #         mrcat = pipeline.add('mrcat', MRCat(),
 #                                      requirements=[mrtrix_req.v('3.0rc3')])
-#         mrcat.inputs.quiet = True
+#                 quiet=True,  #  mrcat parameter
 #         # Connect inputs
-#         pipeline.connect_input('low_b_dw_scan', mrcat, 'first_scan')
-#         pipeline.connect_input('high_b_dw_scan', mrcat, 'second_scan')
+#             'first_scan': ('low_b_dw_scan', _format),  # input mrcat
+#             'second_scan': ('high_b_dw_scan', _format),  # input mrcat
 #         # Connect outputs
 #         pipeline.connect_output('dwi_scan', mrcat, 'out_file')
 #         # Check inputs/outputs are connected
@@ -909,47 +899,47 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #         unzip_bias_correct = pipeline.add(
 #             "unzip_bias_correct", MRConvert(),
 #             requirements=[mrtrix_req.v('3.0rc3')])
-#         unzip_bias_correct.inputs.out_ext = 'nii'
-#         unzip_bias_correct.inputs.quiet = True
+#                 out_ext='nii',  #  unzip_bias_correct parameter
+#                 quiet=True,  #  unzip_bias_correct parameter
 #         unzip_mask = pipeline.add("unzip_mask", MRConvert(),
 #                                   requirements=[mrtrix_req.v('3.0rc3')])
-#         unzip_mask.inputs.out_ext = 'nii'
-#         unzip_mask.inputs.quiet = True
+#                 out_ext='nii',  #  unzip_mask parameter
+#                 quiet=True,  #  unzip_mask parameter
 #         # Create create-roi node
 #         create_roi = pipeline.add(
 #             'create_roi',
 #             CreateROI(),
 #             requirements=[noddi_req, matlab_req.v('R2015a')],
 #             mem_gb=4)
-#         pipeline.connect(unzip_bias_correct, 'out_file', create_roi, 'in_file')
-#         pipeline.connect(unzip_mask, 'out_file', create_roi, 'brain_mask')
+#             'in_file': (unzip_bias_correct, 'out_file'),  # internal create_roi
+#             'brain_mask': (unzip_mask, 'out_file'),  # internal create_roi
 #         # Create batch-fitting node
 #         batch_fit = pipeline.add(
 #             "batch_fit", BatchNODDIFitting(),
 #             requirements=[noddi_req, matlab_req.v('R2015a')], wall_time=180,
 #             mem_gb=8)
-#         batch_fit.inputs.model = self.parameter('noddi_model')
-#         batch_fit.inputs.nthreads = self.processor.num_processes
-#         pipeline.connect(create_roi, 'out_file', batch_fit, 'roi_file')
+#                 model=self.parameter('noddi_model'),  #  batch_fit parameter
+#                 nthreads=self.processor.num_processes,  #  batch_fit parameter
+#             'roi_file': (create_roi, 'out_file'),  # internal batch_fit
 #         # Create output node
 #         save_params = pipeline.add(
 #             "save_params",
 #             SaveParamsAsNIfTI(),
 #             requirements=[noddi_req, matlab_req.v('R2015a')],
 #             mem_gb=4)
-#         save_params.inputs.output_prefix = 'params'
-#         pipeline.connect(batch_fit, 'out_file', save_params, 'params_file')
-#         pipeline.connect(create_roi, 'out_file', save_params, 'roi_file')
+#                 output_prefix='params',  #  save_params parameter
+#             'params_file': (batch_fit, 'out_file'),  # internal save_params
+#             'roi_file': (create_roi, 'out_file'),  # internal save_params
 #         pipeline.connect(unzip_mask, 'out_file', save_params,
 #                          'brain_mask_file')
 #         # Connect inputs
-#         pipeline.connect_input('bias_correct', unzip_bias_correct, 'in_file')
+#             'in_file': ('bias_correct', _format),  # input unzip_bias_correct
 #         if pipeline.branch('single_slice'):
-#             pipeline.connect_input('brain_mask', unzip_mask, 'in_file')
+#                 'in_file': ('brain_mask', _format),  # input unzip_mask
 #         else:
-#             pipeline.connect_input('eroded_mask', unzip_mask, 'in_file')
-#         pipeline.connect_input('grad_dirs', batch_fit, 'bvecs_file')
-#         pipeline.connect_input('bvalues', batch_fit, 'bvals_file')
+#                 'in_file': ('eroded_mask', _format),  # input unzip_mask
+#             'bvecs_file': ('grad_dirs', _format),  # input batch_fit
+#             'bvals_file': ('bvalues', _format),  # input batch_fit
 #         # Connect outputs
 #         pipeline.connect_output('ficvf', save_params, 'ficvf')
 #         pipeline.connect_output('odi', save_params, 'odi')
