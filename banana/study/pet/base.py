@@ -38,9 +38,9 @@ class PetStudy(Study, metaclass=StudyMetaClass):
                         ParameterSpec('image_orientation_check', False)]
 
     add_data_specs = [
+        AcquiredFilesetSpec('list_mode', list_mode_format),
         FilesetSpec('registered_volumes', nifti_gz_format, optional=True),
         FilesetSpec('pet_image', nifti_gz_format, optional=True),
-        AcquiredFilesetSpec('list_mode', list_mode_format),
         FilesetSpec('pet_data_dir', directory_format),
         FilesetSpec('pet_recon_dir', directory_format),
         FilesetSpec('pet_recon_dir_prepared', directory_format,
@@ -69,16 +69,6 @@ class PetStudy(Study, metaclass=StudyMetaClass):
                     'sinogram_unlisting_pipeline')]
 
     def ICA_pipeline(self, **kwargs):
-        return self._ICA_pipeline_factory(
-            input_fileset=FilesetSpec('registered_volumes', nifti_gz_format),
-            **kwargs)
-
-    def _ICA_pipeline_factory(self, input_fileset, **kwargs):
-
-#             inputs=[input_fileset],
-#             outputs=[FilesetSpec('decomposed_file', nifti_gz_format),
-#                      FilesetSpec('timeseries', nifti_gz_format),
-#                      FilesetSpec('mixing_mat', text_format)],
 
         pipeline = self.new_pipeline(
             name='ICA',
@@ -87,27 +77,21 @@ class PetStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        ica = pipeline.add(
+        pipeline.add(
             'ICA',
-            FastICA())
-        ica.inputs.n_components = self.parameter('ica_n_components')
-        ica.inputs.ica_type = self.parameter('ica_type')
-        pipeline.connect_input('registered_volumes', ica, 'volume')
-
-        pipeline.connect_output('decomposed_file', ica, 'ica_decomposition')
-        pipeline.connect_output('timeseries', ica, 'ica_timeseries')
-        pipeline.connect_output('mixing_mat', ica, 'mixing_mat')
+            FastICA(
+                n_components=self.parameter('ica_n_components'),
+                ica_type=self.parameter('ica_type')),
+            inputs={
+                'volume': ('registered_volumes', nifti_gz_format)},
+            ouputs={
+                'decomposed_file': ('ica_decomposition', nifti_gz_format),
+                'timeseries': ('ica_timeseries', nifti_gz_format),
+                'mixing_mat': ('mixing_mat', text_format)})
 
         return pipeline
 
     def Image_normalization_pipeline(self, **kwargs):
-
-
-#             inputs=[FilesetSpec('pet_image', nifti_gz_format)],
-#             outputs=[FilesetSpec('registered_volume', nifti_gz_format),
-#                      FilesetSpec('warp_file', nifti_gz_format),
-#                      FilesetSpec('invwarp_file', nifti_gz_format),
-#                      FilesetSpec('affine_mat', text_matrix_format)],
 
         pipeline = self.new_pipeline(
             name='Image_registration',
@@ -115,26 +99,25 @@ class PetStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        reg = pipeline.add(
+        pipeline.add(
             'ANTs',
-            AntsRegSyn(out_prefix='vol2template'))
-        reg.inputs.num_dimensions = self.parameter('norm_dim')
-        reg.inputs.num_threads = self.processor.num_processes
-        reg.inputs.transformation = self.parameter('norm_transformation')
-        reg.inputs.ref_file = self.parameter('norm_template')
-        pipeline.connect_input('pet_image', reg, 'input_file')
+            AntsRegSyn(
+                out_prefix='vol2template',
+                num_dimensions=self.parameter('norm_dim'),
+                num_threads=self.processor.num_processes,
+                transformation=self.parameter('norm_transformation'),
+                ref_file=self.parameter('norm_template')),
+            inputs={
+                'input_file': ('pet_image', nifti_gz_format)},
+            ouputs={
+                'registered_volume': ('reg_file', nifti_gz_format),
+                'warp_file': ('warp_file', nifti_gz_format),
+                'invwarp_file': ('inv_warp', nifti_gz_format),
+                'affine_mat': ('regmat', text_matrix_format)})
 
-        pipeline.connect_output('registered_volume', reg, 'reg_file')
-        pipeline.connect_output('warp_file', reg, 'warp_file')
-        pipeline.connect_output('invwarp_file', reg, 'inv_warp')
-        pipeline.connect_output('affine_mat', reg, 'regmat')
         return pipeline
 
     def pet_data_preparation_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('pet_recon_dir', directory_format)],
-#             outputs=[FilesetSpec('pet_recon_dir_prepared', directory_format)],
-
 
         pipeline = self.new_pipeline(
             name='pet_data_preparation',
@@ -144,47 +127,40 @@ class PetStudy(Study, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        prep_dir = pipeline.add(
+        pipeline.add(
             'prepare_pet',
-            PreparePetDir(),
+            PreparePetDir(
+                image_orientation_check=self.parameter(
+                    'image_orientation_check')),
+            inputs={
+                'pet_dir': ('pet_recon_dir', directory_format)},
+            ouputs={
+                'pet_recon_dir_prepared': ('pet_dir_prepared',
+                                           directory_format)},
             requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('5.0.9')])
-        prep_dir.inputs.image_orientation_check = self.parameter(
-            'image_orientation_check')
-        pipeline.connect_input('pet_recon_dir', prep_dir, 'pet_dir')
 
-        pipeline.connect_output('pet_recon_dir_prepared', prep_dir,
-                                'pet_dir_prepared')
         return pipeline
 
     def pet_time_info_extraction_pipeline(self, **kwargs):
-#             inputs=[FilesetSpec('pet_data_dir', directory_format)],
-#             outputs=[FieldSpec('pet_end_time', dtype=float),
-#                      FieldSpec('pet_start_time', dtype=str),
-#                      FieldSpec('pet_duration', dtype=int)],
 
-        
         pipeline = self.new_pipeline(
             name='pet_info_extraction',
             desc=("Extract PET time info from list-mode header."),
             references=[],
             **kwargs)
-        time_info = pipeline.add(
+
+        pipeline.add(
             'PET_time_info',
-            PetTimeInfo())
-        pipeline.connect_input('pet_data_dir', time_info, 'pet_data_dir')
-        pipeline.connect_output('pet_end_time', time_info, 'pet_end_time')
-        pipeline.connect_output('pet_start_time', time_info, 'pet_start_time')
-        pipeline.connect_output('pet_duration', time_info, 'pet_duration')
+            PetTimeInfo(),
+            inputs={
+                'pet_data_dir': ('pet_data_dir', directory_format)},
+            ouputs={
+                'pet_end_time': ('pet_end_time', float),
+                'pet_start_time': ('pet_start_time', str),
+                'pet_duration': ('pet_duration', int)})
         return pipeline
 
     def sinogram_unlisting_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('list_mode', list_mode_format),
-#                     FieldSpec('time_offset', int),
-#                     FieldSpec('temporal_length', float),
-#                     FieldSpec('num_frames', int)],
-#             outputs=[FilesetSpec('ssrb_sinograms', directory_format)],
-
 
         pipeline = self.new_pipeline(
             name='prepare_sinogram',
@@ -196,29 +172,35 @@ class PetStudy(Study, metaclass=StudyMetaClass):
 
         prepare_inputs = pipeline.add(
             'prepare_inputs',
-            PrepareUnlistingInputs())
-        pipeline.connect_input('list_mode', prepare_inputs, 'list_mode')
-        pipeline.connect_input('time_offset', prepare_inputs, 'time_offset')
-        pipeline.connect_input('num_frames', prepare_inputs, 'num_frames')
-        pipeline.connect_input('temporal_length', prepare_inputs,
-                               'temporal_len')
+            PrepareUnlistingInputs(),
+            inputs={
+                'list_mode': ('list_mode', list_mode_format),
+                'time_offset': ('time_offset', int),
+                'num_frames': ('num_frames', int),
+                'temporal_len': ('temporal_length', float)})
+
         unlisting = pipeline.add(
             'unlisting',
-            PETListModeUnlisting(), iterfield=['list_inputs'])
-        pipeline.connect(prepare_inputs, 'out', unlisting, 'list_inputs')
+            PETListModeUnlisting(),
+            inputs={
+                'list_inputs': (prepare_inputs, 'out')},
+            iterfield=['list_inputs'])
 
         ssrb = pipeline.add(
             'ssrb',
             SSRB(),
+            inputs={
+                'unlisted_sinogram': (unlisting, 'pet_sinogram')},
             requirements=[stir_req.v('3.0')])
-        pipeline.connect(unlisting, 'pet_sinogram', ssrb, 'unlisted_sinogram')
 
-        merge = pipeline.add(
+        pipeline.add(
             'merge_sinograms',
             MergeUnlistingOutputs(),
+            inputs={
+                'sinograms': (ssrb, 'ssrb_sinograms')},
+            ouputs={
+                'ssrb_sinograms': ('sinogram_folder', directory_format)},
             joinsource='unlisting',
             joinfield=['sinograms'])
-        pipeline.connect(ssrb, 'ssrb_sinograms', merge, 'sinograms')
-        pipeline.connect_output('ssrb_sinograms', merge, 'sinogram_folder')
 
         return pipeline
