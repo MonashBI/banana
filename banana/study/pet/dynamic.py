@@ -5,7 +5,8 @@ from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.utils.interfaces import Merge
 from banana.interfaces.custom.pet import PETdr, GlobalTrendRemoval
-from banana.file_format import (nifti_gz_format, png_format)
+from banana.file_format import (nifti_gz_format, png_format,
+                                text_matrix_format)
 from arcana.study import ParameterSpec
 import os
 
@@ -38,8 +39,6 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         ParameterSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
-#             inputs=[FilesetSpec('pet_volumes', nifti_gz_format)],
-#             outputs=[FilesetSpec('pet_image', nifti_gz_format)],
 
         pipeline = self.new_pipeline(
             name='Extract_volume',
@@ -47,18 +46,20 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        fslroi = pipeline.add(
+        pipeline.add(
             'fslroi',
-            ExtractROI(roi_file='vol.nii.gz', t_min=79, t_size=1))
-        pipeline.connect_input('pet_volumes', fslroi, 'in_file')
-        pipeline.connect_output('pet_image', fslroi, 'roi_file')
+            ExtractROI(
+                roi_file='vol.nii.gz',
+                t_min=79,
+                t_size=1),
+            inputs={
+                'in_file': ('pet_volumes', nifti_gz_format)},
+            outputs={
+                'pet_image': ('roi_file', nifti_gz_format)})
+
         return pipeline
 
     def ApplyTransform_pipeline(self, **kwargs):
-#             inputs=[FilesetSpec('pet_volumes', nifti_gz_format),
-#                     FilesetSpec('warp_file', nifti_gz_format),
-#                     FilesetSpec('affine_mat', text_matrix_format)],
-#             outputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
 
         pipeline = self.new_pipeline(
             name='applytransform',
@@ -68,28 +69,26 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
 
         merge_trans = pipeline.add(
             'merge_transforms',
-            Merge(2))
-        pipeline.connect_input('warp_file', merge_trans, 'in1')
-        pipeline.connect_input('affine_mat', merge_trans, 'in2')
+            Merge(2),
+            inputs={
+                'in1': ('warp_file', nifti_gz_format),
+                'in2': ('affine_mat', text_matrix_format)})
 
-        apply_trans = pipeline.add(
+        pipeline.add(
             'ApplyTransform',
-            ApplyTransforms())
-        apply_trans.inputs.reference_image = self.parameter(
-            'trans_template')
-        apply_trans.inputs.interpolation = 'Linear'
-        apply_trans.inputs.input_image_type = 3
-        pipeline.connect(merge_trans, 'out', apply_trans, 'transforms')
-        pipeline.connect_input('pet_volumes', apply_trans, 'input_image')
+            ApplyTransforms(
+                reference_image=self.parameter('trans_template'),
+                interpolation='Linear',
+                input_image_type=3),
+            inputs={
+                'input_image': ('pet_volumes', nifti_gz_format),
+                'transforms': (merge_trans, 'out')},
+            outputs={
+                'registered_volumes': ('output_image', nifti_gz_format)})
 
-        pipeline.connect_output('registered_volumes', apply_trans,
-                                'output_image')
         return pipeline
 
     def Baseline_Removal_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('registered_volumes', nifti_gz_format)],
-#             outputs=[FilesetSpec('detrended_volumes', nifti_gz_format)],
 
         pipeline = self.new_pipeline(
             name='Baseline_removal',
@@ -97,19 +96,17 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        br = pipeline.add(
+        pipeline.add(
             'Baseline_removal',
-            GlobalTrendRemoval())
-        pipeline.connect_input('registered_volumes', br, 'volume')
-        pipeline.connect_output('detrended_volumes', br, 'detrended_file')
+            GlobalTrendRemoval(),
+            inputs={
+                'volume': ('registered_volumes', nifti_gz_format)},
+            outputs={
+                'detrended_volumes': ('detrended_file', nifti_gz_format)})
+
         return pipeline
 
     def Dual_Regression_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('detrended_volumes', nifti_gz_format),
-#                     FilesetSpec('regression_map', nifti_gz_format)],
-#             outputs=[FilesetSpec('spatial_map', nifti_gz_format),
-#                      FilesetSpec('ts', png_format)],
 
         pipeline = self.new_pipeline(
             name='Dual_regression',
@@ -117,23 +114,19 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
             references=[],
             **kwargs)
 
-        dr = pipeline.add(
+        pipeline.add(
             'PET_dr',
-            PETdr())
-        dr.inputs.threshold = self.parameter('regress_th')
-        dr.inputs.binarize = self.parameter('regress_binarize')
-        pipeline.connect_input('detrended_volumes', dr, 'volume')
-        pipeline.connect_input('regression_map', dr, 'regression_map')
+            PETdr(
+                threshold=self.parameter('regress_th'),
+                binarize=self.parameter('regress_binarize')),
+            inputs={
+                'volume': ('detrended_volumes', nifti_gz_format),
+                'regression_map': ('regression_map', nifti_gz_format)},
+            outputs={
+                'spatial_map': ('spatial_map', nifti_gz_format),
+                'ts': ('timecourse', png_format)})
 
-        pipeline.connect_output('spatial_map', dr, 'spatial_map')
-        pipeline.connect_output('ts', dr, 'timecourse')
         return pipeline
-#     def example_pipeline_switch(self, tool='atool', **kwargs):
-#         if tool == 'atool':
-#             pipeline = self._atool_pipeline(**kwargs)
-#         else:
-#             pipeline = self._anothertool_pipeline(**kwargs)
-#         return pipeline
 
     def dynamics_ica_pipeline(self, **kwargs):
         return self._ICA_pipeline_factory(

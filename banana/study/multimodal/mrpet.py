@@ -188,15 +188,19 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             **kwargs)
 
         num_motion_mats = len(sub_study_names)
+
         merge_motion_mats = pipeline.add(
             'merge_motion_mats',
             Merge(num_motion_mats))
+
         merge_tr = pipeline.add(
             'merge_tr',
             Merge(num_motion_mats))
+
         merge_start_time = pipeline.add(
             'merge_start_time',
             Merge(num_motion_mats))
+
         merge_real_duration = pipeline.add(
             'merge_real_duration',
             Merge(num_motion_mats))
@@ -207,8 +211,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 spec.inverse_map('motion_mats'), merge_motion_mats,
                 'in{}'.format(i))
             pipeline.connect_input(
-                spec.inverse_map('tr'), merge_tr,
-                'in{}'.format(i))
+                spec.inverse_map('tr'), merge_tr, 'in{}'.format(i))
             pipeline.connect_input(
                 spec.inverse_map('start_time'), merge_start_time,
                 'in{}'.format(i))
@@ -218,26 +221,27 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         md = pipeline.add(
             'scan_time_info',
-            MeanDisplacementCalculation())
-        md.inputs.input_names = input_names
-        pipeline.connect(merge_motion_mats, 'out', md, 'motion_mats')
-        pipeline.connect(merge_tr, 'out', md, 'trs')
-        pipeline.connect(merge_start_time, 'out', md, 'start_times')
-        pipeline.connect(merge_real_duration, 'out', md, 'real_durations')
-        pipeline.connect_input('ref_brain', md, 'reference')
-        pipeline.connect_output('mean_displacement', md, 'mean_displacement')
-        pipeline.connect_output(
-            'mean_displacement_rc', md, 'mean_displacement_rc')
-        pipeline.connect_output(
-            'mean_displacement_consecutive', md,
-            'mean_displacement_consecutive')
-        pipeline.connect_output('start_times', md, 'start_times')
-        pipeline.connect_output('motion_par_rc', md, 'motion_parameters_rc')
-        pipeline.connect_output('motion_par', md, 'motion_parameters')
-        pipeline.connect_output('offset_indexes', md, 'offset_indexes')
-        pipeline.connect_output('mats4average', md, 'mats4average')
-        pipeline.connect_output('severe_motion_detection_report', md,
-                                'corrupted_volumes')
+            MeanDisplacementCalculation(
+                input_names=input_names),
+            inputs={
+                'motion_mats': (merge_motion_mats, 'out'),  # internal md
+                'trs': (merge_tr, 'out'),  # internal md
+                'start_times': (merge_start_time, 'out'),  # internal md
+                'real_durations': (merge_real_duration, 'out'),  # internal md
+                'reference': ('ref_brain', _format)},
+            outputs={
+                'mean_displacement': ('mean_displacement', _format),  # output md
+                'mean_displacement_rc': ('mean_displacement_rc', _format),  # output md
+                'mean_displacement_consecutive': ('mean_displacement_consecutive', _format),  # output md
+                'start_times': ('start_times', _format),  # output md
+                'motion_par_rc': ('motion_parameters_rc', _format),  # output md
+                'motion_par': ('motion_parameters', _format),  # output md
+                'offset_indexes': ('offset_indexes', _format),  # output md
+                'mats4average': ('mats4average', _format),  # output md
+                'severe_motion_detection_report': ('corrupted_volumes', _format)})
+                ,  #  md parameter
+                ,  # input md
+                ,  # output md
         return pipeline
 
     def motion_framing_pipeline(self, **kwargs):
@@ -262,25 +266,27 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         framing = pipeline.add(
             'motion_framing',
-            MotionFraming())
-        framing.inputs.motion_threshold = self.parameter('framing_th')
-        framing.inputs.temporal_threshold = self.parameter(
-            'framing_temporal_th')
-        framing.inputs.pet_offset = self.parameter('pet_offset')
-        framing.inputs.pet_duration = self.parameter('framing_duration')
-        pipeline.connect_input('mean_displacement', framing,
-                               'mean_displacement')
-        pipeline.connect_input('mean_displacement_consecutive', framing,
-                               'mean_displacement_consec')
-        pipeline.connect_input('start_times', framing, 'start_times')
+            MotionFraming(
+                motion_threshold=self.parameter('framing_th'),  #  framing parameter
+                temporal_threshold=self.parameter('framing_temporal_th'),  #  framing parameter
+                pet_offset=self.parameter('pet_offset'),  #  framing parameter
+                pet_duration=self.parameter('framing_duration')),
+            inputs={
+                'mean_displacement': ('mean_displacement', _format),  # input framing
+                'mean_displacement_consec': ('mean_displacement_consecutive', _format),  # input framing
+                'start_times': ('start_times', _format)},
+            outputs={
+                'frame_start_times': ('frame_start_times', _format),  # output framing
+                'frame_vol_numbers': ('frame_vol_numbers', _format),  # output framing
+                'timestamps': ('timestamps_dir', _format)})
+                ,  #  framing parameter
+                ,  # input framing
+                ,  # output framing
         if 'pet_data_dir' in self.input_names:
-            pipeline.connect_input('pet_start_time', framing, 'pet_start_time')
-            pipeline.connect_input('pet_end_time', framing, 'pet_end_time')
-        pipeline.connect_output('frame_start_times', framing,
-                                'frame_start_times')
-        pipeline.connect_output('frame_vol_numbers', framing,
-                                'frame_vol_numbers')
-        pipeline.connect_output('timestamps', framing, 'timestamps_dir')
+            pipeline.connect_input('pet_start_time', framing,
+                                   'pet_start_time')
+            pipeline.connect_input('pet_end_time', framing,
+                                   'pet_end_time')
         return pipeline
 
     def plot_mean_displacement_pipeline(self, **kwargs):
@@ -298,22 +304,20 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         plot_md = pipeline.add(
             'plot_md',
-            PlotMeanDisplacementRC())
-        plot_md.inputs.framing = self.parameter('md_framing')
-        pipeline.connect_input('mean_displacement_rc', plot_md,
-                               'mean_disp_rc')
-        pipeline.connect_input('offset_indexes', plot_md,
-                               'false_indexes')
-        pipeline.connect_input('frame_start_times', plot_md,
-                               'frame_start_times')
-        pipeline.connect_input('motion_par_rc', plot_md,
-                               'motion_par_rc')
-        pipeline.connect_output('mean_displacement_plot', plot_md,
-                                'mean_disp_plot')
-        pipeline.connect_output('rotation_plot', plot_md,
-                                'rot_plot')
-        pipeline.connect_output('translation_plot', plot_md,
-                                'trans_plot')
+            PlotMeanDisplacementRC(
+                framing=self.parameter('md_framing')),
+            inputs={
+                'mean_disp_rc': ('mean_displacement_rc', _format),  # input plot_md
+                'false_indexes': ('offset_indexes', _format),  # input plot_md
+                'frame_start_times': ('frame_start_times', _format),  # input plot_md
+                'motion_par_rc': ('motion_par_rc', _format)},
+            outputs={
+                'mean_displacement_plot': ('mean_disp_plot', _format),  # output plot_md
+                'rotation_plot': ('rot_plot', _format),  # output plot_md
+                'translation_plot': ('trans_plot', _format)})
+                ,  #  plot_md parameter
+                ,  # input plot_md
+                ,  # output plot_md
         return pipeline
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
@@ -331,13 +335,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         average = pipeline.add(
             'mats_averaging',
-            AffineMatAveraging())
-        pipeline.connect_input('frame_vol_numbers', average,
-                               'frame_vol_numbers')
-        pipeline.connect_input('mats4average', average,
-                               'all_mats4average')
-        pipeline.connect_output('average_mats', average,
-                                'average_mats')
+            AffineMatAveraging(),
+            inputs={
+                'frame_vol_numbers': ('frame_vol_numbers', _format),  # input average
+                'all_mats4average': ('mats4average', _format)},
+            outputs={
+                'average_mats': ('average_mats', _format)})
+                ,  # input average
+                ,  # output average
         return pipeline
 
     def fixed_binning_pipeline(self, **kwargs):
@@ -357,17 +362,20 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         binning = pipeline.add(
             'fixed_binning',
-            FixedBinning())
-        pipeline.connect_input('start_times', binning, 'start_times')
-        pipeline.connect_input('pet_start_time', binning, 'pet_start_time')
-        pipeline.connect_input('pet_duration', binning, 'pet_duration')
-        pipeline.connect_input('mats4average', binning, 'motion_mats')
-        binning.inputs.n_frames = self.parameter('fixed_binning_n_frames')
-        binning.inputs.pet_offset = self.parameter('pet_offset')
-        binning.inputs.bin_len = self.parameter('fixed_binning_bin_len')
-
-        pipeline.connect_output('fixed_binning_mats', binning,
-                                'average_bin_mats')
+            FixedBinning(
+                n_frames=self.parameter('fixed_binning_n_frames'),  #  binning parameter
+                pet_offset=self.parameter('pet_offset'),  #  binning parameter
+                bin_len=self.parameter('fixed_binning_bin_len')),
+            inputs={
+                'start_times': ('start_times', _format),  # input binning
+                'pet_start_time': ('pet_start_time', _format),  # input binning
+                'pet_duration': ('pet_duration', _format),  # input binning
+                'motion_mats': ('mats4average', _format)},
+            outputs={
+                'fixed_binning_mats': ('average_bin_mats', _format)})
+                ,  # input binning
+                ,  #  binning parameter
+                ,  # output binning
 
         return pipeline
 
@@ -386,11 +394,13 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         corr_factors = pipeline.add(
             'pet_corr_factors',
-            PetCorrectionFactor())
-        pipeline.connect_input('timestamps', corr_factors,
-                               'timestamps')
-        pipeline.connect_output('correction_factors', corr_factors,
-                                'corr_factors')
+            PetCorrectionFactor(),
+            inputs={
+                'timestamps': ('timestamps', _format)},
+            outputs={
+                'correction_factors': ('corr_factors', _format)})
+                ,  # input corr_factors
+                ,  # output corr_factors
         return pipeline
 
     def nifti2dcm_conversion_pipeline(self, **kwargs):
@@ -409,73 +419,95 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         list_niftis = pipeline.add(
             'list_niftis',
-            ListDir())
+            ListDir(),
+            inputs={
+                'directory': ('umaps_align2ref', _format)},
+            outputs={
+                })
+                ,  # input list_niftis
+
         reorient_niftis = pipeline.add(
             'reorient_niftis',
             ReorientUmap(),
+            inputs={
+                'niftis': (list_niftis, 'files'),  # internal reorient_niftis
+                'umap': ('umap', _format)},
+            outputs={
+                },
             requirements=[mrtrix_req.v('3.0rc3')])
+                ,  # input reorient_niftis
+
+        list_dicoms = pipeline.add(
+            'list_dicoms',
+            ListDir(
+                sort_key=dicom_fname_sort_key),
+            inputs={
+                'directory': ('umap', _format)},
+            outputs={
+                })
+                ,  #  list_dicoms parameter
+                ,  # input list_dicoms
 
         nii2dicom = pipeline.add(
             'nii2dicom',
             Nii2Dicom(),
+            inputs={
+                'reference_dicom': (list_dicoms, 'files')},
+            outputs={
+                'in_file': (reorient_niftis, 'reoriented_umaps')},
             iterfield=['in_file'],
             wall_time=20)
-#         nii2dicom.inputs.extension = 'Frame'
-        list_dicoms = pipeline.add(
-            'list_dicoms',
-            ListDir())
-        list_dicoms.inputs.sort_key = dicom_fname_sort_key
+#                 extension='Frame',  #  nii2dicom parameter
+                ,  # internal nii2dicom
+                ,  # internal nii2dicom
+
         copy2dir = pipeline.add(
             'copy2dir',
-            CopyToDir())
-        copy2dir.inputs.extension = 'Frame'
-        # Connect nodes
-        pipeline.connect(list_niftis, 'files', reorient_niftis, 'niftis')
-        pipeline.connect(reorient_niftis, 'reoriented_umaps', nii2dicom,
-                         'in_file')
-        pipeline.connect(list_dicoms, 'files', nii2dicom, 'reference_dicom')
-        pipeline.connect(nii2dicom, 'out_file', copy2dir, 'in_files')
-        # Connect inputs
-        pipeline.connect_input('umaps_align2ref', list_niftis, 'directory')
-        pipeline.connect_input('umap', list_dicoms, 'directory')
-        pipeline.connect_input('umap', reorient_niftis, 'umap')
-        # Connect outputs
-        pipeline.connect_output('umap_aligned_dicoms', copy2dir, 'out_dir')
+            CopyToDir(
+                extension='Frame'),
+            inputs={
+                'in_files': (nii2dicom, 'out_file')},
+            outputs={
+                'umap_aligned_dicoms': ('out_dir', _format)})
+                ,  #  copy2dir parameter
+                ,  # internal copy2dir
+                ,  # output copy2dir
 
         return pipeline
 
     def umap_realignment_pipeline(self, **kwargs):
-        inputs = [FilesetSpec('average_mats', directory_format),
-                  FilesetSpec('umap_ref_coreg_matrix', text_matrix_format),
-                  FilesetSpec('umap_ref_qform_mat', text_matrix_format)]
-        outputs = []
-        if ('umap_ref' in self.sub_study_names and
-                'umap' in self.input_names):
-            inputs.append(FilesetSpec('umap', nifti_gz_format))
-            outputs.append(FilesetSpec('umaps_align2ref', directory_format))
+#         inputs = [FilesetSpec('average_mats', directory_format),
+#                   FilesetSpec('umap_ref_coreg_matrix', text_matrix_format),
+#                   FilesetSpec('umap_ref_qform_mat', text_matrix_format)]
+#         outputs = []
+#         if ('umap_ref' in self.sub_study_names and
+#                 'umap' in self.input_names):
+#             inputs.append(FilesetSpec('umap', nifti_gz_format))
+#             outputs.append(FilesetSpec('umaps_align2ref', directory_format))
+
         pipeline = self.new_pipeline(
             name='umap_realignment',
-            inputs=inputs,
-            outputs=outputs,
             desc=("Pipeline to align the original umap (if provided)"
                   "to match the head position in each frame and improve the "
                   "static PET image quality."),
             citations=[fsl_cite],
             **kwargs)
+
         frame_align = pipeline.add(
             'umap2ref_alignment',
             UmapAlign2Reference(),
+            inputs={
+                },
+            outputs={
+                },
             requirements=[fsl_req.v('5.0.9')])
-        frame_align.inputs.pct = self.parameter('align_pct')
-        pipeline.connect_input('umap_ref_coreg_matrix', frame_align,
-                               'ute_regmat')
-        pipeline.connect_input('umap_ref_qform_mat', frame_align,
-                               'ute_qform_mat')
+                pct=self.parameter('align_pct'),  #  frame_align parameter
+                'ute_regmat': ('umap_ref_coreg_matrix', _format),  # input frame_align
+                'ute_qform_mat': ('umap_ref_qform_mat', _format),  # input frame_align
+                'average_mats': ('average_mats', _format),  # input frame_align
+                'umap': ('umap', _format),  # input frame_align
+                'umaps_align2ref': ('umaps_align2ref', _format),  # output frame_align
 
-        pipeline.connect_input('average_mats', frame_align, 'average_mats')
-        pipeline.connect_input('umap', frame_align, 'umap')
-        pipeline.connect_output('umaps_align2ref', frame_align,
-                                'umaps_align2ref')
         return pipeline
 
     def create_moco_series_pipeline(self, **kwargs):
@@ -498,25 +530,29 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         moco = pipeline.add(
             'create_moco_series',
-            CreateMocoSeries())
-        pipeline.connect_input('start_times', moco, 'start_times')
-        pipeline.connect_input('motion_par', moco, 'motion_par')
-        moco.inputs.moco_template = self.parameter('moco_template')
+            CreateMocoSeries(),
+            inputs={
+                },
+            outputs={
+                })
+                'start_times': ('start_times', _format),  # input moco
+                'motion_par': ('motion_par', _format),  # input moco
+                moco_template=self.parameter('moco_template'),  #  moco parameter
+                'moco_series': ('modified_moco', _format),  # output moco
 
-        pipeline.connect_output('moco_series', moco, 'modified_moco')
         return pipeline
 
     def gather_outputs_pipeline(self, **kwargs):
-        inputs = [FilesetSpec('mean_displacement_plot', png_format),
-                  FilesetSpec('motion_par', text_format),
-                  FilesetSpec('correction_factors', text_format),
-                  FilesetSpec('severe_motion_detection_report', text_format),
-                  FilesetSpec('timestamps', directory_format)]
-        if ('umap_ref' in self.sub_study_names and
-                'umap' in self.input_names):
-            inputs.append(FilesetSpec('umap_ref_preproc', nifti_gz_format))
-            inputs.append(
-                FilesetSpec('umap_aligned_dicoms', directory_format))
+#         inputs = [FilesetSpec('mean_displacement_plot', png_format),
+#                   FilesetSpec('motion_par', text_format),
+#                   FilesetSpec('correction_factors', text_format),
+#                   FilesetSpec('severe_motion_detection_report', text_format),
+#                   FilesetSpec('timestamps', directory_format)]
+#         if ('umap_ref' in self.sub_study_names and
+#                 'umap' in self.input_names):
+#             inputs.append(FilesetSpec('umap_ref_preproc', nifti_gz_format))
+#             inputs.append(
+#                 FilesetSpec('umap_aligned_dicoms', directory_format))
 
 #             inputs=inputs,
 #             outputs=[FilesetSpec('motion_detection_output', directory_format)],
@@ -531,17 +567,23 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         merge_inputs = pipeline.add(
             'merge_inputs',
-            Merge(len(inputs)))
-        for i, fileset in enumerate(inputs, start=1):
-            pipeline.connect_input(
-                fileset.name, merge_inputs, 'in{}'.format(i))
+            Merge(5),
+            inputs={
+                'in1': ('mean_displacement_plot', png_format),
+                'in2': ('motion_par', text_format),
+                'in3': ('correction_factors', text_format),
+                'in4': ('severe_motion_detection_report', text_format),
+                'in5': ('timestamps', directory_format)})
 
         copy2dir = pipeline.add(
             'copy2dir',
-            CopyToDir())
-        pipeline.connect(merge_inputs, 'out', copy2dir, 'in_files')
-
-        pipeline.connect_output('motion_detection_output', copy2dir, 'out_dir')
+            CopyToDir(),
+            inputs={
+                },
+            outputs={
+                })
+                'in_files': (merge_inputs, 'out'),  # internal copy2dir
+                'motion_detection_output': ('out_dir', _format),  # output copy2dir
         return pipeline
 
     prepare_pet_pipeline = MultiStudy.translate(
@@ -570,6 +612,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             StructAlignment = True
         else:
             StructAlignment = False
+
         pipeline = self.new_pipeline(
             name='pet_mc',
             inputs=inputs,
@@ -580,22 +623,17 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   "motion detection pipeline"),
             citations=[fsl_cite],
             **kwargs)
+
         check_pet = pipeline.add(
             'check_pet_data',
             CheckPetMCInputs(),
+            inputs={
+                },
+            outputs={
+                },
             requirements=[fsl_req.v('5.0.9'), mrtrix_req.v('3.0rc3')])
-        pipeline.connect_input('pet_data_prepared', check_pet, 'pet_data')
-
-        if StructAlignment:
-            struct_reg = pipeline.add(
-                'ref2structural_reg',
-                FLIRT(),
-                requirements=[fsl_req.v('5.0.9')])
-            pipeline.connect_input('ref_brain', struct_reg, 'reference')
-            pipeline.connect_input('struct2align', struct_reg, 'in_file')
-            struct_reg.inputs.dof = 6
-            struct_reg.inputs.cost_func = 'normmi'
-            struct_reg.inputs.cost = 'normmi'
+                'pet_data': ('pet_data_prepared', _format),  # input check_pet
+                'reference': ('ref_brain', _format),  # input check_pet
         if dynamic:
             pipeline.connect_input('fixed_binning_mats', check_pet,
                                    'motion_mats')
@@ -604,28 +642,51 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                                    'motion_mats')
             pipeline.connect_input('correction_factors', check_pet,
                                    'corr_factors')
-        pipeline.connect_input('ref_brain', check_pet,
-                               'reference')
+
+        if StructAlignment:
+            struct_reg = pipeline.add(
+                'ref2structural_reg',
+                FLIRT(),
+                inputs={
+                    },
+                outputs={
+                    },
+                requirements=[fsl_req.v('5.0.9')])
+                    'reference': ('ref_brain', _format),  # input struct_reg
+                    'in_file': ('struct2align', _format),  # input struct_reg
+                    dof=6,  #  struct_reg parameter
+                    cost_func='normmi',  #  struct_reg parameter
+                    cost='normmi',  #  struct_reg parameter
+
         if not dynamic:
             pet_mc = pipeline.add(
                 'pet_mc',
-                PetImageMotionCorrection(), 
+                PetImageMotionCorrection(),
+                inputs={
+                    },
+                outputs={
+                    },
                 requirements=[fsl_req.v('5.0.9')],
                 iterfield=['corr_factor', 'pet_image', 'motion_mat'])
-            pipeline.connect(check_pet, 'corr_factors', pet_mc, 'corr_factor')
+                    'corr_factor': (check_pet, 'corr_factors'),  # internal pet_mc
         else:
             pet_mc = pipeline.add(
                 'pet_mc',
-                PetImageMotionCorrection(), 
+                PetImageMotionCorrection(),
+                inputs={
+                    },
+                outputs={
+                    },
                 requirements=[fsl_req.v('5.0.9')],
                 iterfield=['pet_image', 'motion_mat'])
-        pipeline.connect(check_pet, 'pet_images', pet_mc, 'pet_image')
-        pipeline.connect(check_pet, 'motion_mats', pet_mc, 'motion_mat')
-        pipeline.connect(check_pet, 'pet2ref_mat', pet_mc, 'pet2ref_mat')
+                'pet_image': (check_pet, 'pet_images'),  # internal pet_mc
+                'motion_mat': (check_pet, 'motion_mats'),  # internal pet_mc
+                'pet2ref_mat': (check_pet, 'pet2ref_mat'),  # internal pet_mc
         if StructAlignment:
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'structural2ref_regmat')
-            pipeline.connect_input('struct2align', pet_mc, 'structural_image')
+            pipeline.connect_input('struct2align', pet_mc,
+                                   'structural_image')
         if self.parameter('PET2MNI_reg'):
             mni_reg = True
         else:
@@ -635,54 +696,75 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             merge_mc = pipeline.add(
                 'merge_pet_mc',
                 fsl.Merge(),
+                inputs={
+                    },
+                outputs={
+                    },
                 requirements=[fsl_req.v('5.0.9')])
-            merge_mc.inputs.dimension = 't'
+                    dimension='t',  #  merge_mc parameter
+
             merge_no_mc = pipeline.add(
                 'merge_pet_no_mc',
                 fsl.Merge(),
+                inputs={
+                    },
+                outputs={
+                    },
                 requirements=[fsl_req.v('5.0.9')])
-            merge_no_mc.inputs.dimension = 't'
-            pipeline.connect(pet_mc, 'pet_mc_image', merge_mc, 'in_files')
-            pipeline.connect(pet_mc, 'pet_no_mc_image', merge_no_mc,
-                             'in_files')
+                    dimension='t',  #  merge_no_mc parameter
+                    'in_files': (pet_mc, 'pet_mc_image'),  # internal merge_mc
+                    'in_files': (pet_mc, 'pet_no_mc_image'),  # internal merge_no_mc
         else:
             static_mc = pipeline.add(
                 'static_mc_generation',
                 StaticPETImageGeneration(),
+                inputs={
+                    },
+                outputs={
+                    },
                 requirements=[fsl_req.v('5.0.9')])
-            pipeline.connect(pet_mc, 'pet_mc_image', static_mc,
-                             'pet_mc_images')
-            pipeline.connect(pet_mc, 'pet_no_mc_image', static_mc,
-                             'pet_no_mc_images')
+                    'pet_mc_images': (pet_mc, 'pet_mc_image'),  # internal static_mc
+                    'pet_no_mc_images': (pet_mc, 'pet_no_mc_image'),  # internal static_mc
+
         merge_outputs = pipeline.add(
             'merge_outputs',
             Merge(3))
-        pipeline.connect_input('mean_displacement_plot', merge_outputs, 'in1')
+                'in1': ('mean_displacement_plot', _format),  # input merge_outputs
+
         if not StructAlignment:
             cropping = pipeline.add(
                 'pet_cropping',
-                PETFovCropping())
-            cropping.inputs.x_min = self.parameter('crop_xmin')
-            cropping.inputs.x_size = self.parameter('crop_xsize')
-            cropping.inputs.y_min = self.parameter('crop_ymin')
-            cropping.inputs.y_size = self.parameter('crop_ysize')
-            cropping.inputs.z_min = self.parameter('crop_zmin')
-            cropping.inputs.z_size = self.parameter('crop_zsize')
+                PETFovCropping(),
+                inputs={
+                    },
+                outputs={
+                    })
+                    x_min=self.parameter('crop_xmin'),  #  cropping parameter
+                    x_size=self.parameter('crop_xsize'),  #  cropping parameter
+                    y_min=self.parameter('crop_ymin'),  #  cropping parameter
+                    y_size=self.parameter('crop_ysize'),  #  cropping parameter
+                    z_min=self.parameter('crop_zmin'),  #  cropping parameter
+                    z_size=self.parameter('crop_zsize'),  #  cropping parameter
             if dynamic:
                 pipeline.connect(merge_mc, 'merged_file', cropping,
                                  'pet_image')
             else:
-                pipeline.connect(static_mc, 'static_mc', cropping, 'pet_image')
+                pipeline.connect(static_mc, 'static_mc', cropping,
+                                 'pet_image')
 
             cropping_no_mc = pipeline.add(
                 'pet_no_mc_cropping',
-                PETFovCropping())
-            cropping_no_mc.inputs.x_min = self.parameter('crop_xmin')
-            cropping_no_mc.inputs.x_size = self.parameter('crop_xsize')
-            cropping_no_mc.inputs.y_min = self.parameter('crop_ymin')
-            cropping_no_mc.inputs.y_size = self.parameter('crop_ysize')
-            cropping_no_mc.inputs.z_min = self.parameter('crop_zmin')
-            cropping_no_mc.inputs.z_size = self.parameter('crop_zsize')
+                PETFovCropping(),
+                inputs={
+                    },
+                outputs={
+                    })
+                    x_min=self.parameter('crop_xmin'),  #  cropping_no_mc parameter
+                    x_size=self.parameter('crop_xsize'),  #  cropping_no_mc parameter
+                    y_min=self.parameter('crop_ymin'),  #  cropping_no_mc parameter
+                    y_size=self.parameter('crop_ysize'),  #  cropping_no_mc parameter
+                    z_min=self.parameter('crop_zmin'),  #  cropping_no_mc parameter
+                    z_size=self.parameter('crop_zsize'),  #  cropping_no_mc parameter
             if dynamic:
                 pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
                                  'pet_image')
@@ -695,10 +777,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     t_mean = pipeline.add(
                         'PET_temporal_mean',
                         ImageMaths(),
+                        inputs={
+                            },
+                        outputs={
+                            },
                         requirements=[fsl_req.v('5.0.9')])
-                    t_mean.inputs.op_string = '-Tmean'
-                    pipeline.connect(cropping, 'pet_cropped', t_mean,
-                                     'in_file')
+                            op_string='-Tmean',  #  t_mean parameter
+                            'in_file': (cropping, 'pet_cropped'),  # internal t_mean
+
                 reg_tmean2MNI = pipeline.add(
                     'reg2MNI',
                     AntsRegSyn(
@@ -706,10 +792,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                         transformation='s',
                         out_prefix='reg2MNI',
                         num_threads=4),
+                    inputs={
+                        },
+                    outputs={
+                        },
                     wall_time=25,
                     requirements=[ants_req.v('2')])
-                reg_tmean2MNI.inputs.ref_file = self.parameter(
-                    'PET_template_MNI')
+                        ref_file=self.parameter('PET_template_MNI'),  #  reg_tmean2MNI parameter
+
                 if dynamic:
                     pipeline.connect(t_mean, 'out_file', reg_tmean2MNI,
                                      'input_file')
@@ -717,53 +807,62 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     merge_trans = pipeline.add(
                         'merge_transforms',
                         Merge(2),
+                        inputs={
+                            },
+                        outputs={
+                            },
                         wall_time=1)
-                    pipeline.connect(reg_tmean2MNI, 'warp_file', merge_trans,
-                                     'in1')
-                    pipeline.connect(reg_tmean2MNI, 'regmat', merge_trans,
-                                     'in2')
+                            'in1': (reg_tmean2MNI, 'warp_file'),  # internal merge_trans
+                            'in2': (reg_tmean2MNI, 'regmat'),  # internal merge_trans
+
                     apply_trans = pipeline.add(
                         'apply_trans',
                         ApplyTransforms(),
+                        inputs={
+                            },
+                        outputs={
+                            },
                         wall_time=7,
                         mem_gb=24,
                         requirements=[ants_req.v('2')])
-                    apply_trans.inputs.reference_image = self.parameter(
-                        'PET_template_MNI')
-                    apply_trans.inputs.interpolation = 'Linear'
-                    apply_trans.inputs.input_image_type = 3
-                    pipeline.connect(cropping, 'pet_cropped', apply_trans,
-                                     'input_image')
-                    pipeline.connect(merge_trans, 'out', apply_trans,
-                                     'transforms')
-                    pipeline.connect(apply_trans, 'output_image',
-                                     merge_outputs, 'in2')
+                            reference_image=self.parameter('PET_template_MNI'),  #  apply_trans parameter
+                            interpolation='Linear',  #  apply_trans parameter
+                            input_image_type=3,  #  apply_trans parameter
+                            'input_image': (cropping, 'pet_cropped'),  # internal apply_trans
+                            'transforms': (merge_trans, 'out'),  # internal apply_trans
+                            'in2': (apply_trans, 'output_image'),  # internal merge_outputs
                 else:
                     pipeline.connect(cropping, 'pet_cropped', reg_tmean2MNI,
                                      'input_file')
                     pipeline.connect(reg_tmean2MNI, 'reg_file',
                                      merge_outputs, 'in2')
             else:
-                pipeline.connect(cropping, 'pet_cropped', merge_outputs, 'in2')
+                        'in2': (cropping, 'pet_cropped'),  # internal merge_outputs
             pipeline.connect(cropping_no_mc, 'pet_cropped', merge_outputs,
                              'in3')
         else:
             if dynamic:
-                pipeline.connect(merge_mc, 'merged_file', merge_outputs, 'in2')
+                pipeline.connect(merge_mc, 'merged_file', merge_outputs,
+                                 'in2')
                 pipeline.connect(merge_no_mc, 'merged_file', merge_outputs,
                                  'in3')
             else:
-                pipeline.connect(static_mc, 'static_mc', merge_outputs, 'in2')
+                pipeline.connect(static_mc, 'static_mc', merge_outputs,
+                                 'in2')
                 pipeline.connect(static_mc, 'static_no_mc', merge_outputs,
                                  'in3')
 #         mcflirt = pipeline.add('mcflirt', MCFLIRT())
-#         pipeline.connect(merge_mc_ps, 'merged_file', mcflirt, 'in_file')
-#         mcflirt.inputs.cost = 'normmi'
+#                 'in_file': (merge_mc_ps, 'merged_file'),  # internal mcflirt
+#                 cost='normmi',  #  mcflirt parameter
 
         copy2dir = pipeline.add(
             'copy2dir',
-            CopyToDir())
-        pipeline.connect(merge_outputs, 'out', copy2dir, 'in_files')
+            CopyToDir(),
+            inputs={
+                },
+            outputs={
+                })
+                'in_files': (merge_outputs, 'out'),  # internal copy2dir
         if dynamic:
             pipeline.connect_output('dynamic_motion_correction_results',
                                     copy2dir, 'out_dir')

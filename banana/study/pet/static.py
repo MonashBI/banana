@@ -19,22 +19,21 @@ class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):
 
     def suvr_pipeline(self, **kwargs):
 
-#             inputs=[FilesetSpec('registered_volume', nifti_gz_format),
-#                     FilesetSpec('base_mask', nifti_gz_format)],
-#             outputs=[FilesetSpec('SUVR_image', nifti_gz_format)],
-
         pipeline = self.new_pipeline(
             name='SUVR',
             desc=('Calculate SUVR image'),
             references=[],
             **kwargs)
 
-        suvr = pipeline.add(
+        pipeline.add(
             'SUVR',
-            SUVRCalculation())
-        pipeline.connect_input('registered_volume', suvr, 'volume')
-        pipeline.connect_input('base_mask', suvr, 'base_mask')
-        pipeline.connect_output('SUVR_image', suvr, 'SUVR_file')
+            SUVRCalculation(),
+            inputs={
+                'volume': ('registered_volume', nifti_gz_format),
+                'base_mask': ('base_mask', nifti_gz_format)},
+            outputs={
+                'SUVR_image': ('SUVR_file', nifti_gz_format)})
+
         return pipeline
 
     def _ica_inputs(self):
