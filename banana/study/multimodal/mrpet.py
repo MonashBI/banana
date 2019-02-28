@@ -1,7 +1,7 @@
 from arcana.data import FilesetSpec, FieldSpec
 from banana.file_format import (
     nifti_gz_format, directory_format, text_format, png_format, dicom_format,
-    text_matrix_format)
+    text_matrix_format, motion_mats_format)
 from banana.interfaces.custom.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, CreateMocoSeries, FixedBinning,
@@ -148,365 +148,274 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         ParameterSpec('dynamic_pet_mc', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
-        inputs = [FilesetSpec('ref_brain', nifti_gz_format)]
-        sub_study_names = []
-        input_names = []
-        for sub_study_spec in self.sub_study_specs():
-            try:
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map('motion_mats')))
-                inputs.append(self.data_spec(sub_study_spec.inverse_map('tr')))
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map('start_time')))
-                inputs.append(
-                    self.data_spec(sub_study_spec.inverse_map(
-                        'real_duration')))
-                input_names.append(
-                    self.spec(sub_study_spec.inverse_map(
-                        'magnitude')).pattern)
-                sub_study_names.append(sub_study_spec.name)
-            except ArcanaNameError:
-                continue  # Sub study doesn't have motion mat
-
-#             inputs=inputs,
-#             outputs=[FilesetSpec('mean_displacement', text_format),
-#                      FilesetSpec('mean_displacement_rc', text_format),
-#                      FilesetSpec('mean_displacement_consecutive', text_format),
-#                      FilesetSpec('start_times', text_format),
-#                      FilesetSpec('motion_par_rc', text_format),
-#                      FilesetSpec('motion_par', text_format),
-#                      FilesetSpec('offset_indexes', text_format),
-#                      FilesetSpec('mats4average', text_format),
-#                      FilesetSpec('severe_motion_detection_report',
-#                                  text_format)],
 
         pipeline = self.new_pipeline(
             name='mean_displacement_calculation',
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        num_motion_mats = len(sub_study_names)
+        motion_mats_in = {}
+        tr_in = {}
+        start_time_in = {}
+        real_duration_in = {}
+        merge_index = 1
+        for spec in self.sub_study_specs():
+            try:
+                spec.map('motion_mats')
+            except ArcanaNameError:
+                pass  # Sub study doesn't have motion mats spec
+            else:
+                k = 'in{}'.format(merge_index)
+                motion_mats_in[k] = (spec.map('motion_mats'),
+                                     motion_mats_format)
+                tr_in[k] = (spec.map('tr'), float)
+                start_time_in[k] = (spec.map('start_time'), float)
+                real_duration_in[k] = (spec.map('real_duration'), float)
+                merge_index += 1
 
         merge_motion_mats = pipeline.add(
             'merge_motion_mats',
-            Merge(num_motion_mats))
+            Merge(len(motion_mats_in)),
+            inputs=motion_mats_in)
 
         merge_tr = pipeline.add(
             'merge_tr',
-            Merge(num_motion_mats))
+            Merge(len(tr_in)),
+            inputs=tr_in)
 
         merge_start_time = pipeline.add(
             'merge_start_time',
-            Merge(num_motion_mats))
+            Merge(len(start_time_in)),
+            inputs=start_time_in)
 
         merge_real_duration = pipeline.add(
             'merge_real_duration',
-            Merge(num_motion_mats))
+            Merge(len(real_duration_in)),
+            inputs=real_duration_in)
 
-        for i, sub_study_name in enumerate(sub_study_names, start=1):
-            spec = self.sub_study_spec(sub_study_name)
-            pipeline.connect_input(
-                spec.inverse_map('motion_mats'), merge_motion_mats,
-                'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('tr'), merge_tr, 'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('start_time'), merge_start_time,
-                'in{}'.format(i))
-            pipeline.connect_input(
-                spec.inverse_map('real_duration'), merge_real_duration,
-                'in{}'.format(i))
-
-        md = pipeline.add(
+        pipeline.add(
             'scan_time_info',
-            MeanDisplacementCalculation(
-                input_names=input_names),
+            MeanDisplacementCalculation(),
             inputs={
-                'motion_mats': (merge_motion_mats, 'out'),  # internal md
-                'trs': (merge_tr, 'out'),  # internal md
-                'start_times': (merge_start_time, 'out'),  # internal md
-                'real_durations': (merge_real_duration, 'out'),  # internal md
-                'reference': ('ref_brain', _format)},
+                'motion_mats': (merge_motion_mats, 'out'),
+                'trs': (merge_tr, 'out'),
+                'start_times': (merge_start_time, 'out'),
+                'real_durations': (merge_real_duration, 'out'),
+                'reference': ('ref_brain', nifti_gz_format)},
             outputs={
-                'mean_displacement': ('mean_displacement', _format),  # output md
-                'mean_displacement_rc': ('mean_displacement_rc', _format),  # output md
-                'mean_displacement_consecutive': ('mean_displacement_consecutive', _format),  # output md
-                'start_times': ('start_times', _format),  # output md
-                'motion_par_rc': ('motion_parameters_rc', _format),  # output md
-                'motion_par': ('motion_parameters', _format),  # output md
-                'offset_indexes': ('offset_indexes', _format),  # output md
-                'mats4average': ('mats4average', _format),  # output md
-                'severe_motion_detection_report': ('corrupted_volumes', _format)})
-                ,  #  md parameter
-                ,  # input md
-                ,  # output md
+                'mean_displacement': ('mean_displacement', text_format),
+                'mean_displacement_rc': ('mean_displacement_rc', text_format),
+                'mean_displacement_consecutive': (
+                    'mean_displacement_consecutive', text_format),
+                'start_times': ('start_times', text_format),
+                'motion_par_rc': ('motion_parameters_rc', text_format),
+                'motion_par': ('motion_parameters', text_format),
+                'offset_indexes': ('offset_indexes', text_format),
+                'mats4average': ('mats4average', text_format),
+                'severe_motion_detection_report': ('corrupted_volumes',
+                                                   text_format)})
+
         return pipeline
 
     def motion_framing_pipeline(self, **kwargs):
-
-        inputs = [FilesetSpec('mean_displacement', text_format),
-                  FilesetSpec('mean_displacement_consecutive', text_format),
-                  FilesetSpec('start_times', text_format)]
-        if 'pet_data_dir' in self.input_names:
-            inputs.append(FieldSpec('pet_start_time', str))
-            inputs.append(FieldSpec('pet_end_time', str))
-#             inputs=inputs,
-#             outputs=[FilesetSpec('frame_start_times', text_format),
-#                      FilesetSpec('frame_vol_numbers', text_format),
-#                      FilesetSpec('timestamps', directory_format)],
 
         pipeline = self.new_pipeline(
             name='motion_framing',
             desc=("Calculate when the head movement exceeded a "
                   "predefined threshold (default 2mm)."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
         framing = pipeline.add(
             'motion_framing',
             MotionFraming(
-                motion_threshold=self.parameter('framing_th'),  #  framing parameter
-                temporal_threshold=self.parameter('framing_temporal_th'),  #  framing parameter
-                pet_offset=self.parameter('pet_offset'),  #  framing parameter
+                motion_threshold=self.parameter('framing_th'),
+                temporal_threshold=self.parameter('framing_temporal_th'),
+                pet_offset=self.parameter('pet_offset'),
                 pet_duration=self.parameter('framing_duration')),
             inputs={
-                'mean_displacement': ('mean_displacement', _format),  # input framing
-                'mean_displacement_consec': ('mean_displacement_consecutive', _format),  # input framing
-                'start_times': ('start_times', _format)},
+                'mean_displacement': ('mean_displacement', text_format),
+                'mean_displacement_consec': ('mean_displacement_consecutive',
+                                             text_format),
+                'start_times': ('start_times', text_format)},
             outputs={
-                'frame_start_times': ('frame_start_times', _format),  # output framing
-                'frame_vol_numbers': ('frame_vol_numbers', _format),  # output framing
-                'timestamps': ('timestamps_dir', _format)})
-                ,  #  framing parameter
-                ,  # input framing
-                ,  # output framing
+                'frame_start_times': ('frame_start_times', text_format),
+                'frame_vol_numbers': ('frame_vol_numbers', text_format),
+                'timestamps': ('timestamps_dir', directory_format)})
+
         if 'pet_data_dir' in self.input_names:
-            pipeline.connect_input('pet_start_time', framing,
-                                   'pet_start_time')
-            pipeline.connect_input('pet_end_time', framing,
-                                   'pet_end_time')
+            pipeline.connect_input('pet_start_time', framing, 'pet_start_time')
+            pipeline.connect_input('pet_end_time', framing, 'pet_end_time')
+
         return pipeline
 
     def plot_mean_displacement_pipeline(self, **kwargs):
 
-#             inputs=[FilesetSpec('mean_displacement_rc', text_format),
-#                     FilesetSpec('offset_indexes', text_format),
-#                     FilesetSpec('frame_start_times', text_format)],
-#             outputs=[FilesetSpec('mean_displacement_plot', png_format)],
-
         pipeline = self.new_pipeline(
             name='plot_mean_displacement',
             desc=("Plot the mean displacement real clock"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        plot_md = pipeline.add(
+        pipeline.add(
             'plot_md',
             PlotMeanDisplacementRC(
                 framing=self.parameter('md_framing')),
             inputs={
-                'mean_disp_rc': ('mean_displacement_rc', _format),  # input plot_md
-                'false_indexes': ('offset_indexes', _format),  # input plot_md
-                'frame_start_times': ('frame_start_times', _format),  # input plot_md
-                'motion_par_rc': ('motion_par_rc', _format)},
+                'mean_disp_rc': ('mean_displacement_rc', text_format),
+                'false_indexes': ('offset_indexes', text_format),
+                'frame_start_times': ('frame_start_times', text_format),
+                'motion_par_rc': ('motion_par_rc', text_format)},
             outputs={
-                'mean_displacement_plot': ('mean_disp_plot', _format),  # output plot_md
-                'rotation_plot': ('rot_plot', _format),  # output plot_md
-                'translation_plot': ('trans_plot', _format)})
-                ,  #  plot_md parameter
-                ,  # input plot_md
-                ,  # output plot_md
+                'mean_displacement_plot': ('mean_disp_plot', png_format),
+                'rotation_plot': ('rot_plot', png_format),
+                'translation_plot': ('trans_plot', png_format)})
+
         return pipeline
 
     def frame_mean_transformation_mats_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('mats4average', text_format),
-#                     FilesetSpec('frame_vol_numbers', text_format)],
-#             outputs=[FilesetSpec('average_mats', directory_format)],
 
         pipeline = self.new_pipeline(
             name='frame_mean_transformation_mats',
             desc=("Average all the transformation mats within each "
                   "detected frame."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        average = pipeline.add(
+        pipeline.add(
             'mats_averaging',
             AffineMatAveraging(),
             inputs={
-                'frame_vol_numbers': ('frame_vol_numbers', _format),  # input average
-                'all_mats4average': ('mats4average', _format)},
+                'frame_vol_numbers': ('frame_vol_numbers', text_format),
+                'all_mats4average': ('mats4average', text_format)},
             outputs={
-                'average_mats': ('average_mats', _format)})
-                ,  # input average
-                ,  # output average
+                'average_mats': ('average_mats', directory_format)})
+
         return pipeline
 
     def fixed_binning_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('start_times', text_format),
-#                     FieldSpec('pet_start_time', str),
-#                     FieldSpec('pet_duration', int),
-#                     FilesetSpec('mats4average', text_format)],
-#             outputs=[FilesetSpec('fixed_binning_mats', directory_format)],
 
         pipeline = self.new_pipeline(
             name='fixed_binning',
             desc=("Pipeline to generate average motion matrices for "
                   "each bin in a dynamic PET reconstruction experiment."
                   "This will be the input for the dynamic motion correction."),
-            citations=[fsl_cite], **kwargs)
+            references=[fsl_cite], **kwargs)
 
-        binning = pipeline.add(
+        pipeline.add(
             'fixed_binning',
             FixedBinning(
-                n_frames=self.parameter('fixed_binning_n_frames'),  #  binning parameter
-                pet_offset=self.parameter('pet_offset'),  #  binning parameter
+                n_frames=self.parameter('fixed_binning_n_frames'),
+                pet_offset=self.parameter('pet_offset'),
                 bin_len=self.parameter('fixed_binning_bin_len')),
             inputs={
-                'start_times': ('start_times', _format),  # input binning
-                'pet_start_time': ('pet_start_time', _format),  # input binning
-                'pet_duration': ('pet_duration', _format),  # input binning
-                'motion_mats': ('mats4average', _format)},
+                'start_times': ('start_times', text_format),
+                'pet_start_time': ('pet_start_time', str),
+                'pet_duration': ('pet_duration', int),
+                'motion_mats': ('mats4average', text_format)},
             outputs={
-                'fixed_binning_mats': ('average_bin_mats', _format)})
-                ,  # input binning
-                ,  #  binning parameter
-                ,  # output binning
+                'fixed_binning_mats': ('average_bin_mats', directory_format)})
 
         return pipeline
 
     def pet_correction_factors_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('timestamps', directory_format)],
-#             outputs=[FilesetSpec('correction_factors', text_format)],
 
         pipeline = self.new_pipeline(
             name='pet_correction_factors',
             desc=("Pipeline to calculate the correction factors to "
                   "account for frame duration when averaging the PET "
                   "frames to create the static PET image"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        corr_factors = pipeline.add(
+        pipeline.add(
             'pet_corr_factors',
             PetCorrectionFactor(),
             inputs={
-                'timestamps': ('timestamps', _format)},
+                'timestamps': ('timestamps', directory_format)},
             outputs={
-                'correction_factors': ('corr_factors', _format)})
-                ,  # input corr_factors
-                ,  # output corr_factors
+                'correction_factors': ('corr_factors', text_format)})
+
         return pipeline
 
     def nifti2dcm_conversion_pipeline(self, **kwargs):
-
-#             inputs=[FilesetSpec('umaps_align2ref', directory_format),
-#                     FilesetSpec('umap', dicom_format)],
-#             outputs=[FilesetSpec('umap_aligned_dicoms', directory_format)],
 
         pipeline = self.new_pipeline(
             name='conversion_to_dicom',
             desc=(
                 "Conversing aligned umap from nifti to dicom format - "
                 "parallel implementation"),
-            citations=(),
+            references=(),
             **kwargs)
 
         list_niftis = pipeline.add(
             'list_niftis',
             ListDir(),
             inputs={
-                'directory': ('umaps_align2ref', _format)},
-            outputs={
-                })
-                ,  # input list_niftis
+                'directory': ('umaps_align2ref', directory_format)})
 
         reorient_niftis = pipeline.add(
             'reorient_niftis',
             ReorientUmap(),
             inputs={
-                'niftis': (list_niftis, 'files'),  # internal reorient_niftis
-                'umap': ('umap', _format)},
-            outputs={
-                },
+                'niftis': (list_niftis, 'files'),
+                'umap': ('umap', dicom_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
-                ,  # input reorient_niftis
 
         list_dicoms = pipeline.add(
             'list_dicoms',
             ListDir(
                 sort_key=dicom_fname_sort_key),
             inputs={
-                'directory': ('umap', _format)},
-            outputs={
-                })
-                ,  #  list_dicoms parameter
-                ,  # input list_dicoms
+                'directory': ('umap', dicom_format)})
 
         nii2dicom = pipeline.add(
             'nii2dicom',
-            Nii2Dicom(),
+            Nii2Dicom(
+                # extension='Frame',  #  nii2dicom parameter
+                ),
             inputs={
                 'reference_dicom': (list_dicoms, 'files')},
             outputs={
                 'in_file': (reorient_niftis, 'reoriented_umaps')},
             iterfield=['in_file'],
             wall_time=20)
-#                 extension='Frame',  #  nii2dicom parameter
-                ,  # internal nii2dicom
-                ,  # internal nii2dicom
 
-        copy2dir = pipeline.add(
+        pipeline.add(
             'copy2dir',
             CopyToDir(
                 extension='Frame'),
             inputs={
                 'in_files': (nii2dicom, 'out_file')},
             outputs={
-                'umap_aligned_dicoms': ('out_dir', _format)})
-                ,  #  copy2dir parameter
-                ,  # internal copy2dir
-                ,  # output copy2dir
+                'umap_aligned_dicoms': ('out_dir', directory_format)})
 
         return pipeline
 
     def umap_realignment_pipeline(self, **kwargs):
-#         inputs = [FilesetSpec('average_mats', directory_format),
-#                   FilesetSpec('umap_ref_coreg_matrix', text_matrix_format),
-#                   FilesetSpec('umap_ref_qform_mat', text_matrix_format)]
-#         outputs = []
-#         if ('umap_ref' in self.sub_study_names and
-#                 'umap' in self.input_names):
-#             inputs.append(FilesetSpec('umap', nifti_gz_format))
-#             outputs.append(FilesetSpec('umaps_align2ref', directory_format))
 
         pipeline = self.new_pipeline(
             name='umap_realignment',
             desc=("Pipeline to align the original umap (if provided)"
                   "to match the head position in each frame and improve the "
                   "static PET image quality."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        frame_align = pipeline.add(
+        pipeline.add(
             'umap2ref_alignment',
-            UmapAlign2Reference(),
+            UmapAlign2Reference(
+                pct=self.parameter('align_pct')),
             inputs={
-                },
+                'ute_regmat': ('umap_ref_coreg_matrix', text_matrix_format),
+                'ute_qform_mat': ('umap_ref_qform_mat', text_matrix_format),
+                'average_mats': ('average_mats', directory_format),
+                'umap': ('umap', nifti_gz_format)},
             outputs={
-                },
+                'umaps_align2ref': ('umaps_align2ref', directory_format)},
             requirements=[fsl_req.v('5.0.9')])
-                pct=self.parameter('align_pct'),  #  frame_align parameter
-                'ute_regmat': ('umap_ref_coreg_matrix', _format),  # input frame_align
-                'ute_qform_mat': ('umap_ref_qform_mat', _format),  # input frame_align
-                'average_mats': ('average_mats', _format),  # input frame_align
-                'umap': ('umap', _format),  # input frame_align
-                'umaps_align2ref': ('umaps_align2ref', _format),  # output frame_align
 
         return pipeline
 
@@ -516,53 +425,34 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         attempt.
         """
 
-#             inputs=[FilesetSpec('start_times', text_format),
-#                     FilesetSpec('motion_par', text_format)],
-#             outputs=[FilesetSpec('moco_series', directory_format)],
-
         pipeline = self.new_pipeline(
             name='create_moco_series',
             desc=("Pipeline to generate a moco_series that can be then "
                   "imported back in the scanner and used to correct the"
                   " pet data"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
-        moco = pipeline.add(
+        pipeline.add(
             'create_moco_series',
-            CreateMocoSeries(),
+            CreateMocoSeries(
+                moco_template=self.parameter('moco_template')),
             inputs={
-                },
+                'start_times': ('start_times', text_format),
+                'motion_par': ('motion_par', text_format)},
             outputs={
-                })
-                'start_times': ('start_times', _format),  # input moco
-                'motion_par': ('motion_par', _format),  # input moco
-                moco_template=self.parameter('moco_template'),  #  moco parameter
-                'moco_series': ('modified_moco', _format),  # output moco
+                'moco_series': ('modified_moco', directory_format)})
 
         return pipeline
 
     def gather_outputs_pipeline(self, **kwargs):
-#         inputs = [FilesetSpec('mean_displacement_plot', png_format),
-#                   FilesetSpec('motion_par', text_format),
-#                   FilesetSpec('correction_factors', text_format),
-#                   FilesetSpec('severe_motion_detection_report', text_format),
-#                   FilesetSpec('timestamps', directory_format)]
-#         if ('umap_ref' in self.sub_study_names and
-#                 'umap' in self.input_names):
-#             inputs.append(FilesetSpec('umap_ref_preproc', nifti_gz_format))
-#             inputs.append(
-#                 FilesetSpec('umap_aligned_dicoms', directory_format))
-
-#             inputs=inputs,
-#             outputs=[FilesetSpec('motion_detection_output', directory_format)],
 
         pipeline = self.new_pipeline(
             name='gather_motion_detection_outputs',
 
             desc=("Pipeline to gather together all the outputs from "
                   "the motion detection pipeline."),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
         merge_inputs = pipeline.add(
@@ -575,15 +465,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 'in4': ('severe_motion_detection_report', text_format),
                 'in5': ('timestamps', directory_format)})
 
-        copy2dir = pipeline.add(
+        pipeline.add(
             'copy2dir',
             CopyToDir(),
             inputs={
-                },
+                'in_files': (merge_inputs, 'out')},
             outputs={
-                })
-                'in_files': (merge_inputs, 'out'),  # internal copy2dir
-                'motion_detection_output': ('out_dir', _format),  # output copy2dir
+                'motion_detection_output': ('out_dir', directory_format)})
+
         return pipeline
 
     prepare_pet_pipeline = MultiStudy.translate(
@@ -593,47 +482,32 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         'pet_mc', 'pet_time_info_extraction_pipeline')
 
     def motion_correction_pipeline(self, **kwargs):
-        inputs = [FilesetSpec('pet_data_prepared', directory_format),
-                  FilesetSpec('ref_brain', nifti_gz_format),
-                  FilesetSpec('mean_displacement_plot', png_format)]
+
         if self.parameter_spec('dynamic_pet_mc').value:
-            inputs.append(FilesetSpec('fixed_binning_mats', directory_format))
-            outputs = [FilesetSpec('dynamic_motion_correction_results',
-                                   directory_format)]
             dynamic = True
         else:
-            inputs.append(FilesetSpec('average_mats', directory_format))
-            inputs.append(FilesetSpec('correction_factors', text_format))
-            outputs = [FilesetSpec('static_motion_correction_results',
-                                   directory_format)]
             dynamic = False
         if 'struct2align' in self.input_names:
-            inputs.append(FilesetSpec('struct2align', nifti_gz_format))
             StructAlignment = True
         else:
             StructAlignment = False
 
         pipeline = self.new_pipeline(
             name='pet_mc',
-            inputs=inputs,
-            outputs=outputs,
             desc=("Given a folder with reconstructed PET data, this "
                   "pipeline will generate a motion corrected PET"
                   "image using information extracted from the MR-based "
                   "motion detection pipeline"),
-            citations=[fsl_cite],
+            references=[fsl_cite],
             **kwargs)
 
         check_pet = pipeline.add(
             'check_pet_data',
             CheckPetMCInputs(),
             inputs={
-                },
-            outputs={
-                },
+                'pet_data': ('pet_data_prepared', directory_format),
+                'reference': ('ref_brain', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9'), mrtrix_req.v('3.0rc3')])
-                'pet_data': ('pet_data_prepared', _format),  # input check_pet
-                'reference': ('ref_brain', _format),  # input check_pet
         if dynamic:
             pipeline.connect_input('fixed_binning_mats', check_pet,
                                    'motion_mats')
@@ -646,42 +520,33 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if StructAlignment:
             struct_reg = pipeline.add(
                 'ref2structural_reg',
-                FLIRT(),
+                FLIRT(
+                    dof=6,
+                    cost_func='normmi',
+                    cost='normmi'),
                 inputs={
-                    },
-                outputs={
-                    },
+                    'reference': ('ref_brain', nifti_gz_format),
+                    'in_file': ('struct2align', nifti_gz_format)},
                 requirements=[fsl_req.v('5.0.9')])
-                    'reference': ('ref_brain', _format),  # input struct_reg
-                    'in_file': ('struct2align', _format),  # input struct_reg
-                    dof=6,  #  struct_reg parameter
-                    cost_func='normmi',  #  struct_reg parameter
-                    cost='normmi',  #  struct_reg parameter
 
         if not dynamic:
             pet_mc = pipeline.add(
                 'pet_mc',
                 PetImageMotionCorrection(),
                 inputs={
-                    },
-                outputs={
-                    },
+                    'corr_factor': (check_pet, 'corr_factors')},
                 requirements=[fsl_req.v('5.0.9')],
                 iterfield=['corr_factor', 'pet_image', 'motion_mat'])
-                    'corr_factor': (check_pet, 'corr_factors'),  # internal pet_mc
         else:
             pet_mc = pipeline.add(
                 'pet_mc',
                 PetImageMotionCorrection(),
                 inputs={
-                    },
-                outputs={
-                    },
+                    'pet_image': (check_pet, 'pet_images'),
+                    'motion_mat': (check_pet, 'motion_mats'),
+                    'pet2ref_mat': (check_pet, 'pet2ref_mat')},
                 requirements=[fsl_req.v('5.0.9')],
                 iterfield=['pet_image', 'motion_mat'])
-                'pet_image': (check_pet, 'pet_images'),  # internal pet_mc
-                'motion_mat': (check_pet, 'motion_mats'),  # internal pet_mc
-                'pet2ref_mat': (check_pet, 'pet2ref_mat'),  # internal pet_mc
         if StructAlignment:
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'structural2ref_regmat')
@@ -695,56 +560,43 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if dynamic:
             merge_mc = pipeline.add(
                 'merge_pet_mc',
-                fsl.Merge(),
-                inputs={
-                    },
-                outputs={
-                    },
+                fsl.Merge(
+                    dimension='t'),
                 requirements=[fsl_req.v('5.0.9')])
-                    dimension='t',  #  merge_mc parameter
 
             merge_no_mc = pipeline.add(
                 'merge_pet_no_mc',
-                fsl.Merge(),
+                fsl.Merge(
+                    dimension='t'),
                 inputs={
-                    },
-                outputs={
-                    },
+                    'in_files': (pet_mc, 'pet_mc_image'),
+                    'in_files': (pet_mc, 'pet_no_mc_image')},
                 requirements=[fsl_req.v('5.0.9')])
-                    dimension='t',  #  merge_no_mc parameter
-                    'in_files': (pet_mc, 'pet_mc_image'),  # internal merge_mc
-                    'in_files': (pet_mc, 'pet_no_mc_image'),  # internal merge_no_mc
         else:
             static_mc = pipeline.add(
                 'static_mc_generation',
                 StaticPETImageGeneration(),
                 inputs={
-                    },
-                outputs={
-                    },
+                    'pet_mc_images': (pet_mc, 'pet_mc_image'),
+                    'pet_no_mc_images': (pet_mc, 'pet_no_mc_image')},
                 requirements=[fsl_req.v('5.0.9')])
-                    'pet_mc_images': (pet_mc, 'pet_mc_image'),  # internal static_mc
-                    'pet_no_mc_images': (pet_mc, 'pet_no_mc_image'),  # internal static_mc
 
         merge_outputs = pipeline.add(
             'merge_outputs',
-            Merge(3))
-                'in1': ('mean_displacement_plot', _format),  # input merge_outputs
+            Merge(3),
+            inputs={
+                'in1': ('mean_displacement_plot', png_format)})
 
         if not StructAlignment:
             cropping = pipeline.add(
                 'pet_cropping',
-                PETFovCropping(),
-                inputs={
-                    },
-                outputs={
-                    })
-                    x_min=self.parameter('crop_xmin'),  #  cropping parameter
-                    x_size=self.parameter('crop_xsize'),  #  cropping parameter
-                    y_min=self.parameter('crop_ymin'),  #  cropping parameter
-                    y_size=self.parameter('crop_ysize'),  #  cropping parameter
-                    z_min=self.parameter('crop_zmin'),  #  cropping parameter
-                    z_size=self.parameter('crop_zsize'),  #  cropping parameter
+                PETFovCropping(
+                    x_min=self.parameter('crop_xmin'),
+                    x_size=self.parameter('crop_xsize'),
+                    y_min=self.parameter('crop_ymin'),
+                    y_size=self.parameter('crop_ysize'),
+                    z_min=self.parameter('crop_zmin'),
+                    z_size=self.parameter('crop_zsize')))
             if dynamic:
                 pipeline.connect(merge_mc, 'merged_file', cropping,
                                  'pet_image')
@@ -754,17 +606,13 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
             cropping_no_mc = pipeline.add(
                 'pet_no_mc_cropping',
-                PETFovCropping(),
-                inputs={
-                    },
-                outputs={
-                    })
-                    x_min=self.parameter('crop_xmin'),  #  cropping_no_mc parameter
-                    x_size=self.parameter('crop_xsize'),  #  cropping_no_mc parameter
-                    y_min=self.parameter('crop_ymin'),  #  cropping_no_mc parameter
-                    y_size=self.parameter('crop_ysize'),  #  cropping_no_mc parameter
-                    z_min=self.parameter('crop_zmin'),  #  cropping_no_mc parameter
-                    z_size=self.parameter('crop_zsize'),  #  cropping_no_mc parameter
+                PETFovCropping(
+                    x_min=self.parameter('crop_xmin'),
+                    x_size=self.parameter('crop_xsize'),
+                    y_min=self.parameter('crop_ymin'),
+                    y_size=self.parameter('crop_ysize'),
+                    z_min=self.parameter('crop_zmin'),
+                    z_size=self.parameter('crop_zsize')))
             if dynamic:
                 pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
                                  'pet_image')
@@ -776,14 +624,11 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 if dynamic:
                     t_mean = pipeline.add(
                         'PET_temporal_mean',
-                        ImageMaths(),
+                        ImageMaths(
+                            op_string='-Tmean'),
                         inputs={
-                            },
-                        outputs={
-                            },
+                            'in_file': (cropping, 'pet_cropped')},
                         requirements=[fsl_req.v('5.0.9')])
-                            op_string='-Tmean',  #  t_mean parameter
-                            'in_file': (cropping, 'pet_cropped'),  # internal t_mean
 
                 reg_tmean2MNI = pipeline.add(
                     'reg2MNI',
@@ -791,14 +636,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                         num_dimensions=3,
                         transformation='s',
                         out_prefix='reg2MNI',
-                        num_threads=4),
-                    inputs={
-                        },
-                    outputs={
-                        },
+                        num_threads=4,
+                        ref_file=self.parameter('PET_template_MNI')),
                     wall_time=25,
                     requirements=[ants_req.v('2')])
-                        ref_file=self.parameter('PET_template_MNI'),  #  reg_tmean2MNI parameter
 
                 if dynamic:
                     pipeline.connect(t_mean, 'out_file', reg_tmean2MNI,
@@ -808,36 +649,32 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                         'merge_transforms',
                         Merge(2),
                         inputs={
-                            },
-                        outputs={
-                            },
+                            'in1': (reg_tmean2MNI, 'warp_file'),
+                            'in2': (reg_tmean2MNI, 'regmat')},
                         wall_time=1)
-                            'in1': (reg_tmean2MNI, 'warp_file'),  # internal merge_trans
-                            'in2': (reg_tmean2MNI, 'regmat'),  # internal merge_trans
 
                     apply_trans = pipeline.add(
                         'apply_trans',
-                        ApplyTransforms(),
+                        ApplyTransforms(
+                            reference_image=self.parameter('PET_template_MNI'),
+                            interpolation='Linear',
+                            input_image_type=3),
                         inputs={
-                            },
-                        outputs={
-                            },
+                            'input_image': (cropping, 'pet_cropped'),
+                            'transforms': (merge_trans, 'out')},
                         wall_time=7,
                         mem_gb=24,
                         requirements=[ants_req.v('2')])
-                            reference_image=self.parameter('PET_template_MNI'),  #  apply_trans parameter
-                            interpolation='Linear',  #  apply_trans parameter
-                            input_image_type=3,  #  apply_trans parameter
-                            'input_image': (cropping, 'pet_cropped'),  # internal apply_trans
-                            'transforms': (merge_trans, 'out'),  # internal apply_trans
-                            'in2': (apply_trans, 'output_image'),  # internal merge_outputs
+                    pipeline.connect(apply_trans, 'output_image',
+                                     merge_outputs, 'in2'),
                 else:
                     pipeline.connect(cropping, 'pet_cropped', reg_tmean2MNI,
                                      'input_file')
                     pipeline.connect(reg_tmean2MNI, 'reg_file',
                                      merge_outputs, 'in2')
             else:
-                        'in2': (cropping, 'pet_cropped'),  # internal merge_outputs
+                    pipeline.connect(cropping, 'pet_cropped', merge_outputs,
+                                     'in2')
             pipeline.connect(cropping_no_mc, 'pet_cropped', merge_outputs,
                              'in3')
         else:
@@ -852,17 +689,14 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 pipeline.connect(static_mc, 'static_no_mc', merge_outputs,
                                  'in3')
 #         mcflirt = pipeline.add('mcflirt', MCFLIRT())
-#                 'in_file': (merge_mc_ps, 'merged_file'),  # internal mcflirt
-#                 cost='normmi',  #  mcflirt parameter
+#                 'in_file': (merge_mc_ps, 'merged_file'),
+#                 cost='normmi',
 
         copy2dir = pipeline.add(
             'copy2dir',
             CopyToDir(),
             inputs={
-                },
-            outputs={
-                })
-                'in_files': (merge_outputs, 'out'),  # internal copy2dir
+                'in_files': (merge_outputs, 'out')})
         if dynamic:
             pipeline.connect_output('dynamic_motion_correction_results',
                                     copy2dir, 'out_dir')
