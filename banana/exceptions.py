@@ -12,3 +12,7 @@ class BananaMissingHeaderValue(BananaError):
 
 class BananaRuntimeError(BananaError):
     pass
+
+
+class BananaTestSetupError(BananaError):
+    pass
