@@ -13,9 +13,10 @@ parser.add_argument('--work_dir', type=str, default=None,
                     help="The working directory to use")
 args = parser.parse_args()
 
-mri_tester = SystemTester(MriStudy, args.ref_data_dir, args.work_dir)
+results = []
 
-results = mri_tester.test_all()
+mri_tester = SystemTester(MriStudy, args.ref_data_dir, args.work_dir)
+results.extend(mri_tester.test_all())
 
 errors = []
 failures = []

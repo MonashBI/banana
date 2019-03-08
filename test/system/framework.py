@@ -1,10 +1,9 @@
 import os
 import sys
-import json
 import tempfile
+from itertools import chain
 from traceback import format_exception
-import os.path as op
-from arcana.data import Fileset, Field, FilesetSelector, FieldSelector
+from arcana.data import FilesetSelector, FieldSelector
 from arcana.repository import DirectoryRepository
 from arcana.exceptions import ArcanaMissingDataException
 from banana.exceptions import BananaTestSetupError
@@ -16,8 +15,8 @@ class SystemTester(object):
     against reference data from previous runs
     """
 
-    def __init__(self, study_class, ref_data_dir, work_dir=None,
-                 parameters=None, dry_run=False):
+    def __init__(self, study_class, ref_repo, work_dir=None, parameters=None,
+                 dry_run=False, missing_ok=False):
         if parameters is None:
             parameters = {}
         self.parameters = parameters
@@ -30,37 +29,39 @@ class SystemTester(object):
         else:
             self.work_dir = work_dir
             os.makedirs(self.work_dir, exist_ok=True)
-        self.input_repository = DirectoryRepository(ref_data_dir, depth=0)
-        self.output_repository = DirectoryRepository(work_dir, depth=0)
+        self.ref_repo = ref_repo
+        self.output_repo = DirectoryRepository(work_dir, depth=0)
+        # Create inputs corresponding to each input in the repository
         self.inputs = {}
-        for filename in os.listdir(ref_data_dir):
-            path = op.join(ref_data_dir, filename)
-            if filename == DirectoryRepository.FIELDS_FNAME:
-                with open(path) as f:
-                    data = json.load(f)
-                for name, value in data.items():
-                    field = Field(name, value)
-                    self.inputs[name] = FieldSelector(
-                        field.name, field.name, dtype=field.dtype,
-                        repository=self.input_repository)
+        for spec in study_class.data_specs():
+            if spec.is_fileset:
+                selector = FilesetSelector(
+                    spec.name, spec.name, format=spec.format,
+                    repository=self.ref_repo)
             else:
-                fileset = Fileset.from_path(path)
-                self.inputs[fileset.name] = FilesetSelector(
-                    fileset.name, fileset.name, format=fileset.format,
-                    repository=self.input_repository)
+                selector = FieldSelector(
+                    spec.name, spec.name, dtype=spec.dtype,
+                    repository=self.ref_repo)
+            # Check whether a corresponding data exists in the reference repo
+            try:
+                selector.bind(ref_repo)
+            except ArcanaMissingDataException:
+                if not missing_ok:
+                    raise
+            else:
+                self.inputs[spec.name] = selector
         self.all_pipelines = set(
             s.pipeline_name for s in study_class.data_specs())
         self.dry_run = dry_run
 
-    def test(self, pipeline_name, criteria='exact',
-             dry_run=None):
+    def test(self, pipeline_name, criteria='exact', dry_run=None):
         if dry_run is None:
             dry_run = self.dry_run
         # A study with all inputs provided to determine which inputs are needed
         # by the pipeline
         input_study = self.study_class(
             pipeline_name + '_input_checker',
-            repository=self.input_repository,
+            repo=self.ref_repo,
             processor=self.work_dir,
             inputs=self.inputs.values(),
             parameters=self.parameters)
@@ -78,7 +79,7 @@ class SystemTester(object):
         if not dry_run:
             output_study = self.study_class(
                 self.name + '_' + pipeline_name,
-                repository=self.output_repository,
+                repo=self.output_repo,
                 processor=self.work_dir,
                 inputs=[self.inputs[i] for i in pipeline.input_names],
                 parameters=self.parameters)
@@ -98,9 +99,9 @@ class SystemTester(object):
                     results.append(TestSuccess(pipeline_name, spec_name))
             return results
 
-    def test_all(self, skip_pipelines=()):
-        return [self.test(p) for p in self.all_pipelines
-                if p not in skip_pipelines]
+    def test_all(self, skip=()):
+        return list(chain(
+            self.test(p) for p in self.all_pipelines if p not in skip))
 
 
 class TestSuccess(object):
@@ -124,9 +125,9 @@ class TestFailure(TestSuccess):
         self.ref_value = ref_value
 
     def __repr__(self):
-        return ("{} did not match reference produced by {} in "
-                .format(self.spec_name, self.pipeline_name,
-                        self.study_class.__name__))
+        return ("FAILURE! {} did not match reference produced by {}.{}"
+                .format(self.spec_name, self.study_class.__name__,
+                        self.pipeline_name))
 
 
 class TestError(object):
@@ -139,7 +140,6 @@ class TestError(object):
         self.traceback = traceback
 
     def __repr__(self):
-        return ("{} in {} errored:\n{}"
-                .format(self.pipeline_name,
-                        self.study_class.__name__,
+        return ("ERROR! running {}.{}:\n{}"
+                .format(self.study_class.__name__, self.pipeline_name,
                         self.traceback))
