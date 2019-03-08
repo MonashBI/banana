@@ -1,4 +1,5 @@
 import numpy as np
+import os.path as op
 import glob
 import json
 import pydicom
@@ -195,7 +196,7 @@ class NiftixHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
     in_file = File(exists=True, desc="The main nifti file")
     in_json = File(exists=True,
                    desc='JSON side-car file containing additional header info',
-                   mandatory=True)
+                   mandatory=False)
 
 
 class NiftixHeaderInfoExtractionOutputSpec(TraitedSpec):
@@ -213,7 +214,7 @@ class NiftixHeaderInfoExtractionOutputSpec(TraitedSpec):
     total_duration = traits.Float(
         desc='Scan duration as extracted from the header.')
     ped = traits.Str(desc='Phase encoding direction.')
-    pe_angle = traits.Str(desc='Phase angle.')
+    pe_angle = traits.Float(desc='Phase angle.')
     ref_motion_mats = Directory(desc='folder with the reference motion mats')
 
 
@@ -222,22 +223,35 @@ class NiftixHeaderInfoExtraction(BaseInterface):
     input_spec = NiftixHeaderInfoExtractionInputSpec
     output_spec = NiftixHeaderInfoExtractionOutputSpec
 
+    def _run_interface(self, runtime):
+        return runtime
+
     def _list_outputs(self):
 
         outputs = self._outputs().get()
-        with open(self.inputs.in_json) as f:
+        if not isdefined(self.inputs.in_json):
+            side_car_path = split_extension(self.inputs.in_file)[0] + '.json'
+        else:
+            side_car_path = self.inputs.in_json
+        with open(side_car_path) as f:
             dct = json.load(f)
+        nifti_hdr = nib.load(self.inputs.in_file).get_header()
+        # Get the orientation of the main magnetic field as a vector
+        img_orient = np.reshape(
+            np.asarray(dct['ImageOrientationPatientDICOM']),
+            newshape=(2, 3))
+        b0_orient = np.cross(img_orient[0], img_orient[1])
         # Save extracted values to output dictionary
-        outputs['start_time'] = float(start_time)
+        outputs['start_time'] = float(dct['AcquisitionTime'].replace(':', ''))
         outputs['tr'] = dct['RepetitionTime']
         outputs['echo_times'] = [dct['EchoTime']]
-        outputs['voxel_sizes'] = vox_sizes
+        outputs['voxel_sizes'] = [float(v) for v in nifti_hdr['pixdim'][1:4]]
         outputs['H'] = list(b0_orient)
-        outputs['B0'] = hd.MagneticFieldStrength
-        outputs['total_duration'] = float(total_duration)
-        outputs['real_duration'] = float(real_duration)
-        outputs['ped'] = ped
-        outputs['pe_angle'] = str(phase_offset)
+        outputs['B0'] = dct['MagneticFieldStrength']
+        outputs['total_duration'] = 0.0
+        outputs['real_duration'] = 0.0
+        outputs['ped'] = ''
+        outputs['pe_angle'] = 0.0
 
         return outputs
 

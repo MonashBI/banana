@@ -28,7 +28,7 @@ parser.add_argument('--dry_run', default=False, action='store_true',
 args = parser.parse_args()
 
 parts = args.study_class.split('.')
-module_name = parts[:-1]
+module_name = '.'.join(parts[:-1])
 class_name = parts[-1]
 
 parameters = dict(args.parameter)

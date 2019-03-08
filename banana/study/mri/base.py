@@ -10,7 +10,7 @@ from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
     dicom_format, text_format, gif_format, niftix_gz_format)
 from nipype.interfaces.utility import IdentityInterface
-from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req
+from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req, c3d_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exceptions import ArcanaUsageError
 from banana.interfaces.mrtrix.transform import MRResize
@@ -24,6 +24,8 @@ from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.custom.coils import ToPolarCoords
 from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
+from nipype.interfaces.fsl.preprocess import ApplyXFM
+from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 from arcana import ParameterSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
@@ -74,6 +76,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'linear_coreg_pipeline',
                     desc="Head image coregistered to 'coreg_ref'"),
         FilesetSpec('coreg_brain', nifti_gz_format,
+                    'coreg_brain_pipeline',
+                    desc=("Either brain-extracted image coregistered to "
+                          "'coreg_ref_brain' or a brain extraction of a "
+                          "coregistered (incl. skull) image")),
+        FilesetSpec('coreg_brain_mask', nifti_gz_format,
                     'coreg_brain_pipeline',
                     desc=("Either brain-extracted image coregistered to "
                           "'coreg_ref_brain' or a brain extraction of a "
@@ -306,11 +313,46 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                            'coreg_ref': 'coreg_ref_brain'},
                 output_map={'coreg': 'coreg_brain'},
                 name_maps=name_maps)
+
+            # Apply coregistration transform to brain mask
+            try:
+                ants = pipeline.node('ANTs_linear_Reg')
+            except KeyError:
+                tranform_input = (pipeline.node('flirt'), 'out_matrix_file')
+            else:
+                # Convert ANTs transform matrix to FSL format
+                transform_conv = pipeline.add(
+                    'transform_conv',
+                    ANTs2FSLMatrixConversion(
+                        ras2fsl=True),
+                    inputs={
+                        'itk_file': (ants, 'regmat'),
+                        'source_file': ('brain_mask', nifti_gz_format),
+                        'reference_file': ('coreg_ref_brain',
+                                           nifti_gz_format)},
+                    requirements=[c3d_req.v('1.1.0')])
+                tranform_input = (transform_conv, 'fsl_matrix')
+
+            pipeline.add(
+                'mask_transform',
+                ApplyXFM(
+                    output_type='NIFTI_GZ',
+                    reference=self.template_path,
+                    apply_xfm=True),
+                inputs={
+                    'in_matrix_file': tranform_input,
+                    'in_file': ('brain_mask', nifti_gz_format)},
+                outputs={
+                    'coreg_brain_mask': ('out_file', nifti_format)},
+                requirements=[fsl_req.v('5.0.10')],
+                wall_time=10)
+
         elif self.provided('coreg_ref'):
             pipeline = self.brain_extraction_pipeline(
                 name='linear_coreg_brain',
                 input_map={'preproc': 'coreg'},
-                output_map={'brain': 'coreg_brain'},
+                output_map={'brain': 'coreg_brain',
+                            'brain_mask': 'coreg_brain_mask'},
                 name_maps=name_maps)
         else:
             raise ArcanaUsageError(
@@ -344,7 +386,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         """
 
         pipeline = self.new_pipeline(
-            name='linear_reg',
+            name='linear_coreg',
             name_maps=name_maps,
             desc="Registers a MR scan against a reference image using FLIRT",
             references=[fsl_cite])
@@ -721,7 +763,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 out_basename='Reference_segmentation'),
             inputs={
                 'in_files': ('brain', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.9')]),
+            requirements=[fsl_req.v('5.0.9')])
 
         # Determine output field of split to use
         if img_type == 1:
@@ -814,11 +856,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             references=[])
 
         if self.provided('header_image'):
-            dcm_in_name = 'header_image'
+            in_name = 'header_image'
         else:
-            dcm_in_name = 'magnitude'
+            in_name = 'magnitude'
 
-        input_format = self.input(dcm_in_name).format
+        input_format = self.input(in_name).format
 
         if input_format == dicom_format:
 
@@ -827,7 +869,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 DicomHeaderInfoExtraction(
                     multivol=False),
                 inputs={
-                    'dicom_folder': (dcm_in_name, dicom_format)},
+                    'dicom_folder': (in_name, dicom_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -845,10 +887,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
             pipeline.add(
                 'hd_info_extraction',
-                NiftixHeaderInfoExtraction(
-                    multivol=False),
+                NiftixHeaderInfoExtraction(),
                 inputs={
-                    'in_file': (dcm_in_name, nifti_gz_format)},
+                    'in_file': (in_name, nifti_gz_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -856,7 +897,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'real_duration': ('real_duration', str),
                     'ped': ('ped', str),
                     'pe_angle': ('pe_angle', str),
-                    'dcm_info': ('dcm_info', text_format),
                     'echo_times': ('echo_times', float),
                     'voxel_sizes': ('voxel_sizes', float),
                     'main_field_strength': ('B0', float),
@@ -865,7 +905,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             raise ArcanaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM or extended NIfTI format (provided {})"
-                .format(self.input(dcm_in_name).format))
+                .format(self.input(in_name).format))
 
         return pipeline
 
