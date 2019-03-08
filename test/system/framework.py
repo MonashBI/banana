@@ -91,11 +91,11 @@ class SystemTester(object):
                 parameters=self.parameters,
                 subject_ids=input_study.subject_ids,
                 visit_ids=input_study.visit_ids,
-                enforce_inputs=False)
+                enforce_inputs=False,
+                fill_tree=True)
             pipeline = output_study.pipeline(pipeline_getter)
             try:
-                output_study.processor.run(
-                    pipeline, required_outputs=pipeline.output_names)
+                output_study.processor.run(pipeline)
             except Exception:
                 results = [TestError(pipeline_getter, self.study_class,
                                      format_exception(*sys.exc_info()))]
