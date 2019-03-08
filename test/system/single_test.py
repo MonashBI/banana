@@ -41,4 +41,6 @@ ref_repo = DirectoryRepository(args.reference_dir, depth=0)
 
 tester = SystemTester(study_class, ref_repo, args.work_dir,
                       parameters=parameters, dry_run=args.dry_run)
-tester.test(args.pipeline_name, criteria=args.criteria)
+results = tester.test(args.pipeline_name, criteria=args.criteria)
+
+SystemTester.print_results(results)

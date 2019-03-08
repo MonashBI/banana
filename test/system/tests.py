@@ -19,26 +19,4 @@ results = []
 mri_tester = SystemTester(MriStudy, args.ref_data_dir, args.work_dir)
 results.extend(mri_tester.test_all())
 
-errors = []
-failures = []
-successes = []
-for result in results:
-    if result.type == 'success':
-        successes.append(result)
-    elif result.type == 'failure':
-        failures.append(result)
-    elif result.type == 'error':
-        errors.append(result)
-    else:
-        assert False
-
-for error in errors:
-    print(error)
-
-for failure in failures:
-    print(failure)
-
-if not errors and not failures:
-    print("{} tests ran successfully".format(len(successes)))
-else:
-    print("{} errors and {} failures".format(len(errors), len(failures)))
+SystemTester.print_results(results)
