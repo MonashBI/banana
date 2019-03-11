@@ -12,7 +12,8 @@ from banana.file_format import (
 from nipype.interfaces.utility import IdentityInterface
 from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req, c3d_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from arcana.exceptions import ArcanaUsageError
+from arcana.exceptions import (
+    ArcanaUsageError, ArcanaOutputNotProducedException)
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
@@ -357,7 +358,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         else:
             raise ArcanaUsageError(
                 "Either 'coreg_ref' or 'coreg_ref_brain' needs to be provided "
-                "in order to derive coreg_brain")
+                "in order to derive coreg_brain or coreg_brain_mask")
         return pipeline
 
     def coreg_matrix_pipeline(self, **name_maps):
@@ -366,7 +367,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         elif self.provided('coreg_ref'):
             pipeline = self.linear_coreg_pipeline(**name_maps)
         else:
-            raise ArcanaUsageError(
+            raise ArcanaOutputNotProducedException(
                 "'coreg_matrix' can only be derived if 'coreg_ref' or "
                 "'coreg_ref_brain' is provided to {}".format(self))
         return pipeline

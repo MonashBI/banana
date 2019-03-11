@@ -55,8 +55,6 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('bvalues', fsl_bvals_format, 'preprocess_pipeline'),
         FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
-        FilesetSpec('align_mats', directory_format,
-                    'intrascan_alignment_pipeline'),
         FilesetSpec('brain', nifti_gz_format,
                     'brain_extraction_pipeline'),
         FilesetSpec('brain_mask', nifti_gz_format,

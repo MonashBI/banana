@@ -13,7 +13,7 @@ from banana.requirement import fsl_req
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from banana.file_format import (
-    nifti_gz_format, text_matrix_format, directory_format,
+    nifti_gz_format, text_matrix_format,
     par_format, motion_mats_format, dicom_format)
 from banana.interfaces.custom.fmri import FieldMapTimeInfo
 from banana.interfaces.custom.motion_correction import (
@@ -34,7 +34,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                             optional=True),
         FilesetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
-        FilesetSpec('align_mats', directory_format,
+        FilesetSpec('align_mats', motion_mats_format,
                     'intrascan_alignment_pipeline'),
         FilesetSpec('moco_par', par_format,
                     'intrascan_alignment_pipeline'),
@@ -50,21 +50,22 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         ParameterSpec('bet_reduce_bias', False),
         ParameterSpec('fugue_echo_spacing', 0.000275)]
 
-    def linear_coreg_pipeline(self, **kwargs):
+    def linear_coreg_pipeline(self, **name_maps):
         if self.branch('linear_coreg_method', 'epireg'):
-            return self._epireg_linear_coreg_pipeline(**kwargs)
+            return self._epireg_linear_coreg_pipeline(**name_maps)
         else:
             return super(EpiStudy, self).linear_brain_coreg_pipeline(
-                **kwargs)
+                **name_maps)
 
-    def _epireg_linear_coreg_pipeline(self, **kwargs):
+    def _epireg_linear_coreg_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='linear_coreg',
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
             references=[fsl_cite],
-            **kwargs)
+            name_maps=name_maps)
+
         pipeline.add(
             'epireg',
             fsl.epi.EpiReg(
@@ -73,7 +74,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 'epi': ('brain', nifti_gz_format),
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
                 't1_head': ('coreg_ref', nifti_gz_format),
-                'wmseg': ('wmseg', nifti_gz_format)},
+                'wmseg': ('coreg_ref_wmseg', nifti_gz_format)},
             outputs={
                 'coreg_brain': ('out_file', nifti_gz_format),
                 'coreg_matrix': ('epi2str_mat', text_matrix_format)},
@@ -81,13 +82,14 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def intrascan_alignment_pipeline(self, **kwargs):
+    def intrascan_alignment_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='MCFLIRT_pipeline',
             desc=("Intra-epi volumes alignment."),
             references=[fsl_cite],
-            **kwargs)
+            name_maps=name_maps)
+
         mcflirt = pipeline.add(
             'mcflirt',
             fsl.MCFLIRT(
@@ -109,11 +111,11 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
             inputs={
                 'file_list': (mcflirt, 'mat_file')},
             outputs={
-                'align_mats': ('out_dir', directory_format)})
+                'align_mats': ('out_dir', motion_mats_format)})
 
         return pipeline
 
-    def field_map_time_info_pipeline(self, **kwargs):
+    def field_map_time_info_pipeline(self, **name_maps):
 
         pipeline = self.create_pipeline(
             name='field_map_time_info_pipeline',
@@ -121,7 +123,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                   "images, if provided"),
             version=1,
             references=[fsl_cite],
-            **kwargs)
+            name_maps=name_maps)
 
         pipeline.add(
             'extract_delta_te',
@@ -133,23 +135,23 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preprocess_pipeline(self, **kwargs):
+    def preprocess_pipeline(self, **name_maps):
 
         if ('field_map_phase' in self.input_names and
                 'field_map_mag' in self.input_names):
-            return self._fugue_pipeline(**kwargs)
+            return self._fugue_pipeline(**name_maps)
         elif 'reverse_phase' in self.input_names:
-            return self._topup_pipeline(**kwargs)
+            return self._topup_pipeline(**name_maps)
         else:
-            return super(EpiStudy, self).preprocess_pipeline(**kwargs)
+            return super(EpiStudy, self).preprocess_pipeline(**name_maps)
 
-    def _topup_pipeline(self, **kwargs):
+    def _topup_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Topup distortion correction pipeline"),
             references=[fsl_cite],
-            **kwargs)
+            name_maps=name_maps)
 
         reorient_epi_in = pipeline.add(
             'reorient_epi_in',
@@ -226,13 +228,13 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def _fugue_pipeline(self, **kwargs):
+    def _fugue_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Fugue distortion correction pipeline"),
             references=[fsl_cite],
-            **kwargs)
+            name_maps=name_maps)
 
         reorient_epi_in = pipeline.add(
             'reorient_epi_in',
@@ -292,13 +294,13 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def motion_mat_pipeline(self, **kwargs):
+    def motion_mat_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             desc=("Motion matrices calculation"),
             references=[fsl_cite],
-            **kwargs)
+            name_maps=name_maps)
 
         mm = pipeline.add(
             'motion_mats',
@@ -310,6 +312,6 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 'motion_mats': ('motion_mats', motion_mats_format)})
         if 'reverse_phase' not in self.input_names:
             pipeline.connect_input('align_mats', mm, 'align_mats',
-                                   directory_format)
+                                   motion_mats_format)
 
         return pipeline
