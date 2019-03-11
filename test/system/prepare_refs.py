@@ -9,6 +9,7 @@ from arcana.processor import LinearProcessor
 from arcana.data import FilesetSelector, FieldSelector, Field, Fileset
 from importlib import import_module
 from arcana.exceptions import ArcanaUsageError, ArcanaNameError
+import banana.file_format  # @UnusedImport
 
 STUDY_NAME = 'DERIVED'
 
@@ -22,7 +23,7 @@ parser.add_argument('work_dir', help="The work directory")
 parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
                     nargs=2, action='append', default=(),
                     help="Parameter to set when initialising the study")
-parser.add_argument('--skip', '-s', action='append', default=[],
+parser.add_argument('--skip', '-s', nargs='+', default=[],
                     help="Spec names to skip in the generation process")
 parser.add_argument('--reprocess', action='store_true', default=False,
                     help="Whether to reprocess the generated datasets")
