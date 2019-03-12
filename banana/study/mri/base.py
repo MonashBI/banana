@@ -936,5 +936,5 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                                    text_matrix_format)
             if 'align_mats' in self.data_spec_names():
                 pipeline.connect_input('align_mats', mm, 'align_mats',
-                                       directory_format)
+                                       motion_mats_format)
         return pipeline

@@ -117,11 +117,10 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     def field_map_time_info_pipeline(self, **name_maps):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='field_map_time_info_pipeline',
             desc=("Pipeline to extract delta TE from field map "
                   "images, if provided"),
-            version=1,
             references=[fsl_cite],
             name_maps=name_maps)
 

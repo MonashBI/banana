@@ -254,11 +254,10 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def fix_classification_pipeline(self, **name_maps):
 
-        pipeline = self.create_pipeline(
+        pipeline = self.new_pipeline(
             name='fix_classification',
             desc=("Automatic classification of noisy components from the "
                   "rsfMRI data using fsl FIX."),
-            version=1,
             references=[fsl_cite],
             name_maps=name_maps)
 

@@ -21,7 +21,7 @@ parser.add_argument('in_dir', help=("The path to the directory that the input "
 parser.add_argument('out_dir', help="The path to the output directory")
 parser.add_argument('work_dir', help="The work directory")
 parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
-                    nargs=2, action='append', default=(),
+                    nargs=2, action='append', default=[],
                     help="Parameter to set when initialising the study")
 parser.add_argument('--skip', '-s', nargs='+', default=[],
                     help="Spec names to skip in the generation process")
@@ -34,7 +34,16 @@ parts = args.study_class.split('.')
 module_name = '.'.join(parts[:-1])
 class_name = parts[-1]
 
-parameters = dict(args.parameter)
+parameters = {}
+for name, value in args.parameter:
+    try:
+        value = int(value)
+    except ValueError:
+        try:
+            value = float(value)
+        except ValueError:
+            pass
+    parameters[name] = value
 
 module = import_module(module_name)
 study_class = getattr(module, class_name)

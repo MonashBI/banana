@@ -1,3 +1,4 @@
+from logging import getLogger
 from nipype.interfaces.utility import Merge
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
@@ -6,22 +7,22 @@ from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
 # from nipype.workflows.dwi.fsl.tbss import create_tbss_all
-from banana.interfaces.noddi import (
-    CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
+# from banana.interfaces.noddi import (
+#     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from arcana.utils.interfaces import MergeTuple, Chain
 from nipype.interfaces.utility import IdentityInterface
 from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
-    noddi_cite, fast_cite, n4_cite, tbss_cite, dwidenoise_cites)
+    fast_cite, n4_cite, dwidenoise_cites)
 from banana.file_format import (
     mrtrix_format, nifti_gz_format, niftix_gz_format, fsl_bvecs_format,
-    fsl_bvals_format, nifti_format, text_format, dicom_format, eddy_par_format,
-    directory_format, mrtrix_track_format)
+    fsl_bvals_format, text_format, dicom_format, eddy_par_format,
+    mrtrix_track_format, motion_mats_format)
 from banana.requirement import (
-    fsl_req, mrtrix_req, ants_req, matlab_req)
-from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
-# from arcana.interfaces.iterators import SelectSession
+    fsl_req, mrtrix_req, ants_req)
+from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.utils.interfaces import SelectSession
 from arcana.study import ParameterSpec, SwitchSpec
 from .epi import EpiStudy
 from nipype.interfaces import fsl
@@ -29,7 +30,10 @@ from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.bids import BidsSelector, BidsAssociatedSelector
 from banana.exceptions import BananaUsageError
+from arcana.exceptions import ArcanaMissingDataException
 from banana.study import StudyMetaClass
+
+logger = getLogger('banana')
 
 
 class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
@@ -383,6 +387,18 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     def intensity_normalisation_pipeline(self, **name_maps):
 
+        if self.num_sessions < 2:
+            raise ArcanaMissingDataException(
+                "Cannot normalise intensities of DWI images as study only "
+                "contains a single session")
+        elif self.num_sessions < self.RECOMMENDED_NUM_SESSIONS_FOR_INTENS_NORM:
+            logger.warning(
+                "The number of sessions in the study ({}) is less than the "
+                "recommended number for intensity normalisation ({}). The "
+                "results may be unreliable".format(
+                    self.num_sessions,
+                    self.RECOMMENDED_NUM_SESSIONS_FOR_INTENS_NORM))
+
         pipeline = self.new_pipeline(
             name='intensity_normalization',
             desc="Corrects for B1 field inhomogeneity",
@@ -413,11 +429,11 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 fields),
             inputs={
                 'masks': ('brain_mask', nifti_gz_format),
-                'dwis': (mrconvert, 'out_file')},
+                'dwis': (mrconvert, 'out_file'),
+                'subject_ids': ('subject_id', int),
+                'visit_ids': ('visit_id', int)},
             joinsource=self.SUBJECT_ID,
             joinfield=fields)
-        pipeline.connect_subject_id(join_subjects, 'subject_ids')
-        pipeline.connect_visit_id(join_subjects, 'visit_ids')
 
         join_visits = pipeline.add(
             'join_visits',
@@ -443,16 +459,16 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'norm_intens_wm_mask': ('wm_mask', mrtrix_format)})
 
         # Set up expand nodes
-        select = pipeline.add(
+        pipeline.add(
             'expand', SelectSession(),
             inputs={
                 'subject_ids': (join_visits, 'subject_ids'),
                 'visit_ids': (join_visits, 'visit_ids'),
-                'items': (intensity_norm, 'out_files')},
+                'items': (intensity_norm, 'out_files'),
+                'subject_id': ('subject_id', int),
+                'visit_id': ('visit_id', int)},
             outputs={
                 'norm_intensity': ('item', mrtrix_format)})
-        pipeline.connect_subject_id(select, 'subject_id')
-        pipeline.connect_visit_id(select, 'visit_id')
 
         # Connect inputs
         return pipeline
@@ -689,7 +705,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 bzero=True,
                 quiet=True),
             inputs={
-                'grad_fsl': (fsl_grads, 'out'),
+                'fslgrad': (fsl_grads, 'out'),
                 'in_file': ('bias_correct', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -745,7 +761,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'tracking',
             Tractography(
-                n_tracks=self.parameter('num_global_tracks'),
+                select=self.parameter('num_global_tracks'),
                 cutoff=self.parameter('global_tracks_cutoff')),
             inputs={
                 'seed_image': (mask, 'out_file'),
@@ -771,7 +787,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'reference_image': ('preproc', nifti_gz_format),
                 'motion_parameters': ('eddy_par', eddy_par_format)},
             outputs={
-                'align_mats': ('affine_matrices', directory_format)})
+                'align_mats': ('affine_matrices', motion_mats_format)})
 
         return pipeline
 
