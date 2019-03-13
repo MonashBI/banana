@@ -28,6 +28,7 @@ from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
+from banana.study.base import Study
 from banana.bids import BidsSelector, BidsAssociatedSelector
 from banana.exceptions import BananaUsageError
 from arcana.exceptions import ArcanaMissingDataException
@@ -430,8 +431,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             inputs={
                 'masks': ('brain_mask', nifti_gz_format),
                 'dwis': (mrconvert, 'out_file'),
-                'subject_ids': ('subject_id', int),
-                'visit_ids': ('visit_id', int)},
+                'subject_ids': (Study.SUBJECT_ID, int),
+                'visit_ids': (Study.VISIT_ID, int)},
             joinsource=self.SUBJECT_ID,
             joinfield=fields)
 
@@ -465,8 +466,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'subject_ids': (join_visits, 'subject_ids'),
                 'visit_ids': (join_visits, 'visit_ids'),
                 'items': (intensity_norm, 'out_files'),
-                'subject_id': ('subject_id', int),
-                'visit_id': ('visit_id', int)},
+                'subject_id': (Study.SUBJECT_ID, int),
+                'visit_id': (Study.VISIT_ID, int)},
             outputs={
                 'norm_intensity': ('item', mrtrix_format)})
 
