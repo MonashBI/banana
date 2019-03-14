@@ -2,7 +2,7 @@ import logging  # @IgnorePep8
 import os.path as op
 from nipype import config
 config.enable_debug_mode()
-from arcana import FilesetSelector, LinearProcessor  # @IgnorePep8
+from arcana import FilesetInput, LinearProcessor  # @IgnorePep8
 # from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from arcana import MultiStudy, MultiStudyMetaClass, SubStudySpec, Parameter  # @IgnorePep8
 from banana.file_format import zip_format, dicom_format  # @IgnorePep8
@@ -35,10 +35,10 @@ study = T2StarT1Study(
     repository=single_echo_dir,
     processor=LinearProcessor(op.join(test_data, 'work')),
     inputs=[
-        FilesetSelector('t2star_channels', 'swi_coils_icerecon', zip_format),
-        FilesetSelector('t2star_header_image', 'SWI_Images', dicom_format),
-        FilesetSelector('t2star_swi', 'SWI_Images', dicom_format),
-        FilesetSelector('t1_magnitude', dicom_format,
+        FilesetInput('t2star_channels', 'swi_coils_icerecon', zip_format),
+        FilesetInput('t2star_header_image', 'SWI_Images', dicom_format),
+        FilesetInput('t2star_swi', 'SWI_Images', dicom_format),
+        FilesetInput('t1_magnitude', dicom_format,
                         't1_mprage_sag_p2_iso_1mm')],
     parameters=[
         Parameter('t2star_reorient_to_std', False),

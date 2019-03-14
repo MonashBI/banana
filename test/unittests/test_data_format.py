@@ -6,7 +6,7 @@ from arcana.exceptions import ArcanaModulesNotInstalledException
 from banana.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSelector, FilesetSpec, FilesetInputSpec
+from arcana.data import FilesetInput, FilesetSpec, FilesetInputSpec
 from arcana.environment import ModulesEnvironment, StaticEnvironment
 
 try:
@@ -56,7 +56,7 @@ class TestDicom2Niix(BaseTestCase):
             'concatenate',
             environment=environment,
             inputs=[
-                FilesetSelector('input_fileset',
+                FilesetInput('input_fileset',
                                 dicom_format, 't2_tse_tra_p2_448')])
         list(study.data('output_fileset'))[0]
         self.assertFilesetCreated('output_fileset.nii.gz', study.name)

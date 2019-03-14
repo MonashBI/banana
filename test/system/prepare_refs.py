@@ -6,7 +6,7 @@ import json
 from argparse import ArgumentParser
 from arcana.repository import DirectoryRepo
 from arcana.processor import LinearProcessor
-from arcana.data import FilesetSelector, FieldSelector, Field, Fileset
+from arcana.data import FilesetInput, FieldInput, Field, Fileset
 from importlib import import_module
 from arcana.exceptions import ArcanaUsageError, ArcanaNameError
 import banana.file_format  # @UnusedImport
@@ -62,11 +62,11 @@ for fname in os.listdir(args.in_dir):
             field_data = json.load(f)
         for name, value in field_data.items():
             field = Field(name, value)
-            selector = FieldSelector(field.name, field.name, field.dtype)
+            selector = FieldInput(field.name, field.name, field.dtype)
             inputs.append(selector)
     else:
         fileset = Fileset.from_path(path)
-        selector = FilesetSelector(fileset.basename, fileset.basename,
+        selector = FilesetInput(fileset.basename, fileset.basename,
                                    fileset.format)
         try:
             spec = study_class.data_spec(selector)

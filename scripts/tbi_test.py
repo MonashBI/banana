@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from arcana.data import FilesetSelector
+from arcana.data import FilesetInput
 from banana.study.mri.diffusion import DwiStudy
 from arcana.repository.simple import DirectoryRepo
 from banana.file_format import mrtrix_format

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from arcana.data import FilesetSelector  # @IgnorePep8
+from arcana.data import FilesetInput  # @IgnorePep8
 from banana.study.mri.structural.ute import UteStudy  # @IgnorePep8
 from banana.file_format import (  # @IgnorePep8
     dicom_format, nifti_gz_format, text_matrix_format)
@@ -13,9 +13,9 @@ class TestUTE(TestCase):
     def test_ute(self):
         study = self.create_study(
             UteStudy, 'registration', {
-                FilesetSelector('ute_echo1', 'ute_echo1', dicom_format),
-                FilesetSelector('ute_echo2', 'ute_echo2', dicom_format),
-                FilesetSelector('umap_ute', 'umap_ute', dicom_format)})
+                FilesetInput('ute_echo1', 'ute_echo1', dicom_format),
+                FilesetInput('ute_echo2', 'ute_echo2', dicom_format),
+                FilesetInput('umap_ute', 'umap_ute', dicom_format)})
         study.registration_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('ute1_registered.nii.gz', study.name)
         self.assertFilesetCreated('ute2_registered.nii.gz', study.name)
@@ -24,7 +24,7 @@ class TestUTE(TestCase):
     def test_ute(self):
         study = self.create_study(
             UteStudy, 'segmentation', {
-                FilesetSelector('ute1_registered', 'ute1_registered', nifti_gz_format),})
+                FilesetInput('ute1_registered', 'ute1_registered', nifti_gz_format),})
         study.segmentation_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('air_mask.nii.gz', study.name)
         self.assertFilesetCreated('bones_mask.nii.gz', study.name)
@@ -32,10 +32,10 @@ class TestUTE(TestCase):
     def test_ute(self):
         study = self.create_study(
             UteStudy, 'umap_creation', {
-                FilesetSelector('ute1_registered', 'ute1_registered', nifti_gz_format),
-                FilesetSelector('ute2_registered', 'ute2_registered', nifti_gz_format),
-                FilesetSelector('air_mask', 'air_mask', nifti_gz_format),
-                FilesetSelector('bones_mask', 'bones_mask', nifti_gz_format)})
+                FilesetInput('ute1_registered', 'ute1_registered', nifti_gz_format),
+                FilesetInput('ute2_registered', 'ute2_registered', nifti_gz_format),
+                FilesetInput('air_mask', 'air_mask', nifti_gz_format),
+                FilesetInput('bones_mask', 'bones_mask', nifti_gz_format)})
         study.umaps_calculation_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('sute_cont_template.nii.gz', study.name)
         self.assertFilesetCreated('sute_fix_template.nii.gz', study.name)
@@ -59,7 +59,7 @@ class TestUTE(TestCase):
             UteStudy, 'conversion', {
                 'sute_cont_ute':Fileset('sute_cont_ute', nifti_gz_format),
                 'sute_fix_ute':Fileset('sute_fix_ute', nifti_gz_format),
-                FilesetSelector('umap_ute', 'umap_ute', dicom_format)})
+                FilesetInput('umap_ute', 'umap_ute', dicom_format)})
         study.conversion_to_dicom_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('sute_cont_dicoms', study.name)
         self.assertFilesetCreated('sute_fix_dicoms', study.name)
@@ -70,9 +70,9 @@ class TestUTE(TestCase):
     def test_ute(self):
         study = self.create_study(
             UteStudy, 'pipeline', {
-                FilesetSelector('ute_echo1', 'ute_echo1', dicom_format),
-                FilesetSelector('ute_echo2', 'ute_echo2', dicom_format),
-                FilesetSelector('umap_ute', 'umap_ute', dicom_format)})
+                FilesetInput('ute_echo1', 'ute_echo1', dicom_format),
+                FilesetInput('ute_echo2', 'ute_echo2', dicom_format),
+                FilesetInput('umap_ute', 'umap_ute', dicom_format)})
         study.conversion_to_dicom_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('sute_cont_dicoms', study.name)
         self.assertFilesetCreated('sute_fix_dicoms', study.name)

@@ -3,7 +3,7 @@ import sys
 import tempfile
 from itertools import chain
 from traceback import format_exception
-from arcana.data import FilesetSelector, FieldSelector
+from arcana.data import FilesetInput, FieldInput
 from arcana.repository import DirectoryRepo
 from arcana.exceptions import (
     ArcanaMissingDataException, ArcanaSelectorMissingMatchError)
@@ -41,11 +41,11 @@ class SystemTester(object):
                     format = niftix_gz_format  # @ReservedAssignment
                 else:
                     format = spec.format  # @ReservedAssignment
-                selector = FilesetSelector(
+                selector = FilesetInput(
                     spec.name, spec.name, repository=self.ref_repo,
                     format=format)
             else:
-                selector = FieldSelector(
+                selector = FieldInput(
                     spec.name, spec.name, dtype=spec.dtype,
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo

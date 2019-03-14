@@ -1,4 +1,4 @@
-from arcana.data import FilesetSpec, FilesetSelector
+from arcana.data import FilesetSpec, FilesetInput
 from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
@@ -86,14 +86,14 @@ class TestFormatConversions(BaseTestCase):
     def test_pipeline_prerequisites(self):
         study = self.create_study(
             ConversionStudy, 'conversion', [
-                FilesetSelector('mrtrix', 'mrtrix', text_format),
-                FilesetSelector('nifti_gz', text_format,
+                FilesetInput('mrtrix', 'mrtrix', text_format),
+                FilesetInput('nifti_gz', text_format,
                              'nifti_gz'),
-                FilesetSelector('dicom', dicom_format,
+                FilesetInput('dicom', dicom_format,
                              't1_mprage_sag_p2_iso_1_ADNI'),
-                FilesetSelector('directory', directory_format,
+                FilesetInput('directory', directory_format,
                              't1_mprage_sag_p2_iso_1_ADNI'),
-                FilesetSelector('zip', 'zip', zip_format)])
+                FilesetInput('zip', 'zip', zip_format)])
         study.data('nifti_gz_from_dicom')
         study.data('mrtrix_from_nifti_gz')
         study.data('nifti_from_mrtrix')
