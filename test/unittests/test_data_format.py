@@ -7,14 +7,14 @@ from banana.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.study.base import Study, StudyMetaClass
 from arcana.data import FilesetInput, FilesetSpec, FilesetInputSpec
-from arcana.environment import ModulesEnvironment, StaticEnvironment
+from arcana.environment import ModulesEnv, StaticEnv
 
 try:
-    ModulesEnvironment._run_module_cmd('avail')
+    ModulesEnv._run_module_cmd('avail')
 except ArcanaModulesNotInstalledException:
-    environment = StaticEnvironment()
+    environment = StaticEnv()
 else:
-    environment = ModulesEnvironment(fail_on_missing=False)
+    environment = ModulesEnv(fail_on_missing=False)
 
 
 class DummyStudy(Study, metaclass=StudyMetaClass):
