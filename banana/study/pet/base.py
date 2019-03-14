@@ -1,5 +1,5 @@
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FieldSpec, FilesetInputSpec
 from banana.file_format import (
     nifti_gz_format, text_format, text_matrix_format, directory_format,
     list_mode_format)
@@ -38,7 +38,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
                         ParamSpec('image_orientation_check', False)]
 
     add_data_specs = [
-        AcquiredFilesetSpec('list_mode', list_mode_format),
+        FilesetInputSpec('list_mode', list_mode_format),
         FilesetSpec('registered_volumes', nifti_gz_format, optional=True),
         FilesetSpec('pet_image', nifti_gz_format, optional=True),
         FilesetSpec('pet_data_dir', directory_format),

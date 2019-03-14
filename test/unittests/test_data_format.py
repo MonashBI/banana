@@ -6,7 +6,7 @@ from arcana.exceptions import ArcanaModulesNotInstalledException
 from banana.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSelector, FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSelector, FilesetSpec, FilesetInputSpec
 from arcana.environment import ModulesEnvironment, StaticEnvironment
 
 try:
@@ -20,7 +20,7 @@ else:
 class DummyStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('input_fileset', dicom_format),
+        FilesetInputSpec('input_fileset', dicom_format),
         FilesetSpec('output_fileset', nifti_gz_format, 'a_pipeline')]
 
     def a_pipeline(self):

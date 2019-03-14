@@ -3,7 +3,7 @@ from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
                                        SignalRegression, PrepareFIXTraining)
-from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.study.base import StudyMetaClass
 from banana.requirement import (
     afni_req, fix_req, fsl_req, ants_req, c3d_req)
@@ -44,7 +44,7 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('train_data', rfile_format, optional=True,
+        FilesetInputSpec('train_data', rfile_format, optional=True,
                             frequency='per_study'),
         FilesetSpec('hand_label_noise', text_format,
                     'fix_preparation_pipeline'),

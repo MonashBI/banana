@@ -21,7 +21,7 @@ from banana.file_format import (
     mrtrix_track_format, motion_mats_format)
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
-from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.utils.interfaces import SelectSession
 from arcana.study import ParamSpec, SwitchSpec
 from .epi import EpiStudy
@@ -40,7 +40,7 @@ logger = getLogger('banana')
 class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
+        FilesetInputSpec('dwi_reference', nifti_gz_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
         FilesetSpec('noise_residual', mrtrix_format, 'preprocess_pipeline'),
@@ -826,8 +826,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 # class NODDIStudy(DwiStudy, metaclass=StudyMetaClass):
 # 
 #     add_data_specs = [
-#         AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),
-#         AcquiredFilesetSpec('high_b_dw_scan', mrtrix_format),
+#         FilesetInputSpec('low_b_dw_scan', mrtrix_format),
+#         FilesetInputSpec('high_b_dw_scan', mrtrix_format),
 #         FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
 #         FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
 #         FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),

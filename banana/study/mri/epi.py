@@ -6,7 +6,7 @@ from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
 from arcana.study import ParamSpec, SwitchSpec
-from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
+from arcana.data import FilesetInputSpec, FilesetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
 from banana.citation import fsl_cite
 from banana.requirement import fsl_req
@@ -25,12 +25,12 @@ from banana.file_format import STD_IMAGE_FORMATS
 class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
+        FilesetInputSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
                             optional=True),
-        AcquiredFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
-        AcquiredFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
+        FilesetInputSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
+        FilesetInputSpec('field_map_mag', STD_IMAGE_FORMATS,
                             optional=True),
-        AcquiredFilesetSpec('field_map_phase', STD_IMAGE_FORMATS,
+        FilesetInputSpec('field_map_phase', STD_IMAGE_FORMATS,
                             optional=True),
         FilesetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
