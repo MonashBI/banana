@@ -11,7 +11,7 @@ from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 
 
@@ -34,13 +34,13 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
-        ParameterSpec('bet_f_threshold', 0.1),
-        ParameterSpec('bet_g_threshold', 0.0)]
+        ParamSpec('bet_f_threshold', 0.1),
+        ParamSpec('bet_g_threshold', 0.0)]
 #         SwitchSpec('bet_method', 'optibet',
 #                    choices=MriStudy.parameter_spec('bet_method').choices),
 #         SwitchSpec('bet_robust', True),
-#         ParameterSpec('bet_f_threshold', 0.57),
-#         ParameterSpec('bet_g_threshold', -0.1)]
+#         ParamSpec('bet_f_threshold', 0.57),
+#         ParamSpec('bet_g_threshold', -0.1)]
 
     def freesurfer_pipeline(self, **name_maps):
         """

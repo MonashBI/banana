@@ -27,7 +27,7 @@ from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nipype.interfaces.fsl.preprocess import ApplyXFM
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
-from arcana import ParameterSpec, SwitchSpec
+from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.atlas import FslAtlas
@@ -138,47 +138,47 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('reorient_to_std', True),
-        ParameterSpec('force_channel_flip', None, dtype=str, array=True,
+        ParamSpec('force_channel_flip', None, dtype=str, array=True,
                       desc=("Forcibly flip channel inputs during preprocess "
                             "channels to correct issues with channel recon. "
                             "The inputs are passed directly through to FSL's "
                             "swapdims (see fsl.SwapDimensions interface)")),
         SwitchSpec('bet_robust', True),
-        ParameterSpec('bet_f_threshold', 0.5),
+        ParamSpec('bet_f_threshold', 0.5),
         SwitchSpec('bet_reduce_bias', False,
                    desc="Only used if not 'bet_robust'"),
-        ParameterSpec('bet_g_threshold', 0.0),
+        ParamSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        ParameterSpec('atlas_resolution', 2),  # choices=(0.5, 1, 2)),
-        ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
-        ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
-        ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
-        ParameterSpec('preproc_resolution', None, dtype=list),
+        ParamSpec('atlas_resolution', 2),  # choices=(0.5, 1, 2)),
+        ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
+        ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
+        ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
+        ParamSpec('preproc_resolution', None, dtype=list),
         SwitchSpec('linear_coreg_method', 'flirt', ('flirt', 'spm', 'ants'),
                    desc="The tool to use for linear registration"),
-        ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
+        ParamSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
-        ParameterSpec('flirt_cost_func', 'normmi', desc=(
+        ParamSpec('flirt_cost_func', 'normmi', desc=(
             "Cost function used for the registration. Can be one of "
             "'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',"
             " 'labeldiff', 'bbr'")),
-        ParameterSpec('flirt_qsform', False, desc=(
+        ParamSpec('flirt_qsform', False, desc=(
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
             "scanner")),
-        ParameterSpec(
+        ParamSpec(
             'channel_fname_regex',
             r'.*_(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
             desc=("The regular expression to extract channel, echo and complex"
                   " axis from the filenames of the coils channel images")),
-        ParameterSpec(
+        ParamSpec(
             'channel_real_label', 'REAL',
             desc=("The name of the real axis extracted from the channel "
                   "filename")),
-        ParameterSpec(
+        ParamSpec(
             'channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]

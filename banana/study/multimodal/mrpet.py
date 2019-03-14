@@ -22,7 +22,7 @@ from banana.study.pet.base import PetStudy
 from banana.interfaces.custom.pet import (
     CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
     PETFovCropping)
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 import os
 from banana.interfaces.converters import Nii2Dicom
 from arcana.utils.interfaces import CopyToDir, ListDir, dicom_fname_sort_key
@@ -125,27 +125,27 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   pipeline_name='pet_header_extraction_pipeline')]
 
     add_parameter_specs = [
-        ParameterSpec('framing_th', 2.0),
-        ParameterSpec('framing_temporal_th', 30.0),
-        ParameterSpec('framing_duration', 0),
-        ParameterSpec('md_framing', True),
-        ParameterSpec('align_pct', False),
-        ParameterSpec('align_fixed_binning', False),
-        ParameterSpec('moco_template', os.path.join(
+        ParamSpec('framing_th', 2.0),
+        ParamSpec('framing_temporal_th', 30.0),
+        ParamSpec('framing_duration', 0),
+        ParamSpec('md_framing', True),
+        ParamSpec('align_pct', False),
+        ParamSpec('align_fixed_binning', False),
+        ParamSpec('moco_template', os.path.join(
             reference_path, 'moco_template.IMA')),
-        ParameterSpec('PET_template_MNI', os.path.join(
+        ParamSpec('PET_template_MNI', os.path.join(
             template_path, 'PET_template_MNI.nii.gz')),
-        ParameterSpec('fixed_binning_n_frames', 0),
-        ParameterSpec('pet_offset', 0),
-        ParameterSpec('fixed_binning_bin_len', 60),
-        ParameterSpec('crop_xmin', 100),
-        ParameterSpec('crop_xsize', 130),
-        ParameterSpec('crop_ymin', 100),
-        ParameterSpec('crop_ysize', 130),
-        ParameterSpec('crop_zmin', 20),
-        ParameterSpec('crop_zsize', 100),
-        ParameterSpec('PET2MNI_reg', False),
-        ParameterSpec('dynamic_pet_mc', False)]
+        ParamSpec('fixed_binning_n_frames', 0),
+        ParamSpec('pet_offset', 0),
+        ParamSpec('fixed_binning_bin_len', 60),
+        ParamSpec('crop_xmin', 100),
+        ParamSpec('crop_xsize', 130),
+        ParamSpec('crop_ymin', 100),
+        ParamSpec('crop_ysize', 130),
+        ParamSpec('crop_zmin', 20),
+        ParamSpec('crop_zsize', 100),
+        ParamSpec('PET2MNI_reg', False),
+        ParamSpec('dynamic_pet_mc', False)]
 
     def mean_displacement_pipeline(self, **kwargs):
 
@@ -716,7 +716,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
+    parameter_specs = [ParamSpec('ref_preproc_resolution', [1])]
     switch_specs = []
     if struct2align is not None:
         struct_image = struct2align.split('/')[-1].split('.')[0]
@@ -733,7 +733,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 FilesetSelector('struct2align', struct_image, nifti_gz_format))
     if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
         output_data = 'dynamic_motion_correction_results'
-        parameter_specs.append(ParameterSpec('dynamic_pet_mc', True))
+        parameter_specs.append(ParamSpec('dynamic_pet_mc', True))
         if struct2align is not None:
             inputs.append(
                 FilesetSelector('struct2align', struct_image, nifti_gz_format))
@@ -936,7 +936,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    parameter_specs = [ParameterSpec('ref_preproc_resolution', [1])]
+    parameter_specs = [ParamSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
         inputs.append(FilesetSelector('pet_data_dir', 'pet_data_dir',

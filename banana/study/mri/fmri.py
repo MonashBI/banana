@@ -15,7 +15,7 @@ from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from banana.study.mri.epi import EpiStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
@@ -64,17 +64,17 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     'smoothing_pipeline')]
 
     add_param_specs = [
-        ParameterSpec('component_threshold', 20),
-        ParameterSpec('motion_reg', True),
-        ParameterSpec('highpass', 0.01),
-        ParameterSpec('brain_thresh_percent', 5),
-        ParameterSpec('MNI_template', op.join(atlas_path,
+        ParamSpec('component_threshold', 20),
+        ParamSpec('motion_reg', True),
+        ParamSpec('highpass', 0.01),
+        ParamSpec('brain_thresh_percent', 5),
+        ParamSpec('MNI_template', op.join(atlas_path,
                                               'MNI152_T1_2mm.nii.gz')),
-        ParameterSpec('MNI_template_mask', op.join(
+        ParamSpec('MNI_template_mask', op.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         SwitchSpec('linear_reg_method', 'ants',
                    ('flirt', 'spm', 'ants', 'epireg')),
-        ParameterSpec('group_ica_components', 15)]
+        ParamSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsSelector(
         spec_name='magnitude', type='bold', format=niftix_gz_format)
@@ -572,7 +572,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
         parameter_specs.append(
-            ParameterSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
+            ParamSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
         inputs.extend(FilesetSelector(

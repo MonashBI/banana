@@ -21,7 +21,7 @@ from banana.interfaces.sti import (
 from banana.interfaces.custom.coils import HIPCombineChannels
 from banana.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 from logging import getLogger
 
@@ -94,20 +94,20 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('qsm_dual_echo', False),
-        ParameterSpec('qsm_echo', 1,
+        ParamSpec('qsm_echo', 1,
                       desc=("Which echo (by index starting at 1) to use when "
                             "using single echo")),
-        ParameterSpec('qsm_padding', [12, 12, 12]),
-        ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
-        ParameterSpec('qsm_erosion_size', 10),
+        ParamSpec('qsm_padding', [12, 12, 12]),
+        ParamSpec('qsm_mask_dialation', [11, 11, 11]),
+        ParamSpec('qsm_erosion_size', 10),
         SwitchSpec('linear_coreg_method', 'ants',
                    MriStudy.parameter_spec('linear_coreg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', False),
-        ParameterSpec('bet_f_threshold', 0.1),
-        ParameterSpec('bet_g_threshold', 0.0)]
+        ParamSpec('bet_f_threshold', 0.1),
+        ParamSpec('bet_g_threshold', 0.0)]
 
     def preprocess_channels(self, **name_maps):
         pipeline = super().preprocess_channels(**name_maps)

@@ -23,7 +23,7 @@ from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
 from arcana.data import FilesetSpec, AcquiredFilesetSpec
 from arcana.utils.interfaces import SelectSession
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
@@ -87,15 +87,15 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         ]  # @IgnorePep8
 
     add_param_specs = [
-        ParameterSpec('multi_tissue', True),
-        ParameterSpec('preproc_pe_dir', None, dtype=str),
-        ParameterSpec('tbss_skel_thresh', 0.2),
-        ParameterSpec('fsl_mask_f', 0.25),
-        ParameterSpec('bet_robust', True),
-        ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('num_global_tracks', int(1e9)),
-        ParameterSpec('global_tracks_cutoff', 0.05),
+        ParamSpec('multi_tissue', True),
+        ParamSpec('preproc_pe_dir', None, dtype=str),
+        ParamSpec('tbss_skel_thresh', 0.2),
+        ParamSpec('fsl_mask_f', 0.25),
+        ParamSpec('bet_robust', True),
+        ParamSpec('bet_f_threshold', 0.2),
+        ParamSpec('bet_reduce_bias', False),
+        ParamSpec('num_global_tracks', int(1e9)),
+        ParamSpec('global_tracks_cutoff', 0.05),
         SwitchSpec('preproc_denoise', False),
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt')),
@@ -839,7 +839,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #         FilesetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
 #         FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 # 
-#     add_param_specs = [ParameterSpec('noddi_model',
+#     add_param_specs = [ParamSpec('noddi_model',
 #                                          'WatsonSHStickTortIsoV_B0'),
 #                            SwitchSpec('single_slice', False)]
 # 
