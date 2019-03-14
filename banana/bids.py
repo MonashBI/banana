@@ -5,9 +5,9 @@ import stat
 import logging
 from bids.layout import BIDSLayout
 from arcana.exceptions import (
-    ArcanaSelectorMissingMatchError, ArcanaUsageError)
+    ArcanaInputMissingMatchError, ArcanaUsageError)
 from banana.exceptions import BananaUsageError
-from arcana.data.selector import FilesetInput
+from arcana.data.input import FilesetInput
 from arcana.data.item import Fileset
 from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
@@ -299,7 +299,7 @@ class BidsInput(FilesetInput, BaseBidsFileset):
                 (self.task is None or self.task == f.task) and
                 (self.format is None or self.format == f.format))]
         if not matches:
-            raise ArcanaSelectorMissingMatchError(
+            raise ArcanaInputMissingMatchError(
                 "No BIDS filesets for {} match {} found:\n{}"
                 .format(node, self, '\n'.join(str(f) for f in node.filesets)))
         return matches
@@ -449,7 +449,7 @@ class BidsAssocInput(FilesetInput):
                 fieldmap = next(f for f in fieldmaps
                                      if f['type'] == self.association)
             except StopIteration:
-                raise ArcanaSelectorMissingMatchError(
+                raise ArcanaInputMissingMatchError(
                     "No \"{}\" field-maps associated with {} (found {})"
                     .format(self.association, primary_match,
                             ', '.join(f['type'] for f in fieldmaps)))

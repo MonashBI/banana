@@ -6,7 +6,7 @@ from traceback import format_exception
 from arcana.data import FilesetInput, FieldInput
 from arcana.repository import BasicRepo
 from arcana.exceptions import (
-    ArcanaMissingDataException, ArcanaSelectorMissingMatchError)
+    ArcanaMissingDataException, ArcanaInputMissingMatchError)
 from banana.exceptions import BananaTestSetupError
 from banana.file_format import niftix_gz_format
 
@@ -51,7 +51,7 @@ class SystemTester(object):
             # Check whether a corresponding data exists in the reference repo
             try:
                 selector.match(ref_repo.cached_tree())
-            except ArcanaSelectorMissingMatchError:
+            except ArcanaInputMissingMatchError:
                 continue
             self.inputs[spec.name] = selector
         self.all_pipelines = set(
