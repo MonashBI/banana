@@ -11,7 +11,7 @@ from arcana.data.selector import FilesetInput
 from arcana.data.item import Fileset
 from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
-from arcana.repository import DirectoryRepo
+from arcana.repository import BasicRepo
 from banana.file_format import nifti_gz_format, niftix_gz_format
 
 
@@ -20,7 +20,7 @@ logger = logging.getLogger('arcana')
 BIDS_NIFTI = (nifti_gz_format, niftix_gz_format)
 
 
-class BidsRepo(DirectoryRepo):
+class BidsRepo(BasicRepo):
     """
     A repository class for BIDS datasets
 
@@ -33,7 +33,7 @@ class BidsRepo(DirectoryRepo):
     type = 'bids'
 
     def __init__(self, root_dir, **kwargs):
-        DirectoryRepo.__init__(self, root_dir, depth=2, **kwargs)
+        BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
         self._layout = BIDSLayout(root_dir)
 
     @property
@@ -87,7 +87,7 @@ class BidsRepo(DirectoryRepo):
         all_visits = self.layout.get_sessions()
         for item in self.layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
-                # We handle derivatives using the DirectoryRepo base
+                # We handle derivatives using the BasicRepo base
                 # class methods
                 continue
             if not hasattr(item, 'entities') or not item.entities.get('type',
@@ -134,7 +134,7 @@ class BidsRepo(DirectoryRepo):
                         side_cars=side_cars)
                     filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
-        # the method in the DirectoryRepo base class
+        # the method in the BasicRepo base class
         derived_filesets, fields, records = super().find_data(
             subject_ids=subject_ids, visit_ids=visit_ids)
         filesets.extend(derived_filesets)

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import os.path as op
 from arcana import (
-    FilesetInput, DirectoryRepo, SingleProc, StaticEnv)
+    FilesetInput, BasicRepo, SingleProc, StaticEnv)
 from banana.study.mri.dwi import DwiStudy
 from banana.file_format import dicom_format
 
 study = DwiStudy(
     name='example_diffusion',
-    repository=DirectoryRepo(
+    repository=BasicRepo(
         op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),
     processor=SingleProc(work_dir=op.expanduser('~/work')),
     environment=StaticEnv(),

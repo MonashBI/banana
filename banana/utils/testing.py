@@ -124,7 +124,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 # 
 #     @property
 #     def repository(self):
-#         return DirectoryRepo(self.project_dir)
+#         return BasicRepo(self.project_dir)
 # 
 #     @property
 #     def processor(self):

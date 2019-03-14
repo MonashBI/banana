@@ -4,7 +4,7 @@ import tempfile
 from itertools import chain
 from traceback import format_exception
 from arcana.data import FilesetInput, FieldInput
-from arcana.repository import DirectoryRepo
+from arcana.repository import BasicRepo
 from arcana.exceptions import (
     ArcanaMissingDataException, ArcanaSelectorMissingMatchError)
 from banana.exceptions import BananaTestSetupError
@@ -32,7 +32,7 @@ class SystemTester(object):
             self.work_dir = work_dir
             os.makedirs(self.work_dir, exist_ok=True)
         self.ref_repo = ref_repo
-        self.output_repo = DirectoryRepo(self.work_dir, depth=0)
+        self.output_repo = BasicRepo(self.work_dir, depth=0)
         # Create inputs corresponding to each input in the repository
         self.inputs = {}
         for spec in study_class.data_specs():
