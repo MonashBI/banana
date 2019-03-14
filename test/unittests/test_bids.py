@@ -3,7 +3,7 @@ import tempfile
 import shutil
 import logging
 from unittest import TestCase  # @IgnorePep8
-from arcana.processor import LinearProcessor, DEFAULT_PROV_IGNORE
+from arcana.processor import SingleProc, DEFAULT_PROV_IGNORE
 from banana.bids import BidsRepo
 from banana.utils.testing import BaseTestCase
 from banana.study import DwiStudy, FmriStudy
@@ -38,7 +38,7 @@ class TestBids(TestCase):
         study = DwiStudy(
             'test_dwi',
             repository=self.repo,
-            processor=LinearProcessor(
+            processor=SingleProc(
                 self.work_dir,
                 prov_ignore=DEFAULT_PROV_IGNORE + [
                     'workflow/nodes/.*/requirements/.*/version'],
@@ -50,7 +50,7 @@ class TestBids(TestCase):
         study = FmriStudy(
             'test_fmri',
             repository=self.repo,
-            processor=LinearProcessor(
+            processor=SingleProc(
                 self.work_dir,
                 prov_ignore=DEFAULT_PROV_IGNORE + [
                     'workflow/nodes/.*/requirements/.*/version']),

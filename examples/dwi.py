@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os.path as op
 from arcana import (
-    FilesetInput, DirectoryRepo, LinearProcessor, StaticEnvironment)
+    FilesetInput, DirectoryRepo, SingleProc, StaticEnvironment)
 from banana.study.mri.dwi import DwiStudy
 from banana.file_format import dicom_format
 
@@ -9,7 +9,7 @@ study = DwiStudy(
     name='example_diffusion',
     repository=DirectoryRepo(
         op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),
-    processor=LinearProcessor(work_dir=op.expanduser('~/work')),
+    processor=SingleProc(work_dir=op.expanduser('~/work')),
     environment=StaticEnvironment(),
     inputs=[FilesetInput('magnitude', 'R_L.*', dicom_format, is_regex=True),
             FilesetInput('reverse_phase', 'L_R.*', dicom_format,

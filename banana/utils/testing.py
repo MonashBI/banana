@@ -128,7 +128,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 # 
 #     @property
 #     def processor(self):
-#         return LinearProcessor(self.work_dir)
+#         return SingleProc(self.work_dir)
 # 
 #     @property
 #     def project_dir(self):
@@ -177,7 +177,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 #             The repository to use (a default local repository is used if one
 #             isn't provided
 #         processor : Processor | None
-#             The processor to use (a default LinearProcessor is used if one
+#             The processor to use (a default SingleProc is used if one
 #             isn't provided
 #         """
 #         if repository is None:

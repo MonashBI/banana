@@ -2,13 +2,13 @@
 from banana.study.multimodal.mrpet import create_motion_correction_class
 import os.path
 import errno
-# from arcana.processor import MultiProcProcessor
+# from arcana.processor import MultiProcProc
 from arcana.repository.directory import DirectoryRepo
 from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
-from arcana.processor.linear import LinearProcessor
+from arcana.processor.linear import SingleProc
 import shutil
 
 
@@ -216,7 +216,7 @@ if __name__ == "__main__":
             raise
 
     study = MotionCorrection(name='MotionCorrection',
-                             processor=LinearProcessor(WORK_PATH),
+                             processor=SingleProc(WORK_PATH),
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])

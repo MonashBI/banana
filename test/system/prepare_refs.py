@@ -5,7 +5,7 @@ import shutil
 import json
 from argparse import ArgumentParser
 from arcana.repository import DirectoryRepo
-from arcana.processor import LinearProcessor
+from arcana.processor import SingleProc
 from arcana.data import FilesetInput, FieldInput, Field, Fileset
 from importlib import import_module
 from arcana.exceptions import ArcanaUsageError, ArcanaNameError
@@ -85,7 +85,7 @@ for fname in os.listdir(args.in_dir):
 study = study_class(
     STUDY_NAME,
     repository=ref_repo,
-    processor=LinearProcessor(args.work_dir, reprocess=args.reprocess),
+    processor=SingleProc(args.work_dir, reprocess=args.reprocess),
     inputs=inputs,
     parameters=parameters)
 

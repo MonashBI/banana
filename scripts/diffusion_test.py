@@ -1,4 +1,4 @@
-from arcana import DirectoryRepo, LinearProcessor, FilesetInput
+from arcana import DirectoryRepo, SingleProc, FilesetInput
 from banana.study.mri.structural.diffusion import DwiStudy
 from banana.file_format import dicom_format
 import os.path as op
@@ -9,7 +9,7 @@ test_dir = op.join(op.dirname(__file__), '..', 'test', 'data',
 study = DwiStudy(
     'diffusion',
     DirectoryRepo(op.join(test_dir, 'study')),
-    LinearProcessor(op.join(test_dir, 'work')),
+    SingleProc(op.join(test_dir, 'work')),
     inputs=[FilesetInput('magnitude', dicom_format, '16.*',
                          is_regex=True),
             FilesetInput('reverse_phase', dicom_format, '15.*',
