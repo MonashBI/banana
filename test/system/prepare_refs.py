@@ -4,7 +4,7 @@ import os.path as op
 import shutil
 import json
 from argparse import ArgumentParser
-from arcana.repository import DirectoryRepository
+from arcana.repository import DirectoryRepo
 from arcana.processor import LinearProcessor
 from arcana.data import FilesetSelector, FieldSelector, Field, Fileset
 from importlib import import_module
@@ -48,7 +48,7 @@ for name, value in args.parameter:
 module = import_module(module_name)
 study_class = getattr(module, class_name)
 
-ref_repo = DirectoryRepository(args.in_dir, depth=0)
+ref_repo = DirectoryRepo(args.in_dir, depth=0)
 
 in_paths = []
 inputs = []
@@ -57,7 +57,7 @@ for fname in os.listdir(args.in_dir):
         continue
     path = op.join(ref_repo.root_dir, fname)
     in_paths.append(path)
-    if fname == DirectoryRepository.FIELDS_FNAME:
+    if fname == DirectoryRepo.FIELDS_FNAME:
         with open(path) as f:
             field_data = json.load(f)
         for name, value in field_data.items():

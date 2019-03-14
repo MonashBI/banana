@@ -124,7 +124,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 # 
 #     @property
 #     def repository(self):
-#         return DirectoryRepository(self.project_dir)
+#         return DirectoryRepo(self.project_dir)
 # 
 #     @property
 #     def processor(self):
@@ -514,7 +514,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 #             if e.errno != errno.EEXIST:
 #                 raise
 #         for fileset in session.scans.values():
-#             file_format = XnatRepository.guess_file_format(fileset)
+#             file_format = XnatRepo.guess_file_format(fileset)
 #             ext = file_format.extension
 #             if ext is None:
 #                 ext = ''
@@ -550,7 +550,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 #                 "Didn't find fileset matching '{}' in {}".format(fileset_name,
 #                                                                  session_id))
 #         if file_format is None:
-#             file_format = XnatRepository.guess_file_format(fileset)
+#             file_format = XnatRepo.guess_file_format(fileset)
 #         download_resource(download_path, fileset, file_format,
 #                           session.label)
 # 

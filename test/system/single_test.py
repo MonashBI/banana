@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import os.path as op
-from arcana.repository import DirectoryRepository
+from arcana.repository import DirectoryRepo
 from argparse import ArgumentParser
 from importlib import import_module
 sys.path.insert(0, op.dirname(__file__))
@@ -37,7 +37,7 @@ parameters = dict(args.parameter)
 module = import_module(module_name)
 study_class = getattr(module, class_name)
 
-ref_repo = DirectoryRepository(args.reference_dir, depth=0)
+ref_repo = DirectoryRepo(args.reference_dir, depth=0)
 
 tester = SystemTester(study_class, ref_repo, args.work_dir,
                       parameters=parameters, dry_run=args.dry_run)

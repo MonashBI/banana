@@ -4,7 +4,7 @@ import shutil
 import logging
 from unittest import TestCase  # @IgnorePep8
 from arcana.processor import LinearProcessor, DEFAULT_PROV_IGNORE
-from banana.bids import BidsRepository
+from banana.bids import BidsRepo
 from banana.utils.testing import BaseTestCase
 from banana.study import DwiStudy, FmriStudy
 
@@ -23,7 +23,7 @@ class TestBids(TestCase):
                                'ds000114-preproc')
 
     def setUp(self):
-        self.repo = BidsRepository(self.test_dataset)
+        self.repo = BidsRepo(self.test_dataset)
         self.work_dir = tempfile.mkdtemp()
 
     def tearDown(self):

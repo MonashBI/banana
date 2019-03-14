@@ -2,7 +2,7 @@
 from mc_pipeline.generate_mc_pipeline import create_motion_detection_class
 import os.path
 import errno
-from arcana.repository.simple import DirectoryRepository
+from arcana.repository.simple import DirectoryRepo
 from mc_pipeline.utils import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    repository = DirectoryRepository(input_dir+'/work_dir')
+    repository = DirectoryRepo(input_dir+'/work_dir')
     work_dir = os.path.join(input_dir, 'motion_detection_cache')
     WORK_PATH = work_dir
     try:
