@@ -263,7 +263,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
                         self.visit_id))
 
 
-class BidsSelector(FilesetInput, BaseBidsFileset):
+class BidsInput(FilesetInput, BaseBidsFileset):
     """
     A match object for matching filesets from their BIDS attributes and file
     format. If any of the provided attributes are None, then that attribute
@@ -334,7 +334,7 @@ class BidsSelector(FilesetInput, BaseBidsFileset):
         self._task = task
 
 
-class BidsAssociatedSelector(FilesetInput):
+class BidsAssocInput(FilesetInput):
     """
     A match object for matching BIDS filesets that are associated with
     another BIDS filesets (e.g. field-maps, bvecs, bvals)
@@ -343,7 +343,7 @@ class BidsAssociatedSelector(FilesetInput):
     ----------
     name : str
         Name of the associated fileset
-    primary : BidsSelector
+    primary : BidsInput
         A selector to select the primary fileset which the associated fileset
         is associated with
     association : str
@@ -364,7 +364,7 @@ class BidsAssociatedSelector(FilesetInput):
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
             raise BananaUsageError(
-                "Invalid association '{}' passed to BidsAssociatedSelector, "
+                "Invalid association '{}' passed to BidsAssocInput, "
                 "can be one of '{}'".format(
                     association, "', '".join(self.VALID_ASSOCIATIONS)))
         self._association = association

@@ -28,7 +28,7 @@ from banana.interfaces.custom.fmri import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids import BidsSelector, BidsAssociatedSelector
+from banana.bids import BidsInput, BidsAssocInput
 
 logger = logging.getLogger('banana')
 
@@ -76,17 +76,17 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('flirt', 'spm', 'ants', 'epireg')),
         ParamSpec('group_ica_components', 15)]
 
-    primary_bids_selector = BidsSelector(
+    primary_bids_selector = BidsInput(
         spec_name='magnitude', type='bold', format=niftix_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='field_map_phase',
                                primary=primary_bids_selector,
                                association='phasediff',
                                format=nifti_gz_format,
                                drop_if_missing=True),
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='field_map_mag',
                                primary=primary_bids_selector,
                                association='phasediff',

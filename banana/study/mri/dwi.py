@@ -29,7 +29,7 @@ from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.study.base import Study
-from banana.bids import BidsSelector, BidsAssociatedSelector
+from banana.bids import BidsInput, BidsAssocInput
 from banana.exceptions import BananaUsageError
 from arcana.exceptions import ArcanaMissingDataException
 from banana.study import StudyMetaClass
@@ -104,23 +104,23 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    primary_bids_selector = BidsSelector(
+    primary_bids_selector = BidsInput(
         spec_name='magnitude', type='dwi', format=niftix_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='bvalues',
                                primary=primary_bids_selector,
                                association='grads',
                                type='bval',
                                format=fsl_bvals_format),
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='grad_dirs',
                                primary=primary_bids_selector,
                                association='grads',
                                type='bvec',
                                format=fsl_bvecs_format),
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='reverse_phase',
                                primary=primary_bids_selector,
                                association='epi',
