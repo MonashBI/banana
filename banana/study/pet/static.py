@@ -22,7 +22,7 @@ class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='SUVR',
             desc=('Calculate SUVR image'),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(

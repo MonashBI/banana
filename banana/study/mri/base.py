@@ -390,7 +390,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name='linear_coreg',
             name_maps=name_maps,
             desc="Registers a MR scan against a reference image using FLIRT",
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         pipeline.add(
             'flirt',
@@ -447,7 +447,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'linear_coreg',
             name_maps=name_maps,
             desc="Coregister T2-weighted images to T1",
-            references=[spm_cite])
+            citations=[spm_cite])
 
         pipeline.add(
             'coreg',
@@ -476,7 +476,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name='qform_transform',
             name_maps=name_maps,
             desc="Registers a MR scan against a reference image",
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         pipeline.add(
             'flirt',
@@ -502,7 +502,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name='brain_extraction',
             name_maps=name_maps,
             desc="Generate brain mask from mr_scan",
-            references=[fsl_cite, bet_cite, bet2_cite])
+            citations=[fsl_cite, bet_cite, bet2_cite])
         # Create mask node
         bet = pipeline.add(
             "bet",
@@ -532,7 +532,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name='brain_extraction',
             name_maps=name_maps,
             desc=("Modified implementation of optiBET.sh"),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         mni_reg = pipeline.add(
             'T1_reg',
@@ -630,7 +630,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         # Basic reorientation to standard MNI space
         # FIXME: Don't think is necessary any more since preproc should be
@@ -715,7 +715,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         ants_reg = pipeline.add(
             'Struct2MNI_reg',
@@ -754,7 +754,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name='FAST_segmentation',
             name_maps=name_maps,
             desc="White matter segmentation of the reference image",
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         fast = pipeline.add(
             'fast',
@@ -807,7 +807,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         if (self.branch('reorient_to_std') or
                 self.parameter('preproc_resolution') is not None):
@@ -854,7 +854,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc=("Pipeline to extract the most important scan "
                   "information from the image header"),
-            references=[])
+            citations=[])
 
         if self.provided('header_image'):
             in_name = 'header_image'
@@ -916,7 +916,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name='motion_mat_calculation',
             name_maps=name_maps,
             desc=("Motion matrices calculation"),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         mm = pipeline.add(
             'motion_mats',

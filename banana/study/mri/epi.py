@@ -63,7 +63,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
             name='linear_coreg',
             desc=("Intra-subjects epi registration improved using white "
                   "matter boundaries."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -87,7 +87,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='MCFLIRT_pipeline',
             desc=("Intra-epi volumes alignment."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         mcflirt = pipeline.add(
@@ -121,7 +121,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
             name='field_map_time_info_pipeline',
             desc=("Pipeline to extract delta TE from field map "
                   "images, if provided"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -149,7 +149,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Topup distortion correction pipeline"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         reorient_epi_in = pipeline.add(
@@ -232,7 +232,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='preprocess_pipeline',
             desc=("Fugue distortion correction pipeline"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         reorient_epi_in = pipeline.add(
@@ -298,7 +298,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='motion_mat_calculation',
             desc=("Motion matrices calculation"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         mm = pipeline.add(

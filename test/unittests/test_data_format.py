@@ -30,7 +30,7 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
             outputs=[FilesetSpec('output_fileset', nifti_gz_format)],
             desc=("A dummy pipeline used to test dicom-to-nifti "
                          "conversion method"),
-            references=[])
+            citations=[])
         identity = pipeline.add(
             'identity',
             IdentityInterface(['field']))

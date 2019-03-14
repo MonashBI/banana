@@ -74,7 +74,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
             name='ICA',
             desc=('Decompose a 4D fileset into a set of independent '
                   'components using FastICA'),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(
@@ -96,7 +96,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='Image_registration',
             desc=('Image registration to a template using ANTs'),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(
@@ -124,7 +124,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
             desc=("Given a folder with reconstructed PET data, this "
                   "pipeline will prepare the data for the motion "
                   "correction"),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(
@@ -146,7 +146,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='pet_info_extraction',
             desc=("Extract PET time info from list-mode header."),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(
@@ -167,7 +167,7 @@ class PetStudy(Study, metaclass=StudyMetaClass):
             desc=('Unlist pet listmode data into several sinograms and '
                          'perform ssrb compression to prepare data for motion '
                          'detection using PCA pipeline.'),
-            references=[],
+            citations=[],
             **kwargs)
 
         prepare_inputs = pipeline.add(

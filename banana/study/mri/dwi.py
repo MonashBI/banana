@@ -155,7 +155,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc=(
                 "Preprocess dMRI studies using distortion correction"),
-            references=references)
+            citations=references)
 
         # Create nodes to gradients to FSL format
         if self.input('magnitude').format == dicom_format:
@@ -317,7 +317,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             pipeline = self.new_pipeline(
                 'brain_extraction',
                 desc="Generate brain mask from b0 images",
-                references=[mrtrix_cite],
+                citations=[mrtrix_cite],
                 name_maps=name_maps)
 
             # Gradient merge node
@@ -353,7 +353,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='bias_correct',
             desc="Corrects for B1 field inhomogeneity",
-            references=[fast_cite,
+            citations=[fast_cite,
                         (n4_cite
                          if self.parameter('bias_correct_method') == 'ants'
                          else fsl_cite)],
@@ -403,7 +403,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='intensity_normalization',
             desc="Corrects for B1 field inhomogeneity",
-            references=[mrtrix_req.v('3.0rc3')],
+            citations=[mrtrix_req.v('3.0rc3')],
             name_maps=name_maps)
 
         # Convert from nifti to mrtrix format
@@ -483,7 +483,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             name='tensor',
             desc=("Estimates the apparent diffusion tensor in each "
                   "voxel"),
-            references=[],
+            citations=[],
             name_maps=name_maps)
 
         # Gradient merge node
@@ -516,7 +516,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='fa',
             desc=("Calculates the FA and ADC from a tensor image"),
-            references=[],
+            citations=[],
             name_maps=name_maps)
 
         # Create tensor fit node
@@ -549,7 +549,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='response',
             desc=("Estimates the fibre response function"),
-            references=[mrtrix_cite],
+            citations=[mrtrix_cite],
             name_maps=name_maps)
 
         # Gradient merge node
@@ -594,7 +594,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             name='average_response',
             desc=(
                 "Averages the fibre response function over the project"),
-            references=[mrtrix_cite],
+            citations=[mrtrix_cite],
             name_maps=name_maps)
 
         join_subjects = pipeline.add(
@@ -637,7 +637,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             name='fod',
             desc=("Estimates the fibre orientation distribution in each"
                   " voxel"),
-            references=[mrtrix_cite],
+            citations=[mrtrix_cite],
             name_maps=name_maps)
 
         if self.branch('fod_algorithm', 'msmt_csd'):
@@ -688,7 +688,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='extract_b0',
             desc="Extract b0 image from a DWI study",
-            references=[mrtrix_cite],
+            citations=[mrtrix_cite],
             name_maps=name_maps)
 
         # Gradient merge node
@@ -741,7 +741,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='global_tracking',
             desc="Extract b0 image from a DWI study",
-            references=[mrtrix_cite],
+            citations=[mrtrix_cite],
             name_maps=name_maps)
 
         # Add gradients to input image
@@ -778,7 +778,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             name='affine_mat_generation',
             desc=("Generation of the affine matrices for the main dwi "
                   "sequence starting from eddy motion parameters"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -804,7 +804,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 # #                                  frequency='per_study')],
 #         pipeline = self.new_pipeline(
 #             name='tbss',
-#             references=[tbss_cite, fsl_cite],
+#             citations=[tbss_cite, fsl_cite],
 #             name_maps=name_maps)
 #         # Create TBSS workflow
 # #         tbss = create_tbss_all(name='tbss')
@@ -857,7 +857,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #             desc=(
 #                 "Concatenate low and high b-value dMRI filesets for NODDI "
 #                 "processing"),
-#             references=[mrtrix_cite],
+#             citations=[mrtrix_cite],
 #             name_maps=name_maps)
 #         # Create concatenation node
 #         mrcat = pipeline.add('mrcat', MRCat(),
@@ -908,7 +908,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #             desc=(
 #                 "Creates a ROI in which the NODDI processing will be "
 #                 "performed"),
-#             references=[noddi_cite],
+#             citations=[noddi_cite],
 #             name_maps=name_maps)
 #         # Create node to unzip the nifti files
 #         unzip_bias_correct = pipeline.add(

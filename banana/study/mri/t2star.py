@@ -126,7 +126,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             name='qsm_pipeline',
             name_maps=name_maps,
             desc="Resolve QSM from t2star coils",
-            references=[sti_cites, fsl_cite, matlab_cite])
+            citations=[sti_cites, fsl_cite, matlab_cite])
 
         erosion = pipeline.add(
             'mask_erosion',
@@ -300,7 +300,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             name='cv_pipeline',
             name_maps=name_maps,
             desc="Compute Composite Vein Image",
-            references=[fsl_cite, matlab_cite])
+            citations=[fsl_cite, matlab_cite])
 
         # Interpolate priors and atlas
         merge_trans = pipeline.add(
@@ -391,7 +391,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             name='shmrf_pipeline',
             name_maps=name_maps,
             desc="Compute Vein Mask using ShMRF",
-            references=[fsl_cite, matlab_cite])
+            citations=[fsl_cite, matlab_cite])
 
         # Run ShMRF code
         pipeline.add(

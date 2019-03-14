@@ -99,7 +99,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='rsfMRI_filtering',
             desc=("Spatial and temporal rsfMRI filtering"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         afni_mc = pipeline.add(
@@ -154,7 +154,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='MelodicL1',
             desc=("Single subject ICA analysis using FSL MELODIC."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -183,7 +183,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
             name='prepare_fix',
             desc=("Pipeline to create the right folder structure before "
                   "running FIX"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         struct_ants2fsl = pipeline.add(
@@ -258,7 +258,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
             name='fix_classification',
             desc=("Automatic classification of noisy components from the "
                   "rsfMRI data using fsl FIX."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -283,7 +283,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
             name='signal_regression',
             desc=("Regression of the noisy components from the rsfMRI data "
                   "using a python implementation equivalent to that in FIX."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -307,7 +307,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
             name='timeseries_normalization_to_atlas_pipeline',
             desc=("Apply ANTs transformation to the fmri filtered file to "
                   "normalize it to MNI 2mm."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         merge_trans = pipeline.add(
@@ -341,7 +341,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='smoothing_pipeline',
             desc=("Spatial smoothing of the normalized fmri file"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(
@@ -393,7 +393,7 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to create the training set for FIX given a group "
                   "of subjects with the hand_label_noise.txt file within "
                   "their fix_dir."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         num_fix_dirs = len(self.fmri_sub_studies())
@@ -460,7 +460,7 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to gather together all the pre-processed "
                   "fMRI images"),
             version=1,
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         merge_inputs = pipeline.add(
@@ -487,7 +487,7 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline = self.new_pipeline(
             name='group_melodic',
             desc=("Group ICA"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             name_maps=name_maps)
 
         pipeline.add(

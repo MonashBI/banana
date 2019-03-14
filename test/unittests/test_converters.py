@@ -36,7 +36,7 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
                      FilesetSpec('zip_from_directory', directory_format)],
             desc=("A pipeline that tests out various data format "
                          "conversions"),
-            references=[],)
+            citations=[],)
         # Convert from DICOM to NIfTI.gz format on input
         nifti_gz_from_dicom = pipeline.add(
             IdentityInterface(

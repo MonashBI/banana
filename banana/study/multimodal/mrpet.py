@@ -153,7 +153,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             name='mean_displacement_calculation',
             desc=("Calculate the mean displacement between each motion"
                   " matrix and a reference."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         motion_mats_in = {}
@@ -225,7 +225,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             name='motion_framing',
             desc=("Calculate when the head movement exceeded a "
                   "predefined threshold (default 2mm)."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         framing = pipeline.add(
@@ -256,7 +256,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         pipeline = self.new_pipeline(
             name='plot_mean_displacement',
             desc=("Plot the mean displacement real clock"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         pipeline.add(
@@ -281,7 +281,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             name='frame_mean_transformation_mats',
             desc=("Average all the transformation mats within each "
                   "detected frame."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         pipeline.add(
@@ -302,7 +302,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to generate average motion matrices for "
                   "each bin in a dynamic PET reconstruction experiment."
                   "This will be the input for the dynamic motion correction."),
-            references=[fsl_cite], **kwargs)
+            citations=[fsl_cite], **kwargs)
 
         pipeline.add(
             'fixed_binning',
@@ -327,7 +327,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to calculate the correction factors to "
                   "account for frame duration when averaging the PET "
                   "frames to create the static PET image"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         pipeline.add(
@@ -347,7 +347,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=(
                 "Conversing aligned umap from nifti to dicom format - "
                 "parallel implementation"),
-            references=(),
+            citations=(),
             **kwargs)
 
         list_niftis = pipeline.add(
@@ -401,7 +401,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to align the original umap (if provided)"
                   "to match the head position in each frame and improve the "
                   "static PET image quality."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         pipeline.add(
@@ -430,7 +430,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             desc=("Pipeline to generate a moco_series that can be then "
                   "imported back in the scanner and used to correct the"
                   " pet data"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         pipeline.add(
@@ -452,7 +452,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
             desc=("Pipeline to gather together all the outputs from "
                   "the motion detection pipeline."),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         merge_inputs = pipeline.add(
@@ -498,7 +498,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                   "pipeline will generate a motion corrected PET"
                   "image using information extracted from the MR-based "
                   "motion detection pipeline"),
-            references=[fsl_cite],
+            citations=[fsl_cite],
             **kwargs)
 
         check_pet = pipeline.add(

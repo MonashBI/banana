@@ -43,7 +43,7 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='Extract_volume',
             desc=('Extract the last volume of the 4D PET timeseries'),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(
@@ -64,7 +64,7 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='applytransform',
             desc=('Apply transformation the the 4D PET timeseries'),
-            references=[],
+            citations=[],
             **kwargs)
 
         merge_trans = pipeline.add(
@@ -93,7 +93,7 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='Baseline_removal',
             desc=('PET dual regression'),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(
@@ -111,7 +111,7 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='Dual_regression',
             desc=('PET dual regression'),
-            references=[],
+            citations=[],
             **kwargs)
 
         pipeline.add(

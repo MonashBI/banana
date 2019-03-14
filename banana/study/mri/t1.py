@@ -53,7 +53,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             name='segmentation',
             name_maps=name_maps,
             desc="Segment white/grey matter and csf",
-            references=copy(freesurfer_cites))
+            citations=copy(freesurfer_cites))
 
         # FS ReconAll node
         recon_all = pipeline.add(
@@ -94,7 +94,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             name='BET_T1',
             name_maps=name_maps,
             desc=("python implementation of BET"),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         bias = pipeline.add(
             'n4_bias_correction',
@@ -122,7 +122,7 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
             name='CET_T1',
             name_maps=name_maps,
             desc=("Construct cerebellum mask using SUIT template"),
-            references=[fsl_cite])
+            citations=[fsl_cite])
 
         # FIXME: Should convert to inputs
         nl = self._lookup_nl_tfm_inv_name('MNI')
