@@ -225,7 +225,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         The id of the subject which the fileset belongs to
     visit_id : int | str | None
         The id of the visit which the fileset belongs to
-    repository : BaseRepository
+    repository : Repository
         The repository which the fileset is stored
     modality : str
         The BIDS modality
