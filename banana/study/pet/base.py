@@ -1,5 +1,5 @@
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FieldSpec, FilesetInputSpec
 from banana.file_format import (
     nifti_gz_format, text_format, text_matrix_format, directory_format,
     list_mode_format)
@@ -9,7 +9,7 @@ import os
 from banana.requirement import fsl_req, mrtrix_req
 from banana.interfaces.custom.pet import PreparePetDir
 from banana.interfaces.custom.dicom import PetTimeInfo
-from arcana.study import ParameterSpec
+from arcana.study import ParamSpec
 from banana.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
 from banana.requirement import stir_req
@@ -22,23 +22,23 @@ template_path = os.path.abspath(
 
 class PetStudy(Study, metaclass=StudyMetaClass):
 
-    add_param_specs = [ParameterSpec('ica_n_components', 2),
-                        ParameterSpec('ica_type', 'spatial'),
-                        ParameterSpec('norm_transformation', 's'),
-                        ParameterSpec('norm_dim', 3),
-                        ParameterSpec('norm_template',
+    add_param_specs = [ParamSpec('ica_n_components', 2),
+                        ParamSpec('ica_type', 'spatial'),
+                        ParamSpec('norm_transformation', 's'),
+                        ParamSpec('norm_dim', 3),
+                        ParamSpec('norm_template',
                                       os.path.join(template_path,
                                                    'PET_template.nii.gz')),
-                        ParameterSpec('crop_xmin', 100),
-                        ParameterSpec('crop_xsize', 130),
-                        ParameterSpec('crop_ymin', 100),
-                        ParameterSpec('crop_ysize', 130),
-                        ParameterSpec('crop_zmin', 20),
-                        ParameterSpec('crop_zsize', 100),
-                        ParameterSpec('image_orientation_check', False)]
+                        ParamSpec('crop_xmin', 100),
+                        ParamSpec('crop_xsize', 130),
+                        ParamSpec('crop_ymin', 100),
+                        ParamSpec('crop_ysize', 130),
+                        ParamSpec('crop_zmin', 20),
+                        ParamSpec('crop_zsize', 100),
+                        ParamSpec('image_orientation_check', False)]
 
     add_data_specs = [
-        AcquiredFilesetSpec('list_mode', list_mode_format),
+        FilesetInputSpec('list_mode', list_mode_format),
         FilesetSpec('registered_volumes', nifti_gz_format, optional=True),
         FilesetSpec('pet_image', nifti_gz_format, optional=True),
         FilesetSpec('pet_data_dir', directory_format),

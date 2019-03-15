@@ -2,7 +2,7 @@
 import os.path
 import errno
 from banana.study.mri.structural.diffusion import DwiStudy
-from arcana.repository.xnat import XnatRepository
+from arcana.repository.xnat import XnatRepo
 from banana.file_format import dicom_format
 import logging
 import argparse
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 
     study = DwiStudy(
         name=args.study_name,
-        repository=XnatRepository(
+        repository=XnatRepo(
             project_id='MRH060', server='https://mbi-xnat.erc.monash.edu.au',
             cache_dir=os.path.join(scratch_dir, 'xnat_cache-mnd')),
         runner=LinearRunner(work_dir=os.path.join(scratch_dir,

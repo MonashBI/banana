@@ -4,7 +4,7 @@ from banana.citation import spm_cite
 from banana.file_format import (
     nifti_format, motion_mats_format, directory_format, nifti_gz_format,
     multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
-from arcana.data import FilesetSpec, FieldSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FieldSpec, FilesetInputSpec
 from banana.study import Study, StudyMetaClass
 from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
@@ -27,7 +27,7 @@ from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nipype.interfaces.fsl.preprocess import ApplyXFM
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
-from arcana import ParameterSpec, SwitchSpec
+from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.atlas import FslAtlas
@@ -38,15 +38,15 @@ logger = logging.getLogger('arcana')
 class MriStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('magnitude', STD_IMAGE_FORMATS,
+        FilesetInputSpec('magnitude', STD_IMAGE_FORMATS,
                             desc=("Typically the primary scan acquired from "
                                   "the scanner for the given contrast")),
-        AcquiredFilesetSpec(
+        FilesetInputSpec(
             'coreg_ref', STD_IMAGE_FORMATS,
             desc=("A reference scan to coregister the primary scan to. Should "
                   "not be brain extracted"),
             optional=True),
-        AcquiredFilesetSpec(
+        FilesetInputSpec(
             'coreg_ref_brain', STD_IMAGE_FORMATS,
             desc=("A brain-extracted reference scan to coregister a brain-"
                   "extracted scan to. Note that the output of the "
@@ -54,11 +54,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "extracting the output of coregistration performed "
                   "before brain extraction if 'coreg_ref' is provided"),
             optional=True),
-        AcquiredFilesetSpec(
+        FilesetInputSpec(
             'channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
                                  "coil without standardisation.")),
-        AcquiredFilesetSpec('header_image', dicom_format, desc=(
+        FilesetInputSpec('header_image', dicom_format, desc=(
             "A dataset that contains correct the header information for the "
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
@@ -122,15 +122,15 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
-        AcquiredFilesetSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
+        FilesetInputSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
                             default=FslAtlas('MNI152_T1',
                                              resolution='atlas_resolution')),
-        AcquiredFilesetSpec('atlas_brain', STD_IMAGE_FORMATS,
+        FilesetInputSpec('atlas_brain', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=FslAtlas('MNI152_T1',
                                              resolution='atlas_resolution',
                                              dataset='brain')),
-        AcquiredFilesetSpec('atlas_mask', STD_IMAGE_FORMATS,
+        FilesetInputSpec('atlas_mask', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=FslAtlas('MNI152_T1',
                                              resolution='atlas_resolution',
@@ -138,47 +138,47 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('reorient_to_std', True),
-        ParameterSpec('force_channel_flip', None, dtype=str, array=True,
+        ParamSpec('force_channel_flip', None, dtype=str, array=True,
                       desc=("Forcibly flip channel inputs during preprocess "
                             "channels to correct issues with channel recon. "
                             "The inputs are passed directly through to FSL's "
                             "swapdims (see fsl.SwapDimensions interface)")),
         SwitchSpec('bet_robust', True),
-        ParameterSpec('bet_f_threshold', 0.5),
+        ParamSpec('bet_f_threshold', 0.5),
         SwitchSpec('bet_reduce_bias', False,
                    desc="Only used if not 'bet_robust'"),
-        ParameterSpec('bet_g_threshold', 0.0),
+        ParamSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        ParameterSpec('atlas_resolution', 2),  # choices=(0.5, 1, 2)),
-        ParameterSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
-        ParameterSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
-        ParameterSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
-        ParameterSpec('preproc_resolution', None, dtype=list),
+        ParamSpec('atlas_resolution', 2),  # choices=(0.5, 1, 2)),
+        ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
+        ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
+        ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
+        ParamSpec('preproc_resolution', None, dtype=list),
         SwitchSpec('linear_coreg_method', 'flirt', ('flirt', 'spm', 'ants'),
                    desc="The tool to use for linear registration"),
-        ParameterSpec('flirt_degrees_of_freedom', 6, desc=(
+        ParamSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
-        ParameterSpec('flirt_cost_func', 'normmi', desc=(
+        ParamSpec('flirt_cost_func', 'normmi', desc=(
             "Cost function used for the registration. Can be one of "
             "'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',"
             " 'labeldiff', 'bbr'")),
-        ParameterSpec('flirt_qsform', False, desc=(
+        ParamSpec('flirt_qsform', False, desc=(
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
             "scanner")),
-        ParameterSpec(
+        ParamSpec(
             'channel_fname_regex',
             r'.*_(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
             desc=("The regular expression to extract channel, echo and complex"
                   " axis from the filenames of the coils channel images")),
-        ParameterSpec(
+        ParamSpec(
             'channel_real_label', 'REAL',
             desc=("The name of the real axis extracted from the channel "
                   "filename")),
-        ParameterSpec(
+        ParamSpec(
             'channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]

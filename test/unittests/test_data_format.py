@@ -6,21 +6,21 @@ from arcana.exceptions import ArcanaModulesNotInstalledException
 from banana.file_format import (dicom_format, mrtrix_format,
                                     nifti_gz_format)
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSelector, FilesetSpec, AcquiredFilesetSpec
-from arcana.environment import ModulesEnvironment, StaticEnvironment
+from arcana.data import FilesetInput, FilesetSpec, FilesetInputSpec
+from arcana.environment import ModulesEnv, StaticEnv
 
 try:
-    ModulesEnvironment._run_module_cmd('avail')
+    ModulesEnv._run_module_cmd('avail')
 except ArcanaModulesNotInstalledException:
-    environment = StaticEnvironment()
+    environment = StaticEnv()
 else:
-    environment = ModulesEnvironment(fail_on_missing=False)
+    environment = ModulesEnv(fail_on_missing=False)
 
 
 class DummyStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('input_fileset', dicom_format),
+        FilesetInputSpec('input_fileset', dicom_format),
         FilesetSpec('output_fileset', nifti_gz_format, 'a_pipeline')]
 
     def a_pipeline(self):
@@ -56,7 +56,7 @@ class TestDicom2Niix(BaseTestCase):
             'concatenate',
             environment=environment,
             inputs=[
-                FilesetSelector('input_fileset',
+                FilesetInput('input_fileset',
                                 dicom_format, 't2_tse_tra_p2_448')])
         list(study.data('output_fileset'))[0]
         self.assertFilesetCreated('output_fileset.nii.gz', study.name)

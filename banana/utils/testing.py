@@ -124,11 +124,11 @@ class BaseTestCase(ArcanaBaseTestCase):
 # 
 #     @property
 #     def repository(self):
-#         return DirectoryRepository(self.project_dir)
+#         return BasicRepo(self.project_dir)
 # 
 #     @property
 #     def processor(self):
-#         return LinearProcessor(self.work_dir)
+#         return SingleProc(self.work_dir)
 # 
 #     @property
 #     def project_dir(self):
@@ -173,11 +173,11 @@ class BaseTestCase(ArcanaBaseTestCase):
 #             Name of the study
 #         inputs : List[BaseSpec]
 #             List of inputs to the study
-#         repository : BaseRepository | None
+#         repository : Repository | None
 #             The repository to use (a default local repository is used if one
 #             isn't provided
 #         processor : Processor | None
-#             The processor to use (a default LinearProcessor is used if one
+#             The processor to use (a default SingleProc is used if one
 #             isn't provided
 #         """
 #         if repository is None:
@@ -514,7 +514,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 #             if e.errno != errno.EEXIST:
 #                 raise
 #         for fileset in session.scans.values():
-#             file_format = XnatRepository.guess_file_format(fileset)
+#             file_format = XnatRepo.guess_file_format(fileset)
 #             ext = file_format.extension
 #             if ext is None:
 #                 ext = ''
@@ -550,7 +550,7 @@ class BaseTestCase(ArcanaBaseTestCase):
 #                 "Didn't find fileset matching '{}' in {}".format(fileset_name,
 #                                                                  session_id))
 #         if file_format is None:
-#             file_format = XnatRepository.guess_file_format(fileset)
+#             file_format = XnatRepo.guess_file_format(fileset)
 #         download_resource(download_path, fileset, file_format,
 #                           session.label)
 # 

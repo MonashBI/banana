@@ -21,15 +21,15 @@ from banana.file_format import (
     mrtrix_track_format, motion_mats_format)
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
-from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.utils.interfaces import SelectSession
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.study.base import Study
-from banana.bids import BidsSelector, BidsAssociatedSelector
+from banana.bids import BidsInput, BidsAssocInput
 from banana.exceptions import BananaUsageError
 from arcana.exceptions import ArcanaMissingDataException
 from banana.study import StudyMetaClass
@@ -40,7 +40,7 @@ logger = getLogger('banana')
 class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
+        FilesetInputSpec('dwi_reference', nifti_gz_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
         FilesetSpec('noise_residual', mrtrix_format, 'preprocess_pipeline'),
@@ -87,15 +87,15 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         ]  # @IgnorePep8
 
     add_param_specs = [
-        ParameterSpec('multi_tissue', True),
-        ParameterSpec('preproc_pe_dir', None, dtype=str),
-        ParameterSpec('tbss_skel_thresh', 0.2),
-        ParameterSpec('fsl_mask_f', 0.25),
-        ParameterSpec('bet_robust', True),
-        ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('num_global_tracks', int(1e9)),
-        ParameterSpec('global_tracks_cutoff', 0.05),
+        ParamSpec('multi_tissue', True),
+        ParamSpec('preproc_pe_dir', None, dtype=str),
+        ParamSpec('tbss_skel_thresh', 0.2),
+        ParamSpec('fsl_mask_f', 0.25),
+        ParamSpec('bet_robust', True),
+        ParamSpec('bet_f_threshold', 0.2),
+        ParamSpec('bet_reduce_bias', False),
+        ParamSpec('num_global_tracks', int(1e9)),
+        ParamSpec('global_tracks_cutoff', 0.05),
         SwitchSpec('preproc_denoise', False),
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt')),
@@ -104,23 +104,23 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    primary_bids_selector = BidsSelector(
+    primary_bids_selector = BidsInput(
         spec_name='magnitude', type='dwi', format=niftix_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='bvalues',
                                primary=primary_bids_selector,
                                association='grads',
                                type='bval',
                                format=fsl_bvals_format),
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='grad_dirs',
                                primary=primary_bids_selector,
                                association='grads',
                                type='bvec',
                                format=fsl_bvecs_format),
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='reverse_phase',
                                primary=primary_bids_selector,
                                association='epi',
@@ -826,8 +826,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 # class NODDIStudy(DwiStudy, metaclass=StudyMetaClass):
 # 
 #     add_data_specs = [
-#         AcquiredFilesetSpec('low_b_dw_scan', mrtrix_format),
-#         AcquiredFilesetSpec('high_b_dw_scan', mrtrix_format),
+#         FilesetInputSpec('low_b_dw_scan', mrtrix_format),
+#         FilesetInputSpec('high_b_dw_scan', mrtrix_format),
 #         FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
 #         FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
 #         FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
@@ -839,7 +839,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #         FilesetSpec('kappa', nifti_format, 'noddi_fitting_pipeline'),
 #         FilesetSpec('error_code', nifti_format, 'noddi_fitting_pipeline')]
 # 
-#     add_param_specs = [ParameterSpec('noddi_model',
+#     add_param_specs = [ParamSpec('noddi_model',
 #                                          'WatsonSHStickTortIsoV_B0'),
 #                            SwitchSpec('single_slice', False)]
 # 

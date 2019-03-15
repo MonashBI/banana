@@ -7,7 +7,7 @@ from arcana.utils.interfaces import Merge
 from banana.interfaces.custom.pet import PETdr, GlobalTrendRemoval
 from banana.file_format import (nifti_gz_format, png_format,
                                 text_matrix_format)
-from arcana.study import ParameterSpec
+from arcana.study import ParamSpec
 import os
 
 template_path = os.path.abspath(
@@ -31,12 +31,12 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         FilesetSpec('ts', png_format, 'Dual_Regression_pipeline')]
 
     add_param_specs = [
-        ParameterSpec('trans_template',
+        ParamSpec('trans_template',
                       os.path.join(template_path, 'PET_template.nii.gz')),
-        ParameterSpec('base_remove_th', 0),
-        ParameterSpec('base_remove_binarize', False),
-        ParameterSpec('regress_th', 0),
-        ParameterSpec('regress_binarize', False)]
+        ParamSpec('base_remove_th', 0),
+        ParamSpec('base_remove_binarize', False),
+        ParamSpec('regress_th', 0),
+        ParamSpec('regress_binarize', False)]
 
     def Extract_vol_pipeline(self, **kwargs):
 

@@ -1,9 +1,9 @@
 from banana.file_format import dicom_format
-from arcana.data import FilesetSelector
-from arcana.repository.xnat import XnatRepository
+from arcana.data import FilesetInput
+from arcana.repository.xnat import XnatRepo
 
 
-repository = XnatRepository()
+repository = XnatRepo()
 
 repository.cache(
     'MRH032',

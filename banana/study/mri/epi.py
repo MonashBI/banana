@@ -5,8 +5,8 @@ from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.utils import Merge as fsl_merge
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.fsl.preprocess import BET, FUGUE
-from arcana.study import ParameterSpec, SwitchSpec
-from arcana.data import AcquiredFilesetSpec, FilesetSpec, FieldSpec
+from arcana.study import ParamSpec, SwitchSpec
+from arcana.data import FilesetInputSpec, FilesetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
 from banana.citation import fsl_cite
 from banana.requirement import fsl_req
@@ -25,12 +25,12 @@ from banana.file_format import STD_IMAGE_FORMATS
 class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
+        FilesetInputSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
                             optional=True),
-        AcquiredFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
-        AcquiredFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
+        FilesetInputSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
+        FilesetInputSpec('field_map_mag', STD_IMAGE_FORMATS,
                             optional=True),
-        AcquiredFilesetSpec('field_map_phase', STD_IMAGE_FORMATS,
+        FilesetInputSpec('field_map_phase', STD_IMAGE_FORMATS,
                             optional=True),
         FilesetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
@@ -46,9 +46,9 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         SwitchSpec('linear_coreg_method', 'epireg',
                    (MriStudy.parameter_spec('linear_coreg_method').choices +
                     ('epireg',))),
-        ParameterSpec('bet_f_threshold', 0.2),
-        ParameterSpec('bet_reduce_bias', False),
-        ParameterSpec('fugue_echo_spacing', 0.000275)]
+        ParamSpec('bet_f_threshold', 0.2),
+        ParamSpec('bet_reduce_bias', False),
+        ParamSpec('fugue_echo_spacing', 0.000275)]
 
     def linear_coreg_pipeline(self, **name_maps):
         if self.branch('linear_coreg_method', 'epireg'):

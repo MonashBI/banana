@@ -5,13 +5,13 @@ import stat
 import logging
 from bids.layout import BIDSLayout
 from arcana.exceptions import (
-    ArcanaSelectorMissingMatchError, ArcanaUsageError)
+    ArcanaInputMissingMatchError, ArcanaUsageError)
 from banana.exceptions import BananaUsageError
-from arcana.data.selector import FilesetSelector
+from arcana.data.input import FilesetInput
 from arcana.data.item import Fileset
 from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
-from arcana.repository import DirectoryRepository
+from arcana.repository import BasicRepo
 from banana.file_format import nifti_gz_format, niftix_gz_format
 
 
@@ -20,20 +20,20 @@ logger = logging.getLogger('arcana')
 BIDS_NIFTI = (nifti_gz_format, niftix_gz_format)
 
 
-class BidsRepository(DirectoryRepository):
+class BidsRepo(BasicRepo):
     """
     A repository class for BIDS datasets
 
     Parameters
     ----------
     root_dir : str
-        The path to the root of the BidsRepository
+        The path to the root of the BidsRepo
     """
 
     type = 'bids'
 
     def __init__(self, root_dir, **kwargs):
-        DirectoryRepository.__init__(self, root_dir, depth=2, **kwargs)
+        BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
         self._layout = BIDSLayout(root_dir)
 
     @property
@@ -57,7 +57,7 @@ class BidsRepository(DirectoryRepository):
         return self._layout
 
     def __repr__(self):
-        return "BidsRepository(root_dir='{}')".format(self.root_dir)
+        return "BidsRepo(root_dir='{}')".format(self.root_dir)
 
     def __hash__(self):
         return super().__hash__()
@@ -87,7 +87,7 @@ class BidsRepository(DirectoryRepository):
         all_visits = self.layout.get_sessions()
         for item in self.layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
-                # We handle derivatives using the DirectoryRepository base
+                # We handle derivatives using the BasicRepo base
                 # class methods
                 continue
             if not hasattr(item, 'entities') or not item.entities.get('type',
@@ -134,7 +134,7 @@ class BidsRepository(DirectoryRepository):
                         side_cars=side_cars)
                     filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
-        # the method in the DirectoryRepository base class
+        # the method in the BasicRepo base class
         derived_filesets, fields, records = super().find_data(
             subject_ids=subject_ids, visit_ids=visit_ids)
         filesets.extend(derived_filesets)
@@ -225,7 +225,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         The id of the subject which the fileset belongs to
     visit_id : int | str | None
         The id of the visit which the fileset belongs to
-    repository : BaseRepository
+    repository : Repository
         The repository which the fileset is stored
     modality : str
         The BIDS modality
@@ -263,7 +263,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
                         self.visit_id))
 
 
-class BidsSelector(FilesetSelector, BaseBidsFileset):
+class BidsInput(FilesetInput, BaseBidsFileset):
     """
     A match object for matching filesets from their BIDS attributes and file
     format. If any of the provided attributes are None, then that attribute
@@ -285,7 +285,7 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
 
     def __init__(self, spec_name, type, format=None, task=None, modality=None,  # @ReservedAssignment @IgnorePep8
                  **kwargs):
-        FilesetSelector.__init__(
+        FilesetInput.__init__(
             self, spec_name, pattern=None, format=format,
             frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
         BaseBidsFileset.__init__(self, type, modality, task)
@@ -299,7 +299,7 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
                 (self.task is None or self.task == f.task) and
                 (self.format is None or self.format == f.format))]
         if not matches:
-            raise ArcanaSelectorMissingMatchError(
+            raise ArcanaInputMissingMatchError(
                 "No BIDS filesets for {} match {} found:\n{}"
                 .format(node, self, '\n'.join(str(f) for f in node.filesets)))
         return matches
@@ -314,15 +314,15 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
                     self.modality, self.task))
 
     def __eq__(self, other):
-        return (FilesetSelector.__eq__(self, other) and
+        return (FilesetInput.__eq__(self, other) and
                 BaseBidsFileset.__eq__(self, other))
 
     def __hash__(self):
-        return (FilesetSelector.__hash__(self) ^
+        return (FilesetInput.__hash__(self) ^
                 BaseBidsFileset.__hash__(self))
 
     def initkwargs(self):
-        dct = FilesetSelector.initkwargs(self)
+        dct = FilesetInput.initkwargs(self)
         dct.update(BaseBidsFileset.initkwargs(self))
         return dct
 
@@ -334,7 +334,7 @@ class BidsSelector(FilesetSelector, BaseBidsFileset):
         self._task = task
 
 
-class BidsAssociatedSelector(FilesetSelector):
+class BidsAssocInput(FilesetInput):
     """
     A match object for matching BIDS filesets that are associated with
     another BIDS filesets (e.g. field-maps, bvecs, bvals)
@@ -343,7 +343,7 @@ class BidsAssociatedSelector(FilesetSelector):
     ----------
     name : str
         Name of the associated fileset
-    primary : BidsSelector
+    primary : BidsInput
         A selector to select the primary fileset which the associated fileset
         is associated with
     association : str
@@ -359,33 +359,33 @@ class BidsAssociatedSelector(FilesetSelector):
 
     def __init__(self, spec_name, primary, association, type=None, format=None,   # @ReservedAssignment @IgnorePep8
                  **kwargs):
-        FilesetSelector.__init__(self, spec_name, format,
+        FilesetInput.__init__(self, spec_name, format,
                                  frequency='per_session', **kwargs)
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
             raise BananaUsageError(
-                "Invalid association '{}' passed to BidsAssociatedSelector, "
+                "Invalid association '{}' passed to BidsAssocInput, "
                 "can be one of '{}'".format(
                     association, "', '".join(self.VALID_ASSOCIATIONS)))
         self._association = association
         self._type = type
 
     def __eq__(self, other):
-        return (FilesetSelector.__eq__(self, other) and
+        return (FilesetInput.__eq__(self, other) and
                 self.primary == other.primary and
                 self.format == other.format and
                 self.association == other.association and
                 self._type == other._type)
 
     def __hash__(self):
-        return (FilesetSelector.__hash__(self) ^
+        return (FilesetInput.__hash__(self) ^
                 hash(self.primary) ^
                 hash(self.format) ^
                 hash(self.association) ^
                 hash(self._type))
 
     def initkwargs(self):
-        dct = FilesetSelector.initkwargs(self)
+        dct = FilesetInput.initkwargs(self)
         dct['primary'] = self.primary
         dct['format'] = self.primary
         dct['association'] = self.association
@@ -449,7 +449,7 @@ class BidsAssociatedSelector(FilesetSelector):
                 fieldmap = next(f for f in fieldmaps
                                      if f['type'] == self.association)
             except StopIteration:
-                raise ArcanaSelectorMissingMatchError(
+                raise ArcanaInputMissingMatchError(
                     "No \"{}\" field-maps associated with {} (found {})"
                     .format(self.association, primary_match,
                             ', '.join(f['type'] for f in fieldmaps)))

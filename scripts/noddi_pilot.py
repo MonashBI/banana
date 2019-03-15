@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from arcana.data import FilesetSelector
+from arcana.data import FilesetInput
 from banana.study.mri.diffusion import NODDIStudy
-from arcana.repository.simple import DirectoryRepository
+from arcana.repository.basic import BasicRepo
 from banana.file_format import mrtrix_format
 
 repository_path = os.path.abspath(os.path.join(
@@ -23,12 +23,12 @@ shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
 study = NODDIStudy(
     name=DATASET_NAME,
-    project_id=NODDI_PROJECT, repository=DirectoryRepository(repository_path),
+    project_id=NODDI_PROJECT, repository=BasicRepo(repository_path),
     input_scans=[
-        FilesetSelector('low_b_dw_scan', mrtrix_format,
+        FilesetInput('low_b_dw_scan', mrtrix_format,
                      'r_l_noddi_b700_30_directions'),
-        FilesetSelector('high_b_dw_scan', mrtrix_format,
+        FilesetInput('high_b_dw_scan', mrtrix_format,
                      'r_l_noddi_b2000_60_directions'),
-        FilesetSelector('forward_rpe', 'r_l_noddi_b0_6', mrtrix_format),
-        FilesetSelector('reverse_rpe', 'l_r_noddi_b0_6', mrtrix_format)])
+        FilesetInput('forward_rpe', 'r_l_noddi_b0_6', mrtrix_format),
+        FilesetInput('reverse_rpe', 'l_r_noddi_b0_6', mrtrix_format)])
 study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)

@@ -3,10 +3,10 @@ import sys
 import tempfile
 from itertools import chain
 from traceback import format_exception
-from arcana.data import FilesetSelector, FieldSelector
-from arcana.repository import DirectoryRepository
+from arcana.data import FilesetInput, FieldInput
+from arcana.repository import BasicRepo
 from arcana.exceptions import (
-    ArcanaMissingDataException, ArcanaSelectorMissingMatchError)
+    ArcanaMissingDataException, ArcanaInputMissingMatchError)
 from banana.exceptions import BananaTestSetupError
 from banana.file_format import niftix_gz_format
 
@@ -32,7 +32,7 @@ class SystemTester(object):
             self.work_dir = work_dir
             os.makedirs(self.work_dir, exist_ok=True)
         self.ref_repo = ref_repo
-        self.output_repo = DirectoryRepository(self.work_dir, depth=0)
+        self.output_repo = BasicRepo(self.work_dir, depth=0)
         # Create inputs corresponding to each input in the repository
         self.inputs = {}
         for spec in study_class.data_specs():
@@ -41,17 +41,17 @@ class SystemTester(object):
                     format = niftix_gz_format  # @ReservedAssignment
                 else:
                     format = spec.format  # @ReservedAssignment
-                selector = FilesetSelector(
+                selector = FilesetInput(
                     spec.name, spec.name, repository=self.ref_repo,
                     format=format)
             else:
-                selector = FieldSelector(
+                selector = FieldInput(
                     spec.name, spec.name, dtype=spec.dtype,
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
             try:
                 selector.match(ref_repo.cached_tree())
-            except ArcanaSelectorMissingMatchError:
+            except ArcanaInputMissingMatchError:
                 continue
             self.inputs[spec.name] = selector
         self.all_pipelines = set(

@@ -1,7 +1,7 @@
 import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
-from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FilesetInputSpec
 from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
 from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
@@ -21,7 +21,7 @@ from banana.interfaces.sti import (
 from banana.interfaces.custom.coils import HIPCombineChannels
 from banana.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 from logging import getLogger
 
@@ -79,35 +79,35 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
-        AcquiredFilesetSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
+        FilesetInputSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalAtlas('QSMPrior')),
-        AcquiredFilesetSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
+        FilesetInputSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalAtlas('SWIPrior')),
-        AcquiredFilesetSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
+        FilesetInputSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalAtlas('VeinFrequencyPrior')),
-        AcquiredFilesetSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
+        FilesetInputSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalAtlas('VeinFrequencyMap'))]
 
     add_param_specs = [
         SwitchSpec('qsm_dual_echo', False),
-        ParameterSpec('qsm_echo', 1,
+        ParamSpec('qsm_echo', 1,
                       desc=("Which echo (by index starting at 1) to use when "
                             "using single echo")),
-        ParameterSpec('qsm_padding', [12, 12, 12]),
-        ParameterSpec('qsm_mask_dialation', [11, 11, 11]),
-        ParameterSpec('qsm_erosion_size', 10),
+        ParamSpec('qsm_padding', [12, 12, 12]),
+        ParamSpec('qsm_mask_dialation', [11, 11, 11]),
+        ParamSpec('qsm_erosion_size', 10),
         SwitchSpec('linear_coreg_method', 'ants',
                    MriStudy.parameter_spec('linear_coreg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', False),
-        ParameterSpec('bet_f_threshold', 0.1),
-        ParameterSpec('bet_g_threshold', 0.0)]
+        ParamSpec('bet_f_threshold', 0.1),
+        ParamSpec('bet_g_threshold', 0.0)]
 
     def preprocess_channels(self, **name_maps):
         pipeline = super().preprocess_channels(**name_maps)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from arcana.data import FilesetSelector  # @IgnorePep8
+from arcana.data import FilesetInput  # @IgnorePep8
 from banana.file_format import nifti_gz_format  # @IgnorePep8
 from banana.study.mri.base import MriStudy  # @IgnorePep8
 from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
@@ -22,8 +22,8 @@ class TestMRI(TestCase):
     def test_coreg_and_brain_mask(self):
         study = self.create_study(
             TestCoregStudy, 'coreg_and_mask_study', inputs=[
-                FilesetSelector('ref_primary', 'mprage', nifti_gz_format),
-                FilesetSelector('tocoreg_primary', nifti_gz_format,
+                FilesetInput('ref_primary', 'mprage', nifti_gz_format),
+                FilesetInput('tocoreg_primary', nifti_gz_format,
                              'flair')])
         coreg_brain = list(study.data('tocoreg_coreg_brain'))[0]
         self.assertFilesetsEqual(coreg_brain,

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from banana.study.mri.functional.fmri import create_multi_fmri_class
-from arcana.repository.xnat import XnatRepository
-from arcana.processor.linear import LinearProcessor
+from arcana.repository.xnat import XnatRepo
+from arcana.processor.linear import SingleProc
 import os.path
 import errno
 import argparse
@@ -110,12 +110,12 @@ if __name__ == "__main__":
         if e.errno != errno.EEXIST:
             raise
 
-    repository = XnatRepository(
+    repository = XnatRepo(
         server=args.xnat_server, project_id=args.project_id,
         user=args.xnat_username, password=args.xnat_password,
         cache_dir=CACHE_PATH)
 
-    study = fMRI(name='fMRI_preprocessing', processor=LinearProcessor(WORK_PATH),
+    study = fMRI(name='fMRI_preprocessing', processor=SingleProc(WORK_PATH),
                  repository=repository, inputs=inputs, subject_ids=args.subject_ids,
                  visit_ids=args.visit_ids)
     study.data(output_files)

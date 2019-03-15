@@ -3,7 +3,7 @@ from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
                                        SignalRegression, PrepareFIXTraining)
-from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.study.base import StudyMetaClass
 from banana.requirement import (
     afni_req, fix_req, fsl_req, ants_req, c3d_req)
@@ -15,20 +15,20 @@ from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from banana.study.mri.epi import EpiStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from arcana.data import FilesetSelector
+from arcana.data import FilesetInput
 from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from banana.interfaces.custom.fmri import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids import BidsSelector, BidsAssociatedSelector
+from banana.bids import BidsInput, BidsAssocInput
 
 logger = logging.getLogger('banana')
 
@@ -44,7 +44,7 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        AcquiredFilesetSpec('train_data', rfile_format, optional=True,
+        FilesetInputSpec('train_data', rfile_format, optional=True,
                             frequency='per_study'),
         FilesetSpec('hand_label_noise', text_format,
                     'fix_preparation_pipeline'),
@@ -64,29 +64,29 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
                     'smoothing_pipeline')]
 
     add_param_specs = [
-        ParameterSpec('component_threshold', 20),
-        ParameterSpec('motion_reg', True),
-        ParameterSpec('highpass', 0.01),
-        ParameterSpec('brain_thresh_percent', 5),
-        ParameterSpec('MNI_template', op.join(atlas_path,
+        ParamSpec('component_threshold', 20),
+        ParamSpec('motion_reg', True),
+        ParamSpec('highpass', 0.01),
+        ParamSpec('brain_thresh_percent', 5),
+        ParamSpec('MNI_template', op.join(atlas_path,
                                               'MNI152_T1_2mm.nii.gz')),
-        ParameterSpec('MNI_template_mask', op.join(
+        ParamSpec('MNI_template_mask', op.join(
             atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
         SwitchSpec('linear_reg_method', 'ants',
                    ('flirt', 'spm', 'ants', 'epireg')),
-        ParameterSpec('group_ica_components', 15)]
+        ParamSpec('group_ica_components', 15)]
 
-    primary_bids_selector = BidsSelector(
+    primary_bids_selector = BidsInput(
         spec_name='magnitude', type='bold', format=niftix_gz_format)
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='field_map_phase',
                                primary=primary_bids_selector,
                                association='phasediff',
                                format=nifti_gz_format,
                                drop_if_missing=True),
-                           BidsAssociatedSelector(
+                           BidsAssocInput(
                                spec_name='field_map_mag',
                                primary=primary_bids_selector,
                                association='phasediff',
@@ -542,7 +542,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(FilesetSelector('t1_primary', t1, dicom_format,
+    inputs.append(FilesetInput('t1_primary', t1, dicom_format,
                                   is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
@@ -564,23 +564,23 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                        for i in range(epi_number))
 
     for i in range(epi_number):
-        inputs.append(FilesetSelector(
+        inputs.append(FilesetInput(
             'epi_{}_primary'.format(i), epis, dicom_format, order=i,
             is_regex=True))
-#     inputs.extend(FilesetSelector(
+#     inputs.extend(FilesetInput(
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
         parameter_specs.append(
-            ParameterSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
+            ParamSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
-        inputs.extend(FilesetSelector(
+        inputs.extend(FilesetInput(
             'epi_{}_field_map_mag'.format(i), fm_mag, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE}, is_regex=True,
             order=0)
             for i in range(epi_number))
-        inputs.extend(FilesetSelector(
+        inputs.extend(FilesetInput(
             'epi_{}_field_map_phase'.format(i), fm_phase, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE}, is_regex=True,
             order=0)

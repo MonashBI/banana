@@ -7,11 +7,11 @@ from nipype.interfaces import fsl, ants
 from arcana.utils.interfaces import Merge
 from banana.file_format import (
     nifti_gz_format, zip_format, STD_IMAGE_FORMATS, directory_format)
-from arcana.data import FilesetSpec, AcquiredFilesetSpec
+from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.utils.interfaces import JoinPath
 from .base import MriStudy
 from arcana.study.base import StudyMetaClass
-from arcana.study import ParameterSpec, SwitchSpec
+from arcana.study import ParamSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 
 
@@ -20,12 +20,12 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
-        AcquiredFilesetSpec(
+        FilesetInputSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
             desc=("A coregistered T2 image to use in freesurfer to help "
                   "distinguish the peel surface")),
         # Templates
-        AcquiredFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
+        FilesetInputSpec('suit_mask', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalAtlas('SUIT'))]
 
@@ -34,13 +34,13 @@ class T1Study(MriStudy, metaclass=StudyMetaClass):
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
-        ParameterSpec('bet_f_threshold', 0.1),
-        ParameterSpec('bet_g_threshold', 0.0)]
+        ParamSpec('bet_f_threshold', 0.1),
+        ParamSpec('bet_g_threshold', 0.0)]
 #         SwitchSpec('bet_method', 'optibet',
 #                    choices=MriStudy.parameter_spec('bet_method').choices),
 #         SwitchSpec('bet_robust', True),
-#         ParameterSpec('bet_f_threshold', 0.57),
-#         ParameterSpec('bet_g_threshold', -0.1)]
+#         ParamSpec('bet_f_threshold', 0.57),
+#         ParamSpec('bet_g_threshold', -0.1)]
 
     def freesurfer_pipeline(self, **name_maps):
         """
