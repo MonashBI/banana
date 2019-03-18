@@ -375,16 +375,16 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     'group_melodic_pipeline')]
 
     @classmethod
-    def fmri_sub_studies(cls):
+    def fmri_substudies(cls):
         # Detect fMRI sub-studies
-        fmri_sub_studies = []
-        for sub_study_spec in cls.sub_study_specs():
+        fmri_substudies = []
+        for substudy_spec in cls.substudy_specs():
             try:
-                cls.data_spec(sub_study_spec.inverse_map('fix_dir'))
+                cls.data_spec(substudy_spec.inverse_map('fix_dir'))
             except ArcanaNameError:
                 continue  # Sub study is not a Fmri study
             else:
-                fmri_sub_studies.append(sub_study_spec.name)
+                fmri_substudies.append(substudy_spec.name)
 
     def fix_training_pipeline(self, **name_maps):
 
@@ -396,15 +396,15 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             name_maps=name_maps)
 
-        num_fix_dirs = len(self.fmri_sub_studies())
+        num_fix_dirs = len(self.fmri_substudies())
         merge_fix_dirs = pipeline.add(
             'merge_fix_dirs',
             NiPypeMerge(num_fix_dirs))
         merge_label_files = pipeline.add(
             'merge_label_files',
             NiPypeMerge(num_fix_dirs))
-        for i, sub_study_name in enumerate(self.fmri_sub_studies(), start=1):
-            spec = self.sub_study_spec(sub_study_name)
+        for i, substudy_name in enumerate(self.fmri_substudies(), start=1):
+            spec = self.substudy_spec(substudy_name)
             pipeline.connect_input(
                 spec.inverse_map('fix_dir'), merge_fix_dirs, 'in{}'.format(i),
                 directory_format)
@@ -465,9 +465,9 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         merge_inputs = pipeline.add(
             'merge_inputs',
-            NiPypeMerge(len(self.fmri_sub_studies())))
-        for i, sub_study_name in enumerate(self.fmri_sub_studies(), start=1):
-            spec = self.sub_study_spec(sub_study_name)
+            NiPypeMerge(len(self.fmri_substudies())))
+        for i, substudy_name in enumerate(self.fmri_substudies(), start=1):
+            spec = self.substudy_spec(substudy_name)
             pipeline.connect_input(
                 spec.inverse_map('smoothed_ts'),
                 merge_inputs, 'in{}'.format(i), nifti_gz_format)
@@ -592,7 +592,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
         output_files.extend('epi_{}_fix_dir'.format(i)
                             for i in range(epi_number))
 
-    dct['add_sub_study_specs'] = study_specs
+    dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['add_param_specs'] = parameter_specs
     dct['__metaclass__'] = MultiStudyMetaClass

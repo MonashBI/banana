@@ -53,7 +53,7 @@ template_path = os.path.abspath(
 
 class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
-    add_sub_study_specs = [
+    add_substudy_specs = [
         SubStudySpec('pet_mc', PetStudy, {
             'pet_data_dir': 'pet_data_dir',
             'pet_data_reconstructed': 'pet_recon_dir',
@@ -161,7 +161,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         start_time_in = {}
         real_duration_in = {}
         merge_index = 1
-        for spec in self.sub_study_specs():
+        for spec in self.substudy_specs():
             try:
                 spec.map('motion_mats')
             except ArcanaNameError:
@@ -919,7 +919,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         raise Exception('At least one scan, other than the reference, must be '
                         'provided!')
 
-    dct['add_sub_study_specs'] = study_specs
+    dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_parameter_specs'] = parameter_specs
@@ -1077,7 +1077,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         raise Exception('At least one scan, other than the reference, must be '
                         'provided!')
 
-    dct['add_sub_study_specs'] = study_specs
+    dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     dct['add_param_specs'] = parameter_specs

@@ -11,7 +11,7 @@ from arcana.study import (  # @IgnorePep8
 
 class TestCoregStudy(MultiStudy, metaclass=MultiStudyMetaClass):
 
-    add_sub_study_specs = [
+    add_substudy_specs = [
         SubStudySpec('ref', MriStudy),
         SubStudySpec('tocoreg', MriStudy,
                      {'ref_brain': 'coreg_ref'})]

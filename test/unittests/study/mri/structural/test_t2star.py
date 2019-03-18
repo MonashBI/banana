@@ -20,7 +20,7 @@ double_echo_dir = op.join(test_data, 'double-echo')
 
 class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
 
-    add_sub_study_specs = [
+    add_substudy_specs = [
         SubStudySpec(
             't1', T1Study),
         SubStudySpec(

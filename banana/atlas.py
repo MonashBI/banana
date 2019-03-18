@@ -116,17 +116,17 @@ class FslAtlas(BaseAtlas):
             pass
         return op.join(atlas_dir, full_atlas_name + '.nii.gz')
 
-    def translate(self, sub_study_spec):
+    def translate(self, substudy_spec):
         """
         Translate resolution parameter name if used to namespace of multi-study
 
         Parameters
         ----------
-        sub_study_spec : SubStudySpec
+        substudy_spec : SubStudySpec
             The sub-study that the spec belongs to
         """
         if isinstance(self._resolution, str):
-            self._resolution = sub_study_spec.map(self._resolution)
+            self._resolution = substudy_spec.map(self._resolution)
 
     def __eq__(self, other):
         return (
