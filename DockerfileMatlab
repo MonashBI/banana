@@ -1,0 +1,23 @@
+FROM banana:latest
+MAINTAINER Tom Close <tom.g.close@gmail.com>
+
+
+ENV MCR_VER R2018b
+ENV CIFTI_VER 2016-04-16
+ENV GIFT_VER 4.0.b
+ENV STI_VER 2.2
+
+RUN mkdir /packages/mcr/
+    mkdir /opt/mcr && \
+    cd /mcr-install && \
+    wget http://www.mathworks.com/supportfiles/downloads/$MCR_VER/deployment_files/$MCR_VER/installers/glnxa64/MCR_R2015b_glnxa64_installer.zip && \
+    cd /mcr-install && \
+    unzip -q MCR_R2015b_glnxa64_installer.zip && \
+    ./install -destinationFolder /opt/mcr -agreeToLicense yes -mode silent && \
+    cd / && \
+    rm -rf mcr-install
+
+
+# Configure environment variables for MCR
+ENV LD_LIBRARY_PATH /opt/mcr/v90/runtime/glnxa64:/opt/mcr/v90/bin/glnxa64:/opt/mcr/v90/sys/os/glnxa64
+ENV XAPPLRESDIR /opt/mcr/v90/X11/app-defaults
