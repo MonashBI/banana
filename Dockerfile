@@ -1,11 +1,11 @@
 FROM ubuntu:bionic
 MAINTAINER Tom Close <tom.g.close@gmail.com>
 
+ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update
 RUN apt-get install -y \
 	automake \
 	build-essential \
-	bzip2-dev \
 	cmake \
 	curl \
 	g++ \
@@ -31,7 +31,6 @@ RUN apt-get install -y \
 	tcl-dev \
 	unzip \
 	vim \
-	vtk \
 	vtk7 \
 	wget \
 	xorg \
@@ -89,18 +88,19 @@ WORKDIR /packages/dcm2niix/src
 RUN git checkout $DCM2NIIX_VER
 RUN mkdir /packages/dcm2niix/build
 WORKDIR /packages/dcm2niix/build
-RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/packages/dcm2niix/$DCM2NIIX_VER ..
+RUN cmake -DCMAKE_INSTALL_PREFIX:PATH=/packages/dcm2niix/$DCM2NIIX_VER ../src
 RUN make install
-
+RUN rm -r /packages/dcm2niix/src /packages/dcm2niix/build
+ 
 # Create dcm2niix modulefile
 RUN mkdir -p /modules/dcm2niix
-RUN printf  "#%%Module1.0 
-	proc ModulesHelp { } {
-	    global dotversion
-	    puts stderr \"\tDcm2niix $DCM2NIIX_VER\"
-	}
-	module-whatis \"Dcm2niix $DCM2NIIX_VER\"
-	conflict dcm2niix
+RUN printf  "#%%Module1.0\n\
+	proc ModulesHelp { } {\n\
+	    global dotversion\n\
+	    puts stderr \"\tDcm2niix $DCM2NIIX_VER\"\n\
+	}\n\
+	module-whatis \"Dcm2niix $DCM2NIIX_VER\"\n\
+	conflict dcm2niix\n\
 	prepend-path PATH /packages/dcm2niix/$DCM2NIIX_VER/bin" >> /modules/dcm2niix/$DCM2NIIX_VER
 RUN echo 
 
@@ -117,18 +117,17 @@ RUN ./build
 
 # Create modulefile
 RUN mkdir -p /modules/mrtrix
-RUN printf "#%Module1.0
-    proc ModulesHelp { } {
-    global dotversion
-        puts stderr "\tMRtrix $MRTRIX_VER"
-    }
-
-    module-whatis "MRtrix $MRTRIX_VER"
-    conflict mrtrix
-    prepend-path PATH /environment/packages/mrtrix/$MRTRIX_VER/bin
-    prepend-path PATH /environment/packages/mrtrix/$MRTRIX_VER/scripts
+RUN printf "#%Module1.0\n\
+    proc ModulesHelp { } {\n\
+    global dotversion\n\
+        puts stderr "\tMRtrix $MRTRIX_VER"\n\
+    }\n\
+    module-whatis "MRtrix $MRTRIX_VER"\n\
+    conflict mrtrix\n\
+    prepend-path PATH /environment/packages/mrtrix/$MRTRIX_VER/bin\n\
+    prepend-path PATH /environment/packages/mrtrix/$MRTRIX_VER/scripts\n\
     prepend-path LD_LIBRARY_PATH /environment/packages/mrtrix/$MRTRIX_VER/lib" >> /modules/mrtrix/$MRTRIX_VER
 
 # Install Banana
-ENV BUILT_AT 2019-04-02-16:30
-RUN pip3 install banana
+# ENV BUILT_AT 2019-04-02-16:30
+# RUN pip3 install banana
