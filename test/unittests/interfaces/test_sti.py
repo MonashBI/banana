@@ -2,7 +2,7 @@ import os.path as op
 from arcana.utils.testing import BaseTestCase
 import tempfile
 from nipype.pipeline.engine import Node
-from banana.interfaces.sti import MRPhaseUnwrap
+from banana.interfaces.sti import UnwrapPhase
 # from banana.requirement import sti_req
 
 
@@ -15,7 +15,7 @@ class TestMRCalcInterface(BaseTestCase):
         with open(in_file, 'w') as f:
             f.write('test')
         out_file = op.join(tmp_dir, 'out_file.nii.gz')
-        unwrap = Node(MRPhaseUnwrap(), name='unwrap')
+        unwrap = Node(UnwrapPhase(), name='unwrap')
         unwrap.inputs.in_file = in_file
         unwrap.inputs.voxelsize = [2.0, 2.0, 2.0]
 #         unwrap.inputs.out_file = out_file
