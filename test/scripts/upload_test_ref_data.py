@@ -32,8 +32,10 @@ parser.add_argument('--skip', '-s', nargs='+', default=[],
                     help="Spec names to skip in the generation process")
 parser.add_argument('--reprocess', action='store_true', default=False,
                     help="Whether to reprocess the generated datasets")
-parser.add_argument('--ignore_delete_errors', default=False,
-                    action='store_true', help="Ignore errors deleting session")
+parser.add_argument('--overwrite', default=False,
+                    action='store_true', help="Overwrite existing data")
+parser.add_argument('--repo_depth', type=int, default=0,
+                    help="The depth of the input repository")
 args = parser.parse_args()
 
 if args.work_dir is None:
@@ -64,7 +66,7 @@ if class_name.endswith('Study'):
 else:
     study_name = class_name
 
-ref_repo = BasicRepo(args.in_dir, depth=0)
+ref_repo = BasicRepo(args.in_dir, depth=args.repo_depth)
 
 in_paths = []
 inputs = []
@@ -111,13 +113,16 @@ for spec in study.data_specs():
         study.data(spec.name)
 
 # Clear out existing data from project
-with xnat.connect(args.server) as xlogin:
-    for xsubject in xlogin.projects[args.project_id].subjects.values():
-        try:
+if args.overwrite:
+    with xnat.connect(args.server) as xlogin:
+        for xsubject in xlogin.projects[args.project_id].subjects.values():
+            for xsession in xsubject.experiments.values():
+                for xscan in xsession.scans.values():
+                    for xresource in xscan.resources.values():
+                        xresource.delete()
+                    xscan.delete()
+                xsession.delete()
             xsubject.delete()
-        except XNATResponseError:
-            if not args.ignore_delete_errors:
-                raise
 
 # Upload data to repository
 out_repo = XnatRepo(args.server, project_id=args.project_id,
