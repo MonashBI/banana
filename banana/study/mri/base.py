@@ -2,7 +2,7 @@ from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
 from banana.citation import spm_cite
 from banana.file_format import (
-    nifti_format, motion_mats_format, directory_format, nifti_gz_format,
+    nifti_format, motion_mats_format, nifti_gz_format,
     multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, FieldSpec, FilesetInputSpec
 from banana.study import Study, StudyMetaClass
