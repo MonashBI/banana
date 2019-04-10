@@ -52,6 +52,7 @@ class PipelineTester(TestCase):
     """
 
     TEMPDIR_NAME_LEN = 10
+
     parameters = {}
 
     def setUp(self):
@@ -156,3 +157,13 @@ class PipelineTester(TestCase):
         return list(chain(
             self.pipeline_test(p) for p in self.all_pipelines
             if p not in skip))
+
+    @classmethod
+    def test_data_description(cls, study_class, parameters):
+        return (
+            'Test data for {} Banana class with the following non-default '
+            'parameters:\n{}'.format(
+                study_class.__name__,
+                '\n'.join('{}={}'.format(k, v)
+                          for k, v in parameters.items())))
+

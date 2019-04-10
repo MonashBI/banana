@@ -17,7 +17,7 @@ from arcana.exceptions import (
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
-from nipype.interfaces.utility import Split, Merge
+from nipype.interfaces.utility import Merge
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format
 import logging
@@ -100,7 +100,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'coregister_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_report', gif_format,
                     'coregister_to_atlas_pipeline'),
-        FilesetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline'),
         FilesetSpec('dcm_info', text_format,
                     'header_extraction_pipeline',
                     desc=("Extracts ")),
@@ -745,46 +744,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'coreg_to_atlas_report': ('report', gif_format)},
             wall_time=1,
             requirements=[fsl_req.v('5.0.8')])
-
-        return pipeline
-
-    def segmentation_pipeline(self, img_type=2, **name_maps):
-
-        pipeline = self.new_pipeline(
-            name='FAST_segmentation',
-            name_maps=name_maps,
-            desc="White matter segmentation of the reference image",
-            citations=[fsl_cite])
-
-        fast = pipeline.add(
-            'fast',
-            fsl.FAST(
-                img_type=img_type,
-                segments=True,
-                out_basename='Reference_segmentation'),
-            inputs={
-                'in_files': ('brain', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.9')])
-
-        # Determine output field of split to use
-        if img_type == 1:
-            split_output = 'out3'
-        elif img_type == 2:
-            split_output = 'out2'
-        else:
-            raise ArcanaUsageError(
-                "'img_type' parameter can either be 1 or 2 (not {})"
-                .format(img_type))
-
-        pipeline.add(
-            'split',
-            Split(
-                splits=[1, 1, 1],
-                squeeze=True),
-            inputs={
-                'inlist': (fast, 'tissue_class_files')},
-            outputs={
-                'wm_seg': (split_output, nifti_gz_format)})
 
         return pipeline
 

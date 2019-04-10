@@ -1,28 +1,28 @@
 #!/usr/bin/env python3
 import os
 import os.path as op
-import shutil
+from copy import copy
 import json
+import xnat
 from argparse import ArgumentParser
-from arcana.repository import BasicRepo
+from arcana.repository import BasicRepo, XnatRepo
 from arcana.processor import SingleProc
 from arcana.data import FilesetInput, FieldInput, Field, Fileset
 from importlib import import_module
 import tempfile
 from arcana.exceptions import ArcanaNameError
+from xnat.exceptions import XNATResponseError
 import banana.file_format  # @UnusedImport
-
-STUDY_NAME = 'DERIVED'
 
 parser = ArgumentParser()
 parser.add_argument('study_class',
                     help="The full path to the study class to test")
 parser.add_argument('in_dir', help=("The path to the directory that the input "
                                     "data"))
-parser.add_argument('--project_prefix', default='BANANA',
-                    help=("Prefix of the project ID, remaining is built from "
+parser.add_argument('project_id',
+                    help=("The project ID, remaining is built from "
                           "the study class name"))
-parser.add_argument('--server', default='mbi-xnat.erc.monash.edu.au',
+parser.add_argument('--server', default='https://mbi-xnat.erc.monash.edu.au',
                     help="The server to upload the reference data to")
 parser.add_argument('--work_dir', default=None, help="The work directory")
 parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
@@ -32,6 +32,8 @@ parser.add_argument('--skip', '-s', nargs='+', default=[],
                     help="Spec names to skip in the generation process")
 parser.add_argument('--reprocess', action='store_true', default=False,
                     help="Whether to reprocess the generated datasets")
+parser.add_argument('--ignore_delete_errors', default=False,
+                    action='store_true', help="Ignore errors deleting session")
 args = parser.parse_args()
 
 if args.work_dir is None:
@@ -57,12 +59,17 @@ for name, value in args.parameter:
 module = import_module(module_name)
 study_class = getattr(module, class_name)
 
+if class_name.endswith('Study'):
+    study_name = class_name[:-len('Study')]
+else:
+    study_name = class_name
+
 ref_repo = BasicRepo(args.in_dir, depth=0)
 
 in_paths = []
 inputs = []
 for fname in os.listdir(args.in_dir):
-    if fname == STUDY_NAME:
+    if fname == study_name:
         continue
     path = op.join(ref_repo.root_dir, fname)
     in_paths.append(path)
@@ -92,7 +99,7 @@ for fname in os.listdir(args.in_dir):
         inputs.append(selector)
 
 study = study_class(
-    STUDY_NAME,
+    study_name,
     repository=ref_repo,
     processor=SingleProc(work_dir, reprocess=args.reprocess),
     inputs=inputs,
@@ -103,12 +110,34 @@ for spec in study.data_specs():
     if spec.name not in args.skip:
         study.data(spec.name)
 
-shutil.move(op.join(args.in_dir, STUDY_NAME), args.out_dir)
+# Clear out existing data from project
+with xnat.connect(args.server) as xlogin:
+    for xsubject in xlogin.projects[args.project_id].subjects.values():
+        try:
+            xsubject.delete()
+        except XNATResponseError:
+            if not args.ignore_delete_errors:
+                raise
 
-# Copy inputs to output reference dir
-for path in in_paths:
-    out_path = op.join(args.out_dir, op.basename(path))
-    if op.isdir(path):
-        shutil.copytree(path, out_path)
-    else:
-        shutil.copy(path, out_path)
+# Upload data to repository
+out_repo = XnatRepo(args.server, project_id=args.project_id,
+                    cache_dir=op.join(work_dir, 'xnat-cache'))
+for spec in study.data_specs():
+    if spec.name not in args.skip:
+        for item in study.data(spec.name):
+            if not item.exists:
+                continue
+            if item.is_fileset:
+                item_cpy = Fileset(
+                    name=item.name, format=item.format,
+                    frequency=item.frequency, path=item.path,
+                    side_cars=copy(item.side_cars),
+                    subject_id=item.subject_id, visit_id=item.visit_id,
+                    repository=out_repo, exists=True)
+            else:
+                item_cpy = Field(
+                    name=item.name, value=item.value, dtype=item.dtype,
+                    frequency=item.frequency, array=item.array,
+                    subject_id=item.subject_id, visit_id=item.visit_id,
+                    repository=out_repo, exists=True)
+            item_cpy.put()

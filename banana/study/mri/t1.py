@@ -9,13 +9,13 @@ from banana.file_format import (
     nifti_gz_format, zip_format, STD_IMAGE_FORMATS, directory_format)
 from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.utils.interfaces import JoinPath
-from .base import MriStudy
+from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from banana.atlas import LocalAtlas
 
 
-class T1Study(MriStudy, metaclass=StudyMetaClass):
+class T1Study(T2Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
