@@ -11,7 +11,6 @@ from arcana.data import FilesetInput, FieldInput, Field, Fileset
 from importlib import import_module
 import tempfile
 from arcana.exceptions import ArcanaNameError
-from xnat.exceptions import XNATResponseError
 import banana.file_format  # @UnusedImport
 
 parser = ArgumentParser()

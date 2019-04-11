@@ -12,8 +12,7 @@ from banana.file_format import (
 from nipype.interfaces.utility import IdentityInterface
 from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req, c3d_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
-from arcana.exceptions import (
-    ArcanaUsageError, ArcanaOutputNotProducedException)
+from arcana.exceptions import ArcanaOutputNotProducedException
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
@@ -30,6 +29,7 @@ from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
+from banana.exceptions import BananaUsageError
 from banana.atlas import FslAtlas
 
 logger = logging.getLogger('arcana')
@@ -63,9 +63,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
-                    'preprocess_channels'),
+                    'preprocess_channels_pipeline'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
-                    'preprocess_channels'),
+                    'preprocess_channels_pipeline'),
         FilesetSpec('preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Performs basic preprocessing, such as realigning "
                           "image axis to a standard rotation")),
@@ -182,7 +182,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
-    def preprocess_channels(self, **name_maps):
+    def preprocess_channels_pipeline(self, **name_maps):
         pipeline = self.new_pipeline(
             'preprocess_channels',
             name_maps=name_maps,
@@ -355,7 +355,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                             'brain_mask': 'coreg_brain_mask'},
                 name_maps=name_maps)
         else:
-            raise ArcanaUsageError(
+            raise BananaUsageError(
                 "Either 'coreg_ref' or 'coreg_ref_brain' needs to be provided "
                 "in order to derive coreg_brain or coreg_brain_mask")
         return pipeline
@@ -477,14 +477,25 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc="Registers a MR scan against a reference image",
             citations=[fsl_cite])
 
+        if self.provided('coreg_ref'):
+            in_file = 'preproc'
+            reference = 'coreg_ref'
+        elif self.provided('coreg_ref_brain'):
+            in_file = 'brain'
+            reference = 'coreg_ref_brain'
+        else:
+            raise BananaUsageError(
+                "'coreg_ref' or 'coreg_ref_brain' need to be provided to "
+                "study in order to run qform_transform")
+
         pipeline.add(
             'flirt',
             FLIRT(
                 uses_qform=True,
                 apply_xfm=True),
             inputs={
-                'in_file': ('brain', nifti_gz_format),
-                'reference': ('coreg_ref_brain', nifti_gz_format)},
+                'in_file': (in_file, nifti_gz_format),
+                'reference': (reference, nifti_gz_format)},
             outputs={
                 'qformed': ('out_file', nifti_gz_format),
                 'qform_mat': ('out_matrix_file', text_matrix_format)},
@@ -862,7 +873,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'main_field_strength': ('B0', float),
                     'main_field_orient': ('H', float)})
         else:
-            raise ArcanaUsageError(
+            raise BananaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM or extended NIfTI format (provided {})"
                 .format(self.input(in_name).format))
