@@ -4,9 +4,8 @@ import logging
 import tempfile
 from itertools import chain
 from unittest import TestCase
-from arcana.data import FilesetInput, FieldInput
-from arcana.repository import BasicRepo
-from arcana.exceptions import ArcanaInputMissingMatchError, ArcanaNameError
+from arcana import FilesetInput, FieldInput, BasicRepo, SingleProc
+from arcana.exceptions import ArcanaInputMissingMatchError
 from banana.exceptions import BananaTestSetupError
 
 
@@ -130,9 +129,9 @@ class PipelineTester(TestCase):
             test_criteria = {}
         # A study with all inputs provided to determine which inputs are needed
         # by the pipeline
-        pipeline = self.ref_study.pipeline(pipeline_getter)
+        ref_pipeline = self.ref_study.pipeline(pipeline_getter)
         inputs = []
-        for spec_name in chain(pipeline.input_names, add_inputs):
+        for spec_name in chain(ref_pipeline.input_names, add_inputs):
             try:
                 inputs.append(self.inputs[spec_name])
             except KeyError:
@@ -141,14 +140,14 @@ class PipelineTester(TestCase):
         output_study = self.study_class(
             pipeline_getter,
             repository=self.output_repo,
-            processor=self.work_dir,
+            processor=SingleProc(self.work_dir, reprocess='force'),
             inputs=inputs,
             parameters=self.parameters,
             subject_ids=self.ref_study.subject_ids,
             visit_ids=self.ref_study.visit_ids,
             enforce_inputs=False,
             fill_tree=True)
-        for spec_name in pipeline.output_names:
+        for spec_name in ref_pipeline.output_names:
             for ref, test in zip(self.ref_study.data(spec_name),
                                  output_study.data(spec_name)):
                 if ref.is_fileset:
