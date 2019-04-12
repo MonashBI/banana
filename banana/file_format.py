@@ -75,6 +75,8 @@ class ImageFormat(FileFormat, metaclass=ABCMeta):
             The root-mean-square tolerance that is acceptable between the array
             data for the images to be considered equal
         """
+        if other_fileset.format != self:
+            return False
         if self.headers_diff(fileset, other_fileset, **kwargs):
             return False
         if rms_tol:
