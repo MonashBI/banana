@@ -16,12 +16,15 @@ import banana.file_format  # @UnusedImport
 parser = ArgumentParser()
 parser.add_argument('study_class',
                     help="The full path to the study class to test")
-parser.add_argument('in_dir', help=("The path to the directory that the input "
-                                    "data"))
-parser.add_argument('project_id',
-                    help=("The project ID, remaining is built from "
-                          "the study class name"))
-parser.add_argument('--server', default='https://mbi-xnat.erc.monash.edu.au',
+parser.add_argument('in_repo', help=("The path to repository that houses the "
+                                     "input data"))
+parser.add_argument('out_repo',
+                    help=("If the 'xnat_server' argument is provided then out "
+                          "is interpreted as the project ID to use the XNAT "
+                          "server (the project must exist already). Otherwise "
+                          "it is interpreted as the path to a basic "
+                          "repository"))
+parser.add_argument('--xnat_server', default=None,
                     help="The server to upload the reference data to")
 parser.add_argument('--work_dir', default=None, help="The work directory")
 parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
@@ -33,7 +36,7 @@ parser.add_argument('--reprocess', action='store_true', default=False,
                     help="Whether to reprocess the generated datasets")
 parser.add_argument('--overwrite', default=False,
                     action='store_true', help="Overwrite existing data")
-parser.add_argument('--repo_depth', type=int, default=0,
+parser.add_argument('--in_repo_depth', type=int, default=0,
                     help="The depth of the input repository")
 args = parser.parse_args()
 
@@ -65,7 +68,7 @@ if class_name.endswith('Study'):
 else:
     study_name = class_name
 
-ref_repo = BasicRepo(args.in_dir, depth=args.repo_depth)
+ref_repo = BasicRepo(args.in_repo, depth=args.in_repo_depth)
 
 in_paths = []
 inputs = []
@@ -123,9 +126,15 @@ if args.overwrite:
                 xsession.delete()
             xsubject.delete()
 
+
+# Get output repository to write the data to
+if args.xnat_server is not None:
+    out_repo = XnatRepo(project_id=args.out_repo, server=args.xnat_server,
+                        cache_dir=op.join(work_dir, 'xnat-cache'))
+else:
+    out_repo = BasicRepo(args.out_repo)
+
 # Upload data to repository
-out_repo = XnatRepo(args.server, project_id=args.project_id,
-                    cache_dir=op.join(work_dir, 'xnat-cache'))
 for spec in study.data_specs():
     if spec.name not in args.skip:
         for item in study.data(spec.name):
