@@ -91,15 +91,15 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('coreg_brain_matrix', text_matrix_format,
                     'coreg_brain_pipeline'),
         FilesetSpec('coreg_to_atlas', nifti_gz_format,
-                    'coregister_to_atlas_pipeline'),
+                    'coreg_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format,
-                    'coregister_to_atlas_pipeline'),
+                    'coreg_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_mat', text_matrix_format,
-                    'coregister_to_atlas_pipeline'),
+                    'coreg_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_warp', nifti_gz_format,
-                    'coregister_to_atlas_pipeline'),
+                    'coreg_to_atlas_pipeline'),
         FilesetSpec('coreg_to_atlas_report', gif_format,
-                    'coregister_to_atlas_pipeline'),
+                    'coreg_to_atlas_pipeline'),
         FilesetSpec('motion_mats', motion_mats_format, 'motion_mat_pipeline'),
         FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
         FilesetSpec('qform_mat', text_matrix_format,
@@ -368,7 +368,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 "'coreg_ref_brain' is provided to {}".format(self))
         return pipeline
 
-    def coregister_to_atlas_pipeline(self, **name_maps):
+    def coreg_to_atlas_pipeline(self, **name_maps):
         if self.branch('atlas_coreg_tool', 'fnirt'):
             pipeline = self._fnirt_to_atlas_pipeline(**name_maps)
         elif self.branch('atlas_coreg_tool', 'ants'):
@@ -633,7 +633,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         atlas : Which atlas to use, can be one of 'mni_nl6'
         """
         pipeline = self.new_pipeline(
-            name='coregister_to_atlas',
+            name='coreg_to_atlas',
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
@@ -718,7 +718,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
     def _ants_to_atlas_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
-            name='coregister_to_atlas',
+            name='coreg_to_atlas',
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
