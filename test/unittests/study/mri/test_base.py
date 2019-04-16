@@ -32,7 +32,7 @@ class TestMriStudy(PipelineTester):
         self.run_pipeline_test('coreg_to_atlas_pipeline',
                                add_inputs=['coreg_ref'],
                                test_criteria={
-                                   'coreg_to_atlas': {'rms_tol': 15000}})
+                                   'coreg_to_atlas': {'rms_tol': 20000}})
 
     def test_qform_transform_pipeline(self):
         self.run_pipeline_test('qform_transform_pipeline',

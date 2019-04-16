@@ -30,7 +30,7 @@ from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.exceptions import BananaUsageError
-from banana.atlas import FslAtlas
+from banana.template import FslTemplate
 
 logger = logging.getLogger('arcana')
 
@@ -90,16 +90,16 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'coreg_matrix_pipeline'),
         FilesetSpec('coreg_brain_matrix', text_matrix_format,
                     'coreg_brain_pipeline'),
-        FilesetSpec('coreg_to_atlas', nifti_gz_format,
-                    'coreg_to_atlas_pipeline'),
-        FilesetSpec('coreg_to_atlas_coeff', nifti_gz_format,
-                    'coreg_to_atlas_pipeline'),
-        FilesetSpec('coreg_to_atlas_mat', text_matrix_format,
-                    'coreg_to_atlas_pipeline'),
-        FilesetSpec('coreg_to_atlas_warp', nifti_gz_format,
-                    'coreg_to_atlas_pipeline'),
-        FilesetSpec('coreg_to_atlas_report', gif_format,
-                    'coreg_to_atlas_pipeline'),
+        FilesetSpec('coreg_to_tmpl', nifti_gz_format,
+                    'coreg_to_tmpl_pipeline'),
+        FilesetSpec('coreg_to_tmpl_fsl_coeff', nifti_gz_format,
+                    'coreg_to_tmpl_pipeline'),
+        FilesetSpec('coreg_to_tmpl_fsl_report', gif_format,
+                    'coreg_to_tmpl_pipeline'),
+        FilesetSpec('coreg_to_tmpl_ants_mat', text_matrix_format,
+                    'coreg_to_tmpl_pipeline'),
+        FilesetSpec('coreg_to_tmpl_ants_warp', nifti_gz_format,
+                    'coreg_to_tmpl_pipeline'),
         FilesetSpec('motion_mats', motion_mats_format, 'motion_mat_pipeline'),
         FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
         FilesetSpec('qform_mat', text_matrix_format,
@@ -118,18 +118,18 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
-        FilesetInputSpec('atlas', STD_IMAGE_FORMATS, frequency='per_study',
-                            default=FslAtlas('MNI152_T1',
-                                             resolution='atlas_resolution')),
-        FilesetInputSpec('atlas_brain', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=FslAtlas('MNI152_T1',
-                                             resolution='atlas_resolution',
+        FilesetInputSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
+                         default=FslTemplate(
+                             'MNI152_T1', resolution='template_resolution')),
+        FilesetInputSpec('template_brain', STD_IMAGE_FORMATS,
+                         frequency='per_study',
+                         default=FslTemplate('MNI152_T1',
+                                             resolution='template_resolution',
                                              dataset='brain')),
-        FilesetInputSpec('atlas_mask', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=FslAtlas('MNI152_T1',
-                                             resolution='atlas_resolution',
+        FilesetInputSpec('template_mask', STD_IMAGE_FORMATS,
+                         frequency='per_study',
+                         default=FslTemplate('MNI152_T1',
+                                             resolution='template_resolution',
                                              dataset='brain_mask'))]
 
     add_param_specs = [
@@ -146,8 +146,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ParamSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
-        SwitchSpec('atlas_coreg_tool', 'ants', ('fnirt', 'ants')),
-        ParamSpec('atlas_resolution', 2),  # choices=(0.5, 1, 2)),
+        SwitchSpec('template_coreg_tool', 'ants', ('fnirt', 'ants')),
+        ParamSpec('template_resolution', 2),  # choices=(0.5, 1, 2)),
         ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
@@ -368,13 +368,13 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 "'coreg_ref_brain' is provided to {}".format(self))
         return pipeline
 
-    def coreg_to_atlas_pipeline(self, **name_maps):
-        if self.branch('atlas_coreg_tool', 'fnirt'):
-            pipeline = self._fnirt_to_atlas_pipeline(**name_maps)
-        elif self.branch('atlas_coreg_tool', 'ants'):
-            pipeline = self._ants_to_atlas_pipeline(**name_maps)
+    def coreg_to_tmpl_pipeline(self, **name_maps):
+        if self.branch('template_coreg_tool', 'fnirt'):
+            pipeline = self._fnirt_to_tmpl_pipeline(**name_maps)
+        elif self.branch('template_coreg_tool', 'ants'):
+            pipeline = self._ants_to_tmpl_pipeline(**name_maps)
         else:
-            self.unhandled_branch('atlas_coreg_tool')
+            self.unhandled_branch('template_coreg_tool')
         return pipeline
 
     def _flirt_linear_coreg_pipeline(self, **name_maps):
@@ -549,7 +549,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 out_prefix='T12MNI',
                 num_threads=4),
             inputs={
-                'ref_file': ('atlas', nifti_gz_format),
+                'ref_file': ('template', nifti_gz_format),
                 'input_file': ('preproc', nifti_gz_format)},
             wall_time=25,
             requirements=[ants_req.v('2.0')])
@@ -575,7 +575,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 interpolation='NearestNeighbor',
                 input_image_type=3),
             inputs={
-                'input_image': ('atlas_mask', nifti_gz_format),
+                'input_image': ('template_mask', nifti_gz_format),
                 'reference_image': ('preproc', nifti_gz_format),
                 'transforms': (merge_trans, 'out'),
                 'invert_transform_flags': (trans_flags, 'out')},
@@ -623,17 +623,17 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return pipeline
 
     # @UnusedVariable @IgnorePep8
-    def _fnirt_to_atlas_pipeline(self, **name_maps):
+    def _fnirt_to_tmpl_pipeline(self, **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
         command
 
         Parameters
         ----------
-        atlas : Which atlas to use, can be one of 'mni_nl6'
+        template : Which template to use, can be one of 'mni_nl6'
         """
         pipeline = self.new_pipeline(
-            name='coreg_to_atlas',
+            name='coreg_to_tmpl',
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
@@ -673,7 +673,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 dof=12,
                 output_type='NIFTI_GZ'),
             inputs={
-                'reference': ('atlas_brain', nifti_gz_format),
+                'reference': ('template_brain', nifti_gz_format),
                 'in_file': (reorient_brain, 'out_file')},
             requirements=[fsl_req.v('5.0.8')],
             wall_time=5)
@@ -701,24 +701,25 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 apply_inmask=apply_mask,
                 apply_refmask=apply_mask),
             inputs={
-                'ref_file': ('atlas', nifti_gz_format),
-                'refmask': ('atlas_mask', nifti_gz_format),
+                'ref_file': ('template', nifti_gz_format),
+                'refmask': ('template_mask', nifti_gz_format),
                 'in_file': (reorient, 'out_file'),
                 'inmask_file': (reorient_mask, 'out_file'),
                 'affine_file': (flirt, 'out_matrix_file')},
             outputs={
-                'coreg_to_atlas': ('warped_file', nifti_gz_format),
-                'coreg_to_atlas_coeff': ('fieldcoeff_file', nifti_gz_format)},
+                'coreg_to_tmpl': ('warped_file', nifti_gz_format),
+                'coreg_to_tmpl_fsl_coeff': ('fieldcoeff_file',
+                                             nifti_gz_format)},
             requirements=[fsl_req.v('5.0.8')],
             wall_time=60)
         # Set registration parameters
         # TODO: Need to work out which parameters to use
         return pipeline
 
-    def _ants_to_atlas_pipeline(self, **name_maps):
+    def _ants_to_tmpl_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
-            name='coreg_to_atlas',
+            name='coreg_to_tmpl',
             name_maps=name_maps,
             desc=("Nonlinearly registers a MR scan to a standard space,"
                   "e.g. MNI-space"),
@@ -733,23 +734,23 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 num_threads=4),
             inputs={
                 'input_file': (self.brain_spec_name, nifti_gz_format),
-                'ref_file': ('atlas_brain', nifti_gz_format)},
+                'ref_file': ('template_brain', nifti_gz_format)},
             outputs={
-                'coreg_to_atlas': ('reg_file', nifti_gz_format),
-                'coreg_to_atlas_mat': ('regmat', text_matrix_format),
-                'coreg_to_atlas_warp': ('warp_file', nifti_gz_format)},
+                'coreg_to_tmpl': ('reg_file', nifti_gz_format),
+                'coreg_to_tmpl_ants_mat': ('regmat', text_matrix_format),
+                'coreg_to_tmpl_ants_warp': ('warp_file', nifti_gz_format)},
             wall_time=25,
             requirements=[ants_req.v('2.0')])
 
         pipeline.add(
             'slices',
             FSLSlices(
-                outname='coreg_to_atlas_report'),
+                outname='coreg_to_tmpl_report'),
             inputs={
-                'im1': ('atlas', nifti_gz_format),
+                'im1': ('template', nifti_gz_format),
                 'im2': (ants_reg, 'reg_file')},
             outputs={
-                'coreg_to_atlas_report': ('report', gif_format)},
+                'coreg_to_tmpl_fsl_report': ('report', gif_format)},
             wall_time=1,
             requirements=[fsl_req.v('5.0.8')])
 

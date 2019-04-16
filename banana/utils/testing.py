@@ -13,7 +13,7 @@ from arcana.exceptions import ArcanaNameError
 from arcana import (FilesetInput, FieldInput, BasicRepo, XnatRepo, SingleProc,
                     Field, Fileset)
 from arcana.exceptions import ArcanaInputMissingMatchError
-from banana.exceptions import BananaTestSetupError
+from banana.exceptions import BananaTestSetupError, BananaUsageError
 import banana.file_format  # @UnusedImport
 
 
@@ -167,18 +167,19 @@ class PipelineTester(TestCase):
                             "reference".format(spec_name, pipeline_getter,
                                                self.study_class))
                     except Exception:
-                        header_diff = test.headers_diff(ref)
-                        if header_diff:
-                            print("Headers don't match on {}"
-                                  .format(header_diff))
-                            print("Test header:\n{}".format(
-                                pformat(test.get_header())))
-                            print("Reference header:\n{}".format(
-                                pformat(ref.get_header())))
-                        else:
-                            print("Image RMS diff: {}"
-                                  .format(test.rms_diff(ref)))
-                            test.contents_equal(ref)
+                        if hasattr(test, 'headers_diff'):
+                            header_diff = test.headers_diff(ref)
+                            if header_diff:
+                                print("Headers don't match on {}"
+                                      .format(header_diff))
+                                print("Test header:\n{}".format(
+                                    pformat(test.get_header())))
+                                print("Reference header:\n{}".format(
+                                    pformat(ref.get_header())))
+                            else:
+                                print("Image RMS diff: {}"
+                                      .format(test.rms_diff(ref)))
+                                test.contents_equal(ref)
                         raise
                 else:
                     self.assertEqual(
@@ -190,8 +191,9 @@ class PipelineTester(TestCase):
 
     @classmethod
     def generate_test_data(cls, study_class, in_repo, out_repo,
-                           xnat_server=None, work_dir=None, parameters=(),
-                           skip=(), reprocess=False, repo_depth=0):
+                           in_server=None, out_server=None, work_dir=None,
+                           parameters=(), include=None, skip=(),
+                           reprocess=False, repo_depth=0):
         """
         Generates reference data for a pipeline tester unittests given a study
         class and set of parameters
@@ -199,7 +201,7 @@ class PipelineTester(TestCase):
         Parameters
         ----------
         study_class : type(Study)
-            The full path to the study class to test
+            The path to the study class to test, e.g. banana.study.MriStudy
         in_repo : str
             The path to repository that houses the input data
         out_repo : str
@@ -207,14 +209,20 @@ class PipelineTester(TestCase):
             is interpreted as the project ID to use the XNAT
             server (the project must exist already). Otherwise
             it is interpreted as the path to a basic repository
-        xnat_server : str
+        in_server : str | None
+            The server to download the input data from
+        out_server : str | None
             The server to upload the reference data to
         work_dir : str
             The work directory
         parameters : dict[str, *]
             Parameter to set when initialising the study
+        include : list[str] | None
+            Spec names to include in the output repository. If None all names
+            except those listed in 'skip' are included
         skip : list[str]
-            Spec names to skip in the generation process
+            Spec names to skip in the generation process. Only valid if
+            'include' is None
         reprocess : bool
             Whether to reprocess the generated datasets
         repo_depth : int
@@ -250,7 +258,13 @@ class PipelineTester(TestCase):
         else:
             study_name = class_name
 
-        ref_repo = BasicRepo(in_repo, depth=repo_depth)
+        # Get output repository to write the data to
+        if in_server is not None:
+            in_repo = XnatRepo(project_id=in_repo, server=in_server,
+                               cache_dir=op.join(work_dir, 'xnat-cache'))
+        else:
+            in_repo = BasicRepo(in_repo, depth=repo_depth)
+
         temp_repo = BasicRepo(op.join(work_dir, 'temp-repo'), depth=repo_depth)
 
         in_paths = []
@@ -258,7 +272,7 @@ class PipelineTester(TestCase):
         for fname in os.listdir(in_repo):
             if fname == study_name:
                 continue
-            path = op.join(ref_repo.root_dir, fname)
+            path = op.join(in_repo.root_dir, fname)
             in_paths.append(path)
             if fname == BasicRepo.FIELDS_FNAME:
                 with open(path) as f:
@@ -266,12 +280,12 @@ class PipelineTester(TestCase):
                 for name, value in field_data.items():
                     field = Field(name, value)
                     selector = FieldInput(field.name, field.name, field.dtype,
-                                          repository=ref_repo)
+                                          repository=in_repo)
                     inputs.append(selector)
             else:
                 fileset = Fileset.from_path(path)
                 selector = FilesetInput(fileset.basename, fileset.basename,
-                                        fileset.format, repository=ref_repo)
+                                        fileset.format, repository=in_repo)
                 try:
                     spec = study_class.data_spec(selector)
                 except ArcanaNameError:
@@ -295,14 +309,20 @@ class PipelineTester(TestCase):
             parameters=parameters,
             fill_tree=True)
 
+        if include is None:
+            include = [n for n in study.data_spec_names() if n not in skip]
+        elif skip:
+            raise BananaUsageError(
+                "Cannot provide both 'include' and 'skip' options to "
+                "PipelineTester.generate_test_data")
+
         # Generate all derived data
-        for spec in study.data_specs():
-            if spec.name not in skip:
-                study.data(spec.name)
+        for spec_name in include:
+            study.data(spec_name)
 
         # Get output repository to write the data to
-        if xnat_server is not None:
-            out_repo = XnatRepo(project_id=out_repo, server=xnat_server,
+        if out_server is not None:
+            out_repo = XnatRepo(project_id=out_repo, server=in_server,
                                 cache_dir=op.join(work_dir, 'xnat-cache'))
         else:
             out_repo = BasicRepo(out_repo, depth=repo_depth)
@@ -334,7 +354,8 @@ def gen_test_data_entry_point():
         description=("Generates reference data for a pipeline tester "
                      "unittests given a study class and set of parameters"))
     parser.add_argument('study_class',
-                        help="The full path to the study class to test")
+                        help=("The path to the study class to test, e.g. "
+                              "banana.study.MriStudy"))
     parser.add_argument('in_repo', help=("The path to repository that "
                                          "houses the input data"))
     parser.add_argument('out_repo',

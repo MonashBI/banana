@@ -3,12 +3,11 @@ import os.path as op
 from copy import copy
 import banana
 from banana.requirement import fsl_req
-from arcana.exceptions import (
-    ArcanaError, ArcanaNameError, ArcanaUsageError, ArcanaDesignError)
-from arcana import Fileset, FilesetCollection, MultiStudy
+from arcana.exceptions import ArcanaError
+from arcana import Fileset, FilesetCollection
 
 
-class BaseAtlas():
+class BaseTemplate():
 
     frequency = 'per_study'
 
@@ -66,7 +65,7 @@ class BaseAtlas():
         return self._name == other._name
 
 
-class FslAtlas(BaseAtlas):
+class FslTemplate(BaseTemplate):
     """
     Class to retrieve the path to an atlas shipped with a FSL installation
 
@@ -149,7 +148,7 @@ class FslAtlas(BaseAtlas):
             self._atlas_name, self.name, self.study)
 
 
-class LocalAtlas(BaseAtlas):
+class LocalTemplate(BaseTemplate):
     """
     Several atlases used in the composite-vein analysis in the T2* study,
     stored within the banana package.
