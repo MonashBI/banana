@@ -7,7 +7,7 @@ from arcana.exceptions import ArcanaError
 from arcana import Fileset, FilesetCollection
 
 
-class BaseReferenceFileset():
+class BaseReference():
 
     frequency = 'per_study'
 
@@ -67,7 +67,7 @@ class BaseReferenceFileset():
         return self._name == other._name
 
 
-class FslReferenceFileset(BaseReferenceFileset):
+class FslReference(BaseReference):
     """
     Class to retrieve the path to an atlas shipped with a FSL installation
 
@@ -150,7 +150,7 @@ class FslReferenceFileset(BaseReferenceFileset):
             self._atlas_name, self.name, self.study)
 
 
-class LocalReferenceFileset(BaseReferenceFileset):
+class LocalReference(BaseReference):
     """
     Several atlases used in the composite-vein analysis in the T2* study,
     stored within the banana package.
