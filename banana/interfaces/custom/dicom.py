@@ -230,10 +230,10 @@ class NiftixHeaderInfoExtraction(BaseInterface):
 
         outputs = self._outputs().get()
         if not isdefined(self.inputs.in_json):
-            side_car_path = split_extension(self.inputs.in_file)[0] + '.json'
+            aux_file_path = split_extension(self.inputs.in_file)[0] + '.json'
         else:
-            side_car_path = self.inputs.in_json
-        with open(side_car_path) as f:
+            aux_file_path = self.inputs.in_json
+        with open(aux_file_path) as f:
             dct = json.load(f)
         nifti_hdr = nib.load(self.inputs.in_file).get_header()
         # Get the orientation of the main magnetic field as a vector

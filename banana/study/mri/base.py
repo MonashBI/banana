@@ -30,7 +30,7 @@ from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.exceptions import BananaUsageError
-from banana.template import FslTemplate
+from banana.template import FslReferenceFileset
 
 logger = logging.getLogger('arcana')
 
@@ -119,16 +119,16 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
         FilesetInputSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
-                         default=FslTemplate(
+                         default=FslReferenceFileset(
                              'MNI152_T1', resolution='template_resolution')),
         FilesetInputSpec('template_brain', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=FslTemplate('MNI152_T1',
+                         default=FslReferenceFileset('MNI152_T1',
                                              resolution='template_resolution',
                                              dataset='brain')),
         FilesetInputSpec('template_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=FslTemplate('MNI152_T1',
+                         default=FslReferenceFileset('MNI152_T1',
                                              resolution='template_resolution',
                                              dataset='brain_mask'))]
 

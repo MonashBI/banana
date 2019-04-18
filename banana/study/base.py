@@ -5,6 +5,8 @@ from arcana.study import (
 
 # Extend Arcana Study class to support implicit BIDS selectors
 
+# TODO: need to extend for MultiStudy's too
+
 class Study(ArcanaStudy):
 
     def __init__(self, name, repository, processor, inputs=None,

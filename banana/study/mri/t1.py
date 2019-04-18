@@ -12,7 +12,7 @@ from arcana.utils.interfaces import JoinPath
 from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
-from banana.template import LocalTemplate
+from banana.template import LocalReferenceFileset
 
 
 class T1Study(T2Study, metaclass=StudyMetaClass):
@@ -27,7 +27,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         # Templates
         FilesetInputSpec('suit_mask', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=LocalTemplate('SUIT'))]
+                            default=LocalReferenceFileset('SUIT'))]
 
     add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',

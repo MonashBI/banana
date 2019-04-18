@@ -7,12 +7,13 @@ from arcana.exceptions import ArcanaError
 from arcana import Fileset, FilesetCollection
 
 
-class BaseTemplate():
+class BaseReferenceFileset():
 
     frequency = 'per_study'
 
-    def __init__(self, name=None):
+    def __init__(self, format, name=None):  # @ReservedAssignment
         self._name = name
+        self._format = format
         self._study = None
 
     def bind(self, study):
@@ -48,6 +49,7 @@ class BaseTemplate():
         return FilesetCollection(
             self.name,
             [Fileset.from_path(self.path, frequency=self.frequency)],
+            format=self._format,
             frequency=self.frequency)
 
     @property
@@ -65,13 +67,13 @@ class BaseTemplate():
         return self._name == other._name
 
 
-class FslTemplate(BaseTemplate):
+class FslReferenceFileset(BaseReferenceFileset):
     """
     Class to retrieve the path to an atlas shipped with a FSL installation
 
     Parameters
     ----------
-    name : str
+    atlas_name : str
         Name of atlas or family of atlases
     resolution : str | float
         The resolution of the atlas to use. Can either be a fixed floating
@@ -84,9 +86,9 @@ class FslTemplate(BaseTemplate):
         Relative path to atlas directory from FSL 'data' directory
     """
 
-    def __init__(self, atlas_name, name=None, resolution=1, dataset=None,
-                 sub_path=['standard']):
-        super().__init__(name)
+    def __init__(self, atlas_name, format, name=None, resolution=1,  # @ReservedAssignment @IgnorePep8
+                 dataset=None, sub_path=['standard']):
+        super().__init__(format, name)
         self._atlas_name = atlas_name
         self._resolution = resolution
         self._dataset = dataset
@@ -148,7 +150,7 @@ class FslTemplate(BaseTemplate):
             self._atlas_name, self.name, self.study)
 
 
-class LocalTemplate(BaseTemplate):
+class LocalReferenceFileset(BaseReferenceFileset):
     """
     Several atlases used in the composite-vein analysis in the T2* study,
     stored within the banana package.
@@ -162,8 +164,8 @@ class LocalTemplate(BaseTemplate):
 
     BASE_PATH = op.abspath(op.join(op.dirname(banana.__file__), 'atlases'))
 
-    def __init__(self, atlas_name, name=None):
-        super().__init__(name)
+    def __init__(self, atlas_name, format, name=None):  # @ReservedAssignment
+        super().__init__(format, name)
         self._atlas_name = atlas_name
 
     @property

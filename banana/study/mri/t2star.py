@@ -22,7 +22,7 @@ from banana.interfaces.custom.coils import HIPCombineChannels
 from banana.interfaces.custom.mask import (
     DialateMask, MaskCoils, MedianInMasks)
 from arcana.study import ParamSpec, SwitchSpec
-from banana.template import LocalTemplate
+from banana.template import LocalReferenceFileset
 from logging import getLogger
 
 logger = getLogger('banana')
@@ -81,16 +81,16 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Templates
         FilesetInputSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=LocalTemplate('QSMPrior')),
+                            default=LocalReferenceFileset('QSMPrior')),
         FilesetInputSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=LocalTemplate('SWIPrior')),
+                            default=LocalReferenceFileset('SWIPrior')),
         FilesetInputSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=LocalTemplate('VeinFrequencyPrior')),
+                            default=LocalReferenceFileset('VeinFrequencyPrior')),
         FilesetInputSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
                             frequency='per_study',
-                            default=LocalTemplate('VeinFrequencyMap'))]
+                            default=LocalReferenceFileset('VeinFrequencyMap'))]
 
     add_param_specs = [
         SwitchSpec('qsm_dual_echo', False),

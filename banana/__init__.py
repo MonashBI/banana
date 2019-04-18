@@ -19,12 +19,20 @@ limitations under the License.
 
 from .__about__ import __version__, __authors__
 import os
-# Ensure all file_formats are registered with Arcana
-from .file_format import registered_file_formats
 
 # Should be set explicitly in all FSL interfaces, but this squashes the warning
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 
+# Import all objects from Arcana used to design and apply Banana studies
+from arcana import (  # @IgnorePep8
+    SubStudySpec, Parameter, ParamSpec, SwitchSpec, FilesetSpec, FilesetInput,
+    FieldSpec, FieldInput, FilesetInputSpec, FieldInputSpec, FileFormat,
+    Fileset, Field, FilesetCollection, FieldCollection, SingleProc, MultiProc,
+    SlurmProc, DEFAULT_PROV_CHECK, DEFAULT_PROV_IGNORE, StaticEnv, ModulesEnv,
+    BasicRepo, XnatRepo)
+
+
 # Import all Study classes into package root
-# from .study import (  # @IgnorePep8
-#     MriStudy, DwiStudy, T1Study, T2Study, T2starStudy, EpiStudy)
+from .study import (  # @IgnorePep8
+    Study, StudyMetaClass, MultiStudy, MultiStudyMetaClass, MriStudy, DwiStudy,
+    T1Study, T2Study, T2starStudy, EpiStudy)

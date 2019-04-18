@@ -168,7 +168,7 @@ class NiftixFormat(NiftiFormat):
 
     def get_header(self, fileset):
         hdr = super().get_header(fileset)
-        with open(fileset.side_car('json')) as f:
+        with open(fileset.aux_file('json')) as f:
             hdr.update(json.load(f))
         return hdr
 
@@ -256,7 +256,7 @@ dicom_format = DicomFormat(name='dicom', extension=None,
                            directory=True, within_dir_exts=['.dcm'],
                            alternate_names=['secondary'])
 niftix_gz_format = NiftixFormat(name='nifti_gz_ext', extension='.nii.gz',
-                                side_cars={'json': '.json'},
+                                aux_files={'json': '.json'},
                                 converters={'dicom': Dcm2niixConverter})
 nifti_format = NiftiFormat(name='nifti', extension='.nii',
                            converters={'dicom': Dcm2niixConverter,
@@ -270,7 +270,7 @@ nifti_gz_format = NiftiFormat(name='nifti_gz', extension='.nii.gz',
                                           'mrtrix': MrtrixConverter,
                                           'nifti_gz_ext': IdentityConverter})
 analyze_format = NiftiFormat(name='analyze', extension='.img',
-                             side_cars={'header': '.hdr'},
+                             aux_files={'header': '.hdr'},
                              converters={'dicom': MrtrixConverter,
                                          'nifti': MrtrixConverter,
                                          'nifti_gz': MrtrixConverter,

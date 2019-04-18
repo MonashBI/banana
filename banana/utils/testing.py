@@ -337,7 +337,7 @@ class PipelineTester(TestCase):
                         item_cpy = Fileset(
                             name=item.name, format=item.format,
                             frequency=item.frequency, path=item.path,
-                            side_cars=copy(item.side_cars),
+                            aux_files=copy(item.aux_files),
                             subject_id=item.subject_id, visit_id=item.visit_id,
                             repository=out_repo, exists=True)
                     else:

@@ -109,7 +109,7 @@ class BidsRepo(BasicRepo):
                 visit_ids = all_visits
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
-                    side_cars = {}
+                    aux_files = {}
                     metadata = self.layout.get_metadata(item.path)
                     if metadata and not item.path.endswith('.json'):
                         # Write out the combined JSON side cars to a temporary
@@ -123,7 +123,7 @@ class BidsRepo(BasicRepo):
                         if not op.exists(metadata_path):
                             with open(metadata_path, 'w') as f:
                                 json.dump(metadata, f)
-                        side_cars['json'] = metadata_path
+                        aux_files['json'] = metadata_path
                     fileset = BidsFileset(
                         path=op.join(item.dirname, item.filename),
                         type=item.entities['type'],
@@ -131,7 +131,7 @@ class BidsRepo(BasicRepo):
                         repository=self,
                         modality=item.entities.get('modality', None),
                         task=item.entities.get('task', None),
-                        side_cars=side_cars)
+                        aux_files=aux_files)
                     filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
         # the method in the BasicRepo base class
@@ -140,22 +140,22 @@ class BidsRepo(BasicRepo):
         filesets.extend(derived_filesets)
         return filesets, fields, records
 
-    def fileset_path(self, item, fname=None):
-        if not item.derived:
+    def fileset_path(self, fileset, fname=None):
+        if not fileset.derived:
             raise ArcanaUsageError(
                 "Can only get automatically get path to derived filesets not "
-                "{}".format(item))
+                "{}".format(fileset))
         if fname is None:
-            fname = item.fname
-        if item.subject_id is not None:
-            subject_id = item.subject_id
+            fname = fileset.fname
+        if fileset.subject_id is not None:
+            subject_id = fileset.subject_id
         else:
             subject_id = self.SUMMARY_NAME
-        if item.visit_id is not None:
-            visit_id = item.visit_id
+        if fileset.visit_id is not None:
+            visit_id = fileset.visit_id
         else:
             visit_id = self.SUMMARY_NAME
-        sess_dir = op.join(self.root_dir, 'derivatives', item.from_study,
+        sess_dir = op.join(self.root_dir, 'derivatives', fileset.from_study,
                            'sub-{}'.format(subject_id),
                            'sess-{}'.format(visit_id))
         # Make session dir if required
@@ -234,15 +234,15 @@ class BidsFileset(Fileset, BaseBidsFileset):
     checksums : dict[str, str]
         A checksums of all files within the fileset in a dictionary sorted by
         relative file paths
-    side_cars : dict[str, str]
+    aux_files : dict[str, str]
         A dictionary containing a mapping from a side car name to path of the
         file
     """
 
     def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
-                 modality=None, task=None, checksums=None, side_cars=None):
+                 modality=None, task=None, checksums=None, aux_files=None):
         extensions = [split_extension(path)[1]] + sorted(
-            split_extension(p)[1] for p in side_cars.values())
+            split_extension(p)[1] for p in aux_files.values())
         Fileset.__init__(
             self,
             name=op.basename(path),
@@ -253,7 +253,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
             visit_id=visit_id,
             repository=repository,
             checksums=checksums,
-            side_cars=side_cars)
+            aux_files=aux_files)
         BaseBidsFileset.__init__(self, type, modality, task)
 
     def __repr__(self):
