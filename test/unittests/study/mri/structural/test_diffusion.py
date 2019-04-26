@@ -6,7 +6,7 @@ from arcana.data import FilesetInput  # @IgnorePep8
 from banana.study.mri.structural.diffusion import (  # @IgnorePep8
     DwiStudy, NODDIStudy)
 from banana.file_format import (  # @IgnorePep8
-    mrtrix_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
+    mrtrix_image_format, nifti_gz_format, fsl_bvals_format, fsl_bvecs_format,
     text_format)
 from banana.testing import BaseTestCase, BaseMultiSubjectTestCase  # @IgnorePep8 @Reimport
 
@@ -16,8 +16,8 @@ class TestDiffusion(BaseTestCase):
     def test_preprocess(self):
         study = self.create_study(
             DwiStudy, 'preprocess', [
-                FilesetInput('magnitude', 'r_l_dwi_b700_30', mrtrix_format),
-                FilesetInput('dwi_reference', 'l_r_dwi_b0_6', mrtrix_format)])
+                FilesetInput('magnitude', 'r_l_dwi_b700_30', mrtrix_image_format),
+                FilesetInput('dwi_reference', 'l_r_dwi_b0_6', mrtrix_image_format)])
         preproc = list(study.data('preproc'))[0]
         self.assertTrue(os.path.exists(preproc.path))
 
@@ -113,8 +113,8 @@ class TestNODDI(BaseTestCase):
     def test_concatenate(self):
         study = self.create_study(
             NODDIStudy, 'concatenate', inputs=[
-                FilesetInput('low_b_dw_scan', 'r_l_dwi_b700_30', mrtrix_format),
-                FilesetInput('high_b_dw_scan', 'r_l_dwi_b2000_60', mrtrix_format)])
+                FilesetInput('low_b_dw_scan', 'r_l_dwi_b700_30', mrtrix_image_format),
+                FilesetInput('high_b_dw_scan', 'r_l_dwi_b2000_60', mrtrix_image_format)])
         study.concatenate_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('dwi_scan.mif', study.name)
         # TODO: More thorough testing required
@@ -122,7 +122,7 @@ class TestNODDI(BaseTestCase):
 #     def test_noddi_fitting(self, nthreads=6):
 #         study = self.create_study(
 #             NODDIStudy, 'noddi', inputs=[
-#                 FilesetInput('preproc', 'noddi_dwi', mrtrix_format),
+#                 FilesetInput('preproc', 'noddi_dwi', mrtrix_image_format),
 #                 FilesetInput('brain_mask', 'roi_mask', analyze_format),
 #                 'grad_dirs': Fileset('noddi_gradient_directions',
 #                                      fsl_bvecs_format),

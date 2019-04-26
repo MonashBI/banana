@@ -16,7 +16,7 @@ from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
     fast_cite, n4_cite, dwidenoise_cites)
 from banana.file_format import (
-    mrtrix_format, nifti_gz_format, niftix_gz_format, fsl_bvecs_format,
+    mrtrix_image_format, nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format,
     fsl_bvals_format, text_format, dicom_format, eddy_par_format,
     mrtrix_track_format, motion_mats_format)
 from banana.requirement import (
@@ -43,7 +43,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetInputSpec('dwi_reference', nifti_gz_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
-        FilesetSpec('noise_residual', mrtrix_format, 'preprocess_pipeline'),
+        FilesetSpec('noise_residual', mrtrix_image_format, 'preprocess_pipeline'),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline'),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline'),
@@ -52,9 +52,9 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         FilesetSpec('csf_response', text_format, 'response_pipeline'),
         FilesetSpec('avg_response', text_format,
                     'average_response_pipeline'),
-        FilesetSpec('wm_odf', mrtrix_format, 'fod_pipeline'),
-        FilesetSpec('gm_odf', mrtrix_format, 'fod_pipeline'),
-        FilesetSpec('csf_odf', mrtrix_format, 'fod_pipeline'),
+        FilesetSpec('wm_odf', mrtrix_image_format, 'fod_pipeline'),
+        FilesetSpec('gm_odf', mrtrix_image_format, 'fod_pipeline'),
+        FilesetSpec('csf_odf', mrtrix_image_format, 'fod_pipeline'),
         FilesetSpec('bias_correct', nifti_gz_format,
                     'bias_correct_pipeline'),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
@@ -64,17 +64,17 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                     'brain_extraction_pipeline'),
         FilesetSpec('brain_mask', nifti_gz_format,
                     'brain_extraction_pipeline'),
-        FilesetSpec('norm_intensity', mrtrix_format,
+        FilesetSpec('norm_intensity', mrtrix_image_format,
                     'intensity_normalisation_pipeline'),
-        FilesetSpec('norm_intens_fa_template', mrtrix_format,
+        FilesetSpec('norm_intens_fa_template', mrtrix_image_format,
                     'intensity_normalisation_pipeline',
                     frequency='per_study'),
-        FilesetSpec('norm_intens_wm_mask', mrtrix_format,
+        FilesetSpec('norm_intens_wm_mask', mrtrix_image_format,
                     'intensity_normalisation_pipeline',
                     frequency='per_study'),
         FilesetSpec('global_tracks', mrtrix_track_format,
                     'global_tracking_pipeline'),
-        FilesetSpec('wm_mask', mrtrix_format,
+        FilesetSpec('wm_mask', mrtrix_image_format,
                     'global_tracking_pipeline')
         # FilesetSpec('tbss_mean_fa', nifti_gz_format, 'tbss_pipeline',
         #             frequency='per_study'),
@@ -105,7 +105,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
     primary_bids_selector = BidsInput(
-        spec_name='magnitude', type='dwi', format=niftix_gz_format)
+        spec_name='magnitude', type='dwi', format=nifti_gz_x_format)
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssocInput(
@@ -210,7 +210,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'operands': (subtract_operands, 'out')},
                 outputs={
-                    'noise_residual': ('out_file', mrtrix_format)},
+                    'noise_residual': ('out_file', mrtrix_image_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
         # Preproc kwargs
@@ -245,7 +245,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 inputs={
                     'second_scan': ((
                         'dwi_reference' if self.provided('dwi_reference')
-                        else 'reverse_phase'), mrtrix_format),
+                        else 'reverse_phase'), mrtrix_image_format),
                     'first_scan': (mrconvert, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -456,8 +456,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'in_files': (join_visits, 'dwis'),
                 'masks': (join_visits, 'masks')},
             outputs={
-                'norm_intens_fa_template': ('fa_template', mrtrix_format),
-                'norm_intens_wm_mask': ('wm_mask', mrtrix_format)})
+                'norm_intens_fa_template': ('fa_template', mrtrix_image_format),
+                'norm_intens_wm_mask': ('wm_mask', mrtrix_image_format)})
 
         # Set up expand nodes
         pipeline.add(
@@ -469,7 +469,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'subject_id': (Study.SUBJECT_ID, int),
                 'visit_id': (Study.VISIT_ID, int)},
             outputs={
-                'norm_intensity': ('item', mrtrix_format)})
+                'norm_intensity': ('item', mrtrix_image_format)})
 
         # Connect inputs
         return pipeline
@@ -766,7 +766,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 cutoff=self.parameter('global_tracks_cutoff')),
             inputs={
                 'seed_image': (mask, 'out_file'),
-                'in_file': ('wm_odf', mrtrix_format)},
+                'in_file': ('wm_odf', mrtrix_image_format)},
             outputs={
                 'global_tracks': ('out_file', mrtrix_track_format)})
 
@@ -826,9 +826,9 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 # class NODDIStudy(DwiStudy, metaclass=StudyMetaClass):
 # 
 #     add_data_specs = [
-#         FilesetInputSpec('low_b_dw_scan', mrtrix_format),
-#         FilesetInputSpec('high_b_dw_scan', mrtrix_format),
-#         FilesetSpec('dwi_scan', mrtrix_format, 'concatenate_pipeline'),
+#         FilesetInputSpec('low_b_dw_scan', mrtrix_image_format),
+#         FilesetInputSpec('high_b_dw_scan', mrtrix_image_format),
+#         FilesetSpec('dwi_scan', mrtrix_image_format, 'concatenate_pipeline'),
 #         FilesetSpec('ficvf', nifti_format, 'noddi_fitting_pipeline'),
 #         FilesetSpec('odi', nifti_format, 'noddi_fitting_pipeline'),
 #         FilesetSpec('fiso', nifti_format, 'noddi_fitting_pipeline'),
@@ -848,9 +848,9 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 #         Concatenates two dMRI filesets (with different b-values) along the
 #         DW encoding (4th) axis
 #         """
-# #             inputs=[FilesetSpec('low_b_dw_scan', mrtrix_format),
-# #                     FilesetSpec('high_b_dw_scan', mrtrix_format)],
-# #             outputs=[FilesetSpec('dwi_scan', mrtrix_format)],
+# #             inputs=[FilesetSpec('low_b_dw_scan', mrtrix_image_format),
+# #                     FilesetSpec('high_b_dw_scan', mrtrix_image_format)],
+# #             outputs=[FilesetSpec('dwi_scan', mrtrix_image_format)],
 #         pipeline = self.new_pipeline(
 #             name='concatenation',
 # 

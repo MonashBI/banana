@@ -292,35 +292,40 @@ class MrtrixFormat(ImageFormat):
 # NeuroImaging data formats
 dicom_format = DicomFormat(name='dicom', extension=None,
                            directory=True, within_dir_exts=['.dcm'],
-                           xnat_resource_names=['secondary'])
-niftix_gz_format = NiftixFormat(name='extended_nifti_gz', extension='.nii.gz',
-                                aux_files={'json': '.json'},
-                                converters={'dicom': Dcm2niixConverter})
+                           xnat_resource_names=['DICOM', 'secondary'])
+nifti_gz_x_format = NiftixFormat(name='extended_nifti_gz', extension='.nii.gz',
+                                 aux_files={'json': '.json'},
+                                 xnat_resource_names=['NiFTI_GZ_X',
+                                                      'NIFTIX_GZ'],
+                                 converters={'dicom': Dcm2niixConverter})
 nifti_format = NiftiFormat(name='nifti', extension='.nii',
+                           xnat_resource_names=['NiFTI', 'NIFTI'],
                            converters={'dicom': Dcm2niixConverter,
                                        'analyze': MrtrixConverter,
                                        'nifti_gz': MrtrixConverter,
-                                       'mrtrix': MrtrixConverter})
+                                       'mrtrix_image': MrtrixConverter})
 nifti_gz_format = NiftiFormat(name='nifti_gz', extension='.nii.gz',
+                              xnat_resource_names=['NiFTI_GZ', 'NIFTI_GZ'],
                               converters={'dicom': Dcm2niixConverter,
                                           'nifti': MrtrixConverter,
                                           'analyze': MrtrixConverter,
-                                          'mrtrix': MrtrixConverter,
+                                          'mrtrix_image': MrtrixConverter,
                                           'nifti_gz_ext': IdentityConverter})
 analyze_format = NiftiFormat(name='analyze', extension='.img',
                              aux_files={'header': '.hdr'},
                              converters={'dicom': MrtrixConverter,
                                          'nifti': MrtrixConverter,
                                          'nifti_gz': MrtrixConverter,
-                                         'mrtrix': MrtrixConverter})
-mrtrix_format = MrtrixFormat(name='mrtrix', extension='.mif',
-                             converters={'dicom': MrtrixConverter,
-                                         'nifti': MrtrixConverter,
-                                         'nifti_gz': MrtrixConverter,
-                                         'analyze': MrtrixConverter})
+                                         'mrtrix_image': MrtrixConverter})
+mrtrix_image_format = MrtrixFormat(name='mrtrix_image', extension='.mif',
+                                   xnat_resource_names=['MIF', 'MRTRIX'],
+                                   converters={'dicom': MrtrixConverter,
+                                               'nifti': MrtrixConverter,
+                                               'nifti_gz': MrtrixConverter,
+                                               'analyze': MrtrixConverter})
 
 STD_IMAGE_FORMATS = [dicom_format, nifti_format, nifti_gz_format,
-                     niftix_gz_format, analyze_format, mrtrix_format]
+                     nifti_gz_x_format, analyze_format, mrtrix_image_format]
 
 multi_nifti_gz_format = FileFormat(name='multi_nifti_gz', extension=None,
                                    directory=True, within_dir_exts=['.nii.gz'],

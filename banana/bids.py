@@ -12,12 +12,12 @@ from arcana.data.item import Fileset
 from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
-from banana.file_format import nifti_gz_format, niftix_gz_format
+from banana.file_format import nifti_gz_format, nifti_gz_x_format
 
 
 logger = logging.getLogger('arcana')
 
-BIDS_NIFTI = (nifti_gz_format, niftix_gz_format)
+BIDS_NIFTI = (nifti_gz_format, nifti_gz_x_format)
 
 
 class BidsRepo(BasicRepo):

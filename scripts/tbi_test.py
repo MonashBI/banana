@@ -4,7 +4,7 @@ import shutil
 from arcana.data import FilesetInput
 from banana.study.mri.diffusion import DwiStudy
 from arcana.repository.basic import BasicRepo
-from banana.file_format import mrtrix_format
+from banana.file_format import mrtrix_image_format
 
 repository_path = os.path.abspath(os.path.join(
     os.environ['HOME'], 'Data', 'MBI', 'tbi', ))
@@ -21,9 +21,9 @@ study = DwiStudy(
     project_id='2_vs_2.5',
     repository=BasicRepo(repository_path),
     input_scans={
-        'dwi_scan': Fileset('R-L_60dir_b2000', mrtrix_format),
-        'forward_rpe': Fileset('R-L_6dir_b0', mrtrix_format),
-        'reverse_rpe': Fileset('L-R_6dir_b0', mrtrix_format)})
+        'dwi_scan': Fileset('R-L_60dir_b2000', mrtrix_image_format),
+        'forward_rpe': Fileset('R-L_6dir_b0', mrtrix_image_format),
+        'reverse_rpe': Fileset('L-R_6dir_b0', mrtrix_image_format)})
 study.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
 study.fod_pipeline().run(work_dir=WORK_PATH)
 study.fa_pipeline().run(work_dir=WORK_PATH)

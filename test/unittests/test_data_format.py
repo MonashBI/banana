@@ -3,7 +3,7 @@ from nipype.interfaces.utility import IdentityInterface
 from arcana.utils.testing import BaseTestCase
 from banana.interfaces.mrtrix import MRConvert
 from arcana.exceptions import ArcanaModulesNotInstalledException
-from banana.file_format import (dicom_format, mrtrix_format,
+from banana.file_format import (dicom_format, mrtrix_image_format,
                                     nifti_gz_format)
 from arcana.study.base import Study, StudyMetaClass
 from arcana.data import FilesetInput, FilesetSpec, FilesetInputSpec
@@ -44,7 +44,7 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
 class TestConverterAvailability(TestCase):
 
     def test_find_mrtrix(self):
-        converter = mrtrix_format.converter_from(dicom_format)
+        converter = mrtrix_image_format.converter_from(dicom_format)
         self.assertIsInstance(converter.interface, MRConvert)
 
 
