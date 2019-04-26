@@ -67,7 +67,7 @@ class BaseReference():
         return self._name == other._name
 
 
-class FslReference(BaseReference):
+class FslReferenceData(BaseReference):
     """
     Class to retrieve the path to an atlas shipped with a FSL installation
 
@@ -150,7 +150,7 @@ class FslReference(BaseReference):
             self._atlas_name, self.name, self.study)
 
 
-class LocalReference(BaseReference):
+class LocalReferenceData(BaseReference):
     """
     Several atlases used in the composite-vein analysis in the T2* study,
     stored within the banana package.

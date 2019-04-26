@@ -13,7 +13,7 @@ from banana.interfaces.converters import Dcm2niix  # @UnusedImport
 from banana.exceptions import BananaUsageError
 import nibabel
 # Import base file formats from Arcana for convenience
-from arcana.data.file_format.standard import (
+from arcana.data.file_format import (
     text_format, directory_format, zip_format, targz_format,  # @UnusedImport
     UnzipConverter, UnTarGzConverter, IdentityConverter)  # @UnusedImport
 
@@ -175,6 +175,8 @@ class NiftixFormat(NiftiFormat):
 
 class DicomFormat(ImageFormat):
 
+    SERIES_NUMBER_TAG = ('0020', '0011')
+
     def dcm_files(self, fileset):
         return [f for f in os.listdir(fileset.path) if f.endswith('.dcm')]
 
@@ -185,11 +187,11 @@ class DicomFormat(ImageFormat):
                 pydicom.dcmread(op.join(fileset.path, fname)).pixel_array)
         return np.asarray(image_stack)
 
-    def get_header(self, fileset):
+    def get_header(self, fileset, index=0):
         dcm_files = [f for f in os.listdir(fileset.path) if f.endswith('.dcm')]
         # TODO: Probably should collate fields that vary across the set of
         #       files in the set into lists
-        return pydicom.dcmread(op.join(fileset.path, dcm_files[0]))
+        return pydicom.dcmread(op.join(fileset.path, dcm_files[index]))
 
     def get_vox_sizes(self, fileset):
         hdr = self.get_header(fileset)
@@ -199,6 +201,42 @@ class DicomFormat(ImageFormat):
         hdr = self.get_header(fileset)
         return np.array((hdr.Rows, hdr.Columns, len(self.dcm_files(fileset))),
                         dtype=int)
+
+    def extract_id(self, fileset):
+        return int(fileset.dicom_values([self.SERIES_NUMBER_TAG]))
+
+    def dicom_values(self, fileset, tags):
+        """
+        Returns a dictionary with the DICOM header fields corresponding
+        to the given tag names
+
+        Parameters
+        ----------
+        tags : List[Tuple[str, str]]
+            List of DICOM tag values as 2-tuple of strings, e.g.
+            [('0080', '0020')]
+        repository_login : <repository-login-object>
+            A login object for the repository to avoid having to relogin
+            for every dicom_header call.
+
+        Returns
+        -------
+        dct : Dict[Tuple[str, str], str|int|float]
+        """
+        try:
+            if (fileset._path is None and fileset._repository is not None and
+                    hasattr(fileset.repository, 'dicom_header')):
+                hdr = fileset.repository.dicom_header(self)
+                dct = [hdr[t] for t in tags]
+            else:
+                # Get the DICOM object for the first file in the fileset
+                dcm = fileset.get_header(0)
+                dct = [dcm[t].value for t in tags]
+        except KeyError as e:
+            e.msg = ("{} does not have dicom tag {}".format(
+                     self, e.msg))
+            raise e
+        return dct
 
 
 class MrtrixFormat(ImageFormat):
@@ -254,8 +292,8 @@ class MrtrixFormat(ImageFormat):
 # NeuroImaging data formats
 dicom_format = DicomFormat(name='dicom', extension=None,
                            directory=True, within_dir_exts=['.dcm'],
-                           alternate_names=['secondary'])
-niftix_gz_format = NiftixFormat(name='nifti_gz_ext', extension='.nii.gz',
+                           xnat_resource_names=['secondary'])
+niftix_gz_format = NiftixFormat(name='extended_nifti_gz', extension='.nii.gz',
                                 aux_files={'json': '.json'},
                                 converters={'dicom': Dcm2niixConverter})
 nifti_format = NiftiFormat(name='nifti', extension='.nii',
@@ -331,13 +369,12 @@ rda_format = FileFormat(name='raw', extension='.rda')
 
 # Record list of all data formats registered by module (not really
 # used currently but could be useful in future)
-registered_file_formats = []
+std_formats = []
 
 # Register all data formats in module
 for file_format in copy(globals()).values():
     if isinstance(file_format, FileFormat):
-        FileFormat.register(file_format)
-        registered_file_formats.append(file_format.name)
+        std_formats.append(file_format.name)
 
 
 # Since the conversion from DICOM->NIfTI is unfortunately slightly

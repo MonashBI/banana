@@ -30,7 +30,7 @@ from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.exceptions import BananaUsageError
-from banana.template import FslReference
+from banana.reference_data import FslReferenceData
 
 logger = logging.getLogger('arcana')
 
@@ -119,18 +119,24 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
         FilesetInputSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
-                         default=FslReference(
-                             'MNI152_T1', resolution='template_resolution')),
+                         default=FslReferenceData(
+                             'MNI152_T1',
+                             format=nifti_gz_format,
+                             resolution='template_resolution')),
         FilesetInputSpec('template_brain', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=FslReference('MNI152_T1',
-                                             resolution='template_resolution',
-                                             dataset='brain')),
+                         default=FslReferenceData(
+                             'MNI152_T1',
+                             format=nifti_gz_format,
+                             resolution='template_resolution',
+                             dataset='brain')),
         FilesetInputSpec('template_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=FslReference('MNI152_T1',
-                                             resolution='template_resolution',
-                                             dataset='brain_mask'))]
+                         default=FslReferenceData(
+                             'MNI152_T1',
+                             format=nifti_gz_format,
+                             resolution='template_resolution',
+                             dataset='brain_mask'))]
 
     add_param_specs = [
         SwitchSpec('reorient_to_std', True),
