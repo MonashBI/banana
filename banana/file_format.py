@@ -15,6 +15,7 @@ import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format import (
     text_format, directory_format, zip_format, targz_format,  # @UnusedImport
+    png_format, jpg_format, gif_format,  # @UnusedImport
     UnzipConverter, UnTarGzConverter, IdentityConverter)  # @UnusedImport
 
 
@@ -296,41 +297,49 @@ dicom_format = DicomFormat(name='dicom', extension=None,
 nifti_gz_x_format = NiftixFormat(name='extended_nifti_gz', extension='.nii.gz',
                                  aux_files={'json': '.json'},
                                  xnat_resource_names=['NiFTI_GZ_X',
-                                                      'NIFTIX_GZ'],
-                                 converters={'dicom': Dcm2niixConverter})
+                                                      'NIFTIX_GZ'])
 nifti_format = NiftiFormat(name='nifti', extension='.nii',
-                           xnat_resource_names=['NiFTI', 'NIFTI'],
-                           converters={'dicom': Dcm2niixConverter,
-                                       'analyze': MrtrixConverter,
-                                       'nifti_gz': MrtrixConverter,
-                                       'mrtrix_image': MrtrixConverter})
+                           xnat_resource_names=['NiFTI', 'NIFTI'])
+
 nifti_gz_format = NiftiFormat(name='nifti_gz', extension='.nii.gz',
-                              xnat_resource_names=['NiFTI_GZ', 'NIFTI_GZ'],
-                              converters={'dicom': Dcm2niixConverter,
-                                          'nifti': MrtrixConverter,
-                                          'analyze': MrtrixConverter,
-                                          'mrtrix_image': MrtrixConverter,
-                                          'nifti_gz_ext': IdentityConverter})
+                              xnat_resource_names=['NiFTI_GZ', 'NIFTI_GZ'])
 analyze_format = NiftiFormat(name='analyze', extension='.img',
-                             aux_files={'header': '.hdr'},
-                             converters={'dicom': MrtrixConverter,
-                                         'nifti': MrtrixConverter,
-                                         'nifti_gz': MrtrixConverter,
-                                         'mrtrix_image': MrtrixConverter})
+                             aux_files={'header': '.hdr'})
 mrtrix_image_format = MrtrixFormat(name='mrtrix_image', extension='.mif',
-                                   xnat_resource_names=['MIF', 'MRTRIX'],
-                                   converters={'dicom': MrtrixConverter,
-                                               'nifti': MrtrixConverter,
-                                               'nifti_gz': MrtrixConverter,
-                                               'analyze': MrtrixConverter})
+                                   xnat_resource_names=['MIF', 'MRTRIX'])
+
+# Set converters between image formats
+
+nifti_gz_x_format.set_converter(dicom_format, Dcm2niixConverter)
+
+nifti_format.set_converter(dicom_format, Dcm2niixConverter)
+nifti_format.set_converter(analyze_format, MrtrixConverter)
+nifti_format.set_converter(nifti_gz_format, MrtrixConverter)
+nifti_format.set_converter(mrtrix_image_format, MrtrixConverter)
+
+nifti_gz_format.set_converter(dicom_format, Dcm2niixConverter)
+nifti_gz_format.set_converter(nifti_format, MrtrixConverter)
+nifti_gz_format.set_converter(analyze_format, MrtrixConverter)
+nifti_gz_format.set_converter(mrtrix_image_format, MrtrixConverter)
+nifti_gz_format.set_converter(nifti_gz_x_format, IdentityConverter)
+
+analyze_format.set_converter(dicom_format, MrtrixConverter)
+analyze_format.set_converter(nifti_format, MrtrixConverter)
+analyze_format.set_converter(nifti_gz_format, MrtrixConverter)
+analyze_format.set_converter(mrtrix_image_format, MrtrixConverter)
+
+mrtrix_image_format.set_converter(dicom_format, MrtrixConverter)
+mrtrix_image_format.set_converter(nifti_format, MrtrixConverter)
+mrtrix_image_format.set_converter(nifti_gz_format, MrtrixConverter)
+mrtrix_image_format.set_converter(analyze_format, MrtrixConverter)
 
 STD_IMAGE_FORMATS = [dicom_format, nifti_format, nifti_gz_format,
                      nifti_gz_x_format, analyze_format, mrtrix_image_format]
 
 multi_nifti_gz_format = FileFormat(name='multi_nifti_gz', extension=None,
-                                   directory=True, within_dir_exts=['.nii.gz'],
-                                   converters={'zip': UnzipConverter,
-                                               'targz': UnTarGzConverter})
+                                   directory=True, within_dir_exts=['.nii.gz'])
+multi_nifti_gz_format.set_converter(zip_format, UnzipConverter)
+multi_nifti_gz_format.set_converter(targz_format, UnTarGzConverter)
 
 # Tractography formats
 mrtrix_track_format = FileFormat(name='mrtrix_track', extension='.tck')
@@ -358,11 +367,6 @@ motion_mats_format = FileFormat(
           "motion detection pipeline"))
 
 
-# General image formats
-gif_format = FileFormat(name='gif', extension='.gif')
-png_format = FileFormat(name='png', extension='.png')
-jpg_format = FileFormat(name='jpg', extension='.jpg')
-
 # PET formats
 list_mode_format = FileFormat(name='pet_list_mode', extension='.bf')
 
@@ -376,7 +380,7 @@ rda_format = FileFormat(name='raw', extension='.rda')
 # used currently but could be useful in future)
 std_formats = []
 
-# Register all data formats in module
+# Add all data formats in module to a list of "standard" biomedical formats
 for file_format in copy(globals()).values():
     if isinstance(file_format, FileFormat):
         std_formats.append(file_format.name)
@@ -387,6 +391,6 @@ for file_format in copy(globals()).values():
 # be used in pipeline input specs that need to use MRConvert instead
 # of Dcm2niix (i.e. motion-detection pipeline)
 mrconvert_nifti_format = deepcopy(nifti_format)
-mrconvert_nifti_format._converters['dicom'] = MrtrixConverter
+mrconvert_nifti_format.set_converter(dicom_format, MrtrixConverter)
 mrconvert_nifti_gz_format = deepcopy(nifti_gz_format)
-mrconvert_nifti_gz_format._converters['dicom'] = MrtrixConverter
+mrconvert_nifti_gz_format.set_converter(dicom_format, MrtrixConverter)
