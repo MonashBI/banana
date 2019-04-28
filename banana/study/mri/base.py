@@ -8,7 +8,7 @@ from arcana.data import FilesetSpec, FieldSpec, FilesetInputSpec
 from banana.study import Study, StudyMetaClass
 from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
-    dicom_format, text_format, gif_format, nifti_gz_x_format)
+    dicom_format, gif_format, nifti_gz_x_format)
 from nipype.interfaces.utility import IdentityInterface
 from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req, c3d_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
@@ -30,7 +30,7 @@ from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.exceptions import BananaUsageError
-from banana.reference_data import FslReferenceData
+from banana.reference import FslReferenceData
 
 logger = logging.getLogger('arcana')
 

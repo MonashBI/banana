@@ -44,7 +44,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 reference_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '../../',
-                 'reference_data'))
+                 'reference'))
 
 template_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__).split('banana')[0],

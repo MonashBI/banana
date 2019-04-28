@@ -28,11 +28,11 @@ class TestMriStudy(PipelineTester):
         self.run_pipeline_test('coreg_matrix_pipeline',
                                add_inputs=['coreg_ref'])
 
-    def test_coreg_to_atlas_pipeline(self):
-        self.run_pipeline_test('coreg_to_atlas_pipeline',
+    def test_coreg_to_tmpl_pipeline(self):
+        self.run_pipeline_test('coreg_to_tmpl_pipeline',
                                add_inputs=['coreg_ref'],
                                test_criteria={
-                                   'coreg_to_atlas': {'rms_tol': 20000}})
+                                   'coreg_to_tmpl': {'rms_tol': 20000}})
 
     def test_qform_transform_pipeline(self):
         self.run_pipeline_test('qform_transform_pipeline',

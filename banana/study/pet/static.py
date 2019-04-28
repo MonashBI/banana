@@ -7,7 +7,7 @@ import os
 
 template_path = os.path.abspath(
     os.path.join(os.path.dirname(__file__).split('arcana')[0],
-                 'arcana', 'reference_data'))
+                 'arcana', 'reference'))
 
 
 class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):

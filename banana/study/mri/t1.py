@@ -6,13 +6,14 @@ from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.utils.interfaces import Merge
 from banana.file_format import (
-    nifti_gz_format, zip_format, STD_IMAGE_FORMATS, directory_format)
+    nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
+    directory_format)
 from arcana.data import FilesetSpec, FilesetInputSpec
 from arcana.utils.interfaces import JoinPath
 from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
-from banana.reference_data import LocalReferenceData
+from banana.reference import LocalReferenceData
 
 
 class T1Study(T2Study, metaclass=StudyMetaClass):
@@ -26,8 +27,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                   "distinguish the peel surface")),
         # Templates
         FilesetInputSpec('suit_mask', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=LocalReferenceData('SUIT'))]
+                         frequency='per_study',
+                         default=LocalReferenceData('SUIT', nifti_format))]
 
     add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',
