@@ -2,6 +2,7 @@ import os
 import os.path as op
 import logging
 import tempfile
+import shutil
 from copy import copy
 import json
 from pprint import pformat
@@ -233,30 +234,10 @@ class PipelineTester(TestCase):
         else:
             work_dir = work_dir
 
-        parts = study_class.split('.')
-        module_name = '.'.join(parts[:-1])
-        class_name = parts[-1]
-
-        # Convert parameters to dictionary
-        parameters_dct = {}
-        for name, value in parameters:
-            try:
-                value = int(value)
-            except ValueError:
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
-            parameters_dct[name] = value
-        parameters = parameters_dct
-
-        module = import_module(module_name)
-        study_class = getattr(module, class_name)
-
-        if class_name.endswith('Study'):
-            study_name = class_name[:-len('Study')]
+        if study_class.__name__.endswith('Study'):
+            study_name = study_class.__name__[:-len('Study')]
         else:
-            study_name = class_name
+            study_name = study_class.__name__
 
         # Get output repository to write the data to
         if in_server is not None:
@@ -265,7 +246,12 @@ class PipelineTester(TestCase):
         else:
             in_repo = BasicRepo(in_repo, depth=repo_depth)
 
-        temp_repo = BasicRepo(op.join(work_dir, 'temp-repo'), depth=repo_depth)
+        temp_repo_root = op.join(work_dir, 'temp-repo')
+        if os.path.exists(temp_repo_root):
+            shutil.rmtree(temp_repo_root)
+        os.makedirs(temp_repo_root)
+
+        temp_repo = BasicRepo(temp_repo_root, depth=repo_depth)
 
         in_paths = []
         inputs = []
@@ -364,7 +350,9 @@ def gen_test_data_entry_point():
                               "the XNAT server (the project must exist "
                               "already). Otherwise it is interpreted as the "
                               "path to a basic repository"))
-    parser.add_argument('--xnat_server', default=None,
+    parser.add_argument('--in_server', default=None,
+                        help="The server to download the input data from")
+    parser.add_argument('--out_server', default=None,
                         help="The server to upload the reference data to")
     parser.add_argument('--work_dir', default=None,
                         help="The work directory")
@@ -382,8 +370,41 @@ def gen_test_data_entry_point():
                         help="The depth of the input repository")
     args = parser.parse_args()
 
+    parts = args.study_class.split('.')
+    module_name = '.'.join(parts[:-1])
+    class_name = parts[-1]
+
+    # Convert parameters to dictionary
+    parameters_dct = {}
+    for name, value in args.parameters:
+        try:
+            value = int(value)
+        except ValueError:
+            try:
+                value = float(value)
+            except ValueError:
+                pass
+        parameters_dct[name] = value
+    parameters = parameters_dct
+
+    # Get Study class
+    module = import_module(module_name)
+    study_class = getattr(module, class_name)
+
     PipelineTester.generate_test_data(
-        study_class=args.study_class, in_repo=args.in_repo,
-        out_repo=args.out_repo, xnat_server=args.xnat_server,
-        work_dir=args.work_dir, parameters=args.parameter, skip=args.skip,
+        study_class=study_class, in_repo=args.in_repo,
+        out_repo=args.out_repo, in_server=args.in_server,
+        out_server=args.out_server, work_dir=args.work_dir,
+        parameters=parameters, skip=args.skip,
         reprocess=args.reprocess, repo_depth=args.repo_depth)
+
+
+if __name__ == '__main__':
+    from banana.study.mri.dwi import DwiStudy
+
+    PipelineTester.generate_test_data(
+        DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+        in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+        work_dir='/Users/tclose/Data/dwi-work',
+        parameters=(), include=None, skip=(),
+        reprocess=False, repo_depth=0)

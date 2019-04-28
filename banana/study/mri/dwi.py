@@ -43,7 +43,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         InputFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
-        FilesetSpec('noise_residual', mrtrix_image_format, 'preprocess_pipeline'),
+        FilesetSpec('noise_residual', mrtrix_image_format,
+                    'preprocess_pipeline'),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline'),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline'),
@@ -104,25 +105,25 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                    ('mrtrix', 'fsl')),
         SwitchSpec('bias_correct_method', 'ants', ('ants', 'fsl'))]
 
-    primary_bids_selector = BidsInput(
+    primary_bids_input = BidsInput(
         spec_name='magnitude', type='dwi', format=nifti_gz_x_format)
 
-    default_bids_inputs = [primary_bids_selector,
+    default_bids_inputs = [primary_bids_input,
                            BidsAssocInput(
                                spec_name='bvalues',
-                               primary=primary_bids_selector,
+                               primary=primary_bids_input,
                                association='grads',
                                type='bval',
                                format=fsl_bvals_format),
                            BidsAssocInput(
                                spec_name='grad_dirs',
-                               primary=primary_bids_selector,
+                               primary=primary_bids_input,
                                association='grads',
                                type='bvec',
                                format=fsl_bvecs_format),
                            BidsAssocInput(
                                spec_name='reverse_phase',
-                               primary=primary_bids_selector,
+                               primary=primary_bids_input,
                                association='epi',
                                format=nifti_gz_format,
                                drop_if_missing=True)]
