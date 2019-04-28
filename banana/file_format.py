@@ -240,7 +240,7 @@ class DicomFormat(ImageFormat):
         return dct
 
 
-class MrtrixFormat(ImageFormat):
+class MrtrixImageFormat(ImageFormat):
 
     def _load_header_and_array(self, fileset):
         with open(fileset.path, 'rb') as f:
@@ -293,20 +293,22 @@ class MrtrixFormat(ImageFormat):
 # NeuroImaging data formats
 dicom_format = DicomFormat(name='dicom', extension=None,
                            directory=True, within_dir_exts=['.dcm'],
-                           xnat_resource_names=['DICOM', 'secondary'])
+                           resource_names={'xnat': ['DICOM', 'secondary']})
 nifti_gz_x_format = NiftixFormat(name='extended_nifti_gz', extension='.nii.gz',
                                  aux_files={'json': '.json'},
-                                 xnat_resource_names=['NiFTI_GZ_X',
-                                                      'NIFTIX_GZ'])
+                                 resource_names={'xnat': ['NiFTI_GZ_X',
+                                                          'NIFTIX_GZ']})
 nifti_format = NiftiFormat(name='nifti', extension='.nii',
-                           xnat_resource_names=['NiFTI', 'NIFTI'])
+                           resource_names={'xnat': ['NiFTI', 'NIFTI']})
 
 nifti_gz_format = NiftiFormat(name='nifti_gz', extension='.nii.gz',
-                              xnat_resource_names=['NiFTI_GZ', 'NIFTI_GZ'])
+                              resource_names={'xnat': ['NiFTI_GZ',
+                                                       'NIFTI_GZ']})
 analyze_format = NiftiFormat(name='analyze', extension='.img',
                              aux_files={'header': '.hdr'})
-mrtrix_image_format = MrtrixFormat(name='mrtrix_image', extension='.mif',
-                                   xnat_resource_names=['MIF', 'MRTRIX'])
+mrtrix_image_format = MrtrixImageFormat(name='mrtrix_image', extension='.mif',
+                                        resource_names={'xnat': ['MIF',
+                                                                 'MRTRIX']})
 
 # Set converters between image formats
 
