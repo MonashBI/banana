@@ -192,7 +192,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
                 ras2fsl=True,
                 reference_file=self.parameter('MNI_template')),
             inputs={
-                'itk_file': ('coreg_to_atlas_mat', text_matrix_format),
+                'itk_file': ('coreg_to_template_mat', text_matrix_format),
                 'source_file': ('coreg_ref_brain', nifti_gz_format)},
             requirements=[c3d_req.v('1.1.0')])
         epi_ants2fsl = pipeline.add(
@@ -314,8 +314,8 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
             'merge_transforms',
             NiPypeMerge(3),
             inputs={
-                'in1': ('coreg_to_atlas_warp', nifti_gz_format),
-                'in2': ('coreg_to_atlas_mat', text_matrix_format),
+                'in1': ('coreg_to_template_warp', nifti_gz_format),
+                'in2': ('coreg_to_template_mat', text_matrix_format),
                 'in3': ('coreg_matrix', text_matrix_format)},
             wall_time=1)
 
@@ -554,7 +554,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                             't1_preproc': 'coreg_ref',
                             'train_data': 'train_data',
                             'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
-                            'epi_0_coreg_to_atlas_mat': 'coreg_to_atlas_mat'})
+                            'epi_0_coreg_to_template_mat': 'coreg_to_template_mat'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), FmriStudy,
                                         epi_refspec)
                            for i in range(1, epi_number))

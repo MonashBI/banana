@@ -26,8 +26,8 @@ class T2StarT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
         SubStudySpec(
             't2star', T2starStudy,
             name_map={'t1_brain': 'coreg_ref_brain',
-                      't1_coreg_to_atlas_mat': 'coreg_to_atlas_mat',
-                      't1_coreg_to_atlas_warp': 'coreg_to_atlas_warp'})]
+                      't1_coreg_to_template_mat': 'coreg_to_template_mat',
+                      't1_coreg_to_template_warp': 'coreg_to_template_warp'})]
 
 
 study = T2StarT1Study(

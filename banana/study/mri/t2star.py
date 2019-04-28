@@ -312,8 +312,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             Merge(3),
             inputs={
                 'in1': ('coreg_matrix', text_matrix_format),
-                'in2': ('coreg_to_atlas_mat', text_matrix_format),  # Ideal. T1
-                'in3': ('coreg_to_atlas_warp', nifti_gz_format)})  # Ideally T1
+                'in2': ('coreg_to_template_mat', text_matrix_format),  # Ideal. T1
+                'in3': ('coreg_to_template_warp', nifti_gz_format)})  # Ideally T1
 
         apply_trans_q = pipeline.add(
             'ApplyTransform_Q_Prior',

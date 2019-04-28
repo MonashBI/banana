@@ -20,16 +20,16 @@ def get_fsl_reference_path():
     return op.join(os.environ['FSLDIR'], 'data', 'standard')
 
 
-def get_atlas_path(name, fileset='brain', resolution='1mm'):
+def get_template_path(name, fileset='brain', resolution='1mm'):
     """
-    Returns the path to the atlas (or atlas mask) in the arcana repository
+    Returns the path to the template (or template mask) in the arcana repository
 
     Parameters
     ----------
     name : str
         Name of the Atlas, can be one of ('mni_nl6')
-    atlas_type : str
-        Whether to return the brain mask or the full atlas, can be one of
+    template_type : str
+        Whether to return the brain mask or the full template, can be one of
         'image', 'mask'
     """
     if name == 'MNI152':
@@ -62,6 +62,6 @@ def get_atlas_path(name, fileset='brain', resolution='1mm'):
             raise BananaError("Unrecognised fileset '{}'"
                                   .format(fileset))
     else:
-        raise BananaError("Unrecognised atlas name '{}'"
+        raise BananaError("Unrecognised template name '{}'"
                               .format(name))
     return op.abspath(path)
