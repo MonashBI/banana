@@ -1,7 +1,7 @@
 import re
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
-from arcana.data import FilesetSpec, FilesetInputSpec
+from arcana.data import FilesetSpec, InputFilesetSpec
 from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
 from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
@@ -79,19 +79,19 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
-        FilesetInputSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
+        InputFilesetSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalReferenceData('QSMPrior',
                                                        nifti_gz_format)),
-        FilesetInputSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
+        InputFilesetSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalReferenceData('SWIPrior',
                                                        nifti_gz_format)),
-        FilesetInputSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
+        InputFilesetSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalReferenceData('VeinFrequencyPrior',
                                                        nifti_gz_format)),
-        FilesetInputSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
+        InputFilesetSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
                             frequency='per_study',
                             default=LocalReferenceData('VeinFrequencyMap',
                                                        nifti_gz_format))]

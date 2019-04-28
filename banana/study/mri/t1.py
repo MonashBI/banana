@@ -8,7 +8,7 @@ from arcana.utils.interfaces import Merge
 from banana.file_format import (
     nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
     directory_format)
-from arcana.data import FilesetSpec, FilesetInputSpec
+from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
@@ -21,12 +21,12 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
-        FilesetInputSpec(
+        InputFilesetSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
             desc=("A coregistered T2 image to use in freesurfer to help "
                   "distinguish the peel surface")),
         # Templates
-        FilesetInputSpec('suit_mask', STD_IMAGE_FORMATS,
+        InputFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=LocalReferenceData('SUIT', nifti_format))]
 

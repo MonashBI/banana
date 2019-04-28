@@ -4,7 +4,7 @@ from banana.citation import spm_cite
 from banana.file_format import (
     nifti_format, motion_mats_format, nifti_gz_format,
     multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
-from arcana.data import FilesetSpec, FieldSpec, FilesetInputSpec
+from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
 from banana.study import Study, StudyMetaClass
 from banana.citation import fsl_cite, bet_cite, bet2_cite
 from banana.file_format import (
@@ -38,15 +38,15 @@ logger = logging.getLogger('arcana')
 class MriStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetInputSpec('magnitude', STD_IMAGE_FORMATS,
+        InputFilesetSpec('magnitude', STD_IMAGE_FORMATS,
                             desc=("Typically the primary scan acquired from "
                                   "the scanner for the given contrast")),
-        FilesetInputSpec(
+        InputFilesetSpec(
             'coreg_ref', STD_IMAGE_FORMATS,
             desc=("A reference scan to coregister the primary scan to. Should "
                   "not be brain extracted"),
             optional=True),
-        FilesetInputSpec(
+        InputFilesetSpec(
             'coreg_ref_brain', STD_IMAGE_FORMATS,
             desc=("A brain-extracted reference scan to coregister a brain-"
                   "extracted scan to. Note that the output of the "
@@ -54,11 +54,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "extracting the output of coregistration performed "
                   "before brain extraction if 'coreg_ref' is provided"),
             optional=True),
-        FilesetInputSpec(
+        InputFilesetSpec(
             'channels', (multi_nifti_gz_format, zip_format),
             optional=True, desc=("Reconstructed complex image for each "
                                  "coil without standardisation.")),
-        FilesetInputSpec('header_image', dicom_format, desc=(
+        InputFilesetSpec('header_image', dicom_format, desc=(
             "A dataset that contains correct the header information for the "
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
@@ -118,19 +118,19 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FieldSpec('ped', str, 'header_extraction_pipeline'),
         FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
-        FilesetInputSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
+        InputFilesetSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
                              resolution='template_resolution')),
-        FilesetInputSpec('template_brain', STD_IMAGE_FORMATS,
+        InputFilesetSpec('template_brain', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
                              resolution='template_resolution',
                              dataset='brain')),
-        FilesetInputSpec('template_mask', STD_IMAGE_FORMATS,
+        InputFilesetSpec('template_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',

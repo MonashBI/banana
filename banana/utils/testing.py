@@ -10,7 +10,7 @@ from unittest import TestCase
 from argparse import ArgumentParser
 from importlib import import_module
 from arcana.exceptions import ArcanaNameError
-from arcana import (FilesetInput, FieldInput, BasicRepo, XnatRepo, SingleProc,
+from arcana import (InputFileset, InputField, BasicRepo, XnatRepo, SingleProc,
                     Field, Fileset)
 from arcana.exceptions import ArcanaInputMissingMatchError
 from banana.exceptions import BananaTestSetupError, BananaUsageError
@@ -79,10 +79,10 @@ class PipelineTester(TestCase):
         for spec in self.study_class.data_specs():
             # Create an input for each entry in the class specificiation
             if spec.is_fileset:
-                selector = FilesetInput(
+                selector = InputFileset(
                     spec.name, spec.name, repository=self.ref_repo)
             else:
-                selector = FieldInput(
+                selector = InputField(
                     spec.name, spec.name, dtype=spec.dtype,
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
@@ -279,12 +279,12 @@ class PipelineTester(TestCase):
                     field_data = json.load(f)
                 for name, value in field_data.items():
                     field = Field(name, value)
-                    selector = FieldInput(field.name, field.name, field.dtype,
+                    selector = InputField(field.name, field.name, field.dtype,
                                           repository=in_repo)
                     inputs.append(selector)
             else:
                 fileset = Fileset.from_path(path)
-                selector = FilesetInput(fileset.basename, fileset.basename,
+                selector = InputFileset(fileset.basename, fileset.basename,
                                         fileset.format, repository=in_repo)
                 try:
                     spec = study_class.data_spec(selector)
