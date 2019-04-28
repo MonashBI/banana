@@ -6,7 +6,7 @@ from unittest import TestCase  # @IgnorePep8
 from arcana.processor import SingleProc, DEFAULT_PROV_IGNORE
 from banana.bids import BidsRepo
 from banana.utils.testing import BaseTestCase
-from banana.study import DwiStudy, FmriStudy
+from banana.study import DwiStudy, BoldStudy
 
 
 wf_logger = logging.getLogger('nipype.workflow')
@@ -47,7 +47,7 @@ class TestBids(TestCase):
         study.data('tensor')
 
     def test_bids_fmri(self):
-        study = FmriStudy(
+        study = BoldStudy(
             'test_fmri',
             repository=self.repo,
             processor=SingleProc(

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from banana.study.mri.functional.fmri import create_multi_fmri_class
+from banana.study.mri.functional.bold import create_multi_fmri_class
 from arcana.repository.xnat import XnatRepo
 from arcana.processor.linear import SingleProc
 import os.path
@@ -92,8 +92,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     fMRI, inputs, output_files = create_multi_fmri_class(
-            'fMRI', args.hires_structural, args.fmri, args.fmri_order,
-            args.fmri_echo_spacing, fm_mag=args.field_map_mag,
+            'fMRI', args.hires_structural, args.bold, args.bold_order,
+            args.bold_echo_spacing, fm_mag=args.field_map_mag,
             fm_phase=args.field_map_phase,
             run_regression=args.run_regression)
 

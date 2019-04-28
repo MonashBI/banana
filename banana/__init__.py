@@ -35,5 +35,5 @@ from .bids import BidsRepo  # @IgnorePep8
 
 
 # Import all Study classes into package root
-# from .study.base import (  # @IgnorePep8
-#     Study, StudyMetaClass, MultiStudy, MultiStudyMetaClass)
+from .study.base import (  # @IgnorePep8
+    Study, StudyMetaClass, MultiStudy, MultiStudyMetaClass)

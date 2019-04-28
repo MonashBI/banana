@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode() # @IgnorePep8
-from banana.study.mri.functional.fmri import create_multi_fmri_class # @IgnorePep8 @Reimport
+from banana.study.mri.functional.bold import create_multi_fmri_class # @IgnorePep8 @Reimport
 from banana.testing import BaseTestCase as TestCase # @IgnorePep8 @Reimport
 
 

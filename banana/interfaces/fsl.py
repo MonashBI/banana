@@ -76,7 +76,7 @@ class MelodicL1FSF(BaseInterface):
         d = {}
         d['outputdir'] = self.inputs.output_dir
         d['tr'] = self.inputs.tr
-        d['volumes'] = self.get_vols(self.inputs.fmri)
+        d['volumes'] = self.get_vols(self.inputs.bold)
         d['del_volume'] = 0
         d['brain_thresh'] = self.inputs.brain_thresh
         d['epi_dwelltime'] = self.inputs.dwell_time
@@ -84,8 +84,8 @@ class MelodicL1FSF(BaseInterface):
         d['unwarp_dir'] = self.inputs.unwarp_dir
         d['smoothing_fwhm'] = self.inputs.sfwhm
         d['highpass_cutoff'] = self.inputs.high_pass
-        d['fmri_file'] = self.inputs.fmri
-        d['fmri_reference'] = self.inputs.fmri_ref
+        d['fmri_file'] = self.inputs.bold
+        d['fmri_reference'] = self.inputs.bold_ref
         d['fieldmap'] = self.inputs.fmap
         d['fieldmap_mag'] = self.inputs.fmap_mag
         d['structural'] = self.inputs.structural

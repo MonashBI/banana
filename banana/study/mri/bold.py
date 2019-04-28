@@ -24,7 +24,7 @@ from arcana.study.multi import (
 from arcana.data import InputFileset
 from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
-from banana.interfaces.custom.fmri import PrepareFIX
+from banana.interfaces.custom.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
@@ -41,7 +41,7 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
+class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('train_data', rfile_format, optional=True,
@@ -360,7 +360,7 @@ class FmriStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
+class MultiBoldMixin(MultiStudy, metaclass=MultiStudyMetaClass):
     """
     A mixin class used for studies with an array of fMRI scans. Can be used to
     perform combined analysis over the array
@@ -396,14 +396,14 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             citations=[fsl_cite],
             name_maps=name_maps)
 
-        num_fix_dirs = len(self.fmri_substudies())
+        num_fix_dirs = len(self.bold_substudies())
         merge_fix_dirs = pipeline.add(
             'merge_fix_dirs',
             NiPypeMerge(num_fix_dirs))
         merge_label_files = pipeline.add(
             'merge_label_files',
             NiPypeMerge(num_fix_dirs))
-        for i, substudy_name in enumerate(self.fmri_substudies(), start=1):
+        for i, substudy_name in enumerate(self.bold_substudies(), start=1):
             spec = self.substudy_spec(substudy_name)
             pipeline.connect_input(
                 spec.inverse_map('fix_dir'), merge_fix_dirs, 'in{}'.format(i),
@@ -465,8 +465,8 @@ class MultiFmriMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         merge_inputs = pipeline.add(
             'merge_inputs',
-            NiPypeMerge(len(self.fmri_substudies())))
-        for i, substudy_name in enumerate(self.fmri_substudies(), start=1):
+            NiPypeMerge(len(self.bold_substudies())))
+        for i, substudy_name in enumerate(self.bold_substudies(), start=1):
             spec = self.substudy_spec(substudy_name)
             pipeline.connect_input(
                 spec.inverse_map('smoothed_ts'),
@@ -548,18 +548,18 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref',
                         'train_data': 'train_data'})
-    study_specs.append(SubStudySpec('epi_0', FmriStudy, epi_refspec))
+    study_specs.append(SubStudySpec('epi_0', BoldStudy, epi_refspec))
     if epi_number > 1:
         epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                             't1_preproc': 'coreg_ref',
                             'train_data': 'train_data',
                             'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
                             'epi_0_coreg_to_template_mat': 'coreg_to_template_mat'})
-        study_specs.extend(SubStudySpec('epi_{}'.format(i), FmriStudy,
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
                                         epi_refspec)
                            for i in range(1, epi_number))
 
-    study_specs.extend(SubStudySpec('epi_{}'.format(i), FmriStudy,
+    study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
                                     epi_refspec)
                        for i in range(epi_number))
 
@@ -596,5 +596,5 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     dct['add_data_specs'] = data_specs
     dct['add_param_specs'] = parameter_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    return (MultiStudyMetaClass(name, (MultiFmriMixin,), dct), inputs,
+    return (MultiStudyMetaClass(name, (MultiBoldMixin,), dct), inputs,
             output_files)

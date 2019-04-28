@@ -15,7 +15,7 @@ from banana.interfaces.custom.motion_correction import (
 from banana.file_format import (
     nifti_gz_format, text_matrix_format,
     par_format, motion_mats_format, dicom_format)
-from banana.interfaces.custom.fmri import FieldMapTimeInfo
+from banana.interfaces.custom.bold import FieldMapTimeInfo
 from banana.interfaces.custom.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
 
