@@ -34,13 +34,15 @@ from banana.exceptions import BananaUsageError
 from arcana.exceptions import ArcanaMissingDataException
 from banana.study import StudyMetaClass
 
+from banana.file_format import STD_IMAGE_FORMATS
+
 logger = getLogger('banana')
 
 
 class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        InputFilesetSpec('dwi_reference', nifti_gz_format, optional=True),
+        InputFilesetSpec('dwi_reference', STD_IMAGE_FORMATS, optional=True),
         FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
                     desc="b0 image"),
         FilesetSpec('noise_residual', mrtrix_image_format,

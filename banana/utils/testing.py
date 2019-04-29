@@ -80,18 +80,18 @@ class PipelineTester(TestCase):
         for spec in self.study_class.data_specs():
             # Create an input for each entry in the class specificiation
             if spec.is_fileset:
-                selector = InputFileset(
+                inpt = InputFileset(
                     spec.name, spec.name, repository=self.ref_repo)
             else:
-                selector = InputField(
+                inpt = InputField(
                     spec.name, spec.name, dtype=spec.dtype,
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
             try:
-                selector.match(self.ref_repo.cached_tree(), spec)
+                inpt.match(self.ref_repo.cached_tree(), spec)
             except ArcanaInputMissingMatchError:
                 continue
-            self.inputs[spec.name] = selector
+            self.inputs[spec.name] = inpt
         # Create the reference study
         self.ref_study = self.study_class(
             self.name,
@@ -193,7 +193,7 @@ class PipelineTester(TestCase):
     @classmethod
     def generate_test_data(cls, study_class, in_repo, out_repo,
                            in_server=None, out_server=None, work_dir=None,
-                           parameters=(), include=None, skip=(),
+                           parameters=(), include=None, skip=(), skip_bases=(),
                            reprocess=False, repo_depth=0):
         """
         Generates reference data for a pipeline tester unittests given a study
@@ -224,6 +224,10 @@ class PipelineTester(TestCase):
         skip : list[str]
             Spec names to skip in the generation process. Only valid if
             'include' is None
+        skip_bases : list[type(Study)]
+            List of base classes in which all entries in their data
+            specification that is not explicitly in the test data class is
+            added to the list of specs to skip
         reprocess : bool
             Whether to reprocess the generated datasets
         repo_depth : int
@@ -238,6 +242,10 @@ class PipelineTester(TestCase):
             study_name = study_class.__name__[:-len('Study')]
         else:
             study_name = study_class.__name__
+
+        skip = list(skip)
+        for base in skip_bases:
+            skip.extend(s.name for s in base.add_data_specs)
 
         # Get output repository to write the data to
         if in_server is not None:
@@ -255,7 +263,7 @@ class PipelineTester(TestCase):
 
         in_paths = []
         inputs = []
-        for fname in os.listdir(in_repo):
+        for fname in os.listdir(in_repo.root_dir):
             if fname == study_name:
                 continue
             path = op.join(in_repo.root_dir, fname)
@@ -265,27 +273,20 @@ class PipelineTester(TestCase):
                     field_data = json.load(f)
                 for name, value in field_data.items():
                     field = Field(name, value)
-                    selector = InputField(field.name, field.name, field.dtype,
-                                          repository=in_repo)
-                    inputs.append(selector)
+                    inpt = InputField(field.name, field.name, field.dtype,
+                                      repository=in_repo)
+                    inputs.append(inpt)
             else:
                 fileset = Fileset.from_path(path)
-                selector = InputFileset(fileset.basename, fileset.basename,
-                                        fileset.format, repository=in_repo)
+                inpt = InputFileset(fileset.basename, fileset.basename,
+                                    fileset.format, repository=in_repo)
                 try:
-                    spec = study_class.data_spec(selector)
+                    spec = study_class.data_spec(inpt)
                 except ArcanaNameError:
                     print("Skipping '{}' as it doesn't match a spec in {}"
                           .format(fname, study_class))
                     continue
-                if not (spec.derived and
-                        selector.format in spec.valid_formats):
-                    print("Skipping '{}' as it doesn't have a valid format "
-                          "for {} in {} ({})".format(
-                              fname, spec.name, study_class,
-                              ', '.join(f.name for f in spec.valid_formats)))
-                    continue
-                inputs.append(selector)
+                inputs.append(inpt)
 
         study = study_class(
             study_name,
@@ -293,6 +294,8 @@ class PipelineTester(TestCase):
             processor=SingleProc(work_dir, reprocess=reprocess),
             inputs=inputs,
             parameters=parameters,
+            subject_ids=in_repo.tree().subject_ids,
+            visit_ids=in_repo.tree().visit_ids,
             fill_tree=True)
 
         if include is None:
@@ -335,6 +338,14 @@ class PipelineTester(TestCase):
                     item_cpy.put()
 
 
+def resolve_class(class_str):
+    parts = class_str.split('.')
+    module_name = '.'.join(parts[:-1])
+    class_name = parts[-1]
+    module = import_module(module_name)
+    return getattr(module, class_name)
+
+
 def gen_test_data_entry_point():
     parser = ArgumentParser(
         description=("Generates reference data for a pipeline tester "
@@ -363,6 +374,8 @@ def gen_test_data_entry_point():
     parser.add_argument('--skip', '-s', nargs='+', default=[],
                         help=("Spec names to skip in the generation "
                               "process"))
+    parser.add_argument('--skip_base', action='append', default=[],
+                        help=("Base classes of which to skip data specs from"))
     parser.add_argument('--reprocess', action='store_true', default=False,
                         help=("Whether to reprocess previously generated "
                               "datasets in the output repository"))
@@ -370,9 +383,10 @@ def gen_test_data_entry_point():
                         help="The depth of the input repository")
     args = parser.parse_args()
 
-    parts = args.study_class.split('.')
-    module_name = '.'.join(parts[:-1])
-    class_name = parts[-1]
+    # Get Study class
+    study_class = resolve_class(args.study_class)
+
+    skip_bases = [resolve_class(c) for c in args.skip_base]
 
     # Convert parameters to dictionary
     parameters_dct = {}
@@ -387,24 +401,25 @@ def gen_test_data_entry_point():
         parameters_dct[name] = value
     parameters = parameters_dct
 
-    # Get Study class
-    module = import_module(module_name)
-    study_class = getattr(module, class_name)
-
     PipelineTester.generate_test_data(
         study_class=study_class, in_repo=args.in_repo,
         out_repo=args.out_repo, in_server=args.in_server,
         out_server=args.out_server, work_dir=args.work_dir,
-        parameters=parameters, skip=args.skip,
+        parameters=parameters, skip=args.skip, skip_bases=skip_bases,
         reprocess=args.reprocess, repo_depth=args.repo_depth)
 
 
 if __name__ == '__main__':
+    from banana.study.mri import MriStudy
     from banana.study.mri.dwi import DwiStudy
 
     PipelineTester.generate_test_data(
         DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
         work_dir='/Users/tclose/Data/dwi-work',
-        parameters=(), include=None, skip=(),
+        skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+              'field_map_phase', 'moco', 'align_mats', 'moco_par',
+              'field_map_delta_te'],
+        skip_bases=[MriStudy],
+        parameters=(), include=None,
         reprocess=False, repo_depth=0)

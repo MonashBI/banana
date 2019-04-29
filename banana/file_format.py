@@ -204,7 +204,7 @@ class DicomFormat(ImageFormat):
                         dtype=int)
 
     def extract_id(self, fileset):
-        return int(fileset.dicom_values([self.SERIES_NUMBER_TAG]))
+        return int(fileset.dicom_values([self.SERIES_NUMBER_TAG])[0])
 
     def dicom_values(self, fileset, tags):
         """

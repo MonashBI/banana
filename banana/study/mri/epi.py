@@ -26,7 +26,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
-                            optional=True),
+                         optional=True),
         InputFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
         InputFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
                             optional=True),
