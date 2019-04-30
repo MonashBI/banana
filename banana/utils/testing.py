@@ -390,7 +390,7 @@ def gen_test_data_entry_point():
 
     # Convert parameters to dictionary
     parameters_dct = {}
-    for name, value in args.parameters:
+    for name, value in args.parameter:
         try:
             value = int(value)
         except ValueError:
