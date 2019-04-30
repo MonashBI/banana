@@ -243,10 +243,6 @@ class PipelineTester(TestCase):
         else:
             study_name = study_class.__name__
 
-        skip = list(skip)
-        for base in skip_bases:
-            skip.extend(s.name for s in base.add_data_specs)
-
         # Get output repository to write the data to
         if in_server is not None:
             in_repo = XnatRepo(project_id=in_repo, server=in_server,
@@ -299,7 +295,11 @@ class PipelineTester(TestCase):
             fill_tree=True)
 
         if include is None:
-            include = [n for n in study.data_spec_names() if n not in skip]
+            include = set()
+            for base in study_class.__mro__:
+                if base not in skip_bases and hasattr(base, 'add_data_specs'):
+                    include.update(s.name for s in base.add_data_specs
+                                   if s.name not in skip)
         elif skip:
             raise BananaUsageError(
                 "Cannot provide both 'include' and 'skip' options to "
@@ -318,24 +318,23 @@ class PipelineTester(TestCase):
 
         # Upload data to repository
         for spec in study.data_specs():
-            if spec.name not in skip:
-                for item in study.data(spec.name):
-                    if not item.exists:
-                        continue
-                    if item.is_fileset:
-                        item_cpy = Fileset(
-                            name=item.name, format=item.format,
-                            frequency=item.frequency, path=item.path,
-                            aux_files=copy(item.aux_files),
-                            subject_id=item.subject_id, visit_id=item.visit_id,
-                            repository=out_repo, exists=True)
-                    else:
-                        item_cpy = Field(
-                            name=item.name, value=item.value, dtype=item.dtype,
-                            frequency=item.frequency, array=item.array,
-                            subject_id=item.subject_id, visit_id=item.visit_id,
-                            repository=out_repo, exists=True)
-                    item_cpy.put()
+            for item in study.data(spec.name, generate=False):
+                if not item.exists:
+                    continue
+                if item.is_fileset:
+                    item_cpy = Fileset(
+                        name=item.name, format=item.format,
+                        frequency=item.frequency, path=item.path,
+                        aux_files=copy(item.aux_files),
+                        subject_id=item.subject_id, visit_id=item.visit_id,
+                        repository=out_repo, exists=True)
+                else:
+                    item_cpy = Field(
+                        name=item.name, value=item.value, dtype=item.dtype,
+                        frequency=item.frequency, array=item.array,
+                        subject_id=item.subject_id, visit_id=item.visit_id,
+                        repository=out_repo, exists=True)
+                item_cpy.put()
 
 
 def resolve_class(class_str):
