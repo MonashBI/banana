@@ -257,32 +257,30 @@ class PipelineTester(TestCase):
 
         temp_repo = BasicRepo(temp_repo_root, depth=repo_depth)
 
-        in_paths = []
-        inputs = []
-        for fname in os.listdir(in_repo.root_dir):
-            if fname == study_name:
-                continue
-            path = op.join(in_repo.root_dir, fname)
-            in_paths.append(path)
-            if fname == BasicRepo.FIELDS_FNAME:
-                with open(path) as f:
-                    field_data = json.load(f)
-                for name, value in field_data.items():
-                    field = Field(name, value)
-                    inpt = InputField(field.name, field.name, field.dtype,
+        inputs = None
+        for session in in_repo.tree().sessions:
+            session_inputs = []
+            for item in chain(session.filesets, session.fields):
+                if isinstance(item, Fileset):
+                    inpt = InputFileset(item.basename, item.basename,
+                                        item.format, repository=in_repo)
+                else:
+                    inpt = InputField(item.name, item.name, item.dtype,
                                       repository=in_repo)
-                    inputs.append(inpt)
-            else:
-                fileset = Fileset.from_path(path)
-                inpt = InputFileset(fileset.basename, fileset.basename,
-                                    fileset.format, repository=in_repo)
                 try:
                     spec = study_class.data_spec(inpt)
                 except ArcanaNameError:
-                    print("Skipping '{}' as it doesn't match a spec in {}"
-                          .format(fname, study_class))
-                    continue
-                inputs.append(inpt)
+                    print("Skipping {} as it doesn't match a spec in {}"
+                          .format(item, study_class))
+                else:
+                    session_inputs.append(inpt)
+            session_inputs = sorted(session_inputs)
+            if inputs is not None and session_inputs != inputs:
+                raise BananaUsageError(
+                    "Inconsistent inputs ({} and {}) found in sessions of {}"
+                    .format(inputs, session_inputs, in_repo))
+            else:
+                inputs = session_inputs
 
         study = study_class(
             study_name,
@@ -413,7 +411,7 @@ if __name__ == '__main__':
     from banana.study.mri.dwi import DwiStudy
 
     PipelineTester.generate_test_data(
-        DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+        DwiStudy, '/Users/tclose/Data/dwi2', 'TESTBANANADWI',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
         work_dir='/Users/tclose/Data/dwi-work',
         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
@@ -421,4 +419,4 @@ if __name__ == '__main__':
               'field_map_delta_te'],
         skip_bases=[MriStudy],
         parameters=(), include=None,
-        reprocess=False, repo_depth=0)
+        reprocess=False, repo_depth=1)
