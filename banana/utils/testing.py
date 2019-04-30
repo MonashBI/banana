@@ -23,6 +23,7 @@ logger.setLevel(logging.WARNING)
 handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
 handler.setFormatter(formatter)
+
 logger.addHandler(handler)
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -251,9 +252,9 @@ class PipelineTester(TestCase):
             in_repo = BasicRepo(in_repo, depth=repo_depth)
 
         temp_repo_root = op.join(work_dir, 'temp-repo')
-        if os.path.exists(temp_repo_root):
+        if os.path.exists(temp_repo_root) and reprocess:
             shutil.rmtree(temp_repo_root)
-        os.makedirs(temp_repo_root)
+        os.makedirs(temp_repo_root, exist_ok=True)
 
         temp_repo = BasicRepo(temp_repo_root, depth=repo_depth)
 
@@ -379,6 +380,13 @@ def gen_test_data_entry_point():
     parser.add_argument('--repo_depth', type=int, default=0,
                         help="The depth of the input repository")
     args = parser.parse_args()
+
+    logger = logging.getLogger('nipype.workflow')
+    logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     # Get Study class
     study_class = resolve_class(args.study_class)
