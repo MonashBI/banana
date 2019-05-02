@@ -286,7 +286,11 @@ class PipelineTester(TestCase):
         study = study_class(
             study_name,
             repository=temp_repo,
-            processor=SingleProc(work_dir, reprocess=reprocess),
+            processor=SingleProc(
+                work_dir, reprocess=reprocess, prov_ignore=(
+                    SingleProc.DEFAULT_PROV_IGNORE +
+                    ['.*/pkg_version',
+                     'workflow/nodes/.*/requirements/.*/version'])),
             inputs=inputs,
             parameters=parameters,
             subject_ids=in_repo.tree().subject_ids,
@@ -305,7 +309,7 @@ class PipelineTester(TestCase):
                 "PipelineTester.generate_test_data")
 
         # Generate all derived data
-        for spec_name in include:
+        for spec_name in sorted(include):
             study.data(spec_name)
 
         # Get output repository to write the data to
@@ -426,5 +430,6 @@ if __name__ == '__main__':
               'field_map_phase', 'moco', 'align_mats', 'moco_par',
               'field_map_delta_te'],
         skip_bases=[MriStudy],
-        parameters=(), include=None,
+        parameters={
+            'num_global_tracks': int(1e6)}, include=None,
         reprocess=False, repo_depth=1)

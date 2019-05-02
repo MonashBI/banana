@@ -28,7 +28,7 @@ from arcana import (  # @IgnorePep8
     SubStudySpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
     FilesetSpec, InputFileset, InputFilesetSpec, FilesetCollection, Field,
     FieldSpec, InputField, InputFieldSpec, FieldCollection, SingleProc,
-    MultiProc, SlurmProc, DEFAULT_PROV_CHECK, DEFAULT_PROV_IGNORE, StaticEnv,
+    MultiProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, XnatRepo)
 
 from .bids import BidsRepo  # @IgnorePep8
