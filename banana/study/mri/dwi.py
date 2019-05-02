@@ -130,6 +130,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                                format=nifti_gz_format,
                                drop_if_missing=True)]
 
+    RECOMMENDED_NUM_SESSIONS_FOR_INTENS_NORM = 5
+
     @property
     def multi_tissue(self):
         return self.branch('response_algorithm',
