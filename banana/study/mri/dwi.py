@@ -427,39 +427,49 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 'in_file': ('bias_correct', nifti_gz_format),
                 'grad_fsl': (grad_merge, 'out')})
 
-        # Set up join nodes
-        fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
-        join_subjects = pipeline.add(
-            'join_subjects',
+        # Pair subject and visit ids together, expanding so they can be
+        # joined and chained together
+        session_ids = pipeline.add(
+            'session_ids',
             IdentityInterface(
-                fields),
+                ['subject_id', 'visit_id']),
+            inputs={
+                'subject_id': (Study.SUBJECT_ID, int),
+                'visit_id': (Study.VISIT_ID, int)})
+
+        # Set up join nodes
+        join_fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
+        join_over_subjects = pipeline.add(
+            'join_over_subjects',
+            IdentityInterface(
+                join_fields),
             inputs={
                 'masks': ('brain_mask', nifti_gz_format),
                 'dwis': (mrconvert, 'out_file'),
-                'subject_ids': (Study.SUBJECT_ID, int),
-                'visit_ids': (Study.VISIT_ID, int)},
+                'subject_ids': (session_ids, 'subject_id'),
+                'visit_ids': (session_ids, 'visit_id')},
             joinsource=self.SUBJECT_ID,
-            joinfield=fields)
+            joinfield=join_fields)
 
-        join_visits = pipeline.add(
-            'join_visits',
+        join_over_visits = pipeline.add(
+            'join_over_visits',
             Chain(
-                fields),
+                join_fields),
             inputs={
-                'dwis': (join_subjects, 'dwis'),
-                'masks': (join_subjects, 'masks'),
-                'subject_ids': (join_subjects, 'subject_ids'),
-                'visit_ids': (join_subjects, 'visit_ids')},
+                'dwis': (join_over_subjects, 'dwis'),
+                'masks': (join_over_subjects, 'masks'),
+                'subject_ids': (join_over_subjects, 'subject_ids'),
+                'visit_ids': (join_over_subjects, 'visit_ids')},
             joinsource=self.VISIT_ID,
-            joinfield=fields)
+            joinfield=join_fields)
 
         # Intensity normalization
         intensity_norm = pipeline.add(
             'dwiintensitynorm',
             DWIIntensityNorm(),
             inputs={
-                'in_files': (join_visits, 'dwis'),
-                'masks': (join_visits, 'masks')},
+                'in_files': (join_over_visits, 'dwis'),
+                'masks': (join_over_visits, 'masks')},
             outputs={
                 'norm_intens_fa_template': ('fa_template', mrtrix_image_format),
                 'norm_intens_wm_mask': ('wm_mask', mrtrix_image_format)})
@@ -468,9 +478,9 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'expand', SelectSession(),
             inputs={
-                'subject_ids': (join_visits, 'subject_ids'),
-                'visit_ids': (join_visits, 'visit_ids'),
-                'items': (intensity_norm, 'out_files'),
+                'subject_ids': (join_over_visits, 'subject_ids'),
+                'visit_ids': (join_over_visits, 'visit_ids'),
+                'inlist': (intensity_norm, 'out_files'),
                 'subject_id': (Study.SUBJECT_ID, int),
                 'visit_id': (Study.VISIT_ID, int)},
             outputs={

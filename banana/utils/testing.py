@@ -24,6 +24,12 @@ handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
+logger = logging.getLogger('nipype.workflow')
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+formatter = logging.Formatter("%(levelname)s - %(message)s")
+handler.setFormatter(formatter)
+
 logger.addHandler(handler)
 
 logging.getLogger("urllib3").setLevel(logging.WARNING)
@@ -309,7 +315,7 @@ class PipelineTester(TestCase):
                 "PipelineTester.generate_test_data")
 
         # Generate all derived data
-        for spec_name in sorted(include):
+        for spec_name in ['norm_intensity']: # sorted(include):
             study.data(spec_name)
 
         # Get output repository to write the data to
