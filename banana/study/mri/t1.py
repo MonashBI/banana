@@ -5,9 +5,10 @@ from banana.requirement import freesurfer_req, ants_req, fsl_req
 from banana.citation import freesurfer_cites, fsl_cite
 from nipype.interfaces import fsl, ants
 from arcana.utils.interfaces import Merge
+from banana.interfaces.freesurfer import AparcStats
 from banana.file_format import (
     nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
-    directory_format)
+    directory_format, text_format)
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from .t2 import T2Study, MriStudy
@@ -21,6 +22,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
+        FilesetSpec('fs_aparc_rh_thick', text_format,
+                    'fs_aparc_rh_thick_pipeline'),
         InputFilesetSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
             desc=("A coregistered T2 image to use in freesurfer to help "
@@ -89,12 +92,34 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                                                               **name_maps)
         return pipeline
 
+    def fs_aparc_rh_thick_pipeline(self):
+        return self._aparc_stats_base_pipeline('thickness', 'rh')
+
+    def _aparc_stats_base_pipeline(self, measure, hemisphere, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='aparc_stats',
+            name_maps=name_maps,
+            desc=("Extract statistics from freesurfer outputs"))
+
+        pipeline.add(
+            name='aparc_stats',
+            AparcStats(),
+            inputs={
+                'recon_all_dir': ('fs_recon_all', directory_format),
+                'measure': measure,
+                'hemisphere': hemisphere},
+            outputs={
+                'aparc_stats': ('tablefile', text_format)})
+
+        return pipeline
+
     def bet_T1(self, **name_maps):
 
         pipeline = self.new_pipeline(
             name='BET_T1',
             name_maps=name_maps,
-            desc=("python implementation of BET"),
+            desc=("Brain extraction pipeline using FSL's BET"),
             citations=[fsl_cite])
 
         bias = pipeline.add(
