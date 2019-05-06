@@ -1,7 +1,7 @@
-from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
-                                    traits, File, TraitedSpec, Directory)
 from nipype.interfaces.base import (
-    isdefined, CommandLineInputSpec, TraitedSpec, CommandLine)
+    BaseInterface, BaseInterfaceInputSpec, traits, File, TraitedSpec,
+    Directory, isdefined, CommandLineInputSpec, CommandLine)
+
 
 class GenFSBrainMasksInputSpec(BaseInterfaceInputSpec):
 
@@ -39,7 +39,7 @@ class AparcStatsInputSpec(CommandLineInputSpec):
         mandatory=True)
     tablefile = File(argstr='--tablefile %', genfile=True,
                            desc=("(REQUIRED) output table file"))
-    hemi = traits.Enum(
+    hemisphere = traits.Enum(
         'lh', 'rh',
         argstr='--hemi %',
         mandatory=True,

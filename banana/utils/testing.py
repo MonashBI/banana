@@ -24,11 +24,11 @@ handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-logger = logging.getLogger('nipype.workflow')
-logger.setLevel(logging.DEBUG)
-handler = logging.StreamHandler()
-formatter = logging.Formatter("%(levelname)s - %(message)s")
-handler.setFormatter(formatter)
+# logger = logging.getLogger('nipype.workflow')
+# logger.setLevel(logging.DEBUG)
+# handler = logging.StreamHandler()
+# formatter = logging.Formatter("%(levelname)s - %(message)s")
+# handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
@@ -315,7 +315,7 @@ class PipelineTester(TestCase):
                 "PipelineTester.generate_test_data")
 
         # Generate all derived data
-        for spec_name in ['norm_intensity']: # sorted(include):
+        for spec_name in sorted(include):
             study.data(spec_name)
 
         # Get output repository to write the data to
@@ -426,16 +426,27 @@ def gen_test_data_entry_point():
 
 if __name__ == '__main__':
     from banana.study.mri import MriStudy
-    from banana.study.mri.dwi import DwiStudy
+    from banana.study.mri.t1 import T1Study
 
     PipelineTester.generate_test_data(
-        DwiStudy, '/Users/tclose/Data/dwi2', 'TESTBANANADWI',
+        T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/dwi-work',
-        skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
-              'field_map_phase', 'moco', 'align_mats', 'moco_par',
-              'field_map_delta_te'],
+        work_dir='/Users/tclose/Data/t1-work',
+        skip=[],
         skip_bases=[MriStudy],
-        parameters={
-            'num_global_tracks': int(1e6)}, include=None,
-        reprocess=False, repo_depth=1)
+        include=None,
+        reprocess=False, repo_depth=0)
+
+#     from banana.study.mri.dwi import DwiStudy
+#
+#     PipelineTester.generate_test_data(
+#         DwiStudy, '/Users/tclose/Data/dwi2', 'TESTBANANADWI',
+#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+#         work_dir='/Users/tclose/Data/dwi-work',
+#         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+#               'field_map_phase', 'moco', 'align_mats', 'moco_par',
+#               'field_map_delta_te'],
+#         skip_bases=[MriStudy],
+#         parameters={
+#             'num_global_tracks': int(1e6)}, include=None,
+#         reprocess=False, repo_depth=1)

@@ -1,4 +1,5 @@
 from copy import copy
+import itertools
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.utils.interfaces import DummyReconAll as ReconAll
 from banana.requirement import freesurfer_req, ants_req, fsl_req
@@ -22,8 +23,6 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
-        FilesetSpec('fs_aparc_rh_thick', text_format,
-                    'fs_aparc_rh_thick_pipeline'),
         InputFilesetSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
             desc=("A coregistered T2 image to use in freesurfer to help "
@@ -31,7 +30,17 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         # Templates
         InputFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=LocalReferenceData('SUIT', nifti_format))]
+                         default=LocalReferenceData('SUIT', nifti_format))] + [
+        FilesetSpec(
+            'aparc_stats_{}_{}_table'.format(h, m),
+            text_format, 'aparc_stats_table_pipeline',
+            pipeline_args={'hemisphere': h, 'measure': m},
+            desc=("Table of {} of {} per parcellated segment"
+                  .format(m, h.upper())))
+        for h, m in itertools.product(
+            ('lh', 'rh'),
+            ('volume', 'thickness', 'thicknessstd', 'meancurv', 'gauscurv',
+             'foldind', 'curvind'))]
 
     add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',
@@ -92,25 +101,23 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                                                               **name_maps)
         return pipeline
 
-    def fs_aparc_rh_thick_pipeline(self):
-        return self._aparc_stats_base_pipeline('thickness', 'rh')
-
-    def _aparc_stats_base_pipeline(self, measure, hemisphere, **name_maps):
+    def aparc_stats_table_pipeline(self, measure, hemisphere, **name_maps):
 
         pipeline = self.new_pipeline(
-            name='aparc_stats',
+            name='aparc_stats_{}_{}'.format(hemisphere, measure),
             name_maps=name_maps,
             desc=("Extract statistics from freesurfer outputs"))
 
         pipeline.add(
-            name='aparc_stats',
-            AparcStats(),
+            'aparc_stats',
+            AparcStats(
+                measure=measure,
+                hemisphere=hemisphere),
             inputs={
-                'recon_all_dir': ('fs_recon_all', directory_format),
-                'measure': measure,
-                'hemisphere': hemisphere},
+                'recon_all_dir': ('fs_recon_all', directory_format)},
             outputs={
-                'aparc_stats': ('tablefile', text_format)})
+                'aparc_stats_{}_{}_table'
+                .format(hemisphere, measure): ('tablefile', text_format)})
 
         return pipeline
 
