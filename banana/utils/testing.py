@@ -320,7 +320,7 @@ class PipelineTester(TestCase):
 
         # Get output repository to write the data to
         if out_server is not None:
-            out_repo = XnatRepo(project_id=out_repo, server=in_server,
+            out_repo = XnatRepo(project_id=out_repo, server=out_server,
                                 cache_dir=op.join(work_dir, 'xnat-cache'))
         else:
             out_repo = BasicRepo(out_repo, depth=repo_depth)
@@ -426,27 +426,28 @@ def gen_test_data_entry_point():
 
 if __name__ == '__main__':
     from banana.study.mri import MriStudy
-    from banana.study.mri.t1 import T1Study
+#     from banana.study.mri.t1 import T1Study
+# 
+#     PipelineTester.generate_test_data(
+#         T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
+#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+#         work_dir='/Users/tclose/Data/t1-work',
+#         skip=[],
+#         skip_bases=[MriStudy],
+#         include=None,
+#         reprocess=False, repo_depth=0)
+
+    from banana.study.mri.dwi import DwiStudy
 
     PipelineTester.generate_test_data(
-        T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
+        DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/t1-work',
-        skip=[],
+        work_dir='/Users/tclose/Data/dwi-work',
+        skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+              'field_map_phase', 'moco', 'align_mats', 'moco_par',
+              'field_map_delta_te', 'norm_intensity',
+              'norm_intens_fa_template', 'norm_intens_wm_mask'],
         skip_bases=[MriStudy],
-        include=None,
-        reprocess=False, repo_depth=0)
-
-#     from banana.study.mri.dwi import DwiStudy
-#
-#     PipelineTester.generate_test_data(
-#         DwiStudy, '/Users/tclose/Data/dwi2', 'TESTBANANADWI',
-#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-#         work_dir='/Users/tclose/Data/dwi-work',
-#         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
-#               'field_map_phase', 'moco', 'align_mats', 'moco_par',
-#               'field_map_delta_te'],
-#         skip_bases=[MriStudy],
-#         parameters={
-#             'num_global_tracks': int(1e6)}, include=None,
-#         reprocess=False, repo_depth=1)
+        parameters={
+            'num_global_tracks': int(1e6)}, include=None,
+        reprocess=False, repo_depth=1)
