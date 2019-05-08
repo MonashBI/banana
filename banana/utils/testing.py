@@ -4,7 +4,6 @@ import logging
 import tempfile
 import shutil
 from copy import copy
-import json
 from pprint import pformat
 from itertools import chain
 from unittest import TestCase
@@ -13,7 +12,8 @@ from importlib import import_module
 from arcana.exceptions import ArcanaNameError
 from arcana import (InputFileset, InputField, BasicRepo, XnatRepo, SingleProc,
                     Field, Fileset)
-from arcana.exceptions import ArcanaInputMissingMatchError
+from arcana.exceptions import (
+    ArcanaInputMissingMatchError, ArcanaMissingDataException)
 from banana.exceptions import BananaTestSetupError, BananaUsageError
 import banana.file_format  # @UnusedImport
 
@@ -327,7 +327,11 @@ class PipelineTester(TestCase):
 
         # Upload data to repository
         for spec in study.data_specs():
-            for item in study.data(spec.name, generate=False):
+            try:
+                data = study.data(spec.name, generate=False)
+            except ArcanaMissingDataException:
+                continue
+            for item in data:
                 if not item.exists:
                     continue
                 if item.is_fileset:
@@ -426,28 +430,28 @@ def gen_test_data_entry_point():
 
 if __name__ == '__main__':
     from banana.study.mri import MriStudy
-#     from banana.study.mri.t1 import T1Study
-# 
-#     PipelineTester.generate_test_data(
-#         T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
-#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-#         work_dir='/Users/tclose/Data/t1-work',
-#         skip=[],
-#         skip_bases=[MriStudy],
-#         include=None,
-#         reprocess=False, repo_depth=0)
-
-    from banana.study.mri.dwi import DwiStudy
+    from banana.study.mri.t1 import T1Study
 
     PipelineTester.generate_test_data(
-        DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+        T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/dwi-work',
-        skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
-              'field_map_phase', 'moco', 'align_mats', 'moco_par',
-              'field_map_delta_te', 'norm_intensity',
-              'norm_intens_fa_template', 'norm_intens_wm_mask'],
+        work_dir='/Users/tclose/Data/t1-work',
+        skip=['t2_coreg'],
         skip_bases=[MriStudy],
-        parameters={
-            'num_global_tracks': int(1e6)}, include=None,
+        include=None,
         reprocess=False, repo_depth=1)
+
+#     from banana.study.mri.dwi import DwiStudy
+# 
+#     PipelineTester.generate_test_data(
+#         DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+#         work_dir='/Users/tclose/Data/dwi-work',
+#         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+#               'field_map_phase', 'moco', 'align_mats', 'moco_par',
+#               'field_map_delta_te', 'norm_intensity',
+#               'norm_intens_fa_template', 'norm_intens_wm_mask'],
+#         skip_bases=[MriStudy],
+#         parameters={
+#             'num_global_tracks': int(1e6)}, include=None,
+#         reprocess=False, repo_depth=1)

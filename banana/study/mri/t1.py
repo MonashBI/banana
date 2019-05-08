@@ -15,6 +15,7 @@ from arcana.utils.interfaces import JoinPath
 from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
+from arcana.utils.interfaces import CopyToDir
 from banana.reference import LocalReferenceData
 
 
@@ -34,6 +35,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         FilesetSpec(
             'aparc_stats_{}_{}_table'.format(h, m),
             text_format, 'aparc_stats_table_pipeline',
+            frequency='per_visit',
             pipeline_args={'hemisphere': h, 'measure': m},
             desc=("Table of {} of {} per parcellated segment"
                   .format(m, h.upper())))
@@ -108,13 +110,23 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc=("Extract statistics from freesurfer outputs"))
 
+        copy_to_dir = pipeline.add(
+            'copy_to_subjects_dir',
+            CopyToDir(),
+            inputs={
+                'in_files': ('fs_recon_all', directory_format),
+                'file_names': (self.SUBJECT_ID, int)},
+            joinsource=self.SUBJECT_ID,
+            joinfield=['in_files', 'file_names'])
+
         pipeline.add(
             'aparc_stats',
             AparcStats(
                 measure=measure,
                 hemisphere=hemisphere),
             inputs={
-                'recon_all_dir': ('fs_recon_all', directory_format)},
+                'subjects_dir': (copy_to_dir, 'out_dir'),
+                'subjects': (copy_to_dir, 'file_names')},
             outputs={
                 'aparc_stats_{}_{}_table'
                 .format(hemisphere, measure): ('tablefile', text_format)})
