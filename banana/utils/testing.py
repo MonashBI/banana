@@ -333,6 +333,8 @@ class PipelineTester(TestCase):
                 continue
             for item in data:
                 if not item.exists:
+                    logger.info("Skipping upload of non-existant {}"
+                                .format(item))
                     continue
                 if item.is_fileset:
                     item_cpy = Fileset(
@@ -430,28 +432,28 @@ def gen_test_data_entry_point():
 
 if __name__ == '__main__':
     from banana.study.mri import MriStudy
-    from banana.study.mri.t1 import T1Study
-
-    PipelineTester.generate_test_data(
-        T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
-        in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/t1-work',
-        skip=['t2_coreg'],
-        skip_bases=[MriStudy],
-        include=None,
-        reprocess=False, repo_depth=1)
-
-#     from banana.study.mri.dwi import DwiStudy
+#     from banana.study.mri.t1 import T1Study
 # 
 #     PipelineTester.generate_test_data(
-#         DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+#         T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
 #         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-#         work_dir='/Users/tclose/Data/dwi-work',
-#         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
-#               'field_map_phase', 'moco', 'align_mats', 'moco_par',
-#               'field_map_delta_te', 'norm_intensity',
-#               'norm_intens_fa_template', 'norm_intens_wm_mask'],
+#         work_dir='/Users/tclose/Data/t1-work',
+#         skip=['t2_coreg'],
 #         skip_bases=[MriStudy],
-#         parameters={
-#             'num_global_tracks': int(1e6)}, include=None,
+#         include=None,
 #         reprocess=False, repo_depth=1)
+
+    from banana.study.mri.dwi import DwiStudy
+
+    PipelineTester.generate_test_data(
+        DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+        in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+        work_dir='/Users/tclose/Data/dwi-work',
+        skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+              'field_map_phase', 'moco', 'align_mats', 'moco_par',
+              'field_map_delta_te', 'norm_intensity',
+              'norm_intens_fa_template', 'norm_intens_wm_mask'],
+        skip_bases=[MriStudy],
+        parameters={
+            'num_global_tracks': int(1e6)}, include=None,
+        reprocess=False, repo_depth=1)
