@@ -55,7 +55,7 @@ class AparcStatsInputSpec(FSTraitedSpec):
         desc=("name of the longitudinal qdec table which has the column of tp "
               "ids (fsid) and subject templates (fsid-base)"))
     parc = traits.Enum(
-        'aparc', 'aparc.a2009s',
+        'aparc', 'aparc.a2009s', 'aparc.DKTatlas',
         argstr='--parc %s', usedefault=True,
         desc=("parcellation.. default is aparc (alt aparc.a2009s)"))
     measure = traits.Enum(
