@@ -142,7 +142,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                 'subjects': (copy_to_dir, 'file_names')},
             outputs={
                 'aparc_stats_{}_{}_table'
-                .format(hemisphere, measure): ('tablefile', text_format)})
+                .format(hemisphere, measure): ('tablefile', text_format)},
+            requirements=[freesurfer_req.v('5.3')])
 
         return pipeline
 
