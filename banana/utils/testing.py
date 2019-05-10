@@ -542,3 +542,18 @@ if __name__ == '__main__':
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
             reprocess=False, repo_depth=1, modules_env=True)
+
+#     from banana.study.mri.dwi import DwiStudy
+# 
+#     PipelineTester.generate_test_data(
+#         DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+#         work_dir='/Users/tclose/Data/dwi-work',
+#         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+#               'field_map_phase', 'moco', 'align_mats', 'moco_par',
+#               'field_map_delta_te', 'norm_intensity',
+#               'norm_intens_fa_template', 'norm_intens_wm_mask'],
+#         skip_bases=[MriStudy],
+#         parameters={
+#             'num_global_tracks': int(1e6)}, include=None,
+#         reprocess=False, repo_depth=1)

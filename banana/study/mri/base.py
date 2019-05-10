@@ -1,3 +1,9 @@
+import pydicom
+import nibabel
+import json
+import glob
+import numpy as np
+from nipype.utils.filemanip import split_filename
 from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
 from banana.citation import spm_cite
@@ -14,8 +20,6 @@ from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req, c3d_req
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exceptions import ArcanaOutputNotProducedException
 from banana.interfaces.mrtrix.transform import MRResize
-from banana.interfaces.custom.dicom import (
-    DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
 from nipype.interfaces.utility import Merge
 from arcana.utils.interfaces import SelectOne
 from nipype.interfaces import ants
@@ -31,7 +35,7 @@ from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
-from banana.exceptions import BananaUsageError
+from banana.exceptions import BananaUsageError, BananaMissingHeaderValue
 from banana.reference import FslReferenceData
 
 logger = logging.getLogger('arcana')
@@ -106,19 +110,19 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
         FilesetSpec('qform_mat', text_matrix_format,
                     'qform_transform_pipeline'),
-        FieldSpec('tr', float, 'header_extraction_pipeline'),
-        FieldSpec('echo_times', float, 'header_extraction_pipeline',
-                  array=True),
-        FieldSpec('voxel_sizes', float, 'header_extraction_pipeline',
-                  array=True),
-        FieldSpec('main_field_orient', float, 'header_extraction_pipeline',
-                  array=True),
-        FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
-        FieldSpec('start_time', float, 'header_extraction_pipeline'),
-        FieldSpec('real_duration', float, 'header_extraction_pipeline'),
-        FieldSpec('total_duration', float, 'header_extraction_pipeline'),
-        FieldSpec('ped', str, 'header_extraction_pipeline'),
-        FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
+#         FieldSpec('tr', float, 'header_extraction_pipeline'),
+#         FieldSpec('echo_times', float, 'header_extraction_pipeline',
+#                   array=True),
+#         FieldSpec('voxel_sizes', float, 'header_extraction_pipeline',
+#                   array=True),
+#         FieldSpec('main_field_orient', float, 'header_extraction_pipeline',
+#                   array=True),
+#         FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
+#         FieldSpec('start_time', float, 'header_extraction_pipeline'),
+#         FieldSpec('real_duration', float, 'header_extraction_pipeline'),
+#         FieldSpec('total_duration', float, 'header_extraction_pipeline'),
+#         FieldSpec('ped', str, 'header_extraction_pipeline'),
+#         FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
         # Templates
         InputFilesetSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
                          default=FslReferenceData(
@@ -155,7 +159,10 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
         SwitchSpec('coreg_to_tmpl_method', 'ants', ('fnirt', 'ants')),
-        ParamSpec('template_resolution', 2),  # choices=(0.5, 1, 2)),
+        SwitchSpec('template_resolution', None, dtype=float,
+                   choices=(0.5, 1, 2),
+                   desc=("Override the template resolution to use for NL "
+                         "registration")),
         ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
@@ -186,6 +193,194 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'channel_imag_label', 'IMAGINARY',
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._extract_header_info()
+
+    def _extract_header_info(self):
+        """
+        A method run to extract header information from DICOM or NiFTI-x images
+        to give provide access to the following MRI acquisition parameters
+
+            - start_time
+            - tr
+            - echo_times
+            - voxel_sizes
+            - main_field_orient
+            - main_field_strength
+            - total_duration
+            - real_duration
+            - ped
+            - pe_angle
+
+        """
+
+        if self.provided('header_image'):
+            in_name = 'header_image'
+        else:
+            in_name = 'magnitude'
+
+        inpt = self.input(in_name)
+
+        if inpt.format == dicom_format:
+            self._header = self._extract_dicom_header_info(inpt)
+        elif inpt.format == nifti_gz_x_format:
+            self._header = self._extract_niftix_header_info(inpt)
+        else:
+            raise BananaUsageError(
+                "Can only extract header info if 'magnitude' fileset "
+                "is provided in DICOM or extended NIfTI format (provided {})"
+                .format(self.input(in_name).format))
+
+    def _extract_niftix_header_info(self, fileset):
+
+        with open(fileset.aux_file['json']) as f:
+            dct = json.load(f)
+        nifti_hdr = nibabel.load(self.inputs.in_file).get_header()
+        # Get the orientation of the main magnetic field as a vector
+        img_orient = np.reshape(
+            np.asarray(dct['ImageOrientationPatientDICOM']),
+            newshape=(2, 3))
+        b0_orient = np.cross(img_orient[0], img_orient[1])
+        # Save extracted values to output dictionary
+        header = {}
+        header['start_time'] = float(dct['AcquisitionTime'].replace(':', ''))
+        header['tr'] = dct['RepetitionTime']
+        header['echo_times'] = [dct['EchoTime']]
+        header['voxel_sizes'] = [float(v) for v in nifti_hdr['pixdim'][1:4]]
+        header['main_field_orient'] = list(b0_orient)
+        header['main_field_strength'] = dct['MagneticFieldStrength']
+        header['total_duration'] = 0.0
+        header['real_duration'] = 0.0
+        header['ped'] = ''
+        header['pe_angle'] = 0.0
+        return header
+
+    def _extract_dicom_header_info(self, fileset):
+        """
+        Extract required header fields from DICOM input image
+        """
+        list_dicom = sorted(glob.glob(fileset.path + '/*'))
+        multivol = self.inputs.multivol
+        ped = ''
+        phase_offset = ''
+        self.dict_output = {}
+        dwi_directions = None
+
+        header = {}
+
+        try:
+            phase_offset, ped = self.get_phase_encoding_direction(
+                list_dicom[0])
+        except KeyError:
+            pass  # image does not have ped info in the header
+
+        with open(list_dicom[0], 'rb') as f:
+            for line in f:
+                try:
+                    line = line[:-1].decode('utf-8')
+                except UnicodeDecodeError:
+                    continue
+                if 'TotalScan' in line:
+                    total_duration = line.split('=')[-1].strip()
+                    if not multivol:
+                        real_duration = total_duration
+                elif 'alTR[0]' in line:
+                    tr = float(line.split('=')[-1].strip()) / 1000000
+                elif ('SliceArray.asSlice[0].dInPlaneRot' in line and
+                        (not phase_offset or not ped)):
+                    if len(line.split('=')) > 1:
+                        phase_offset = float(line.split('=')[-1].strip())
+                        if (np.abs(phase_offset) > 1 and
+                                np.abs(phase_offset) < 3):
+                            ped = 'ROW'
+                        elif (np.abs(phase_offset) < 1 or
+                                np.abs(phase_offset) > 3):
+                            ped = 'COL'
+                            if np.abs(phase_offset) > 3:
+                                phase_offset = -1
+                            else:
+                                phase_offset = 1
+                elif 'lDiffDirections' in line:
+                    dwi_directions = float(line.split('=')[-1].strip())
+        if multivol:
+            if dwi_directions:
+                n_vols = dwi_directions
+            else:
+                n_vols = len(list_dicom)
+            real_duration = n_vols * tr
+
+        # Read header from first DICOM file in list
+        hd = pydicom.read_file(list_dicom[0])
+        try:
+            start_time = hd.AcquisitionTime
+        except AttributeError:
+            try:
+                start_time = str(hd.AcquisitionDateTime)[8:]
+            except AttributeError:
+                start_time = None
+        # Get echo times
+        num_echoes = hd.EchoTrainLength
+        if num_echoes == 1:
+            echo_times = [hd.EchoTime]
+        else:
+            echo_times = set()
+            for f in list_dicom:
+                hdr = pydicom.read_file(f)
+                echo_times.add(hdr.EchoTime)
+                if len(echo_times) == num_echoes:
+                    break
+            echo_times = list(echo_times)
+        # Get the orientation of the main magnetic field as a vector
+        img_orient = np.reshape(np.asarray(hd.ImageOrientationPatient),
+                                newshape=(2, 3))
+        b0_orient = np.cross(img_orient[0], img_orient[1])
+        # Get voxel sizes
+        vox_sizes = list(hd.PixelSpacing)
+        vox_sizes.append(hd.SliceThickness)
+
+        header['start_time'] = float(start_time)
+        header['tr'] = float(tr) / 1000.0  # Convert to seconds
+        header['echo_times'] = [float(t) / 1000.0  # Convert to secs
+                                          for t in echo_times]
+        header['voxel_sizes'] = vox_sizes
+        header['main_field_orient'] = list(b0_orient)
+        header['main_field_strength'] = hd.MagneticFieldStrength
+        header['total_duration'] = float(total_duration)
+        header['real_duration'] = float(real_duration)
+        header['ped'] = ped
+        header['pe_angle'] = str(phase_offset)
+
+        return header
+
+#         if self.inputs.reference:
+#             os.mkdir('reference_motion_mats')
+#             np.savetxt('reference_motion_mats/reference_motion_mat.mat',
+#                        np.eye(4))
+#             np.savetxt('reference_motion_mats/reference_motion_mat_inv.mat',
+#                        np.eye(4))
+
+    def header(self, name):
+        try:
+            self._header[name]
+        except KeyError:
+            raise BananaMissingHeaderValue(
+                'No acquisition time found for this scan.')
+
+    @property
+    def template_resolution(self):
+        res = self.parameter('template_resolution')
+        if res is None:
+            vox = self.header('vox_sizes')
+            if not all(vox[1:] == vox[0]):
+                raise BananaUsageError(
+                    "Cannot automatically detect header resolution as header "
+                    "image is not isotropic ({}). Please provide explicitly "
+                    "provide a template resolution for 'template"
+                    .format(vox))
+            res = vox[0]
+        return res
 
     def preprocess_channels_pipeline(self, **name_maps):
         pipeline = self.new_pipeline(
@@ -984,68 +1179,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'file': ('magnitude', nifti_gz_format)},
                 outputs={
                     'preproc': ('file', nifti_gz_format)})
-
-        return pipeline
-
-    def header_extraction_pipeline(self, **name_maps):
-
-        pipeline = self.new_pipeline(
-            name='header_extraction',
-            name_maps=name_maps,
-            desc=("Pipeline to extract the most important scan "
-                  "information from the image header"),
-            citations=[])
-
-        if self.provided('header_image'):
-            in_name = 'header_image'
-        else:
-            in_name = 'magnitude'
-
-        input_format = self.input(in_name).format
-
-        if input_format == dicom_format:
-
-            pipeline.add(
-                'hd_info_extraction',
-                DicomHeaderInfoExtraction(
-                    multivol=False),
-                inputs={
-                    'dicom_folder': (in_name, dicom_format)},
-                outputs={
-                    'tr': ('tr', float),
-                    'start_time': ('start_time', str),
-                    'total_duration': ('total_duration', str),
-                    'real_duration': ('real_duration', str),
-                    'ped': ('ped', str),
-                    'pe_angle': ('pe_angle', str),
-                    'echo_times': ('echo_times', float),
-                    'voxel_sizes': ('voxel_sizes', float),
-                    'main_field_strength': ('B0', float),
-                    'main_field_orient': ('H', float)})
-
-        elif input_format == nifti_gz_x_format:
-
-            pipeline.add(
-                'hd_info_extraction',
-                NiftixHeaderInfoExtraction(),
-                inputs={
-                    'in_file': (in_name, nifti_gz_format)},
-                outputs={
-                    'tr': ('tr', float),
-                    'start_time': ('start_time', str),
-                    'total_duration': ('total_duration', str),
-                    'real_duration': ('real_duration', str),
-                    'ped': ('ped', str),
-                    'pe_angle': ('pe_angle', str),
-                    'echo_times': ('echo_times', float),
-                    'voxel_sizes': ('voxel_sizes', float),
-                    'main_field_strength': ('B0', float),
-                    'main_field_orient': ('H', float)})
-        else:
-            raise BananaUsageError(
-                "Can only extract header info if 'magnitude' fileset "
-                "is provided in DICOM or extended NIfTI format (provided {})"
-                .format(self.input(in_name).format))
 
         return pipeline
 

@@ -77,8 +77,8 @@ class FslReferenceData(BaseReference):
         Name of atlas or family of atlases
     resolution : str | float
         The resolution of the atlas to use. Can either be a fixed floating
-        point value or the name of a parameter in the study to draw the
-        value from
+        point value or the name of an attribute of the study that the
+        collection is bound to
     dataset : str | None
         Name of the dataset (i.e. 'brain', 'brain_mask', 'eye_mask', 'edges')
         will be append to the atlas name using '_' as a delimeter
@@ -97,13 +97,7 @@ class FslReferenceData(BaseReference):
 
     @property
     def path(self):
-        # If resolution is a string then it is assumed to be a parameter name
-        # of the study
-        if isinstance(self._resolution, str):
-            resolution = self.study.parameter(self._resolution)
-        else:
-            resolution = self._resolution
-        full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
+        full_atlas_name = '{}_{}mm'.format(self._atlas_name, self.resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
         fsl_ver = self.study.environment.satisfy(fsl_req.v('5.0.8'))[0]
@@ -147,6 +141,16 @@ class FslReferenceData(BaseReference):
     def _error_msg_loc(self):
         return "'{}' FSL atlas passed to '{}' in {} ".format(
             self._atlas_name, self.name, self.study)
+
+    @property
+    def resolution(self):
+        # If resolution is a string then it is assumed to be an attribute
+        # of the study
+        if isinstance(self._resolution, str):
+            resolution = getattr(self.study, self._resolution)
+        else:
+            resolution = self._resolution
+        return resolution
 
 
 class LocalReferenceData(BaseReference):

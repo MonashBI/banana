@@ -7,7 +7,7 @@ class TestMriStudy(PipelineTester):
 
     name = 'BaseMri'
     study_class = MriStudy
-    ref_repo = XnatRepo(server='https://mbi-xnat.erc.monash.edu.au',
+    ref_repo = XnatRepo(server='http://mbi-xnat.erc.monash.edu.au',
                         project_id='TESTBANANAMRI',
                         cache_dir=TEST_CACHE_DIR)
 

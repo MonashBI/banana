@@ -16,7 +16,7 @@ from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import CopyToDir
-from banana.reference import LocalReferenceData
+from banana.reference import LocalReferenceData, FslReferenceData
 
 
 class T1Study(T2Study, metaclass=StudyMetaClass):
@@ -29,9 +29,29 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             desc=("A coregistered T2 image to use in freesurfer to help "
                   "distinguish the peel surface")),
         # Templates
+        InputFilesetSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
+                         default=FslReferenceData(
+                             'MNI152_T1',
+                             format=nifti_gz_format,
+                             resolution='template_resolution')),
+        InputFilesetSpec('template_brain', STD_IMAGE_FORMATS,
+                         frequency='per_study',
+                         default=FslReferenceData(
+                             'MNI152_T1',
+                             format=nifti_gz_format,
+                             resolution='template_resolution',
+                             dataset='brain')),
+        InputFilesetSpec('template_mask', STD_IMAGE_FORMATS,
+                         frequency='per_study',
+                         default=FslReferenceData(
+                             'MNI152_T1',
+                             format=nifti_gz_format,
+                             resolution='template_resolution',
+                             dataset='brain_mask')),
         InputFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=LocalReferenceData('SUIT', nifti_format))] + [
+        # Freesurfer statistics per parcellated region
         FilesetSpec(
             'aparc_stats_{}_{}_table'.format(h, m),
             text_format, 'aparc_stats_table_pipeline',
@@ -40,9 +60,9 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             desc=("Table of {} of {} per parcellated segment"
                   .format(m, h.upper())))
         for h, m in itertools.product(
-            ('lh', 'rh'),
+            ('lh', 'rh'),  # hemispheres
             ('volume', 'thickness', 'thicknessstd', 'meancurv', 'gauscurv',
-             'foldind', 'curvind'))]
+             'foldind', 'curvind'))]  # measures
 
     add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',
