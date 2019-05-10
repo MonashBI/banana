@@ -6,6 +6,6 @@ __authors__ = [
     ("Phillip G. D. Ward", "phillipgdward@gmail.com")]
 
 
-install_requires = ['arcana>=0.4.2',
+install_requires = ['arcana>=0.4.3',
                     'pydicom>=1.0',
                     'nibabel>=2.3.0']
