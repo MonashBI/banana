@@ -51,7 +51,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         SwitchSpec('bet_reduce_bias', True),
         SwitchSpec('aparc_atlas', 'desikan-killiany',
                    choices=('desikan-killiany', 'destrieux',
-                            'desikan-killiany-tourville')),
+                            'DKT')),
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
 #         SwitchSpec('bet_method', 'optibet',
@@ -126,8 +126,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             parc = 'aparc'
         elif self.branch('aparc_atlas', 'destrieux'):
             parc = 'aparc.a2009s'
-        elif self.branch('aparc_atlas', 'desikan-killiany-tourville'):
-            parc = 'aparc.DKTatlas'
+        elif self.branch('aparc_atlas', 'DKT'):
+            parc = 'aparc.DKTatlas40'
         else:
             self.unhandled_branch('aparc_atlas')
 

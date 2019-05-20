@@ -74,15 +74,15 @@ sessions = Node(
 
 datasource = Node(
     nio.DataGrabber(
-        base_directory='/my-dataset',
+        base_directory='/Users/tclose/Data/my-dataset',
         template='subject%s/visit_%s/image.nii.gz',
         infields=['subject_id', 'visit_id'],
         sort_filelist=True),
     name='datasource')
 
-normaliser = Node(
-    Normaliser(),
-    name='normaliser')
+# normaliser = Node(
+#     Normaliser(),
+#     name='normaliser')
 
 
 join_subjects = JoinNode(
@@ -103,22 +103,17 @@ selector = Node(
     SelectSession(),
     name='selector')
 
-...
-
-Session specific workflow to follow
-
-...
 
 workflow.connect(subjects, 'subject_id', sessions, 'subject_id')
 workflow.connect(visits, 'visit_id', sessions, 'visit_id')
 workflow.connect(sessions, 'subject_id', datasource, 'subject_id')
 workflow.connect(sessions, 'visit_id', datasource, 'visit_id')
-workflow.connect(datasource, 'outfiles', normaliser, 'infiles')
+# workflow.connect(datasource, 'outfiles', normaliser, 'infiles')
 workflow.connect(sessions, 'subject_id', join_subjects, 'subject_ids')
 workflow.connect(sessions, 'visit_id', join_subjects, 'visit_ids')
 workflow.connect(join_subjects, 'subject_id', join_visits, 'subject_ids')
 workflow.connect(join_subjects, 'visit_id', join_visits, 'visit_ids')
-workflow.connect(normaliser, 'outfiles', selector, 'inlist')
+# workflow.connect(normaliser, 'outfiles', selector, 'inlist')
 workflow.connect(join_visits, 'subject_ids', selector, 'subject_ids')
 workflow.connect(join_visits, 'visit_ids', selector, 'visit_ids')
 workflow.connect(sessions, 'subject_id', selector, 'subject_id')

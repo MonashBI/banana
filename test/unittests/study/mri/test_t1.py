@@ -11,7 +11,7 @@ class TestMriStudy(PipelineTester):
                         project_id='TESTBANANAT1',
                         cache_dir=TEST_CACHE_DIR)
 
-    parameters = {'aparc_atlas': 'desikan-killiany-tourville'}
+    parameters = {'aparc_atlas': 'DKT'}
 
     def test_aparc_stats_table_pipeline(self):
         self.run_pipeline_test('aparc_stats_table_pipeline',
