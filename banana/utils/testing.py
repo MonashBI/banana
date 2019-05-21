@@ -446,9 +446,9 @@ if __name__ == '__main__':
     from banana.study.mri.dwi import DwiStudy
 
     PipelineTester.generate_test_data(
-        DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
+        DwiStudy, op.expanduser('~/Data/dwi'), 'TESTBANANADWI',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/dwi-work',
+        work_dir=op.expanduser('~/Data/dwi-work'),
         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
               'field_map_phase', 'moco', 'align_mats', 'moco_par',
               'field_map_delta_te', 'norm_intensity',
