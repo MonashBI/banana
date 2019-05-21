@@ -360,7 +360,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class MultiBoldMixin(MultiStudy, metaclass=MultiStudyMetaClass):
+class MultiBoldMixin(MultiStudy):
     """
     A mixin class used for studies with an array of fMRI scans. Can be used to
     perform combined analysis over the array
@@ -553,7 +553,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
         epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                             't1_preproc': 'coreg_ref',
                             'train_data': 'train_data',
-                            'epi_0_coreg_to_atlas_warp': 'coreg_to_atlas_warp',
+                            'epi_0_coreg_to_tmpl_warp': 'coreg_to_tmpl_warp',
                             'epi_0_coreg_to_template_mat': 'coreg_to_template_mat'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
                                         epi_refspec)

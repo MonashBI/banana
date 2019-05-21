@@ -121,7 +121,7 @@ class PipelineTester(TestCase):
                                        pipeline_getter, self.name))
 
     def run_pipeline_test(self, pipeline_getter, add_inputs=(),
-                          test_criteria=None):
+                          test_criteria=None, pipeline_args=None):
         """
         Runs a pipeline and tests its outputs against the reference data
 
@@ -143,9 +143,12 @@ class PipelineTester(TestCase):
         """
         if test_criteria is None:
             test_criteria = {}
+        if pipeline_args is None:
+            pipeline_args = {}
         # A study with all inputs provided to determine which inputs are needed
         # by the pipeline
-        ref_pipeline = self.ref_study.pipeline(pipeline_getter)
+        ref_pipeline = self.ref_study.pipeline(pipeline_getter,
+                                               pipeline_args=pipeline_args)
         inputs = []
         for spec_name in chain(ref_pipeline.input_names, add_inputs):
             try:

@@ -49,6 +49,9 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
+        SwitchSpec('aparc_atlas', 'desikan-killiany',
+                   choices=('desikan-killiany', 'destrieux',
+                            'DKT')),
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
 #         SwitchSpec('bet_method', 'optibet',
@@ -119,17 +122,28 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             joinsource=self.SUBJECT_ID,
             joinfield=['in_files', 'file_names'])
 
+        if self.branch('aparc_atlas', 'desikan-killiany'):
+            parc = 'aparc'
+        elif self.branch('aparc_atlas', 'destrieux'):
+            parc = 'aparc.a2009s'
+        elif self.branch('aparc_atlas', 'DKT'):
+            parc = 'aparc.DKTatlas40'
+        else:
+            self.unhandled_branch('aparc_atlas')
+
         pipeline.add(
             'aparc_stats',
             AparcStats(
                 measure=measure,
-                hemisphere=hemisphere),
+                hemisphere=hemisphere,
+                parc=parc),
             inputs={
                 'subjects_dir': (copy_to_dir, 'out_dir'),
                 'subjects': (copy_to_dir, 'file_names')},
             outputs={
                 'aparc_stats_{}_{}_table'
-                .format(hemisphere, measure): ('tablefile', text_format)})
+                .format(hemisphere, measure): ('tablefile', text_format)},
+            requirements=[freesurfer_req.v('5.3')])
 
         return pipeline
 
