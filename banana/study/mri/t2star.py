@@ -67,7 +67,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         # Set the magnitude to be generated from the preprocess_channels
         # pipeline
-        FilesetSpec('magnitude', nifti_gz_format, 'preprocess_channels',
+        FilesetSpec('magnitude', nifti_gz_format,
+                    'preprocess_channels_pipeline',
                     desc=("Generated from separate channel signals, "
                           "provided to 'channels'.")),
         # QSM and phase processing
@@ -113,8 +114,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
 
-    def preprocess_channels(self, **name_maps):
-        pipeline = super().preprocess_channels(**name_maps)
+    def preprocess_channels_pipeline(self, **name_maps):
+        pipeline = super().preprocess_channels_pipeline(**name_maps)
         # Connect combined first echo output to the magnitude data spec
         pipeline.connect_output('magnitude', pipeline.node('to_polar'),
                                 'first_echo', nifti_gz_format)
@@ -312,8 +313,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             Merge(3),
             inputs={
                 'in1': ('coreg_matrix', text_matrix_format),
-                'in2': ('coreg_to_template_mat', text_matrix_format),  # Ideal. T1
-                'in3': ('coreg_to_template_warp', nifti_gz_format)})  # Ideally T1
+                'in2': ('coreg_to_tmpl_ants_mat',
+                        text_matrix_format),  # Ideal. T1
+                'in3': ('coreg_to_tmpl_ants_warp',
+                        nifti_gz_format)})  # Ideally T1
 
         apply_trans_q = pipeline.add(
             'ApplyTransform_Q_Prior',
@@ -448,7 +451,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Combine masks
         maths1 = pipeline.add(
             'combine_masks',
-            fsl.utils.ImageMaths(suffix='_optiBET_masks', op_string='-mas'),
+            fsl.utils.ImageMaths(
+                suffix='_optiBET_masks',
+                op_string='-mas',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('betted_T2s_mask', nifti_gz_format),
                 'in_file2': (apply_trans, 'output_image')},
@@ -459,7 +465,9 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'mask_t2s',
             fsl.utils.ImageMaths(
-                suffix='_optiBET_cerebellum', op_string='-mas'),
+                suffix='_optiBET_cerebellum',
+                op_string='-mas',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('betted_T2s', nifti_gz_format),
                 'in_file2': (maths1, 'output_image')},
@@ -471,7 +479,9 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'mask_t2s_last_echo',
             fsl.utils.ImageMaths(
-                suffix='_optiBET_cerebellum', op_string='-mas'),
+                suffix='_optiBET_cerebellum',
+                op_string='-mas',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('betted_T2s_last_echo', nifti_gz_format),
                 'in_file2': (maths1, 'output_image')},
@@ -493,7 +503,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         bet = pipeline.add(
             'bet',
-            fsl.BET(frac=0.1, mask=True),
+            fsl.BET(
+                frac=0.1,
+                mask=True,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('t2s', nifti_gz_format)},
             outputs={
@@ -504,7 +517,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         pipeline.add(
             'mask',
-            fsl.utils.ImageMaths(suffix='_BET_brain', op_string='-mas'),
+            fsl.utils.ImageMaths(
+                suffix='_BET_brain',
+                op_string='-mas',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('t2s_last_echo', nifti_gz_format),
                 'in_file2': (bet, 'mask_file')},

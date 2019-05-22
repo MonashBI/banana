@@ -31,7 +31,8 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
             fsl.FAST(
                 img_type=img_type,
                 segments=True,
-                out_basename='Reference_segmentation'),
+                out_basename='Reference_segmentation',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_files': ('brain', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])

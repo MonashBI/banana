@@ -129,7 +129,10 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
 
         meanfunc = pipeline.add(
             'meanfunc',
-            ImageMaths(op_string='-Tmean', suffix='_mean'),
+            ImageMaths(
+                op_string='-Tmean',
+                suffix='_mean',
+                output_type='NIFTI_GZ'),
             wall_time=5,
             inputs={
                 'in_file': (afni_mc, 'out_file')},
@@ -137,7 +140,9 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
 
         pipeline.add(
             'add_mean',
-            ImageMaths(op_string='-add'),
+            ImageMaths(
+                op_string='-add',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (filt, 'out_file'),
                 'in_file2': (meanfunc, 'out_file')},
@@ -165,7 +170,8 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 report=True,
                 out_stats=True,
                 mm_thresh=0.5,
-                out_dir='melodic_ica'),
+                out_dir='melodic_ica',
+                output_type='NIFTI_GZ'),
             inputs={
                 'mask': ('brain_mask', nifti_gz_format),
                 'tr_sec': ('tr', float),
@@ -192,7 +198,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 ras2fsl=True,
                 reference_file=self.parameter('MNI_template')),
             inputs={
-                'itk_file': ('coreg_to_template_mat', text_matrix_format),
+                'itk_file': ('coreg_to_tmpl_ants_mat', text_matrix_format),
                 'source_file': ('coreg_ref_brain', nifti_gz_format)},
             requirements=[c3d_req.v('1.1.0')])
         epi_ants2fsl = pipeline.add(
@@ -225,7 +231,10 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
 
         meanfunc = pipeline.add(
             'meanfunc',
-            ImageMaths(op_string='-Tmean', suffix='_mean'),
+            ImageMaths(
+                op_string='-Tmean',
+                suffix='_mean',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('preproc', nifti_gz_format)},
             wall_time=5,
@@ -314,8 +323,8 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
             'merge_transforms',
             NiPypeMerge(3),
             inputs={
-                'in1': ('coreg_to_template_warp', nifti_gz_format),
-                'in2': ('coreg_to_template_mat', text_matrix_format),
+                'in1': ('coreg_to_tmpl_ants_warp', nifti_gz_format),
+                'in2': ('coreg_to_tmpl_ants_mat', text_matrix_format),
                 'in3': ('coreg_matrix', text_matrix_format)},
             wall_time=1)
 
@@ -501,7 +510,8 @@ class MultiBoldMixin(MultiStudy):
                 mm_thresh=0.5,
                 sep_vn=True,
                 mask=self.parameter('MNI_template_mask'),
-                out_dir='group_melodic.ica'),
+                out_dir='group_melodic.ica',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_files': ('smoothed_ts', nifti_gz_format),
                 'tr_sec': ('tr', float)},
@@ -554,7 +564,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                             't1_preproc': 'coreg_ref',
                             'train_data': 'train_data',
                             'epi_0_coreg_to_tmpl_warp': 'coreg_to_tmpl_warp',
-                            'epi_0_coreg_to_template_mat': 'coreg_to_template_mat'})
+                            'epi_0_coreg_to_tmpl_ants_mat': 'coreg_to_tmpl_ants_mat'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
                                         epi_refspec)
                            for i in range(1, epi_number))

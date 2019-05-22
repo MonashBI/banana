@@ -11,7 +11,7 @@ from argparse import ArgumentParser
 from importlib import import_module
 from arcana.exceptions import ArcanaNameError
 from arcana import (InputFileset, InputField, BasicRepo, XnatRepo, SingleProc,
-                    Field, Fileset)
+                    Field, Fileset, ModulesEnv, StaticEnv)
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaMissingDataException)
 from banana.exceptions import BananaTestSetupError, BananaUsageError
@@ -204,7 +204,7 @@ class PipelineTester(TestCase):
     def generate_test_data(cls, study_class, in_repo, out_repo,
                            in_server=None, out_server=None, work_dir=None,
                            parameters=(), include=None, skip=(), skip_bases=(),
-                           reprocess=False, repo_depth=0):
+                           reprocess=False, repo_depth=0, modules_env=False):
         """
         Generates reference data for a pipeline tester unittests given a study
         class and set of parameters
@@ -242,6 +242,8 @@ class PipelineTester(TestCase):
             Whether to reprocess the generated datasets
         repo_depth : int
             The depth of the input repository
+        modules_env : bool
+            Whether to use modules environment or not
         """
         if work_dir is None:
             work_dir = tempfile.mkdtemp()
@@ -292,6 +294,11 @@ class PipelineTester(TestCase):
             else:
                 inputs = session_inputs
 
+        if modules_env:
+            env = ModulesEnv()
+        else:
+            env = StaticEnv()
+
         study = study_class(
             study_name,
             repository=temp_repo,
@@ -300,6 +307,7 @@ class PipelineTester(TestCase):
                     SingleProc.DEFAULT_PROV_IGNORE +
                     ['.*/pkg_version',
                      'workflow/nodes/.*/requirements/.*/version'])),
+            environment=env,
             inputs=inputs,
             parameters=parameters,
             subject_ids=in_repo.tree().subject_ids,
@@ -398,6 +406,8 @@ def gen_test_data_entry_point():
                               "datasets in the output repository"))
     parser.add_argument('--repo_depth', type=int, default=0,
                         help="The depth of the input repository")
+    parser.add_argument('--modules_env', action='store_true', default=False,
+                        help="Whether to use a Modules Envionment or not")
     args = parser.parse_args()
 
     logger = logging.getLogger('nipype.workflow')
@@ -430,18 +440,20 @@ def gen_test_data_entry_point():
         out_repo=args.out_repo, in_server=args.in_server,
         out_server=args.out_server, work_dir=args.work_dir,
         parameters=parameters, skip=args.skip, skip_bases=skip_bases,
-        reprocess=args.reprocess, repo_depth=args.repo_depth)
+        reprocess=args.reprocess, repo_depth=args.repo_depth,
+        modules_env=args.modules_env)
 
 
 if __name__ == '__main__':
-    from banana.study.mri.t2 import T2Study
+    from banana.study.mri.base import MriStudy
+    from banana.study.mri.t2star import T2starStudy
 
     PipelineTester.generate_test_data(
-        T2Study, '/Users/tclose/Data/t2', 'TESTBANANAT2',
+        T2starStudy, '/Users/tclose/Data/t2star', 'TESTBANANAT2S',
         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/t2-work',
-        include=['wm_seg', 'brain', 'brain_mask'],
-        reprocess=False, repo_depth=0)
+        work_dir='/Users/tclose/Data/t2star-work',
+        skip_bases=[MriStudy],
+        reprocess=False, repo_depth=0, modules_env=True)
 
 #     from banana.study.mri.t1 import T1Study
 # 

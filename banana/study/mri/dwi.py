@@ -298,7 +298,8 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
         # Create node to reorient preproc out_file
         pipeline.add(
             'fslreorient2std',
-            fsl.utils.Reorient2Std(),
+            fsl.utils.Reorient2Std(
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (preproc, 'out_file')},
             outputs={

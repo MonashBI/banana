@@ -104,7 +104,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
                 searchr_y=[-180, 180],
                 searchr_z=[-180, 180],
                 bins=256,
-                cost_func='corratio'),
+                cost_func='corratio',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (echo1_conv, 'out_file')},
             outputs={
@@ -192,7 +193,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             Threshold(
                 output_type="NIFTI_GZ",
                 direction='below',
-                thresh=0.2),
+                thresh=0.2,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (select_bones_pm, 'out')},
             requirements=[fsl_req.v('5.0.10')],
@@ -202,7 +204,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             'bones_probabilistic_map_binarization',
             UnaryMaths(
                 output_type="NIFTI_GZ",
-                operation='bin'),
+                operation='bin',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (threshold_bones, 'out_file')},
             outputs={
@@ -215,7 +218,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             Threshold(
                 output_type="NIFTI_GZ",
                 direction='below',
-                thresh=0.1),
+                thresh=0.1,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (select_air_pm, 'out')},
             requirements=[fsl_req.v('5.0.10')],
@@ -225,7 +229,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
             'air_probabilistic_map_binarization',
             UnaryMaths(
                 output_type="NIFTI_GZ",
-                operation='bin'),
+                operation='bin',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (threshold_air, 'out_file')},
             outputs={
@@ -368,7 +373,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'smooth_sute_fix',
             Smooth(
-                sigma=2.),
+                sigma=2.0,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (sute_fix_ute_background, 'out_file')},
             requirements=[fsl_req.v('5.0.10')],
@@ -377,7 +383,8 @@ class UteStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'smooth_sute_cont',
             Smooth(
-                sigma=2.),
+                sigma=2.0,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (sute_cont_ute_background, 'out_file')},
             outputs={

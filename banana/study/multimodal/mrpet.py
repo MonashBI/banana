@@ -523,7 +523,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 FLIRT(
                     dof=6,
                     cost_func='normmi',
-                    cost='normmi'),
+                    cost='normmi',
+                    output_type='NIFTI_GZ'),
                 inputs={
                     'reference': ('ref_brain', nifti_gz_format),
                     'in_file': ('struct2align', nifti_gz_format)},

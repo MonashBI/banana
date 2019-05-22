@@ -69,7 +69,8 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'epireg',
             fsl.epi.EpiReg(
-                out_base='epireg2ref'),
+                out_base='epireg2ref',
+                output_type='NIFTI_GZ'),
             inputs={
                 'epi': ('brain', nifti_gz_format),
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
@@ -192,14 +193,16 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         merge = pipeline.add(
             'fsl_merge',
             fsl_merge(
-                dimension='t'),
+                dimension='t',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_files': (merge_outputs, 'out')},
             requirements=[fsl_req.v('5.0.9')])
 
         topup = pipeline.add(
             'topup',
-            TOPUP(),
+            TOPUP(
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (merge, 'merged_file'),
                 'encoding_file': (ped, 'config_file')},
@@ -215,7 +218,8 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
             'applytopup',
             ApplyTOPUP(
                 method='jac',
-                in_index=[1]),
+                in_index=[1],
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_files': (in_apply_tp, 'out'),
                 'encoding_file': (ped, 'apply_topup_config'),
@@ -237,21 +241,24 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
         reorient_epi_in = pipeline.add(
             'reorient_epi_in',
-            fsl.utils.Reorient2Std(),
+            fsl.utils.Reorient2Std(
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('magnitude', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         fm_mag_reorient = pipeline.add(
             'reorient_fm_mag',
-            fsl.utils.Reorient2Std(),
+            fsl.utils.Reorient2Std(
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('field_map_mag', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         fm_phase_reorient = pipeline.add(
             'reorient_fm_phase',
-            fsl.utils.Reorient2Std(),
+            fsl.utils.Reorient2Std(
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('field_map_phase', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
@@ -259,7 +266,8 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         bet = pipeline.add(
             "bet",
             BET(
-                robust=True),
+                robust=True,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (fm_mag_reorient, 'out_file')},
             wall_time=5,
@@ -282,7 +290,8 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
             FUGUE(
                 unwarp_direction='x',
                 dwell_time=self.parameter('fugue_echo_spacing'),
-                unwarped_file='example_func.nii.gz'),
+                unwarped_file='example_func.nii.gz',
+                output_type='NIFTI_GZ'),
             inputs={
                 'fmap_in_file': (create_fmap, 'out_fieldmap'),
                 'in_file': (reorient_epi_in, 'out_file')},

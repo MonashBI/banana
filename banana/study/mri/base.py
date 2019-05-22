@@ -220,7 +220,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 # acquired channels
                 copy_geom = pipeline.add(
                     'qsm_copy_geometry',
-                    fsl.CopyGeom(),
+                    fsl.CopyGeom(
+                        output_type='NIFTI_GZ'),
                     inputs={
                         'in_file': ('header_image', nifti_gz_format),
                         'dest_file': geom_dest_file},
@@ -495,7 +496,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'flirt',
             FLIRT(
                 uses_qform=True,
-                apply_xfm=True),
+                apply_xfm=True,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (in_file, nifti_gz_format),
                 'reference': (reference, nifti_gz_format)},
@@ -593,7 +595,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'binarize',
             fsl.ImageMaths(
                 suffix='_optiBET_brain_mask',
-                op_string='-bin'),
+                op_string='-bin',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (apply_trans, 'output_image')},
             outputs={
@@ -605,7 +608,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'mask',
             fsl.ImageMaths(
                 suffix='_optiBET_brain',
-                op_string='-mas'),
+                op_string='-mas',
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': ('preproc', nifti_gz_format),
                 'in_file2': (maths1, 'out_file')},
@@ -617,7 +621,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if self.branch('optibet_gen_report'):
             pipeline.add(
                 'slices',
-                FSLSlices(outname='optiBET_report'),
+                FSLSlices(
+                    outname='optiBET_report',
+                    output_type='NIFTI_GZ'),
                 wall_time=5,
                 inputs={
                     'im1': ('preproc', nifti_gz_format),
@@ -788,7 +794,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             if self.branch('reorient_to_std'):
                 swap = pipeline.add(
                     'fslreorient2std',
-                    fsl.utils.Reorient2Std(),
+                    fsl.utils.Reorient2Std(
+                        output_type='NIFTI_GZ'),
                     inputs={
                         'in_file': ('magnitude', nifti_gz_format)},
                     requirements=[fsl_req.v('5.0.9')])

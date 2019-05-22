@@ -165,7 +165,10 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 
         pipeline.add(
             'bet',
-            fsl.BET(frac=0.15, reduce_bias=True),
+            fsl.BET(
+                frac=0.15,
+                reduce_bias=True,
+                output_type='NIFTI_GZ'),
             inputs={
                 'in_file': (bias, 'output_image')},
             outputs={
