@@ -1,6 +1,6 @@
 from .base import MriStudy
 from nipype.interfaces.utility import Split
-from arcana import ParamSpec, FilesetSpec, StudyMetaClass
+from arcana import ParamSpec, SwitchSpec, FilesetSpec, StudyMetaClass
 from banana.exceptions import BananaUsageError
 from nipype.interfaces import fsl
 from banana.requirement import fsl_req
@@ -14,7 +14,7 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         FilesetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline')]
 
     add_param_specs = [
-        ParamSpec('bet_robust', True),
+        SwitchSpec('bet_robust', True),
         ParamSpec('bet_f_threshold', 0.5),
         ParamSpec('bet_reduce_bias', False)]
 
