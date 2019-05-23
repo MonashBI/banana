@@ -446,37 +446,42 @@ def gen_test_data_entry_point():
 
 if __name__ == '__main__':
     from banana.study.mri.base import MriStudy
-    from banana.study.mri.t2star import T2starStudy
 
-    PipelineTester.generate_test_data(
-        T2starStudy, '/Users/tclose/Data/t2star', 'TESTBANANAT2S',
-        in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-        work_dir='/Users/tclose/Data/t2star-work',
-        skip_bases=[MriStudy],
-        reprocess=False, repo_depth=0, modules_env=True)
+    generate = ('t2star',)
 
-#     from banana.study.mri.t1 import T1Study
-# 
-#     PipelineTester.generate_test_data(
-#         T1Study, '/Users/tclose/Data/t1', 'TESTBANANAT1',
-#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-#         work_dir='/Users/tclose/Data/t1-work',
-#         skip=['t2_coreg'],
-#         skip_bases=[MriStudy],
-#         include=None,
-#         reprocess=False, repo_depth=1)
+    if 't2star' in generate:
+        from banana.study.mri.t2star import T2starStudy
 
-#     from banana.study.mri.dwi import DwiStudy
-# 
-#     PipelineTester.generate_test_data(
-#         DwiStudy, '/Users/tclose/Data/dwi', 'TESTBANANADWI',
-#         in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-#         work_dir='/Users/tclose/Data/dwi-work',
-#         skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
-#               'field_map_phase', 'moco', 'align_mats', 'moco_par',
-#               'field_map_delta_te', 'norm_intensity',
-#               'norm_intens_fa_template', 'norm_intens_wm_mask'],
-#         skip_bases=[MriStudy],
-#         parameters={
-#             'num_global_tracks': int(1e6)}, include=None,
-#         reprocess=False, repo_depth=1)
+        PipelineTester.generate_test_data(
+            T2starStudy, op.expanduser('~/Data/t2star'), 'TESTBANANAT2S',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/t2star-work',
+            skip_bases=[MriStudy],
+            reprocess=False, repo_depth=0, modules_env=True)
+
+    if 't1' in generate:
+        from banana.study.mri.t1 import T1Study
+
+        PipelineTester.generate_test_data(
+            T1Study, op.expanduser('~/Data/t1'), 'TESTBANANAT1',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/t1-work',
+            skip=['t2_coreg'],
+            skip_bases=[MriStudy],
+            include=None,
+            reprocess=False, repo_depth=1)
+
+    if 'dwi' in generate:
+        from banana.study.mri.dwi import DwiStudy
+        PipelineTester.generate_test_data(
+            DwiStudy, op.expanduser('~/Data/dwi'), 'TESTBANANADWI',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir=op.expanduser('~/Data/dwi-work'),
+            skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+                  'field_map_phase', 'moco', 'align_mats', 'moco_par',
+                  'field_map_delta_te', 'norm_intensity',
+                  'norm_intens_fa_template', 'norm_intens_wm_mask'],
+            skip_bases=[MriStudy],
+            parameters={
+                'num_global_tracks': int(1e6)}, include=None,
+            reprocess=False, repo_depth=1)
