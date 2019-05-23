@@ -165,7 +165,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
                     'in_file': (channel_combine, 'phase')},
-                requirements=[sti_req.v(2.2)])
+                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
 
             # Remove background noise
             vsharp = pipeline.add(
@@ -176,7 +176,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float),
                     'in_file': (unwrap, 'out_file'),
                     'mask': (erosion, 'out_file')},
-                requirements=[sti_req.v(2.2)])
+                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
 
             # Run QSM iLSQR
             pipeline.add(
@@ -193,7 +193,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'mask': (vsharp, 'new_mask')},
                 outputs={
                     'qsm': ('qsm', nifti_format)},
-                requirements=[sti_req.v(2.2)])
+                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
 
         else:
             # Dialate eroded mask
@@ -239,7 +239,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
                     'in_file': (list_phases, 'files')},
-                requirements=[sti_req.v(2.2)])
+                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
 
             # Background phase removal
             vsharp = pipeline.add(
@@ -250,7 +250,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float),
                     'mask': (mask_coils, 'out_files'),
                     'in_file': (unwrap, 'out_file')},
-                requirements=[sti_req.v(2.2)])
+                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -272,7 +272,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
-                requirements=[sti_req.v(2.2)],
+                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)],
                 wall_time=45)  # FIXME: Should be dependent on number of coils
 
             # Combine channel QSM by taking the median coil value

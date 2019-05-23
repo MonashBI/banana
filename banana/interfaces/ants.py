@@ -3,9 +3,9 @@ from nipype.interfaces.base import (
 import os
 from nipype.interfaces.base import isdefined
 
-ants_reg_path = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), 'resources', 'bash',
-                 'antsRegistrationSyN.sh'))
+# ants_reg_path = os.path.abspath(
+#     os.path.join(os.path.dirname(__file__), 'resources', 'bash',
+#                  'antsRegistrationSyN.sh'))
 
 
 class AntsRegSynInputSpec(CommandLineInputSpec):
@@ -52,7 +52,7 @@ class AntsRegSynOutputSpec(TraitedSpec):
 
 class AntsRegSyn(CommandLine):
 
-    _cmd = ants_reg_path
+    _cmd = 'antsRegistrationSyN.sh'
     input_spec = AntsRegSynInputSpec
     output_spec = AntsRegSynOutputSpec
     mat_ext = '.mat'
