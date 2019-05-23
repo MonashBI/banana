@@ -106,16 +106,15 @@ class FslReferenceData(BaseReference):
         full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
-        try:
-            fsl_ver = self.study.environment.load(fsl_req.v('5.0.8'))
-        except AttributeError:
-            pass
-        atlas_dir = op.join(os.environ['FSLDIR'], 'data', *self._sub_path)
-        try:
+        fsl_ver = self.study.environment.satisfy(fsl_req.v('5.0.8'))[0]
+        if hasattr(self.study.environment, 'load'):
+            self.study.environment.load(fsl_ver)
+            fsl_dir = os.environ['FSLDIR']
             self.study.environment.unload(fsl_ver)
-        except AttributeError:
-            pass
-        return op.join(atlas_dir, full_atlas_name + '.nii.gz')
+        else:
+            fsl_dir = os.environ['FSLDIR']  # Static environments
+        return op.join(fsl_dir, 'data', *self._sub_path,
+                       full_atlas_name + '.nii.gz')
 
     def translate(self, substudy_spec):
         """
