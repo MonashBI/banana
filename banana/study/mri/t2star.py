@@ -165,7 +165,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
                     'in_file': (channel_combine, 'phase')},
-                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
+                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
 
             # Remove background noise
             vsharp = pipeline.add(
@@ -176,7 +176,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float),
                     'in_file': (unwrap, 'out_file'),
                     'mask': (erosion, 'out_file')},
-                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
+                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
 
             # Run QSM iLSQR
             pipeline.add(
@@ -193,7 +193,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'mask': (vsharp, 'new_mask')},
                 outputs={
                     'qsm': ('qsm', nifti_format)},
-                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
+                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
 
         else:
             # Dialate eroded mask
@@ -202,7 +202,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 DialateMask(
                     dialation=self.parameter('qsm_mask_dialation')),
                 inputs={
-                    'in_file': (erosion, 'out_file')})
+                    'in_file': (erosion, 'out_file')},
+                requirements=[matlab_req.v('r2017a')])
 
             # List files for the phases of separate channel
             list_phases = pipeline.add(
@@ -229,7 +230,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     dialation=self.parameter('qsm_mask_dialation')),
                 inputs={
                     'masks': (list_mags, 'files'),
-                    'whole_brain_mask': (dialate, 'out_file')})
+                    'whole_brain_mask': (dialate, 'out_file')},
+                requirements=[matlab_req.v('r2017a')])
 
             # Unwrap phase
             unwrap = pipeline.add(
@@ -239,7 +241,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
                     'in_file': (list_phases, 'files')},
-                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
+                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
 
             # Background phase removal
             vsharp = pipeline.add(
@@ -250,7 +252,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'voxelsize': ('voxel_sizes', float),
                     'mask': (mask_coils, 'out_files'),
                     'in_file': (unwrap, 'out_file')},
-                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)])
+                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
 
             first_echo_time = pipeline.add(
                 'first_echo',
@@ -272,7 +274,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'in_file': (vsharp, 'out_file'),
                     'mask': (vsharp, 'new_mask'),
                     'te': (first_echo_time, 'out')},
-                requirements=[matlab_req.v('R2017a'), sti_req.v(2.2)],
+                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)],
                 wall_time=45)  # FIXME: Should be dependent on number of coils
 
             # Combine channel QSM by taking the median coil value
@@ -284,7 +286,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'channel_masks': (vsharp, 'new_mask'),
                     'whole_brain_mask': (dialate, 'out_file')},
                 outputs={
-                    'qsm': ('out_file', nifti_format)})
+                    'qsm': ('out_file', nifti_format)},
+                requirements=[matlab_req.v('r2017a')])
         return pipeline
 
     def swi_pipeline(self, **name_maps):
