@@ -95,7 +95,7 @@ class PipelineTester(TestCase):
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
             try:
-                inpt.match(self.ref_repo.cached_tree(), spec)
+                inpt.match(self.ref_repo.cached_tree(), spec.valid_formats)
             except ArcanaInputMissingMatchError:
                 continue
             self.inputs[spec.name] = inpt
