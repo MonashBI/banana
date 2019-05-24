@@ -12,6 +12,7 @@ from importlib import import_module
 from arcana.exceptions import ArcanaNameError
 from arcana import (InputFileset, InputField, BasicRepo, XnatRepo, SingleProc,
                     Field, Fileset, ModulesEnv, StaticEnv)
+from arcana.data.spec import BaseInputSpec
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaMissingDataException)
 from banana.exceptions import BananaTestSetupError, BananaUsageError
@@ -39,6 +40,9 @@ try:
 except KeyError:
     TEST_DIR = tempfile.mkdtemp()
 
+USE_MODULES = 'BANANA_TEST_USE_MODULES' in os.environ
+
+
 TEST_CACHE_DIR = op.join(TEST_DIR, 'cache')
 
 
@@ -65,6 +69,7 @@ class PipelineTester(TestCase):
 
     parameters = {}
     warn_missing_tests = True
+    environment = ModulesEnv() if USE_MODULES else StaticEnv()
 
     def setUp(self):
         if not hasattr(self, 'study_class'):
@@ -95,7 +100,8 @@ class PipelineTester(TestCase):
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
             try:
-                inpt.match(self.ref_repo.cached_tree(), spec.valid_formats)
+                inpt.match(self.ref_repo.cached_tree(),
+                           valid_formats=getattr(spec, 'valid_formats', None))
             except ArcanaInputMissingMatchError:
                 continue
             self.inputs[spec.name] = inpt
@@ -105,6 +111,7 @@ class PipelineTester(TestCase):
             repository=self.ref_repo,
             processor=self.work_dir,
             inputs=self.inputs.values(),
+            environment=self.environment,
             parameters=self.parameters)
         # Get set of all pipelines to test
         if self.warn_missing_tests:
@@ -160,6 +167,7 @@ class PipelineTester(TestCase):
             pipeline_getter,
             repository=self.output_repo,
             processor=SingleProc(self.work_dir, reprocess='force'),
+            environment=self.environment,
             inputs=inputs,
             parameters=self.parameters,
             subject_ids=self.ref_study.subject_ids,
@@ -319,7 +327,8 @@ class PipelineTester(TestCase):
             for base in study_class.__mro__:
                 if base not in skip_bases and hasattr(base, 'add_data_specs'):
                     include.update(s.name for s in base.add_data_specs
-                                   if s.name not in skip)
+                                   if (s.name not in skip and
+                                       not isinstance(s, BaseInputSpec)))
         elif skip:
             raise BananaUsageError(
                 "Cannot provide both 'include' and 'skip' options to "
@@ -448,6 +457,17 @@ if __name__ == '__main__':
     from banana.study.mri.base import MriStudy
 
     generate = ('t2star',)
+
+    if 'base2' in generate:
+
+        PipelineTester.generate_test_data(
+            MriStudy, op.expanduser('~/Data/mri2'), 'TESTBANANAMRI2',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/mri2-work',
+            reprocess=False, repo_depth=0, modules_env=True,
+            include=['coreg_brain'],
+            parameters={
+                'coreg_method': 'ants'})
 
     if 't2star' in generate:
         from banana.study.mri.t2star import T2starStudy

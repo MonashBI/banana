@@ -16,7 +16,8 @@ from arcana.exceptions import ArcanaOutputNotProducedException
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
-from nipype.interfaces.utility import Merge
+from nipype.interfaces.utility import Merge, Select
+from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format
 import logging
@@ -86,10 +87,10 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     desc=("Either brain-extracted image coregistered to "
                           "'coreg_ref_brain' or a brain extraction of a "
                           "coregistered (incl. skull) image")),
-        FilesetSpec('coreg_matrix', text_matrix_format,
+        FilesetSpec('coreg_ants_mat', text_matrix_format,
                     'coreg_matrix_pipeline'),
-        FilesetSpec('coreg_brain_matrix', text_matrix_format,
-                    'coreg_brain_pipeline'),
+        FilesetSpec('coreg_fsl_mat', text_matrix_format,
+                    'coreg_matrix_pipeline'),
         FilesetSpec('coreg_to_tmpl', nifti_gz_format,
                     'coreg_to_tmpl_pipeline'),
         FilesetSpec('coreg_to_tmpl_fsl_coeff', nifti_gz_format,
@@ -152,13 +153,13 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ParamSpec('bet_g_threshold', 0.0),
         SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
         SwitchSpec('optibet_gen_report', False),
-        SwitchSpec('template_coreg_tool', 'ants', ('fnirt', 'ants')),
+        SwitchSpec('coreg_to_tmpl_method', 'ants', ('fnirt', 'ants')),
         ParamSpec('template_resolution', 2),  # choices=(0.5, 1, 2)),
         ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParamSpec('preproc_resolution', None, dtype=list),
-        SwitchSpec('linear_coreg_method', 'flirt', ('flirt', 'spm', 'ants'),
+        SwitchSpec('coreg_method', 'flirt', ('flirt', 'spm', 'ants'),
                    desc="The tool to use for linear registration"),
         ParamSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
@@ -282,14 +283,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return name
 
     def linear_coreg_pipeline(self, **name_maps):
-        if self.branch('linear_coreg_method', 'flirt'):
+        if self.branch('coreg_method', 'flirt'):
             pipeline = self._flirt_linear_coreg_pipeline(**name_maps)
-        elif self.branch('linear_coreg_method', 'ants'):
+        elif self.branch('coreg_method', 'ants'):
             pipeline = self._ants_linear_coreg_pipeline(**name_maps)
-        elif self.branch('linear_coreg_method', 'spm'):
+        elif self.branch('coreg_method', 'spm'):
             pipeline = self._spm_linear_coreg_pipeline(**name_maps)
         else:
-            self.unhandled_branch('linear_coreg_method')
+            self.unhandled_branch('coreg_method')
         return pipeline
 
     def brain_extraction_pipeline(self, **name_maps):
@@ -311,6 +312,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         then brain extraction is performed after
         """
         if self.provided('coreg_ref_brain'):
+            # If a reference brain extracted image is provided we coregister
+            # the brain extracted image to that
             pipeline = self.linear_coreg_pipeline(
                 name='linear_coreg_brain',
                 input_map={'preproc': 'brain',
@@ -320,38 +323,50 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
             # Apply coregistration transform to brain mask
             try:
-                ants = pipeline.node('ANTs_linear_Reg')
+                ants_reg = pipeline.node('ants_reg')
             except KeyError:
-                tranform_input = (pipeline.node('flirt'), 'out_matrix_file')
+                transform_input = (pipeline.node('flirt'), 'out_matrix_file')
             else:
-                # Convert ANTs transform matrix to FSL format
+                # Convert ANTs transform matrix to FSL format if we have used
+                # Ants registration so we can apply the transform using
+                # ApplyXFM
+
+                select_xfm_stage = pipeline.add(
+                    'select_xfm_stage',
+                    Select(
+                        index=0),
+                    inputs={
+                        'inlist': (ants_reg, 'forward_transforms')})
+
                 transform_conv = pipeline.add(
                     'transform_conv',
                     ANTs2FSLMatrixConversion(
                         ras2fsl=True),
                     inputs={
-                        'itk_file': (ants, 'regmat'),
+                        'itk_file': (select_xfm_stage, 'out'),
                         'source_file': ('brain_mask', nifti_gz_format),
                         'reference_file': ('coreg_ref_brain',
                                            nifti_gz_format)},
-                    requirements=[c3d_req.v('1.1.0')])
-                tranform_input = (transform_conv, 'fsl_matrix')
+                    requirements=[c3d_req.v('1.0')])
+                transform_input = (transform_conv, 'fsl_matrix')
 
             pipeline.add(
                 'mask_transform',
                 ApplyXFM(
                     output_type='NIFTI_GZ',
-                    reference=self.template_path,
                     apply_xfm=True),
                 inputs={
-                    'in_matrix_file': tranform_input,
-                    'in_file': ('brain_mask', nifti_gz_format)},
+                    'in_matrix_file': transform_input,
+                    'in_file': ('brain_mask', nifti_gz_format),
+                    'reference': ('coreg_ref_brain', nifti_gz_format)},
                 outputs={
                     'coreg_brain_mask': ('out_file', nifti_format)},
                 requirements=[fsl_req.v('5.0.10')],
                 wall_time=10)
 
         elif self.provided('coreg_ref'):
+            # If coreg_ref is provided then we co-register the non-brain
+            # extracted images and then brain extract the co-registered image
             pipeline = self.brain_extraction_pipeline(
                 name='linear_coreg_brain',
                 input_map={'preproc': 'coreg'},
@@ -371,17 +386,17 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             pipeline = self.linear_coreg_pipeline(**name_maps)
         else:
             raise ArcanaOutputNotProducedException(
-                "'coreg_matrix' can only be derived if 'coreg_ref' or "
-                "'coreg_ref_brain' is provided to {}".format(self))
+                "'coregistration matrices can only be derived if 'coreg_ref' "
+                "or 'coreg_ref_brain' is provided to {}".format(self))
         return pipeline
 
     def coreg_to_tmpl_pipeline(self, **name_maps):
-        if self.branch('template_coreg_tool', 'fnirt'):
+        if self.branch('coreg_to_tmpl_method', 'fnirt'):
             pipeline = self._fnirt_to_tmpl_pipeline(**name_maps)
-        elif self.branch('template_coreg_tool', 'ants'):
+        elif self.branch('coreg_to_tmpl_method', 'ants'):
             pipeline = self._ants_to_tmpl_pipeline(**name_maps)
         else:
-            self.unhandled_branch('template_coreg_tool')
+            self.unhandled_branch('coreg_to_tmpl_method')
         return pipeline
 
     def _flirt_linear_coreg_pipeline(self, **name_maps):
@@ -406,7 +421,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'reference': ('coreg_ref', nifti_gz_format)},
             outputs={
                 'coreg': ('out_file', nifti_gz_format),
-                'coreg_matrix': ('out_matrix_file', text_matrix_format)},
+                'coreg_fsl_mat': ('out_matrix_file', text_matrix_format)},
             requirements=[fsl_req.v('5.0.8')],
             wall_time=5)
 
@@ -424,17 +439,35 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc="Registers a MR scan against a reference image using ANTs")
 
         pipeline.add(
-            'ANTs_linear_Reg',
-            AntsRegSyn(
-                num_dimensions=3,
-                transformation='r',
-                out_prefix='reg2hires'),
+            'ants_reg',
+            ants.Registration(
+                dimension=3,
+                collapse_output_transforms=True,
+                float=False,
+                interpolation='Linear',
+                use_histogram_matching=False,
+                winsorize_upper_quantile=0.995,
+                winsorize_lower_quantile=0.005,
+                verbose=True,
+                transforms=['Rigid'],
+                transform_parameters=[(0.1,)],
+                metric=['MI'],
+                metric_weight=[1],
+                radius_or_number_of_bins=[32],
+                sampling_strategy=['Regular'],
+                sampling_percentage=[0.25],
+                number_of_iterations=[[1000, 500, 250, 100]],
+                convergence_threshold=[1e-6],
+                convergence_window_size=[10],
+                shrink_factors=[[8, 4, 2, 1]],
+                smoothing_sigmas=[[3, 2, 1, 0]],
+                write_composite_transform=True),
             inputs={
-                'ref_file': ('coreg_ref', nifti_gz_format),
-                'input_file': ('preproc', nifti_gz_format)},
+                'fixed_image': ('coreg_ref', nifti_gz_format),
+                'moving_image': ('preproc', nifti_gz_format)},
             outputs={
-                'coreg': ('reg_file', nifti_gz_format),
-                'coreg_matrix': ('regmat', text_matrix_format)},
+                'coreg': ('warped_image', nifti_gz_format),
+                'coreg_ants_mat': ('composite_transform', text_matrix_format)},
             wall_time=10,
             requirements=[ants_req.v('2.0')])
 
@@ -903,14 +936,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             MotionMatCalculation(),
             outputs={
                 'motion_mats': ('motion_mats', motion_mats_format)})
-        if not self.spec('coreg_matrix').derivable:
+        if not self.spec('coreg_fsl_mat').derivable:
             logger.info("Cannot derive 'coreg_matrix' for {} required for "
                         "motion matrix calculation, assuming that it "
                         "is the reference study".format(self))
             mm.inputs.reference = True
             pipeline.connect_input('magnitude', mm, 'dummy_input')
         else:
-            pipeline.connect_input('coreg_matrix', mm, 'reg_mat',
+            pipeline.connect_input('coreg_fsl_mat', mm, 'reg_mat',
                                    text_matrix_format)
             pipeline.connect_input('qform_mat', mm, 'qform_mat',
                                    text_matrix_format)

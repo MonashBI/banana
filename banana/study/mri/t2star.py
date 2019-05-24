@@ -105,8 +105,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         ParamSpec('qsm_padding', [12, 12, 12]),
         ParamSpec('qsm_mask_dialation', [11, 11, 11]),
         ParamSpec('qsm_erosion_size', 10),
-        SwitchSpec('linear_coreg_method', 'ants',
-                   MriStudy.parameter_spec('linear_coreg_method').choices),
+        SwitchSpec('coreg_method', 'ants',
+                   MriStudy.parameter_spec('coreg_method').choices),
         SwitchSpec('bet_method', 'fsl_bet',
                    choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
@@ -315,7 +315,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             'merge_transforms',
             Merge(3),
             inputs={
-                'in1': ('coreg_matrix', text_matrix_format),
+                'in1': ('coreg_ants_mat', text_matrix_format),
                 'in2': ('coreg_to_tmpl_ants_mat',
                         text_matrix_format),  # Ideal. T1
                 'in3': ('coreg_to_tmpl_ants_warp',

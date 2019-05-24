@@ -43,15 +43,15 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('bet_robust', True),
-        SwitchSpec('linear_coreg_method', 'epireg',
-                   (MriStudy.parameter_spec('linear_coreg_method').choices +
+        SwitchSpec('coreg_method', 'epireg',
+                   (MriStudy.parameter_spec('coreg_method').choices +
                     ('epireg',))),
         ParamSpec('bet_f_threshold', 0.2),
         ParamSpec('bet_reduce_bias', False),
         ParamSpec('fugue_echo_spacing', 0.000275)]
 
     def linear_coreg_pipeline(self, **name_maps):
-        if self.branch('linear_coreg_method', 'epireg'):
+        if self.branch('coreg_method', 'epireg'):
             return self._epireg_linear_coreg_pipeline(**name_maps)
         else:
             return super(EpiStudy, self).linear_brain_coreg_pipeline(
