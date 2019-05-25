@@ -16,7 +16,7 @@ from arcana.exceptions import ArcanaOutputNotProducedException
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
-from nipype.interfaces.utility import Merge, Select
+from nipype.interfaces.utility import Merge
 from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format
@@ -88,9 +88,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                           "'coreg_ref_brain' or a brain extraction of a "
                           "coregistered (incl. skull) image")),
         FilesetSpec('coreg_ants_mat', text_matrix_format,
-                    'coreg_matrix_pipeline'),
+                    'coreg_ants_mat_pipeline'),
         FilesetSpec('coreg_fsl_mat', text_matrix_format,
-                    'coreg_matrix_pipeline'),
+                    'coreg_fsl_mat_pipeline'),
         FilesetSpec('coreg_to_tmpl', nifti_gz_format,
                     'coreg_to_tmpl_pipeline'),
         FilesetSpec('coreg_to_tmpl_fsl_coeff', nifti_gz_format,
@@ -315,60 +315,55 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             # If a reference brain extracted image is provided we coregister
             # the brain extracted image to that
             pipeline = self.linear_coreg_pipeline(
-                name='linear_coreg_brain',
+                name='coreg_brain',
                 input_map={'preproc': 'brain',
                            'coreg_ref': 'coreg_ref_brain'},
                 output_map={'coreg': 'coreg_brain'},
                 name_maps=name_maps)
 
             # Apply coregistration transform to brain mask
-            try:
-                ants_reg = pipeline.node('ants_reg')
-            except KeyError:
-                transform_input = (pipeline.node('flirt'), 'out_matrix_file')
-            else:
+            if self.branch('coreg_method', 'flirt'):
+                pipeline.add(
+                    'mask_transform',
+                    ApplyXFM(
+                        output_type='NIFTI_GZ',
+                        apply_xfm=True),
+                    inputs={
+                        'in_matrix_file': (pipeline.node('flirt'),
+                                           'out_matrix_file'),
+                        'in_file': ('brain_mask', nifti_gz_format),
+                        'reference': ('coreg_ref_brain', nifti_gz_format)},
+                    outputs={
+                        'coreg_brain_mask': ('out_file', nifti_format)},
+                    requirements=[fsl_req.v('5.0.10')],
+                    wall_time=10)
+
+            elif self.branch('coreg_method', 'ants'):
                 # Convert ANTs transform matrix to FSL format if we have used
                 # Ants registration so we can apply the transform using
                 # ApplyXFM
-
-                select_xfm_stage = pipeline.add(
-                    'select_xfm_stage',
-                    Select(
-                        index=0),
+                pipeline.add(
+                    'mask_transform',
+                    ants.resampling.ApplyTransforms(
+                        interpolation='Linear',
+                        input_image_type=3,
+                        invert_transform_flags=[True, True, False]),
                     inputs={
-                        'inlist': (ants_reg, 'forward_transforms')})
-
-                transform_conv = pipeline.add(
-                    'transform_conv',
-                    ANTs2FSLMatrixConversion(
-                        ras2fsl=True),
-                    inputs={
-                        'itk_file': (select_xfm_stage, 'out'),
-                        'source_file': ('brain_mask', nifti_gz_format),
-                        'reference_file': ('coreg_ref_brain',
-                                           nifti_gz_format)},
-                    requirements=[c3d_req.v('1.0')])
-                transform_input = (transform_conv, 'fsl_matrix')
-
-            pipeline.add(
-                'mask_transform',
-                ApplyXFM(
-                    output_type='NIFTI_GZ',
-                    apply_xfm=True),
-                inputs={
-                    'in_matrix_file': transform_input,
-                    'in_file': ('brain_mask', nifti_gz_format),
-                    'reference': ('coreg_ref_brain', nifti_gz_format)},
-                outputs={
-                    'coreg_brain_mask': ('out_file', nifti_format)},
-                requirements=[fsl_req.v('5.0.10')],
-                wall_time=10)
+                        'input_image': ('brain_mask', nifti_gz_format),
+                        'reference_image': ('coreg_ref_brain',
+                                            nifti_gz_format),
+                        'transforms': (pipeline.node('ants_reg'),
+                                       'transforms')},
+                    requirements=[ants_req.v('1.9')], mem_gb=16,
+                    wall_time=30)
+            else:
+                self.unhandled_branch('coreg_method')
 
         elif self.provided('coreg_ref'):
             # If coreg_ref is provided then we co-register the non-brain
             # extracted images and then brain extract the co-registered image
             pipeline = self.brain_extraction_pipeline(
-                name='linear_coreg_brain',
+                name='bet_coreg',
                 input_map={'preproc': 'coreg'},
                 output_map={'brain': 'coreg_brain',
                             'brain_mask': 'coreg_brain_mask'},
@@ -379,7 +374,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 "in order to derive coreg_brain or coreg_brain_mask")
         return pipeline
 
-    def coreg_matrix_pipeline(self, **name_maps):
+    def _coreg_mat_pipeline(self, **name_maps):
         if self.provided('coreg_ref_brain'):
             pipeline = self.coreg_brain_pipeline(**name_maps)
         elif self.provided('coreg_ref'):
@@ -388,6 +383,52 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             raise ArcanaOutputNotProducedException(
                 "'coregistration matrices can only be derived if 'coreg_ref' "
                 "or 'coreg_ref_brain' is provided to {}".format(self))
+        return pipeline
+
+    def coreg_ants_mat_pipeline(self, **name_maps):
+        if self.branch('coreg_method', 'ants'):
+            pipeline = self._coreg_mat_pipeline(**name_maps)
+        else:
+            raise ArcanaOutputNotProducedException(
+                "ANTS transforms are only produced if the 'coreg_method' "
+                "switch is set to 'ants'")
+        return pipeline
+
+    def coreg_fsl_mat_pipeline(self, **name_maps):
+        if self.branch('coreg_method', 'flirt'):
+            pipeline = self._coreg_mat_pipeline(**name_maps)
+        elif self.branch('coreg_method', 'flirt'):
+            # Convert ANTS transform to FSL transform
+            pipeline = self.new_pipeline(
+                name='covert_ants_to_fsl_coreg_mat',
+                name_maps=name_maps)
+
+            if self.provided('coreg_ref'):
+                source = 'preproc'
+                ref = 'coreg_ref'
+            elif self.provided('coreg_ref_brain'):
+                source = 'brain'
+                ref = 'coreg_ref_brain'
+            else:
+                raise BananaUsageError(
+                    "Either 'coreg_ref' or 'coreg_ref_brain' needs to be "
+                    "provided in order to derive coreg_brain or coreg_brain_"
+                    "mask")
+
+            pipeline.add(
+                'transform_conv',
+                ANTs2FSLMatrixConversion(
+                    ras2fsl=True),
+                inputs={
+                    'itk_file': ('coreg_ants_mat', 'out'),
+                    'source_file': (source, nifti_gz_format),
+                    'reference_file': (ref, nifti_gz_format)},
+                outputs={
+                    'coreg_fsl_mat': ('fsl_matrix', nifti_gz_format)},
+                requirements=[c3d_req.v('1.0')])
+        else:
+            self.unhandled_branch('coreg_method')
+
         return pipeline
 
     def coreg_to_tmpl_pipeline(self, **name_maps):
