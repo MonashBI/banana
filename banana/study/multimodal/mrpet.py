@@ -124,7 +124,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         FieldSpec('pet_start_time', dtype=str,
                   pipeline_name='pet_header_extraction_pipeline')]
 
-    add_parameter_specs = [
+    add_param_specs = [
         ParamSpec('framing_th', 2.0),
         ParamSpec('framing_temporal_th', 30.0),
         ParamSpec('framing_duration', 0),
@@ -483,7 +483,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def motion_correction_pipeline(self, **kwargs):
 
-        if self.parameter_spec('dynamic_pet_mc').value:
+        if self.param_spec('dynamic_pet_mc').value:
             dynamic = True
         else:
             dynamic = False
@@ -717,7 +717,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    parameter_specs = [ParamSpec('ref_preproc_resolution', [1])]
+    param_specs = [ParamSpec('ref_preproc_resolution', [1])]
     switch_specs = []
     if struct2align is not None:
         struct_image = struct2align.split('/')[-1].split('.')[0]
@@ -734,7 +734,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                 InputFileset('struct2align', struct_image, nifti_gz_format))
     if pet_data_dir is not None and pet_recon_dir is not None and dynamic:
         output_data = 'dynamic_motion_correction_results'
-        parameter_specs.append(ParamSpec('dynamic_pet_mc', True))
+        param_specs.append(ParamSpec('dynamic_pet_mc', True))
         if struct2align is not None:
             inputs.append(
                 InputFileset('struct2align', struct_image, nifti_gz_format))
@@ -923,7 +923,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    dct['add_parameter_specs'] = parameter_specs
+    dct['add_param_specs'] = param_specs
     dct['add_switch_specs'] = switch_specs
     return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
             output_data)
@@ -937,7 +937,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    parameter_specs = [ParamSpec('ref_preproc_resolution', [1])]
+    param_specs = [ParamSpec('ref_preproc_resolution', [1])]
 
     if pet_data_dir is not None:
         inputs.append(InputFileset('pet_data_dir', 'pet_data_dir',
@@ -1081,5 +1081,5 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['__metaclass__'] = MultiStudyMetaClass
-    dct['add_param_specs'] = parameter_specs
+    dct['add_param_specs'] = param_specs
     return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs

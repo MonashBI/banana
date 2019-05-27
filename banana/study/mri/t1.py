@@ -46,7 +46,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('bet_method', 'fsl_bet',
-                   choices=MriStudy.parameter_spec('bet_method').choices),
+                   choices=MriStudy.param_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
         SwitchSpec('aparc_atlas', 'desikan-killiany',
@@ -55,7 +55,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
 #         SwitchSpec('bet_method', 'optibet',
-#                    choices=MriStudy.parameter_spec('bet_method').choices),
+#                    choices=MriStudy.param_spec('bet_method').choices),
 #         SwitchSpec('bet_robust', True),
 #         ParamSpec('bet_f_threshold', 0.57),
 #         ParamSpec('bet_g_threshold', -0.1)]

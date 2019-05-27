@@ -311,7 +311,9 @@ class PipelineTester(TestCase):
             study_name,
             repository=temp_repo,
             processor=SingleProc(
-                work_dir, reprocess=reprocess, prov_ignore=(
+                work_dir, reprocess=reprocess,
+                clean_work_dir_between_runs=False,
+                prov_ignore=(
                     SingleProc.DEFAULT_PROV_IGNORE +
                     ['.*/pkg_version',
                      'workflow/nodes/.*/requirements/.*/version'])),
@@ -456,7 +458,15 @@ def gen_test_data_entry_point():
 if __name__ == '__main__':
     from banana.study.mri.base import MriStudy
 
-    generate = ('t2star',)
+    generate = ('bold',)
+
+    if 'base' in generate:
+
+        PipelineTester.generate_test_data(
+            MriStudy, op.expanduser('~/Data/mri'), 'TESTBANANAMRI',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/mri-work',
+            reprocess=False, repo_depth=0, modules_env=True)
 
     if 'base2' in generate:
 
@@ -467,7 +477,27 @@ if __name__ == '__main__':
             reprocess=False, repo_depth=0, modules_env=True,
             include=['coreg_brain'],
             parameters={
-                'coreg_method': 'ants'})
+                'coreg_method': 'flirt'})
+
+    if 'bold' in generate:
+        from banana.study.mri.bold import BoldStudy
+
+        PipelineTester.generate_test_data(
+            BoldStudy, op.expanduser('~/Data/bold'), 'TESTBANANABOLD',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/bold-work',
+            reprocess=False, repo_depth=0, modules_env=True,
+            skip_bases=[MriStudy])
+
+    if 't2' in generate:
+        from banana.study.mri.t2 import T2Study
+
+        PipelineTester.generate_test_data(
+            T2Study, op.expanduser('~/Data/t2'), 'TESTBANANAT2',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/t2-work',
+            skip_bases=[MriStudy],
+            reprocess=False, repo_depth=0, modules_env=True)
 
     if 't2star' in generate:
         from banana.study.mri.t2star import T2starStudy
@@ -489,7 +519,7 @@ if __name__ == '__main__':
             skip=['t2_coreg'],
             skip_bases=[MriStudy],
             include=None,
-            reprocess=False, repo_depth=1)
+            reprocess=False, repo_depth=1, modules_env=True)
 
     if 'dwi' in generate:
         from banana.study.mri.dwi import DwiStudy
@@ -504,4 +534,4 @@ if __name__ == '__main__':
             skip_bases=[MriStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
-            reprocess=False, repo_depth=1)
+            reprocess=False, repo_depth=1, modules_env=True)

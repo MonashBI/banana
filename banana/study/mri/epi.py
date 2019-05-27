@@ -44,7 +44,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
     add_param_specs = [
         SwitchSpec('bet_robust', True),
         SwitchSpec('coreg_method', 'epireg',
-                   (MriStudy.parameter_spec('coreg_method').choices +
+                   (MriStudy.param_spec('coreg_method').choices +
                     ('epireg',))),
         ParamSpec('bet_f_threshold', 0.2),
         ParamSpec('bet_reduce_bias', False),
