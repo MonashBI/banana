@@ -68,12 +68,8 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
         ParamSpec('motion_reg', True),
         ParamSpec('highpass', 0.01),
         ParamSpec('brain_thresh_percent', 5),
-        ParamSpec('MNI_template', op.join(atlas_path,
-                                              'MNI152_T1_2mm.nii.gz')),
-        ParamSpec('MNI_template_mask', op.join(
-            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        SwitchSpec('linear_reg_method', 'ants',
-                   ('flirt', 'spm', 'ants', 'epireg')),
+        SwitchSpec('coreg_method', 'ants',
+                   EpiStudy.param_spec('coreg_method').choices + ('epireg',)),
         ParamSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsInput(
@@ -331,10 +327,10 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'ApplyTransform',
             ApplyTransforms(
-                reference_image=self.parameter('MNI_template'),
                 interpolation='Linear',
                 input_image_type=3),
             inputs={
+                'reference_image': ('template', nifti_gz_format),
                 'input_image': ('cleaned_file', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             outputs={
@@ -357,9 +353,9 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
             '3dBlurToFWHM',
             BlurToFWHM(
                 fwhm=5,
-                out_file='smoothed_ts.nii.gz',
-                mask=self.parameter('MNI_template_mask')),
+                out_file='smoothed_ts.nii.gz'),
             inputs={
+                'mask': ('template_mask', nifti_gz_format),
                 'in_file': ('normalized_ts', nifti_gz_format)},
             outputs={
                 'smoothed_ts': ('out_file', nifti_gz_format)},
@@ -532,7 +528,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     inputs = []
     dct = {}
     data_specs = []
-    parameter_specs = []
+    param_specs = []
     output_files = []
     distortion_correction = False
 
@@ -581,7 +577,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
-        parameter_specs.append(
+        param_specs.append(
             ParamSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
@@ -604,7 +600,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
-    dct['add_param_specs'] = parameter_specs
+    dct['add_param_specs'] = param_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     return (MultiStudyMetaClass(name, (MultiBoldMixin,), dct), inputs,
             output_files)
