@@ -160,7 +160,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
         ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
         ParamSpec('preproc_resolution', None, dtype=list),
-        SwitchSpec('coreg_method', 'flirt', ('flirt', 'spm', 'ants'),
+        SwitchSpec('coreg_method', 'ants', ('ants', 'flirt', 'spm'),
                    desc="The tool to use for linear registration"),
         ParamSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
