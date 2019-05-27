@@ -17,6 +17,7 @@ from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
 from nipype.interfaces.utility import Merge
+from arcana.utils.interfaces import SelectOne
 from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format
@@ -75,7 +76,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="Mask of the brain"),
         FilesetSpec('coreg', nifti_gz_format,
-                    'linear_coreg_pipeline',
+                    'coreg_pipeline',
                     desc="Head image coregistered to 'coreg_ref'"),
         FilesetSpec('coreg_brain', nifti_gz_format,
                     'coreg_brain_pipeline',
@@ -282,13 +283,21 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name = 'brain'
         return name
 
-    def linear_coreg_pipeline(self, **name_maps):
+    def coreg_pipeline(self, source='preproc', reference='coreg_ref',
+                       output='coreg', **name_maps):
+        if not self.provided(reference):
+            raise ArcanaOutputNotProducedException(
+                "Cannot co-register '{}' to produce '{}' as reference image "
+                "'{}' has not been provided".format(source, output, reference))
         if self.branch('coreg_method', 'flirt'):
-            pipeline = self._flirt_linear_coreg_pipeline(**name_maps)
+            pipeline = self._flirt_linear_coreg_pipeline(source, reference,
+                                                         output, **name_maps)
         elif self.branch('coreg_method', 'ants'):
-            pipeline = self._ants_linear_coreg_pipeline(**name_maps)
+            pipeline = self._ants_linear_coreg_pipeline(source, reference,
+                                                        output, **name_maps)
         elif self.branch('coreg_method', 'spm'):
-            pipeline = self._spm_linear_coreg_pipeline(**name_maps)
+            pipeline = self._spm_linear_coreg_pipeline(source, reference,
+                                                       output, **name_maps)
         else:
             self.unhandled_branch('coreg_method')
         return pipeline
@@ -314,11 +323,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if self.provided('coreg_ref_brain'):
             # If a reference brain extracted image is provided we coregister
             # the brain extracted image to that
-            pipeline = self.linear_coreg_pipeline(
+            pipeline = self.coreg_pipeline(
                 name='coreg_brain',
-                input_map={'preproc': 'brain',
-                           'coreg_ref': 'coreg_ref_brain'},
-                output_map={'coreg': 'coreg_brain'},
+                source='brain',
+                reference='coreg_ref_brain',
+                output='coreg_brain',
                 name_maps=name_maps)
 
             # Apply coregistration transform to brain mask
@@ -378,7 +387,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if self.provided('coreg_ref_brain'):
             pipeline = self.coreg_brain_pipeline(**name_maps)
         elif self.provided('coreg_ref'):
-            pipeline = self.linear_coreg_pipeline(**name_maps)
+            pipeline = self.coreg_pipeline(**name_maps)
         else:
             raise ArcanaOutputNotProducedException(
                 "'coregistration matrices can only be derived if 'coreg_ref' "
@@ -440,7 +449,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             self.unhandled_branch('coreg_to_tmpl_method')
         return pipeline
 
-    def _flirt_linear_coreg_pipeline(self, **name_maps):
+    def _flirt_linear_coreg_pipeline(self, source, reference, output,
+                                     **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's FLIRT command
         """
@@ -458,17 +468,18 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   cost_func=self.parameter('flirt_cost_func'),
                   output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format),
-                'reference': ('coreg_ref', nifti_gz_format)},
+                'in_file': (source, nifti_gz_format),
+                'reference': (reference, nifti_gz_format)},
             outputs={
-                'coreg': ('out_file', nifti_gz_format),
+                output: ('out_file', nifti_gz_format),
                 'coreg_fsl_mat': ('out_matrix_file', text_matrix_format)},
             requirements=[fsl_req.v('5.0.8')],
             wall_time=5)
 
         return pipeline
 
-    def _ants_linear_coreg_pipeline(self, **name_maps):
+    def _ants_linear_coreg_pipeline(self, source, reference, output,
+                                    **name_maps):
         """
         Registers a MR scan to a refernce MR scan using ANTS's linear_reg
         command
@@ -479,7 +490,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc="Registers a MR scan against a reference image using ANTs")
 
-        pipeline.add(
+        ants_reg = pipeline.add(
             'ants_reg',
             ants.Registration(
                 dimension=3,
@@ -502,19 +513,28 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 convergence_window_size=[10],
                 shrink_factors=[[8, 4, 2, 1]],
                 smoothing_sigmas=[[3, 2, 1, 0]],
-                write_composite_transform=True),
+                output_warped_image=True),
             inputs={
-                'fixed_image': ('coreg_ref', nifti_gz_format),
-                'moving_image': ('preproc', nifti_gz_format)},
+                'fixed_image': (reference, nifti_gz_format),
+                'moving_image': (source, nifti_gz_format)},
             outputs={
-                'coreg': ('warped_image', nifti_gz_format),
-                'coreg_ants_mat': ('composite_transform', text_matrix_format)},
+                output: ('warped_image', nifti_gz_format)},
             wall_time=10,
             requirements=[ants_req.v('2.0')])
 
+        pipeline.add(
+            'select',
+            SelectOne(
+                index=0),
+            inputs={
+                'inlist': (ants_reg, 'forward_transforms')},
+            outputs={
+                'coreg_ants_mat': ('out', text_matrix_format)})
+
         return pipeline
 
-    def _spm_linear_coreg_pipeline(self, **name_maps):  # @UnusedVariable
+    def _spm_linear_coreg_pipeline(self, source, reference, output,
+                                   **name_maps):  # @UnusedVariable
         """
         Coregisters T2 image to T1 image using SPM's "Register" method.
 
@@ -540,10 +560,10 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 write_mask=False,
                 out_prefix='r'),
             inputs={
-                'target': ('coreg_ref', nifti_format),
-                'source': ('preproc', nifti_format)},
+                'target': (reference, nifti_format),
+                'source': (source, nifti_format)},
             outputs={
-                'coreg': ('coregistered_source', nifti_format)},
+                output: ('coregistered_source', nifti_format)},
             requirements=[spm_req.v(12)],
             wall_time=30)
         return pipeline
@@ -811,22 +831,87 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "e.g. MNI-space"),
             citations=[fsl_cite])
 
+#         ants_reg = pipeline.add(
+#             'Struct2MNI_reg',
+#             AntsRegSyn(
+#                 num_dimensions=3,
+#                 transformation='s',
+#                 out_prefix='Struct2MNI',
+#                 num_threads=4),
+#             inputs={
+#                 'input_file': (self.brain_spec_name, nifti_gz_format),
+#                 'ref_file': ('template_brain', nifti_gz_format)},
+#             outputs={
+#                 'coreg_to_tmpl': ('reg_file', nifti_gz_format),
+#                 'coreg_to_tmpl_ants_mat': ('regmat', text_matrix_format),
+#                 'coreg_to_tmpl_ants_warp': ('warp_file', nifti_gz_format)},
+#             wall_time=25,
+#             requirements=[ants_req.v('2.0')])
+
         ants_reg = pipeline.add(
-            'Struct2MNI_reg',
-            AntsRegSyn(
-                num_dimensions=3,
-                transformation='s',
-                out_prefix='Struct2MNI',
-                num_threads=4),
+            'ants_reg',
+            ants.Registration(
+                dimension=3,
+                collapse_output_transforms=True,
+                float=False,
+                interpolation='Linear',
+                use_histogram_matching=False,
+                winsorize_upper_quantile=0.995,
+                winsorize_lower_quantile=0.005,
+                verbose=True,
+                transforms=['Rigid', 'Affine', 'SyN'],
+                transform_parameters=[(0.1,), (0.1,), (0.1, 3, 0)],
+                metric=['MI', 'MI', 'CC'],
+                metric_weight=[1, 1, 1],
+                radius_or_number_of_bins=[32, 32, 32],
+                sampling_strategy=['Regular', 'Regular', 'None'],
+                sampling_percentage=[0.25, 0.25, None],
+                number_of_iterations=[[1000, 500, 250, 100],
+                                      [1000, 500, 250, 100],
+                                      [100, 70, 50, 20]],
+                convergence_threshold=[1e-6, 1e-6, 1e-6],
+                convergence_window_size=[10, 10, 10],
+                shrink_factors=[[8, 4, 2, 1],
+                                [8, 4, 2, 1],
+                                [8, 4, 2, 1]],
+                smoothing_sigmas=[[3, 2, 1, 0],
+                                  [3, 2, 1, 0],
+                                  [3, 2, 1, 0]],
+                output_warped_image=True),
             inputs={
-                'input_file': (self.brain_spec_name, nifti_gz_format),
-                'ref_file': ('template_brain', nifti_gz_format)},
+                'fixed_image': (self.brain_spec_name, nifti_gz_format),
+                'moving_image': ('template_brain', nifti_gz_format)},
             outputs={
-                'coreg_to_tmpl': ('reg_file', nifti_gz_format),
-                'coreg_to_tmpl_ants_mat': ('regmat', text_matrix_format),
-                'coreg_to_tmpl_ants_warp': ('warp_file', nifti_gz_format)},
+                'coreg_to_tmpl': ('warped_image', nifti_gz_format)},
             wall_time=25,
             requirements=[ants_req.v('2.0')])
+
+        select_trans = pipeline.add(
+            'select',
+            SelectOne(
+                index=0),
+            inputs={
+                'inlist': (ants_reg, 'forward_transforms')},
+            outputs={
+                'coreg_to_tmpl_ants_mat': ('out', text_matrix_format)})
+
+#         pipeline.add(
+#             'select',
+#             SelectOne(
+#                 index=1),
+#             inputs={
+#                 'inlist': (ants_reg, 'forward_transforms')},
+#             outputs={
+#                 'coreg_ants_mat': ('out', text_matrix_format)})
+
+        pipeline.add(
+            'select_warp',
+            SelectOne(
+                index=1),
+            inputs={
+                'inlist': (ants_reg, 'forward_transforms')},
+            outputs={
+                'coreg_to_tmpl_ants_warp': ('out', nifti_gz_format)})
 
         pipeline.add(
             'slices',
@@ -834,7 +919,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 outname='coreg_to_tmpl_report'),
             inputs={
                 'im1': ('template', nifti_gz_format),
-                'im2': (ants_reg, 'reg_file')},
+                'im2': (select_trans, 'out')},
             outputs={
                 'coreg_to_tmpl_fsl_report': ('report', gif_format)},
             wall_time=1,
