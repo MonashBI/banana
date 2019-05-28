@@ -494,7 +494,7 @@ if __name__ == '__main__':
             work_dir='/Users/tclose/Data/bold-work',
             reprocess=False, repo_depth=0, modules_env=True,
             skip_bases=[MriStudy],
-            skip=['cleaned_file'])
+            skip=['field_map_delta_te', 'cleaned_file'])
 
     if 't1' in generate:
         from banana.study.mri.t1 import T1Study
