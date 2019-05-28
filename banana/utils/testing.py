@@ -459,10 +459,7 @@ if __name__ == '__main__':
     import sys
     from banana.study.mri.base import MriStudy
 
-    if sys.argv[1:]:
-        generate = sys.argv[1:]
-    else:
-        generate = ('bold',)
+    generate = sys.argv[1:]
 
     print("Generating test data for {}".format(generate))
 
