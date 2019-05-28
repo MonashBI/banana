@@ -456,9 +456,15 @@ def gen_test_data_entry_point():
 
 
 if __name__ == '__main__':
+    import sys
     from banana.study.mri.base import MriStudy
 
-    generate = ('bold',)
+    if sys.argv[1:]:
+        generate = sys.argv[1:]
+    else:
+        generate = ('bold',)
+
+    print("Generating test data for {}".format(generate))
 
     if 'base' in generate:
 
@@ -487,7 +493,20 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir='/Users/tclose/Data/bold-work',
             reprocess=False, repo_depth=0, modules_env=True,
-            skip_bases=[MriStudy])
+            skip_bases=[MriStudy],
+            skip=['cleaned_file'])
+
+    if 't1' in generate:
+        from banana.study.mri.t1 import T1Study
+
+        PipelineTester.generate_test_data(
+            T1Study, op.expanduser('~/Data/t1'), 'TESTBANANAT1',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir='/Users/tclose/Data/t1-work',
+            skip=['t2_coreg'],
+            skip_bases=[MriStudy],
+            include=None,
+            reprocess=False, repo_depth=1, modules_env=True)
 
     if 't2' in generate:
         from banana.study.mri.t2 import T2Study
@@ -508,18 +527,6 @@ if __name__ == '__main__':
             work_dir='/Users/tclose/Data/t2star-work',
             skip_bases=[MriStudy],
             reprocess=False, repo_depth=0, modules_env=True)
-
-    if 't1' in generate:
-        from banana.study.mri.t1 import T1Study
-
-        PipelineTester.generate_test_data(
-            T1Study, op.expanduser('~/Data/t1'), 'TESTBANANAT1',
-            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/t1-work',
-            skip=['t2_coreg'],
-            skip_bases=[MriStudy],
-            include=None,
-            reprocess=False, repo_depth=1, modules_env=True)
 
     if 'dwi' in generate:
         from banana.study.mri.dwi import DwiStudy

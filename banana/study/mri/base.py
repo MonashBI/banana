@@ -362,7 +362,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                         'reference_image': ('coreg_ref_brain',
                                             nifti_gz_format),
                         'transforms': (pipeline.node('ants_reg'),
-                                       'transforms')},
+                                       'forward_transforms')},
                     requirements=[ants_req.v('1.9')], mem_gb=16,
                     wall_time=30)
             else:
