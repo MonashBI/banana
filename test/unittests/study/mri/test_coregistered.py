@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from arcana.data import InputFileset  # @IgnorePep8
+from arcana.data import InputFilesets  # @IgnorePep8
 from banana.file_format import nifti_gz_format, text_matrix_format  # @IgnorePep8
 from banana.study.mri.coregistered import (  # @IgnorePep8
     CoregisteredStudy, CoregisteredToMatrixStudy)
@@ -14,8 +14,8 @@ class TestCoregistered(TestCase):
         study = self.create_study(
             CoregisteredStudy, 'registration',
             inputs=[
-                InputFileset('to_register', 'flair', nifti_gz_format),
-                InputFileset('reference', 'mprage', nifti_gz_format)])
+                InputFilesets('to_register', 'flair', nifti_gz_format),
+                InputFilesets('reference', 'mprage', nifti_gz_format)])
         pipeline = study.linear_registration_pipeline()
         pipeline.run(work_dir=self.work_dir)
         self.assertFilesetCreated('registered.nii.gz', study.name)
@@ -25,8 +25,8 @@ class TestCoregistered(TestCase):
     def test_registration_to_matrix(self):
         study = self.create_study(
             CoregisteredToMatrixStudy, 'registration_to_matrix', {
-                InputFileset('to_register', 'flair', nifti_gz_format),
-                InputFileset('reference', 'mprage', nifti_gz_format),
-                InputFileset('matrix', 'matrix', text_matrix_format)})
+                InputFilesets('to_register', 'flair', nifti_gz_format),
+                InputFilesets('reference', 'mprage', nifti_gz_format),
+                InputFilesets('matrix', 'matrix', text_matrix_format)})
         study.linear_registration_pipeline().run(work_dir=self.work_dir)
         self.assertFilesetCreated('registered.nii.gz', study.name)

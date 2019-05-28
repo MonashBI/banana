@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import shutil
-from arcana.data import InputFileset
+from arcana.data import InputFilesets
 from banana.study.mri.diffusion import NODDIStudy
 from arcana.repository.basic import BasicRepo
 from banana.file_format import mrtrix_image_format
@@ -25,10 +25,10 @@ study = NODDIStudy(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, repository=BasicRepo(repository_path),
     input_scans=[
-        InputFileset('low_b_dw_scan', mrtrix_image_format,
+        InputFilesets('low_b_dw_scan', mrtrix_image_format,
                      'r_l_noddi_b700_30_directions'),
-        InputFileset('high_b_dw_scan', mrtrix_image_format,
+        InputFilesets('high_b_dw_scan', mrtrix_image_format,
                      'r_l_noddi_b2000_60_directions'),
-        InputFileset('forward_rpe', 'r_l_noddi_b0_6', mrtrix_image_format),
-        InputFileset('reverse_rpe', 'l_r_noddi_b0_6', mrtrix_image_format)])
+        InputFilesets('forward_rpe', 'r_l_noddi_b0_6', mrtrix_image_format),
+        InputFilesets('reverse_rpe', 'l_r_noddi_b0_6', mrtrix_image_format)])
 study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)

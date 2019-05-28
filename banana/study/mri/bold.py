@@ -21,7 +21,7 @@ from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from arcana.data import InputFileset
+from arcana.data import InputFilesets
 from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from banana.interfaces.custom.bold import PrepareFIX
@@ -548,7 +548,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(InputFileset('t1_primary', t1, dicom_format,
+    inputs.append(InputFilesets('t1_primary', t1, dicom_format,
                                   is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
@@ -571,10 +571,10 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                        for i in range(epi_number))
 
     for i in range(epi_number):
-        inputs.append(InputFileset(
+        inputs.append(InputFilesets(
             'epi_{}_primary'.format(i), epis, dicom_format, order=i,
             is_regex=True))
-#     inputs.extend(InputFileset(
+#     inputs.extend(InputFilesets(
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
@@ -582,12 +582,12 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
             ParamSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
-        inputs.extend(InputFileset(
+        inputs.extend(InputFilesets(
             'epi_{}_field_map_mag'.format(i), fm_mag, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE}, is_regex=True,
             order=0)
             for i in range(epi_number))
-        inputs.extend(InputFileset(
+        inputs.extend(InputFilesets(
             'epi_{}_field_map_phase'.format(i), fm_phase, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE}, is_regex=True,
             order=0)

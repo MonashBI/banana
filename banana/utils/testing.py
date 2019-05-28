@@ -10,7 +10,7 @@ from unittest import TestCase
 from argparse import ArgumentParser
 from importlib import import_module
 from arcana.exceptions import ArcanaNameError
-from arcana import (InputFileset, InputField, BasicRepo, XnatRepo, SingleProc,
+from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo, SingleProc,
                     Field, Fileset, ModulesEnv, StaticEnv)
 from arcana.data.spec import BaseInputSpec
 from arcana.exceptions import (
@@ -92,10 +92,10 @@ class PipelineTester(TestCase):
         for spec in self.study_class.data_specs():
             # Create an input for each entry in the class specificiation
             if spec.is_fileset:
-                inpt = InputFileset(
+                inpt = InputFilesets(
                     spec.name, spec.name, repository=self.ref_repo)
             else:
-                inpt = InputField(
+                inpt = InputFields(
                     spec.name, spec.name, dtype=spec.dtype,
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
@@ -282,10 +282,10 @@ class PipelineTester(TestCase):
             session_inputs = []
             for item in chain(session.filesets, session.fields):
                 if isinstance(item, Fileset):
-                    inpt = InputFileset(item.basename, item.basename,
+                    inpt = InputFilesets(item.basename, item.basename,
                                         item.format, repository=in_repo)
                 else:
-                    inpt = InputField(item.name, item.name, item.dtype,
+                    inpt = InputFields(item.name, item.name, item.dtype,
                                       repository=in_repo)
                 try:
                     spec = study_class.data_spec(inpt)
