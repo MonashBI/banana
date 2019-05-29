@@ -462,7 +462,6 @@ def gen_test_data_entry_point():
 
 
 if __name__ == '__main__':
-    import sys
     from banana.study.mri.base import MriStudy
     import argparse
 
@@ -492,6 +491,15 @@ if __name__ == '__main__':
             include=['coreg_brain'],
             parameters={
                 'coreg_method': 'flirt'})
+
+    if 'base3' in args.generate:
+
+        PipelineTester.generate_test_data(
+            MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI3',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir=op.join(args.data_dir, 'mri3-work'),
+            reprocess=False, repo_depth=0, modules_env=True,
+            include=['coreg_brain'])
 
     if 'bold' in args.generate:
         from banana.study.mri.bold import BoldStudy

@@ -28,6 +28,7 @@ from .epi import EpiStudy
 from nipype.interfaces import fsl
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
+from banana.interfaces.custom.dwi import TransformGradients
 from banana.study.base import Study
 from banana.bids import BidsInput, BidsAssocInput
 from banana.exceptions import BananaUsageError
@@ -305,6 +306,20 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             outputs={
                 'preproc': ('out_file', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
+
+        return pipeline
+
+    def coreg_pipeline(self, **name_maps):
+        pipeline = super().coreg_brain_pipeline(
+            input_map={
+                'coreg': 'b0'})
+
+        transform_grads = pipeline.add(
+            'transform_grads',
+            TransformGradients(),
+            inputs={
+                'gradients': ('grad_dirs', fsl_bvecs_format),
+                'transform': })
 
         return pipeline
 

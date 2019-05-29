@@ -100,7 +100,7 @@ class FslReferenceData(BaseReference):
         # If resolution is a string then it is assumed to be a parameter name
         # of the study
         if isinstance(self._resolution, str):
-            resolution = self.study.parameter(self._resolution)
+            resolution = getattr(self.study, self._resolution)
         else:
             resolution = self._resolution
         full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)

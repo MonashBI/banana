@@ -313,13 +313,12 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Interpolate priors and atlas
         merge_trans = pipeline.add(
             'merge_transforms',
-            Merge(3),
+            Merge(4),
             inputs={
                 'in1': ('coreg_ants_mat', text_matrix_format),
-                'in2': ('coreg_to_tmpl_ants_mat',
-                        text_matrix_format),  # Ideal. T1
-                'in3': ('coreg_to_tmpl_ants_warp',
-                        nifti_gz_format)})  # Ideally T1
+                'in2': ('coreg_to_tmpl_ants_rigid', text_matrix_format),
+                'in3': ('coreg_to_tmpl_ants_affine', text_matrix_format),
+                'in4': ('coreg_to_tmpl_ants_warp', nifti_gz_format)})
 
         apply_trans_q = pipeline.add(
             'ApplyTransform_Q_Prior',
