@@ -212,7 +212,8 @@ class PipelineTester(TestCase):
     def generate_test_data(cls, study_class, in_repo, out_repo,
                            in_server=None, out_server=None, work_dir=None,
                            parameters=(), include=None, skip=(), skip_bases=(),
-                           reprocess=False, repo_depth=0, modules_env=False):
+                           reprocess=False, repo_depth=0, modules_env=False,
+                           clean_work_dir=True):
         """
         Generates reference data for a pipeline tester unittests given a study
         class and set of parameters
@@ -252,6 +253,8 @@ class PipelineTester(TestCase):
             The depth of the input repository
         modules_env : bool
             Whether to use modules environment or not
+        clean_work_dir : bool
+            Whether to clean the Nipype work directory or not
         """
         if work_dir is None:
             work_dir = tempfile.mkdtemp()
@@ -312,7 +315,7 @@ class PipelineTester(TestCase):
             repository=temp_repo,
             processor=SingleProc(
                 work_dir, reprocess=reprocess,
-                clean_work_dir_between_runs=False,
+                clean_work_dir_between_runs=clean_work_dir,
                 prov_ignore=(
                     SingleProc.DEFAULT_PROV_IGNORE +
                     ['.*/pkg_version',
@@ -419,6 +422,8 @@ def gen_test_data_entry_point():
                         help="The depth of the input repository")
     parser.add_argument('--modules_env', action='store_true', default=False,
                         help="Whether to use a Modules Envionment or not")
+    parser.add_argument('--dont_clean_work_dir', action='store_true', default=False,
+                        help="Whether to clean the Nipype work dir between runs")
     args = parser.parse_args()
 
     logger = logging.getLogger('nipype.workflow')
@@ -452,88 +457,91 @@ def gen_test_data_entry_point():
         out_server=args.out_server, work_dir=args.work_dir,
         parameters=parameters, skip=args.skip, skip_bases=skip_bases,
         reprocess=args.reprocess, repo_depth=args.repo_depth,
-        modules_env=args.modules_env)
+        modules_env=args.modules_env,
+        clean_work_dir=(not args.dont_clean_work_dir))
 
 
 if __name__ == '__main__':
     import sys
     from banana.study.mri.base import MriStudy
+    import argparse
 
-    if sys.argv[1:]:
-        generate = sys.argv[1:]
-    else:
-        generate = ('bold',)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('generate', nargs='+', help="datasets to generate")
+    parser.add_argument('--data_dir', default=op.expanduser('~/Data'),
+                        help="The data dir to use")
+    args = parser.parse_args()
 
-    print("Generating test data for {}".format(generate))
+    print("Generating test data for {}".format(args.generate))
 
-    if 'base' in generate:
+    if 'base' in args.generate:
 
         PipelineTester.generate_test_data(
-            MriStudy, op.expanduser('~/Data/mri'), 'TESTBANANAMRI',
+            MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/mri-work',
+            work_dir=op.join(args.data_dir, 'mri-work'),
             reprocess=False, repo_depth=0, modules_env=True)
 
-    if 'base2' in generate:
+    if 'base2' in args.generate:
 
         PipelineTester.generate_test_data(
-            MriStudy, op.expanduser('~/Data/mri2'), 'TESTBANANAMRI2',
+            MriStudy, op.join(args.data_dir, 'mri2'), 'TESTBANANAMRI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/mri2-work',
+            work_dir=op.join(args.data_dir, 'mri2-work'),
             reprocess=False, repo_depth=0, modules_env=True,
             include=['coreg_brain'],
             parameters={
                 'coreg_method': 'flirt'})
 
-    if 'bold' in generate:
+    if 'bold' in args.generate:
         from banana.study.mri.bold import BoldStudy
 
         PipelineTester.generate_test_data(
-            BoldStudy, op.expanduser('~/Data/bold'), 'TESTBANANABOLD',
+            BoldStudy, op.join(args.data_dir, 'bold'), 'TESTBANANABOLD',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/bold-work',
+            work_dir=op.join(args.data_dir, 'bold-work'),
             reprocess=False, repo_depth=0, modules_env=True,
             skip_bases=[MriStudy],
             skip=['field_map_delta_te', 'cleaned_file'])
 
-    if 't1' in generate:
+    if 't1' in args.generate:
         from banana.study.mri.t1 import T1Study
 
         PipelineTester.generate_test_data(
-            T1Study, op.expanduser('~/Data/t1'), 'TESTBANANAT1',
+            T1Study, op.join(args.data_dir, 't1'), 'TESTBANANAT1',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/t1-work',
+            work_dir=op.join(args.data_dir, 't1-work'),
             skip=['t2_coreg'],
             skip_bases=[MriStudy],
             include=None,
             reprocess=False, repo_depth=1, modules_env=True)
 
-    if 't2' in generate:
+    if 't2' in args.generate:
         from banana.study.mri.t2 import T2Study
 
         PipelineTester.generate_test_data(
-            T2Study, op.expanduser('~/Data/t2'), 'TESTBANANAT2',
+            T2Study, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/t2-work',
+            work_dir=op.join(args.data_dir, 't2-work'),
             skip_bases=[MriStudy],
             reprocess=False, repo_depth=0, modules_env=True)
 
-    if 't2star' in generate:
+    if 't2star' in args.generate:
         from banana.study.mri.t2star import T2starStudy
 
         PipelineTester.generate_test_data(
-            T2starStudy, op.expanduser('~/Data/t2star'), 'TESTBANANAT2S',
+            T2starStudy, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir='/Users/tclose/Data/t2star-work',
+            work_dir=op.join(args.data_dir, 't2star-work'),
             skip_bases=[MriStudy],
             reprocess=False, repo_depth=0, modules_env=True)
 
-    if 'dwi' in generate:
+    if 'dwi' in args.generate:
         from banana.study.mri.dwi import DwiStudy
         PipelineTester.generate_test_data(
-            DwiStudy, op.expanduser('~/Data/dwi'), 'TESTBANANADWI',
+            DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
-            work_dir=op.expanduser('~/Data/dwi-work'),
+            work_dir=op.join(args.data_dir, 'dwi-work'),
             skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
                   'field_map_phase', 'moco', 'align_mats', 'moco_par',
                   'field_map_delta_te', 'norm_intensity',

@@ -78,6 +78,7 @@ class ToPolarCoords(BaseInterface):
         return runtime
 
     def _list_outputs(self):  # @UnusedVariable
+        print("in-dir: " + self.inputs.in_dir)
         outputs = self._outputs().get()
         # Get names for output directories
         combined_dir = outputs['combined_dir'] = self._gen_filename(
