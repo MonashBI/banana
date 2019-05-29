@@ -879,8 +879,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                                   [3, 2, 1, 0]],
                 output_warped_image=True),
             inputs={
-                'fixed_image': (self.brain_spec_name, nifti_gz_format),
-                'moving_image': ('template_brain', nifti_gz_format)},
+                'fixed_image': ('template_brain', nifti_gz_format),
+                'moving_image': (self.brain_spec_name, nifti_gz_format)},
             outputs={
                 'coreg_to_tmpl': ('warped_image', nifti_gz_format)},
             wall_time=25,
