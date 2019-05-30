@@ -18,13 +18,13 @@ class TestDiffusion(BaseTestCase):
             DwiStudy, 'preprocess', [
                 InputFilesets('magnitude', 'r_l_dwi_b700_30', mrtrix_image_format),
                 InputFilesets('dwi_reference', 'l_r_dwi_b0_6', mrtrix_image_format)])
-        preproc = list(study.data('preproc'))[0]
+        preproc = list(study.data('mag_preproc'))[0]
         self.assertTrue(os.path.exists(preproc.path))
 
     def test_extract_b0(self):
         study = self.create_study(
             DwiStudy, 'extract_b0', [
-                InputFilesets('preproc', 'preproc', nifti_gz_format),
+                InputFilesets('mag_preproc', 'mag_preproc', nifti_gz_format),
                 InputFilesets('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
                 InputFilesets('bvalues', 'bvalues', fsl_bvals_format)])
         study.extract_b0_pipeline().run(work_dir=self.work_dir)
@@ -33,7 +33,7 @@ class TestDiffusion(BaseTestCase):
     def test_bias_correct(self):
         study = self.create_study(
             DwiStudy, 'bias_correct', [
-                InputFilesets('preproc', 'preproc', nifti_gz_format),
+                InputFilesets('mag_preproc', 'mag_preproc', nifti_gz_format),
                 InputFilesets('grad_dirs', 'gradient_dirs', fsl_bvecs_format),
                 InputFilesets('bvalues', 'bvalues', fsl_bvals_format)])
         study.bias_correct_pipeline(mask_tool='mrtrix').run(
@@ -122,7 +122,7 @@ class TestNODDI(BaseTestCase):
 #     def test_noddi_fitting(self, nthreads=6):
 #         study = self.create_study(
 #             NODDIStudy, 'noddi', inputs=[
-#                 InputFilesets('preproc', 'noddi_dwi', mrtrix_image_format),
+#                 InputFilesets('mag_preproc', 'noddi_dwi', mrtrix_image_format),
 #                 InputFilesets('brain_mask', 'roi_mask', analyze_format),
 #                 'grad_dirs': Fileset('noddi_gradient_directions',
 #                                      fsl_bvecs_format),

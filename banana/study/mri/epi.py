@@ -29,9 +29,9 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                          optional=True),
         InputFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
         InputFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
-                            optional=True),
+                         optional=True),
         InputFilesetSpec('field_map_phase', STD_IMAGE_FORMATS,
-                            optional=True),
+                         optional=True),
         FilesetSpec('moco', nifti_gz_format,
                     'intrascan_alignment_pipeline'),
         FilesetSpec('align_mats', motion_mats_format,
@@ -100,7 +100,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 output_type='NIFTI_GZ',
                 out_file='moco.nii.gz'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('mag_preproc', nifti_gz_format)},
             outputs={
                 'moco': ('out_file', nifti_gz_format),
                 'moco_par': ('par_file', par_format)},
@@ -226,7 +226,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 'in_topup_movpar': (topup, 'out_movpar'),
                 'in_topup_fieldcoef': (topup, 'out_fieldcoef')},
             outputs={
-                'preproc': ('out_corrected', nifti_gz_format)},
+                'mag_preproc': ('out_corrected', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
@@ -296,7 +296,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 'fmap_in_file': (create_fmap, 'out_fieldmap'),
                 'in_file': (reorient_epi_in, 'out_file')},
             outputs={
-                'preproc': ('unwarped_file', nifti_gz_format)},
+                'mag_preproc': ('unwarped_file', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 

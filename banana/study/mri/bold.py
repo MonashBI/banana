@@ -103,7 +103,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 out_file='rsfmri_mc.nii.gz',
                 oned_file='prefiltered_func_data_mcf.par'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('mag_preproc', nifti_gz_format)},
             outputs={
                 'mc_par': ('oned_file', par_format)},
             wall_time=5,
@@ -232,7 +232,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 suffix='_mean',
                 output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('mag_preproc', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -244,7 +244,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
                 'mc_par': ('mc_par', par_format),
                 'epi_brain_mask': ('brain_mask', nifti_gz_format),
-                'epi_preproc': ('preproc', nifti_gz_format),
+                'epi_preproc': ('mag_preproc', nifti_gz_format),
                 'filtered_epi': ('filtered_data', nifti_gz_format),
                 'epi2t1_mat': (epi_ants2fsl, 'fsl_matrix'),
                 't12MNI_mat': (struct_ants2fsl, 'fsl_matrix'),

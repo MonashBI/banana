@@ -80,7 +80,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                 directive='all',
                 openmp=self.processor.num_processes),
             inputs={
-                'T1_files': ('preproc', nifti_gz_format)},
+                'T1_files': ('mag_preproc', nifti_gz_format)},
             requirements=[freesurfer_req.v('5.3')],
             wall_time=2000)
 

@@ -41,8 +41,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('magnitude', STD_IMAGE_FORMATS,
-                            desc=("Typically the primary scan acquired from "
-                                  "the scanner for the given contrast")),
+                         desc=("Typically the primary scan acquired from "
+                               "the scanner for the given contrast")),
         InputFilesetSpec(
             'coreg_ref', STD_IMAGE_FORMATS,
             desc=("A reference scan to coregister the primary scan to. Should "
@@ -64,13 +64,13 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             "A dataset that contains correct the header information for the "
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
+        FilesetSpec('mag_preproc', nifti_gz_format, 'prepare_pipeline',
+                    desc=("Magnitude after basic preprocessing, such as "
+                          "realigning image axis to a standard rotation")),
         FilesetSpec('channel_mags', multi_nifti_gz_format,
                     'preprocess_channels_pipeline'),
         FilesetSpec('channel_phases', multi_nifti_gz_format,
                     'preprocess_channels_pipeline'),
-        FilesetSpec('preproc', nifti_gz_format, 'preprocess_pipeline',
-                    desc=("Performs basic preprocessing, such as realigning "
-                          "image axis to a standard rotation")),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="The brain masked image"),
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
@@ -160,8 +160,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ParamSpec('mni_template_resolution', None, choices=(0.5, 1, 2)),
         ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
         ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
-        ParamSpec('preproc_new_dims', ('RL', 'AP', 'IS')),
-        ParamSpec('preproc_resolution', None, dtype=list),
+        ParamSpec('reoriented_dims', ('RL', 'AP', 'IS')),
+        ParamSpec('resampled_resolution', None, dtype=list),
         SwitchSpec('coreg_method', 'ants', ('ants', 'flirt', 'spm'),
                    desc="The tool to use for linear registration"),
         ParamSpec('flirt_degrees_of_freedom', 6, desc=(
@@ -337,7 +337,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 name='coreg_brain',
                 name_maps=dict(
                     input_map={
-                        'preproc': 'brain',
+                        'mag_preproc': 'brain',
                         'coreg_ref': 'coreg_ref_brain'},
                     output_map={
                         'coreg': 'coreg_brain'},
@@ -386,7 +386,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             # extracted images and then brain extract the co-registered image
             pipeline = self.brain_extraction_pipeline(
                 name='bet_coreg',
-                input_map={'preproc': 'coreg'},
+                input_map={'mag_preproc': 'coreg'},
                 output_map={'brain': 'coreg_brain',
                             'brain_mask': 'coreg_brain_mask'},
                 name_maps=name_maps)
@@ -426,7 +426,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 name_maps=name_maps)
 
             if self.provided('coreg_ref'):
-                source = 'preproc'
+                source = 'mag_preproc'
                 ref = 'coreg_ref'
             elif self.provided('coreg_ref_brain'):
                 source = 'brain'
@@ -480,7 +480,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   cost_func=self.parameter('flirt_cost_func'),
                   output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format),
+                'in_file': ('mag_preproc', nifti_gz_format),
                 'reference': ('coreg_ref', nifti_gz_format)},
             outputs={
                 'coreg': ('out_file', nifti_gz_format),
@@ -527,7 +527,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 output_warped_image=True),
             inputs={
                 'fixed_image': ('coreg_ref', nifti_gz_format),
-                'moving_image': ('preproc', nifti_gz_format)},
+                'moving_image': ('mag_preproc', nifti_gz_format)},
             outputs={
                 'coreg': ('warped_image', nifti_gz_format)},
             wall_time=10,
@@ -571,7 +571,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 out_prefix='r'),
             inputs={
                 'target': ('coreg_ref', nifti_format),
-                'source': ('preproc', nifti_format)},
+                'source': ('mag_preproc', nifti_format)},
             outputs={
                 'coreg': ('coregistered_source', nifti_format)},
             requirements=[spm_req.v(12)],
@@ -586,7 +586,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             citations=[fsl_cite])
 
         if self.provided('coreg_ref'):
-            in_file = 'preproc'
+            in_file = 'mag_preproc'
             reference = 'coreg_ref'
         elif self.provided('coreg_ref_brain'):
             in_file = 'brain'
@@ -631,7 +631,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 frac=self.parameter('bet_f_threshold'),
                 vertical_gradient=self.parameter('bet_g_threshold')),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('mag_preproc', nifti_gz_format)},
             outputs={
                 'brain': ('out_file', nifti_gz_format),
                 'brain_mask': ('mask_file', nifti_gz_format)},
@@ -662,7 +662,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 num_threads=4),
             inputs={
                 'ref_file': ('template', nifti_gz_format),
-                'input_file': ('preproc', nifti_gz_format)},
+                'input_file': ('mag_preproc', nifti_gz_format)},
             wall_time=25,
             requirements=[ants_req.v('2.0')])
 
@@ -688,7 +688,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 input_image_type=3),
             inputs={
                 'input_image': ('template_mask', nifti_gz_format),
-                'reference_image': ('preproc', nifti_gz_format),
+                'reference_image': ('mag_preproc', nifti_gz_format),
                 'transforms': (merge_trans, 'out'),
                 'invert_transform_flags': (trans_flags, 'out')},
             wall_time=7,
@@ -715,7 +715,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 op_string='-mas',
                 output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format),
+                'in_file': ('mag_preproc', nifti_gz_format),
                 'in_file2': (maths1, 'out_file')},
             outputs={
                 'brain': ('out_file', nifti_gz_format)},
@@ -730,7 +730,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     output_type='NIFTI_GZ'),
                 wall_time=5,
                 inputs={
-                    'im1': ('preproc', nifti_gz_format),
+                    'im1': ('mag_preproc', nifti_gz_format),
                     'im2': (maths2, 'out_file')},
                 outputs={
                     'optiBET_report': ('report', gif_format)},
@@ -763,7 +763,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             Reorient2Std(
                 output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('mag_preproc', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.8')])
 
         reorient_mask = pipeline.add(
@@ -937,7 +937,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preprocess_pipeline(self, **name_maps):
+    def prepare_pipeline(self, **name_maps):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -952,14 +952,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             performed
         """
         pipeline = self.new_pipeline(
-            name='preprocess_pipeline',
+            name='prepare_pipeline',
             name_maps=name_maps,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
             citations=[fsl_cite])
 
         if (self.branch('reorient_to_std') or
-                self.parameter('preproc_resolution') is not None):
+                self.parameter('resampled_resolution') is not None):
             if self.branch('reorient_to_std'):
                 swap = pipeline.add(
                     'fslreorient2std',
@@ -968,20 +968,20 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     inputs={
                         'in_file': ('magnitude', nifti_gz_format)},
                     requirements=[fsl_req.v('5.0.9')])
-    #         swap.inputs.new_dims = self.parameter('preproc_new_dims')
+    #         swap.inputs.new_dims = self.parameter('reoriented_dims')
 
-            if self.parameter('preproc_resolution') is not None:
+            if self.parameter('resampled_resolution') is not None:
                 resample = pipeline.add(
                     "resample",
                     MRResize(
-                        voxel=self.parameter('preproc_resolution')),
+                        voxel=self.parameter('resampled_resolution')),
                     inputs={
                         'in_file': (swap, 'out_file')},
                     requirements=[mrtrix_req.v('3.0rc3')])
-                pipeline.connect_output('preproc', resample, 'out_file',
+                pipeline.connect_output('mag_preproc', resample, 'out_file',
                                         nifti_gz_format)
             else:
-                pipeline.connect_output('preproc', swap, 'out_file',
+                pipeline.connect_output('mag_preproc', swap, 'out_file',
                                         nifti_gz_format)
         else:
             # Don't actually do any processing just copy magnitude image to
@@ -993,7 +993,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 inputs={
                     'file': ('magnitude', nifti_gz_format)},
                 outputs={
-                    'preproc': ('file', nifti_gz_format)})
+                    'mag_preproc': ('file', nifti_gz_format)})
 
         return pipeline
 

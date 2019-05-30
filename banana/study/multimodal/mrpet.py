@@ -717,7 +717,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    param_specs = [ParamSpec('ref_preproc_resolution', [1])]
+    param_specs = [ParamSpec('ref_resampled_resolution', [1])]
     switch_specs = []
     if struct2align is not None:
         struct_image = struct2align.split('/')[-1].split('.')[0]
@@ -937,7 +937,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     dct = {}
     data_specs = []
     run_pipeline = False
-    param_specs = [ParamSpec('ref_preproc_resolution', [1])]
+    param_specs = [ParamSpec('ref_resampled_resolution', [1])]
 
     if pet_data_dir is not None:
         inputs.append(InputFilesets('pet_data_dir', 'pet_data_dir',

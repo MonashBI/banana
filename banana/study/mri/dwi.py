@@ -43,9 +43,17 @@ logger = getLogger('banana')
 class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        InputFilesetSpec('dwi_reference', STD_IMAGE_FORMATS, optional=True),
-        FilesetSpec('b0', nifti_gz_format, 'extract_b0_pipeline',
-                    desc="b0 image"),
+        InputFilesetSpec('dw_series', STD_IMAGE_FORMATS,
+                         desc="The set of diffusion-weighted EPI images"),
+        InputFilesetSpec('magnitude', STD_IMAGE_FORMATS, optional=True,
+                         desc=("An optional magnitude (i.e. b==0) image used "
+                               "as a reference in preprocessing")),
+        FilesetSpec('dw_series_preproc', nifti_gz_format, 'prepproc_pipeline',
+                    desc=("Preprocessed DW series to remove eddy current and "
+                          "EPI distortion artefacts")),
+        FilesetSpec('mag_preproc', nifti_gz_format, 'extract_b0_pipeline',
+                    desc=("A b==0 image extracted from the preprocessed DW "
+                          "series")),
         FilesetSpec('noise_residual', mrtrix_image_format,
                     'preprocess_pipeline'),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
@@ -63,7 +71,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                     'bias_correct_pipeline'),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('bvalues', fsl_bvals_format, 'preprocess_pipeline'),
-        FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
+        FilesetSpec('eddy_par', eddy_par_format, 'prepare_pipeline'),
         FilesetSpec('brain', nifti_gz_format,
                     'brain_extraction_pipeline'),
         FilesetSpec('brain_mask', nifti_gz_format,
@@ -304,7 +312,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             inputs={
                 'in_file': (preproc, 'out_file')},
             outputs={
-                'preproc': ('out_file', nifti_gz_format)},
+                'dw_series_preproc': ('out_file', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
@@ -355,7 +363,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 BrainMask(
                     out_file='brain_mask.nii.gz'),
                 inputs={
-                    'in_file': ('preproc', nifti_gz_format),
+                    'in_file': ('mag_preproc', nifti_gz_format),
                     'grad_fsl': (grad_fsl, 'out')},
                 outputs={
                     'brain_mask': ('out_file', nifti_gz_format)},
@@ -395,7 +403,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
                 method=self.parameter('bias_correct_method')),
             inputs={
                 'grad_fsl': (fsl_grads, 'out'),  # internal
-                'in_file': ('preproc', nifti_gz_format),
+                'in_file': ('dw_series_preproc', nifti_gz_format),
                 'mask': ('brain_mask', nifti_gz_format)},
             outputs={
                 'bias_correct': ('out_file', nifti_gz_format)},
@@ -816,7 +824,7 @@ class DwiStudy(EpiStudy, metaclass=StudyMetaClass):
             'gen_aff_mats',
             AffineMatrixGeneration(),
             inputs={
-                'reference_image': ('preproc', nifti_gz_format),
+                'reference_image': ('mag_preproc', nifti_gz_format),
                 'motion_parameters': ('eddy_par', eddy_par_format)},
             outputs={
                 'align_mats': ('affine_matrices', motion_mats_format)})

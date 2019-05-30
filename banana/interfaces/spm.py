@@ -113,7 +113,7 @@ class MultiChannelSegment(SPMCommand):
         _local_version = SPMCommand().version
         if _local_version and '12.' in _local_version:
             self._jobtype = 'spatial'
-            self._jobname = 'preproc'
+            self._jobname = 'mag_preproc'
         else:
             self._jobtype = 'tools'
             self._jobname = 'preproc8'
