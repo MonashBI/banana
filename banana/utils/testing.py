@@ -550,10 +550,26 @@ if __name__ == '__main__':
             DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi-work'),
-            skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+            skip=['coreg_ref_wmseg', 'field_map_mag',
                   'field_map_phase', 'moco', 'align_mats', 'moco_par',
                   'field_map_delta_te', 'norm_intensity',
                   'norm_intens_fa_template', 'norm_intens_wm_mask'],
+            skip_bases=[MriStudy],
+            parameters={
+                'num_global_tracks': int(1e6)}, include=None,
+            reprocess=False, repo_depth=1, modules_env=True)
+
+    if 'dwi2' in args.generate:
+        from banana.study.mri.dwi import DwiStudy  # @Reimport
+        PipelineTester.generate_test_data(
+            DwiStudy, op.join(args.data_dir, 'dwi2'), 'TESTBANANADWI2',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir=op.join(args.data_dir, 'dwi2-work'),
+            skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
+                  'field_map_phase', 'moco', 'align_mats', 'moco_par',
+                  'field_map_delta_te', 'norm_intensity',
+                  'norm_intens_fa_template', 'norm_intens_wm_mask',
+                  'global_tracks'],
             skip_bases=[MriStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
