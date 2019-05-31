@@ -16,7 +16,6 @@ from nipype.interfaces.utility import Merge as NiPypeMerge
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.study import ParamSpec, SwitchSpec
-from banana.study.mri.epi import EpiStudy
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
@@ -29,6 +28,7 @@ from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
 from banana.bids import BidsInput, BidsAssocInput
+from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')
 
@@ -41,7 +41,7 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
+class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('train_data', rfile_format, optional=True,
@@ -71,7 +71,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
         ParamSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsInput(
-        spec_name='magnitude', type='bold', format=nifti_gz_x_format)
+        spec_name='series', type='bold', format=nifti_gz_x_format)
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssocInput(
@@ -103,7 +103,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 out_file='rsfmri_mc.nii.gz',
                 oned_file='prefiltered_func_data_mcf.par'),
             inputs={
-                'in_file': ('mag_preproc', nifti_gz_format)},
+                'in_file': ('series_preproc', nifti_gz_format)},
             outputs={
                 'mc_par': ('oned_file', par_format)},
             wall_time=5,
@@ -232,7 +232,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 suffix='_mean',
                 output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('mag_preproc', nifti_gz_format)},
+                'in_file': ('series_preproc', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -244,7 +244,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
                 'mc_par': ('mc_par', par_format),
                 'epi_brain_mask': ('brain_mask', nifti_gz_format),
-                'epi_preproc': ('mag_preproc', nifti_gz_format),
+                'epi_preproc': ('series_preproc', nifti_gz_format),
                 'filtered_epi': ('filtered_data', nifti_gz_format),
                 'epi2t1_mat': (epi_ants2fsl, 'fsl_matrix'),
                 't12MNI_mat': (struct_ants2fsl, 'fsl_matrix'),

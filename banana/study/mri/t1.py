@@ -45,20 +45,13 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
              'foldind', 'curvind'))]
 
     add_param_specs = [
-        SwitchSpec('bet_method', 'fsl_bet',
-                   choices=MriStudy.param_spec('bet_method').choices),
+        # MriStudy.param_spec('bet_method').with_new_choices(default='opti_bet'),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
         SwitchSpec('aparc_atlas', 'desikan-killiany',
-                   choices=('desikan-killiany', 'destrieux',
-                            'DKT')),
+                   choices=('desikan-killiany', 'destrieux', 'DKT')),
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
-#         SwitchSpec('bet_method', 'optibet',
-#                    choices=MriStudy.param_spec('bet_method').choices),
-#         SwitchSpec('bet_robust', True),
-#         ParamSpec('bet_f_threshold', 0.57),
-#         ParamSpec('bet_g_threshold', -0.1)]
 
     def freesurfer_pipeline(self, **name_maps):
         """

@@ -52,7 +52,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'coreg_ref_brain', STD_IMAGE_FORMATS,
             desc=("A brain-extracted reference scan to coregister a brain-"
                   "extracted scan to. Note that the output of the "
-                  "registration coreg_brain can also be derived by brain "
+                  "registration brain_coreg can also be derived by brain "
                   "extracting the output of coregistration performed "
                   "before brain extraction if 'coreg_ref' is provided"),
             optional=True),
@@ -75,16 +75,15 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     desc="The brain masked image"),
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="Mask of the brain"),
-        FilesetSpec('coreg', nifti_gz_format,
-                    'coreg_pipeline',
+        FilesetSpec('mag_coreg', nifti_gz_format, 'coreg_pipeline',
                     desc="Head image coregistered to 'coreg_ref'"),
-        FilesetSpec('coreg_brain', nifti_gz_format,
-                    'coreg_brain_pipeline',
+        FilesetSpec('brain_coreg', nifti_gz_format,
+                    'brain_coreg_pipeline',
                     desc=("Either brain-extracted image coregistered to "
                           "'coreg_ref_brain' or a brain extraction of a "
                           "coregistered (incl. skull) image")),
-        FilesetSpec('coreg_brain_mask', nifti_gz_format,
-                    'coreg_brain_pipeline',
+        FilesetSpec('brain_mask_coreg', nifti_gz_format,
+                    'brain_coreg_pipeline',
                     desc=("Either brain-extracted image coregistered to "
                           "'coreg_ref_brain' or a brain extraction of a "
                           "coregistered (incl. skull) image")),
@@ -200,6 +199,18 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 "via 'template_resolution' parameter")
         return res
 
+    @property
+    def is_coregistered(self):
+        return self.provided('coreg_ref') or self.provided('coreg_ref_brain')
+
+    @property
+    def header_image(self):
+        if self.provided('header_image'):
+            hdr_name = 'header_image'
+        else:
+            hdr_name = 'magnitude'
+        return hdr_name
+
     def preprocess_channels_pipeline(self, **name_maps):
         pipeline = self.new_pipeline(
             'preprocess_channels',
@@ -291,7 +302,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         'coreg_ref_brain' optional inputs.
         """
         if self.provided('coreg_ref') or self.provided('coreg_ref_brain'):
-            name = 'coreg_brain'
+            name = 'brain_coreg'
         else:
             name = 'brain'
         return name
@@ -321,7 +332,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             self.unhandled_branch('bet_method')
         return pipeline
 
-    def coreg_brain_pipeline(self, **name_maps):
+    def brain_coreg_pipeline(self, **name_maps):
         """
         Coregistered + brain-extracted images can be derived in 2-ways. If an
         explicit brain-extracted reference is provided to
@@ -334,13 +345,13 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             # If a reference brain extracted image is provided we coregister
             # the brain extracted image to that
             pipeline = self.coreg_pipeline(
-                name='coreg_brain',
+                name='brain_coreg',
                 name_maps=dict(
                     input_map={
                         'mag_preproc': 'brain',
                         'coreg_ref': 'coreg_ref_brain'},
                     output_map={
-                        'coreg': 'coreg_brain'},
+                        'mag_coreg': 'brain_coreg'},
                     name_maps=name_maps))
 
             # Apply coregistration transform to brain mask
@@ -356,7 +367,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                         'in_file': ('brain_mask', nifti_gz_format),
                         'reference': ('coreg_ref_brain', nifti_gz_format)},
                     outputs={
-                        'coreg_brain_mask': ('out_file', nifti_format)},
+                        'brain_mask_coreg': ('out_file', nifti_format)},
                     requirements=[fsl_req.v('5.0.10')],
                     wall_time=10)
 
@@ -386,19 +397,19 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             # extracted images and then brain extract the co-registered image
             pipeline = self.brain_extraction_pipeline(
                 name='bet_coreg',
-                input_map={'mag_preproc': 'coreg'},
-                output_map={'brain': 'coreg_brain',
-                            'brain_mask': 'coreg_brain_mask'},
+                input_map={'mag_preproc': 'mag_coreg'},
+                output_map={'brain': 'brain_coreg',
+                            'brain_mask': 'brain_mask_coreg'},
                 name_maps=name_maps)
         else:
             raise BananaUsageError(
                 "Either 'coreg_ref' or 'coreg_ref_brain' needs to be provided "
-                "in order to derive coreg_brain or coreg_brain_mask")
+                "in order to derive brain_coreg or brain_mask_coreg")
         return pipeline
 
     def _coreg_mat_pipeline(self, **name_maps):
         if self.provided('coreg_ref_brain'):
-            pipeline = self.coreg_brain_pipeline(**name_maps)
+            pipeline = self.brain_coreg_pipeline(**name_maps)
         elif self.provided('coreg_ref'):
             pipeline = self.coreg_pipeline(**name_maps)
         else:
@@ -434,7 +445,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             else:
                 raise BananaUsageError(
                     "Either 'coreg_ref' or 'coreg_ref_brain' needs to be "
-                    "provided in order to derive coreg_brain or coreg_brain_"
+                    "provided in order to derive brain_coreg or brain_coreg_"
                     "mask")
 
             pipeline.add(
@@ -483,7 +494,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in_file': ('mag_preproc', nifti_gz_format),
                 'reference': ('coreg_ref', nifti_gz_format)},
             outputs={
-                'coreg': ('out_file', nifti_gz_format),
+                'mag_coreg': ('out_file', nifti_gz_format),
                 'coreg_fsl_mat': ('out_matrix_file', text_matrix_format)},
             requirements=[fsl_req.v('5.0.8')],
             wall_time=5)
@@ -529,7 +540,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'fixed_image': ('coreg_ref', nifti_gz_format),
                 'moving_image': ('mag_preproc', nifti_gz_format)},
             outputs={
-                'coreg': ('warped_image', nifti_gz_format)},
+                'mag_coreg': ('warped_image', nifti_gz_format)},
             wall_time=10,
             requirements=[ants_req.v('2.0')])
 
@@ -557,7 +568,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             citations=[spm_cite])
 
         pipeline.add(
-            'coreg',
+            'mag_coreg',
             Coregister(
                 jobtype='estwrite',
                 cost_function='nmi',
@@ -573,7 +584,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'target': ('coreg_ref', nifti_format),
                 'source': ('mag_preproc', nifti_format)},
             outputs={
-                'coreg': ('coregistered_source', nifti_format)},
+                'mag_coreg': ('coregistered_source', nifti_format)},
             requirements=[spm_req.v(12)],
             wall_time=30)
         return pipeline
@@ -1006,12 +1017,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "information from the image header"),
             citations=[])
 
-        if self.provided('header_image'):
-            in_name = 'header_image'
-        else:
-            in_name = 'magnitude'
-
-        input_format = self.input(in_name).format
+        input_format = self.input(self.header_image).format
 
         if input_format == dicom_format:
 
@@ -1020,7 +1026,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 DicomHeaderInfoExtraction(
                     multivol=False),
                 inputs={
-                    'dicom_folder': (in_name, dicom_format)},
+                    'dicom_folder': (self.header_image, dicom_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -1039,7 +1045,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'hd_info_extraction',
                 NiftixHeaderInfoExtraction(),
                 inputs={
-                    'in_file': (in_name, nifti_gz_format)},
+                    'in_file': (self.header_image, nifti_gz_x_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -1055,7 +1061,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             raise BananaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM or extended NIfTI format (provided {})"
-                .format(self.input(in_name).format))
+                .format(self.input(self.header_image).format))
 
         return pipeline
 

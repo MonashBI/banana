@@ -483,10 +483,6 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     def motion_correction_pipeline(self, **kwargs):
 
-        if self.param_spec('dynamic_pet_mc').value:
-            dynamic = True
-        else:
-            dynamic = False
         if 'struct2align' in self.input_names:
             StructAlignment = True
         else:
@@ -508,7 +504,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 'pet_data': ('pet_data_prepared', directory_format),
                 'reference': ('ref_brain', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9'), mrtrix_req.v('3.0rc3')])
-        if dynamic:
+        if self.branch('dynamic_pet_mc'):
             pipeline.connect_input('fixed_binning_mats', check_pet,
                                    'motion_mats')
         else:
@@ -530,15 +526,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     'in_file': ('struct2align', nifti_gz_format)},
                 requirements=[fsl_req.v('5.0.9')])
 
-        if not dynamic:
-            pet_mc = pipeline.add(
-                'pet_mc',
-                PetImageMotionCorrection(),
-                inputs={
-                    'corr_factor': (check_pet, 'corr_factors')},
-                requirements=[fsl_req.v('5.0.9')],
-                iterfield=['corr_factor', 'pet_image', 'motion_mat'])
-        else:
+        if self.branch('dynamic_pet_mc'):
             pet_mc = pipeline.add(
                 'pet_mc',
                 PetImageMotionCorrection(),
@@ -548,6 +536,15 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     'pet2ref_mat': (check_pet, 'pet2ref_mat')},
                 requirements=[fsl_req.v('5.0.9')],
                 iterfield=['pet_image', 'motion_mat'])
+        else:
+            pet_mc = pipeline.add(
+                'pet_mc',
+                PetImageMotionCorrection(),
+                inputs={
+                    'corr_factor': (check_pet, 'corr_factors')},
+                requirements=[fsl_req.v('5.0.9')],
+                iterfield=['corr_factor', 'pet_image', 'motion_mat'])
+
         if StructAlignment:
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'structural2ref_regmat')
@@ -558,7 +555,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         else:
             mni_reg = False
 
-        if dynamic:
+        if self.branch('dynamic_pet_mc'):
             merge_mc = pipeline.add(
                 'merge_pet_mc',
                 fsl.Merge(
@@ -598,7 +595,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     y_size=self.parameter('crop_ysize'),
                     z_min=self.parameter('crop_zmin'),
                     z_size=self.parameter('crop_zsize')))
-            if dynamic:
+            if self.branch('dynamic_pet_mc'):
                 pipeline.connect(merge_mc, 'merged_file', cropping,
                                  'pet_image')
             else:
@@ -614,7 +611,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     y_size=self.parameter('crop_ysize'),
                     z_min=self.parameter('crop_zmin'),
                     z_size=self.parameter('crop_zsize')))
-            if dynamic:
+            if self.branch('dynamic_pet_mc'):
                 pipeline.connect(merge_no_mc, 'merged_file', cropping_no_mc,
                                  'pet_image')
             else:
@@ -622,7 +619,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                                  'pet_image')
 
             if mni_reg:
-                if dynamic:
+                if self.branch('dynamic_pet_mc'):
                     t_mean = pipeline.add(
                         'PET_temporal_mean',
                         ImageMaths(
@@ -642,7 +639,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     wall_time=25,
                     requirements=[ants_req.v('2')])
 
-                if dynamic:
+                if self.branch('dynamic_pet_mc'):
                     pipeline.connect(t_mean, 'out_file', reg_tmean2MNI,
                                      'input_file')
 
@@ -679,7 +676,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             pipeline.connect(cropping_no_mc, 'pet_cropped', merge_outputs,
                              'in3')
         else:
-            if dynamic:
+            if self.branch('dynamic_pet_mc'):
                 pipeline.connect(merge_mc, 'merged_file', merge_outputs,
                                  'in2')
                 pipeline.connect(merge_no_mc, 'merged_file', merge_outputs,
@@ -698,7 +695,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             CopyToDir(),
             inputs={
                 'in_files': (merge_outputs, 'out')})
-        if dynamic:
+        if self.branch('dynamic_pet_mc'):
             pipeline.connect_output('dynamic_motion_correction_results',
                                     copy2dir, 'out_dir')
         else:

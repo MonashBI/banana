@@ -488,7 +488,7 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri2-work'),
             reprocess=False, repo_depth=0, modules_env=True,
-            include=['coreg_brain'],
+            include=['brain_coreg'],
             parameters={
                 'coreg_method': 'flirt'})
 
@@ -499,7 +499,7 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri3-work'),
             reprocess=False, repo_depth=0, modules_env=True,
-            include=['coreg_brain'])
+            include=['brain_coreg'])
 
     if 'bold' in args.generate:
         from banana.study.mri.bold import BoldStudy

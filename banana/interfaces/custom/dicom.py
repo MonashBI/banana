@@ -79,7 +79,12 @@ class DicomHeaderInfoExtraction(BaseInterface):
         echo_times = set()
         try:
             for f in list_dicom:
-                hdr = pydicom.read_file(f)
+                hdr = pydicom.read_file(f, specific_tags=['EchoTime'])
+                echo_time = hdr.EchoTime
+                if echo_time in echo_times:
+                    # Assumes that consequetive echos are in sequence. Maybe
+                    # a bit dangerous but otherwise very expensive
+                    break
                 echo_times.add(hdr.EchoTime)
         except AttributeError:
             pass

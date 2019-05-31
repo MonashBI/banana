@@ -20,8 +20,8 @@ class TestMriStudy(PipelineTester):
     def test_brain_extraction_pipeline(self):
         self.run_pipeline_test('brain_extraction_pipeline')
 
-    def test_coreg_brain_pipeline(self):
-        self.run_pipeline_test('coreg_brain_pipeline',
+    def test_brain_coreg_pipeline(self):
+        self.run_pipeline_test('brain_coreg_pipeline',
                                add_inputs=['coreg_ref'])
 
     def test_coreg_matrix_pipeline(self):
