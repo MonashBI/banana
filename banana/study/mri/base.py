@@ -367,7 +367,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                         'in_file': ('brain_mask', nifti_gz_format),
                         'reference': ('coreg_ref_brain', nifti_gz_format)},
                     outputs={
-                        'brain_mask_coreg': ('out_file', nifti_format)},
+                        'brain_mask_coreg': ('out_file', nifti_gz_format)},
                     requirements=[fsl_req.v('5.0.10')],
                     wall_time=10)
 
@@ -430,7 +430,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
     def coreg_fsl_mat_pipeline(self, **name_maps):
         if self.branch('coreg_method', 'flirt'):
             pipeline = self._coreg_mat_pipeline(**name_maps)
-        elif self.branch('coreg_method', 'flirt'):
+        elif self.branch('coreg_method', 'ants'):
             # Convert ANTS transform to FSL transform
             pipeline = self.new_pipeline(
                 name='covert_ants_to_fsl_coreg_mat',

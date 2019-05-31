@@ -53,7 +53,8 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('bet_robust', True),
-        MriStudy.param_spec('coreg_method').with_new_choices('epireg'),
+        MriStudy.param_spec('coreg_method').with_new_choices(
+            'epireg', fallbacks={'epireg': 'flirt'}),
         ParamSpec('bet_f_threshold', 0.2),
         ParamSpec('bet_reduce_bias', False),
         ParamSpec('fugue_echo_spacing', 0.000275)]
@@ -71,6 +72,65 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
             pipeline = self._epireg_linear_coreg_pipeline(**name_maps)
         else:
             pipeline = super().coreg_pipeline(**name_maps)
+        return pipeline
+
+    def _epireg_linear_coreg_pipeline(self, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='linear_coreg',
+            desc=("Intra-subjects epi registration improved using white "
+                  "matter boundaries."),
+            citations=[fsl_cite],
+            name_maps=name_maps)
+
+        epireg = pipeline.add(
+            'epireg',
+            fsl.epi.EpiReg(
+                out_base='epireg2ref',
+                output_type='NIFTI_GZ'),
+            inputs={
+                'epi': ('brain', nifti_gz_format),
+                't1_brain': ('coreg_ref_brain', nifti_gz_format),
+                't1_head': ('coreg_ref', nifti_gz_format)},
+            outputs={
+                'brain_coreg': ('out_file', nifti_gz_format),
+                'coreg_fsl_mat': ('epi2str_mat', text_matrix_format)},
+            requirements=[fsl_req.v('5.0.9')])
+
+        if self.provided('coreg_ref_wmseg'):
+            pipeline.connect_input('coreg_ref_wmseg', epireg, 'wmseg',
+                                   nifti_gz_format)
+
+        return pipeline
+
+    def brain_coreg_pipeline(self, **name_maps):
+        if self.branch('coreg_method', 'epireg'):
+            pipeline = self.coreg_pipeline(
+                name='brain_coreg',
+                name_maps=dict(
+                    input_map={
+                        'mag_preproc': 'brain',
+                        'coreg_ref': 'coreg_ref_brain'},
+                    output_map={
+                        'mag_coreg': 'brain_coreg'},
+                    name_maps=name_maps))
+
+            pipeline.add(
+                'mask_transform',
+                fsl.ApplyXFM(
+                    output_type='NIFTI_GZ',
+                    apply_xfm=True),
+                inputs={
+                    'in_matrix_file': (pipeline.node('epireg'), 'epi2str_mat'),
+                    'in_file': ('brain_mask', nifti_gz_format),
+                    'reference': ('coreg_ref_brain', nifti_gz_format)},
+                outputs={
+                    'brain_mask_coreg': ('out_file', nifti_gz_format)},
+                requirements=[fsl_req.v('5.0.10')],
+                wall_time=10)
+        else:
+            pipeline = super().coreg_brain_pipeline(**name_maps)
+
         return pipeline
 
     def extract_magnitude_pipeline(self, **name_maps):
@@ -124,30 +184,6 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
                 'series_coreg': ('out_file', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.10')],
             wall_time=10)
-
-    def _epireg_linear_coreg_pipeline(self, **name_maps):
-
-        pipeline = self.new_pipeline(
-            name='linear_coreg',
-            desc=("Intra-subjects epi registration improved using white "
-                  "matter boundaries."),
-            citations=[fsl_cite],
-            name_maps=name_maps)
-
-        pipeline.add(
-            'epireg',
-            fsl.epi.EpiReg(
-                out_base='epireg2ref',
-                output_type='NIFTI_GZ'),
-            inputs={
-                'epi': ('brain', nifti_gz_format),
-                't1_brain': ('coreg_ref_brain', nifti_gz_format),
-                't1_head': ('coreg_ref', nifti_gz_format),
-                'wmseg': ('coreg_ref_wmseg', nifti_gz_format)},
-            outputs={
-                'brain_coreg': ('out_file', nifti_gz_format),
-                'coreg_fsl_mat': ('epi2str_mat', text_matrix_format)},
-            requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
 

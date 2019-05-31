@@ -211,9 +211,9 @@ class PipelineTester(TestCase):
     @classmethod
     def generate_test_data(cls, study_class, in_repo, out_repo,
                            in_server=None, out_server=None, work_dir=None,
-                           parameters=(), include=None, skip=(), skip_bases=(),
-                           reprocess=False, repo_depth=0, modules_env=False,
-                           clean_work_dir=True):
+                           parameters=(), include=None, skip=(),
+                           include_bases=(), reprocess=False, repo_depth=0,
+                           modules_env=False, clean_work_dir=True):
         """
         Generates reference data for a pipeline tester unittests given a study
         class and set of parameters
@@ -243,10 +243,9 @@ class PipelineTester(TestCase):
         skip : list[str]
             Spec names to skip in the generation process. Only valid if
             'include' is None
-        skip_bases : list[type(Study)]
+        include_bases : list[type(Study)]
             List of base classes in which all entries in their data
-            specification that is not explicitly in the test data class is
-            added to the list of specs to skip
+            specification are added to the list to include
         reprocess : bool
             Whether to reprocess the generated datasets
         repo_depth : int
@@ -286,10 +285,10 @@ class PipelineTester(TestCase):
             for item in chain(session.filesets, session.fields):
                 if isinstance(item, Fileset):
                     inpt = InputFilesets(item.basename, item.basename,
-                                        item.format, repository=in_repo)
+                                         item.format, repository=in_repo)
                 else:
                     inpt = InputFields(item.name, item.name, item.dtype,
-                                      repository=in_repo)
+                                       repository=in_repo)
                 try:
                     spec = study_class.data_spec(inpt)
                 except ArcanaNameError:
@@ -328,16 +327,26 @@ class PipelineTester(TestCase):
             fill_tree=True)
 
         if include is None:
+            # Get set of methods that could override pipeline getters in
+            # base classes that are not included
+            potentially_overridden = set()
+            for cls in chain(include_bases, [study_class]):
+                potentially_overridden.update(dir(cls))
+
             include = set()
             for base in study_class.__mro__:
-                if base not in skip_bases and hasattr(base, 'add_data_specs'):
-                    include.update(s.name for s in base.add_data_specs
-                                   if (s.name not in skip and
-                                       not isinstance(s, BaseInputSpec)))
+                if not hasattr(base, 'add_data_specs'):
+                    continue
+                for spec in base.add_data_specs:
+                    if isinstance(spec, BaseInputSpec) or spec.name in skip:
+                        continue
+                    if (base is study_class or base in include_bases or
+                            spec.pipeline_getter in potentially_overridden):
+                        include.add(spec.name)
         elif skip:
             raise BananaUsageError(
-                "Cannot provide both 'include' and 'skip' options to "
-                "PipelineTester.generate_test_data")
+                "Does not make sense to provide both 'include' and 'skip' "
+                "options to PipelineTester.generate_test_data")
 
         # Generate all derived data
         for spec_name in sorted(include):
@@ -422,8 +431,10 @@ def gen_test_data_entry_point():
                         help="The depth of the input repository")
     parser.add_argument('--modules_env', action='store_true', default=False,
                         help="Whether to use a Modules Envionment or not")
-    parser.add_argument('--dont_clean_work_dir', action='store_true', default=False,
-                        help="Whether to clean the Nipype work dir between runs")
+    parser.add_argument('--dont_clean_work_dir', action='store_true',
+                        default=False,
+                        help=("Whether to clean the Nipype work dir between "
+                              "runs"))
     args = parser.parse_args()
 
     logger = logging.getLogger('nipype.workflow')
@@ -436,7 +447,7 @@ def gen_test_data_entry_point():
     # Get Study class
     study_class = resolve_class(args.study_class)
 
-    skip_bases = [resolve_class(c) for c in args.skip_base]
+    include_bases = [resolve_class(c) for c in args.skip_base]
 
     # Convert parameters to dictionary
     parameters_dct = {}
@@ -455,7 +466,7 @@ def gen_test_data_entry_point():
         study_class=study_class, in_repo=args.in_repo,
         out_repo=args.out_repo, in_server=args.in_server,
         out_server=args.out_server, work_dir=args.work_dir,
-        parameters=parameters, skip=args.skip, skip_bases=skip_bases,
+        parameters=parameters, skip=args.skip, include_bases=include_bases,
         reprocess=args.reprocess, repo_depth=args.repo_depth,
         modules_env=args.modules_env,
         clean_work_dir=(not args.dont_clean_work_dir))
@@ -509,7 +520,6 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'bold-work'),
             reprocess=False, repo_depth=0, modules_env=True,
-            skip_bases=[MriStudy],
             skip=['field_map_delta_te', 'cleaned_file'])
 
     if 't1' in args.generate:
@@ -520,7 +530,6 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't1-work'),
             skip=['t2_coreg'],
-            skip_bases=[MriStudy],
             include=None,
             reprocess=False, repo_depth=1, modules_env=True)
 
@@ -531,7 +540,6 @@ if __name__ == '__main__':
             T2Study, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2-work'),
-            skip_bases=[MriStudy],
             reprocess=False, repo_depth=0, modules_env=True)
 
     if 't2star' in args.generate:
@@ -541,11 +549,11 @@ if __name__ == '__main__':
             T2starStudy, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2star-work'),
-            skip_bases=[MriStudy],
             reprocess=False, repo_depth=0, modules_env=True)
 
     if 'dwi' in args.generate:
         from banana.study.mri.dwi import DwiStudy
+        from banana.study.mri.epi import EpiSeriesStudy
         PipelineTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
@@ -554,7 +562,7 @@ if __name__ == '__main__':
                   'field_map_phase', 'moco', 'align_mats', 'moco_par',
                   'field_map_delta_te', 'norm_intensity',
                   'norm_intens_fa_template', 'norm_intens_wm_mask'],
-            skip_bases=[MriStudy],
+            include_bases=[EpiSeriesStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
             reprocess=False, repo_depth=1, modules_env=True)
@@ -570,7 +578,6 @@ if __name__ == '__main__':
                   'field_map_delta_te', 'norm_intensity',
                   'norm_intens_fa_template', 'norm_intens_wm_mask',
                   'global_tracks'],
-            skip_bases=[MriStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
             reprocess=False, repo_depth=1, modules_env=True)

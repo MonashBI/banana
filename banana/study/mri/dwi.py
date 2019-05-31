@@ -128,13 +128,13 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         return self.branch('response_algorithm',
                            ('msmt_5tt', 'dhollander'))
 
-    def fsl_grads(self, pipeline):
+    def fsl_grads(self, pipeline, coregistered=True):
         "Adds and returns a node to the pipeline to merge the FSL grads and "
         "bvecs"
         try:
             fslgrad = pipeline.node('fslgrad')
         except ArcanaNameError:
-            if self.is_coregistered:
+            if self.is_coregistered and coregistered:
                 grad_dirs = 'grad_dirs_coreg'
             else:
                 grad_dirs = 'grad_dirs'
@@ -170,7 +170,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_ext='.nii.gz'),
             inputs={
                 'in_file': ('series', nifti_gz_format),
-                'fslgrad': self.fsl_grads(pipeline)},
+                'fslgrad': self.fsl_grads(pipeline, coregistered=False)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
         pipeline.add(
@@ -408,16 +408,32 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 name_maps=name_maps)
 
             # Create mask node
-            pipeline.add(
+            masker = pipeline.add(
                 'dwi2mask',
                 BrainMask(
                     out_file='brain_mask.nii.gz'),
                 inputs={
                     'in_file': ('mag_preproc', nifti_gz_format),
-                    'grad_fsl': self.fsl_grads(pipeline)},
+                    'grad_fsl': self.fsl_grads(pipeline, coregistered=False)},
                 outputs={
                     'brain_mask': ('out_file', nifti_gz_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
+
+            merge = pipeline.add(
+                'merge_operands',
+                Merge(2),
+                inputs={
+                    'in1': ('mag_preproc', nifti_gz_format),
+                    'in2': (masker, 'out_file')})
+
+            pipeline.add(
+                'apply_mask',
+                MRCalc(
+                    operation='multiply'),
+                inputs={
+                    'operands': (merge, 'out')},
+                outputs={
+                    'brain': ('out_file', nifti_gz_format)})
 
         else:
             pipeline = super().brain_extraction_pipeline(**name_maps)
@@ -435,7 +451,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'gradients': ('grad_dirs', fsl_bvecs_format),
                 'transform': ('coreg_fsl_mat', text_matrix_format)},
             outputs={
-                'grad_dirs_coreg', ('transformed', fsl_bvecs_format)})
+                'grad_dirs_coreg': ('transformed', fsl_bvecs_format)})
 
         return pipeline
 
