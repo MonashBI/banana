@@ -44,7 +44,9 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
     add_data_specs = [
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
-                    'series_coreg_pipeline'),
+                    'series_coreg_pipeline',
+                    desc=("The gradient directions coregistered to the "
+                          "orientation of the coreg reference")),
         FilesetSpec('bvalues', fsl_bvals_format, 'preprocess_pipeline'),
         FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
         FilesetSpec('noise_residual', mrtrix_image_format,
