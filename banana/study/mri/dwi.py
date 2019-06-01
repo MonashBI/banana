@@ -42,6 +42,10 @@ logger = getLogger('banana')
 class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
+        InputFilesetSpec('five_tissue_type', mrtrix_image_format,
+                         desc=("A segmentation image taken from freesurfer "
+                               "output and simplified into 5 tissue types. "
+                               "Used in ACT streamlines tractography")),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
                     'series_coreg_pipeline',
