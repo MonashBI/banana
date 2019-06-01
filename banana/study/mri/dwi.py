@@ -42,7 +42,7 @@ logger = getLogger('banana')
 class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        InputFilesetSpec('five_tissue_type', mrtrix_image_format,
+        InputFilesetSpec('anatomical_5tt', mrtrix_image_format,
                          desc=("A segmentation image taken from freesurfer "
                                "output and simplified into 5 tissue types. "
                                "Used in ACT streamlines tractography")),
@@ -797,7 +797,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc, nifti_gz_format)})
 
-        pipeline.add(
+        tracking = pipeline.add(
             'tracking',
             Tractography(
                 select=self.parameter('num_global_tracks'),
@@ -807,6 +807,10 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'in_file': ('wm_odf', mrtrix_image_format)},
             outputs={
                 'global_tracks': ('out_file', mrtrix_track_format)})
+
+        if self.provided('anatomical_5tt'):
+            pipeline.connect_input('anatomical_5tt', tracking, 'act_file',
+                                   mrtrix_image_format)
 
         return pipeline
 
