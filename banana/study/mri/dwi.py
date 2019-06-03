@@ -22,6 +22,7 @@ from banana.study import StudyMetaClass
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.interfaces.custom.dwi import TransformGradients
+from banana.interfaces.utility import AppendPath
 from banana.study.base import Study
 from banana.bids import BidsInput, BidsAssocInput
 from banana.exceptions import BananaUsageError
@@ -487,7 +488,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_ext='.mif'),
             inputs={
                 'in_file': (self.series_preproc, nifti_gz_format),
-                'grad_fsl': self.fsl_grads(pipeline)})
+                'grad_fsl': self.fsl_grads(pipeline)},
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         # Pair subject and visit ids together, expanding so they can be
         # joined and chained together
@@ -535,7 +537,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             outputs={
                 'norm_intens_fa_template': ('fa_template',
                                             mrtrix_image_format),
-                'norm_intens_wm_mask': ('wm_mask', mrtrix_image_format)})
+                'norm_intens_wm_mask': ('wm_mask', mrtrix_image_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         # Set up expand nodes
         pipeline.add(
@@ -574,7 +577,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'in_file': (self.series_preproc, nifti_gz_format),
                 'in_mask': ('brain_mask', nifti_gz_format)},
             outputs={
-                'tensor': ('out_file', nifti_gz_format)})
+                'tensor': ('out_file', nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         return pipeline
 
@@ -682,7 +686,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             inputs={
                 'in_files': (join_visits, 'responses')},
             outputs={
-                'avg_response': ('out_file', text_format)})
+                'avg_response': ('out_file', text_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         return pipeline
 
@@ -806,7 +811,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'seed_image': (mask, 'out_file'),
                 'in_file': ('wm_odf', mrtrix_image_format)},
             outputs={
-                'global_tracks': ('out_file', mrtrix_track_format)})
+                'global_tracks': ('out_file', mrtrix_track_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         if self.provided('anatomical_5tt'):
             pipeline.connect_input('anatomical_5tt', tracking, 'act_file',
@@ -844,16 +850,17 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         aseg_path = pipeline.add(
             'aseg_path',
-            utility.Rename(
-                format_string='{}/mri/aparc+aseg.mgz'),
+            AppendPath(
+                sub_paths=['mri', 'aparc+aseg.mgz']),
             inputs={
-                'in_file': ('fs_recon_all', directory_format)})
+                'base_path': ('fs_recon_all', directory_format)})
 
         pipeline.add(
             'connectome',
             mrtrix3.BuildConnectome(),
             inputs={
                 'in_file': ('global_tracks', mrtrix_track_format),
-                'in_parc': (aseg_path, 'out_file')},
+                'in_parc': (aseg_path, 'out_path')},
             outputs={
-                'connectome': ('out_file', csv_format)})
+                'connectome': ('out_file', csv_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
