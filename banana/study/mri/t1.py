@@ -33,6 +33,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                          frequency='per_study',
                          default=LocalReferenceData('SUIT', nifti_format)),
         FilesetSpec('five_tissue_type', mrtrix_image_format,
+                    'gen_5tt_pipeline',
                     desc=("A segmentation image taken from freesurfer output "
                           "and simplified into 5 tissue types. Used in ACT "
                           "streamlines tractography"))] + [

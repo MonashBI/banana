@@ -510,46 +510,62 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             name_maps=name_maps,
             desc="Registers a MR scan against a reference image using ANTs")
 
-        ants_reg = pipeline.add(
-            'ants_reg',
-            ants.Registration(
-                dimension=3,
-                collapse_output_transforms=True,
-                float=False,
-                interpolation='Linear',
-                use_histogram_matching=False,
-                winsorize_upper_quantile=0.995,
-                winsorize_lower_quantile=0.005,
-                verbose=True,
-                transforms=['Rigid'],
-                transform_parameters=[(0.1,)],
-                metric=['MI'],
-                metric_weight=[1],
-                radius_or_number_of_bins=[32],
-                sampling_strategy=['Regular'],
-                sampling_percentage=[0.25],
-                number_of_iterations=[[1000, 500, 250, 100]],
-                convergence_threshold=[1e-6],
-                convergence_window_size=[10],
-                shrink_factors=[[8, 4, 2, 1]],
-                smoothing_sigmas=[[3, 2, 1, 0]],
-                output_warped_image=True),
+        pipeline.add(
+            'ANTs_linear_Reg',
+            AntsRegSyn(
+                num_dimensions=3,
+                transformation='r',
+                out_prefix='reg2hires'),
             inputs={
-                'fixed_image': ('coreg_ref', nifti_gz_format),
-                'moving_image': ('mag_preproc', nifti_gz_format)},
+                'ref_file': ('coreg_ref', nifti_gz_format),
+                'input_file': ('preproc', nifti_gz_format)},
             outputs={
-                'mag_coreg': ('warped_image', nifti_gz_format)},
+                'coreg': ('reg_file', nifti_gz_format),
+                'coreg_matrix': ('regmat', text_matrix_format)},
             wall_time=10,
             requirements=[ants_req.v('2.0')])
 
-        pipeline.add(
-            'select',
-            SelectOne(
-                index=0),
-            inputs={
-                'inlist': (ants_reg, 'forward_transforms')},
-            outputs={
-                'coreg_ants_mat': ('out', text_matrix_format)})
+
+#         ants_reg = pipeline.add(
+#             'ants_reg',
+#             ants.Registration(
+#                 dimension=3,
+#                 collapse_output_transforms=True,
+#                 float=False,
+#                 interpolation='Linear',
+#                 use_histogram_matching=False,
+#                 winsorize_upper_quantile=0.995,
+#                 winsorize_lower_quantile=0.005,
+#                 verbose=True,
+#                 transforms=['Rigid'],
+#                 transform_parameters=[(0.1,)],
+#                 metric=['MI'],
+#                 metric_weight=[1],
+#                 radius_or_number_of_bins=[32],
+#                 sampling_strategy=['Regular'],
+#                 sampling_percentage=[0.25],
+#                 number_of_iterations=[[1000, 500, 250, 100]],
+#                 convergence_threshold=[1e-6],
+#                 convergence_window_size=[10],
+#                 shrink_factors=[[8, 4, 2, 1]],
+#                 smoothing_sigmas=[[3, 2, 1, 0]],
+#                 output_warped_image=True),
+#             inputs={
+#                 'fixed_image': ('coreg_ref', nifti_gz_format),
+#                 'moving_image': ('mag_preproc', nifti_gz_format)},
+#             outputs={
+#                 'mag_coreg': ('warped_image', nifti_gz_format)},
+#             wall_time=10,
+#             requirements=[ants_req.v('2.0')])
+# 
+#         pipeline.add(
+#             'select',
+#             SelectOne(
+#                 index=0),
+#             inputs={
+#                 'inlist': (ants_reg, 'forward_transforms')},
+#             outputs={
+#                 'coreg_ants_mat': ('out', text_matrix_format)})
 
         return pipeline
 
@@ -850,90 +866,90 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "e.g. MNI-space"),
             citations=[fsl_cite])
 
-#         ants_reg = pipeline.add(
-#             'Struct2MNI_reg',
-#             AntsRegSyn(
-#                 num_dimensions=3,
-#                 transformation='s',
-#                 out_prefix='Struct2MNI',
-#                 num_threads=4),
-#             inputs={
-#                 'input_file': (self.brain_spec_name, nifti_gz_format),
-#                 'ref_file': ('template_brain', nifti_gz_format)},
-#             outputs={
-#                 'coreg_to_tmpl': ('reg_file', nifti_gz_format),
-#                 'coreg_to_tmpl_ants_mat': ('regmat', text_matrix_format),
-#                 'coreg_to_tmpl_ants_warp': ('warp_file', nifti_gz_format)},
-#             wall_time=25,
-#             requirements=[ants_req.v('2.0')])
-
-        ants_reg = pipeline.add(
-            'ants_reg',
-            ants.Registration(
-                dimension=3,
-                collapse_output_transforms=True,
-                float=False,
-                interpolation='Linear',
-                use_histogram_matching=False,
-                winsorize_upper_quantile=0.995,
-                winsorize_lower_quantile=0.005,
-                verbose=True,
-                transforms=['Rigid', 'Affine', 'SyN'],
-                transform_parameters=[(0.1,), (0.1,), (0.1, 3, 0)],
-                metric=['MI', 'MI', 'CC'],
-                metric_weight=[1, 1, 1],
-                radius_or_number_of_bins=[32, 32, 32],
-                sampling_strategy=['Regular', 'Regular', 'None'],
-                sampling_percentage=[0.25, 0.25, None],
-                number_of_iterations=[[1000, 500, 250, 100],
-                                      [1000, 500, 250, 100],
-                                      [100, 70, 50, 20]],
-                convergence_threshold=[1e-6, 1e-6, 1e-6],
-                convergence_window_size=[10, 10, 10],
-                shrink_factors=[[8, 4, 2, 1],
-                                [8, 4, 2, 1],
-                                [8, 4, 2, 1]],
-                smoothing_sigmas=[[3, 2, 1, 0],
-                                  [3, 2, 1, 0],
-                                  [3, 2, 1, 0]],
-                output_warped_image=True),
+        pipeline.add(
+            'Struct2MNI_reg',
+            AntsRegSyn(
+                num_dimensions=3,
+                transformation='s',
+                out_prefix='Struct2MNI',
+                num_threads=4),
             inputs={
-                'fixed_image': ('template_brain', nifti_gz_format),
-                'moving_image': (self.brain_spec_name, nifti_gz_format)},
+                'input_file': (self.brain_spec_name, nifti_gz_format),
+                'ref_file': ('template_brain', nifti_gz_format)},
             outputs={
-                'coreg_to_tmpl': ('warped_image', nifti_gz_format)},
+                'coreg_to_tmpl': ('reg_file', nifti_gz_format),
+                'coreg_to_tmpl_ants_mat': ('regmat', text_matrix_format),
+                'coreg_to_tmpl_ants_warp': ('warp_file', nifti_gz_format)},
             wall_time=25,
             requirements=[ants_req.v('2.0')])
 
-        select_trans = pipeline.add(
-            'select',
-            SelectOne(
-                index=1),
-            inputs={
-                'inlist': (ants_reg, 'forward_transforms')},
-            outputs={
-                'coreg_to_tmpl_ants_mat': ('out', text_matrix_format)})
-
-        pipeline.add(
-            'select_warp',
-            SelectOne(
-                index=0),
-            inputs={
-                'inlist': (ants_reg, 'forward_transforms')},
-            outputs={
-                'coreg_to_tmpl_ants_warp': ('out', nifti_gz_format)})
-
-        pipeline.add(
-            'slices',
-            FSLSlices(
-                outname='coreg_to_tmpl_report'),
-            inputs={
-                'im1': ('template', nifti_gz_format),
-                'im2': (select_trans, 'out')},
-            outputs={
-                'coreg_to_tmpl_fsl_report': ('report', gif_format)},
-            wall_time=1,
-            requirements=[fsl_req.v('5.0.8')])
+#         ants_reg = pipeline.add(
+#             'ants_reg',
+#             ants.Registration(
+#                 dimension=3,
+#                 collapse_output_transforms=True,
+#                 float=False,
+#                 interpolation='Linear',
+#                 use_histogram_matching=False,
+#                 winsorize_upper_quantile=0.995,
+#                 winsorize_lower_quantile=0.005,
+#                 verbose=True,
+#                 transforms=['Rigid', 'Affine', 'SyN'],
+#                 transform_parameters=[(0.1,), (0.1,), (0.1, 3, 0)],
+#                 metric=['MI', 'MI', 'CC'],
+#                 metric_weight=[1, 1, 1],
+#                 radius_or_number_of_bins=[32, 32, 32],
+#                 sampling_strategy=['Regular', 'Regular', 'None'],
+#                 sampling_percentage=[0.25, 0.25, None],
+#                 number_of_iterations=[[1000, 500, 250, 100],
+#                                       [1000, 500, 250, 100],
+#                                       [100, 70, 50, 20]],
+#                 convergence_threshold=[1e-6, 1e-6, 1e-6],
+#                 convergence_window_size=[10, 10, 10],
+#                 shrink_factors=[[8, 4, 2, 1],
+#                                 [8, 4, 2, 1],
+#                                 [8, 4, 2, 1]],
+#                 smoothing_sigmas=[[3, 2, 1, 0],
+#                                   [3, 2, 1, 0],
+#                                   [3, 2, 1, 0]],
+#                 output_warped_image=True),
+#             inputs={
+#                 'fixed_image': ('template_brain', nifti_gz_format),
+#                 'moving_image': (self.brain_spec_name, nifti_gz_format)},
+#             outputs={
+#                 'coreg_to_tmpl': ('warped_image', nifti_gz_format)},
+#             wall_time=25,
+#             requirements=[ants_req.v('2.0')])
+# 
+#         select_trans = pipeline.add(
+#             'select',
+#             SelectOne(
+#                 index=1),
+#             inputs={
+#                 'inlist': (ants_reg, 'forward_transforms')},
+#             outputs={
+#                 'coreg_to_tmpl_ants_mat': ('out', text_matrix_format)})
+# 
+#         pipeline.add(
+#             'select_warp',
+#             SelectOne(
+#                 index=0),
+#             inputs={
+#                 'inlist': (ants_reg, 'forward_transforms')},
+#             outputs={
+#                 'coreg_to_tmpl_ants_warp': ('out', nifti_gz_format)})
+# 
+#         pipeline.add(
+#             'slices',
+#             FSLSlices(
+#                 outname='coreg_to_tmpl_report'),
+#             inputs={
+#                 'im1': ('template', nifti_gz_format),
+#                 'im2': (select_trans, 'out')},
+#             outputs={
+#                 'coreg_to_tmpl_fsl_report': ('report', gif_format)},
+#             wall_time=1,
+#             requirements=[fsl_req.v('5.0.8')])
 
         return pipeline
 
