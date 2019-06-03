@@ -45,7 +45,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         InputFilesetSpec('anatomical_5tt', mrtrix_image_format,
                          desc=("A segmentation image taken from freesurfer "
                                "output and simplified into 5 tissue types. "
-                               "Used in ACT streamlines tractography")),
+                               "Used in ACT streamlines tractography"),
+                         optional=True),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
                     'series_coreg_pipeline',

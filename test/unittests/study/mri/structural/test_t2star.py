@@ -44,7 +44,7 @@ study = T2StarT1Study(
         Parameter('t2star_reorient_to_std', False),
         Parameter('t1_reorient_to_std', False)])
 
-# print(study.data('t2star_channel_mags', clean_work_dir=True).path(
+# print(study.data('t2star_mag_channels', clean_work_dir=True).path(
 #     subject_id='SUBJECT', visit_id='VISIT'))
 
 print(study.data('t2star_vein_mask', clean_work_dir=True).path(

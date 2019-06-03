@@ -23,7 +23,6 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
-        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
         InputFilesetSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
             desc=("A coregistered T2 image to use in freesurfer to help "
@@ -114,18 +113,21 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 
         aseg_path = pipeline.add(
             'aseg_path',
-            utility.Rename(
-                format_string='{}/mri/aseg.mgz'),
+            utility.Function(
+                input_names='in_path',
+                function='{}/mri/aseg.mgz'.format),
             inputs={
-                'in_file': ('fs_recon_all', directory_format)})
+                'in_path': ('fs_recon_all', directory_format)})
 
         pipeline.add(
             'gen5tt',
             mrtrix3.Generate5tt(),
             inputs={
-                'in_file': (aseg_path, 'out_file')},
+                'in_file': (aseg_path, 'out')},
             outputs={
                 'five_tissue_type': ('out_file', mrtrix_image_format)})
+
+        return pipeline
 
     def aparc_stats_table_pipeline(self, measure, hemisphere, **name_maps):
 

@@ -213,7 +213,8 @@ class PipelineTester(TestCase):
                            in_server=None, out_server=None, work_dir=None,
                            parameters=(), include=None, skip=(),
                            include_bases=(), reprocess=False, repo_depth=0,
-                           modules_env=False, clean_work_dir=True):
+                           modules_env=False, clean_work_dir=True,
+                           loggers=('nipype.workflow', 'arcana', 'banana')):
         """
         Generates reference data for a pipeline tester unittests given a study
         class and set of parameters
@@ -255,6 +256,15 @@ class PipelineTester(TestCase):
         clean_work_dir : bool
             Whether to clean the Nipype work directory or not
         """
+
+        for logger_name in loggers:
+            logger = logging.getLogger(logger_name)
+            logger.setLevel(logging.INFO)
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(levelname)s - %(message)s")
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+
         if work_dir is None:
             work_dir = tempfile.mkdtemp()
         else:
@@ -318,7 +328,7 @@ class PipelineTester(TestCase):
                 prov_ignore=(
                     SingleProc.DEFAULT_PROV_IGNORE +
                     ['.*/pkg_version',
-                     'workflow/nodes/.*/requirements/.*/version'])),
+                     'workflow/nodes/.*/requirements/.*'])),
             environment=env,
             inputs=inputs,
             parameters=parameters,
@@ -331,7 +341,7 @@ class PipelineTester(TestCase):
             # base classes that are not included
             potentially_overridden = set()
             for cls in chain(include_bases, [study_class]):
-                potentially_overridden.update(dir(cls))
+                potentially_overridden.update(cls.__dict__.keys())
 
             include = set()
             for base in study_class.__mro__:
@@ -343,10 +353,6 @@ class PipelineTester(TestCase):
                     if (base is study_class or base in include_bases or
                             spec.pipeline_getter in potentially_overridden):
                         include.add(spec.name)
-        elif skip:
-            raise BananaUsageError(
-                "Does not make sense to provide both 'include' and 'skip' "
-                "options to PipelineTester.generate_test_data")
 
         # Generate all derived data
         for spec_name in sorted(include):
@@ -370,6 +376,9 @@ class PipelineTester(TestCase):
                     logger.info("Skipping upload of non-existant {}"
                                 .format(item.name))
                     continue
+                if skip is not None and item.name in skip:
+                    logger.info("Forced skip of {}".format(item.name))
+                    continue
                 if item.is_fileset:
                     item_cpy = Fileset(
                         name=item.name, format=item.format,
@@ -383,7 +392,11 @@ class PipelineTester(TestCase):
                         frequency=item.frequency, array=item.array,
                         subject_id=item.subject_id, visit_id=item.visit_id,
                         repository=out_repo, exists=True)
+                logger.info("Uploading {}".format(item_cpy))
                 item_cpy.put()
+                logger.info("Uploaded {}".format(item_cpy))
+        logger.info("Finished generating and uploading test data for {}"
+                    .format(study_class))
 
 
 def resolve_class(class_str):
@@ -435,14 +448,10 @@ def gen_test_data_entry_point():
                         default=False,
                         help=("Whether to clean the Nipype work dir between "
                               "runs"))
+    parser.add_argument('--loggers', nargs='+',
+                        default=('nipype.workflow', 'arcana', 'banana'),
+                        help="Loggers to set handlers to stdout for")
     args = parser.parse_args()
-
-    logger = logging.getLogger('nipype.workflow')
-    logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter("%(levelname)s - %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
 
     # Get Study class
     study_class = resolve_class(args.study_class)
@@ -480,6 +489,8 @@ if __name__ == '__main__':
     parser.add_argument('generate', nargs='+', help="datasets to generate")
     parser.add_argument('--data_dir', default=op.expanduser('~/Data'),
                         help="The data dir to use")
+    parser.add_argument('--dont_clean_work_dir', action='store_true',
+                        default=False, help="Don't clean work dir")
     args = parser.parse_args()
 
     print("Generating test data for {}".format(args.generate))
@@ -490,7 +501,10 @@ if __name__ == '__main__':
             MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri-work'),
-            reprocess=False, repo_depth=0, modules_env=True)
+            reprocess=False, repo_depth=0, modules_env=True,
+            skip=['channels', 'mag_channels', 'phase_channels'],
+            clean_work_dir=(not args.dont_clean_work_dir),
+            parameters={'mni_template_resolution': 1})
 
     if 'mri2' in args.generate:
 
@@ -499,7 +513,9 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri2-work'),
             reprocess=False, repo_depth=0, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir),
             include=['brain_coreg'],
+            skip=['template', 'template_brain', 'template_mask'],
             parameters={
                 'coreg_method': 'flirt'})
 
@@ -510,6 +526,7 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri3-work'),
             reprocess=False, repo_depth=0, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir),
             include=['brain_coreg'])
 
     if 'bold' in args.generate:
@@ -520,6 +537,7 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'bold-work'),
             reprocess=False, repo_depth=0, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir),
             skip=['field_map_delta_te', 'cleaned_file'])
 
     if 't1' in args.generate:
@@ -531,7 +549,8 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 't1-work'),
             skip=['t2_coreg'],
             include=None,
-            reprocess=False, repo_depth=1, modules_env=True)
+            reprocess=False, repo_depth=1, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2' in args.generate:
         from banana.study.mri.t2 import T2Study
@@ -540,7 +559,8 @@ if __name__ == '__main__':
             T2Study, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2-work'),
-            reprocess=False, repo_depth=0, modules_env=True)
+            reprocess=False, repo_depth=0, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2star' in args.generate:
         from banana.study.mri.t2star import T2starStudy
@@ -549,7 +569,8 @@ if __name__ == '__main__':
             T2starStudy, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2star-work'),
-            reprocess=False, repo_depth=0, modules_env=True)
+            reprocess=False, repo_depth=0, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi' in args.generate:
         from banana.study.mri.dwi import DwiStudy
@@ -565,7 +586,8 @@ if __name__ == '__main__':
             include_bases=[EpiSeriesStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
-            reprocess=False, repo_depth=1, modules_env=True)
+            reprocess=False, repo_depth=1, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi2' in args.generate:
         from banana.study.mri.dwi import DwiStudy  # @Reimport
@@ -580,4 +602,5 @@ if __name__ == '__main__':
                   'global_tracks'],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
-            reprocess=False, repo_depth=1, modules_env=True)
+            reprocess=False, repo_depth=1, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir))

@@ -150,8 +150,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'channel_combine',
                 HIPCombineChannels(),
                 inputs={
-                    'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
-                    'phases_dir': ('channel_phases', multi_nifti_gz_format)})
+                    'magnitudes_dir': ('mag_channels', multi_nifti_gz_format),
+                    'phases_dir': ('phase_channels', multi_nifti_gz_format)})
 
             # Unwrap phase using Laplacian unwrapping
             unwrap = pipeline.add(
@@ -208,7 +208,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     sort_key=coil_sort_key,
                     filter=CoilEchoFilter(self.parameter('qsm_echo'))),
                 inputs={
-                    'directory': ('channel_phases', multi_nifti_gz_format)})
+                    'directory': ('phase_channels', multi_nifti_gz_format)})
 
             # List files for the phases of separate channel
             list_mags = pipeline.add(
@@ -217,7 +217,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     sort_key=coil_sort_key,
                     filter=CoilEchoFilter(self.parameter('qsm_echo'))),
                 inputs={
-                    'directory': ('channel_mags', multi_nifti_gz_format)})
+                    'directory': ('mag_channels', multi_nifti_gz_format)})
 
             # Generate coil specific masks
             mask_coils = pipeline.add(
