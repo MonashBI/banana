@@ -570,6 +570,8 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2star-work'),
             reprocess=False, repo_depth=0, modules_env=True,
+            parameters={
+                'mni_template_resolution': 2},
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi' in args.generate:
