@@ -100,11 +100,6 @@ class AparcStats(FSCommand):
     output_spec = AparcStatsOutputSpec
     _cmd = 'aparcstats2table'
 
-    def __init__(self, **inputs):
-        super(FSCommand, self).__init__(**inputs)
-        self.inputs.on_trait_change(self._subjects_dir_update, 'subjects_dir')
-        self._subjects_dir_update()
-
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['tablefile'] = self._gen_tablefile_fname()

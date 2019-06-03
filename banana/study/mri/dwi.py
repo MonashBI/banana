@@ -9,30 +9,30 @@ from banana.interfaces.mrtrix import (
 # from nipype.workflows.dwi.fsl.tbss import create_tbss_all
 # from banana.interfaces.noddi import (
 #     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
-from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
+from nipype.interfaces import fsl, mrtrix3, utility
 from arcana.utils.interfaces import MergeTuple, Chain
-from nipype.interfaces.utility import IdentityInterface
-from banana.citation import (
-    mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
-    n4_cite, dwidenoise_cites)
-from banana.file_format import (
-    mrtrix_image_format, nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format,
-    fsl_bvals_format, text_format, dicom_format, eddy_par_format,
-    mrtrix_track_format, motion_mats_format, text_matrix_format)
-from banana.requirement import (
-    fsl_req, mrtrix_req, ants_req)
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import SelectSession
 from arcana.study import ParamSpec, SwitchSpec
-from nipype.interfaces import fsl, ants
+from arcana.exceptions import ArcanaMissingDataException, ArcanaNameError
+from banana.requirement import (
+    fsl_req, mrtrix_req, ants_req)
+from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
+from banana.study import StudyMetaClass
 from banana.interfaces.custom.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.interfaces.custom.dwi import TransformGradients
 from banana.study.base import Study
 from banana.bids import BidsInput, BidsAssocInput
 from banana.exceptions import BananaUsageError
-from arcana.exceptions import ArcanaMissingDataException, ArcanaNameError
-from banana.study import StudyMetaClass
+from banana.citation import (
+    mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
+    n4_cite, dwidenoise_cites)
+from banana.file_format import (
+    mrtrix_image_format, nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format,
+    fsl_bvals_format, text_format, dicom_format, eddy_par_format,
+    mrtrix_track_format, motion_mats_format, text_matrix_format,
+    directory_format, csv_format)
 from .base import MriStudy
 from .epi import EpiSeriesStudy
 
@@ -42,6 +42,10 @@ logger = getLogger('banana')
 class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
+        InputFilesetSpec('anatomical_5tt', mrtrix_image_format,
+                         desc=("A segmentation image taken from freesurfer "
+                               "output and simplified into 5 tissue types. "
+                               "Used in ACT streamlines tractography")),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
                     'series_coreg_pipeline',
@@ -77,7 +81,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         FilesetSpec('global_tracks', mrtrix_track_format,
                     'global_tracking_pipeline'),
         FilesetSpec('wm_mask', mrtrix_image_format,
-                    'global_tracking_pipeline')]  # @IgnorePep8
+                    'global_tracking_pipeline'),
+        FilesetSpec('connectome', csv_format, 'connectome_pipeline')]  # @IgnorePep8
 
     add_param_specs = [
         ParamSpec('multi_tissue', True),
@@ -487,7 +492,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         # joined and chained together
         session_ids = pipeline.add(
             'session_ids',
-            IdentityInterface(
+            utility.IdentityInterface(
                 ['subject_id', 'visit_id']),
             inputs={
                 'subject_id': (Study.SUBJECT_ID, int),
@@ -497,7 +502,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         join_fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
         join_over_subjects = pipeline.add(
             'join_over_subjects',
-            IdentityInterface(
+            utility.IdentityInterface(
                 join_fields),
             inputs={
                 'masks': ('brain_mask', nifti_gz_format),
@@ -655,7 +660,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         join_subjects = pipeline.add(
             'join_subjects',
-            IdentityInterface(['responses']),
+            utility.IdentityInterface(['responses']),
             inputs={
                 'responses': ('wm_response', text_format)},
             outputs={},
@@ -791,7 +796,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc, nifti_gz_format)})
 
-        pipeline.add(
+        tracking = pipeline.add(
             'tracking',
             Tractography(
                 select=self.parameter('num_global_tracks'),
@@ -801,6 +806,10 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'in_file': ('wm_odf', mrtrix_image_format)},
             outputs={
                 'global_tracks': ('out_file', mrtrix_track_format)})
+
+        if self.provided('anatomical_5tt'):
+            pipeline.connect_input('anatomical_5tt', tracking, 'act_file',
+                                   mrtrix_image_format)
 
         return pipeline
 
@@ -823,3 +832,27 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'align_mats': ('affine_matrices', motion_mats_format)})
 
         return pipeline
+
+    def connectome_pipeline(self, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='connectome',
+            desc=("Generate a connectome from whole brain connectivity"),
+            citations=[],
+            name_maps=name_maps)
+
+        aseg_path = pipeline.add(
+            'aseg_path',
+            utility.Rename(
+                format_string='{}/mri/aparc+aseg.mgz'),
+            inputs={
+                'in_file': ('fs_recon_all', directory_format)})
+
+        pipeline.add(
+            'connectome',
+            mrtrix3.BuildConnectome(),
+            inputs={
+                'in_file': ('global_tracks', mrtrix_track_format),
+                'in_parc': (aseg_path, 'out_file')},
+            outputs={
+                'connectome': ('out_file', csv_format)})

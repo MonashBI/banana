@@ -97,9 +97,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'coreg_to_tmpl_pipeline'),
         FilesetSpec('coreg_to_tmpl_fsl_report', gif_format,
                     'coreg_to_tmpl_pipeline'),
-        FilesetSpec('coreg_to_tmpl_ants_rigid', text_matrix_format,
-                    'coreg_to_tmpl_pipeline'),
-        FilesetSpec('coreg_to_tmpl_ants_affine', text_matrix_format,
+        FilesetSpec('coreg_to_tmpl_ants_mat', text_matrix_format,
                     'coreg_to_tmpl_pipeline'),
         FilesetSpec('coreg_to_tmpl_ants_warp', nifti_gz_format,
                     'coreg_to_tmpl_pipeline'),
@@ -873,7 +871,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             'ants_reg',
             ants.Registration(
                 dimension=3,
-                collapse_output_transforms=False,
+                collapse_output_transforms=True,
                 float=False,
                 interpolation='Linear',
                 use_histogram_matching=False,
@@ -910,20 +908,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         select_trans = pipeline.add(
             'select',
             SelectOne(
-                index=0),
-            inputs={
-                'inlist': (ants_reg, 'forward_transforms')},
-            outputs={
-                'coreg_to_tmpl_ants_rigid': ('out', text_matrix_format)})
-
-        pipeline.add(
-            'select',
-            SelectOne(
                 index=1),
             inputs={
                 'inlist': (ants_reg, 'forward_transforms')},
             outputs={
-                'coreg_ants_to_tmpl_affine': ('out', text_matrix_format)})
+                'coreg_to_tmpl_ants_mat': ('out', text_matrix_format)})
 
         pipeline.add(
             'select_warp',

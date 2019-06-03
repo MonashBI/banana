@@ -2,21 +2,21 @@ from copy import copy
 import itertools
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.utils.interfaces import DummyReconAll as ReconAll
-from banana.requirement import freesurfer_req, ants_req, fsl_req
-from banana.citation import freesurfer_cites, fsl_cite
-from nipype.interfaces import fsl, ants
+from nipype.interfaces import fsl, ants, mrtrix3, utility
 from arcana.utils.interfaces import Merge
-from banana.interfaces.freesurfer import AparcStats
-from banana.file_format import (
-    nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
-    directory_format, text_format)
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
-from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import CopyToDir
+from banana.requirement import freesurfer_req, ants_req, fsl_req
+from banana.citation import freesurfer_cites, fsl_cite
+from banana.interfaces.freesurfer import AparcStats
+from banana.file_format import (
+    nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
+    directory_format, text_format, mrtrix_image_format)
 from banana.reference import LocalReferenceData
+from .t2 import T2Study
 
 
 class T1Study(T2Study, metaclass=StudyMetaClass):
@@ -31,7 +31,11 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         # Templates
         InputFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=LocalReferenceData('SUIT', nifti_format))] + [
+                         default=LocalReferenceData('SUIT', nifti_format)),
+        FilesetSpec('five_tissue_type', mrtrix_image_format,
+                    desc=("A segmentation image taken from freesurfer output "
+                          "and simplified into 5 tissue types. Used in ACT "
+                          "streamlines tractography"))] + [
         FilesetSpec(
             'aparc_stats_{}_{}_table'.format(h, m),
             text_format, 'aparc_stats_table_pipeline',
@@ -98,6 +102,29 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         pipeline = super(T1Study, self).segmentation_pipeline(img_type=1,
                                                               **name_maps)
         return pipeline
+
+    def gen_5tt_pipeline(self, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='gen5tt',
+            name_maps=name_maps,
+            desc=("Generate 5-tissue-type image used for Anatomically-"
+                  "Constrained Tractography (ACT)"))
+
+        aseg_path = pipeline.add(
+            'aseg_path',
+            utility.Rename(
+                format_string='{}/mri/aseg.mgz'),
+            inputs={
+                'in_file': ('fs_recon_all', directory_format)})
+
+        pipeline.add(
+            'gen5tt',
+            mrtrix3.Generate5tt(),
+            inputs={
+                'in_file': (aseg_path, 'out_file')},
+            outputs={
+                'five_tissue_type': ('out_file', mrtrix_image_format)})
 
     def aparc_stats_table_pipeline(self, measure, hemisphere, **name_maps):
 
