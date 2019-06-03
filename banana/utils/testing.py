@@ -595,12 +595,6 @@ if __name__ == '__main__':
             DwiStudy, op.join(args.data_dir, 'dwi2'), 'TESTBANANADWI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi2-work'),
-            skip=['dwi_reference', 'coreg_ref_wmseg', 'field_map_mag',
-                  'field_map_phase', 'moco', 'align_mats', 'moco_par',
-                  'field_map_delta_te', 'norm_intensity',
-                  'norm_intens_fa_template', 'norm_intens_wm_mask',
-                  'global_tracks'],
-            parameters={
-                'num_global_tracks': int(1e6)}, include=None,
+            include=['wm_odf'],
             reprocess=False, repo_depth=1, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))
