@@ -484,7 +484,7 @@ if __name__ == '__main__':
 
     print("Generating test data for {}".format(args.generate))
 
-    if 'base' in args.generate:
+    if 'mri' in args.generate:
 
         PipelineTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI',
@@ -492,7 +492,7 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 'mri-work'),
             reprocess=False, repo_depth=0, modules_env=True)
 
-    if 'base2' in args.generate:
+    if 'mri2' in args.generate:
 
         PipelineTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri2'), 'TESTBANANAMRI2',
