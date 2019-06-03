@@ -2,16 +2,17 @@ from copy import copy
 import itertools
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.utils.interfaces import DummyReconAll as ReconAll
-from nipype.interfaces import fsl, ants, mrtrix3, utility
+from nipype.interfaces import fsl, ants, mrtrix3
 from arcana.utils.interfaces import Merge
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import CopyToDir
-from banana.requirement import freesurfer_req, ants_req, fsl_req
+from banana.requirement import freesurfer_req, ants_req, fsl_req, mrtrix_req
 from banana.citation import freesurfer_cites, fsl_cite
 from banana.interfaces.freesurfer import AparcStats
+from banana.interfaces.utility import AppendPath
 from banana.file_format import (
     nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
     directory_format, text_format, mrtrix_image_format)
@@ -113,19 +114,22 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 
         aseg_path = pipeline.add(
             'aseg_path',
-            utility.Function(
-                input_names='in_path',
-                function='{}/mri/aseg.mgz'.format),
+            AppendPath(
+                sub_paths=['mri', 'aseg.mgz']),
             inputs={
-                'in_path': ('fs_recon_all', directory_format)})
+                'base_path': ('fs_recon_all', directory_format)})
 
         pipeline.add(
             'gen5tt',
-            mrtrix3.Generate5tt(),
+            mrtrix3.Generate5tt(
+                algorithm='freesurfer',
+                out_file='5tt.mif'),
             inputs={
-                'in_file': (aseg_path, 'out')},
+                'in_file': (aseg_path, 'out_path')},
             outputs={
-                'five_tissue_type': ('out_file', mrtrix_image_format)})
+                'five_tissue_type': ('out_file', mrtrix_image_format)},
+            requirements=[mrtrix_req.v('3.0rc3'),
+                          freesurfer_req.v('6.0')])
 
         return pipeline
 
