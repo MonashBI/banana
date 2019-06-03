@@ -51,10 +51,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
         FilesetSpec('noise_residual', mrtrix_image_format,
                     'preprocess_pipeline'),
-        FilesetSpec('biased_brain_mask', nifti_gz_format,
-                    'preprocess_pipeline',
-                    desc=("A byproduct of the preprocess pipeline that should "
-                          "be manually sanity checked")),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline'),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline'),
@@ -371,9 +367,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             inputs={
                 'in_file': (preproc, 'out_file'),
                 'grad_fsl': gradients},
-            outputs={
-                # Output for manual QC
-                'biased_brain_mask': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
         # Create bias correct node
@@ -409,13 +402,18 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 citations=[mrtrix_cite],
                 name_maps=name_maps)
 
+            if self.provided('coreg_ref'):
+                series = 'series_coreg'
+            else:
+                series = 'series_preproc'
+
             # Create mask node
             masker = pipeline.add(
                 'dwi2mask',
                 BrainMask(
                     out_file='brain_mask.nii.gz'),
                 inputs={
-                    'in_file': ('mag_preproc', nifti_gz_format),
+                    'in_file': (series, nifti_gz_format),
                     'grad_fsl': self.fsl_grads(pipeline, coregistered=False)},
                 outputs={
                     'brain_mask': ('out_file', nifti_gz_format)},
@@ -435,8 +433,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 inputs={
                     'operands': (merge, 'out')},
                 outputs={
-                    'brain': ('out_file', nifti_gz_format)})
-
+                    'brain': ('out_file', nifti_gz_format)},
+                requirements=[mrtrix_req.v('3.0rc3')])
         else:
             pipeline = super().brain_extraction_pipeline(**name_maps)
         return pipeline
