@@ -30,9 +30,9 @@ class TransformGradients(BaseInterface):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        transform = np.loadtxt(self.inputs.transform)
-        gradients = np.load(self.inputs.gradients)
-        transformed = transform.dot(gradients)
+        rotation = np.loadtxt(self.inputs.transform)[:3, :3]
+        gradients = np.loadtxt(self.inputs.gradients)
+        transformed = rotation.dot(gradients)
         np.savetxt(self.transformed_path, transformed)
         outputs['transformed'] = self.transformed_path
         return outputs
