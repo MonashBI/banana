@@ -98,8 +98,7 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
             requirements=[fsl_req.v('5.0.9')])
 
         if self.provided('coreg_ref_wmseg'):
-            pipeline.connect_input('coreg_ref_wmseg', epireg, 'wmseg',
-                                   nifti_gz_format)
+            epireg.add_input('wmseg', 'coreg_ref_wmseg', nifti_gz_format)
 
         return pipeline
 
@@ -400,7 +399,7 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
                 'fmap_in_file': (create_fmap, 'out_fieldmap'),
                 'in_file': (reorient_epi_in, 'out_file')},
             outputs={
-                'mag_preproc': ('unwarped_file', nifti_gz_format)},
+                'series_preproc': ('unwarped_file', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -423,7 +422,6 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'motion_mats': ('motion_mats', motion_mats_format)})
         if 'reverse_phase' not in self.input_names:
-            pipeline.connect_input('align_mats', mm, 'align_mats',
-                                   motion_mats_format)
+            mm.add_input('align_mats', 'align_mats', motion_mats_format)
 
         return pipeline

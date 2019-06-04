@@ -505,13 +505,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 'reference': ('ref_brain', nifti_gz_format)},
             requirements=[fsl_req.v('5.0.9'), mrtrix_req.v('3.0rc3')])
         if self.branch('dynamic_pet_mc'):
-            pipeline.connect_input('fixed_binning_mats', check_pet,
-                                   'motion_mats')
+            pipeline.connect_input('fixed_binning_mats', check_pet, 'motion_mats')
         else:
-            pipeline.connect_input('average_mats', check_pet,
-                                   'motion_mats')
-            pipeline.connect_input('correction_factors', check_pet,
-                                   'corr_factors')
+            pipeline.connect_input('average_mats', check_pet, 'motion_mats')
+            pipeline.connect_input('correction_factors', check_pet, 'corr_factors')
 
         if StructAlignment:
             struct_reg = pipeline.add(
@@ -548,8 +545,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         if StructAlignment:
             pipeline.connect(struct_reg, 'out_matrix_file', pet_mc,
                              'structural2ref_regmat')
-            pipeline.connect_input('struct2align', pet_mc,
-                                   'structural_image')
+            pipeline.connect_input('struct2align', pet_mc, 'structural_image')
         if self.parameter('PET2MNI_reg'):
             mni_reg = True
         else:
@@ -696,11 +692,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
             inputs={
                 'in_files': (merge_outputs, 'out')})
         if self.branch('dynamic_pet_mc'):
-            pipeline.connect_output('dynamic_motion_correction_results',
-                                    copy2dir, 'out_dir')
+            pipeline.connect_output('dynamic_motion_correction_results', copy2dir, 'out_dir')
         else:
-            pipeline.connect_output('static_motion_correction_results',
-                                    copy2dir, 'out_dir')
+            pipeline.connect_output('static_motion_correction_results', copy2dir, 'out_dir')
         return pipeline
 
 

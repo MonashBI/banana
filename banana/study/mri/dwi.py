@@ -365,7 +365,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             wall_time=60)
 
         if distortion_correction:
-            pipeline.connect(prep_dwi, 'pe', preproc, 'pe_dir')
+            preproc.add_input('pe_dir', prep_dwi, 'pe')
 
         mask = pipeline.add(
             'dwi2mask',
@@ -643,10 +643,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         if self.multi_tissue:
             response.inputs.gm_file = 'gm.txt',
             response.inputs.csf_file = 'csf.txt',
-            pipeline.connect_output('gm_response', response, 'gm_file',
-                                    text_format)
-            pipeline.connect_output('csf_response', response, 'csf_file',
-                                    text_format)
+            response.add_output('gm_response', 'gm_file', text_format)
+            response.add_output('csf_response', 'csf_file', text_format)
 
         return pipeline
 
@@ -707,10 +705,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             citations=[mrtrix_cite],
             name_maps=name_maps)
 
-        if self.branch('fod_algorithm', 'msmt_csd'):
-            pipeline.add_input(FilesetSpec('gm_response', text_format))
-            pipeline.add_input(FilesetSpec('csf_response', text_format))
-
         # Create fod fit node
         dwi2fod = pipeline.add(
             'dwi2fod',
@@ -728,14 +722,10 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         if self.multi_tissue:
             dwi2fod.inputs.gm_odf = 'gm.mif',
             dwi2fod.inputs.csf_odf = 'csf.mif',
-            pipeline.connect_input('gm_response', dwi2fod, 'gm_txt',
-                                   text_format),
-            pipeline.connect_input('csf_response', dwi2fod, 'csf_txt',
-                                   text_format),
-            pipeline.connect_output('gm_odf', dwi2fod, 'gm_odf',
-                                    nifti_gz_format),
-            pipeline.connect_output('csf_odf', dwi2fod, 'csf_odf',
-                                    nifti_gz_format),
+            pipeline.connect_input('gm_response', dwi2fod, 'gm_txt', text_format),
+            pipeline.connect_input('csf_response', dwi2fod, 'csf_txt', text_format),
+            pipeline.connect_output('gm_odf', dwi2fod, 'gm_odf', nifti_gz_format),
+            pipeline.connect_output('csf_odf', dwi2fod, 'csf_odf', nifti_gz_format),
         # Check inputs/output are connected
         return pipeline
 
@@ -815,8 +805,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             requirements=[mrtrix_req.v('3.0rc3')])
 
         if self.provided('anat_5tt'):
-            pipeline.connect_input('anat_5tt', tracking, 'act_file',
-                                   mrtrix_image_format)
+            tracking.add_input('act_file', 'anat_5tt', mrtrix_image_format)
 
         return pipeline
 

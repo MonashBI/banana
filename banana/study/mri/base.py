@@ -987,18 +987,17 @@ class MriStudy(Study, metaclass=StudyMetaClass):
     #         swap.inputs.new_dims = self.parameter('reoriented_dims')
 
             if self.parameter('resampled_resolution') is not None:
-                resample = pipeline.add(
+                pipeline.add(
                     "resample",
                     MRResize(
                         voxel=self.parameter('resampled_resolution')),
                     inputs={
                         'in_file': (swap, 'out_file')},
+                    outputs={
+                        'mag_preproc': ('out_file', nifti_gz_format)},
                     requirements=[mrtrix_req.v('3.0rc3')])
-                pipeline.connect_output('mag_preproc', resample, 'out_file',
-                                        nifti_gz_format)
             else:
-                pipeline.connect_output('mag_preproc', swap, 'out_file',
-                                        nifti_gz_format)
+                swap.add_output('mag_preproc', 'out_file', nifti_gz_format)
         else:
             # Don't actually do any processing just copy magnitude image to
             # preproc
@@ -1088,13 +1087,10 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                         "motion matrix calculation, assuming that it "
                         "is the reference study".format(self))
             mm.inputs.reference = True
-            pipeline.connect_input('magnitude', mm, 'dummy_input')
+            mm.add_input('dummy_input', 'magnitude', nifti_gz_format)
         else:
-            pipeline.connect_input('coreg_fsl_mat', mm, 'reg_mat',
-                                   text_matrix_format)
-            pipeline.connect_input('qform_mat', mm, 'qform_mat',
-                                   text_matrix_format)
+            mm.add_input('reg_mat', 'coreg_fsl_mat', text_matrix_format)
+            mm.add_input('qform_mat', 'qform_mat', text_matrix_format)
             if 'align_mats' in self.data_spec_names():
-                pipeline.connect_input('align_mats', mm, 'align_mats',
-                                       motion_mats_format)
+                mm.add_input('align_mats', 'align_mats', motion_mats_format)
         return pipeline

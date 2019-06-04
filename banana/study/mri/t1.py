@@ -83,8 +83,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             wall_time=2000)
 
         if self.provided('t2_coreg'):
-            pipeline.connect_input('t2_coreg', recon_all, 'T2_file',
-                                   nifti_gz_format)
+            recon_all.add_input('T2_file', 't2_coreg', nifti_gz_format)
             recon_all.inputs.use_T2 = True
 
         # Wrapper around os.path.join

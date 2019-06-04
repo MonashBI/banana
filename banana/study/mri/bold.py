@@ -410,12 +410,8 @@ class MultiBoldMixin(MultiStudy):
             NiPypeMerge(num_fix_dirs))
         for i, substudy_name in enumerate(self.bold_substudies(), start=1):
             spec = self.substudy_spec(substudy_name)
-            pipeline.connect_input(
-                spec.inverse_map('fix_dir'), merge_fix_dirs, 'in{}'.format(i),
-                directory_format)
-            pipeline.connect_input(
-                spec.inverse_map('hand_label_noise'), merge_label_files,
-                'in{}'.format(i), text_format)
+            merge_fix_dirs.add_input('in{}'.format(i), spec.inverse_map('fix_dir'), directory_format)
+            merge_label_files.add_input('in{}'.format(i),  spec.inverse_map('hand_label_noise'), text_format)
 
         merge_visits = pipeline.add(
             IdentityInterface(
@@ -473,9 +469,7 @@ class MultiBoldMixin(MultiStudy):
             NiPypeMerge(len(self.bold_substudies())))
         for i, substudy_name in enumerate(self.bold_substudies(), start=1):
             spec = self.substudy_spec(substudy_name)
-            pipeline.connect_input(
-                spec.inverse_map('smoothed_ts'),
-                merge_inputs, 'in{}'.format(i), nifti_gz_format)
+            merge_inputs.add_input('in{}'.format(i),  spec.inverse_map('smoothed_ts'), nifti_gz_format)
 
         pipeline.add(
             'copy2dir',

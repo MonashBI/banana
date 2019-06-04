@@ -35,8 +35,7 @@ class DummyStudy(Study, metaclass=StudyMetaClass):
             'identity',
             IdentityInterface(['field']))
         # Connect inputs
-        pipeline.connect_input('input_fileset', identity, 'field')
-        # Connect outputs
+        pipeline.connect_input('input_fileset', identity, 'field') # Connect outputs
         pipeline.connect_output('output_fileset', identity, 'field')
         return pipeline
 

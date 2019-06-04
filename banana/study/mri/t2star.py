@@ -113,8 +113,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
     def preprocess_channels_pipeline(self, **name_maps):
         pipeline = super().preprocess_channels_pipeline(**name_maps)
         # Connect combined first echo output to the magnitude data spec
-        pipeline.connect_output('magnitude', pipeline.node('to_polar'),
-                                'first_echo', nifti_gz_format)
+        pipeline.node('to_polar').add_output('magnitude', 'first_echo', nifti_gz_format)
         return pipeline
 
     def qsm_pipeline(self, **name_maps):
