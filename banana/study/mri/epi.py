@@ -400,7 +400,7 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
                 'fmap_in_file': (create_fmap, 'out_fieldmap'),
                 'in_file': (reorient_epi_in, 'out_file')},
             outputs={
-                'mag_preproc': ('unwarped_file', nifti_gz_format)},
+                'series_preproc': ('unwarped_file', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
