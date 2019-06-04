@@ -309,7 +309,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Interpolate priors and atlas
         merge_trans = pipeline.add(
             'merge_transforms',
-            Merge(2),
+            Merge(3),
             inputs={
                 'in1': ('coreg_ants_mat', text_matrix_format),
                 'in2': ('coreg_to_tmpl_ants_mat', text_matrix_format),
