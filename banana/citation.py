@@ -1,5 +1,13 @@
 from arcana.citation import Citation
 
+# TODO: fill in this citation
+ants_cite = Citation(
+    short_name='ants',
+    authors=[],
+    title='',
+    institute='',
+    url='',
+    year=0000)
 
 mrtrix_cite = Citation(
     short_name="mrtrix",

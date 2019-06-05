@@ -1,12 +1,40 @@
-# Name of your awesome project
-
-Deriving BIDS derivatives with (a) Banana
+# Generating BIDS derivatives with (a) Banana
 
 ## Project Description
-Main idea and context
+
+_Brain imAgiNg Analysis iN Arcana (Banana)_ is a collection of imaging analysis
+methods implemented in the [Arcana framework (Close et al. 2019)](), which is
+proposed as a code-base for collaborative development of neuroimaging
+workflows. Unlike traditional "linear" workflows, analyses implemented in
+Arcana are constructed on-the-fly from cascades of modular pipelines that
+generate derivatives from a mixture of acquired data and prequisite derivatives
+(similar to a Makefile). Given the "data-centric" architecture of this approach,
+there should be a natural harmony between it and the ongoing standardisation of
+BIDS derivatives.
+
+The primary goal of this project is to closely align the analysis methods
+implemented in Banana with the BIDS standard, in particular BIDS derivatives,
+in order to make them familiar to new users and interoperable with other
+packages. Further to this, in cases where a _de facto_ standard for a particular 
+workflow exists (e.g. fmriprep) Banana should aim to mirror this standard by
+default. The extensibility of Arcana's object-orientated architecture (via class
+inheritance) could then be utilised to tailor such workflows to the needs of
+specific studies.
+
+There is also plenty of scope to expand the imaging contrasts/modalities
+supported by Banana, so if you have expertise in a particular area and are
+interested in implementing it in Banana we can definitely look to do that as
+well.  
+
 
 ## Skills required to participate
-What different types of people could contribute?
+
+Any of the following:
+
+* Workflow design + Python (preferably some Nipype but not essential)
+* Detailed knowledge BIDS specification (or part thereof)
+* Domain-specific knowlege of analysis of a particular imaging modality that
+  you would like to see implemented in Banana (e.g. EEG, MEG, etc..)  
 
 ## Integration
 How would your project integrate a
@@ -16,19 +44,25 @@ collaborator? You can check the Mozilla Open Leadership material on
 Try to define intermediate goals (milestones).  
 
 ## Preparation material
-Provide links to preparation material / online tutorials. You can, for example,
-have a look at our [list of online tutorials](Tutorial_Resources.md).
+
+* BioXiv paper
+* arcana docs
+* banana docs
+* nipype docs - Arcana is built on top of Nipype so knowledge of Nipype datatypes is definitely helpful
 
 
 ## Link to your GitHub repo
-[YourGitHubRepo](https://github.com/yourUserName/yourRepo)  
-    with [ReadMe.md](https://mozilla.github.io/open-leadership-training-series/articles/opening-your-project/write-a-great-project-readme/) containing  
-        &nbsp;&nbsp;&nbsp;&nbsp;* Project idea and context  
-        &nbsp;&nbsp;&nbsp;&nbsp;* Installation guidelines if applicable  
-        &nbsp;&nbsp;&nbsp;&nbsp;* Links to further reading / tutorials  
-    and if you want, additional files such as  
-        &nbsp;&nbsp;&nbsp;&nbsp;* [Contributors.md](https://mozilla.github.io/open-leadership-training-series/articles/building-communities-of-contributors/write-contributor-guidelines/),
-        to specify which types of people can contribute how.
+[Banana GitHub](https://github.com/MonashBI/banana)
+
+[Arcana GitHub](https://github.com/MonashBI/arcana)
+  
+with [ReadMe.md](https://mozilla.github.io/open-leadership-training-series/articles/opening-your-project/write-a-great-project-readme/) containing  
+    &nbsp;&nbsp;&nbsp;&nbsp;* Project idea and context  
+    &nbsp;&nbsp;&nbsp;&nbsp;* Installation guidelines if applicable  
+    &nbsp;&nbsp;&nbsp;&nbsp;* Links to further reading / tutorials  
+and if you want, additional files such as  
+    &nbsp;&nbsp;&nbsp;&nbsp;* [Contributors.md](https://mozilla.github.io/open-leadership-training-series/articles/building-communities-of-contributors/write-contributor-guidelines/),
+      to specify which types of people can contribute how.
 
 ## Communication
 Link to the communication channel for your project. You can, for example,

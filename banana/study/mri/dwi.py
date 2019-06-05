@@ -33,7 +33,7 @@ from banana.file_format import (
     mrtrix_image_format, nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format,
     fsl_bvals_format, text_format, dicom_format, eddy_par_format,
     mrtrix_track_format, motion_mats_format, text_matrix_format,
-    directory_format, csv_format)
+    directory_format, csv_format, zip_format)
 from .base import MriStudy
 from .epi import EpiSeriesStudy
 
@@ -44,10 +44,13 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('anat_5tt', mrtrix_image_format,
-                         desc=("A segmentation image taken from freesurfer "
-                               "output and simplified into 5 tissue types. "
-                               "Used in ACT streamlines tractography"),
+                         desc=("A co-registered segmentation image taken from "
+                               "freesurfer output and simplified into 5 tissue"
+                               " types. Used in ACT streamlines tractography"),
                          optional=True),
+        InputFilesetSpec('anat_fs_recon_all', zip_format,
+                         desc=("Co-registered freesurfer recon-all output. "
+                               "Used in building the connectome")),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
                     'series_coreg_pipeline',
@@ -68,10 +71,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         FilesetSpec('wm_odf', mrtrix_image_format, 'fod_pipeline'),
         FilesetSpec('gm_odf', mrtrix_image_format, 'fod_pipeline'),
         FilesetSpec('csf_odf', mrtrix_image_format, 'fod_pipeline'),
-        FilesetSpec('brain', nifti_gz_format,
-                    'brain_extraction_pipeline'),
-        FilesetSpec('brain_mask', nifti_gz_format,
-                    'brain_extraction_pipeline'),
         FilesetSpec('norm_intensity', mrtrix_image_format,
                     'intensity_normalisation_pipeline'),
         FilesetSpec('norm_intens_fa_template', mrtrix_image_format,
@@ -159,6 +158,14 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         else:
             preproc = 'series_preproc'
         return preproc
+
+    @property
+    def brain_mask(self):
+        if self.is_coregistered:
+            brain_mask = 'brain_mask_coreg'
+        else:
+            brain_mask = 'brain_mask'
+        return brain_mask
 
     def extract_magnitude_pipeline(self, **name_maps):
 
@@ -508,7 +515,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             utility.IdentityInterface(
                 join_fields),
             inputs={
-                'masks': ('brain_mask', nifti_gz_format),
+                'masks': (self.brain_mask, nifti_gz_format),
                 'dwis': (mrconvert, 'out_file'),
                 'subject_ids': (session_ids, 'subject_id'),
                 'visit_ids': (session_ids, 'visit_id')},
@@ -575,7 +582,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc, nifti_gz_format),
-                'in_mask': ('brain_mask', nifti_gz_format)},
+                'in_mask': (self.brain_mask, nifti_gz_format)},
             outputs={
                 'tensor': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
@@ -601,7 +608,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_adc='adc.nii.gz'),
             inputs={
                 'in_file': ('tensor', nifti_gz_format),
-                'in_mask': ('brain_mask', nifti_gz_format)},
+                'in_mask': (self.brain_mask, nifti_gz_format)},
             outputs={
                 'fa': ('out_fa', nifti_gz_format),
                 'adc': ('out_adc', nifti_gz_format)},
@@ -634,7 +641,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc, nifti_gz_format),
-                'in_mask': ('brain_mask', nifti_gz_format)},
+                'in_mask': (self.brain_mask, nifti_gz_format)},
             outputs={
                 'wm_response': ('wm_file', text_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
@@ -719,7 +726,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             inputs={
                 'in_file': (self.series_preproc, nifti_gz_format),
                 'wm_txt': ('wm_response', text_format),
-                'mask_file': ('brain_mask', nifti_gz_format),
+                'mask_file': (self.brain_mask, nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline)},
             outputs={
                 'wm_odf': ('wm_odf', nifti_gz_format)},
