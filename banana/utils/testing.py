@@ -581,9 +581,9 @@ if __name__ == '__main__':
             DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi-work'),
-            skip=['coreg_ref_wmseg', 'field_map_mag',
+            skip=['coreg_ref_wmseg', 'field_map_mag', 'brain_coreg',
                   'field_map_phase', 'moco', 'align_mats', 'moco_par',
-                  'field_map_delta_te', 'norm_intensity',
+                  'field_map_delta_te', 'norm_intensity', 'brain_mask_coreg',
                   'norm_intens_fa_template', 'norm_intens_wm_mask'],
             include_bases=[EpiSeriesStudy],
             parameters={

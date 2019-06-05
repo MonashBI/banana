@@ -48,6 +48,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                                "output and simplified into 5 tissue types. "
                                "Used in ACT streamlines tractography"),
                          optional=True),
+        InputFilesetSpec('anat_fs_recon_all', zip_format, optional=True,
+                         desc="The freesurfer recon-all output from anatomical")
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
                     'series_coreg_pipeline',
@@ -853,7 +855,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             AppendPath(
                 sub_paths=['mri', 'aparc+aseg.mgz']),
             inputs={
-                'base_path': ('fs_recon_all', directory_format)})
+                'base_path': ('anat_fs_recon_all', directory_format)})
 
         pipeline.add(
             'connectome',
