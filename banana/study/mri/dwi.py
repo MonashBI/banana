@@ -151,22 +151,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                     'in2': ('bvalues', fsl_bvals_format)})
         return (fslgrad, 'out')
 
-    @property
-    def series_preproc(self):
-        if self.is_coregistered:
-            preproc = 'series_coreg'
-        else:
-            preproc = 'series_preproc'
-        return preproc
-
-    @property
-    def brain_mask(self):
-        if self.is_coregistered:
-            brain_mask = 'brain_mask_coreg'
-        else:
-            brain_mask = 'brain_mask'
-        return brain_mask
-
     def extract_magnitude_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
@@ -494,7 +478,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             MRConvert(
                 out_ext='.mif'),
             inputs={
-                'in_file': (self.series_preproc, nifti_gz_format),
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -515,7 +499,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             utility.IdentityInterface(
                 join_fields),
             inputs={
-                'masks': (self.brain_mask, nifti_gz_format),
+                'masks': (self.brain_mask_spec_name, nifti_gz_format),
                 'dwis': (mrconvert, 'out_file'),
                 'subject_ids': (session_ids, 'subject_id'),
                 'visit_ids': (session_ids, 'visit_id')},
@@ -581,8 +565,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_file='dti.nii.gz'),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
-                'in_file': (self.series_preproc, nifti_gz_format),
-                'in_mask': (self.brain_mask, nifti_gz_format)},
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format),
+                'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
             outputs={
                 'tensor': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
@@ -608,7 +592,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_adc='adc.nii.gz'),
             inputs={
                 'in_file': ('tensor', nifti_gz_format),
-                'in_mask': (self.brain_mask, nifti_gz_format)},
+                'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
             outputs={
                 'fa': ('out_fa', nifti_gz_format),
                 'adc': ('out_adc', nifti_gz_format)},
@@ -640,8 +624,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 algorithm=self.parameter('response_algorithm')),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
-                'in_file': (self.series_preproc, nifti_gz_format),
-                'in_mask': (self.brain_mask, nifti_gz_format)},
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format),
+                'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
             outputs={
                 'wm_response': ('wm_file', text_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
@@ -724,9 +708,9 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             EstimateFOD(
                 algorithm=self.parameter('fod_algorithm')),
             inputs={
-                'in_file': (self.series_preproc, nifti_gz_format),
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'wm_txt': ('wm_response', text_format),
-                'mask_file': (self.brain_mask, nifti_gz_format),
+                'mask_file': (self.brain_mask_spec_name, nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline)},
             outputs={
                 'wm_odf': ('wm_odf', nifti_gz_format)},
@@ -765,7 +749,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 quiet=True),
             inputs={
                 'fslgrad': self.fsl_grads(pipeline),
-                'in_file': (self.series_preproc, nifti_gz_format)},
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
         # FIXME: Need a registration step before the mean
@@ -807,7 +791,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             DWI2Mask(),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
-                'in_file': (self.series_preproc, nifti_gz_format)})
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format)})
 
         tracking = pipeline.add(
             'tracking',

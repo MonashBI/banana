@@ -60,12 +60,20 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
         ParamSpec('fugue_echo_spacing', 0.000275)]
 
     @property
-    def header_image(self):
+    def header_image_spec_name(self):
         if self.provided('header_image'):
             hdr_name = 'header_image'
         else:
             hdr_name = 'series'
         return hdr_name
+
+    @property
+    def series_preproc_spec_name(self):
+        if self.is_coregistered:
+            preproc = 'series_coreg'
+        else:
+            preproc = 'series_preproc'
+        return preproc
 
     def coreg_pipeline(self, **name_maps):
         if self.branch('coreg_method', 'epireg'):
