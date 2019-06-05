@@ -538,7 +538,9 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 'bold-work'),
             reprocess=False, repo_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir),
-            skip=['field_map_delta_te', 'cleaned_file'])
+            skip=['field_map_delta_te', 'cleaned_file'],
+            parameters={
+                'mni_template_resolution': 2})
 
     if 't1' in args.generate:
         from banana.study.mri.t1 import T1Study
