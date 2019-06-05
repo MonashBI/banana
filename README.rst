@@ -13,17 +13,10 @@ Brain imAgiNg Analysis iN Arcana (Banana): a collection of brain imaging analysi
 workflows implemented in the Arcana_ framework, which can be used to analyse
 study datasets stored in XNAT, BIDS or plain-directory repositories.
 
-Dependencies
------------------
+Installation
+------------
 
-Core
-~~~~
-
-* arcana
-* nibabel
-* pydicom
-
-All of these are available on PyPI and can be installed with::
+Banana and its dependencies can be installed from PyPI with::
 
     $ pip3 install banana
 
