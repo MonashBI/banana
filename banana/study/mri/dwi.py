@@ -791,7 +791,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             DWI2Mask(),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
-                'in_file': (self.series_preproc_spec_name, nifti_gz_format)})
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         tracking = pipeline.add(
             'tracking',
