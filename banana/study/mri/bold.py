@@ -15,7 +15,7 @@ from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.study import ParamSpec, SwitchSpec
+from arcana.study import ParamSpec
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
@@ -118,7 +118,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_file='filtered_func_data.nii.gz'),
             inputs={
                 'delta_t': ('tr', float),
-                'mask': ('brain_mask', nifti_gz_format),
+                'mask': (self.brain_mask_spec_name, nifti_gz_format),
                 'in_file': (afni_mc, 'out_file')},
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
@@ -168,7 +168,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_dir='melodic_ica',
                 output_type='NIFTI_GZ'),
             inputs={
-                'mask': ('brain_mask', nifti_gz_format),
+                'mask': (self.brain_mask_spec_name, nifti_gz_format),
                 'tr_sec': ('tr', float),
                 'in_files': ('filtered_data', nifti_gz_format)},
             outputs={

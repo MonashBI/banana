@@ -206,12 +206,33 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         return self.provided('coreg_ref') or self.provided('coreg_ref_brain')
 
     @property
-    def header_image(self):
+    def header_image_spec_name(self):
         if self.provided('header_image'):
             hdr_name = 'header_image'
         else:
             hdr_name = 'magnitude'
         return hdr_name
+
+    @property
+    def brain_spec_name(self):
+        """
+        The name of the brain extracted image after registration has been
+        applied if registration is specified by supplying 'coreg_ref' or
+        'coreg_ref_brain' optional inputs.
+        """
+        if self.is_coregistered:
+            name = 'brain_coreg'
+        else:
+            name = 'brain'
+        return name
+
+    @property
+    def brain_mask_spec_name(self):
+        if self.is_coregistered:
+            brain_mask = 'brain_mask_coreg'
+        else:
+            brain_mask = 'brain_mask'
+        return brain_mask
 
     def preprocess_channels_pipeline(self, **name_maps):
         pipeline = self.new_pipeline(
@@ -295,19 +316,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'phase_channels': ('phases_dir', multi_nifti_gz_format)})
 
         return pipeline
-
-    @property
-    def brain_spec_name(self):
-        """
-        The name of the brain extracted image after registration has been
-        applied if registration is specified by supplying 'coreg_ref' or
-        'coreg_ref_brain' optional inputs.
-        """
-        if self.provided('coreg_ref') or self.provided('coreg_ref_brain'):
-            name = 'brain_coreg'
-        else:
-            name = 'brain'
-        return name
 
     def coreg_pipeline(self, **name_maps):
         if self.branch('coreg_method', 'flirt'):
@@ -1029,7 +1037,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "information from the image header"),
             citations=[])
 
-        input_format = self.input(self.header_image).format
+        input_format = self.input(self.header_image_spec_name).format
 
         if input_format == dicom_format:
 
@@ -1038,7 +1046,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 DicomHeaderInfoExtraction(
                     multivol=False),
                 inputs={
-                    'dicom_folder': (self.header_image, dicom_format)},
+                    'dicom_folder': (self.header_image_spec_name, dicom_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -1057,7 +1065,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'hd_info_extraction',
                 NiftixHeaderInfoExtraction(),
                 inputs={
-                    'in_file': (self.header_image, nifti_gz_x_format)},
+                    'in_file': (self.header_image_spec_name, nifti_gz_x_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -1073,7 +1081,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             raise BananaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM or extended NIfTI format (provided {})"
-                .format(self.input(self.header_image).format))
+                .format(self.input(self.header_image_spec_name).format))
 
         return pipeline
 
