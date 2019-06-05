@@ -577,6 +577,7 @@ if __name__ == '__main__':
     if 'dwi' in args.generate:
         from banana.study.mri.dwi import DwiStudy
         from banana.study.mri.epi import EpiSeriesStudy
+
         PipelineTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
@@ -593,10 +594,39 @@ if __name__ == '__main__':
 
     if 'dwi2' in args.generate:
         from banana.study.mri.dwi import DwiStudy  # @Reimport
+
         PipelineTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi2'), 'TESTBANANADWI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi2-work'),
             include=['wm_odf'],
             reprocess=False, repo_depth=1, modules_env=True,
+            clean_work_dir=(not args.dont_clean_work_dir))
+
+    if 'dwi3' in args.generate:
+        from banana import MultiStudy, MultiStudyMetaClass, SubStudySpec
+        from banana.study.mri.dwi import DwiStudy  # @Reimport
+        from banana.study.mri.t1 import T1Study  # @Reimport
+
+        class DwiT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
+
+            add_substudy_specs = [
+                SubStudySpec(
+                    't1',
+                    T1Study,
+                    name_map={
+                        'coreg_ref': 'dwi_mag_preproc'}),
+                SubStudySpec(
+                    'dwi',
+                    DwiStudy,
+                    name_map={
+                        'anat_5tt': 't1_five_tissue_type',
+                        'anat_fs_recon_all': 't1_fs_recon_all'})]
+
+        PipelineTester.generate_test_data(
+            DwiT1Study, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',
+            in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
+            work_dir=op.join(args.data_dir, 'dwi3-work'),
+            include=['dwi_connectome'],
+            reprocess=False, repo_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))

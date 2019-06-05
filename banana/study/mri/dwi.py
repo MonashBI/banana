@@ -855,3 +855,5 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             outputs={
                 'connectome': ('out_file', csv_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
+
+        return pipeline
