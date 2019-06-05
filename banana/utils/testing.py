@@ -585,7 +585,8 @@ if __name__ == '__main__':
             skip=['coreg_ref_wmseg', 'field_map_mag', 'brain_coreg',
                   'field_map_phase', 'moco', 'align_mats', 'moco_par',
                   'field_map_delta_te', 'norm_intensity', 'brain_mask_coreg',
-                  'norm_intens_fa_template', 'norm_intens_wm_mask'],
+                  'norm_intens_fa_template', 'norm_intens_wm_mask',
+                  'connectome'],
             include_bases=[EpiSeriesStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
