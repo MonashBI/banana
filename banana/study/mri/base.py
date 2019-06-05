@@ -6,7 +6,7 @@ from banana.file_format import (
     multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
 from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
 from banana.study import Study, StudyMetaClass
-from banana.citation import fsl_cite, bet_cite, bet2_cite
+from banana.citation import fsl_cite, bet_cite, bet2_cite, ants_cite
 from banana.file_format import (
     dicom_format, gif_format, nifti_gz_x_format)
 from nipype.interfaces.utility import IdentityInterface
@@ -18,7 +18,6 @@ from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
 from nipype.interfaces.utility import Merge
-from arcana.utils.interfaces import SelectOne
 from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format
@@ -141,6 +140,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                              dataset='brain_mask'))]
 
     add_param_specs = [
+        SwitchSpec('resample_coreg_ref', False,
+                   desc=("Whether to resample the coregistration reference "
+                         "image to the resolution of the moving image")),
         SwitchSpec('reorient_to_std', True),
         ParamSpec('force_channel_flip', None, dtype=str, array=True,
                       desc=("Forcibly flip channel inputs during preprocess "
@@ -422,9 +424,15 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if self.branch('coreg_method', 'ants'):
             pipeline = self._coreg_mat_pipeline(**name_maps)
         else:
-            raise ArcanaOutputNotProducedException(
-                "ANTS transforms are only produced if the 'coreg_method' "
-                "switch is set to 'ants'")
+            # Run the coreg_mat pipeline only to generate the ANTs transform
+            # and mapping the typical outputs to None so they don't override
+            # the other settings
+            pipeline = self._coreg_mat_pipeline(
+                output_maps={
+                    'mag_preproc': None,
+                    'brain_coreg': None,
+                    'brain_mask_coreg': None},
+                name_maps=name_maps)
         return pipeline
 
     def coreg_fsl_mat_pipeline(self, **name_maps):
@@ -510,7 +518,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='linear_coreg',
             name_maps=name_maps,
-            desc="Registers a MR scan against a reference image using ANTs")
+            desc="Registers a MR scan against a reference image using ANTs",
+            citations=[ants_cite])
 
         pipeline.add(
             'ANTs_linear_Reg',
@@ -558,7 +567,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 #                 'mag_coreg': ('warped_image', nifti_gz_format)},
 #             wall_time=10,
 #             requirements=[ants_req.v('2.0')])
-# 
+#
 #         pipeline.add(
 #             'select',
 #             SelectOne(
@@ -782,8 +791,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             citations=[fsl_cite])
 
         # Basic reorientation to standard MNI space
-        # FIXME: Don't think is necessary any more since preproc should be
-        #        in standard orientation
         reorient = pipeline.add(
             'reorient',
             Reorient2Std(
@@ -920,7 +927,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 #                 'mag_coreg_to_tmpl': ('warped_image', nifti_gz_format)},
 #             wall_time=25,
 #             requirements=[ants_req.v('2.0')])
-# 
+#
 #         select_trans = pipeline.add(
 #             'select',
 #             SelectOne(
@@ -929,7 +936,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 #                 'inlist': (ants_reg, 'forward_transforms')},
 #             outputs={
 #                 'coreg_to_tmpl_ants_mat': ('out', text_matrix_format)})
-# 
+#
 #         pipeline.add(
 #             'select_warp',
 #             SelectOne(
@@ -938,7 +945,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 #                 'inlist': (ants_reg, 'forward_transforms')},
 #             outputs={
 #                 'coreg_to_tmpl_ants_warp': ('out', nifti_gz_format)})
-# 
+#
 #         pipeline.add(
 #             'slices',
 #             FSLSlices(
