@@ -6,10 +6,7 @@ Banana
   :alt: Supported Python versions
 .. image:: https://img.shields.io/pypi/v/banana.svg
   :target: https://pypi.python.org/pypi/banana/
-  :alt: Latest Version    
-.. image:: https://readthedocs.org/projects/banana/badge/?version=latest
-  :target: http://banana.readthedocs.io/en/latest/?badge=latest
-  :alt: Documentation Status
+  :alt: Latest Version
 
 
 Brain imAgiNg Analysis iN Arcana (Banana): a collection of brain imaging analysis
