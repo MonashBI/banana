@@ -18,7 +18,6 @@ from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
 from nipype.interfaces.utility import Merge
-from arcana.utils.interfaces import SelectOne
 from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
 from banana.file_format import text_matrix_format

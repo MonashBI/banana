@@ -187,32 +187,39 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             citations=[fsl_cite],
             name_maps=name_maps)
 
-        struct_ants2fsl = pipeline.add(
-            'struct_ants2fsl',
-            ANTs2FSLMatrixConversion(
-                ras2fsl=True),
-            inputs={
-                'reference_file': ('template_brain', nifti_gz_format),
-                'itk_file': ('coreg_to_tmpl_ants_mat', text_matrix_format),
-                'source_file': ('coreg_ref_brain', nifti_gz_format)},
-            requirements=[c3d_req.v('1.0.0')])
+        if self.branch('coreg_to_tmpl_method', 'ants'):
 
-        epi_ants2fsl = pipeline.add(
-            'epi_ants2fsl',
-            ANTs2FSLMatrixConversion(
-                ras2fsl=True),
-            inputs={
-                'source_file': ('brain', nifti_gz_format),
-                'itk_file': ('coreg_ants_mat', text_matrix_format),
-                'reference_file': ('coreg_ref_brain', nifti_gz_format)},
-            requirements=[c3d_req.v('1.0.0')])
+            struct_ants2fsl = pipeline.add(
+                'struct_ants2fsl',
+                ANTs2FSLMatrixConversion(
+                    ras2fsl=True),
+                inputs={
+                    'reference_file': ('template_brain', nifti_gz_format),
+                    'itk_file': ('coreg_to_tmpl_ants_mat', text_matrix_format),
+                    'source_file': ('coreg_ref_brain', nifti_gz_format)},
+                requirements=[c3d_req.v('1.0.0')])
+
+            struct_matrix = (struct_ants2fsl, 'fsl_matrix')
+        else:
+            struct_matrix = ('coreg_to_tmpl_fsl_mat', text_matrix_format)
+
+#         if self.branch('coreg_method', 'ants'):
+#         epi_ants2fsl = pipeline.add(
+#             'epi_ants2fsl',
+#             ANTs2FSLMatrixConversion(
+#                 ras2fsl=True),
+#             inputs={
+#                 'source_file': ('brain', nifti_gz_format),
+#                 'itk_file': ('coreg_ants_mat', text_matrix_format),
+#                 'reference_file': ('coreg_ref_brain', nifti_gz_format)},
+#             requirements=[c3d_req.v('1.0.0')])
 
         MNI2t1 = pipeline.add(
             'MNI2t1',
             ConvertXFM(
                 invert_xfm=True),
             inputs={
-                'in_file': (struct_ants2fsl, 'fsl_matrix')},
+                'in_file': struct_matrix},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -221,7 +228,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             ConvertXFM(
                 invert_xfm=True),
             inputs={
-                'in_file': (epi_ants2fsl, 'fsl_matrix')},
+                'in_file': ('coreg_fsl_mat', text_matrix_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -246,7 +253,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'epi_brain_mask': ('brain_mask', nifti_gz_format),
                 'epi_preproc': ('series_preproc', nifti_gz_format),
                 'filtered_epi': ('filtered_data', nifti_gz_format),
-                'epi2t1_mat': (epi_ants2fsl, 'fsl_matrix'),
+                'epi2t1_mat': ('coreg_fsl_mat', text_matrix_format),
                 't12MNI_mat': (struct_ants2fsl, 'fsl_matrix'),
                 'MNI2t1_mat': (MNI2t1, 'out_file'),
                 't12epi_mat': (struct2epi, 'out_file'),
