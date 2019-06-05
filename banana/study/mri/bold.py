@@ -15,7 +15,7 @@ from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.study import ParamSpec, SwitchSpec
+from arcana.study import ParamSpec
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
