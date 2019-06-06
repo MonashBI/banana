@@ -1,6 +1,6 @@
 from arcana.utils.testing import BaseTestCase, BaseMultiSubjectTestCase
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSpec, InputFileset
+from arcana.data import FilesetSpec, InputFilesets
 from banana.file_format import (
     dicom_format)
 
@@ -29,10 +29,10 @@ class TestDicomTagMatch(BaseTestCase):
     PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
     MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
     DICOM_MATCH = [
-        InputFileset('gre_phase', dicom_format, GRE_PATTERN,
+        InputFilesets('gre_phase', dicom_format, GRE_PATTERN,
                      dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE},
                      is_regex=True),
-        InputFileset('gre_mag', dicom_format, GRE_PATTERN,
+        InputFilesets('gre_mag', dicom_format, GRE_PATTERN,
                      dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE},
                      is_regex=True)]
 
@@ -49,10 +49,10 @@ class TestDicomTagMatch(BaseTestCase):
         study = self.create_study(
             TestMatchStudy, 'test_dicom',
             inputs=[
-                InputFileset('gre_phase', dicom_format,
+                InputFilesets('gre_phase', dicom_format,
                              pattern=self.GRE_PATTERN, order=1,
                              is_regex=True),
-                InputFileset('gre_mag', dicom_format,
+                InputFilesets('gre_mag', dicom_format,
                              pattern=self.GRE_PATTERN, order=0,
                              is_regex=True)])
         phase = list(study.data('gre_phase'))[0]

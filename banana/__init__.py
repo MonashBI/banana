@@ -26,8 +26,8 @@ os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 # Import all objects from Arcana used to design and apply Banana studies
 from arcana import (  # @IgnorePep8
     SubStudySpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
-    FilesetSpec, InputFileset, InputFilesetSpec, FilesetCollection, Field,
-    FieldSpec, InputField, InputFieldSpec, FieldCollection, SingleProc,
+    FilesetSpec, InputFilesets, InputFilesetSpec, FilesetCollection, Field,
+    FieldSpec, InputFields, InputFieldSpec, FieldCollection, SingleProc,
     MultiProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, XnatRepo)
 

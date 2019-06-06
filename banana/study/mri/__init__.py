@@ -6,4 +6,4 @@ from .t2 import T2Study
 from .t2star import T2starStudy
 # from .bold import BoldStudy
 # from .ute import Utetudy
-from .epi import EpiStudy
+from .epi import EpiSeriesStudy

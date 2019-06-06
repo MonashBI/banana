@@ -48,7 +48,6 @@ class DicomHeaderInfoExtractionOutputSpec(TraitedSpec):
         desc='Scan duration as extracted from the header.')
     ped = traits.Str(desc='Phase encoding direction.')
     pe_angle = traits.Str(desc='Phase angle.')
-    dcm_info = File(exists=True, desc='File with all the previous outputs.')
     ref_motion_mats = Directory(desc='folder with the reference motion mats')
 
 
@@ -60,18 +59,67 @@ class DicomHeaderInfoExtraction(BaseInterface):
     def _run_interface(self, runtime):
 
         list_dicom = sorted(glob.glob(self.inputs.dicom_folder + '/*'))
-        multivol = self.inputs.multivol
-        _, out_name, _ = split_filename(self.inputs.dicom_folder)
-        ped = ''
-        phase_offset = ''
-        self.dict_output = {}
-        dwi_directions = None
+        self.outpt = {}
+
+        # Read header from first DICOM file in list
+        hd = pydicom.read_file(list_dicom[0])
+
+        # Get acquisition start time
+        try:
+            self.outpt['start_time'] = float(hd.AcquisitionTime)
+        except AttributeError:
+            try:
+                self.outpt['start_time'] = float(
+                    str(hd.AcquisitionDateTime)[8:])
+            except AttributeError:
+                raise BananaMissingHeaderValue(
+                    'No acquisition time found for this scan.')
+
+        # Get echo times
+        echo_times = set()
+        try:
+            for f in list_dicom:
+                hdr = pydicom.read_file(f, specific_tags=['EchoTime'])
+                echo_time = hdr.EchoTime
+                if echo_time in echo_times:
+                    # Assumes that consequetive echos are in sequence. Maybe
+                    # a bit dangerous but otherwise very expensive
+                    break
+                echo_times.add(hdr.EchoTime)
+        except AttributeError:
+            pass
+        else:
+            # Convert to secs
+            self.outpt['echo_times'] = [float(t) / 1000.0 for t in echo_times]
+
+        # Get the orientation of the main magnetic field as a vector
+        try:
+            img_orient = np.reshape(np.asarray(hd.ImageOrientationPatient),
+                                    newshape=(2, 3))
+        except AttributeError:
+            pass
+        else:
+            self.outpt['H'] = list(np.cross(img_orient[0],
+                                                  img_orient[1]))
+            # Get voxel sizes
+        try:
+            vox_sizes = list(hd.PixelSpacing)
+        except AttributeError:
+            pass
+        else:
+            try:
+                vox_sizes.append(hd.SliceThickness)
+            except AttributeError:
+                pass
+            self.outpt['voxel_sizes'] = vox_sizes
 
         try:
-            phase_offset, ped = self.get_phase_encoding_direction(
-                list_dicom[0])
-        except KeyError:
-            pass  # image does not have ped info in the header
+            self.outpt['B0'] = hd.MagneticFieldStrength
+        except AttributeError:
+            pass
+
+        # Extract fields that are not read by pydicom
+        dwi_directions = total_duration = phase_offset = tr = ped = None
 
         with open(list_dicom[0], 'rb') as f:
             for line in f:
@@ -81,7 +129,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
                     continue
                 if 'TotalScan' in line:
                     total_duration = line.split('=')[-1].strip()
-                    if not multivol:
+                    if not self.inputs.multivol:
                         real_duration = total_duration
                 elif 'alTR[0]' in line:
                     tr = float(line.split('=')[-1].strip()) / 1000000
@@ -101,61 +149,36 @@ class DicomHeaderInfoExtraction(BaseInterface):
                                 phase_offset = 1
                 elif 'lDiffDirections' in line:
                     dwi_directions = float(line.split('=')[-1].strip())
-        if multivol:
+
+        try:
+            phase_offset, ped = self.get_phase_encoding_direction(
+                list_dicom[0])
+        except KeyError:
+            pass  # image does not have ped info in the header
+
+        if phase_offset is not None:
+            self.outpt['pe_angle'] = str(phase_offset)
+
+        if ped is not None:
+            self.outpt['ped'] = ped
+
+        if tr is not None:
+            self.outpt['tr'] = float(tr) / 1000.0  # Convert to seconds
+
+        if self.inputs.multivol:
             if dwi_directions:
                 n_vols = dwi_directions
             else:
                 n_vols = len(list_dicom)
             real_duration = n_vols * tr
 
-        # Read header from first DICOM file in list
-        hd = pydicom.read_file(list_dicom[0])
-        try:
-            start_time = hd.AcquisitionTime
-        except AttributeError:
-            try:
-                start_time = str(hd.AcquisitionDateTime)[8:]
-            except AttributeError:
-                raise BananaMissingHeaderValue(
-                    'No acquisition time found for this scan.')
-        # Get echo times
-        num_echoes = hd.EchoTrainLength
-        if num_echoes == 1:
-            echo_times = [hd.EchoTime]
-        else:
-            echo_times = set()
-            for f in list_dicom:
-                hdr = pydicom.read_file(f)
-                echo_times.add(hdr.EchoTime)
-                if len(echo_times) == num_echoes:
-                    break
-            echo_times = list(echo_times)
-        # Get the orientation of the main magnetic field as a vector
-        img_orient = np.reshape(np.asarray(hd.ImageOrientationPatient),
-                                newshape=(2, 3))
-        b0_orient = np.cross(img_orient[0], img_orient[1])
-        # Get voxel sizes
-        vox_sizes = list(hd.PixelSpacing)
-        vox_sizes.append(hd.SliceThickness)
-        # Save extracted values to output dictionary
-        self.dict_output['start_time'] = float(start_time)
-        self.dict_output['tr'] = float(tr) / 1000.0  # Convert to seconds
-        self.dict_output['echo_times'] = [float(t) / 1000.0  # Convert to secs
-                                          for t in echo_times]
-        self.dict_output['voxel_sizes'] = vox_sizes
-        self.dict_output['H'] = list(b0_orient)
-        self.dict_output['B0'] = hd.MagneticFieldStrength
-        self.dict_output['total_duration'] = float(total_duration)
-        self.dict_output['real_duration'] = float(real_duration)
-        self.dict_output['ped'] = ped
-        self.dict_output['pe_angle'] = str(phase_offset)
-        keys = ['start_time', 'tr', 'total_duration', 'real_duration', 'ped',
-                'pe_angle']
-        with open('scan_header_info.txt', 'w') as f:
-                f.write(str(out_name) + '\n')
-                for k in keys:
-                    f.write(k + ' ' + str(self.dict_output[k]) + '\n')
-                f.close()
+        if total_duration is not None:
+            self.outpt['total_duration'] = float(total_duration)
+
+        if real_duration is not None:
+            self.outpt['real_duration'] = float(real_duration)
+
+        # A bit of a hack for the PET-MR motion correction workflow to work
         if self.inputs.reference:
             os.mkdir('reference_motion_mats')
             np.savetxt('reference_motion_mats/reference_motion_mat.mat',
@@ -167,14 +190,8 @@ class DicomHeaderInfoExtraction(BaseInterface):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs.update(self.dict_output)
-#         outputs["start_time"] = self.dict_output['start_time']
-#         outputs["tr"] = self.dict_output['tr']
-#         outputs["total_duration"] = self.dict_output['total_duration']
-#         outputs["real_duration"] = self.dict_output['real_duration']
-#         outputs["ped"] = self.dict_output['ped']
-#         outputs["pe_angle"] = self.dict_output['pe_angle']
-        outputs["dcm_info"] = os.getcwd() + '/scan_header_info.txt'
+        outputs.update(self.outpt)
+
         if self.inputs.reference:
             outputs["ref_motion_mats"] = os.getcwd() + '/reference_motion_mats'
 

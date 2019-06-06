@@ -397,7 +397,7 @@ class MRCalcOutputSpec(TraitedSpec):
 
 class MRCalc(CommandLine):
     """
-    Extracts the gradient information in MRtrix format from a DWI image
+    Performs a mathematical calculation on the given images
     """
     _cmd = 'mrcalc'
     input_spec = MRCalcInputSpec

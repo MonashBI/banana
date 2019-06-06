@@ -2,7 +2,7 @@ import logging  # @IgnorePep8
 import os.path as op
 from nipype import config
 config.enable_debug_mode()
-from arcana import InputFileset, SingleProc  # @IgnorePep8
+from arcana import InputFilesets, SingleProc  # @IgnorePep8
 # from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
 from arcana import MultiStudy, MultiStudyMetaClass, SubStudySpec, Parameter  # @IgnorePep8
 from banana.file_format import zip_format, dicom_format  # @IgnorePep8
@@ -35,16 +35,16 @@ study = T2StarT1Study(
     repository=single_echo_dir,
     processor=SingleProc(op.join(test_data, 'work')),
     inputs=[
-        InputFileset('t2star_channels', 'swi_coils_icerecon', zip_format),
-        InputFileset('t2star_header_image', 'SWI_Images', dicom_format),
-        InputFileset('t2star_swi', 'SWI_Images', dicom_format),
-        InputFileset('t1_magnitude', dicom_format,
+        InputFilesets('t2star_channels', 'swi_coils_icerecon', zip_format),
+        InputFilesets('t2star_header_image', 'SWI_Images', dicom_format),
+        InputFilesets('t2star_swi', 'SWI_Images', dicom_format),
+        InputFilesets('t1_magnitude', dicom_format,
                         't1_mprage_sag_p2_iso_1mm')],
     parameters=[
         Parameter('t2star_reorient_to_std', False),
         Parameter('t1_reorient_to_std', False)])
 
-# print(study.data('t2star_channel_mags', clean_work_dir=True).path(
+# print(study.data('t2star_mag_channels', clean_work_dir=True).path(
 #     subject_id='SUBJECT', visit_id='VISIT'))
 
 print(study.data('t2star_vein_mask', clean_work_dir=True).path(

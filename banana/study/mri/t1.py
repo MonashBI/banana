@@ -2,28 +2,28 @@ from copy import copy
 import itertools
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.utils.interfaces import DummyReconAll as ReconAll
-from banana.requirement import freesurfer_req, ants_req, fsl_req
-from banana.citation import freesurfer_cites, fsl_cite
-from nipype.interfaces import fsl, ants
+from nipype.interfaces import fsl, ants, mrtrix3
 from arcana.utils.interfaces import Merge
-from banana.interfaces.freesurfer import AparcStats
-from banana.file_format import (
-    nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
-    directory_format, text_format)
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
-from .t2 import T2Study, MriStudy
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import CopyToDir
+from banana.requirement import freesurfer_req, ants_req, fsl_req, mrtrix_req
+from banana.citation import freesurfer_cites, fsl_cite
+from banana.interfaces.freesurfer import AparcStats
+from banana.interfaces.utility import AppendPath
+from banana.file_format import (
+    nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
+    directory_format, text_format, mrtrix_image_format)
 from banana.reference import LocalReferenceData
+from .t2 import T2Study
 
 
 class T1Study(T2Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
-        FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline'),
         InputFilesetSpec(
             't2_coreg', STD_IMAGE_FORMATS, optional=True,
             desc=("A coregistered T2 image to use in freesurfer to help "
@@ -31,7 +31,12 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         # Templates
         InputFilesetSpec('suit_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
-                         default=LocalReferenceData('SUIT', nifti_format))] + [
+                         default=LocalReferenceData('SUIT', nifti_format)),
+        FilesetSpec('five_tissue_type', mrtrix_image_format,
+                    'gen_5tt_pipeline',
+                    desc=("A segmentation image taken from freesurfer output "
+                          "and simplified into 5 tissue types. Used in ACT "
+                          "streamlines tractography"))] + [
         FilesetSpec(
             'aparc_stats_{}_{}_table'.format(h, m),
             text_format, 'aparc_stats_table_pipeline',
@@ -45,20 +50,13 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
              'foldind', 'curvind'))]
 
     add_param_specs = [
-        SwitchSpec('bet_method', 'fsl_bet',
-                   choices=MriStudy.parameter_spec('bet_method').choices),
+        # MriStudy.param_spec('bet_method').with_new_choices(default='opti_bet'),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
         SwitchSpec('aparc_atlas', 'desikan-killiany',
-                   choices=('desikan-killiany', 'destrieux',
-                            'DKT')),
+                   choices=('desikan-killiany', 'destrieux', 'DKT')),
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
-#         SwitchSpec('bet_method', 'optibet',
-#                    choices=MriStudy.parameter_spec('bet_method').choices),
-#         SwitchSpec('bet_robust', True),
-#         ParamSpec('bet_f_threshold', 0.57),
-#         ParamSpec('bet_g_threshold', -0.1)]
 
     def freesurfer_pipeline(self, **name_maps):
         """
@@ -80,7 +78,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                 directive='all',
                 openmp=self.processor.num_processes),
             inputs={
-                'T1_files': ('preproc', nifti_gz_format)},
+                'T1_files': ('mag_preproc', nifti_gz_format)},
             requirements=[freesurfer_req.v('5.3')],
             wall_time=2000)
 
@@ -104,6 +102,35 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
     def segmentation_pipeline(self, **name_maps):
         pipeline = super(T1Study, self).segmentation_pipeline(img_type=1,
                                                               **name_maps)
+        return pipeline
+
+    def gen_5tt_pipeline(self, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='gen5tt',
+            name_maps=name_maps,
+            desc=("Generate 5-tissue-type image used for Anatomically-"
+                  "Constrained Tractography (ACT)"))
+
+        aseg_path = pipeline.add(
+            'aseg_path',
+            AppendPath(
+                sub_paths=['mri', 'aseg.mgz']),
+            inputs={
+                'base_path': ('fs_recon_all', directory_format)})
+
+        pipeline.add(
+            'gen5tt',
+            mrtrix3.Generate5tt(
+                algorithm='freesurfer',
+                out_file='5tt.mif'),
+            inputs={
+                'in_file': (aseg_path, 'out_path')},
+            outputs={
+                'five_tissue_type': ('out_file', mrtrix_image_format)},
+            requirements=[mrtrix_req.v('3.0rc3'),
+                          freesurfer_req.v('6.0')])
+
         return pipeline
 
     def aparc_stats_table_pipeline(self, measure, hemisphere, **name_maps):

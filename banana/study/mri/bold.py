@@ -15,13 +15,12 @@ from banana.interfaces.afni import Tproject
 from nipype.interfaces.utility import Merge as NiPypeMerge
 import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
-from arcana.study import ParamSpec, SwitchSpec
-from banana.study.mri.epi import EpiStudy
+from arcana.study import ParamSpec
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from banana.study.mri.t1 import T1Study
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from arcana.data import InputFileset
+from arcana.data import InputFilesets
 from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
 from banana.interfaces.custom.bold import PrepareFIX
@@ -29,6 +28,7 @@ from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
 from banana.bids import BidsInput, BidsAssocInput
+from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')
 
@@ -41,11 +41,11 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
+class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('train_data', rfile_format, optional=True,
-                            frequency='per_study'),
+                         frequency='per_study'),
         FilesetSpec('hand_label_noise', text_format,
                     'fix_preparation_pipeline'),
         FilesetSpec('labelled_components', text_format,
@@ -68,16 +68,10 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
         ParamSpec('motion_reg', True),
         ParamSpec('highpass', 0.01),
         ParamSpec('brain_thresh_percent', 5),
-        ParamSpec('MNI_template', op.join(atlas_path,
-                                              'MNI152_T1_2mm.nii.gz')),
-        ParamSpec('MNI_template_mask', op.join(
-            atlas_path, 'MNI152_T1_2mm_brain_mask.nii.gz')),
-        SwitchSpec('linear_reg_method', 'ants',
-                   ('flirt', 'spm', 'ants', 'epireg')),
         ParamSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsInput(
-        spec_name='magnitude', type='bold', format=nifti_gz_x_format)
+        spec_name='series', type='bold', format=nifti_gz_x_format)
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssocInput(
@@ -109,7 +103,9 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 out_file='rsfmri_mc.nii.gz',
                 oned_file='prefiltered_func_data_mcf.par'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('series_preproc', nifti_gz_format)},
+            outputs={
+                'mc_par': ('oned_file', par_format)},
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
 
@@ -122,7 +118,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 out_file='filtered_func_data.nii.gz'),
             inputs={
                 'delta_t': ('tr', float),
-                'mask': ('brain_mask', nifti_gz_format),
+                'mask': (self.brain_mask_spec_name, nifti_gz_format),
                 'in_file': (afni_mc, 'out_file')},
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
@@ -147,8 +143,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 'in_file': (filt, 'out_file'),
                 'in_file2': (meanfunc, 'out_file')},
             outputs={
-                'filtered_data': ('out_file', nifti_gz_format),
-                'mc_par': ('oned_file', par_format)},
+                'filtered_data': ('out_file', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.10')])
 
@@ -173,7 +168,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 out_dir='melodic_ica',
                 output_type='NIFTI_GZ'),
             inputs={
-                'mask': ('brain_mask', nifti_gz_format),
+                'mask': (self.brain_mask_spec_name, nifti_gz_format),
                 'tr_sec': ('tr', float),
                 'in_files': ('filtered_data', nifti_gz_format)},
             outputs={
@@ -192,31 +187,39 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
             citations=[fsl_cite],
             name_maps=name_maps)
 
-        struct_ants2fsl = pipeline.add(
-            'struct_ants2fsl',
-            ANTs2FSLMatrixConversion(
-                ras2fsl=True,
-                reference_file=self.parameter('MNI_template')),
-            inputs={
-                'itk_file': ('coreg_to_tmpl_ants_mat', text_matrix_format),
-                'source_file': ('coreg_ref_brain', nifti_gz_format)},
-            requirements=[c3d_req.v('1.1.0')])
-        epi_ants2fsl = pipeline.add(
-            'epi_ants2fsl',
-            ANTs2FSLMatrixConversion(
-                ras2fsl=True),
-            inputs={
-                'source_file': ('brain', nifti_gz_format),
-                'itk_file': ('coreg_matrix', text_matrix_format),
-                'reference_file': ('coreg_ref_brain', nifti_gz_format)},
-            requirements=[c3d_req.v('1.1.0')])
+        if self.branch('coreg_to_tmpl_method', 'ants'):
+
+            struct_ants2fsl = pipeline.add(
+                'struct_ants2fsl',
+                ANTs2FSLMatrixConversion(
+                    ras2fsl=True),
+                inputs={
+                    'reference_file': ('template_brain', nifti_gz_format),
+                    'itk_file': ('coreg_to_tmpl_ants_mat', text_matrix_format),
+                    'source_file': ('coreg_ref_brain', nifti_gz_format)},
+                requirements=[c3d_req.v('1.0.0')])
+
+            struct_matrix = (struct_ants2fsl, 'fsl_matrix')
+        else:
+            struct_matrix = ('coreg_to_tmpl_fsl_mat', text_matrix_format)
+
+#         if self.branch('coreg_method', 'ants'):
+#         epi_ants2fsl = pipeline.add(
+#             'epi_ants2fsl',
+#             ANTs2FSLMatrixConversion(
+#                 ras2fsl=True),
+#             inputs={
+#                 'source_file': ('brain', nifti_gz_format),
+#                 'itk_file': ('coreg_ants_mat', text_matrix_format),
+#                 'reference_file': ('coreg_ref_brain', nifti_gz_format)},
+#             requirements=[c3d_req.v('1.0.0')])
 
         MNI2t1 = pipeline.add(
             'MNI2t1',
             ConvertXFM(
                 invert_xfm=True),
             inputs={
-                'in_file': (struct_ants2fsl, 'fsl_matrix')},
+                'in_file': struct_matrix},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -225,7 +228,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
             ConvertXFM(
                 invert_xfm=True),
             inputs={
-                'in_file': (epi_ants2fsl, 'fsl_matrix')},
+                'in_file': ('coreg_fsl_mat', text_matrix_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -236,7 +239,7 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 suffix='_mean',
                 output_type='NIFTI_GZ'),
             inputs={
-                'in_file': ('preproc', nifti_gz_format)},
+                'in_file': ('series_preproc', nifti_gz_format)},
             wall_time=5,
             requirements=[fsl_req.v('5.0.9')])
 
@@ -248,9 +251,9 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
                 'mc_par': ('mc_par', par_format),
                 'epi_brain_mask': ('brain_mask', nifti_gz_format),
-                'epi_preproc': ('preproc', nifti_gz_format),
+                'epi_preproc': ('series_preproc', nifti_gz_format),
                 'filtered_epi': ('filtered_data', nifti_gz_format),
-                'epi2t1_mat': (epi_ants2fsl, 'fsl_matrix'),
+                'epi2t1_mat': ('coreg_fsl_mat', text_matrix_format),
                 't12MNI_mat': (struct_ants2fsl, 'fsl_matrix'),
                 'MNI2t1_mat': (MNI2t1, 'out_file'),
                 't12epi_mat': (struct2epi, 'out_file'),
@@ -331,10 +334,10 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
         pipeline.add(
             'ApplyTransform',
             ApplyTransforms(
-                reference_image=self.parameter('MNI_template'),
                 interpolation='Linear',
                 input_image_type=3),
             inputs={
+                'reference_image': ('template_brain', nifti_gz_format),
                 'input_image': ('cleaned_file', nifti_gz_format),
                 'transforms': (merge_trans, 'out')},
             outputs={
@@ -357,9 +360,9 @@ class BoldStudy(EpiStudy, metaclass=StudyMetaClass):
             '3dBlurToFWHM',
             BlurToFWHM(
                 fwhm=5,
-                out_file='smoothed_ts.nii.gz',
-                mask=self.parameter('MNI_template_mask')),
+                out_file='smoothed_ts.nii.gz'),
             inputs={
+                'mask': ('template_mask', nifti_gz_format),
                 'in_file': ('normalized_ts', nifti_gz_format)},
             outputs={
                 'smoothed_ts': ('out_file', nifti_gz_format)},
@@ -503,16 +506,16 @@ class MultiBoldMixin(MultiStudy):
             MELODIC(
                 no_bet=True,
                 bg_threshold=self.parameter('brain_thresh_percent'),
-                bg_image=self.parameter('MNI_template'),
                 dim=self.parameter('group_ica_components'),
                 report=True,
                 out_stats=True,
                 mm_thresh=0.5,
                 sep_vn=True,
-                mask=self.parameter('MNI_template_mask'),
                 out_dir='group_melodic.ica',
                 output_type='NIFTI_GZ'),
             inputs={
+                'bg_image': ('template_brain', nifti_gz_format),
+                'mask': ('template_mask', nifti_gz_format),
                 'in_files': ('smoothed_ts', nifti_gz_format),
                 'tr_sec': ('tr', float)},
             outputs={
@@ -532,7 +535,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     inputs = []
     dct = {}
     data_specs = []
-    parameter_specs = []
+    param_specs = []
     output_files = []
     distortion_correction = False
 
@@ -552,7 +555,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(InputFileset('t1_primary', t1, dicom_format,
+    inputs.append(InputFilesets('t1_primary', t1, dicom_format,
                                   is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
@@ -564,7 +567,8 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                             't1_preproc': 'coreg_ref',
                             'train_data': 'train_data',
                             'epi_0_coreg_to_tmpl_warp': 'coreg_to_tmpl_warp',
-                            'epi_0_coreg_to_tmpl_ants_mat': 'coreg_to_tmpl_ants_mat'})
+                            'epi_0_coreg_to_tmpl_ants_mat':
+                            'coreg_to_tmpl_ants_mat'})
         study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
                                         epi_refspec)
                            for i in range(1, epi_number))
@@ -574,23 +578,23 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                        for i in range(epi_number))
 
     for i in range(epi_number):
-        inputs.append(InputFileset(
+        inputs.append(InputFilesets(
             'epi_{}_primary'.format(i), epis, dicom_format, order=i,
             is_regex=True))
-#     inputs.extend(InputFileset(
+#     inputs.extend(InputFilesets(
 #         'epi_{}_hand_label_noise'.format(i), text_format,
 #         'hand_label_noise_{}'.format(i+1))
 #         for i in range(epi_number))
-        parameter_specs.append(
+        param_specs.append(
             ParamSpec('epi_{}_fugue_echo_spacing'.format(i), echo_spacing))
 
     if distortion_correction:
-        inputs.extend(InputFileset(
+        inputs.extend(InputFilesets(
             'epi_{}_field_map_mag'.format(i), fm_mag, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE}, is_regex=True,
             order=0)
             for i in range(epi_number))
-        inputs.extend(InputFileset(
+        inputs.extend(InputFilesets(
             'epi_{}_field_map_phase'.format(i), fm_phase, dicom_format,
             dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE}, is_regex=True,
             order=0)
@@ -604,7 +608,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
-    dct['add_param_specs'] = parameter_specs
+    dct['add_param_specs'] = param_specs
     dct['__metaclass__'] = MultiStudyMetaClass
     return (MultiStudyMetaClass(name, (MultiBoldMixin,), dct), inputs,
             output_files)

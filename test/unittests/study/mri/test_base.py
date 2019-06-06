@@ -20,8 +20,8 @@ class TestMriStudy(PipelineTester):
     def test_brain_extraction_pipeline(self):
         self.run_pipeline_test('brain_extraction_pipeline')
 
-    def test_coreg_brain_pipeline(self):
-        self.run_pipeline_test('coreg_brain_pipeline',
+    def test_brain_coreg_pipeline(self):
+        self.run_pipeline_test('brain_coreg_pipeline',
                                add_inputs=['coreg_ref'])
 
     def test_coreg_matrix_pipeline(self):
@@ -38,8 +38,8 @@ class TestMriStudy(PipelineTester):
         self.run_pipeline_test('qform_transform_pipeline',
                                add_inputs=['coreg_ref'])
 
-    def test_preprocess_pipeline(self):
-        self.run_pipeline_test('preprocess_pipeline')
+    def test_prepare_pipeline(self):
+        self.run_pipeline_test('prepare_pipeline')
 
     def test_header_extraction_pipeline(self):
         self.run_pipeline_test('header_extraction_pipeline')

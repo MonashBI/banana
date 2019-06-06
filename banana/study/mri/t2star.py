@@ -105,10 +105,6 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         ParamSpec('qsm_padding', [12, 12, 12]),
         ParamSpec('qsm_mask_dialation', [11, 11, 11]),
         ParamSpec('qsm_erosion_size', 10),
-        SwitchSpec('coreg_method', 'ants',
-                   MriStudy.parameter_spec('coreg_method').choices),
-        SwitchSpec('bet_method', 'fsl_bet',
-                   choices=MriStudy.parameter_spec('bet_method').choices),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', False),
         ParamSpec('bet_f_threshold', 0.1),
@@ -154,8 +150,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'channel_combine',
                 HIPCombineChannels(),
                 inputs={
-                    'magnitudes_dir': ('channel_mags', multi_nifti_gz_format),
-                    'phases_dir': ('channel_phases', multi_nifti_gz_format)})
+                    'magnitudes_dir': ('mag_channels', multi_nifti_gz_format),
+                    'phases_dir': ('phase_channels', multi_nifti_gz_format)})
 
             # Unwrap phase using Laplacian unwrapping
             unwrap = pipeline.add(
@@ -212,7 +208,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     sort_key=coil_sort_key,
                     filter=CoilEchoFilter(self.parameter('qsm_echo'))),
                 inputs={
-                    'directory': ('channel_phases', multi_nifti_gz_format)})
+                    'directory': ('phase_channels', multi_nifti_gz_format)})
 
             # List files for the phases of separate channel
             list_mags = pipeline.add(
@@ -221,7 +217,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     sort_key=coil_sort_key,
                     filter=CoilEchoFilter(self.parameter('qsm_echo'))),
                 inputs={
-                    'directory': ('channel_mags', multi_nifti_gz_format)})
+                    'directory': ('mag_channels', multi_nifti_gz_format)})
 
             # Generate coil specific masks
             mask_coils = pipeline.add(
@@ -316,10 +312,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             Merge(3),
             inputs={
                 'in1': ('coreg_ants_mat', text_matrix_format),
-                'in2': ('coreg_to_tmpl_ants_mat',
-                        text_matrix_format),  # Ideal. T1
-                'in3': ('coreg_to_tmpl_ants_warp',
-                        nifti_gz_format)})  # Ideally T1
+                'in2': ('coreg_to_tmpl_ants_mat', text_matrix_format),
+                'in3': ('coreg_to_tmpl_ants_warp', nifti_gz_format)})
 
         apply_trans_q = pipeline.add(
             'ApplyTransform_Q_Prior',

@@ -1,6 +1,7 @@
 from nipype.interfaces.base import (
     TraitedSpec, traits, File, CommandLineInputSpec, CommandLine)
 import os
+import os.path as op
 from nipype.interfaces.base import isdefined
 
 # ants_reg_path = os.path.abspath(
@@ -19,8 +20,8 @@ class AntsRegSynInputSpec(CommandLineInputSpec):
     num_dimensions = traits.Int(desc='number of dimension of the input file',
                                 argstr='-d %s', mandatory=True)
     out_prefix = traits.Str(
-        desc='A prefix that is prepended to all output files', argstr='-o %s',
-        mandatory=True)
+        'antsreg', argstr='-o %s', usedefault=True, mandatory=True,
+        desc='A prefix that is prepended to all output files')
     transformation = traits.Enum(
         *_trans_types, argstr='-t %s',
         desc='type of transformation. t:translation, r:rigid, a:rigid+affine,'
@@ -55,39 +56,29 @@ class AntsRegSyn(CommandLine):
     _cmd = 'antsRegistrationSyN.sh'
     input_spec = AntsRegSynInputSpec
     output_spec = AntsRegSynOutputSpec
-    mat_ext = '.mat'
-    img_ext = '.nii.gz'
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        outputs['regmat'] = os.path.join(os.getcwd(),
-                                         self._gen_filename('regmat'))
-        outputs['reg_file'] = os.path.join(os.getcwd(),
-                                           self._gen_filename('reg_file'))
+        outputs['regmat'] = op.abspath(self.inputs.out_prefix +
+                                       '0GenericAffine.mat')
+        outputs['reg_file'] = op.abspath(self.inputs.out_prefix +
+                                         'Warped.nii.gz')
         if isdefined(self.inputs.transformation and
                      (self.inputs.transformation != 'r' or
                       self.inputs.transformation != 'a' or
                       self.inputs.transformation != 't')):
-            outputs['warp_file'] = os.path.join(
-                os.getcwd(), self._gen_filename('warp_file'))
-            outputs['inv_warp'] = os.path.join(
-                os.getcwd(), self._gen_filename('inv_warp'))
+            outputs['warp_file'] = op.abspath(
+                self.inputs.out_prefix + '1Warp.nii.gz')
+            outputs['inv_warp'] = op.abspath(
+                self.inputs.out_prefix + '1InverseWarp.nii.gz')
 
         return outputs
 
-    def _gen_filename(self, name):
-        if name == 'regmat':
-            fid = os.path.basename(self.inputs.out_prefix)
-            fname = fid + '_0GenericAffine' + self.mat_ext
-        elif name == 'warp_file':
-            fid = os.path.basename(self.inputs.out_prefix)
-            fname = fid + '_1Warp' + self.img_ext
-        elif name == 'inv_warp':
-            fid = os.path.basename(self.inputs.out_prefix)
-            fname = fid + '_1InverseWarp' + self.img_ext
-        elif name == 'reg_file':
-            fid = os.path.basename(self.inputs.out_prefix)
-            fname = fid + self.img_ext
-        else:
-            assert False
-        return fname
+
+if __name__ == '__main__':
+
+    interface = AntsRegSyn()
+    interface.inputs.input_file = '/Users/tclose/tmp.txt'
+    interface.inputs.ref_file = '/Users/tclose/tmp.txt'
+    interface.inputs.num_dimensions = 3
+    interface.cmdline
