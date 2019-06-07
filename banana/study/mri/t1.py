@@ -253,3 +253,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
             wall_time=5)
 
         return pipeline
+
+
+class PreclinicalT1(T1Study, metaclass=StudyMetaClass):
+
+    pass
