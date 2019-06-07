@@ -291,17 +291,18 @@ class DeriveCmd():
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 
 
-class TestDataCmd():
+class TestGenCmd():
 
     desc = "Generate derivatives from a study"
 
     @classmethod
     def parser(cls):
         parser = ArgumentParser(
-            prog='banana test_data',
-            description=("Generates reference data for a pipeline tester "
-                         "unittests given a study class and set of "
-                         "parameters"))
+            prog='banana test-gen',
+            description=("Generates reference data for the built-in unittest "
+                         "framework given a study class, an input repository "
+                         "containing data named according to the data "
+                         "specification of the class and set of parameters"))
         parser.add_argument('study_class',
                             help=("The path to the study class to test, e.g. "
                                   "banana.study.MriStudy"))
@@ -323,20 +324,22 @@ class TestDataCmd():
                             nargs=2, action='append', default=[],
                             help=("Parameters to set when initialising the "
                                   "study"))
+        parser.add_argument('--include', '-i', nargs='+', default=[],
+                            help=("Spec names to include in the generation "
+                                  "process. If not provided all (except "
+                                  "those that are explicitly skipped) "
+                                  "are included"))
         parser.add_argument('--skip', '-s', nargs='+', default=[],
                             help=("Spec names to skip in the generation "
                                   "process"))
-        parser.add_argument('--skip_base', action='append', default=[],
-                            help=("Base classes of which to skip data specs "
-                                  "from"))
+        parser.add_argument('--bases', nargs='+', default=[],
+                            help=("Base classes which to include data specs "
+                                  "defined within them"))
         parser.add_argument('--reprocess', action='store_true', default=False,
                             help=("Whether to reprocess previously generated "
                                   "datasets in the output repository"))
         parser.add_argument('--repo_depth', type=int, default=0,
                             help="The depth of the input repository")
-        parser.add_argument('--modules_env', action='store_true',
-                            default=False,
-                            help="Whether to use a Modules Envionment or not")
         parser.add_argument('--dont_clean_work_dir', action='store_true',
                             default=False,
                             help=("Whether to clean the Nipype work dir "
@@ -344,6 +347,9 @@ class TestDataCmd():
         parser.add_argument('--loggers', nargs='+',
                             default=('nipype.workflow', 'arcana', 'banana'),
                             help="Loggers to set handlers to stdout for")
+        parser.add_argument('--environment', type=str, default='static',
+                            choices=('modules', 'static'), metavar='TYPE',
+                            help="The type of environment to use")
         return parser
 
     @classmethod
@@ -352,7 +358,7 @@ class TestDataCmd():
         # Get Study class
         study_class = resolve_class(args.study_class)
 
-        include_bases = [resolve_class(c) for c in args.skip_base]
+        include_bases = [resolve_class(c) for c in args.bases]
 
         # Convert parameters to dictionary
         parameters_dct = {}
@@ -371,9 +377,10 @@ class TestDataCmd():
             study_class=study_class, in_repo=args.in_repo,
             out_repo=args.out_repo, in_server=args.in_server,
             out_server=args.out_server, work_dir=args.work_dir,
-            parameters=parameters, skip=args.skip, include_bases=include_bases,
+            parameters=parameters, skip=args.skip, include=args.include,
+            include_bases=include_bases,
             reprocess=args.reprocess, repo_depth=args.repo_depth,
-            modules_env=args.modules_env,
+            modules_env=(args.environment == 'modules'),
             clean_work_dir=(not args.dont_clean_work_dir))
 
 
@@ -419,7 +426,7 @@ class MainCmd():
     commands = {
         'derive': DeriveCmd,
         'menu': MenuCmd,
-        'test_data': TestDataCmd,
+        'test-gen': TestGenCmd,
         'help': HelpCmd}
 
     @classmethod
