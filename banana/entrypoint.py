@@ -122,6 +122,9 @@ class DeriveCmd():
                                   "specs"))
         parser.add_argument('--reprocess', type=bool, default=False,
                             help=("Whether to reprocess the "))
+        parser.add_argument('--email', type=str, default=None,
+                            help=("The email account to provide to SLURM "
+                                  "scheduler"))
         parser.add_argument('--logger', nargs=2, action='append',
                             metavar=['LOGGER', 'LEVEL'],
                             default=[('banana', 'INFO'), ('arcana', 'INFO'),
@@ -204,15 +207,15 @@ class DeriveCmd():
             processor = SingleProc(work_dir, **proc_args)
         elif args.processor[0] == 'multi':
             if len(args.processor) > 1:
-                num_procs = args.processor[1]
+                num_processes = args.processor[1]
             elif len(args.processor) > 2:
                 raise BananaUsageError(
                     "Unrecognised arguments passed to '--processor' option "
                     "({}) expected at most 1 additional argument for 'multi' "
                     "type processor (NUM_PROCS)".format(args.processor))
             else:
-                num_procs = cpu_count()
-            processor = MultiProc(work_dir, num_procs=num_procs,
+                num_processes = cpu_count()
+            processor = MultiProc(work_dir, num_processes=num_processes,
                                   **proc_args)
         elif args.processor[0] == 'slurm':
             if email is None:
@@ -268,7 +271,7 @@ class DeriveCmd():
             repository=repository,
             processor=processor,
             environment=environment,
-            inputs=dict(args.inputs),
+            inputs=dict(args.input),
             parameters=parameters,
             subject_ids=subject_ids,
             visit_ids=visit_ids,
