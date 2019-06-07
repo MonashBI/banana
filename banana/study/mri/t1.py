@@ -61,7 +61,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         ParamSpec('bet_g_threshold', 0.0)]
 
     default_bids_inputs = [
-        BidsInput(spec_name='magnitude', type='t1', format=nifti_gz_x_format)]
+        BidsInput(spec_name='magnitude', type='T1w', format=nifti_gz_format)]
 
     def freesurfer_pipeline(self, **name_maps):
         """
