@@ -9,26 +9,28 @@ from arcana.exceptions import (
 from banana.exceptions import BananaUsageError
 from arcana.data.input import InputFilesets
 from arcana.data.item import Fileset
-from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
-    tsv_format)
+    tsv_format, json_format)
 
 
 logger = logging.getLogger('arcana')
 
 BIDS_FORMATS = (nifti_gz_x_format, nifti_gz_format, fsl_bvecs_format,
-                fsl_bvals_format, tsv_format)
+                fsl_bvals_format, tsv_format, json_format)
 
 
-def detect_format(fileset):
+def detect_format(path, aux_files):
+    ext = split_extension(path)[1]
+    aux_names = set(aux_files.keys())
     for frmt in BIDS_FORMATS:
-        if frmt.matches(fileset):
+        if frmt.extension == ext and set(frmt.aux_files.keys()) == aux_names:
             return frmt
     raise BananaUsageError(
-        "No matching BIDS format found for {}".format(fileset))
+        "No matching BIDS format matches provided path ({}) and aux files ({})"
+        .format(path, aux_files))
 
 
 class BidsRepo(BasicRepo):
@@ -256,6 +258,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
             self,
             name=op.basename(path),
             frequency='per_session',
+            format=detect_format(path, aux_files),
             path=path,
             subject_id=subject_id,
             visit_id=visit_id,
@@ -263,7 +266,6 @@ class BidsFileset(Fileset, BaseBidsFileset):
             checksums=checksums,
             aux_files=aux_files)
         BaseBidsFileset.__init__(self, type, modality, task)
-        self.detect_format(BIDS_FORMATS)
 
     def __repr__(self):
         return ("{}(type={}, task={}, modality={}, format={}, subj={}, vis={})"

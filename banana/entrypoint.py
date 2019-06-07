@@ -67,20 +67,20 @@ class DeriveCmd():
         parser.add_argument('repository_path',
                             help=("Either the path to the repository if of "
                                   "'bids' or 'basic' types, or the name of the"
-                                  "project ID for 'xnat' type"))
+                                  " project ID for 'xnat' type"))
         parser.add_argument('study_class',
                             help=("Name of the class to instantiate"))
         parser.add_argument('study_name',
                             help=("The name of the study to put the analysis "
                                   "under (e.g. parenthood)"))
-        parser.add_argument('derivatives', nargs='+', metavar=['SPEC'],
+        parser.add_argument('derivatives', nargs='+',
                             help=("The names of the derivatives to generate"))
         parser.add_argument('--repository', nargs='+', default=['bids'],
-                            metavar=['TYPE', 'REPO_ARGS'],
+                            metavar='ARG',
                             help=("Specify the repository type and any options"
                                   " to be passed to it. First argument "))
         parser.add_argument('--processor', default=['multi'], nargs='+',
-                            metavar=['TYPE', 'PROC_ARGS'],
+                            metavar='ARG',
                             help=("The type of processor to use plus arguments"
                                   "used to initate it. First arg is the type "
                                   "(one of 'single', 'multi', 'slurm'). "
@@ -88,7 +88,7 @@ class DeriveCmd():
                                   "single [], multi [NUM_PROCS], slurm ["
                                   "ACCOUNT, PARTITION]"))
         parser.add_argument('--environment', type=str, default='static',
-                            choices=('modules', 'static'), metavar=['TYPE'],
+                            choices=('modules', 'static'), metavar='TYPE',
                             help="The type of environment to use")
         parser.add_argument('--input', '-i', nargs=2, action='append',
                             default=[], metavar=('SPEC', 'PATTERN'),
@@ -98,35 +98,36 @@ class DeriveCmd():
                             metavar=('NAME', 'VALUE'), default=[],
                             help="Parameters to pass to the study")
         parser.add_argument('--subject_ids', nargs='+', default=None,
-                            metavar=['ID'],
+                            metavar='ID',
                             help=("The subject IDs to include in the analysis."
                                   " If a single value with a '/' in it is "
                                   "provided then it is interpreted as a text "
                                   "file containing a list of IDs"))
         parser.add_argument('--visit_ids', nargs='+', default=None,
-                            metavar=['ID'],
+                            metavar='ID',
                             help=("The visit IDs to include in the analysis"
                                   "If a single value with a '/' in it is "
                                   "provided then it is interpreted as a text "
                                   "file containing a list of IDs"))
         parser.add_argument('--scratch', type=str, default=None,
-                            metavar=['PATH'],
+                            metavar='PATH',
                             help=("The scratch directory to use for the "
                                   "workflow and cache"))
-        parser.add_argument('--cache', nargs='+', default=(), metavar=['SPEC'],
+        parser.add_argument('--cache', nargs='+', default=(), metavar='SPEC',
                             help=("Input filesets to cache locally before "
                                   "running workflows"))
         parser.add_argument('--enforce_inputs', action='store_true',
                             default=False,
                             help=("Whether to enforce inputs for non-optional "
                                   "specs"))
-        parser.add_argument('--reprocess', type=bool, default=False,
-                            help=("Whether to reprocess the "))
+        parser.add_argument('--reprocess', action='store_true', default=False,
+                            help=("Whether to reprocess previously generated "
+                                  "derivatives with mismatching provenance"))
         parser.add_argument('--email', type=str, default=None,
                             help=("The email account to provide to SLURM "
                                   "scheduler"))
         parser.add_argument('--logger', nargs=2, action='append',
-                            metavar=['LOGGER', 'LEVEL'],
+                            metavar=('LOGGER', 'LEVEL'),
                             default=[('banana', 'INFO'), ('arcana', 'INFO'),
                                      ('nipype.workflow', 'INFO')],
                             help=("Set levels for various loggers ('arcana', "
@@ -161,7 +162,7 @@ class DeriveCmd():
 
         if args.repository[0] == 'bids':
             repository = BidsRepo(args.repository_path)
-        elif args.repository == 'basic':
+        elif args.repository[0] == 'basic':
             if len(args.repository) != 2:
                 raise BananaUsageError(
                     "Unrecognised arguments passed to '--repository' option "
@@ -389,8 +390,7 @@ class HelpCmd():
         return parser
 
     @classmethod
-    def run(cls, argv):
-        args = cls.parser().parse_args(argv)
+    def run(cls, args):
         MainCmd.commands[args.command].parser().print_help()
 
 

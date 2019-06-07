@@ -15,8 +15,10 @@ from banana.interfaces.freesurfer import AparcStats
 from banana.interfaces.utility import AppendPath
 from banana.file_format import (
     nifti_gz_format, nifti_format, zip_format, STD_IMAGE_FORMATS,
-    directory_format, text_format, mrtrix_image_format)
+    directory_format, text_format, mrtrix_image_format,
+    nifti_gz_x_format)
 from banana.reference import LocalReferenceData
+from banana.bids_ import BidsInput
 from .t2 import T2Study
 
 
@@ -57,6 +59,9 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                    choices=('desikan-killiany', 'destrieux', 'DKT')),
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
+
+    default_bids_inputs = [
+        BidsInput(spec_name='magnitude', type='t1', format=nifti_gz_x_format)]
 
     def freesurfer_pipeline(self, **name_maps):
         """
