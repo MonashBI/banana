@@ -265,7 +265,8 @@ class DeriveCmd():
 
         parameters = {}
         for name, value in args.parameter:
-            parameters[name] = parse_value(value)
+            parameters[name] = parse_value(
+                value, dtype=study_class.param_spec(name).dtype)
 
         study = study_class(
             name=args.study_name,

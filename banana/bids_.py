@@ -13,13 +13,13 @@ from arcana.utils import split_extension
 from arcana.repository import BasicRepo
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
-    tsv_format, json_format)
+    tsv_format, json_format, nifti_format)
 
 
 logger = logging.getLogger('arcana')
 
-BIDS_FORMATS = (nifti_gz_x_format, nifti_gz_format, fsl_bvecs_format,
-                fsl_bvals_format, tsv_format, json_format)
+BIDS_FORMATS = (nifti_gz_x_format, nifti_gz_format, nifti_format,
+                fsl_bvecs_format, fsl_bvals_format, tsv_format, json_format)
 
 
 def detect_format(path, aux_files):
@@ -98,6 +98,8 @@ class BidsRepo(BasicRepo):
         layout = BIDSLayout(self.root_dir)
         all_subjects = layout.get_subjects()
         all_visits = layout.get_sessions()
+        if not all_visits:
+            all_visits = [self.DEFAULT_VISIT_ID]
         for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
                 # We handle derivatives using the BasicRepo base
@@ -274,7 +276,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
                         self.visit_id))
 
 
-class BidsInput(InputFilesets, BaseBidsFileset):
+class BidsInputs(InputFilesets, BaseBidsFileset):
     """
     A match object for matching filesets from their BIDS attributes and file
     format. If any of the provided attributes are None, then that attribute
@@ -301,7 +303,7 @@ class BidsInput(InputFilesets, BaseBidsFileset):
             frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
         BaseBidsFileset.__init__(self, type, modality, task)
 
-    def _filtered_matches(self, node):
+    def _filtered_matches(self, node, **kwargs):  # @UnusedVariable
         matches = [
             f for f in node.filesets
             if (isinstance(f, BidsFileset) and
@@ -354,7 +356,7 @@ class BidsAssocInput(InputFilesets):
     ----------
     name : str
         Name of the associated fileset
-    primary : BidsInput
+    primary : BidsInputs
         A selector to select the primary fileset which the associated fileset
         is associated with
     association : str

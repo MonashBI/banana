@@ -24,7 +24,7 @@ from banana.interfaces.custom.motion_correction import (
 from banana.interfaces.custom.dwi import TransformGradients
 from banana.interfaces.utility import AppendPath
 from banana.study.base import Study
-from banana.bids_ import BidsInput, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInput
 from banana.exceptions import BananaUsageError
 from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
@@ -102,7 +102,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         MriStudy.param_spec('bet_method').with_new_choices('mrtrix'),
         SwitchSpec('reorient2std', False)]
 
-    primary_bids_input = BidsInput(
+    primary_bids_input = BidsInputs(
         spec_name='series', type='dwi', format=nifti_gz_x_format)
 
     default_bids_inputs = [primary_bids_input,
