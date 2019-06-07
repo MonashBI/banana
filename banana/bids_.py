@@ -47,7 +47,6 @@ class BidsRepo(BasicRepo):
 
     def __init__(self, root_dir, **kwargs):
         BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
-        self._layout = BIDSLayout(root_dir)
 
     @property
     def root_dir(self):
@@ -96,14 +95,15 @@ class BidsRepo(BasicRepo):
             the repository
         """
         filesets = []
-        all_subjects = self.layout.get_subjects()
-        all_visits = self.layout.get_sessions()
-        for item in self.layout.get(return_type='object'):
+        layout = BIDSLayout(self.root_dir)
+        all_subjects = layout.get_subjects()
+        all_visits = layout.get_sessions()
+        for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
                 # We handle derivatives using the BasicRepo base
                 # class methods
                 continue
-            if not hasattr(item, 'entities') or not item.entities.get('type',
+            if not hasattr(item, 'entities') or not item.entities.get('suffix',
                                                                       False):
                 logger.warning("Skipping unrecognised file '{}' in BIDS tree"
                                .format(op.join(item.dirname, item.filename)))
@@ -123,7 +123,7 @@ class BidsRepo(BasicRepo):
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
                     aux_files = {}
-                    metadata = self.layout.get_metadata(item.path)
+                    metadata = layout.get_metadata(item.path)
                     if metadata and not item.path.endswith('.json'):
                         # Write out the combined JSON side cars to a temporary
                         # file to include in extended NIfTI filesets
@@ -139,7 +139,7 @@ class BidsRepo(BasicRepo):
                         aux_files['json'] = metadata_path
                     fileset = BidsFileset(
                         path=op.join(item.dirname, item.filename),
-                        type=item.entities['type'],
+                        type=item.entities['suffix'],
                         subject_id=subject_id, visit_id=visit_id,
                         repository=self,
                         modality=item.entities.get('modality', None),
