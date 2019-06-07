@@ -160,9 +160,9 @@ class DeriveCmd():
         else:
             repo_type = args.repository[0]
 
-        if args.repository[0] == 'bids':
+        if repo_type == 'bids':
             repository = BidsRepo(args.repository_path)
-        elif args.repository[0] == 'basic':
+        elif repo_type == 'basic':
             if len(args.repository) != 2:
                 raise BananaUsageError(
                     "Unrecognised arguments passed to '--repository' option "
