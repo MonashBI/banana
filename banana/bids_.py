@@ -9,15 +9,28 @@ from arcana.exceptions import (
 from banana.exceptions import BananaUsageError
 from arcana.data.input import InputFilesets
 from arcana.data.item import Fileset
-from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
-from banana.file_format import nifti_gz_format, nifti_gz_x_format
+from banana.file_format import (
+    nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
+    tsv_format, json_format)
 
 
 logger = logging.getLogger('arcana')
 
-BIDS_NIFTI = (nifti_gz_format, nifti_gz_x_format)
+BIDS_FORMATS = (nifti_gz_x_format, nifti_gz_format, fsl_bvecs_format,
+                fsl_bvals_format, tsv_format, json_format)
+
+
+def detect_format(path, aux_files):
+    ext = split_extension(path)[1]
+    aux_names = set(aux_files.keys())
+    for frmt in BIDS_FORMATS:
+        if frmt.extension == ext and set(frmt.aux_files.keys()) == aux_names:
+            return frmt
+    raise BananaUsageError(
+        "No matching BIDS format matches provided path ({}) and aux files ({})"
+        .format(path, aux_files))
 
 
 class BidsRepo(BasicRepo):
@@ -34,7 +47,6 @@ class BidsRepo(BasicRepo):
 
     def __init__(self, root_dir, **kwargs):
         BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
-        self._layout = BIDSLayout(root_dir)
 
     @property
     def root_dir(self):
@@ -83,14 +95,15 @@ class BidsRepo(BasicRepo):
             the repository
         """
         filesets = []
-        all_subjects = self.layout.get_subjects()
-        all_visits = self.layout.get_sessions()
-        for item in self.layout.get(return_type='object'):
+        layout = BIDSLayout(self.root_dir)
+        all_subjects = layout.get_subjects()
+        all_visits = layout.get_sessions()
+        for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
                 # We handle derivatives using the BasicRepo base
                 # class methods
                 continue
-            if not hasattr(item, 'entities') or not item.entities.get('type',
+            if not hasattr(item, 'entities') or not item.entities.get('suffix',
                                                                       False):
                 logger.warning("Skipping unrecognised file '{}' in BIDS tree"
                                .format(op.join(item.dirname, item.filename)))
@@ -110,7 +123,7 @@ class BidsRepo(BasicRepo):
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
                     aux_files = {}
-                    metadata = self.layout.get_metadata(item.path)
+                    metadata = layout.get_metadata(item.path)
                     if metadata and not item.path.endswith('.json'):
                         # Write out the combined JSON side cars to a temporary
                         # file to include in extended NIfTI filesets
@@ -126,7 +139,7 @@ class BidsRepo(BasicRepo):
                         aux_files['json'] = metadata_path
                     fileset = BidsFileset(
                         path=op.join(item.dirname, item.filename),
-                        type=item.entities['type'],
+                        type=item.entities['suffix'],
                         subject_id=subject_id, visit_id=visit_id,
                         repository=self,
                         modality=item.entities.get('modality', None),
@@ -241,13 +254,11 @@ class BidsFileset(Fileset, BaseBidsFileset):
 
     def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
                  modality=None, task=None, checksums=None, aux_files=None):
-        extensions = [split_extension(path)[1]] + sorted(
-            split_extension(p)[1] for p in aux_files.values())
         Fileset.__init__(
             self,
             name=op.basename(path),
-            format=FileFormat.by_ext(extensions),
             frequency='per_session',
+            format=detect_format(path, aux_files),
             path=path,
             subject_id=subject_id,
             visit_id=visit_id,

@@ -27,7 +27,7 @@ from banana.interfaces.custom.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids import BidsInput, BidsAssocInput
+from banana.bids_ import BidsInput, BidsAssocInput
 from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')

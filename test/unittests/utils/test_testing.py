@@ -2,7 +2,7 @@ import tempfile
 import shutil
 import logging
 from unittest import TestCase  # @IgnorePep8
-from banana.bids import BidsRepo
+from banana.bids_ import BidsRepo
 
 
 wf_logger = logging.getLogger('nipype.workflow')

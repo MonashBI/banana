@@ -24,7 +24,7 @@ from banana.interfaces.custom.motion_correction import (
 from banana.interfaces.custom.dwi import TransformGradients
 from banana.interfaces.utility import AppendPath
 from banana.study.base import Study
-from banana.bids import BidsInput, BidsAssocInput
+from banana.bids_ import BidsInput, BidsAssocInput
 from banana.exceptions import BananaUsageError
 from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,

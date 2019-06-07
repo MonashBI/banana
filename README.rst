@@ -6,27 +6,17 @@ Banana
   :alt: Supported Python versions
 .. image:: https://img.shields.io/pypi/v/banana.svg
   :target: https://pypi.python.org/pypi/banana/
-  :alt: Latest Version    
-.. image:: https://readthedocs.org/projects/banana/badge/?version=latest
-  :target: http://banana.readthedocs.io/en/latest/?badge=latest
-  :alt: Documentation Status
+  :alt: Latest Version
 
 
-Biomedical imAgiNg Analysis iN Arcana (Banana): a collection of biomedical analysis
+Brain imAgiNg Analysis iN Arcana (Banana): a collection of brain imaging analysis
 workflows implemented in the Arcana_ framework, which can be used to analyse
 study datasets stored in XNAT, BIDS or plain-directory repositories.
 
-Dependencies
------------------
+Installation
+------------
 
-Core
-~~~~
-
-* arcana
-* nibabel
-* pydicom
-
-All of these are available on PyPI and can be installed with::
+Banana and its dependencies can be installed from PyPI with::
 
     $ pip3 install banana
 
