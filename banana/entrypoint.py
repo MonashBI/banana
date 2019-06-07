@@ -35,8 +35,12 @@ def resolve_class(class_str, prefixes=('banana.', 'banana.study.')):
     class_name = parts[-1]
     cls = None
     for prefix in [''] + list(prefixes):
+        mod_name = prefix + module_name
+        if not mod_name:
+            continue
+        mod_name = mod_name.strip('.')
         try:
-            module = import_module(prefix + module_name)
+            module = import_module(mod_name)
         except ModuleNotFoundError:
             continue
         else:
@@ -58,7 +62,8 @@ class DeriveCmd():
 
     @classmethod
     def parser(cls):
-        parser = ArgumentParser(description=cls.desc)
+        parser = ArgumentParser(prog='banana derive',
+                                description=cls.desc)
         parser.add_argument('repository_path',
                             help=("Either the path to the repository if of "
                                   "'bids' or 'basic' types, or the name of the"
@@ -282,13 +287,14 @@ class DeriveCmd():
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 
 
-class GenTestDataCmd():
+class TestDataCmd():
 
     desc = "Generate derivatives from a study"
 
     @classmethod
     def parser(cls):
         parser = ArgumentParser(
+            prog='banana test_data',
             description=("Generates reference data for a pipeline tester "
                          "unittests given a study class and set of "
                          "parameters"))
@@ -373,7 +379,8 @@ class HelpCmd():
 
     @classmethod
     def parser(cls):
-        parser = ArgumentParser(description=cls.desc)
+        parser = ArgumentParser(prog='banana help',
+                                description=cls.desc)
         parser.add_argument('command',
                             help="The sub-command to show the help info for")
         return parser
@@ -391,7 +398,8 @@ class MenuCmd():
 
     @classmethod
     def parser(cls):
-        parser = ArgumentParser(description=cls.desc)
+        parser = ArgumentParser(prog='banana menu',
+                                description=cls.desc)
         parser.add_argument('study_class',
                             help=("Name of the class to display menu for"))
         return parser
@@ -400,7 +408,7 @@ class MenuCmd():
     def run(cls, args):
         # Get Study class
         study_class = resolve_class(args.study_class)
-        print(study_class.menu())
+        print(study_class.static_menu())
 
 
 class MainCmd():
@@ -408,14 +416,14 @@ class MainCmd():
     commands = {
         'derive': DeriveCmd,
         'menu': MenuCmd,
-        'gen_test_data': GenTestDataCmd,
+        'test_data': TestDataCmd,
         'help': HelpCmd}
 
     @classmethod
     def parser(cls):
         usage = "banana <command> [<args>]\n\nAvailable commands:"
         for name, cmd_cls in cls.commands.items():
-            usage += '  \n{}\t{}'.format(name, cmd_cls.desc)
+            usage += '\n\t{}\t\t{}'.format(name, cmd_cls.desc)
         parser = ArgumentParser(
             description="Base banana command",
             usage=usage)
@@ -429,10 +437,14 @@ class MainCmd():
         parser = cls.parser()
         args = parser.parse_args(argv[:1])
         try:
-            cmd_cls = cls.commands[args.comand]
+            cmd_cls = cls.commands[args.command]
         except KeyError:
             print("Unrecognised command '{}'".format(args.command))
             parser.print_help()
             exit(1)
-        cmd_args = cmd_cls.parser().parse_args(argv[2:])
+        cmd_args = cmd_cls.parser().parse_args(argv[1:])
         cmd_cls.run(cmd_args)
+
+
+if __name__ == '__main__':
+    MainCmd.run()

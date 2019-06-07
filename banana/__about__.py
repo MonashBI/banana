@@ -8,4 +8,5 @@ __authors__ = [
 
 install_requires = ['arcana>=0.4.8',
                     'pydicom>=1.0',
-                    'nibabel>=2.3.0']
+                    'nibabel>=2.3.0',
+                    'pybids>=2.7.3']
