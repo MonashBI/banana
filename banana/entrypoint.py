@@ -1,6 +1,7 @@
 import sys
 import os.path as op
 import os
+import math
 from argparse import ArgumentParser
 from importlib import import_module
 from setuptools import find_packages
@@ -562,7 +563,8 @@ class MainCmd():
     def parser(cls):
         usage = "banana <command> [<args>]\n\nAvailable commands:"
         for name, cmd_cls in cls.commands.items():
-            usage += '\n\t{}\t\t{}'.format(name, cmd_cls.desc)
+            tabs = '\t' * (3 - int(math.floor(len(name) / 5)))
+            usage += '\n\t{}{}{}'.format(name, tabs, cmd_cls.desc)
         parser = ArgumentParser(
             description="Base banana command",
             usage=usage)
@@ -583,8 +585,11 @@ class MainCmd():
             print("Unrecognised command '{}'".format(args.command))
             parser.print_help()
             exit(1)
-        cmd_args = cmd_cls.parser().parse_args(argv[1:])
-        cmd_cls.run(cmd_args)
+        if args.command == 'help' and len(argv) == 1:
+            parser.print_help()
+        else:
+            cmd_args = cmd_cls.parser().parse_args(argv[1:])
+            cmd_cls.run(cmd_args)
 
 
 if __name__ == '__main__':
