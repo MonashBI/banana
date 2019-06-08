@@ -296,10 +296,10 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         Modality of the filesets
     """
 
-    def __init__(self, spec_name, type, format=None, task=None, modality=None,  # @ReservedAssignment @IgnorePep8
-                 **kwargs):
+    def __init__(self, spec_name, type, valid_formats=None, task=None,# @ReservedAssignment @IgnorePep8
+                 modality=None, **kwargs):
         InputFilesets.__init__(
-            self, spec_name, pattern=None, format=format,
+            self, spec_name, pattern=None, valid_formats=valid_formats,
             frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
         BaseBidsFileset.__init__(self, type, modality, task)
 

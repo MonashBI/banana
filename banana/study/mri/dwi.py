@@ -103,7 +103,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         SwitchSpec('reorient2std', False)]
 
     primary_bids_input = BidsInputs(
-        spec_name='series', type='dwi', format=nifti_gz_x_format)
+        spec_name='series', type='dwi',
+        valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_input,
                            BidsAssocInput(

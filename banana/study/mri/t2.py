@@ -5,7 +5,8 @@ from banana.exceptions import BananaUsageError
 from nipype.interfaces import fsl
 from banana.requirement import fsl_req
 from banana.citation import fsl_cite
-from banana.file_format import nifti_gz_format
+from banana.file_format import nifti_gz_format, nifti_gz_x_format
+from banana.bids_ import BidsInputs
 
 
 class T2Study(MriStudy, metaclass=StudyMetaClass):
@@ -17,6 +18,10 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         SwitchSpec('bet_robust', True),
         ParamSpec('bet_f_threshold', 0.5),
         ParamSpec('bet_reduce_bias', False)]
+
+    default_bids_inputs = [
+        BidsInputs(spec_name='magnitude', type='T2w',
+                   valid_formats=(nifti_gz_x_format, nifti_gz_format))]
 
     def segmentation_pipeline(self, img_type=2, **name_maps):
 

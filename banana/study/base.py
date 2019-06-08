@@ -21,12 +21,7 @@ class Study(ArcanaStudy):
         if repository.type == 'bids' and hasattr(self, 'default_bids_inputs'):
             # If the study has the attribute default bids inputs then
             # then check to see if they are present in the repository
-            bids_inputs = {}
-            for inpt in self.default_bids_inputs:
-                if inpt.task is None and bids_task is not None:
-                    inpt = copy(inpt)
-                    inpt.task = self.bids_task
-                bids_inputs[inpt.spec_name] = inpt
+            bids_inputs = self.get_bids_inputs(bids_task)
             # Combine explicit inputs with defaults, overriding any with
             # matching spec names
             bids_inputs.update(inputs)
@@ -34,6 +29,17 @@ class Study(ArcanaStudy):
         # Update the inputs di
         ArcanaStudy.__init__(self, name, repository, processor, inputs,
                              **kwargs)
+
+    @classmethod
+    def get_bids_inputs(cls, task=None, repository=None):
+        inputs = {}
+        for inpt in cls.default_bids_inputs:
+            inpt = copy(inpt)
+            if inpt.task is None and task is not None:
+                inpt.task = task
+            inpt._repository = repository
+            inputs[inpt.spec_name] = inpt
+        return inputs
 
     @property
     def bids_task(self):

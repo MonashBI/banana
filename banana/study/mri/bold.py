@@ -71,7 +71,8 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         ParamSpec('group_ica_components', 15)]
 
     primary_bids_selector = BidsInputs(
-        spec_name='series', type='bold', format=nifti_gz_x_format)
+        spec_name='series', type='bold',
+        valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssocInput(
