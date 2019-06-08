@@ -1,4 +1,7 @@
-class BananaError(Exception):
+from arcana.exceptions import ArcanaError
+
+
+class BananaError(ArcanaError):
     pass
 
 

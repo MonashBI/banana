@@ -3,10 +3,10 @@ import tempfile
 import shutil
 import logging
 from unittest import TestCase  # @IgnorePep8
-from arcana.processor import SingleProc, DEFAULT_PROV_IGNORE
-from banana.bids import BidsRepo
-from banana.utils.testing import BaseTestCase
-from banana.study import DwiStudy, BoldStudy
+from arcana.processor import SingleProc
+from banana.bids_ import BidsRepo
+from banana.utils.testing import TEST_DIR
+from banana.study.mri import DwiStudy, BoldStudy
 
 
 wf_logger = logging.getLogger('nipype.workflow')
@@ -19,8 +19,7 @@ logging.getLogger("urllib3").setLevel(logging.WARNING)
 
 class TestBids(TestCase):
 
-    test_dataset = op.join(BaseTestCase.test_data_dir, 'reference', 'bids',
-                               'ds000114-preproc')
+    test_dataset = op.join(TEST_DIR, 'reference', 'bids', 'ds000114-preproc')
 
     def setUp(self):
         self.repo = BidsRepo(self.test_dataset)
@@ -40,7 +39,7 @@ class TestBids(TestCase):
             repository=self.repo,
             processor=SingleProc(
                 self.work_dir,
-                prov_ignore=DEFAULT_PROV_IGNORE + [
+                prov_ignore=SingleProc.DEFAULT_PROV_IGNORE + [
                     'workflow/nodes/.*/requirements/.*/version'],
                 reprocess=True),
             parameters={'preproc_pe_dir': 'RL'})
@@ -52,7 +51,7 @@ class TestBids(TestCase):
             repository=self.repo,
             processor=SingleProc(
                 self.work_dir,
-                prov_ignore=DEFAULT_PROV_IGNORE + [
+                prov_ignore=SingleProc.DEFAULT_PROV_IGNORE + [
                     'workflow/nodes/.*/requirements/.*/version']),
             bids_task='covertverbgeneration')
         study.data('melodic_ica')

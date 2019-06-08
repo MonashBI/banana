@@ -15,7 +15,7 @@ import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format import (
     text_format, directory_format, zip_format, targz_format,  # @UnusedImport
-    png_format, jpg_format, gif_format,  # @UnusedImport
+    png_format, jpg_format, gif_format, json_format,  # @UnusedImport
     UnzipConverter, UnTarGzConverter, IdentityConverter)  # @UnusedImport
 
 

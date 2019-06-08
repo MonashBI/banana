@@ -27,7 +27,7 @@ from banana.interfaces.custom.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids import BidsInput, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInput
 from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')
@@ -70,8 +70,9 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         ParamSpec('brain_thresh_percent', 5),
         ParamSpec('group_ica_components', 15)]
 
-    primary_bids_selector = BidsInput(
-        spec_name='series', type='bold', format=nifti_gz_x_format)
+    primary_bids_selector = BidsInputs(
+        spec_name='series', type='bold',
+        valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_selector,
                            BidsAssocInput(
