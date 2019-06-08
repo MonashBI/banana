@@ -306,14 +306,14 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
             frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
         BaseBidsFileset.__init__(self, type, modality, task)
 
-    def _filtered_matches(self, node, **kwargs):  # @UnusedVariable
+    def _filtered_matches(self, node, valid_formats=None, **kwargs):  # @UnusedVariable @IgnorePep8
         matches = [
             f for f in node.filesets
             if (isinstance(f, BidsFileset) and
                 self.type == f.type and
                 (self.modality is None or self.modality == f.modality) and
                 (self.task is None or self.task == f.task) and
-                (self.format is None or self.format == f.format))]
+                f.format in valid_formats)]
         if not matches:
             raise ArcanaInputMissingMatchError(
                 "No BIDS filesets for {} match {} found:\n{}"

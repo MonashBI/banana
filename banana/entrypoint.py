@@ -11,6 +11,7 @@ from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, BidsRepo, XnatRepo)
 import logging
+from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
 
@@ -496,6 +497,8 @@ class MainCmd():
             description="Base banana command",
             usage=usage)
         parser.add_argument('command', help="The sub-command to run")
+        parser.add_argument('--version', action='version',
+                            version='%(prog)s {}'.format(__version__))
         return parser
 
     @classmethod
