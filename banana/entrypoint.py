@@ -39,8 +39,11 @@ def resolve_class(class_str, prefixes=(DEFAULT_STUDY_CLASS_PATH,)):
     module_name = '.'.join(parts[:-1])
     class_name = parts[-1]
     cls = None
-    for prefix in [''] + list(prefixes):
-        mod_name = prefix + module_name
+    for prefix in [None] + list(prefixes):
+        if prefix is not None:
+            mod_name = prefix + '.' + module_name
+        else:
+            mod_name = module_name
         if not mod_name:
             continue
         mod_name = mod_name.strip('.')
@@ -536,14 +539,14 @@ class AvailableCmd():
                     module_path = pkg_path + '.' + module_info.name
                     module = import_module(module_path)
                     find_study_classes(module, module_path)
-        msg = ("The following Study classes are available (and have a 'desc' "
-               "attr):")
+        msg = ("\nThe following Study classes are available (and have a 'desc'"
+               " attr):")
         for cls, module_path in available.items():
             if module_path.startswith(DEFAULT_STUDY_CLASS_PATH):
                 module_path = module_path[(len(DEFAULT_STUDY_CLASS_PATH) + 1):]
             msg += '\n\t{}.{}\t\t{}'.format(
                 module_path, cls.__name__, getattr(cls, 'desc', ''))
-        print(msg)
+        print(msg + '\n')
 
 
 class MainCmd():
