@@ -480,12 +480,33 @@ class MenuCmd():
         print(study_class.static_menu())
 
 
+class AvailCmd():
+
+    desc = ("List all available study classes within Banana and custom search "
+            "paths")
+
+    @classmethod
+    def parser(cls):
+        parser = ArgumentParser(prog='banana avail',
+                                description=cls.desc)
+        parser.add_argument('search_paths', nargs='+',
+                            help="packages to search for Study classes")
+        return parser
+
+    @classmethod
+    def run(cls, args):
+        available = []
+        print("Found the following Study classes on the search path ({}):"
+              .format(args.search_paths, "\n\t{}".join(available)))
+
+
 class MainCmd():
 
     commands = {
         'derive': DeriveCmd,
         'menu': MenuCmd,
         'test-gen': TestGenCmd,
+        'avail': AvailCmd,
         'help': HelpCmd}
 
     @classmethod
@@ -497,7 +518,7 @@ class MainCmd():
             description="Base banana command",
             usage=usage)
         parser.add_argument('command', help="The sub-command to run")
-        parser.add_argument('--version', action='version',
+        parser.add_argument('--version', '-v', action='version',
                             version='%(prog)s {}'.format(__version__))
         return parser
 
