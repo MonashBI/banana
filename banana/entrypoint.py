@@ -8,8 +8,8 @@ from banana.exceptions import BananaUsageError
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
 from banana import (
-    InputFilesets, MultiProc, SingleProc, SlurmProc, StaticEnv, ModulesEnv,
-    BasicRepo, BidsRepo, XnatRepo)
+    InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
+    ModulesEnv, BasicRepo, BidsRepo, XnatRepo)
 import logging
 
 logger = logging.getLogger('banana')
@@ -79,6 +79,10 @@ class DeriveCmd():
                             metavar='ARG',
                             help=("Specify the repository type and any options"
                                   " to be passed to it. First argument "))
+        parser.add_argument('--output_repository', '-o', nargs='+',
+                            metavar='ARG', default=None,
+                            help=("Specify a different output repository "
+                                  "to place the derivatives in"))
         parser.add_argument('--processor', default=['multi'], nargs='+',
                             metavar='ARG',
                             help=("The type of processor to use plus arguments"
@@ -133,6 +137,8 @@ class DeriveCmd():
                             help=("Set levels for various loggers ('arcana', "
                                   "'banana', and 'nipype.workflow' are set to "
                                   "INFO by default)"))
+        parser.add_argument('--bids_task', default=None,
+                            help=("A task to use to filter the BIDS inputs"))
         return parser
 
     @classmethod
@@ -154,45 +160,98 @@ class DeriveCmd():
 
         if args.repository is None:
             if args.input:
-                repo_type = 'basic'
+                repository_type = 'basic'
             else:
-                repo_type = 'bids'
+                repository_type = 'bids'
         else:
-            repo_type = args.repository[0]
+            repository_type = args.repository[0]
 
-        if repo_type == 'bids':
-            repository = BidsRepo(args.repository_path)
-        elif repo_type == 'basic':
-            if len(args.repository) != 2:
-                raise BananaUsageError(
-                    "Unrecognised arguments passed to '--repository' option "
-                    "({}) exactly 1 additional argument is required for "
-                    "'basic' type repository (DEPTH)".format(args.respository))
-            repository = BasicRepo(args.repository_path)
-        elif repo_type == 'xnat':
-            nargs = len(args.repository)
-            if nargs < 2:
-                raise BananaUsageError(
-                    "Not enough arguments passed to '--repository' option "
-                    "({}), at least 1 additional argument is required for "
-                    "'xnat' type repository (SERVER)"
-                    .format(args.respository))
-            elif nargs > 4:
-                raise BananaUsageError(
-                    "Unrecognised arguments passed to '--repository' option "
-                    "({}), at most 3 additional argument are accepted for "
-                    "'xnat' type repository (SERVER, USER, PASSWORD)"
-                    .format(args.respository))
-            repository = XnatRepo(
-                project_id=args.repository_path,
-                server=args.repository[1],
-                user=(args.repository[2] if nargs > 2 else None),
-                password=(args.repository[3] if nargs > 3 else None),
-                cache_dir=op.join(scratch_dir, 'cache'))
+        # Load subject_ids from file if single value is provided with
+        # a '/' in the string
+        if (args.subject_ids is not None and len(args.subject_ids) and
+                '/' in args.subject_ids[0]):
+            with open(args.subject_ids[0]) as f:
+                subject_ids = f.read().split()
         else:
-            raise BananaUsageError(
-                "Unrecognised repository type provided as first argument to "
-                "'--repository' option ({})".format(args.repository[0]))
+            subject_ids = args.subject_ids
+
+        # Load visit_ids from file if single value is provided with
+        # a '/' in the string
+        if (args.visit_ids is not None and len(args.visit_ids) and
+                '/' in args.visit_ids[0]):
+            with open(args.visit_ids[0]) as f:
+                visit_ids = f.read().split()
+        else:
+            visit_ids = args.visit_ids
+
+        def init_repo(repo_path, repo_type, option_str, *repo_args,
+                      create_root=False):
+            if repo_type == 'bids':
+                if create_root:
+                    os.makedirs(repo_path, exist_ok=True)
+                repo = BidsRepo(repo_path)
+            elif repo_type == 'basic':
+                if len(repo_args) != 1:
+                    raise BananaUsageError(
+                        "Unrecognised arguments passed to '--{}' option "
+                        "({}) exactly 1 additional argument is required for "
+                        "'basic' type repository (DEPTH)"
+                        .format(option_str, args.respository))
+                if create_root:
+                    os.makedirs(repo_path, exist_ok=True)
+                repo = BasicRepo(repo_path, depth=repo_args[0])
+            elif repo_type == 'xnat':
+                nargs = len(repo_args)
+                if nargs < 1:
+                    raise BananaUsageError(
+                        "Not enough arguments passed to '--{}' option "
+                        "({}), at least 1 additional argument is required for "
+                        "'xnat' type repository (SERVER)"
+                        .format(option_str, args.respository))
+                elif nargs > 3:
+                    raise BananaUsageError(
+                        "Unrecognised arguments passed to '--{}' option "
+                        "({}), at most 3 additional arguments are accepted for"
+                        " 'xnat' type repository (SERVER, USER, PASSWORD)"
+                        .format(option_str, args.respository))
+                repo = XnatRepo(
+                    project_id=repo_path,
+                    server=repo_args[0],
+                    user=(repo_args[1] if nargs > 2 else None),
+                    password=(repo_args[2] if nargs > 3 else None),
+                    cache_dir=op.join(scratch_dir, 'cache'))
+            else:
+                raise BananaUsageError(
+                    "Unrecognised repository type provided as first argument "
+                    "to '--{}' option ({})".format(option_str,
+                                                   repo_args[0]))
+            return repo
+
+        repository = init_repo(args.repository_path, repository_type,
+                               'repository', *args.repository)
+
+        if args.output_repository is not None:
+            input_repository = repository
+            tree = repository.cached_tree()
+            if subject_ids is None:
+                subject_ids = list(tree.subject_ids)
+            if visit_ids is None:
+                visit_ids = list(tree.visit_ids)
+            fill_tree = True
+            nargs = len(args.output_repository)
+            if nargs == 1:
+                repo_type = 'basic'
+                out_path = args.output_repository[0]
+                out_repo_args = [input_repository.depth]
+            else:
+                repo_type = args.output_repository[0]
+                out_path = args.output_repository[1]
+                out_repo_args = args.output_repository[2:]
+            repository = init_repo(out_path, repo_type, 'output_repository',
+                                   *out_repo_args, create_root=True)
+        else:
+            input_repository = None
+            fill_tree = False
 
         if args.email is not None:
             email = args.email
@@ -245,38 +304,37 @@ class DeriveCmd():
         else:
             environment = ModulesEnv()
 
-        # Load subject_ids from file if single value is provided with
-        # a '/' in the string
-        if (args.subject_ids is not None and len(args.subject_ids) and
-                '/' in args.subject_ids[0]):
-            with open(args.subject_ids[0]) as f:
-                subject_ids = f.read().split()
-        else:
-            subject_ids = args.subject_ids
-
-        # Load visit_ids from file if single value is provided with
-        # a '/' in the string
-        if (args.visit_ids is not None and len(args.visit_ids) and
-                '/' in args.visit_ids[0]):
-            with open(args.visit_ids[0]) as f:
-                visit_ids = f.read().split()
-        else:
-            visit_ids = args.visit_ids
-
         parameters = {}
         for name, value in args.parameter:
-            parameters[name] = parse_value(value)
+            parameters[name] = parse_value(
+                value, dtype=study_class.param_spec(name).dtype)
+
+        if input_repository is not None and input_repository.type == 'bids':
+            inputs = study_class.get_bids_inputs(args.bids_task,
+                                                 repository=input_repository)
+        else:
+            inputs = {}
+        for name, pattern in args.input:
+            spec = study_class.data_spec(name)
+            if spec.is_fileset:
+                inpt_cls = InputFilesets
+            else:
+                inpt_cls = InputFields
+            inputs[name] = inpt_cls(name, pattern=pattern, is_regex=True,
+                                    repository=input_repository)
 
         study = study_class(
             name=args.study_name,
             repository=repository,
             processor=processor,
             environment=environment,
-            inputs=dict(args.input),
+            inputs=inputs,
             parameters=parameters,
             subject_ids=subject_ids,
             visit_ids=visit_ids,
-            enforce_inputs=args.enforce_inputs)
+            enforce_inputs=args.enforce_inputs,
+            fill_tree=fill_tree,
+            bids_task=args.bids_task)
 
         for spec_name in args.cache:
             spec = study.bound_spec(spec_name)

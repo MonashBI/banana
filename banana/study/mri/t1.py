@@ -18,7 +18,7 @@ from banana.file_format import (
     directory_format, text_format, mrtrix_image_format,
     nifti_gz_x_format)
 from banana.reference import LocalReferenceData
-from banana.bids_ import BidsInput
+from banana.bids_ import BidsInputs
 from .t2 import T2Study
 
 
@@ -61,7 +61,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         ParamSpec('bet_g_threshold', 0.0)]
 
     default_bids_inputs = [
-        BidsInput(spec_name='magnitude', type='T1w', format=nifti_gz_x_format)]
+        BidsInputs(spec_name='magnitude', type='T1w',
+                   valid_formats=(nifti_gz_x_format, nifti_gz_format))]
 
     def freesurfer_pipeline(self, **name_maps):
         """
