@@ -1,4 +1,4 @@
-from arcana.data import FilesetSpec, FieldSpec
+from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
 from banana.file_format import (
     nifti_gz_format, directory_format, text_format, png_format, dicom_format,
     text_matrix_format, motion_mats_format)
@@ -9,7 +9,7 @@ from banana.interfaces.custom.motion_correction import (
 from banana.citation import fsl_cite
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from banana.study.mri.epi import EpiStudy
+from banana.study.mri.epi import EpiSeriesStudy
 from banana.study.mri.t1 import T1Study
 from banana.study.mri.t2 import T2Study
 from nipype.interfaces.utility import Merge
@@ -54,25 +54,20 @@ template_path = os.path.abspath(
 class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
     add_substudy_specs = [
-        SubStudySpec('pet_mc', PetStudy, {
-            'pet_data_dir': 'pet_data_dir',
-            'pet_data_reconstructed': 'pet_recon_dir',
-            'pet_data_prepared': 'pet_recon_dir_prepared',
-            'pet_start_time': 'pet_start_time',
-            'pet_end_time': 'pet_end_time',
-            'pet_duration': 'pet_duration'})]
+        SubStudySpec('pet_mc', PetStudy)]
 
     add_data_specs = [
-        FilesetSpec('pet_data_dir', directory_format, optional=True),
-        FilesetSpec('pet_data_reconstructed', directory_format, optional=True),
-        FilesetSpec('struct2align', nifti_gz_format, optional=True),
+        InputFilesetSpec('pet_data_dir', directory_format, optional=True),
+        InputFilesetSpec('pet_data_reconstructed', directory_format,
+                         optional=True),
+        InputFilesetSpec('struct2align', nifti_gz_format, optional=True),
+        InputFilesetSpec('umap', dicom_format, optional=True),
         FilesetSpec('pet_data_prepared', directory_format,
                     'prepare_pet_pipeline'),
         FilesetSpec('static_motion_correction_results', directory_format,
                     'motion_correction_pipeline'),
         FilesetSpec('dynamic_motion_correction_results', directory_format,
                     'motion_correction_pipeline'),
-        FilesetSpec('umap', dicom_format, optional=True),
         FilesetSpec('mean_displacement', text_format,
                     'mean_displacement_pipeline'),
         FilesetSpec('mean_displacement_rc', text_format,
@@ -117,12 +112,9 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                     'create_moco_series_pipeline'),
         FilesetSpec('fixed_binning_mats', directory_format,
                     'fixed_binning_pipeline'),
-        FieldSpec('pet_duration', dtype=int,
-                  pipeline_name='pet_header_extraction_pipeline'),
-        FieldSpec('pet_end_time', dtype=str,
-                  pipeline_name='pet_header_extraction_pipeline'),
-        FieldSpec('pet_start_time', dtype=str,
-                  pipeline_name='pet_header_extraction_pipeline')]
+        FieldSpec('pet_duration', int, 'pet_header_extraction_pipeline'),
+        FieldSpec('pet_end_time', str, 'pet_header_extraction_pipeline'),
+        FieldSpec('pet_start_time', str, 'pet_header_extraction_pipeline')]
 
     add_param_specs = [
         ParamSpec('framing_th', 2.0),
@@ -812,7 +804,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         epi_refspec = ref_spec.copy()
         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                             'ref_preproc': 'coreg_ref'})
-        study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiStudy,
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiSeriesStudy,
                                         epi_refspec)
                            for i in range(len(epis)))
         inputs.extend(
@@ -865,7 +857,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                               for i in range(len(dwis_main)))
         if dwis_opposite and dwis_main and not dwis_ref:
             study_specs.extend(
-                SubStudySpec('b0_{}'.format(i), EpiStudy, dwi_refspec)
+                SubStudySpec('b0_{}'.format(i), EpiSeriesStudy, dwi_refspec)
                 for i in range(len(dwis_opposite)))
             inputs.extend(InputFilesets('b0_{}_primary'.format(i),
                                           dwis_opposite[i][0], dicom_format)
@@ -881,7 +873,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
         elif dwis_opposite and dwis_ref:
             min_index = min(len(dwis_opposite), len(dwis_ref))
             study_specs.extend(
-                SubStudySpec('b0_{}'.format(i), EpiStudy, dwi_refspec)
+                SubStudySpec('b0_{}'.format(i), EpiSeriesStudy, dwi_refspec)
                 for i in range(min_index * 2))
             inputs.extend(
                 InputFilesets('b0_{}_primary'.format(i), scan[0],
@@ -976,7 +968,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         epi_refspec = ref_spec.copy()
         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
                             'ref_preproc': 'coreg_ref'})
-        study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiStudy,
+        study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiSeriesStudy,
                                         epi_refspec)
                            for i in range(len(epis)))
         inputs.extend(
@@ -1023,7 +1015,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                               for i in range(len(dwis_main)))
         if dwis_opposite and dwis_main and not dwis_ref:
             study_specs.extend(
-                SubStudySpec('b0_{}'.format(i), EpiStudy, b0_refspec)
+                SubStudySpec('b0_{}'.format(i), EpiSeriesStudy, b0_refspec)
                 for i in range(len(dwis_opposite)))
             inputs.extend(InputFilesets('b0_{}_primary'.format(i),
                                           dwis_opposite[i][0], dicom_format)
@@ -1039,7 +1031,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         elif dwis_opposite and dwis_ref:
             min_index = min(len(dwis_opposite), len(dwis_ref))
             study_specs.extend(
-                SubStudySpec('b0_{}'.format(i), EpiStudy, b0_refspec)
+                SubStudySpec('b0_{}'.format(i), EpiSeriesStudy, b0_refspec)
                 for i in range(min_index * 2))
             inputs.extend(
                 InputFilesets('b0_{}_primary'.format(i),

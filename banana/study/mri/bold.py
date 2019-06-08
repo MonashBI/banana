@@ -43,6 +43,8 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
+    desc = "Functional MRI BOLD MRI contrast"
+
     add_data_specs = [
         InputFilesetSpec('train_data', rfile_format, optional=True,
                          frequency='per_study'),

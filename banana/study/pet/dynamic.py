@@ -1,5 +1,5 @@
 from .base import PetStudy
-from arcana.data import FilesetSpec
+from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.study.base import StudyMetaClass
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
@@ -18,8 +18,8 @@ template_path = os.path.abspath(
 class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('pet_volumes', nifti_gz_format),
-        FilesetSpec('regression_map', nifti_gz_format),
+        InputFilesetSpec('pet_volumes', nifti_gz_format),
+        InputFilesetSpec('regression_map', nifti_gz_format),
         FilesetSpec('pet_image', nifti_gz_format,
                     'Extract_vol_pipeline'),
         FilesetSpec('registered_volumes', nifti_gz_format,

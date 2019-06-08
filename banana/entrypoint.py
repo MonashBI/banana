@@ -17,6 +17,8 @@ from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
 
+DEFAULT_STUDY_CLASS_PATH = 'banana.study'
+
 
 def set_loggers(loggers):
 
@@ -32,7 +34,7 @@ def set_loggers(loggers):
         logger.addHandler(handler)
 
 
-def resolve_class(class_str, prefixes=('banana.', 'banana.study.')):
+def resolve_class(class_str, prefixes=(DEFAULT_STUDY_CLASS_PATH,)):
     parts = class_str.split('.')
     module_name = '.'.join(parts[:-1])
     class_name = parts[-1]
@@ -85,7 +87,11 @@ class DeriveCmd():
         parser.add_argument('--output_repository', '-o', nargs='+',
                             metavar='ARG', default=None,
                             help=("Specify a different output repository "
-                                  "to place the derivatives in"))
+                                  "to place the derivatives in. 1st arg "
+                                  "is the type, one of ('basic', 'bids' or "
+                                  "'xnat'). If type == 'xnat' then the "
+                                  "following args are PROJECTID, SERVER, "
+                                  "[USER, PASSWORD]"))
         parser.add_argument('--processor', default=['multi'], nargs='+',
                             metavar='ARG',
                             help=("The type of processor to use plus arguments"
@@ -482,12 +488,12 @@ class MenuCmd():
         print(study_class.static_menu())
 
 
-class AvailCmd():
+class AvailableCmd():
 
     desc = ("List all available study classes within Banana and custom search "
             "paths")
 
-    default_paths = ['banana.study']
+    default_path = 'banana.study'
 
     @classmethod
     def parser(cls):
@@ -499,30 +505,54 @@ class AvailCmd():
 
     @classmethod
     def run(cls, args):
-        available = []
-        for search_path in cls.default_paths + args.search_paths:
+        available = {}
+
+        def find_study_classes(pkg_or_module, pkg_or_module_path):
+            for cls_name in dir(pkg_or_module):
+                if cls_name.startswith('_'):
+                    continue
+                cls = getattr(pkg_or_module, cls_name)
+                try:
+                    if (issubclass(cls, Study) and
+                            'desc' in cls.__dict__):
+                        try:
+                            old_path = available[cls]
+                        except KeyError:
+                            available[cls] = pkg_or_module_path
+                        else:
+                            if len(pkg_or_module_path) < len(old_path):
+                                available[cls] = pkg_or_module_path
+                except TypeError:
+                    pass
+
+        search_paths = [cls.default_path] + args.search_paths
+        for search_path in search_paths:
             base_module = import_module(search_path)
-            base_module_path = op.dirname(base_module.__file__)
-            for pkg_name in find_packages(base_module_path):
-                full_pkg = search_path + '.' + pkg_name
-                pkg = import_module(full_pkg)
-                pkg_path = op.dirname(pkg.__file__)
-                for module in iter_modules(pkg_path):
-                    for cls_name in dir(module):
-                        cls = module.getattr(cls_name)
-                        if issubclass(cls, Study):
-                            available.append(cls)
-        print("Found the following Study classes on the search path ({}):"
-              .format(args.search_paths, "\n\t{}".join(available)))
+            for pkg_name in find_packages(op.dirname(base_module.__file__)):
+                pkg_path = search_path + '.' + pkg_name
+                pkg = import_module(pkg_path)
+                find_study_classes(pkg, pkg_path)
+                for module_info in iter_modules([op.dirname(pkg.__file__)]):
+                    module_path = pkg_path + '.' + module_info.name
+                    module = import_module(module_path)
+                    find_study_classes(module, module_path)
+        msg = ("The following Study classes are available (and have a 'desc' "
+               "attr):")
+        for cls, module_path in available.items():
+            if module_path.startswith(DEFAULT_STUDY_CLASS_PATH):
+                module_path = module_path[(len(DEFAULT_STUDY_CLASS_PATH) + 1):]
+            msg += '\n\t{}.{}\t\t{}'.format(
+                module_path, cls.__name__, getattr(cls, 'desc', ''))
+        print(msg)
 
 
 class MainCmd():
 
     commands = {
-        'derive': DeriveCmd,
+        'avail': AvailableCmd,
         'menu': MenuCmd,
+        'derive': DeriveCmd,
         'test-gen': TestGenCmd,
-        'avail': AvailCmd,
         'help': HelpCmd}
 
     @classmethod

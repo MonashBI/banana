@@ -11,6 +11,8 @@ from banana.bids_ import BidsInputs
 
 class T2Study(MriStudy, metaclass=StudyMetaClass):
 
+    desc = "T2-weighted MRI contrast"
+
     add_data_specs = [
         FilesetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline')]
 
