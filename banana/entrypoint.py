@@ -185,7 +185,7 @@ class DeriveCmd():
             visit_ids = args.visit_ids
 
         def init_repo(repo_path, repo_type, option_str, *repo_args,
-                            create_root=False):
+                      create_root=False):
             if repo_type == 'bids':
                 if create_root:
                     os.makedirs(repo_path, exist_ok=True)
@@ -199,7 +199,7 @@ class DeriveCmd():
                         .format(option_str, args.respository))
                 if create_root:
                     os.makedirs(repo_path, exist_ok=True)
-                repo = BasicRepo(repo_path)
+                repo = BasicRepo(repo_path, depth=repo_args[0])
             elif repo_type == 'xnat':
                 nargs = len(repo_args)
                 if nargs < 1:
@@ -216,9 +216,9 @@ class DeriveCmd():
                         .format(option_str, args.respository))
                 repo = XnatRepo(
                     project_id=repo_path,
-                    server=repo_args[1],
-                    user=(repo_args[2] if nargs > 2 else None),
-                    password=(repo_args[3] if nargs > 3 else None),
+                    server=repo_args[0],
+                    user=(repo_args[1] if nargs > 2 else None),
+                    password=(repo_args[2] if nargs > 3 else None),
                     cache_dir=op.join(scratch_dir, 'cache'))
             else:
                 raise BananaUsageError(

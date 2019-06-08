@@ -100,6 +100,9 @@ class BidsRepo(BasicRepo):
         all_visits = layout.get_sessions()
         if not all_visits:
             all_visits = [self.DEFAULT_VISIT_ID]
+            self._depth = 1
+        else:
+            self._depth = 2
         for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
                 # We handle derivatives using the BasicRepo base
