@@ -3,13 +3,15 @@ import os.path as op
 import os
 from argparse import ArgumentParser
 from importlib import import_module
-from banana.utils.testing import PipelineTester
-from banana.exceptions import BananaUsageError
+from setuptools import find_packages
+from pkgutil import iter_modules
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
+from banana.utils.testing import PipelineTester
+from banana.exceptions import BananaUsageError
 from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, BasicRepo, BidsRepo, XnatRepo)
+    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study)
 import logging
 from banana.__about__ import __version__
 
@@ -485,17 +487,31 @@ class AvailCmd():
     desc = ("List all available study classes within Banana and custom search "
             "paths")
 
+    default_paths = ['banana.study']
+
     @classmethod
     def parser(cls):
         parser = ArgumentParser(prog='banana avail',
                                 description=cls.desc)
-        parser.add_argument('search_paths', nargs='+',
+        parser.add_argument('search_paths', nargs='*',
                             help="packages to search for Study classes")
         return parser
 
     @classmethod
     def run(cls, args):
         available = []
+        for search_path in cls.default_paths + args.search_paths:
+            base_module = import_module(search_path)
+            base_module_path = op.dirname(base_module.__file__)
+            for pkg_name in find_packages(base_module_path):
+                full_pkg = search_path + '.' + pkg_name
+                pkg = import_module(full_pkg)
+                pkg_path = op.dirname(pkg.__file__)
+                for module in iter_modules(pkg_path):
+                    for cls_name in dir(module):
+                        cls = module.getattr(cls_name)
+                        if issubclass(cls, Study):
+                            available.append(cls)
         print("Found the following Study classes on the search path ({}):"
               .format(args.search_paths, "\n\t{}".join(available)))
 

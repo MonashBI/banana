@@ -523,7 +523,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi3' in args.generate:
-        from banana import MultiStudy, MultiStudyMetaClass, SubStudySpec
+        from banana import (MultiStudy, MultiStudyMetaClass, SubStudySpec)
         from banana.study.mri.dwi import DwiStudy  # @Reimport
         from banana.study.mri.t1 import T1Study  # @Reimport
 
@@ -541,6 +541,7 @@ if __name__ == '__main__':
                     name_map={
                         'anat_5tt': 't1_five_tissue_type',
                         'anat_fs_recon_all': 't1_fs_recon_all'})]
+
 
         PipelineTester.generate_test_data(
             DwiT1Study, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',
