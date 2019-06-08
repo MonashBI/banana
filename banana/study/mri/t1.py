@@ -24,6 +24,8 @@ from .t2 import T2Study
 
 class T1Study(T2Study, metaclass=StudyMetaClass):
 
+    desc = "T1-weighted MRI contrast"
+
     add_data_specs = [
         FilesetSpec('fs_recon_all', zip_format, 'freesurfer_pipeline'),
         InputFilesetSpec(

@@ -42,6 +42,8 @@ logger = getLogger('banana')
 
 class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
+    desc = "Diffusion-weighted MRI contrast"
+
     add_data_specs = [
         InputFilesetSpec('anat_5tt', mrtrix_image_format,
                          desc=("A co-registered segmentation image taken from "

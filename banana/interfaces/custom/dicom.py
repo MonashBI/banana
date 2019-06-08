@@ -1,5 +1,4 @@
 import numpy as np
-import os.path as op
 import glob
 import json
 import pydicom
