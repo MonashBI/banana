@@ -150,6 +150,8 @@ class DeriveCmd():
                             help=("Set levels for various loggers ('arcana', "
                                   "'banana', and 'nipype.workflow' are set to "
                                   "INFO by default)"))
+        parser.add_argument('--quiet', action='store_true', default=False,
+                            help=("Disable logging output"))
         parser.add_argument('--bids_task', default=None,
                             help=("A task to use to filter the BIDS inputs"))
         return parser
@@ -157,7 +159,8 @@ class DeriveCmd():
     @classmethod
     def run(cls, args):
 
-        set_loggers(args.logger)
+        if not args.quiet:
+            set_loggers(args.logger)
 
         study_class = resolve_class(args.study_class)
 
@@ -209,10 +212,10 @@ class DeriveCmd():
                         "Unrecognised arguments passed to '--{}' option "
                         "({}) exactly 1 additional argument is required for "
                         "'basic' type repository (DEPTH)"
-                        .format(option_str, args.respository))
+                        .format(option_str, repo_args))
                 if create_root:
                     os.makedirs(repo_path, exist_ok=True)
-                repo = BasicRepo(repo_path, depth=repo_args[0])
+                repo = BasicRepo(repo_path, depth=int(repo_args[0]))
             elif repo_type == 'xnat':
                 nargs = len(repo_args)
                 if nargs < 1:
@@ -220,13 +223,13 @@ class DeriveCmd():
                         "Not enough arguments passed to '--{}' option "
                         "({}), at least 1 additional argument is required for "
                         "'xnat' type repository (SERVER)"
-                        .format(option_str, args.respository))
+                        .format(option_str, repo_args))
                 elif nargs > 3:
                     raise BananaUsageError(
                         "Unrecognised arguments passed to '--{}' option "
                         "({}), at most 3 additional arguments are accepted for"
                         " 'xnat' type repository (SERVER, USER, PASSWORD)"
-                        .format(option_str, args.respository))
+                        .format(option_str, repo_args))
                 repo = XnatRepo(
                     project_id=repo_path,
                     server=repo_args[0],
@@ -241,7 +244,7 @@ class DeriveCmd():
             return repo
 
         repository = init_repo(args.repository_path, repository_type,
-                               'repository', *args.repository)
+                               'repository', *args.repository[1:])
 
         if args.output_repository is not None:
             input_repository = repository
@@ -364,7 +367,8 @@ class DeriveCmd():
 
 class TestGenCmd():
 
-    desc = "Generate derivatives from a study"
+    desc = ("Generate all derivatives from a study in a format compatible "
+            "with Banana's unit-testing framework")
 
     @classmethod
     def parser(cls):
@@ -550,6 +554,18 @@ class AvailableCmd():
         print(msg + '\n')
 
 
+def wrap_desc(desc, nchars, indent='\t'):
+    lines = []
+    while desc:
+        if len(desc) > nchars:
+            n = desc[:nchars].rfind(' ')
+        else:
+            n = nchars
+        lines.append(desc[:n])
+        desc = desc[(n + 1):]
+    return '\n{}'.format(indent).join(lines)
+
+
 class MainCmd():
 
     commands = {
@@ -562,9 +578,11 @@ class MainCmd():
     @classmethod
     def parser(cls):
         usage = "banana <command> [<args>]\n\nAvailable commands:"
+        nchars = max(len(k) for k in cls.commands.keys()) + 4
         for name, cmd_cls in cls.commands.items():
-            tabs = '\t' * (3 - int(math.floor(len(name) / 5)))
-            usage += '\n\t{}{}{}'.format(name, tabs, cmd_cls.desc)
+            spaces = ' ' * (nchars - len(name))
+            usage += '\n\t{}{}{}'.format(
+                name, spaces, wrap_desc(cmd_cls.desc, 70, '\t' + ' ' * nchars))
         parser = ArgumentParser(
             description="Base banana command",
             usage=usage)

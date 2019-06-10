@@ -542,7 +542,6 @@ if __name__ == '__main__':
                         'anat_5tt': 't1_five_tissue_type',
                         'anat_fs_recon_all': 't1_fs_recon_all'})]
 
-
         PipelineTester.generate_test_data(
             DwiT1Study, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',

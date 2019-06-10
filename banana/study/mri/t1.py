@@ -86,7 +86,7 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
                 directive='all',
                 openmp=self.processor.num_processes),
             inputs={
-                'T1_files': ('mag_preproc', nifti_gz_format)},
+                'T1_files': (self.preproc_spec_name, nifti_gz_format)},
             requirements=[freesurfer_req.v('5.3')],
             wall_time=2000)
 
@@ -182,85 +182,85 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def bet_T1(self, **name_maps):
-
-        pipeline = self.new_pipeline(
-            name='BET_T1',
-            name_maps=name_maps,
-            desc=("Brain extraction pipeline using FSL's BET"),
-            citations=[fsl_cite])
-
-        bias = pipeline.add(
-            'n4_bias_correction',
-            ants.N4BiasFieldCorrection(),
-            inputs={
-                'input_image': ('t1', nifti_gz_format)},
-            requirements=[ants_req.v('1.9')],
-            wall_time=60, mem_gb=12)
-
-        pipeline.add(
-            'bet',
-            fsl.BET(
-                frac=0.15,
-                reduce_bias=True,
-                output_type='NIFTI_GZ'),
-            inputs={
-                'in_file': (bias, 'output_image')},
-            outputs={
-                'betted_T1': ('out_file', nifti_gz_format),
-                'betted_T1_mask': ('mask_file', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], mem_gb=8,
-            wall_time=45)
-
-        return pipeline
-
-    def cet_T1(self, **name_maps):
-        pipeline = self.new_pipeline(
-            name='CET_T1',
-            name_maps=name_maps,
-            desc=("Construct cerebellum mask using SUIT template"),
-            citations=[fsl_cite])
-
-        # FIXME: Should convert to inputs
-        nl = self._lookup_nl_tfm_inv_name('MNI')
-        linear = self._lookup_l_tfm_to_name('MNI')
-
-        # Initially use MNI space to warp SUIT into T1 and threshold to mask
-        merge_trans = pipeline.add(
-            'merge_transforms',
-            Merge(2),
-            inputs={
-                'in2': (nl, nifti_gz_format),
-                'in1': (linear, nifti_gz_format)})
-
-        apply_trans = pipeline.add(
-            'ApplyTransform',
-            ants.resampling.ApplyTransforms(
-                interpolation='NearestNeighbor',
-                input_image_type=3,
-                invert_transform_flags=[True, False]),
-            inputs={
-                'reference_image': ('betted_T1', nifti_gz_format),
-                'input_image': ('suit_mask', nifti_gz_format),
-                'transforms': (merge_trans, 'out')},
-            requirements=[ants_req.v('1.9')], mem_gb=16,
-            wall_time=120)
-
-        pipeline.add(
-            'maths2',
-            fsl.utils.ImageMaths(
-                suffix='_optiBET_cerebellum',
-                op_string='-mas'),
-            inputs={
-                'in_file': ('betted_T1', nifti_gz_format),
-                'in_file2': (apply_trans, 'output_image')},
-            outputs={
-                'cetted_T1': ('out_file', nifti_gz_format),
-                'cetted_T1_mask': ('output_image', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')], mem_gb=16,
-            wall_time=5)
-
-        return pipeline
+#     def bet_T1(self, **name_maps):
+# 
+#         pipeline = self.new_pipeline(
+#             name='BET_T1',
+#             name_maps=name_maps,
+#             desc=("Brain extraction pipeline using FSL's BET"),
+#             citations=[fsl_cite])
+# 
+#         bias = pipeline.add(
+#             'n4_bias_correction',
+#             ants.N4BiasFieldCorrection(),
+#             inputs={
+#                 'input_image': ('t1', nifti_gz_format)},
+#             requirements=[ants_req.v('1.9')],
+#             wall_time=60, mem_gb=12)
+# 
+#         pipeline.add(
+#             'bet',
+#             fsl.BET(
+#                 frac=0.15,
+#                 reduce_bias=True,
+#                 output_type='NIFTI_GZ'),
+#             inputs={
+#                 'in_file': (bias, 'output_image')},
+#             outputs={
+#                 'betted_T1': ('out_file', nifti_gz_format),
+#                 'betted_T1_mask': ('mask_file', nifti_gz_format)},
+#             requirements=[fsl_req.v('5.0.8')], mem_gb=8,
+#             wall_time=45)
+# 
+#         return pipeline
+# 
+#     def cet_T1(self, **name_maps):
+#         pipeline = self.new_pipeline(
+#             name='CET_T1',
+#             name_maps=name_maps,
+#             desc=("Construct cerebellum mask using SUIT template"),
+#             citations=[fsl_cite])
+# 
+#         # FIXME: Should convert to inputs
+#         nl = self._lookup_nl_tfm_inv_name('MNI')
+#         linear = self._lookup_l_tfm_to_name('MNI')
+# 
+#         # Initially use MNI space to warp SUIT into T1 and threshold to mask
+#         merge_trans = pipeline.add(
+#             'merge_transforms',
+#             Merge(2),
+#             inputs={
+#                 'in2': (nl, nifti_gz_format),
+#                 'in1': (linear, nifti_gz_format)})
+# 
+#         apply_trans = pipeline.add(
+#             'ApplyTransform',
+#             ants.resampling.ApplyTransforms(
+#                 interpolation='NearestNeighbor',
+#                 input_image_type=3,
+#                 invert_transform_flags=[True, False]),
+#             inputs={
+#                 'reference_image': ('betted_T1', nifti_gz_format),
+#                 'input_image': ('suit_mask', nifti_gz_format),
+#                 'transforms': (merge_trans, 'out')},
+#             requirements=[ants_req.v('1.9')], mem_gb=16,
+#             wall_time=120)
+# 
+#         pipeline.add(
+#             'maths2',
+#             fsl.utils.ImageMaths(
+#                 suffix='_optiBET_cerebellum',
+#                 op_string='-mas'),
+#             inputs={
+#                 'in_file': ('betted_T1', nifti_gz_format),
+#                 'in_file2': (apply_trans, 'output_image')},
+#             outputs={
+#                 'cetted_T1': ('out_file', nifti_gz_format),
+#                 'cetted_T1_mask': ('output_image', nifti_gz_format)},
+#             requirements=[fsl_req.v('5.0.8')], mem_gb=16,
+#             wall_time=5)
+# 
+#         return pipeline
 
 
 class PreclinicalT1(T1Study, metaclass=StudyMetaClass):
