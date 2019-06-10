@@ -24,7 +24,7 @@ from banana.interfaces.custom.motion_correction import (
 from banana.interfaces.custom.dwi import TransformGradients
 from banana.interfaces.utility import AppendPath
 from banana.study.base import Study
-from banana.bids_ import BidsInputs, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInputs
 from banana.exceptions import BananaUsageError
 from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
@@ -138,19 +138,19 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_input,
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='bvalues',
                                primary=primary_bids_input,
                                association='grads',
                                type='bval',
                                format=fsl_bvals_format),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='grad_dirs',
                                primary=primary_bids_input,
                                association='grads',
                                type='bvec',
                                format=fsl_bvecs_format),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='reverse_phase',
                                primary=primary_bids_input,
                                association='epi',

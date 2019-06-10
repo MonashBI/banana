@@ -1,7 +1,6 @@
 import sys
 import os.path as op
 import os
-import math
 from argparse import ArgumentParser
 from importlib import import_module
 from setuptools import find_packages
@@ -12,7 +11,7 @@ from banana.utils.testing import PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study)
+    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study, MultiStudy)
 import logging
 from banana.__about__ import __version__
 
@@ -503,6 +502,8 @@ class AvailableCmd():
 
     default_path = 'banana.study'
 
+    desc_start = 22
+
     @classmethod
     def parser(cls):
         parser = ArgumentParser(prog='banana avail',
@@ -521,7 +522,7 @@ class AvailableCmd():
                     continue
                 cls = getattr(pkg_or_module, cls_name)
                 try:
-                    if (issubclass(cls, Study) and
+                    if (issubclass(cls, (Study, MultiStudy)) and
                             'desc' in cls.__dict__):
                         try:
                             old_path = available[cls]
@@ -544,13 +545,16 @@ class AvailableCmd():
                     module_path = pkg_path + '.' + module_info.name
                     module = import_module(module_path)
                     find_study_classes(module, module_path)
-        msg = ("\nThe following Study classes are available (and have a 'desc'"
-               " attr):")
-        for cls, module_path in available.items():
+        msg = ("\nThe following Study classes are available:")
+        for avail_cls, module_path in sorted(available.items(),
+                                             key=lambda x: x[0].__name__):
             if module_path.startswith(DEFAULT_STUDY_CLASS_PATH):
                 module_path = module_path[(len(DEFAULT_STUDY_CLASS_PATH) + 1):]
-            msg += '\n\t{}.{}\t\t{}'.format(
-                module_path, cls.__name__, getattr(cls, 'desc', ''))
+            full_name = module_path + '.' + avail_cls.__name__
+            spaces = ' ' * max(cls.desc_start - len(full_name), 4)
+            msg += '\n\t{}{}{}'.format(
+                full_name, spaces, wrap_desc(avail_cls.desc, 60,
+                                             '\t' + ' ' * cls.desc_start))
         print(msg + '\n')
 
 

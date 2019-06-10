@@ -27,7 +27,7 @@ from banana.interfaces.custom.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids_ import BidsInputs, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInputs
 from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')
@@ -77,13 +77,13 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='field_map_phase',
                                primary=primary_bids_selector,
                                association='phasediff',
                                format=nifti_gz_format,
                                drop_if_missing=True),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='field_map_mag',
                                primary=primary_bids_selector,
                                association='phasediff',
