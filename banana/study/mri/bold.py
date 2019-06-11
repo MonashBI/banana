@@ -121,7 +121,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_file='filtered_func_data.nii.gz'),
             inputs={
                 'delta_t': ('tr', float),
-                'mask': (self.brain_mask_spec_name, nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format),
                 'in_file': (afni_mc, 'out_file')},
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
@@ -171,7 +171,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_dir='melodic_ica',
                 output_type='NIFTI_GZ'),
             inputs={
-                'mask': (self.brain_mask_spec_name, nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format),
                 'tr_sec': ('tr', float),
                 'in_files': ('filtered_data', nifti_gz_format)},
             outputs={
