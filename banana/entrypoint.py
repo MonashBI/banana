@@ -13,11 +13,16 @@ from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study, MultiStudy)
 import logging
+from arcana.utils import wrap_text
 from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
 
 DEFAULT_STUDY_CLASS_PATH = 'banana.study'
+
+DEFAULT_LINE_LENGTH = 79
+DEFAULT_INDENT = 4
+DEFAULT_SPACER = 4
 
 
 def set_loggers(loggers):
@@ -35,6 +40,9 @@ def set_loggers(loggers):
 
 
 def resolve_class(class_str, prefixes=(DEFAULT_STUDY_CLASS_PATH,)):
+    """
+    Resolves a class from the '.' delimted module + class name string
+    """
     parts = class_str.split('.')
     module_name = '.'.join(parts[:-1])
     class_name = parts[-1]
@@ -546,28 +554,22 @@ class AvailableCmd():
                     module = import_module(module_path)
                     find_study_classes(module, module_path)
         msg = ("\nThe following Study classes are available:")
+        to_print = []
         for avail_cls, module_path in sorted(available.items(),
                                              key=lambda x: x[0].__name__):
             if module_path.startswith(DEFAULT_STUDY_CLASS_PATH):
                 module_path = module_path[(len(DEFAULT_STUDY_CLASS_PATH) + 1):]
             full_name = module_path + '.' + avail_cls.__name__
-            spaces = ' ' * max(cls.desc_start - len(full_name), 4)
-            msg += '\n\t{}{}{}'.format(
-                full_name, spaces, wrap_desc(avail_cls.desc, 60,
-                                             '\t' + ' ' * cls.desc_start))
+            to_print.append((full_name, avail_cls.desc))
+
+        desc_start = max(len(l[0]) for l in to_print) + DEFAULT_SPACER
+        for cls_name, desc in to_print:
+            spaces = ' ' * (desc_start - len(cls_name))
+            msg += '\n{}{}{}{}'.format(
+                ' ' * DEFAULT_INDENT, cls_name, spaces,
+                wrap_text(desc, DEFAULT_LINE_LENGTH,
+                          desc_start + DEFAULT_INDENT))
         print(msg + '\n')
-
-
-def wrap_desc(desc, nchars, indent='\t'):
-    lines = []
-    while desc:
-        if len(desc) > nchars:
-            n = desc[:nchars].rfind(' ')
-        else:
-            n = nchars
-        lines.append(desc[:n])
-        desc = desc[(n + 1):]
-    return '\n{}'.format(indent).join(lines)
 
 
 class MainCmd():
@@ -582,11 +584,13 @@ class MainCmd():
     @classmethod
     def parser(cls):
         usage = "banana <command> [<args>]\n\nAvailable commands:"
-        nchars = max(len(k) for k in cls.commands.keys()) + 4
+        desc_start = max(len(k) for k in cls.commands.keys()) + DEFAULT_SPACER
         for name, cmd_cls in cls.commands.items():
-            spaces = ' ' * (nchars - len(name))
-            usage += '\n\t{}{}{}'.format(
-                name, spaces, wrap_desc(cmd_cls.desc, 70, '\t' + ' ' * nchars))
+            spaces = ' ' * (desc_start - len(name))
+            usage += '\n{}{}{}{}'.format(
+                ' ' * DEFAULT_INDENT, name, spaces,
+                wrap_text(cmd_cls.desc, DEFAULT_LINE_LENGTH,
+                          desc_start + DEFAULT_INDENT))
         parser = ArgumentParser(
             description="Base banana command",
             usage=usage)

@@ -420,7 +420,7 @@ if __name__ == '__main__':
             reprocess=False, repo_depth=0, modules_env=True,
             skip=['channels', 'mag_channels', 'phase_channels'],
             clean_work_dir=(not args.dont_clean_work_dir),
-            parameters={'mni_template_resolution': 1})
+            parameters={'mni_tmpl_resolution': 1})
 
     if 'mri2' in args.generate:
 
@@ -456,7 +456,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir),
             skip=['field_map_delta_te', 'cleaned_file'],
             parameters={
-                'mni_template_resolution': 2})
+                'mni_tmpl_resolution': 2})
 
     if 't1' in args.generate:
         from banana.study.mri.t1 import T1Study
@@ -489,7 +489,7 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 't2star-work'),
             reprocess=False, repo_depth=0, modules_env=True,
             parameters={
-                'mni_template_resolution': 2},
+                'mni_tmpl_resolution': 2},
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi' in args.generate:

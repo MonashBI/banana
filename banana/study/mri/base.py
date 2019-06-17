@@ -142,14 +142,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
-                             resolution='mni_template_resolution'),
+                             resolution='mni_tmpl_resolution'),
                          desc=("")),
         InputFilesetSpec('template_brain', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
-                             resolution='mni_template_resolution',
+                             resolution='mni_tmpl_resolution',
                              dataset='brain'),
                          desc=("")),
         InputFilesetSpec('template_mask', STD_IMAGE_FORMATS,
@@ -157,7 +157,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
-                             resolution='mni_template_resolution',
+                             resolution='mni_tmpl_resolution',
                              dataset='brain_mask'),
                          desc=(""))]
 
@@ -186,7 +186,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                    desc=("")),
         SwitchSpec('coreg_to_tmpl_method', 'ants', ('fnirt', 'ants'),
                    desc=("")),
-        ParamSpec('mni_template_resolution', None, choices=(0.5, 1, 2),
+        ParamSpec('mni_tmpl_resolution', None, choices=(0.5, 1, 2),
                   dtype=int),
         ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias',
                   desc=("")),
@@ -201,10 +201,10 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         ParamSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
-        ParamSpec('flirt_cost_func', 'normmi', desc=(
-            "Cost function used for the registration. Can be one of "
-            "'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',"
-            " 'labeldiff', 'bbr'")),
+        SwitchSpec('flirt_cost_func', 'normmi', desc=(
+            "Cost function used for the registration. Can be one of "),
+            choices=('mutualinfo', 'corratio', 'normcorr', 'normmi',
+                     'leastsq', 'labeldiff', 'bbr')),
         ParamSpec('flirt_qsform', False, desc=(
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
@@ -224,14 +224,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "filename"))]
 
     @property
-    def mni_template_resolution(self):
-        if self.parameter('mni_template_resolution') is not None:
-            res = self.parameter('mni_template_resolution')
+    def mni_tmpl_resolution(self):
+        if self.parameter('mni_tmpl_resolution') is not None:
+            res = self.parameter('mni_tmpl_resolution')
         else:
             raise ArcanaMissingDataException(
                 "Automatic detection of dataset resolution is not implemented "
                 "yet, please specify resolution of default MNI templates "
-                "manually via 'mni_template_resolution' parameter")
+                "manually via 'mni_tmpl_resolution' parameter")
         return res
 
     @property
