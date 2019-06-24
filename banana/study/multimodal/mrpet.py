@@ -743,7 +743,7 @@ def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
                         'ref_types are t1 or t2.'.format(ref_type))
 
     study_specs = [SubStudySpec('ref', ref_study)]
-    ref_spec = {'ref_brain': 'coreg_ref_brain'}
+    ref_spec = {'coreg_ref_brain': 'coreg_ref_brain'}
     inputs.append(InputFilesets('ref_primary', ref, dicom_format))
 
     if umap_ref and umap:
