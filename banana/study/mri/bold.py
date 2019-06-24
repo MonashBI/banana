@@ -558,7 +558,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(InputFilesets('t1_primary', t1, dicom_format,
+    inputs.append(InputFilesets('t1_magnitude', t1, dicom_format,
                                   is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
@@ -582,7 +582,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     for i in range(epi_number):
         inputs.append(InputFilesets(
-            'epi_{}_primary'.format(i), epis, dicom_format, order=i,
+            'epi_{}_series'.format(i), epis, dicom_format, order=i,
             is_regex=True))
 #     inputs.extend(InputFilesets(
 #         'epi_{}_hand_label_noise'.format(i), text_format,

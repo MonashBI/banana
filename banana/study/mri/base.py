@@ -326,7 +326,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             pipeline = self._spm_linear_coreg_pipeline(**name_maps)
         else:
             self.unhandled_branch('coreg_method')
-        if not self.provided(pipeline.map_input('coreg_ref')):
+        if not (self.provided('coreg_ref') or
+                self.provided('coreg_ref_brain')):
             raise ArcanaOutputNotProducedException(
                 "Cannot co-register {} as reference image "
                 "'{}' has not been provided".format(
@@ -396,7 +397,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                         'reference_image': ('coreg_ref_brain',
                                             nifti_gz_format),
                         'transforms': (pipeline.node('ants_reg'),
-                                       'forward_transforms')},
+                                       'regmat')},  # forward_transformations
                     requirements=[ants_req.v('1.9')], mem_gb=16,
                     wall_time=30)
             else:
@@ -459,7 +460,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 source = 'brain'
                 ref = 'coreg_ref_brain'
             else:
-                raise BananaUsageError(
+                raise ArcanaMissingDataException(
                     "Either 'coreg_ref' or 'coreg_ref_brain' needs to be "
                     "provided in order to derive brain_coreg or brain_coreg_"
                     "mask")
@@ -530,7 +531,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             citations=[ants_cite])
 
         pipeline.add(
-            'ANTs_linear_Reg',
+            'ants_reg',
             AntsRegSyn(
                 num_dimensions=3,
                 transformation='r'),

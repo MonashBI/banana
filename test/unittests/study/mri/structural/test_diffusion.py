@@ -16,8 +16,8 @@ class TestDiffusion(BaseTestCase):
     def test_preprocess(self):
         study = self.create_study(
             DwiStudy, 'preprocess', [
-                InputFilesets('magnitude', 'r_l_dwi_b700_30', mrtrix_image_format),
-                InputFilesets('dwi_reference', 'l_r_dwi_b0_6', mrtrix_image_format)])
+                InputFilesets('series', 'r_l_dwi_b700_30', mrtrix_image_format),
+                InputFilesets('magnitude', 'l_r_dwi_b0_6', mrtrix_image_format)])
         preproc = list(study.data('mag_preproc'))[0]
         self.assertTrue(os.path.exists(preproc.path))
 
