@@ -1087,7 +1087,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 DicomHeaderInfoExtraction(
                     multivol=False),
                 inputs={
-                    'dicom_folder': (self.header_image_spec_name, dicom_format)},
+                    'dicom_folder': (self.header_image_spec_name,
+                                     dicom_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -1106,7 +1107,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'hd_info_extraction',
                 NiftixHeaderInfoExtraction(),
                 inputs={
-                    'in_file': (self.header_image_spec_name, nifti_gz_x_format)},
+                    'in_file': (self.header_image_spec_name,
+                                nifti_gz_x_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
