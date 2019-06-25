@@ -31,7 +31,7 @@ from arcana import (  # @IgnorePep8
     MultiProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, XnatRepo)
 
-from .bids import BidsRepo  # @IgnorePep8
+from .bids_ import BidsRepo  # @IgnorePep8
 
 
 # Import all Study classes into package root

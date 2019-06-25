@@ -6,18 +6,32 @@ import logging
 from bids.layout import BIDSLayout
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaUsageError)
-from banana.exceptions import BananaUsageError
+from banana.exceptions import BananaUsageError, BananaUnrecognisedBidsFormat
 from arcana.data.input import InputFilesets
 from arcana.data.item import Fileset
-from arcana.data.file_format import FileFormat
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
-from banana.file_format import nifti_gz_format, nifti_gz_x_format
+from arcana.study.multi import MultiStudy
+from banana.file_format import (
+    nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
+    tsv_format, json_format, nifti_format)
 
 
 logger = logging.getLogger('arcana')
 
-BIDS_NIFTI = (nifti_gz_format, nifti_gz_x_format)
+BIDS_FORMATS = (nifti_gz_x_format, nifti_gz_format, nifti_format,
+                fsl_bvecs_format, fsl_bvals_format, tsv_format, json_format)
+
+
+def detect_format(path, aux_files):
+    ext = split_extension(path)[1]
+    aux_names = set(aux_files.keys())
+    for frmt in BIDS_FORMATS:
+        if frmt.extension == ext and set(frmt.aux_files.keys()) == aux_names:
+            return frmt
+    raise BananaUnrecognisedBidsFormat(
+        "No matching BIDS format matches provided path ({}) and aux files ({})"
+        .format(path, aux_files))
 
 
 class BidsRepo(BasicRepo):
@@ -34,7 +48,6 @@ class BidsRepo(BasicRepo):
 
     def __init__(self, root_dir, **kwargs):
         BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
-        self._layout = BIDSLayout(root_dir)
 
     @property
     def root_dir(self):
@@ -54,7 +67,7 @@ class BidsRepo(BasicRepo):
 
     @property
     def layout(self):
-        return self._layout
+        return BIDSLayout(self.root_dir)
 
     def __repr__(self):
         return "BidsRepo(root_dir='{}')".format(self.root_dir)
@@ -83,14 +96,20 @@ class BidsRepo(BasicRepo):
             the repository
         """
         filesets = []
-        all_subjects = self.layout.get_subjects()
-        all_visits = self.layout.get_sessions()
-        for item in self.layout.get(return_type='object'):
+        layout = self.layout
+        all_subjects = layout.get_subjects()
+        all_visits = layout.get_sessions()
+        if not all_visits:
+            all_visits = [self.DEFAULT_VISIT_ID]
+            self._depth = 1
+        else:
+            self._depth = 2
+        for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
                 # We handle derivatives using the BasicRepo base
                 # class methods
                 continue
-            if not hasattr(item, 'entities') or not item.entities.get('type',
+            if not hasattr(item, 'entities') or not item.entities.get('suffix',
                                                                       False):
                 logger.warning("Skipping unrecognised file '{}' in BIDS tree"
                                .format(op.join(item.dirname, item.filename)))
@@ -110,7 +129,7 @@ class BidsRepo(BasicRepo):
             for subject_id in subject_ids:
                 for visit_id in visit_ids:
                     aux_files = {}
-                    metadata = self.layout.get_metadata(item.path)
+                    metadata = layout.get_metadata(item.path)
                     if metadata and not item.path.endswith('.json'):
                         # Write out the combined JSON side cars to a temporary
                         # file to include in extended NIfTI filesets
@@ -124,15 +143,19 @@ class BidsRepo(BasicRepo):
                             with open(metadata_path, 'w') as f:
                                 json.dump(metadata, f)
                         aux_files['json'] = metadata_path
-                    fileset = BidsFileset(
-                        path=op.join(item.dirname, item.filename),
-                        type=item.entities['type'],
-                        subject_id=subject_id, visit_id=visit_id,
-                        repository=self,
-                        modality=item.entities.get('modality', None),
-                        task=item.entities.get('task', None),
-                        aux_files=aux_files)
-                    filesets.append(fileset)
+                    try:
+                        fileset = BidsFileset(
+                            path=op.join(item.dirname, item.filename),
+                            type=item.entities['suffix'],
+                            subject_id=subject_id, visit_id=visit_id,
+                            repository=self,
+                            modality=item.entities.get('modality', None),
+                            task=item.entities.get('task', None),
+                            aux_files=aux_files)
+                    except BananaUnrecognisedBidsFormat:
+                        pass
+                    else:
+                        filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
         # the method in the BasicRepo base class
         derived_filesets, fields, records = super().find_data(
@@ -241,13 +264,11 @@ class BidsFileset(Fileset, BaseBidsFileset):
 
     def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
                  modality=None, task=None, checksums=None, aux_files=None):
-        extensions = [split_extension(path)[1]] + sorted(
-            split_extension(p)[1] for p in aux_files.values())
         Fileset.__init__(
             self,
             name=op.basename(path),
-            format=FileFormat.by_ext(extensions),
             frequency='per_session',
+            format=detect_format(path, aux_files),
             path=path,
             subject_id=subject_id,
             visit_id=visit_id,
@@ -263,7 +284,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
                         self.visit_id))
 
 
-class BidsInput(InputFilesets, BaseBidsFileset):
+class BidsInputs(InputFilesets, BaseBidsFileset):
     """
     A match object for matching filesets from their BIDS attributes and file
     format. If any of the provided attributes are None, then that attribute
@@ -283,21 +304,21 @@ class BidsInput(InputFilesets, BaseBidsFileset):
         Modality of the filesets
     """
 
-    def __init__(self, spec_name, type, format=None, task=None, modality=None,  # @ReservedAssignment @IgnorePep8
-                 **kwargs):
+    def __init__(self, spec_name, type, valid_formats=None, task=None,# @ReservedAssignment @IgnorePep8
+                 modality=None, **kwargs):
         InputFilesets.__init__(
-            self, spec_name, pattern=None, format=format,
+            self, spec_name, pattern=None, valid_formats=valid_formats,
             frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
         BaseBidsFileset.__init__(self, type, modality, task)
 
-    def _filtered_matches(self, node):
+    def _filtered_matches(self, node, valid_formats=None, **kwargs):  # @UnusedVariable @IgnorePep8
         matches = [
             f for f in node.filesets
             if (isinstance(f, BidsFileset) and
                 self.type == f.type and
                 (self.modality is None or self.modality == f.modality) and
                 (self.task is None or self.task == f.task) and
-                (self.format is None or self.format == f.format))]
+                f.format in valid_formats)]
         if not matches:
             raise ArcanaInputMissingMatchError(
                 "No BIDS filesets for {} match {} found:\n{}"
@@ -334,7 +355,7 @@ class BidsInput(InputFilesets, BaseBidsFileset):
         self._task = task
 
 
-class BidsAssocInput(InputFilesets):
+class BidsAssocInputs(InputFilesets):
     """
     A match object for matching BIDS filesets that are associated with
     another BIDS filesets (e.g. field-maps, bvecs, bvals)
@@ -343,7 +364,7 @@ class BidsAssocInput(InputFilesets):
     ----------
     name : str
         Name of the associated fileset
-    primary : BidsInput
+    primary : BidsInputs
         A selector to select the primary fileset which the associated fileset
         is associated with
     association : str
@@ -364,7 +385,7 @@ class BidsAssocInput(InputFilesets):
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
             raise BananaUsageError(
-                "Invalid association '{}' passed to BidsAssocInput, "
+                "Invalid association '{}' passed to BidsAssocInputs, "
                 "can be one of '{}'".format(
                     association, "', '".join(self.VALID_ASSOCIATIONS)))
         self._association = association
@@ -405,7 +426,13 @@ class BidsAssocInput(InputFilesets):
         # associated selector so we set the bound version temporarily to
         # self._primary before winding it back after we have done the bind
         unbound_primary = self._primary
-        self._primary = self._primary.bind(study, **kwargs)
+        if isinstance(study, MultiStudy) and hasattr(self,
+                                                     'prefixed_primary_name'):
+            primary_spec_name = self.prefixed_primary_name
+        else:
+            primary_spec_name = self.primary.name
+        self._primary = self._primary.bind(study, spec_name=primary_spec_name,
+                                           **kwargs)
         bound = super().bind(study, spec_name=spec_name, **kwargs)
         self._primary = unbound_primary
         return bound
@@ -430,8 +457,8 @@ class BidsAssocInput(InputFilesets):
     def task(self, task):
         self.primary.task = task
 
-    def match_node(self, node):
-        primary_match = self.primary.match_node(node)
+    def match_node(self, node, **kwargs):
+        primary_match = self.primary.match_node(node, **kwargs)
         layout = self.primary.repository.layout
         if self.association == 'grads':
             if self.type == 'bvec':

@@ -27,7 +27,7 @@ from banana.interfaces.custom.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids import BidsInput, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInputs
 from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')
@@ -42,6 +42,8 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
 class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
+
+    desc = "Functional MRI BOLD MRI contrast"
 
     add_data_specs = [
         InputFilesetSpec('train_data', rfile_format, optional=True,
@@ -70,17 +72,18 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         ParamSpec('brain_thresh_percent', 5),
         ParamSpec('group_ica_components', 15)]
 
-    primary_bids_selector = BidsInput(
-        spec_name='series', type='bold', format=nifti_gz_x_format)
+    primary_bids_selector = BidsInputs(
+        spec_name='series', type='bold',
+        valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='field_map_phase',
                                primary=primary_bids_selector,
                                association='phasediff',
                                format=nifti_gz_format,
                                drop_if_missing=True),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='field_map_mag',
                                primary=primary_bids_selector,
                                association='phasediff',
@@ -118,7 +121,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_file='filtered_func_data.nii.gz'),
             inputs={
                 'delta_t': ('tr', float),
-                'mask': (self.brain_mask_spec_name, nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format),
                 'in_file': (afni_mc, 'out_file')},
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
@@ -168,7 +171,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_dir='melodic_ica',
                 output_type='NIFTI_GZ'),
             inputs={
-                'mask': (self.brain_mask_spec_name, nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format),
                 'tr_sec': ('tr', float),
                 'in_files': ('filtered_data', nifti_gz_format)},
             outputs={

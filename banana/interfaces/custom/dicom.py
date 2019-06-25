@@ -1,19 +1,22 @@
 import numpy as np
-import os.path as op
 import glob
 import json
 import pydicom
-from nipype.utils.filemanip import split_filename
 import datetime as dt
 import os.path
+import warnings
 import nibabel as nib
+from nipype.utils.filemanip import split_filename
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
                                     traits, TraitedSpec, Directory, File,
                                     isdefined)
 from arcana.utils import split_extension
-import nibabel.nicom.csareader as csareader
 from logging import getLogger
 from banana.exceptions import BananaMissingHeaderValue
+
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    import nibabel.nicom.csareader as csareader
 
 
 logger = getLogger('banana')

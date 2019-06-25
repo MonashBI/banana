@@ -7,8 +7,6 @@ from copy import copy
 from pprint import pformat
 from itertools import chain
 from unittest import TestCase
-from argparse import ArgumentParser
-from importlib import import_module
 from arcana.exceptions import ArcanaNameError
 from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo, SingleProc,
                     Field, Fileset, ModulesEnv, StaticEnv)
@@ -399,88 +397,6 @@ class PipelineTester(TestCase):
                     .format(study_class))
 
 
-def resolve_class(class_str):
-    parts = class_str.split('.')
-    module_name = '.'.join(parts[:-1])
-    class_name = parts[-1]
-    module = import_module(module_name)
-    return getattr(module, class_name)
-
-
-def gen_test_data_entry_point():
-    parser = ArgumentParser(
-        description=("Generates reference data for a pipeline tester "
-                     "unittests given a study class and set of parameters"))
-    parser.add_argument('study_class',
-                        help=("The path to the study class to test, e.g. "
-                              "banana.study.MriStudy"))
-    parser.add_argument('in_repo', help=("The path to repository that "
-                                         "houses the input data"))
-    parser.add_argument('out_repo',
-                        help=("If the 'xnat_server' argument is provided then "
-                              "out is interpreted as the project ID to use "
-                              "the XNAT server (the project must exist "
-                              "already). Otherwise it is interpreted as the "
-                              "path to a basic repository"))
-    parser.add_argument('--in_server', default=None,
-                        help="The server to download the input data from")
-    parser.add_argument('--out_server', default=None,
-                        help="The server to upload the reference data to")
-    parser.add_argument('--work_dir', default=None,
-                        help="The work directory")
-    parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
-                        nargs=2, action='append', default=[],
-                        help=("Parameters to set when initialising the "
-                              "study"))
-    parser.add_argument('--skip', '-s', nargs='+', default=[],
-                        help=("Spec names to skip in the generation "
-                              "process"))
-    parser.add_argument('--skip_base', action='append', default=[],
-                        help=("Base classes of which to skip data specs from"))
-    parser.add_argument('--reprocess', action='store_true', default=False,
-                        help=("Whether to reprocess previously generated "
-                              "datasets in the output repository"))
-    parser.add_argument('--repo_depth', type=int, default=0,
-                        help="The depth of the input repository")
-    parser.add_argument('--modules_env', action='store_true', default=False,
-                        help="Whether to use a Modules Envionment or not")
-    parser.add_argument('--dont_clean_work_dir', action='store_true',
-                        default=False,
-                        help=("Whether to clean the Nipype work dir between "
-                              "runs"))
-    parser.add_argument('--loggers', nargs='+',
-                        default=('nipype.workflow', 'arcana', 'banana'),
-                        help="Loggers to set handlers to stdout for")
-    args = parser.parse_args()
-
-    # Get Study class
-    study_class = resolve_class(args.study_class)
-
-    include_bases = [resolve_class(c) for c in args.skip_base]
-
-    # Convert parameters to dictionary
-    parameters_dct = {}
-    for name, value in args.parameter:
-        try:
-            value = int(value)
-        except ValueError:
-            try:
-                value = float(value)
-            except ValueError:
-                pass
-        parameters_dct[name] = value
-    parameters = parameters_dct
-
-    PipelineTester.generate_test_data(
-        study_class=study_class, in_repo=args.in_repo,
-        out_repo=args.out_repo, in_server=args.in_server,
-        out_server=args.out_server, work_dir=args.work_dir,
-        parameters=parameters, skip=args.skip, include_bases=include_bases,
-        reprocess=args.reprocess, repo_depth=args.repo_depth,
-        modules_env=args.modules_env,
-        clean_work_dir=(not args.dont_clean_work_dir))
-
-
 if __name__ == '__main__':
     from banana.study.mri.base import MriStudy
     import argparse
@@ -504,7 +420,7 @@ if __name__ == '__main__':
             reprocess=False, repo_depth=0, modules_env=True,
             skip=['channels', 'mag_channels', 'phase_channels'],
             clean_work_dir=(not args.dont_clean_work_dir),
-            parameters={'mni_template_resolution': 1})
+            parameters={'mni_tmpl_resolution': 1})
 
     if 'mri2' in args.generate:
 
@@ -540,7 +456,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir),
             skip=['field_map_delta_te', 'cleaned_file'],
             parameters={
-                'mni_template_resolution': 2})
+                'mni_tmpl_resolution': 2})
 
     if 't1' in args.generate:
         from banana.study.mri.t1 import T1Study
@@ -573,7 +489,7 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 't2star-work'),
             reprocess=False, repo_depth=0, modules_env=True,
             parameters={
-                'mni_template_resolution': 2},
+                'mni_tmpl_resolution': 2},
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi' in args.generate:
@@ -608,7 +524,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi3' in args.generate:
-        from banana import MultiStudy, MultiStudyMetaClass, SubStudySpec
+        from banana import (MultiStudy, MultiStudyMetaClass, SubStudySpec)
         from banana.study.mri.dwi import DwiStudy  # @Reimport
         from banana.study.mri.t1 import T1Study  # @Reimport
 

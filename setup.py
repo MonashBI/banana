@@ -19,15 +19,13 @@ setup(
     url='https://github.com/MonashBI/{}'.format(PACKAGE_NAME),
     license='The Apache Software Licence 2.0',
     description=(
-        'Biomedical ANAlysis iN Arcana (Banana): biomedical '
+        'Brain imAgiNg Analysis iN Arcana (Banana): brain imaging '
         'analysis workflows implemented in the Arcana '
         'framework (arcana.readthedocs.io)'),
     long_description=open('README.rst').read(),
     install_requires=install_requires,
     entry_points={
-        'console_scripts': [
-            'gen_banana_test_data = '
-            'banana.utils.testing:gen_test_data_entry_point']},
+        'console_scripts': ['banana = banana.entrypoint:MainCmd.run']},
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Healthcare Industry",
