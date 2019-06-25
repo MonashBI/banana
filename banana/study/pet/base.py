@@ -14,6 +14,7 @@ from arcana.study import ParamSpec
 from banana.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
 from banana.requirement import stir_req
+from banana.exceptions import BananaUsageError
 
 
 template_path = os.path.abspath(
@@ -40,8 +41,8 @@ class PetStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('list_mode', list_mode_format),
-        InputFilesetSpec('registered_volumes', nifti_gz_format, optional=True),
-        InputFilesetSpec('pet_image', nifti_gz_format, optional=True),
+        InputFilesetSpec('registered_volumes', nifti_gz_format),
+        InputFilesetSpec('pet_image', nifti_gz_format),
         InputFilesetSpec('pet_data_dir', directory_format),
         InputFilesetSpec('pet_recon_dir', directory_format),
         FilesetSpec('pet_recon_dir_prepared', directory_format,
@@ -170,6 +171,11 @@ class PetStudy(Study, metaclass=StudyMetaClass):
                          'detection using PCA pipeline.'),
             citations=[],
             **kwargs)
+
+        if not self.provided('list_mode'):
+            raise BananaUsageError(
+                "'list_mode' was not provided as an input to the study "
+                "so cannot perform sinogram unlisting")
 
         prepare_inputs = pipeline.add(
             'prepare_inputs',

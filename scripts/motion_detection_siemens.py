@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 from banana.study.multimodal.mrpet import create_motion_detection_class
-import os.path
+import os
+import os.path as op
 import errno
 from arcana.repository.basic import BasicRepo
 from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
-from arcana.processor.single import SingleProc
+from arcana import SingleProc, ModulesEnv, StaticEnv
 
 
 class MoCoDataLoader(object):
@@ -19,9 +20,9 @@ class MoCoDataLoader(object):
     def load(self, pet_dir=None):
 
         cached_inputs = False
-        cache_input_path = os.path.join(self.input_dir, 'inputs.pickle')
+        cache_input_path = op.join(self.input_dir, 'inputs.pickle')
 
-        if os.path.isdir(input_dir):
+        if op.isdir(input_dir):
             try:
                 with open(cache_input_path, 'rb') as f:
                     ref, ref_type, t1s, epis, t2s, dwis = pkl.load(f)
@@ -54,6 +55,9 @@ if __name__ == "__main__":
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_dir', '-i', type=str,
                         help=("Path to an existing directory"))
+    parser.add_argument('--environment', choices=('static', 'modules'),
+                        default='static',
+                        help="The environment to use, modules or static")
     args = parser.parse_args()
     input_dir = args.input_dir
     dataloader = MoCoDataLoader(input_dir)
@@ -65,8 +69,8 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    repository = BasicRepo(input_dir+'/work_dir')
-    work_dir = os.path.join(input_dir, 'motion_detection_cache')
+    repository = BasicRepo(op.join(input_dir, 'work_dir'))
+    work_dir = op.join(input_dir, 'motion_detection_cache')
     WORK_PATH = work_dir
     try:
         os.makedirs(WORK_PATH)
@@ -76,6 +80,9 @@ if __name__ == "__main__":
 
     study = MotionDetection(name='MotionDetection',
                             processor=SingleProc(WORK_PATH),
+                            environment=(
+                                ModulesEnv() if args.environment == 'modules'
+                                else StaticEnv()),
                             repository=repository, inputs=inputs,
                             subject_ids=[sub_id], visit_ids=[session_id])
     study.data('motion_detection_output')
