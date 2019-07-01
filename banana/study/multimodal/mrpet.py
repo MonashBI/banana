@@ -153,6 +153,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
         start_time_in = {}
         real_duration_in = {}
         merge_index = 1
+        input_names = []
         for spec in self.substudy_specs():
             try:
                 spec.map('motion_mats')
@@ -165,6 +166,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 tr_in[k] = (spec.map('tr'), float)
                 start_time_in[k] = (spec.map('start_time'), float)
                 real_duration_in[k] = (spec.map('real_duration'), float)
+                input_names.append(self.spec(spec.inverse_map(
+                    spec.study_class.primary_scan_name)).pattern)
                 merge_index += 1
 
         merge_motion_mats = pipeline.add(
@@ -189,7 +192,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline.add(
             'scan_time_info',
-            MeanDisplacementCalculation(),
+            MeanDisplacementCalculation(
+                input_names=input_names),
             inputs={
                 'motion_mats': (merge_motion_mats, 'out'),
                 'trs': (merge_tr, 'out'),

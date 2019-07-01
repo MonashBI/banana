@@ -25,6 +25,8 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
         BidsInputs(spec_name='magnitude', type='T2w',
                    valid_formats=(nifti_gz_x_format, nifti_gz_format))]
 
+    primary_scan_name = 'magnitude'
+
     def segmentation_pipeline(self, img_type=2, **name_maps):
 
         pipeline = self.new_pipeline(
