@@ -420,7 +420,7 @@ if __name__ == '__main__':
             reprocess=False, repo_depth=0, modules_env=True,
             skip=['channels', 'mag_channels', 'phase_channels'],
             clean_work_dir=(not args.dont_clean_work_dir),
-            parameters={'mni_template_resolution': 1})
+            parameters={'mni_tmpl_resolution': 1})
 
     if 'mri2' in args.generate:
 
@@ -456,7 +456,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir),
             skip=['field_map_delta_te', 'cleaned_file'],
             parameters={
-                'mni_template_resolution': 2})
+                'mni_tmpl_resolution': 2})
 
     if 't1' in args.generate:
         from banana.study.mri.t1 import T1Study
@@ -489,7 +489,7 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 't2star-work'),
             reprocess=False, repo_depth=0, modules_env=True,
             parameters={
-                'mni_template_resolution': 2},
+                'mni_tmpl_resolution': 2},
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi' in args.generate:
@@ -504,7 +504,8 @@ if __name__ == '__main__':
                   'field_map_phase', 'moco', 'align_mats', 'moco_par',
                   'field_map_delta_te', 'norm_intensity', 'brain_mask_coreg',
                   'norm_intens_fa_template', 'norm_intens_wm_mask',
-                  'connectome'],
+                  'connectome', 'series_coreg', 'grad_dirs_coreg',
+                  'mag_coreg', 'motion_mats'],
             include_bases=[EpiSeriesStudy],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
@@ -541,7 +542,6 @@ if __name__ == '__main__':
                     name_map={
                         'anat_5tt': 't1_five_tissue_type',
                         'anat_fs_recon_all': 't1_fs_recon_all'})]
-
 
         PipelineTester.generate_test_data(
             DwiT1Study, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',

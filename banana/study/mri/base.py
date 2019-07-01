@@ -68,9 +68,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     desc=("Magnitude after basic preprocessing, such as "
                           "realigning image axis to a standard rotation")),
         FilesetSpec('mag_channels', multi_nifti_gz_format,
-                    'preprocess_channels_pipeline'),
+                    'preprocess_channels_pipeline',
+                    desc=("")),
         FilesetSpec('phase_channels', multi_nifti_gz_format,
-                    'preprocess_channels_pipeline'),
+                    'preprocess_channels_pipeline',
+                    desc=("")),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="The brain masked image"),
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
@@ -88,90 +90,121 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                           "'coreg_ref_brain' or a brain extraction of a "
                           "coregistered (incl. skull) image")),
         FilesetSpec('coreg_ants_mat', text_matrix_format,
-                    'coreg_ants_mat_pipeline'),
+                    'coreg_ants_mat_pipeline',
+                    desc=("")),
         FilesetSpec('coreg_fsl_mat', text_matrix_format,
-                    'coreg_fsl_mat_pipeline'),
+                    'coreg_fsl_mat_pipeline',
+                    desc=("")),
         FilesetSpec('mag_coreg_to_tmpl', nifti_gz_format,
-                    'coreg_to_tmpl_pipeline'),
+                    'coreg_to_tmpl_pipeline',
+                    desc=("")),
         FilesetSpec('coreg_to_tmpl_fsl_coeff', nifti_gz_format,
-                    'coreg_to_tmpl_pipeline'),
+                    'coreg_to_tmpl_pipeline',
+                    desc=("")),
         FilesetSpec('coreg_to_tmpl_fsl_report', gif_format,
-                    'coreg_to_tmpl_pipeline'),
+                    'coreg_to_tmpl_pipeline',
+                    desc=("")),
         FilesetSpec('coreg_to_tmpl_ants_mat', text_matrix_format,
-                    'coreg_to_tmpl_pipeline'),
+                    'coreg_to_tmpl_pipeline',
+                    desc=("")),
         FilesetSpec('coreg_to_tmpl_ants_warp', nifti_gz_format,
-                    'coreg_to_tmpl_pipeline'),
-        FilesetSpec('motion_mats', motion_mats_format, 'motion_mat_pipeline'),
-        FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline'),
+                    'coreg_to_tmpl_pipeline',
+                    desc=("")),
+        FilesetSpec('motion_mats', motion_mats_format, 'motion_mat_pipeline',
+                    desc=("")),
+        FilesetSpec('qformed', nifti_gz_format, 'qform_transform_pipeline',
+                    desc=("")),
         FilesetSpec('qform_mat', text_matrix_format,
-                    'qform_transform_pipeline'),
-        FieldSpec('tr', float, 'header_extraction_pipeline'),
+                    'qform_transform_pipeline',
+                    desc=("")),
+        FieldSpec('tr', float, 'header_extraction_pipeline',
+                  desc=("")),
         FieldSpec('echo_times', float, 'header_extraction_pipeline',
-                  array=True),
+                  array=True, desc=("")),
         FieldSpec('voxel_sizes', float, 'header_extraction_pipeline',
-                  array=True),
+                  array=True, desc=("")),
         FieldSpec('main_field_orient', float, 'header_extraction_pipeline',
-                  array=True),
-        FieldSpec('main_field_strength', float, 'header_extraction_pipeline'),
-        FieldSpec('start_time', float, 'header_extraction_pipeline'),
-        FieldSpec('real_duration', float, 'header_extraction_pipeline'),
-        FieldSpec('total_duration', float, 'header_extraction_pipeline'),
-        FieldSpec('ped', str, 'header_extraction_pipeline'),
-        FieldSpec('pe_angle', float, 'header_extraction_pipeline'),
+                  array=True, desc=("")),
+        FieldSpec('main_field_strength', float, 'header_extraction_pipeline',
+                  desc=("")),
+        FieldSpec('start_time', float, 'header_extraction_pipeline',
+                  desc=("")),
+        FieldSpec('real_duration', float, 'header_extraction_pipeline',
+                  desc=("")),
+        FieldSpec('total_duration', float, 'header_extraction_pipeline',
+                  desc=("")),
+        FieldSpec('ped', str, 'header_extraction_pipeline',
+                  desc=("")),
+        FieldSpec('pe_angle', float, 'header_extraction_pipeline',
+                  desc=("")),
         # Templates
         InputFilesetSpec('template', STD_IMAGE_FORMATS, frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
-                             resolution='mni_template_resolution')),
+                             resolution='mni_tmpl_resolution'),
+                         desc=("")),
         InputFilesetSpec('template_brain', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
-                             resolution='mni_template_resolution',
-                             dataset='brain')),
+                             resolution='mni_tmpl_resolution',
+                             dataset='brain'),
+                         desc=("")),
         InputFilesetSpec('template_mask', STD_IMAGE_FORMATS,
                          frequency='per_study',
                          default=FslReferenceData(
                              'MNI152_T1',
                              format=nifti_gz_format,
-                             resolution='mni_template_resolution',
-                             dataset='brain_mask'))]
+                             resolution='mni_tmpl_resolution',
+                             dataset='brain_mask'),
+                         desc=(""))]
 
     add_param_specs = [
         SwitchSpec('resample_coreg_ref', False,
                    desc=("Whether to resample the coregistration reference "
                          "image to the resolution of the moving image")),
-        SwitchSpec('reorient_to_std', True),
+        SwitchSpec('reorient_to_std', True,
+                   desc=("")),
         ParamSpec('force_channel_flip', None, dtype=str, array=True,
-                      desc=("Forcibly flip channel inputs during preprocess "
-                            "channels to correct issues with channel recon. "
-                            "The inputs are passed directly through to FSL's "
-                            "swapdims (see fsl.SwapDimensions interface)")),
-        SwitchSpec('bet_robust', True),
-        ParamSpec('bet_f_threshold', 0.5),
+                  desc=("Forcibly flip channel inputs during preprocess "
+                        "channels to correct issues with channel recon. "
+                        "The inputs are passed directly through to FSL's "
+                        "swapdims (see fsl.SwapDimensions interface)")),
+        SwitchSpec('bet_robust', True,
+                   desc=("")),
+        ParamSpec('bet_f_threshold', 0.5,
+                  desc=("")),
         SwitchSpec('bet_reduce_bias', False,
                    desc="Only used if not 'bet_robust'"),
-        ParamSpec('bet_g_threshold', 0.0),
-        SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet')),
-        SwitchSpec('optibet_gen_report', False),
-        SwitchSpec('coreg_to_tmpl_method', 'ants', ('fnirt', 'ants')),
-        ParamSpec('mni_template_resolution', None, choices=(0.5, 1, 2),
+        ParamSpec('bet_g_threshold', 0.0,
+                  desc=("")),
+        SwitchSpec('bet_method', 'fsl_bet', ('fsl_bet', 'optibet'),
+                   desc=("")),
+        SwitchSpec('optibet_gen_report', False,
+                   desc=("")),
+        SwitchSpec('coreg_to_tmpl_method', 'ants', ('fnirt', 'ants'),
+                   desc=("")),
+        ParamSpec('mni_tmpl_resolution', None, choices=(0.5, 1, 2),
                   dtype=int),
-        ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias'),
-        ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1]),
-        ParamSpec('reoriented_dims', ('RL', 'AP', 'IS')),
-        ParamSpec('resampled_resolution', None, dtype=list),
+        ParamSpec('fnirt_intensity_model', 'global_non_linear_with_bias',
+                  desc=("")),
+        ParamSpec('fnirt_subsampling', [4, 4, 2, 2, 1, 1],
+                  desc=("")),
+        ParamSpec('reoriented_dims', ('RL', 'AP', 'IS'),
+                  desc=("")),
+        ParamSpec('resampled_resolution', None, dtype=list,
+                  desc=("")),
         SwitchSpec('coreg_method', 'ants', ('ants', 'flirt', 'spm'),
                    desc="The tool to use for linear registration"),
         ParamSpec('flirt_degrees_of_freedom', 6, desc=(
             "Number of degrees of freedom used in the registration. "
             "Default is 6 -> affine transformation.")),
-        ParamSpec('flirt_cost_func', 'normmi', desc=(
-            "Cost function used for the registration. Can be one of "
-            "'mutualinfo', 'corratio', 'normcorr', 'normmi', 'leastsq',"
-            " 'labeldiff', 'bbr'")),
+        SwitchSpec('flirt_cost_func', 'normmi', desc=(
+            "Cost function used for the registration. Can be one of "),
+            choices=('mutualinfo', 'corratio', 'normcorr', 'normmi',
+                     'leastsq', 'labeldiff', 'bbr')),
         ParamSpec('flirt_qsform', False, desc=(
             "Whether to use the QS form supplied in the input image "
             "header (the image coordinates of the FOV supplied by the "
@@ -191,14 +224,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "filename"))]
 
     @property
-    def mni_template_resolution(self):
-        if self.parameter('mni_template_resolution') is not None:
-            res = self.parameter('mni_template_resolution')
+    def mni_tmpl_resolution(self):
+        if self.parameter('mni_tmpl_resolution') is not None:
+            res = self.parameter('mni_tmpl_resolution')
         else:
             raise ArcanaMissingDataException(
                 "Automatic detection of dataset resolution is not implemented "
                 "yet, please specify resolution of default MNI templates "
-                "manually via 'mni_template_resolution' parameter")
+                "manually via 'mni_tmpl_resolution' parameter")
         return res
 
     @property
@@ -212,6 +245,14 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         else:
             hdr_name = 'magnitude'
         return hdr_name
+
+    @property
+    def preproc_spec_name(self):
+        if self.is_coregistered:
+            name = 'mag_coreg'
+        else:
+            name = 'mag_preproc'
+        return name
 
     @property
     def brain_spec_name(self):
@@ -718,23 +759,16 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in2': (mni_reg, 'regmat')},
             wall_time=1)
 
-        trans_flags = pipeline.add(
-            'trans_flags',
-            Merge(2,
-                  in1=False,
-                  in2=True),
-            wall_time=1)
-
         apply_trans = pipeline.add(
             'ApplyTransform',
             ApplyTransforms(
                 interpolation='NearestNeighbor',
-                input_image_type=3),
+                input_image_type=3,
+                invert_transform_flags=[False, True]),
             inputs={
                 'input_image': ('template_mask', nifti_gz_format),
                 'reference_image': ('mag_preproc', nifti_gz_format),
-                'transforms': (merge_trans, 'out'),
-                'invert_transform_flags': (trans_flags, 'out')},
+                'transforms': (merge_trans, 'out')},
             wall_time=7,
             mem_gb=24,
             requirements=[ants_req.v('2.0')])
@@ -1047,7 +1081,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 DicomHeaderInfoExtraction(
                     multivol=False),
                 inputs={
-                    'dicom_folder': (self.header_image_spec_name, dicom_format)},
+                    'dicom_folder': (self.header_image_spec_name,
+                                     dicom_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
@@ -1066,7 +1101,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'hd_info_extraction',
                 NiftixHeaderInfoExtraction(),
                 inputs={
-                    'in_file': (self.header_image_spec_name, nifti_gz_x_format)},
+                    'in_file': (self.header_image_spec_name,
+                                nifti_gz_x_format)},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),

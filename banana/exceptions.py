@@ -19,3 +19,7 @@ class BananaRuntimeError(BananaError):
 
 class BananaTestSetupError(BananaError):
     pass
+
+
+class BananaUnrecognisedBidsFormat(BananaError):
+    pass

@@ -17,6 +17,8 @@ class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):
         InputFilesetSpec('base_mask', nifti_gz_format),
         FilesetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]
 
+    primary_scan_name = 'pet_image'
+
     def suvr_pipeline(self, **kwargs):
 
         pipeline = self.new_pipeline(

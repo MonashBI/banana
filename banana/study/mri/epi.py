@@ -59,6 +59,8 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
         ParamSpec('bet_reduce_bias', False),
         ParamSpec('fugue_echo_spacing', 0.000275)]
 
+    primary_scan_name = 'series'
+
     @property
     def header_image_spec_name(self):
         if self.provided('header_image'):
