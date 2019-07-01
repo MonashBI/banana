@@ -166,7 +166,7 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
                 tr_in[k] = (spec.map('tr'), float)
                 start_time_in[k] = (spec.map('start_time'), float)
                 real_duration_in[k] = (spec.map('real_duration'), float)
-                input_names.append(self.spec(spec.inverse_map(
+                input_names.append(self.spec(spec.map(
                     spec.study_class.primary_scan_name)).pattern)
                 merge_index += 1
 
