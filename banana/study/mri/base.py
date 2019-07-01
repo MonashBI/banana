@@ -758,23 +758,16 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 'in2': (mni_reg, 'regmat')},
             wall_time=1)
 
-        trans_flags = pipeline.add(
-            'trans_flags',
-            Merge(2,
-                  in1=False,
-                  in2=True),
-            wall_time=1)
-
         apply_trans = pipeline.add(
             'ApplyTransform',
             ApplyTransforms(
                 interpolation='NearestNeighbor',
-                input_image_type=3),
+                input_image_type=3,
+                invert_transform_flags=[False, True]),
             inputs={
                 'input_image': ('template_mask', nifti_gz_format),
                 'reference_image': ('mag_preproc', nifti_gz_format),
-                'transforms': (merge_trans, 'out'),
-                'invert_transform_flags': (trans_flags, 'out')},
+                'transforms': (merge_trans, 'out')},
             wall_time=7,
             mem_gb=24,
             requirements=[ants_req.v('2.0')])
