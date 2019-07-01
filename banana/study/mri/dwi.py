@@ -159,6 +159,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
     RECOMMENDED_NUM_SESSIONS_FOR_INTENS_NORM = 5
 
+    primary_scan_name = 'series'
+
     @property
     def multi_tissue(self):
         return self.branch('response_algorithm',

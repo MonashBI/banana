@@ -66,6 +66,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         BidsInputs(spec_name='magnitude', type='T1w',
                    valid_formats=(nifti_gz_x_format, nifti_gz_format))]
 
+    primary_scan_name = 'magnitude'
+
     def freesurfer_pipeline(self, **name_maps):
         """
         Segments grey matter, white matter and CSF from T1 images using

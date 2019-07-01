@@ -91,6 +91,8 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                                format=nifti_gz_format,
                                drop_if_missing=True)]
 
+    primary_scan_name = 'series'
+
     def rsfMRI_filtering_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
