@@ -86,14 +86,23 @@ class FslReferenceData(BaseReference):
         Relative path to atlas directory from FSL 'data' directory
     """
 
+    DEFAULT_SUB_PATH = ('standard',)
+
     def __init__(self, atlas_name, format, name=None, resolution=1,  # @ReservedAssignment @IgnorePep8
-                 dataset=None, sub_path=['standard']):
+                 dataset=None, sub_path=DEFAULT_SUB_PATH):
         super().__init__(format, name)
         self._atlas_name = atlas_name
         self._resolution = resolution
         self._dataset = dataset
         self._sub_path = tuple(sub_path.split('/') if isinstance(sub_path, str)
                                else sub_path)
+
+    def __str__(self):
+        return ("FslReferenceData({},{}{})"
+                .format(self._atlas_name,
+                        self._resolution,
+                        (',{}'.format(self._dataset)
+                         if self._dataset is not None else '')))
 
     @property
     def path(self):

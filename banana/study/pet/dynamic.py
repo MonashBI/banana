@@ -38,6 +38,8 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
         ParamSpec('regress_th', 0),
         ParamSpec('regress_binarize', False)]
 
+    primary_scan_name = 'pet_volumes'
+
     def Extract_vol_pipeline(self, **kwargs):
 
         pipeline = self.new_pipeline(

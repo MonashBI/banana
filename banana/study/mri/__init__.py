@@ -7,3 +7,4 @@ from .t2star import T2starStudy
 # from .bold import BoldStudy
 # from .ute import Utetudy
 from .epi import EpiSeriesStudy
+from .multi import DwiAndT1Study, T1AndT2Study

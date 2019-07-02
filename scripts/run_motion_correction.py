@@ -8,7 +8,7 @@ from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
 import pickle as pkl
-from arcana.processor.linear import SingleProc
+from arcana.processor.single import SingleProc
 import shutil
 
 
