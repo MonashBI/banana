@@ -2,7 +2,7 @@ from nipype.interfaces.fsl.model import MELODIC
 from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
-                                       SignalRegression, PrepareFIXTraining)
+                                   SignalRegression, PrepareFIXTraining)
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.study.base import StudyMetaClass
 from banana.requirement import (
@@ -430,13 +430,14 @@ class MultiBoldMixin(MultiStudy):
                 'in{}'.format(i), text_format)
 
         merge_visits = pipeline.add(
+            'merge_visits',
             IdentityInterface(
                 ['list_dir', 'list_label_files']),
             inputs={
                 'list_dir': (merge_fix_dirs, 'out'),
                 'list_label_files': (merge_label_files, 'out')},
             joinsource=self.SUBJECT_ID,
-            joinfield=['list_dir', 'list_label_files'], name='merge_visits')
+            joinfield=['list_dir', 'list_label_files'])
 
         merge_subjects = pipeline.add(
             'merge_subjects',
@@ -508,6 +509,7 @@ class MultiBoldMixin(MultiStudy):
             name_maps=name_maps)
 
         pipeline.add(
+            'gica',
             MELODIC(
                 no_bet=True,
                 bg_threshold=self.parameter('brain_thresh_percent'),
@@ -527,7 +529,6 @@ class MultiBoldMixin(MultiStudy):
                 'group_melodic': ('out_dir', directory_format)},
             joinsource=self.SUBJECT_ID,
             joinfield=['in_files'],
-            name='gica',
             requirements=[fsl_req.v('5.0.10')],
             wall_time=7200)
 
@@ -561,7 +562,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
     inputs.append(InputFilesets('t1_magnitude', t1, dicom_format,
-                                  is_regex=True, order=0))
+                                is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref',
