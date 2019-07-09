@@ -62,7 +62,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         elif 'reverse_phase' in self.input_names:
             return self._topup_pipeline(**name_maps)
         else:
-            return super().preprocess_pipeline(**name_maps)
+            return super().prepare_pipeline(**name_maps)
 
     def _topup_pipeline(self, **name_maps):
 
@@ -349,7 +349,7 @@ class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
                 requirements=[fsl_req.v('5.0.10')],
                 wall_time=10)
         else:
-            pipeline = super().coreg_brain_pipeline(**name_maps)
+            pipeline = super().brain_coreg_pipeline(**name_maps)
 
         return pipeline
 
