@@ -24,7 +24,38 @@ from banana.interfaces.mrtrix import MRConvert
 from banana.requirement import mrtrix_req
 
 
-class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
+class EpiStudy(MriStudy, metaclass=StudyMetaClass):
+
+    add_data_specs = [
+        InputFilesetSpec('series', STD_IMAGE_FORMATS,
+                         desc=("The set of EPI volumes that make up the "
+                               "series")),
+        InputFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
+                         optional=True),
+        InputFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
+        InputFilesetSpec('field_map_mag', STD_IMAGE_FORMATS,
+                         optional=True),
+        InputFilesetSpec('field_map_phase', STD_IMAGE_FORMATS,
+                         optional=True),
+        FilesetSpec('moco', nifti_gz_format,
+                    'intrascan_alignment_pipeline'),
+        FilesetSpec('align_mats', motion_mats_format,
+                    'intrascan_alignment_pipeline'),
+        FilesetSpec('moco_par', par_format,
+                    'intrascan_alignment_pipeline'),
+        FieldSpec('field_map_delta_te', float,
+                  'field_map_time_info_pipeline')]
+
+    add_param_specs = [
+        SwitchSpec('bet_robust', True),
+        MriStudy.param_spec('coreg_method').with_new_choices(
+            'epireg', fallbacks={'epireg': 'flirt'}),
+        ParamSpec('bet_f_threshold', 0.2),
+        ParamSpec('bet_reduce_bias', False),
+        ParamSpec('fugue_echo_spacing', 0.000275)]
+
+
+class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('series', STD_IMAGE_FORMATS,
@@ -62,14 +93,6 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
     primary_scan_name = 'series'
 
     @property
-    def header_image_spec_name(self):
-        if self.provided('header_image'):
-            hdr_name = 'header_image'
-        else:
-            hdr_name = 'series'
-        return hdr_name
-
-    @property
     def series_preproc_spec_name(self):
         if self.is_coregistered:
             preproc = 'series_coreg'
@@ -97,7 +120,8 @@ class EpiSeriesStudy(MriStudy, metaclass=StudyMetaClass):
             'epireg',
             fsl.epi.EpiReg(
                 out_base='epireg2ref',
-                output_type='NIFTI_GZ'),
+                output_type='NIFTI_GZ',
+                noclean=True),
             inputs={
                 'epi': ('brain', nifti_gz_format),
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),

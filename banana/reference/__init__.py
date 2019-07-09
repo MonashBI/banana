@@ -88,7 +88,7 @@ class FslReferenceData(BaseReference):
 
     DEFAULT_SUB_PATH = ('standard',)
 
-    def __init__(self, atlas_name, format, name=None, resolution=1,  # @ReservedAssignment @IgnorePep8
+    def __init__(self, atlas_name, format, name=None, resolution=1,  # noqa: E501 @ReservedAssignment
                  dataset=None, sub_path=DEFAULT_SUB_PATH):
         super().__init__(format, name)
         self._atlas_name = atlas_name

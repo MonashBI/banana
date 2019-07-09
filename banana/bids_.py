@@ -186,7 +186,7 @@ class BidsRepo(BasicRepo):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
         return op.join(sess_dir, fname)
 
-    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
         if len(path_parts) != 4 or path_parts[0] != 'derivatives':
             return None
         from_study, subj, sess = path_parts[1:]
@@ -262,7 +262,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         file
     """
 
-    def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
+    def __init__(self, path, type, subject_id, visit_id, repository,  # noqa: E501 @ReservedAssignment
                  modality=None, task=None, checksums=None, aux_files=None):
         Fileset.__init__(
             self,
@@ -304,14 +304,14 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         Modality of the filesets
     """
 
-    def __init__(self, spec_name, type, valid_formats=None, task=None,# @ReservedAssignment @IgnorePep8
+    def __init__(self, spec_name, type, valid_formats=None, task=None,# noqa: E501 @ReservedAssignment
                  modality=None, **kwargs):
         InputFilesets.__init__(
             self, spec_name, pattern=None, valid_formats=valid_formats,
-            frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
+            frequency='per_session', **kwargs)  # noqa: E501 @ReservedAssignment
         BaseBidsFileset.__init__(self, type, modality, task)
 
-    def _filtered_matches(self, node, valid_formats=None, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _filtered_matches(self, node, valid_formats=None, **kwargs):  # noqa: E501 @UnusedVariable
         matches = [
             f for f in node.filesets
             if (isinstance(f, BidsFileset) and
@@ -378,7 +378,7 @@ class BidsAssocInputs(InputFilesets):
 
     VALID_ASSOCIATIONS = ('grads', 'phase', 'phasediff', 'epi', 'fieldmap')
 
-    def __init__(self, spec_name, primary, association, type=None, format=None,   # @ReservedAssignment @IgnorePep8
+    def __init__(self, spec_name, primary, association, type=None, format=None,   # noqa: E501 @ReservedAssignment
                  **kwargs):
         InputFilesets.__init__(self, spec_name, format,
                                  frequency='per_session', **kwargs)

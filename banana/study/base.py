@@ -1,7 +1,7 @@
 from copy import copy
 from arcana.study import (
     Study as ArcanaStudy, MultiStudy as ArcanaMultiStudy,
-     StudyMetaClass, MultiStudyMetaClass)  # @UnusedImport @IgnorePep8
+     StudyMetaClass, MultiStudyMetaClass)  # noqa: E501 @UnusedImport
 from banana.bids_ import BidsAssocInputs
 
 
