@@ -3,7 +3,7 @@ from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
     traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpec)
+    MRTrix3Base, MRTrix3BaseInputSpecMixin)
 from arcana.utils import split_extension
 
 
@@ -12,7 +12,7 @@ from arcana.utils import split_extension
 # =============================================================================
 
 
-class MRConvertInputSpec(MRTrix3BaseInputSpec):
+class MRConvertInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = traits.Either(
         File(exists=True, desc="Input file"),
         Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
@@ -193,7 +193,7 @@ class MRCropInputSpec(CommandLineInputSpec):
         traits.Int(desc="index"),  # @UndefinedVariable
         traits.Int(desc="start"),  # @UndefinedVariable
         traits.Int(desc='end'),  # @UndefinedVariable
-        mandatory=False, argstr="-axis %s %s %s", # noqa: E501 @UndefinedVariable
+        mandatory=False, argstr="-axis %s %s %s",  # noqa: E501 @UndefinedVariable
         desc=("crop the input image in the provided axis"))
 
     mask = File(mandatory=False, exists=True, argstr="-mask %s",

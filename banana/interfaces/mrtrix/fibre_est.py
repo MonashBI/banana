@@ -2,14 +2,14 @@ import os.path
 from nipype.interfaces.base import (
     traits, InputMultiPath, File, TraitedSpec, isdefined)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpec)
+    MRTrix3Base, MRTrix3BaseInputSpecMixin)
 from nipype.interfaces.mrtrix3.preprocess import (
     ResponseSD as NipypeResponseSD,
     ResponseSDInputSpec as NipypeResponseSDInputSpec)
 from arcana.utils import split_extension
 
 
-class Fod2FixelInputSpec(MRTrix3BaseInputSpec):
+class Fod2FixelInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -32,7 +32,7 @@ class Fod2Fixel(MRTrix3Base):
         return outputs
 
 
-class Fixel2VoxelInputSpec(MRTrix3BaseInputSpec):
+class Fixel2VoxelInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -55,7 +55,7 @@ class Fixel2Voxel(MRTrix3Base):
         return outputs
 
 
-class FixelCorrespondenceInputSpec(MRTrix3BaseInputSpec):
+class FixelCorrespondenceInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -78,7 +78,7 @@ class FixelCorrespondence(MRTrix3Base):
         return outputs
 
 
-class FixelCFEStatsInputSpec(MRTrix3BaseInputSpec):
+class FixelCFEStatsInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -101,7 +101,7 @@ class FixelCFEStats(MRTrix3Base):
         return outputs
 
 
-class TckSiftInputSpec(MRTrix3BaseInputSpec):
+class TckSiftInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -124,7 +124,7 @@ class TckSift(MRTrix3Base):
         return outputs
 
 
-class Warp2MetricInputSpec(MRTrix3BaseInputSpec):
+class Warp2MetricInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -147,7 +147,7 @@ class Warp2Metric(MRTrix3Base):
         return outputs
 
 
-class AverageReponseInputSpec(MRTrix3BaseInputSpec):
+class AverageReponseInputSpec(MRTrix3BaseInputSpecMixin):
 
     in_files = InputMultiPath(
         File(exists=True), argstr='%s', mandatory=True,
@@ -192,7 +192,7 @@ class AverageResponse(MRTrix3Base):
         return filename
 
 
-class EstimateFODInputSpec(MRTrix3BaseInputSpec):
+class EstimateFODInputSpec(MRTrix3BaseInputSpecMixin):
 
     algorithm = traits.Enum('csd', 'msmt_csd', argstr='%s', mandatory=True,
                             position=0,
@@ -297,10 +297,10 @@ class EstimateFOD(MRTrix3Base):
     >>> fod.inputs.response = 'response.txt'
     >>> fod.inputs.in_mask = 'mask.nii.gz'
     >>> fod.inputs.grad_fsl = ('bvecs', 'bvals')
-    >>> fod.cmdline                               # doctest: +ELLIPSIS +ALLOW_UNICODE
+    >>> fod.cmdline
     'dwi2fod -fslgrad bvecs bvals -mask mask.nii.gz dwi.mif response.txt\
  fods.mif'
-    >>> fod.run()                                 # doctest: +SKIP
+    >>> fod.run()
     """
 
     _cmd = 'dwi2fod'

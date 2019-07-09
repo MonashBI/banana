@@ -4,17 +4,17 @@ import math
 from nipype.interfaces.base import (
     File, Directory, TraitedSpec, isdefined, traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpec)
+    MRTrix3Base, MRTrix3BaseInputSpecMixin)
 from arcana.utils import split_extension
 
 
-# TODO: Write MRtrixBaseInputSpec with all the generic parameters included
+# TODO: Write MRtrixBaseInputSpecMixin with all the generic parameters included
 
 # =============================================================================
 # Extract MR gradients
 # =============================================================================
 
-class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
+class DWIPreprocInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = traits.File(
         mandatory=True, argstr='%s',
         desc=("The input DWI series to be corrected"), position=1)
@@ -105,7 +105,7 @@ class DWIPreproc(MRTrix3Base):
         return temp_dir
 
 
-class DWI2MaskInputSpec(MRTrix3BaseInputSpec):
+class DWI2MaskInputSpec(MRTrix3BaseInputSpecMixin):
     # Arguments
     bvalue_scaling = File(
         mandatory=False, argstr='-bvalue_scaling %s',
@@ -156,7 +156,7 @@ class DWI2Mask(MRTrix3Base):
         return out_name
 
 
-class DWIBiasCorrectInputSpec(MRTrix3BaseInputSpec):
+class DWIBiasCorrectInputSpec(MRTrix3BaseInputSpecMixin):
     # Arguments
     mask = File(
         mandatory=True, argstr='-mask %s',
@@ -212,7 +212,7 @@ class DWIBiasCorrect(MRTrix3Base):
 # =============================================================================
 
 
-class DWIDenoiseInputSpec(MRTrix3BaseInputSpec):
+class DWIDenoiseInputSpec(MRTrix3BaseInputSpecMixin):
     in_file = traits.Either(
         File(exists=True, desc="Input file"),
         Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
@@ -292,7 +292,7 @@ class DWIDenoise(MRTrix3Base):
         return out_name
 
 
-class DWIIntensityNormInputSpec(MRTrix3BaseInputSpec):
+class DWIIntensityNormInputSpec(MRTrix3BaseInputSpecMixin):
 
     in_files = InputMultiPath(
         File(exists=True),
