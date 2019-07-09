@@ -304,7 +304,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         Modality of the filesets
     """
 
-    def __init__(self, spec_name, type, valid_formats=None, task=None,# noqa: E501 @ReservedAssignment
+    def __init__(self, spec_name, type, valid_formats=None, task=None,  # noqa: E501 @ReservedAssignment
                  modality=None, **kwargs):
         InputFilesets.__init__(
             self, spec_name, pattern=None, valid_formats=valid_formats,
@@ -350,7 +350,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
     def _check_args(self):
         pass  # Disable check for either pattern or ID in base class
 
-    @BaseBidsFileset.task.setter
+    @BaseBidsFileset.task.setter  # pylint: disable=no-member
     def task(self, task):
         self._task = task
 
@@ -381,7 +381,7 @@ class BidsAssocInputs(InputFilesets):
     def __init__(self, spec_name, primary, association, type=None, format=None,   # noqa: E501 @ReservedAssignment
                  **kwargs):
         InputFilesets.__init__(self, spec_name, format,
-                                 frequency='per_session', **kwargs)
+                               frequency='per_session', **kwargs)
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
             raise BananaUsageError(
@@ -428,7 +428,7 @@ class BidsAssocInputs(InputFilesets):
         unbound_primary = self._primary
         if isinstance(study, MultiStudy) and hasattr(self,
                                                      'prefixed_primary_name'):
-            primary_spec_name = self.prefixed_primary_name
+            primary_spec_name = self.prefixed_primary_name  # noqa pylint: disable=no-member
         else:
             primary_spec_name = self.primary.name
         self._primary = self._primary.bind(study, spec_name=primary_spec_name,
@@ -474,7 +474,7 @@ class BidsAssocInputs(InputFilesets):
                                             return_list=True)
             try:
                 fieldmap = next(f for f in fieldmaps
-                                     if f['type'] == self.association)
+                                if f['type'] == self.association)
             except StopIteration:
                 raise ArcanaInputMissingMatchError(
                     "No \"{}\" field-maps associated with {} (found {})"

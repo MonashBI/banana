@@ -56,8 +56,8 @@ class MRConvertInputSpec(MRTrix3BaseInputSpec):
               "scale * stored_value. By default, the values in the input "
               "image header are passed through to the output image header "
               "when writing to an integer image, and reset to 0,1 (no scaling)"
-              " for floating-point and binary images. Note that his parameter has"
-              " no effect for floating-point and binary images."))
+              " for floating-point and binary images. Note that his parameter "
+              "has no effect for floating-point and binary images."))
     stride = traits.Str(
         mandatory=False, argstr='-stride %s',
         desc=("specify the strides of the output data in memory, as a "

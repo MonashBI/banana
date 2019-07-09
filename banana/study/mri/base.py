@@ -372,8 +372,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if not (self.provided('coreg_ref') or
                 self.provided('coreg_ref_brain')):
             raise ArcanaOutputNotProducedException(
-                "Cannot co-register {} as reference image "
-                "'{}' has not been provided".format(
+                ("Cannot co-register {} as reference image "
+                 "'{}' has not been provided").format(
                     pipeline.map_input('coreg_ref')))
         return pipeline
 
