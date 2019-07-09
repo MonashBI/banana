@@ -8,8 +8,8 @@ from pprint import pformat
 from itertools import chain
 from unittest import TestCase
 from arcana.exceptions import ArcanaNameError
-from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo, SingleProc,
-                    Field, Fileset, ModulesEnv, StaticEnv)
+from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo,
+                    SingleProc, Field, Fileset, ModulesEnv, StaticEnv)
 from arcana.data.spec import BaseInputSpecMixin
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaMissingDataException)
@@ -346,7 +346,8 @@ class PipelineTester(TestCase):
                 if not hasattr(base, 'add_data_specs'):
                     continue
                 for spec in base.add_data_specs:
-                    if isinstance(spec, BaseInputSpecMixin) or spec.name in skip:
+                    if isinstance(spec,
+                                  BaseInputSpecMixin) or spec.name in skip:
                         continue
                     if (base is study_class or base in include_bases or
                             spec.pipeline_getter in potentially_overridden):
