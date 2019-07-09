@@ -1,9 +1,11 @@
 
 from nipype.interfaces.base import (BaseInterface, BaseInterfaceInputSpec,
-                                    traits, File, TraitedSpec, Directory)
+                                    traits, File, TraitedSpec, Directory,
+                                    InputMultiPath)
 import numpy as np
 from nipype.utils.filemanip import split_filename
 import os
+import os.path as op
 import glob
 import shutil
 import nibabel as nib
@@ -110,8 +112,9 @@ class MotionMatCalculation(BaseInterface):
 
 class MergeListMotionMatInputSpec(BaseInterfaceInputSpec):
 
-    file_list = traits.List(mandatory=True, desc='List of files to save into '
-                            'a new directory')
+    file_list = InputMultiPath(
+        File(exists=True), mandatory=True,
+        desc='List of files to save into a new directory')
 
 
 class MergeListMotionMatOutputSpec(TraitedSpec):
@@ -128,22 +131,22 @@ class MergeListMotionMat(BaseInterface):
     output_spec = MergeListMotionMatOutputSpec
 
     def _run_interface(self, runtime):
-
-        file_list = self.inputs.file_list
-        pth, _, _ = split_filename(file_list[0])
-        if os.path.isdir(pth + '/motion_mats') is False:
-            os.mkdir(pth + '/motion_mats')
-        for f in file_list:
-            shutil.copy(f, pth + '/motion_mats')
-
         return runtime
 
     def _list_outputs(self):
         outputs = self._outputs().get()
 
         file_list = self.inputs.file_list
-        pth, _, _ = split_filename(file_list[0])
-        outputs["out_dir"] = pth + '/motion_mats'
+
+        if isinstance(file_list, str):
+            file_list = [file_list]
+
+        out_dir = op.abspath('motion_mats')
+        os.makedirs(out_dir, exist_ok=True)
+        for f in file_list:
+            shutil.copy(f, out_dir)
+
+        outputs["out_dir"] = out_dir
 
         return outputs
 
@@ -152,8 +155,9 @@ class PrepareDWIInputSpec(BaseInterfaceInputSpec):
 
     pe_dir = traits.Str(mandatory=True, desc='Phase encoding direction, i.e. '
                         'if ROW or COL.')
-    ped_polarity = traits.Float(mandatory=True, desc='phase encoding direction '
-                                'polarity, i.e. if + or - ROW for example.')
+    ped_polarity = traits.Float(
+        mandatory=True, desc=('phase encoding direction polarity, i.e. if + '
+                              'or - ROW for example.'))
     dwi = File(exists=True, desc='First diffusion image. Can '
                'be with multiple directions or b0.')
     dwi1 = File(exists=True, desc='Second diffusion image. Can'
