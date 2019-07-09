@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from banana.study.multimodal.mrpet import create_motion_detection_class
+from banana.study.multi.mrpet import create_motion_detection_class
 import os
 import os.path as op
 import errno
