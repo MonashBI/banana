@@ -34,10 +34,10 @@ class ShMRF(BaseInterface):
 
     def _run_interface(self, runtime):  # @UnusedVariable
         mlab = matlab_cmd(
-            "ShMRF('{in_file}', '{mask_file}', '{out_file}')").format(
+            "ShMRF('{in_file}', '{mask_file}', '{out_file}')".format(
                 in_file=self.inputs.in_file,
                 mask_file=self.inputs.mask_file,
-                out_file=self._gen_filename('out_file'))
+                out_file=self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -208,10 +208,10 @@ class FillHoles(BaseInterface):
 
     def _run_interface(self, runtime):  # @UnusedVariable
         mlab = matlab_cmd(
-            "fillholes('{in_file}', '{out_file}');\n"
-            "exit;\n").format(
+            ("fillholes('{in_file}', '{out_file}');\n" +
+             "exit;\n").format(
                 in_file=self.inputs.in_file,
-                out_file=self._gen_filename('out_file'))
+                out_file=self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -243,12 +243,12 @@ class FitMask(BaseInterface):
 
     def _run_interface(self, runtime):  # @UnusedVariable
         mlab = matlab_cmd(
-            "FitMask('{in_file}', '{initial_mask_file}', '{out_file}');\n"
-            "exit;\n").format(
+            ("FitMask('{in_file}', '{initial_mask_file}', '{out_file}');\n"
+             "exit;\n").format(
                 in_file=self.inputs.in_file,
                 initial_mask_file=self.inputs.initial_mask_file,
                 out_file=op.join(os.getcwd(),
-                                 self._gen_filename('out_file')))
+                                 self._gen_filename('out_file'))))
         result = mlab.run()
         return result.runtime
 

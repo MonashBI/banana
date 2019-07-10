@@ -851,8 +851,8 @@ class MotionFraming(BaseInterface):
             frame_st4pet = [
                 x for x in frame_start_times if
                 (dt.datetime.strptime(x, '%H%M%S.%f') >
-                 dt.datetime.strptime(pet_st, '%H%M%S.%f')
-                 and dt.datetime.strptime(x, '%H%M%S.%f') <
+                 dt.datetime.strptime(pet_st, '%H%M%S.%f') and
+                 dt.datetime.strptime(x, '%H%M%S.%f') <
                  dt.datetime.strptime(pet_endtime, '%H%M%S.%f'))]
             if frame_start_times[0] in frame_st4pet:
                 frame_st4pet.remove(frame_start_times[0])
@@ -961,10 +961,12 @@ class PlotMeanDisplacementRC(BaseInterface):
         dates = np.arange(0, len(mean_disp_rc), 1)
         indxs = np.zeros(len(mean_disp_rc), int) + 1
         indxs[false_indexes] = 0
-        start_true_period = [x for x in range(1, len(indxs)) if indxs[x] == 1
-                             and indxs[x - 1] == 0]
-        end_true_period = [x for x in range(len(indxs) - 1) if indxs[x] == 0 and
-                           indxs[x - 1] == 1]
+        start_true_period = [
+            x for x in range(1, len(indxs)) if indxs[x] == 1 and
+            indxs[x - 1] == 0]
+        end_true_period = [
+            x for x in range(len(indxs) - 1) if indxs[x] == 0 and
+            indxs[x - 1] == 1]
         start_true_period.append(1)
         end_true_period.append(len(dates))
         start_true_period = sorted(start_true_period)
@@ -972,8 +974,8 @@ class PlotMeanDisplacementRC(BaseInterface):
         if len(start_true_period) == len(end_true_period) - 1:
             end_true_period.remove(end_true_period[-1])
         elif len(start_true_period) != len(end_true_period):
-            print ('Something went wrong in the identification of the MR '
-                   'idling time. It will not be plotted.')
+            print('Something went wrong in the identification of the MR '
+                  'idling time. It will not be plotted.')
             plot_offset = False
 
         self.gen_plot(dates, mean_disp_rc, plot_offset, start_true_period,
@@ -1005,14 +1007,17 @@ class PlotMeanDisplacementRC(BaseInterface):
                 if plot_mp:
                     for ii in range(3):
                         ax.plot(
-                            dates[start_true_period[i] - 1:end_true_period[i] + 1],
+                            dates[start_true_period[i] -
+                                  1:end_true_period[i] + 1],
                             to_plot[ii, start_true_period[i] - 1:
                                     end_true_period[i] + 1],
                             c=col[ii], linewidth=2)
                 else:
-                    ax.plot(dates[start_true_period[i] - 1:end_true_period[i] + 1],
+                    ax.plot(dates[start_true_period[i] -
+                                  1:end_true_period[i] + 1],
                             to_plot[start_true_period[i] - 1:
-                                    end_true_period[i] + 1], c='b', linewidth=2)
+                                    end_true_period[i] + 1], c='b',
+                            linewidth=2)
             for i in range(0, len(end_true_period) - 1):
                 if plot_mp:
                     for ii in range(3):
@@ -1024,8 +1029,10 @@ class PlotMeanDisplacementRC(BaseInterface):
                             c=col[ii], linewidth=2, ls='--', dashes=(2, 3))
                 else:
                     ax.plot(
-                        dates[end_true_period[i] - 1:start_true_period[i + 1] + 1],
-                        to_plot[end_true_period[i] - 1:start_true_period[i + 1] + 1],
+                        dates[end_true_period[i] -
+                              1:start_true_period[i + 1] + 1],
+                        to_plot[end_true_period[i] -
+                                1:start_true_period[i + 1] + 1],
                         c='b', linewidth=2, ls='--', dashes=(2, 3))
 
         if framing:
@@ -1044,8 +1051,8 @@ class PlotMeanDisplacementRC(BaseInterface):
 
                 tt1 = ((dt.datetime.strptime(str(frame_start_times[i + 1]),
                                              '%H%M%S.%f') -
-                       dt.datetime.strptime(str(frame_start_times[0]),
-                                            '%H%M%S.%f'))
+                        dt.datetime.strptime(str(frame_start_times[0]),
+                                             '%H%M%S.%f'))
                        .total_seconds() * 1000)
                 if tt1 >= len(dates):
                     tt1 = len(dates) - 1
@@ -1439,7 +1446,7 @@ class FixedBinning(BaseInterface):
                   for x in scan_duration]
         MrStartPoints = [MrBins[i] + dt.timedelta(
             seconds=(MrBins[i + 1] - MrBins[i]).total_seconds() / 2) for i in
-                         range(len(MrBins) - 1)]
+            range(len(MrBins) - 1)]
 
         indxs = []
         PetBins.append(pet_st + dt.timedelta(seconds=pet_len))
@@ -1454,8 +1461,10 @@ class FixedBinning(BaseInterface):
                 if (pet_bin > MrStartPoints[i] and
                         pet_bin < MrStartPoints[i + 1]):
                     MrDiff = (
-                        (MrStartPoints[i + 1] - MrStartPoints[i]).total_seconds())
-                    w0 = (MrStartPoints[i + 1] - pet_bin).total_seconds() / MrDiff
+                        (MrStartPoints[i + 1] -
+                         MrStartPoints[i]).total_seconds())
+                    w0 = (MrStartPoints[i + 1] -
+                          pet_bin).total_seconds() / MrDiff
                     w1 = (pet_bin - MrStartPoints[i]).total_seconds() / MrDiff
                     indxs.append([[w0, i], [w1, i + 1]])
                     break
@@ -1481,7 +1490,8 @@ class FixedBinning(BaseInterface):
                     'average_motion_mat_bin_{0}.txt'.format(str(z).zfill(3)),
                     av_mat)
                 z = z + 1
-            elif (s1 + 1 == s2 and e1 + 1 == e2) or (s1 + 2 == s2 and e1 + 2 == e2):
+            elif (s1 + 1 == s2 and e1 + 1 == e2) or (s1 + 2 == s2 and
+                                                     e1 + 2 == e2):
                 mat_s1 = np.loadtxt(motion_mats[s1])
                 mat_e1 = np.loadtxt(motion_mats[e1])
                 mat_s2 = np.loadtxt(motion_mats[s2])
