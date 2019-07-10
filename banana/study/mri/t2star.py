@@ -77,33 +77,33 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         FilesetSpec('swi', nifti_gz_format, 'swi_pipeline'),
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     desc=("Quantitative susceptibility image resolved "
-                                 "from T2* coil images")),
+                          "from T2* coil images")),
         # Vein analysis
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
         # Templates
         InputFilesetSpec('mni_template_qsm_prior', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=LocalReferenceData('QSMPrior',
-                                                       nifti_gz_format)),
+                         frequency='per_study',
+                         default=LocalReferenceData('QSMPrior',
+                                                    nifti_gz_format)),
         InputFilesetSpec('mni_template_swi_prior', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=LocalReferenceData('SWIPrior',
-                                                       nifti_gz_format)),
+                         frequency='per_study',
+                         default=LocalReferenceData('SWIPrior',
+                                                    nifti_gz_format)),
         InputFilesetSpec('mni_template_atlas_prior', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=LocalReferenceData('VeinFrequencyPrior',
-                                                       nifti_gz_format)),
+                         frequency='per_study',
+                         default=LocalReferenceData('VeinFrequencyPrior',
+                                                    nifti_gz_format)),
         InputFilesetSpec('mni_template_vein_atlas', STD_IMAGE_FORMATS,
-                            frequency='per_study',
-                            default=LocalReferenceData('VeinFrequencyMap',
-                                                       nifti_gz_format))]
+                         frequency='per_study',
+                         default=LocalReferenceData('VeinFrequencyMap',
+                                                    nifti_gz_format))]
 
     add_param_specs = [
         SwitchSpec('qsm_dual_echo', False),
         ParamSpec('qsm_echo', 1,
-                      desc=("Which echo (by index starting at 1) to use when "
-                            "using single echo")),
+                  desc=("Which echo (by index starting at 1) to use when "
+                        "using single echo")),
         ParamSpec('qsm_padding', [12, 12, 12]),
         ParamSpec('qsm_mask_dialation', [11, 11, 11]),
         ParamSpec('qsm_erosion_size', 10),
@@ -292,14 +292,6 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         raise NotImplementedError
 
-        pipeline = self.new_pipeline(
-            name='swi',
-            name_maps=name_maps,
-            desc=("Calculate susceptibility-weighted image from magnitude and "
-                  "phase"))
-
-        return pipeline
-
     def cv_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
@@ -438,7 +430,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 interpolation='NearestNeighbor',
                 input_image_type=3,
                 invert_transform_flags=[True, True, False],
-                input_image=pipeline.option('SUIT_mask')),
+                input_image=self.parameter('SUIT_mask')),
             inputs={
                 'transforms': (merge_trans, 'out'),
                 'reference_image': ('betted_T2s', nifti_gz_format)},

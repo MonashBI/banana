@@ -20,9 +20,6 @@ limitations under the License.
 from .__about__ import __version__, __authors__
 import os
 
-# Should be set explicitly in all FSL interfaces, but this squashes the warning
-os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
-
 # Import all objects from Arcana used to design and apply Banana studies
 from arcana import (  # @IgnorePep8
     SubStudySpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
@@ -37,3 +34,6 @@ from .bids_ import BidsRepo  # @IgnorePep8
 # Import all Study classes into package root
 from .study.base import (  # @IgnorePep8
     Study, StudyMetaClass, MultiStudy, MultiStudyMetaClass)
+
+# Should be set explicitly in all FSL interfaces, but this squashes the warning
+os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'

@@ -448,7 +448,7 @@ class PreparePetDir(BaseInterface):
             hd = im.header
             if 'New_e7tools' in hd['db_name']:
                 image_orientation_check = True
-                print ('New e7tool version detected.')
+                print('New e7tool version detected.')
             pet_dicoms = sorted(glob.glob(pet_dir + '/Frame*'))
             if pet_dicoms and len(pet_images) != len(pet_dicoms):
                 for f in pet_images:
@@ -463,7 +463,7 @@ class PreparePetDir(BaseInterface):
                         'syngo MR B20P' in hd.SoftwareVersions or
                         'syngo MR E11' in hd.SoftwareVersions):
                     image_orientation_check = True
-                    print ('New e7tool version detected.')
+                    print('New e7tool version detected.')
                 for dcm in pet_dicoms:
                     frame_num = dcm.split('/')[-1][5:]
                     cmd = ('mrconvert -force {0} {1}/{2}{3}.nii.gz'

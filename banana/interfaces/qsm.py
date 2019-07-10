@@ -248,7 +248,7 @@ class FitMask(BaseInterface):
                 in_file=self.inputs.in_file,
                 initial_mask_file=self.inputs.initial_mask_file,
                 out_file=op.join(os.getcwd(),
-                                         self._gen_filename('out_file')))
+                                 self._gen_filename('out_file')))
         result = mlab.run()
         return result.runtime
 
@@ -282,7 +282,7 @@ class QSMSummary(BaseInterface):
 
     def _run_interface(self, runtime):  # @UnusedVariable
         with open(op.join(os.getcwd(),
-                               self._gen_filename('out_file')), 'w') as fp:
+                          self._gen_filename('out_file')), 'w') as fp:
 
             fp.write('subjectId,visitId,' + ','.join(
                 str(t) for t in self.inputs.in_field_names) + '\n')

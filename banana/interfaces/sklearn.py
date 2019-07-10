@@ -81,8 +81,8 @@ class FastICA(BaseInterface):
             if vstd != 0:
                 pc_zscore = pc/vstd
             else:
-                print ('Not converting to z-scores as division by zero'
-                       ' warning may occur.')
+                print('Not converting to z-scores as division by zero'
+                      ' warning may occur.')
                 pc_zscore = pc
             ica_zscore[:, :, :, i] = pc_zscore
             ica_tc[:, i] = tc[:, i]

@@ -72,7 +72,7 @@ class ImageDisplayMixin():
         # Either show image or save it to file
 
     def display_tcks_with_mrview(self, tcks, backgrounds, padding=1,
-                                  img_size=5, offset=None):
+                                 img_size=5, offset=None):
         """
         Displays dMRI tractography streamlines using MRtrix's mrview to
         display and screenshot to file the streamlines. Then reload,
@@ -121,7 +121,7 @@ class ImageDisplayMixin():
             padded_size = max(chain(*(a.shape for a in imgs)))
             for i, img in enumerate(imgs):
                 img = self.pad_to_size(img, (padded_size,
-                                              padded_size))
+                                             padded_size))
                 axis = fig.add_subplot(gs[i])
                 axis.get_xaxis().set_visible(False)
                 axis.get_yaxis().set_visible(False)

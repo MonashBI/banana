@@ -3,7 +3,7 @@ from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
     traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpecMixin)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 from arcana.utils import split_extension
 
 
@@ -12,7 +12,7 @@ from arcana.utils import split_extension
 # =============================================================================
 
 
-class MRConvertInputSpec(MRTrix3BaseInputSpecMixin):
+class MRConvertInputSpec(MRTrix3BaseInputSpec):
     in_file = traits.Either(
         File(exists=True, desc="Input file"),
         Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
@@ -251,10 +251,10 @@ class MRPadInputSpec(CommandLineInputSpec):
                     desc="Extracted DW or b-zero images")
 
     axis = traits.Tuple(
-        traits.Int(desc="index"),  # @UndefinedVariable
-        traits.Int(desc="lower"),  # @UndefinedVariable
-        traits.Int(desc='upper'),  # @UndefinedVariable
-        mandatory=False, argstr="-axis %s %s %s", # noqa: E501 @UndefinedVariable
+        traits.Int(desc="index"),
+        traits.Int(desc="lower"),
+        traits.Int(desc='upper'),
+        mandatory=False, argstr="-axis %s %s %s",
         desc=("Pad the input image along the provided axis (defined by index)."
               "Lower and upper define the number of voxels to add to the lower"
               " and upper bounds of the axis"))
@@ -495,9 +495,10 @@ class ExtractFSLGradients(CommandLine):
 # =============================================================================
 
 class ExtractDWIorB0InputSpec(CommandLineInputSpec):
-    in_file = traits.Either(File, Directory, exists=True, argstr='%s',
-                            mandatory=True, position=0,
-                            desc="Diffusion weighted images with graident info")
+    in_file = traits.Either(
+        File, Directory, exists=True, argstr='%s',
+        mandatory=True, position=0,
+        desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")

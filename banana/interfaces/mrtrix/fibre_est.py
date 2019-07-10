@@ -2,14 +2,14 @@ import os.path
 from nipype.interfaces.base import (
     traits, InputMultiPath, File, TraitedSpec, isdefined)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpecMixin)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 from nipype.interfaces.mrtrix3.preprocess import (
     ResponseSD as NipypeResponseSD,
     ResponseSDInputSpec as NipypeResponseSDInputSpec)
 from arcana.utils import split_extension
 
 
-class Fod2FixelInputSpec(MRTrix3BaseInputSpecMixin):
+class Fod2FixelInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -32,7 +32,7 @@ class Fod2Fixel(MRTrix3Base):
         return outputs
 
 
-class Fixel2VoxelInputSpec(MRTrix3BaseInputSpecMixin):
+class Fixel2VoxelInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -55,7 +55,7 @@ class Fixel2Voxel(MRTrix3Base):
         return outputs
 
 
-class FixelCorrespondenceInputSpec(MRTrix3BaseInputSpecMixin):
+class FixelCorrespondenceInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -78,7 +78,7 @@ class FixelCorrespondence(MRTrix3Base):
         return outputs
 
 
-class FixelCFEStatsInputSpec(MRTrix3BaseInputSpecMixin):
+class FixelCFEStatsInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -101,7 +101,7 @@ class FixelCFEStats(MRTrix3Base):
         return outputs
 
 
-class TckSiftInputSpec(MRTrix3BaseInputSpecMixin):
+class TckSiftInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -124,7 +124,7 @@ class TckSift(MRTrix3Base):
         return outputs
 
 
-class Warp2MetricInputSpec(MRTrix3BaseInputSpecMixin):
+class Warp2MetricInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -147,7 +147,7 @@ class Warp2Metric(MRTrix3Base):
         return outputs
 
 
-class AverageReponseInputSpec(MRTrix3BaseInputSpecMixin):
+class AverageReponseInputSpec(MRTrix3BaseInputSpec):
 
     in_files = InputMultiPath(
         File(exists=True), argstr='%s', mandatory=True,
@@ -192,7 +192,7 @@ class AverageResponse(MRTrix3Base):
         return filename
 
 
-class EstimateFODInputSpec(MRTrix3BaseInputSpecMixin):
+class EstimateFODInputSpec(MRTrix3BaseInputSpec):
 
     algorithm = traits.Enum('csd', 'msmt_csd', argstr='%s', mandatory=True,
                             position=0,

@@ -32,7 +32,7 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         ParamSpec('trans_template',
-                      os.path.join(template_path, 'PET_template.nii.gz')),
+                  os.path.join(template_path, 'PET_template.nii.gz')),
         ParamSpec('base_remove_th', 0),
         ParamSpec('base_remove_binarize', False),
         ParamSpec('regress_th', 0),

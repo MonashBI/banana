@@ -169,8 +169,8 @@ class UnwrapPhaseInputSpec(BaseSTIInputSpec):
     in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
                    desc="Input file to unwrap")
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                             mandatory=True, keyword=True,
-                             desc="Voxel size of the image")
+                            mandatory=True, keyword=True,
+                            desc="Voxel size of the image")
     padsize = traits.List([12, 12, 12],
                           (traits.Int(), traits.Int(), traits.Int()),
                           usedefault=True, keyword=True,
@@ -200,8 +200,8 @@ class VSharpInputSpec(BaseSTIInputSpec):
         desc=("A format string used to manipulate the mask before it is "
               "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                             mandatory=True, keyword=True,
-                             desc="Voxel size of the image")
+                            mandatory=True, keyword=True,
+                            desc="Voxel size of the image")
 
 
 class VSharpOutputSpec(BaseSTIOutputSpec):
@@ -229,8 +229,8 @@ class QSMiLSQRInputSpec(BaseSTIInputSpec):
         desc=("The format string used to manipulate the mask before it is "
               "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                             mandatory=True, in_struct='params',
-                             desc="Voxel size of the image")
+                            mandatory=True, in_struct='params',
+                            desc="Voxel size of the image")
     padsize = traits.List([12, 12, 12],
                           (traits.Int(), traits.Int(), traits.Int()),
                           usedefault=True, in_struct='params',
@@ -240,8 +240,8 @@ class QSMiLSQRInputSpec(BaseSTIInputSpec):
     B0 = traits.Float(mandatory=True, desc="B0 field strength",
                       in_struct='params')
     H = traits.List((traits.Float(), traits.Float(), traits.Float()),
-                     mandatory=True, desc="Direction of the B0 field",
-                     in_struct='params')
+                    mandatory=True, desc="Direction of the B0 field",
+                    in_struct='params')
 
 
 class QSMiLSQROutputSpec(BaseSTIOutputSpec):

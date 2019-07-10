@@ -207,7 +207,7 @@ class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
     phases_dir = Directory(exists=True, desc=(
         "Input directory containing coil phase images."))
     in_fname_re = traits.Str(
-        'coil_(?P<channel>\d+)_(?P<echo>\d+)\.nii\.gz', usedefault=True,
+        r'coil_(?P<channel>\d+)_(?P<echo>\d+)\.nii\.gz', usedefault=True,
         desc=("The format string used to generate the save channel filenames. "
               "Must use the 'channel' and 'echo' field names"))
     magnitude = File(genfile=True, desc="Combined magnitude image")

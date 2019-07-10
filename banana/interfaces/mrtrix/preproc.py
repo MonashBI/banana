@@ -4,7 +4,7 @@ import math
 from nipype.interfaces.base import (
     File, Directory, TraitedSpec, isdefined, traits, InputMultiPath)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpecMixin)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 from arcana.utils import split_extension
 
 
@@ -14,7 +14,7 @@ from arcana.utils import split_extension
 # Extract MR gradients
 # =============================================================================
 
-class DWIPreprocInputSpec(MRTrix3BaseInputSpecMixin):
+class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
     in_file = traits.File(
         mandatory=True, argstr='%s',
         desc=("The input DWI series to be corrected"), position=1)
@@ -105,7 +105,7 @@ class DWIPreproc(MRTrix3Base):
         return temp_dir
 
 
-class DWI2MaskInputSpec(MRTrix3BaseInputSpecMixin):
+class DWI2MaskInputSpec(MRTrix3BaseInputSpec):
     # Arguments
     bvalue_scaling = File(
         mandatory=False, argstr='-bvalue_scaling %s',
@@ -156,7 +156,7 @@ class DWI2Mask(MRTrix3Base):
         return out_name
 
 
-class DWIBiasCorrectInputSpec(MRTrix3BaseInputSpecMixin):
+class DWIBiasCorrectInputSpec(MRTrix3BaseInputSpec):
     # Arguments
     mask = File(
         mandatory=True, argstr='-mask %s',
@@ -212,7 +212,7 @@ class DWIBiasCorrect(MRTrix3Base):
 # =============================================================================
 
 
-class DWIDenoiseInputSpec(MRTrix3BaseInputSpecMixin):
+class DWIDenoiseInputSpec(MRTrix3BaseInputSpec):
     in_file = traits.Either(
         File(exists=True, desc="Input file"),
         Directory(exists=True, desc="Input directory (assumed to be DICOM)"),
@@ -292,7 +292,7 @@ class DWIDenoise(MRTrix3Base):
         return out_name
 
 
-class DWIIntensityNormInputSpec(MRTrix3BaseInputSpecMixin):
+class DWIIntensityNormInputSpec(MRTrix3BaseInputSpec):
 
     in_files = InputMultiPath(
         File(exists=True),

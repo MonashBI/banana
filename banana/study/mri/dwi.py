@@ -126,7 +126,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                    desc=("")),
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt'),
-                    desc=("")),
+                   desc=("")),
         SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd'),
                    desc=("")),
         MriStudy.param_spec('bet_method').with_new_choices('mrtrix'),
@@ -731,10 +731,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                   " voxel"),
             citations=[mrtrix_cite],
             name_maps=name_maps)
-
-        if self.branch('fod_algorithm', 'msmt_csd'):
-            pipeline.add_input(FilesetSpec('gm_response', text_format))
-            pipeline.add_input(FilesetSpec('csf_response', text_format))
 
         # Create fod fit node
         dwi2fod = pipeline.add(

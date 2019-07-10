@@ -2,11 +2,11 @@ import os.path
 from nipype.interfaces.base import (
     traits, InputMultiPath, File, TraitedSpec, isdefined)
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpecMixin)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 from arcana.utils import split_extension
 
 
-class MRResizeInputSpec(MRTrix3BaseInputSpecMixin):
+class MRResizeInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -83,7 +83,7 @@ class MRResize(MRTrix3Base):
         return out_name
 
 
-class MRRegisterInputSpec(MRTrix3BaseInputSpecMixin):
+class MRRegisterInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     reference = File(exists=True, argstr='%s', mandatory=True, position=-2,
@@ -125,7 +125,7 @@ class MRRegister(MRTrix3Base):
         return out_name
 
 
-class MRThresholdInputSpec(MRTrix3BaseInputSpecMixin):
+class MRThresholdInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
@@ -165,7 +165,7 @@ class MRThreshold(MRTrix3Base):
         return out_name
 
 
-class FixelReorientInputSpec(MRTrix3BaseInputSpecMixin):
+class FixelReorientInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-3,
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)

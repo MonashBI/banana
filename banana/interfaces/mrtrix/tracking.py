@@ -1,9 +1,9 @@
 from nipype.interfaces.base import traits, File, TraitedSpec
 from nipype.interfaces.mrtrix3.reconst import (
-    MRTrix3Base, MRTrix3BaseInputSpecMixin)
+    MRTrix3Base, MRTrix3BaseInputSpec)
 
 
-class GlobalTractographyInputSpec(MRTrix3BaseInputSpecMixin):
+class GlobalTractographyInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True,
                    position=-3, desc='input dMRI file')
     wm_response = File(exists=True, argstr='%s', mandatory=True,
