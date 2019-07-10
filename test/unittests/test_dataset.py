@@ -1,6 +1,6 @@
 from arcana.utils.testing import BaseTestCase, BaseMultiSubjectTestCase
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSpec, InputFilesets
+from arcana.data import InputFilesetSpec, FilesetSpec, InputFilesets
 from banana.file_format import (
     dicom_format)
 
@@ -8,8 +8,8 @@ from banana.file_format import (
 class TestMatchStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('gre_phase', dicom_format),
-        FilesetSpec('gre_mag', dicom_format)]
+        InputFilesetSpec('gre_phase', dicom_format),
+        InputFilesetSpec('gre_mag', dicom_format)]
 
     def dummy_pipeline1(self):
         pass
@@ -30,11 +30,11 @@ class TestDicomTagMatch(BaseTestCase):
     MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
     DICOM_MATCH = [
         InputFilesets('gre_phase', dicom_format, GRE_PATTERN,
-                     dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE},
-                     is_regex=True),
+                      dicom_tags={IMAGE_TYPE_TAG: PHASE_IMAGE_TYPE},
+                      is_regex=True),
         InputFilesets('gre_mag', dicom_format, GRE_PATTERN,
-                     dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE},
-                     is_regex=True)]
+                      dicom_tags={IMAGE_TYPE_TAG: MAG_IMAGE_TYPE},
+                      is_regex=True)]
 
     def test_dicom_match(self):
         study = self.create_study(
@@ -49,12 +49,12 @@ class TestDicomTagMatch(BaseTestCase):
         study = self.create_study(
             TestMatchStudy, 'test_dicom',
             inputs=[
-                InputFilesets('gre_phase', dicom_format,
-                             pattern=self.GRE_PATTERN, order=1,
-                             is_regex=True),
-                InputFilesets('gre_mag', dicom_format,
-                             pattern=self.GRE_PATTERN, order=0,
-                             is_regex=True)])
+                InputFilesets('gre_phase', valid_formats=dicom_format,
+                              pattern=self.GRE_PATTERN, order=1,
+                              is_regex=True),
+                InputFilesets('gre_mag', valid_formats=dicom_format,
+                              pattern=self.GRE_PATTERN, order=0,
+                              is_regex=True)])
         phase = list(study.data('gre_phase'))[0]
         mag = list(study.data('gre_mag'))[0]
         self.assertEqual(phase.name, 'gre_field_mapping_3mm_phase')
