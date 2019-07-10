@@ -262,7 +262,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         file
     """
 
-    def __init__(self, path, type, subject_id, visit_id, repository,  # noqa: E501 @ReservedAssignment
+    def __init__(self, path, type, subject_id, visit_id, repository,
                  modality=None, task=None, checksums=None, aux_files=None):
         Fileset.__init__(
             self,
@@ -304,11 +304,11 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         Modality of the filesets
     """
 
-    def __init__(self, spec_name, type, valid_formats=None, task=None,  # noqa: E501 @ReservedAssignment
+    def __init__(self, spec_name, type, valid_formats=None, task=None,
                  modality=None, **kwargs):
         InputFilesets.__init__(
             self, spec_name, pattern=None, valid_formats=valid_formats,
-            frequency='per_session', **kwargs)  # noqa: E501 @ReservedAssignment
+            frequency='per_session', **kwargs)
         BaseBidsFileset.__init__(self, type, modality, task)
 
     def _filtered_matches(self, node, valid_formats=None, **kwargs):  # noqa: E501 @UnusedVariable
@@ -378,7 +378,7 @@ class BidsAssocInputs(InputFilesets):
 
     VALID_ASSOCIATIONS = ('grads', 'phase', 'phasediff', 'epi', 'fieldmap')
 
-    def __init__(self, spec_name, primary, association, type=None, format=None,   # noqa: E501 @ReservedAssignment
+    def __init__(self, spec_name, primary, association, type=None, format=None,
                  **kwargs):
         InputFilesets.__init__(self, spec_name, format,
                                frequency='per_session', **kwargs)
