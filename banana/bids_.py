@@ -199,7 +199,7 @@ class BaseBidsFileset(object):
 
     derived = False
 
-    def __init__(self, type, modality, task):  # @ReservedAssignment
+    def __init__(self, type, modality, task):
         self._modality = modality
         self._type = type
         self._task = task

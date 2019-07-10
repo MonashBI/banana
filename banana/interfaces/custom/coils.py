@@ -77,7 +77,7 @@ class ToPolarCoords(BaseInterface):
     def _run_interface(self, runtime):
         return runtime
 
-    def _list_outputs(self):  # @UnusedVariable
+    def _list_outputs(self):
         print("in-dir: " + self.inputs.in_dir)
         outputs = self._outputs().get()
         # Get names for output directories
@@ -232,7 +232,7 @@ class HIPCombineChannels(BaseInterface):
     def _run_interface(self, runtime):
         return runtime
 
-    def _list_outputs(self):  # @UnusedVariable
+    def _list_outputs(self):
         outputs = self._outputs().get()
         mag_fname = outputs['magnitude'] = self._gen_filename('magnitude')
         phase_fname = outputs['phase'] = self._gen_filename('phase')

@@ -32,7 +32,7 @@ class ShMRF(BaseInterface):
     input_spec = ShMRFInputSpec
     output_spec = ShMRFOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         mlab = matlab_cmd(
             "ShMRF('{in_file}', '{mask_file}', '{out_file}')".format(
                 in_file=self.inputs.in_file,
@@ -68,7 +68,7 @@ class FlipSWI(BaseInterface):
     input_spec = FlipSWIInputSpec
     output_spec = FlipSWIOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         mlab = matlab_cmd(
             "FlipSWI('{in_file}', '{hdr_file}', '{out_file}')".format(
                 in_file=self.inputs.in_file,
@@ -109,7 +109,7 @@ class CVImage(BaseInterface):
     input_spec = CVImageInputSpec
     output_spec = CVImageOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         mlab = matlab_cmd(
             "CVImage('{qsm_file}', '{swi_file}', '{vein_atlas_file}', "
             "'{mask_file}', '{q_prior_file}', '{s_prior_file}', "
@@ -159,7 +159,7 @@ class Prepare(BaseInterface):
     input_spec = PrepareInputSpec
     output_spec = PrepareOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         mlab = matlab_cmd(
             "Prepare_Raw_Channels('{in_dir}', '{filename}', {echo_times}, "
             "{num_channels}, '{out_dir}', '{out_file_fe}', '{out_file_le}')"
@@ -206,7 +206,7 @@ class FillHoles(BaseInterface):
     input_spec = FillHolesInputSpec
     output_spec = FillHolesOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         mlab = matlab_cmd(
             ("fillholes('{in_file}', '{out_file}');\n" +
              "exit;\n").format(
@@ -241,7 +241,7 @@ class FitMask(BaseInterface):
     input_spec = FitMaskInputSpec
     output_spec = FitMaskOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         mlab = matlab_cmd(
             ("FitMask('{in_file}', '{initial_mask_file}', '{out_file}');\n"
              "exit;\n").format(
@@ -280,7 +280,7 @@ class QSMSummary(BaseInterface):
     input_spec = QSMSummaryInputsSpec
     output_spec = QSMSummaryOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         with open(op.join(os.getcwd(),
                           self._gen_filename('out_file')), 'w') as fp:
 

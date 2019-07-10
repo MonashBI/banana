@@ -91,7 +91,7 @@ class ImageFormat(FileFormat, metaclass=ABCMeta):
                                   other_fileset.get_array())
 
     def headers_diff(self, fileset, other_fileset, include_keys=None,
-                     ignore_keys=None, **kwargs):  # @UnusedVariable
+                     ignore_keys=None, **kwargs):
         """
         Check headers to see if all values
         """

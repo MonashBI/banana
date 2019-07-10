@@ -1,9 +1,9 @@
 from nipype import config
 config.enable_debug_mode()
-from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
-# from banana.study.multi.test_motion_detection import (  # @IgnorePep8 @Reimport
+from banana.testing import BaseTestCase as TestCase
+# from banana.study.multi.test_motion_detection import (
 #     MotionDetection, inputs)
-from banana.study.multi.mrpet import create_motion_correction_class  # @IgnorePep8 @Reimport
+from banana.study.multi.mrpet import create_motion_correction_class
 
 
 ref = 'ref'

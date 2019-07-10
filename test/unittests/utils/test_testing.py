@@ -1,7 +1,7 @@
 import tempfile
 import shutil
 import logging
-from unittest import TestCase  # @IgnorePep8
+from unittest import TestCase
 from banana.bids_ import BidsRepo
 
 

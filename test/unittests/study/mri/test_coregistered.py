@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from arcana.data import InputFilesets  # @IgnorePep8
-from banana.file_format import nifti_gz_format, text_matrix_format  # @IgnorePep8
-from banana.study.mri.coregistered import (  # @IgnorePep8
+from arcana.data import InputFilesets
+from banana.file_format import nifti_gz_format, text_matrix_format
+from banana.study.mri.coregistered import (
     CoregisteredStudy, CoregisteredToMatrixStudy)
-from banana.testing import BaseTestCase as TestCase  # @IgnorePep8 @Reimport
+from banana.testing import BaseTestCase as TestCase
 
 
 class TestCoregistered(TestCase):

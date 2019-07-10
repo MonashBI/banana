@@ -2,7 +2,7 @@ import os.path as op
 import tempfile
 import shutil
 import logging
-from unittest import TestCase  # @IgnorePep8
+from unittest import TestCase
 from arcana.processor import SingleProc
 from banana.bids_ import BidsRepo
 from banana.utils.testing import TEST_DIR

@@ -40,7 +40,7 @@ class BaseVein(MatlabCommand):
         results.outputs.raw_output = stdout
         return results
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         """
         Generate script to perform masking
         """
@@ -66,7 +66,7 @@ class ShMRFInputSpec(BaseVeinInputSpec):
 class ShMRF(BaseVein):
     input_spec = ShMRFInputSpec
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         """
         Generate script to load images, pass them to the STI function along
         with the keyword parameters
@@ -114,7 +114,7 @@ class CompositeVeinImage(BaseVein):
 
     input_spec = CompositeVeinImageInputSpec
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         script = """
         mask = load_untouch_nii('{mask}');
         mask = single(mask.img)>0;

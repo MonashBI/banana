@@ -631,7 +631,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def _spm_linear_coreg_pipeline(self, **name_maps):  # @UnusedVariable
+    def _spm_linear_coreg_pipeline(self, **name_maps):
         """
         Coregisters T2 image to T1 image using SPM's "Register" method.
 

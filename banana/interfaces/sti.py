@@ -69,10 +69,10 @@ class BaseSTICommand(MatlabCommand):
                 name=name)
         return script
 
-    def _input_fname(self, name, **kwargs):  # @UnusedVariable
+    def _input_fname(self, name, **kwargs):
         return getattr(self.inputs, name)
 
-    def _output_fname(self, name, **kwargs):  # @UnusedVariable
+    def _output_fname(self, name, **kwargs):
         return name
 
     def _create_param_structs(self):
@@ -294,13 +294,13 @@ class BaseBatchSTICommand(BaseSTICommand):
         script += self._exit()
         return script
 
-    def _input_fname(self, name, index, **kwargs):  # @UnusedVariable
+    def _input_fname(self, name, index, **kwargs):
         inpt = super(BaseBatchSTICommand, self)._input_fname(name)
         if isinstance(inpt, list):
             inpt = inpt[index]
         return inpt
 
-    def _output_fname(self, name, index, **kwargs):  # @UnusedVariable
+    def _output_fname(self, name, index, **kwargs):
         return name + str(index)
 
     def _list_outputs(self):

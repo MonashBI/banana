@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 from nipype import config
 config.enable_debug_mode()
-from arcana.data import InputFilesets  # @IgnorePep8
+from arcana.data import InputFilesets
 from banana.file_format import (nifti_gz_format) # @IgnorePep8
-from banana.study.pet.static.sPET import StaticPetStudy  # @IgnorePep8
-from banana.testing import BaseTestCase  # @IgnorePep8 @Reimport
+from banana.study.pet.static.sPET import StaticPetStudy
+from banana.testing import BaseTestCase
 
 
 class TestsPET(BaseTestCase):

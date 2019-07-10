@@ -101,7 +101,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                     'global_tracking_pipeline',
                     desc=("")),
         FilesetSpec('connectome', csv_format, 'connectome_pipeline',
-                    desc=(""))]  # @IgnorePep8
+                    desc=(""))]
 
     add_param_specs = [
         ParamSpec('multi_tissue', True,
@@ -580,7 +580,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         # Connect inputs
         return pipeline
 
-    def tensor_pipeline(self, **name_maps):  # @UnusedVariable
+    def tensor_pipeline(self, **name_maps):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -607,7 +607,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def tensor_metrics_pipeline(self, **name_maps):  # @UnusedVariable
+    def tensor_metrics_pipeline(self, **name_maps):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -634,7 +634,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def response_pipeline(self, **name_maps):  # @UnusedVariable
+    def response_pipeline(self, **name_maps):
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -716,7 +716,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def fod_pipeline(self, **name_maps):  # @UnusedVariable
+    def fod_pipeline(self, **name_maps):
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -760,7 +760,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         # Check inputs/output are connected
         return pipeline
 
-    def extract_b0_pipeline(self, **name_maps):  # @UnusedVariable
+    def extract_b0_pipeline(self, **name_maps):
         """
         Extracts the b0 images from a DWI study and takes their mean
         """

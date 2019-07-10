@@ -27,7 +27,7 @@ class AppendPath(BaseInterface):
     def _run_interface(self, runtime):
         return runtime
 
-    def _list_outputs(self):  # @UnusedVariable
+    def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_path'] = op.join(self.inputs.base_path,
                                       *self.inputs.sub_paths)
