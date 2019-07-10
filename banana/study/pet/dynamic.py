@@ -129,8 +129,3 @@ class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
                 'ts': ('timecourse', png_format)})
 
         return pipeline
-
-    def dynamics_ica_pipeline(self, **kwargs):
-        return self._ICA_pipeline_factory(
-            input_fileset=FilesetSpec(
-                'registered_volumes', nifti_gz_format, **kwargs))

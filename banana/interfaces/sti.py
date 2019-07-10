@@ -25,6 +25,8 @@ class BaseSTICommand(MatlabCommand):
     Base interface for STI classes
     """
 
+    func = None
+
     def run(self, **inputs):
         # Set the script input of the matlab spec
         self.inputs.script = self.script(cwd=inputs['cwd'])
