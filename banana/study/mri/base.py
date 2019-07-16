@@ -64,7 +64,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             "A dataset that contains correct the header information for the "
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
-        FilesetSpec('mag_preproc', nifti_gz_format, 'prepare_pipeline',
+        FilesetSpec('mag_preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Magnitude after basic preprocessing, such as "
                           "realigning image axis to a standard rotation")),
         FilesetSpec('mag_channels', multi_nifti_gz_format,
@@ -1005,7 +1005,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def prepare_pipeline(self, **name_maps):
+    def preprocess_pipeline(self, **name_maps):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -1020,7 +1020,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             performed
         """
         pipeline = self.new_pipeline(
-            name='prepare_pipeline',
+            name='preprocess_pipeline',
             name_maps=name_maps,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),

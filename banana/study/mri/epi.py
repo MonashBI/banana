@@ -36,8 +36,6 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         SwitchSpec('bet_robust', True),
-        MriStudy.param_spec('coreg_method').with_new_choices(
-            'epireg', fallbacks={'epireg': 'flirt'}),
         ParamSpec('bet_f_threshold', 0.2),
         ParamSpec('bet_reduce_bias', False),
         ParamSpec('fugue_echo_spacing', 0.000275)]
@@ -48,7 +46,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
                 'field_map_mag' in self.input_names):
             return self._fugue_pipeline(**name_maps)
         else:
-            return super().prepare_pipeline(**name_maps)
+            return super().preprocess_pipeline(**name_maps)
 
     def _fugue_pipeline(self, **name_maps):
 
@@ -169,12 +167,8 @@ class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
                   'field_map_time_info_pipeline')]
 
     add_param_specs = [
-        SwitchSpec('bet_robust', True),
         MriStudy.param_spec('coreg_method').with_new_choices(
-            'epireg', fallbacks={'epireg': 'flirt'}),
-        ParamSpec('bet_f_threshold', 0.2),
-        ParamSpec('bet_reduce_bias', False),
-        ParamSpec('fugue_echo_spacing', 0.000275)]
+            'epireg', fallbacks={'epireg': 'flirt'})]
 
     primary_scan_name = 'series'
 
@@ -207,11 +201,13 @@ class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def preprocess_pipeline(self, **name_maps):
-        return super().preprocess_pipeline(input_map={'magnitude': 'series'},
-                                           name_maps=name_maps)
+        return super().preprocess_pipeline(
+            input_map={'magnitude': 'series'},
+            output_map={'mag_preproc': 'series_preproc'},
+            name_maps=name_maps)
 
     def mag_preproc_pipeline(self, **name_maps):
-        self.extract_magnitude_pipeline(
+        return self.extract_magnitude_pipeline(
             input_map={'series': 'series_preproc'},
             output_map={'magnitude': 'mag_preproc'},
             name_maps=name_maps)
@@ -237,7 +233,7 @@ class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
             fsl.epi.EpiReg(
                 out_base='epireg2ref',
                 output_type='NIFTI_GZ',
-                noclean=True),
+                no_clean=True),
             inputs={
                 'epi': ('brain', nifti_gz_format),
                 't1_brain': ('coreg_ref_brain', nifti_gz_format),
