@@ -1,5 +1,5 @@
 from .base import PetStudy
-from arcana.data import FilesetSpec
+from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.study.base import StudyMetaClass
 from banana.interfaces.custom.pet import SUVRCalculation
 from banana.file_format import (nifti_gz_format)
@@ -13,9 +13,11 @@ template_path = os.path.abspath(
 class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):
 
     add_data_specs = [
-        FilesetSpec('pet_image', nifti_gz_format),
-        FilesetSpec('base_mask', nifti_gz_format),
+        InputFilesetSpec('pet_image', nifti_gz_format),
+        InputFilesetSpec('base_mask', nifti_gz_format),
         FilesetSpec('SUVR_image', nifti_gz_format, 'suvr_pipeline')]
+
+    primary_scan_name = 'pet_image'
 
     def suvr_pipeline(self, **kwargs):
 

@@ -2,7 +2,7 @@ from nipype.interfaces.fsl.model import MELODIC
 from nipype.interfaces.afni.preprocess import Volreg
 from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
-                                       SignalRegression, PrepareFIXTraining)
+                                   SignalRegression, PrepareFIXTraining)
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.study.base import StudyMetaClass
 from banana.requirement import (
@@ -27,7 +27,7 @@ from banana.interfaces.custom.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
-from banana.bids_ import BidsInputs, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInputs
 from .epi import EpiSeriesStudy
 
 logger = logging.getLogger('banana')
@@ -42,6 +42,8 @@ MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
 class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
+
+    desc = "Functional MRI BOLD MRI contrast"
 
     add_data_specs = [
         InputFilesetSpec('train_data', rfile_format, optional=True,
@@ -75,19 +77,21 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_selector,
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='field_map_phase',
                                primary=primary_bids_selector,
                                association='phasediff',
                                format=nifti_gz_format,
                                drop_if_missing=True),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='field_map_mag',
                                primary=primary_bids_selector,
                                association='phasediff',
                                type='magnitude',
                                format=nifti_gz_format,
                                drop_if_missing=True)]
+
+    primary_scan_name = 'series'
 
     def rsfMRI_filtering_pipeline(self, **name_maps):
 
@@ -119,7 +123,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_file='filtered_func_data.nii.gz'),
             inputs={
                 'delta_t': ('tr', float),
-                'mask': (self.brain_mask_spec_name, nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format),
                 'in_file': (afni_mc, 'out_file')},
             wall_time=5,
             requirements=[afni_req.v('16.2.10')])
@@ -169,7 +173,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 out_dir='melodic_ica',
                 output_type='NIFTI_GZ'),
             inputs={
-                'mask': (self.brain_mask_spec_name, nifti_gz_format),
+                'mask': ('brain_mask', nifti_gz_format),
                 'tr_sec': ('tr', float),
                 'in_files': ('filtered_data', nifti_gz_format)},
             outputs={
@@ -426,13 +430,14 @@ class MultiBoldMixin(MultiStudy):
                 'in{}'.format(i), text_format)
 
         merge_visits = pipeline.add(
+            'merge_visits',
             IdentityInterface(
                 ['list_dir', 'list_label_files']),
             inputs={
                 'list_dir': (merge_fix_dirs, 'out'),
                 'list_label_files': (merge_label_files, 'out')},
             joinsource=self.SUBJECT_ID,
-            joinfield=['list_dir', 'list_label_files'], name='merge_visits')
+            joinfield=['list_dir', 'list_label_files'])
 
         merge_subjects = pipeline.add(
             'merge_subjects',
@@ -504,6 +509,7 @@ class MultiBoldMixin(MultiStudy):
             name_maps=name_maps)
 
         pipeline.add(
+            'gica',
             MELODIC(
                 no_bet=True,
                 bg_threshold=self.parameter('brain_thresh_percent'),
@@ -523,7 +529,6 @@ class MultiBoldMixin(MultiStudy):
                 'group_melodic': ('out_dir', directory_format)},
             joinsource=self.SUBJECT_ID,
             joinfield=['in_files'],
-            name='gica',
             requirements=[fsl_req.v('5.0.10')],
             wall_time=7200)
 
@@ -556,8 +561,8 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     study_specs = [SubStudySpec('t1', T1Study)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
-    inputs.append(InputFilesets('t1_primary', t1, dicom_format,
-                                  is_regex=True, order=0))
+    inputs.append(InputFilesets('t1_magnitude', t1, dicom_format,
+                                is_regex=True, order=0))
     epi_refspec = ref_spec.copy()
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref',
@@ -580,7 +585,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
 
     for i in range(epi_number):
         inputs.append(InputFilesets(
-            'epi_{}_primary'.format(i), epis, dicom_format, order=i,
+            'epi_{}_series'.format(i), epis, dicom_format, order=i,
             is_regex=True))
 #     inputs.extend(InputFilesets(
 #         'epi_{}_hand_label_noise'.format(i), text_format,

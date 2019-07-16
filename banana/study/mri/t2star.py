@@ -64,6 +64,8 @@ class CoilEchoFilter():
 
 class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
+    desc = "T2*-weighted MRI contrast"
+
     add_data_specs = [
         # Set the magnitude to be generated from the preprocess_channels
         # pipeline

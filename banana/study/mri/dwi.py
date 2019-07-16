@@ -24,7 +24,7 @@ from banana.interfaces.custom.motion_correction import (
 from banana.interfaces.custom.dwi import TransformGradients
 from banana.interfaces.utility import AppendPath
 from banana.study.base import Study
-from banana.bids_ import BidsInputs, BidsAssocInput
+from banana.bids_ import BidsInputs, BidsAssocInputs
 from banana.exceptions import BananaUsageError
 from banana.citation import (
     mrtrix_cite, fsl_cite, eddy_cite, topup_cite, distort_correct_cite,
@@ -42,6 +42,8 @@ logger = getLogger('banana')
 
 class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
+    desc = "Diffusion-weighted MRI contrast"
+
     add_data_specs = [
         InputFilesetSpec('anat_5tt', mrtrix_image_format,
                          desc=("A co-registered segmentation image taken from "
@@ -56,70 +58,99 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                     'series_coreg_pipeline',
                     desc=("The gradient directions coregistered to the "
                           "orientation of the coreg reference")),
-        FilesetSpec('bvalues', fsl_bvals_format, 'preprocess_pipeline'),
-        FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline'),
+        FilesetSpec('bvalues', fsl_bvals_format, 'preprocess_pipeline',
+                    desc=("")),
+        FilesetSpec('eddy_par', eddy_par_format, 'preprocess_pipeline',
+                    desc=("")),
         FilesetSpec('noise_residual', mrtrix_image_format,
-                    'preprocess_pipeline'),
-        FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline'),
-        FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline'),
-        FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline'),
-        FilesetSpec('wm_response', text_format, 'response_pipeline'),
-        FilesetSpec('gm_response', text_format, 'response_pipeline'),
-        FilesetSpec('csf_response', text_format, 'response_pipeline'),
-        FilesetSpec('avg_response', text_format,
-                    'average_response_pipeline'),
-        FilesetSpec('wm_odf', mrtrix_image_format, 'fod_pipeline'),
-        FilesetSpec('gm_odf', mrtrix_image_format, 'fod_pipeline'),
-        FilesetSpec('csf_odf', mrtrix_image_format, 'fod_pipeline'),
+                    'preprocess_pipeline',
+                    desc=("")),
+        FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline',
+                    desc=("")),
+        FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline',
+                    desc=("")),
+        FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline',
+                    desc=("")),
+        FilesetSpec('wm_response', text_format, 'response_pipeline',
+                    desc=("")),
+        FilesetSpec('gm_response', text_format, 'response_pipeline',
+                    desc=("")),
+        FilesetSpec('csf_response', text_format, 'response_pipeline',
+                    desc=("")),
+        FilesetSpec('avg_response', text_format, 'average_response_pipeline',
+                    desc=("")),
+        FilesetSpec('wm_odf', mrtrix_image_format, 'fod_pipeline',
+                    desc=("")),
+        FilesetSpec('gm_odf', mrtrix_image_format, 'fod_pipeline',
+                    desc=("")),
+        FilesetSpec('csf_odf', mrtrix_image_format, 'fod_pipeline',
+                    desc=("")),
         FilesetSpec('norm_intensity', mrtrix_image_format,
-                    'intensity_normalisation_pipeline'),
+                    'intensity_normalisation_pipeline',
+                    desc=("")),
         FilesetSpec('norm_intens_fa_template', mrtrix_image_format,
-                    'intensity_normalisation_pipeline',
-                    frequency='per_study'),
+                    'intensity_normalisation_pipeline', frequency='per_study',
+                    desc=("")),
         FilesetSpec('norm_intens_wm_mask', mrtrix_image_format,
-                    'intensity_normalisation_pipeline',
-                    frequency='per_study'),
+                    'intensity_normalisation_pipeline', frequency='per_study',
+                    desc=("")),
         FilesetSpec('global_tracks', mrtrix_track_format,
-                    'global_tracking_pipeline'),
+                    'global_tracking_pipeline',
+                    desc=("")),
         FilesetSpec('wm_mask', mrtrix_image_format,
-                    'global_tracking_pipeline'),
-        FilesetSpec('connectome', csv_format, 'connectome_pipeline')]  # @IgnorePep8
+                    'global_tracking_pipeline',
+                    desc=("")),
+        FilesetSpec('connectome', csv_format, 'connectome_pipeline',
+                    desc=(""))]  # @IgnorePep8
 
     add_param_specs = [
-        ParamSpec('multi_tissue', True),
-        ParamSpec('preproc_pe_dir', None, dtype=str),
-        ParamSpec('tbss_skel_thresh', 0.2),
-        ParamSpec('fsl_mask_f', 0.25),
-        ParamSpec('bet_robust', True),
-        ParamSpec('bet_f_threshold', 0.2),
-        ParamSpec('bet_reduce_bias', False),
-        ParamSpec('num_global_tracks', int(1e9)),
-        ParamSpec('global_tracks_cutoff', 0.05),
-        SwitchSpec('preproc_denoise', False),
+        ParamSpec('multi_tissue', True,
+                  desc=("")),
+        ParamSpec('preproc_pe_dir', None, dtype=str,
+                  desc=("")),
+        ParamSpec('tbss_skel_thresh', 0.2,
+                  desc=("")),
+        ParamSpec('fsl_mask_f', 0.25,
+                  desc=("")),
+        ParamSpec('bet_robust', True,
+                  desc=("")),
+        ParamSpec('bet_f_threshold', 0.2,
+                  desc=("")),
+        ParamSpec('bet_reduce_bias', False,
+                  desc=("")),
+        ParamSpec('num_global_tracks', int(1e9),
+                  desc=("")),
+        ParamSpec('global_tracks_cutoff', 0.05,
+                  desc=("")),
+        SwitchSpec('preproc_denoise', False,
+                   desc=("")),
         SwitchSpec('response_algorithm', 'tax',
-                   ('tax', 'dhollander', 'msmt_5tt')),
-        SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd')),
+                   ('tax', 'dhollander', 'msmt_5tt'),
+                    desc=("")),
+        SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd'),
+                   desc=("")),
         MriStudy.param_spec('bet_method').with_new_choices('mrtrix'),
-        SwitchSpec('reorient2std', False)]
+        SwitchSpec('reorient2std', False,
+                   desc=(""))]
 
     primary_bids_input = BidsInputs(
         spec_name='series', type='dwi',
         valid_formats=(nifti_gz_x_format, nifti_gz_format))
 
     default_bids_inputs = [primary_bids_input,
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='bvalues',
                                primary=primary_bids_input,
                                association='grads',
                                type='bval',
                                format=fsl_bvals_format),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='grad_dirs',
                                primary=primary_bids_input,
                                association='grads',
                                type='bvec',
                                format=fsl_bvecs_format),
-                           BidsAssocInput(
+                           BidsAssocInputs(
                                spec_name='reverse_phase',
                                primary=primary_bids_input,
                                association='epi',
@@ -127,6 +158,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                                drop_if_missing=True)]
 
     RECOMMENDED_NUM_SESSIONS_FOR_INTENS_NORM = 5
+
+    primary_scan_name = 'series'
 
     @property
     def multi_tissue(self):

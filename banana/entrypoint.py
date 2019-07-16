@@ -3,16 +3,26 @@ import os.path as op
 import os
 from argparse import ArgumentParser
 from importlib import import_module
-from banana.utils.testing import PipelineTester
-from banana.exceptions import BananaUsageError
+from setuptools import find_packages
+from pkgutil import iter_modules
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
+from banana.utils.testing import PipelineTester
+from banana.exceptions import BananaUsageError
 from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, BasicRepo, BidsRepo, XnatRepo)
+    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study, MultiStudy)
 import logging
+from arcana.utils import wrap_text
+from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
+
+DEFAULT_STUDY_CLASS_PATH = 'banana.study'
+
+DEFAULT_LINE_LENGTH = 79
+DEFAULT_INDENT = 4
+DEFAULT_SPACER = 4
 
 
 def set_loggers(loggers):
@@ -29,13 +39,19 @@ def set_loggers(loggers):
         logger.addHandler(handler)
 
 
-def resolve_class(class_str, prefixes=('banana.', 'banana.study.')):
+def resolve_class(class_str, prefixes=(DEFAULT_STUDY_CLASS_PATH,)):
+    """
+    Resolves a class from the '.' delimted module + class name string
+    """
     parts = class_str.split('.')
     module_name = '.'.join(parts[:-1])
     class_name = parts[-1]
     cls = None
-    for prefix in [''] + list(prefixes):
-        mod_name = prefix + module_name
+    for prefix in [None] + list(prefixes):
+        if prefix is not None:
+            mod_name = prefix + '.' + module_name
+        else:
+            mod_name = module_name
         if not mod_name:
             continue
         mod_name = mod_name.strip('.')
@@ -82,7 +98,11 @@ class DeriveCmd():
         parser.add_argument('--output_repository', '-o', nargs='+',
                             metavar='ARG', default=None,
                             help=("Specify a different output repository "
-                                  "to place the derivatives in"))
+                                  "to place the derivatives in. 1st arg "
+                                  "is the type, one of ('basic', 'bids' or "
+                                  "'xnat'). If type == 'xnat' then the "
+                                  "following args are PROJECTID, SERVER, "
+                                  "[USER, PASSWORD]"))
         parser.add_argument('--processor', default=['multi'], nargs='+',
                             metavar='ARG',
                             help=("The type of processor to use plus arguments"
@@ -137,6 +157,8 @@ class DeriveCmd():
                             help=("Set levels for various loggers ('arcana', "
                                   "'banana', and 'nipype.workflow' are set to "
                                   "INFO by default)"))
+        parser.add_argument('--quiet', action='store_true', default=False,
+                            help=("Disable logging output"))
         parser.add_argument('--bids_task', default=None,
                             help=("A task to use to filter the BIDS inputs"))
         return parser
@@ -144,7 +166,8 @@ class DeriveCmd():
     @classmethod
     def run(cls, args):
 
-        set_loggers(args.logger)
+        if not args.quiet:
+            set_loggers(args.logger)
 
         study_class = resolve_class(args.study_class)
 
@@ -196,10 +219,10 @@ class DeriveCmd():
                         "Unrecognised arguments passed to '--{}' option "
                         "({}) exactly 1 additional argument is required for "
                         "'basic' type repository (DEPTH)"
-                        .format(option_str, args.respository))
+                        .format(option_str, repo_args))
                 if create_root:
                     os.makedirs(repo_path, exist_ok=True)
-                repo = BasicRepo(repo_path, depth=repo_args[0])
+                repo = BasicRepo(repo_path, depth=int(repo_args[0]))
             elif repo_type == 'xnat':
                 nargs = len(repo_args)
                 if nargs < 1:
@@ -207,13 +230,13 @@ class DeriveCmd():
                         "Not enough arguments passed to '--{}' option "
                         "({}), at least 1 additional argument is required for "
                         "'xnat' type repository (SERVER)"
-                        .format(option_str, args.respository))
+                        .format(option_str, repo_args))
                 elif nargs > 3:
                     raise BananaUsageError(
                         "Unrecognised arguments passed to '--{}' option "
                         "({}), at most 3 additional arguments are accepted for"
                         " 'xnat' type repository (SERVER, USER, PASSWORD)"
-                        .format(option_str, args.respository))
+                        .format(option_str, repo_args))
                 repo = XnatRepo(
                     project_id=repo_path,
                     server=repo_args[0],
@@ -228,7 +251,7 @@ class DeriveCmd():
             return repo
 
         repository = init_repo(args.repository_path, repository_type,
-                               'repository', *args.repository)
+                               'repository', *args.repository[1:])
 
         if args.output_repository is not None:
             input_repository = repository
@@ -351,7 +374,8 @@ class DeriveCmd():
 
 class TestGenCmd():
 
-    desc = "Generate derivatives from a study"
+    desc = ("Generate all derivatives from a study in a format compatible "
+            "with Banana's unit-testing framework")
 
     @classmethod
     def parser(cls):
@@ -479,23 +503,100 @@ class MenuCmd():
         print(study_class.static_menu())
 
 
+class AvailableCmd():
+
+    desc = ("List all available study classes within Banana and custom search "
+            "paths")
+
+    default_path = 'banana.study'
+
+    desc_start = 22
+
+    @classmethod
+    def parser(cls):
+        parser = ArgumentParser(prog='banana avail',
+                                description=cls.desc)
+        parser.add_argument('search_paths', nargs='*',
+                            help="packages to search for Study classes")
+        return parser
+
+    @classmethod
+    def run(cls, args):
+        available = {}
+
+        def find_study_classes(pkg_or_module, pkg_or_module_path):
+            for cls_name in dir(pkg_or_module):
+                if cls_name.startswith('_'):
+                    continue
+                cls = getattr(pkg_or_module, cls_name)
+                try:
+                    if (issubclass(cls, (Study, MultiStudy)) and
+                            'desc' in cls.__dict__):
+                        try:
+                            old_path = available[cls]
+                        except KeyError:
+                            available[cls] = pkg_or_module_path
+                        else:
+                            if len(pkg_or_module_path) < len(old_path):
+                                available[cls] = pkg_or_module_path
+                except TypeError:
+                    pass
+
+        search_paths = [cls.default_path] + args.search_paths
+        for search_path in search_paths:
+            base_module = import_module(search_path)
+            for pkg_name in find_packages(op.dirname(base_module.__file__)):
+                pkg_path = search_path + '.' + pkg_name
+                pkg = import_module(pkg_path)
+                find_study_classes(pkg, pkg_path)
+                for module_info in iter_modules([op.dirname(pkg.__file__)]):
+                    module_path = pkg_path + '.' + module_info.name
+                    module = import_module(module_path)
+                    find_study_classes(module, module_path)
+        msg = ("\nThe following Study classes are available:")
+        to_print = []
+        for avail_cls, module_path in sorted(available.items(),
+                                             key=lambda x: x[0].__name__):
+            if module_path.startswith(DEFAULT_STUDY_CLASS_PATH):
+                module_path = module_path[(len(DEFAULT_STUDY_CLASS_PATH) + 1):]
+            full_name = module_path + '.' + avail_cls.__name__
+            to_print.append((full_name, avail_cls.desc))
+
+        desc_start = max(len(l[0]) for l in to_print) + DEFAULT_SPACER
+        for cls_name, desc in to_print:
+            spaces = ' ' * (desc_start - len(cls_name))
+            msg += '\n{}{}{}{}'.format(
+                ' ' * DEFAULT_INDENT, cls_name, spaces,
+                wrap_text(desc, DEFAULT_LINE_LENGTH,
+                          desc_start + DEFAULT_INDENT))
+        print(msg + '\n')
+
+
 class MainCmd():
 
     commands = {
-        'derive': DeriveCmd,
+        'avail': AvailableCmd,
         'menu': MenuCmd,
+        'derive': DeriveCmd,
         'test-gen': TestGenCmd,
         'help': HelpCmd}
 
     @classmethod
     def parser(cls):
         usage = "banana <command> [<args>]\n\nAvailable commands:"
+        desc_start = max(len(k) for k in cls.commands.keys()) + DEFAULT_SPACER
         for name, cmd_cls in cls.commands.items():
-            usage += '\n\t{}\t\t{}'.format(name, cmd_cls.desc)
+            spaces = ' ' * (desc_start - len(name))
+            usage += '\n{}{}{}{}'.format(
+                ' ' * DEFAULT_INDENT, name, spaces,
+                wrap_text(cmd_cls.desc, DEFAULT_LINE_LENGTH,
+                          desc_start + DEFAULT_INDENT))
         parser = ArgumentParser(
             description="Base banana command",
             usage=usage)
         parser.add_argument('command', help="The sub-command to run")
+        parser.add_argument('--version', '-v', action='version',
+                            version='%(prog)s {}'.format(__version__))
         return parser
 
     @classmethod
@@ -510,8 +611,11 @@ class MainCmd():
             print("Unrecognised command '{}'".format(args.command))
             parser.print_help()
             exit(1)
-        cmd_args = cmd_cls.parser().parse_args(argv[1:])
-        cmd_cls.run(cmd_args)
+        if args.command == 'help' and len(argv) == 1:
+            parser.print_help()
+        else:
+            cmd_args = cmd_cls.parser().parse_args(argv[1:])
+            cmd_cls.run(cmd_args)
 
 
 if __name__ == '__main__':

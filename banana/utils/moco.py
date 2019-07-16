@@ -23,13 +23,14 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 
 def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
                            struct2align=None):
-
     scan_description = []
     dcm_files = sorted(glob.glob(input_dir+'/*.dcm'))
+
     if not dcm_files:
         dcm_files = sorted(glob.glob(input_dir+'/*.IMA'))
     else:
         dcm = True
+
     if not dcm_files:
         scan_description = [f for f in os.listdir(input_dir) if (not
                             f.startswith('.') and os.path.isdir(input_dir+f)
@@ -37,9 +38,11 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
         dcm = False
     else:
         dcm = True
+
     if not dcm_files and not scan_description:
         raise Exception('No DICOM files or folders found in {}'
                         .format(input_dir))
+
     try:
         os.mkdir(input_dir+'/work_dir')
         os.mkdir(input_dir+'/work_dir/work_sub_dir')
@@ -52,6 +55,7 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
                    'previous process failed. Trying to restart it.')
             working_dir = input_dir+'/work_dir/work_sub_dir/work_session_dir/'
             copy = False
+
     if dcm:
         hdr = pydicom.read_file(dcm_files[0])
         name_scan = (
@@ -83,6 +87,7 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
                     os.mkdir(working_dir+scan_description[-1])
                     for f in files:
                         shutil.copy(f, working_dir+scan_description[-1])
+
     elif not dcm and copy:
         for s in scan_description:
             shutil.copytree(input_dir+s, working_dir+'/'+s)
@@ -94,6 +99,7 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
             shutil.copy2(struct2align, working_dir+'/')
 
     phase_image_type, no_dicom = check_image_type(input_dir, scan_description)
+
     if no_dicom:
         print(('No DICOM files could be found in the following folders '
                'For this reason they will be removed from the analysis.\n{}'
@@ -106,7 +112,9 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
                .format('\n'.join(x for x in phase_image_type))))
         scan_description = [x for x in scan_description
                             if x not in phase_image_type]
+
     same_start_time = check_image_start_time(input_dir, scan_description)
+
     if same_start_time:
         print(('The following scans were found to have the same start time '
                'as other scans provided. For this reason they will be removed'
@@ -397,8 +405,10 @@ def check_image_type(input_dir, scans):
 
     toremove = []
     nodicom = []
+
     for scan in scans:
         dcm_file = None
+
         try:
             dcm_file = sorted(glob.glob(input_dir+'/'+scan+'/*.dcm'))[0]
         except IndexError:
@@ -407,6 +417,7 @@ def check_image_type(input_dir, scans):
                     input_dir+'/'+scan+'/*.IMA'))[0]
             except IndexError:
                 nodicom.append(scan)
+
         if dcm_file is not None:
             try:
                 hd = pydicom.read_file(dcm_file)
@@ -430,15 +441,18 @@ def check_image_start_time(input_dir, scans):
             hd_extraction = DicomHeaderInfoExtraction()
             hd_extraction.inputs.dicom_folder = input_dir+'/'+scan
             dcm_info = hd_extraction.run()
+
             start_times.append([dcm_info.outputs.start_time, scan_number,
                                 scan])
         except:
             print(('This folder {} seems to not contain DICOM files. It will '
                    'be ingnored.'.format(scan)))
+
     start_times = sorted(start_times)
+
     for i in range(1, len(start_times)):
-        diff = ((dt.datetime.strptime(start_times[i][0], '%H%M%S.%f') -
-                dt.datetime.strptime(start_times[i-1][0], '%H%M%S.%f'))
+        diff = ((dt.datetime.strptime(str(start_times[i][0]), '%H%M%S.%f') -
+                dt.datetime.strptime(str(start_times[i-1][0]), '%H%M%S.%f'))
                 .total_seconds())
         if diff < 5:
             toremove.append(start_times[i][-1])

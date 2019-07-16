@@ -65,3 +65,4 @@ def get_template_path(name, fileset='brain', resolution='1mm'):
         raise BananaError("Unrecognised template name '{}'"
                               .format(name))
     return op.abspath(path)
+

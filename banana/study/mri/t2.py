@@ -11,6 +11,8 @@ from banana.bids_ import BidsInputs
 
 class T2Study(MriStudy, metaclass=StudyMetaClass):
 
+    desc = "T2-weighted MRI contrast"
+
     add_data_specs = [
         FilesetSpec('wm_seg', nifti_gz_format, 'segmentation_pipeline')]
 
@@ -22,6 +24,8 @@ class T2Study(MriStudy, metaclass=StudyMetaClass):
     default_bids_inputs = [
         BidsInputs(spec_name='magnitude', type='T2w',
                    valid_formats=(nifti_gz_x_format, nifti_gz_format))]
+
+    primary_scan_name = 'magnitude'
 
     def segmentation_pipeline(self, img_type=2, **name_maps):
 

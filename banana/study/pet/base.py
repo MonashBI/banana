@@ -1,5 +1,6 @@
 from arcana.study.base import Study, StudyMetaClass
-from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
+from arcana.data import (
+    FilesetSpec, FieldSpec, InputFilesetSpec, InputFieldSpec)
 from banana.file_format import (
     nifti_gz_format, text_format, text_matrix_format, directory_format,
     list_mode_format)
@@ -13,6 +14,7 @@ from arcana.study import ParamSpec
 from banana.interfaces.custom.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
 from banana.requirement import stir_req
+from banana.exceptions import BananaUsageError
 
 
 template_path = os.path.abspath(
@@ -39,10 +41,10 @@ class PetStudy(Study, metaclass=StudyMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('list_mode', list_mode_format),
-        FilesetSpec('registered_volumes', nifti_gz_format, optional=True),
-        FilesetSpec('pet_image', nifti_gz_format, optional=True),
-        FilesetSpec('pet_data_dir', directory_format),
-        FilesetSpec('pet_recon_dir', directory_format),
+        InputFilesetSpec('registered_volumes', nifti_gz_format),
+        InputFilesetSpec('pet_image', nifti_gz_format),
+        InputFilesetSpec('pet_data_dir', directory_format),
+        InputFilesetSpec('pet_recon_dir', directory_format),
         FilesetSpec('pet_recon_dir_prepared', directory_format,
                     'pet_data_preparation_pipeline'),
         FilesetSpec('decomposed_file', nifti_gz_format, 'ICA_pipeline'),
@@ -56,15 +58,15 @@ class PetStudy(Study, metaclass=StudyMetaClass):
                     'Image_normalization_pipeline'),
         FilesetSpec('affine_mat', text_matrix_format,
                     'Image_normalization_pipeline'),
-        FieldSpec('pet_duration', dtype=int,
+        FieldSpec('pet_duration', int,
                   'pet_time_info_extraction_pipeline'),
-        FieldSpec('pet_end_time', dtype=str,
+        FieldSpec('pet_end_time', str,
                   'pet_time_info_extraction_pipeline'),
-        FieldSpec('pet_start_time', dtype=str,
+        FieldSpec('pet_start_time', str,
                   'pet_time_info_extraction_pipeline'),
-        FieldSpec('time_offset', int),
-        FieldSpec('temporal_length', float),
-        FieldSpec('num_frames', int),
+        InputFieldSpec('time_offset', int),
+        InputFieldSpec('temporal_length', float),
+        InputFieldSpec('num_frames', int),
         FilesetSpec('ssrb_sinograms', directory_format,
                     'sinogram_unlisting_pipeline')]
 
@@ -169,6 +171,11 @@ class PetStudy(Study, metaclass=StudyMetaClass):
                          'detection using PCA pipeline.'),
             citations=[],
             **kwargs)
+
+        if not self.provided('list_mode'):
+            raise BananaUsageError(
+                "'list_mode' was not provided as an input to the study "
+                "so cannot perform sinogram unlisting")
 
         prepare_inputs = pipeline.add(
             'prepare_inputs',
