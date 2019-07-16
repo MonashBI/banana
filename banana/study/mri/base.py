@@ -1137,7 +1137,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             MotionMatCalculation(),
             outputs={
                 'motion_mats': ('motion_mats', motion_mats_format)})
-        if not self.spec('coreg_fsl_mat').derivable:
+        if not self.is_coregistered:
             logger.info("Cannot derive 'coreg_matrix' for {} required for "
                         "motion matrix calculation, assuming that it "
                         "is the reference study".format(self))
