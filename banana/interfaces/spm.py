@@ -22,7 +22,7 @@ class MultiChannelSegmentInputSpec(SPMCommandInputSpec):
                                 desc="""A tuple with the following fields:
             - bias reguralisation (0-10)
             - FWHM of Gaussian smoothness of bias
-            - which maps to save (Corrected, Field) - a tuple of two boolean values""",  # @IgnorePep8
+            - which maps to save (Corrected, Field) - a tuple of two boolean values""",  # noqa
                                 field='channel')
     tissues = traits.List(
         traits.Tuple(traits.Tuple(File(exists=True), traits.Int()),
@@ -32,7 +32,7 @@ class MultiChannelSegmentInputSpec(SPMCommandInputSpec):
             - tissue probability map (4D), 1-based index to frame
             - number of gaussians
             - which maps to save [Native, DARTEL] - a tuple of two boolean values
-            - which maps to save [Unmodulated, Modulated] - a tuple of two boolean values""",  # @IgnorePep8
+            - which maps to save [Unmodulated, Modulated] - a tuple of two boolean values""",  # noqa
         field='tissue')
     affine_regularization = traits.Enum('mni', 'eastern', 'subj', 'none',
                                         field='warp.affreg',
@@ -104,7 +104,7 @@ class MultiChannelSegment(SPMCommand):
     >>> seg.inputs.tissues = [tissue1, tissue2, tissue3, tissue4, tissue5]
     >>> seg.run() # doctest: +SKIP
 
-    """
+    """  # noqa
 
     input_spec = MultiChannelSegmentInputSpec
     output_spec = MultiChannelSegmentOutputSpec
@@ -175,7 +175,7 @@ class MultiChannelSegment(SPMCommand):
             outputs['modulated_class_images'].append([])
 
         for filename in self.inputs.channel_files:
-            pth, base, ext = split_filename(filename)
+            pth, base, _ = split_filename(filename)
             if isdefined(self.inputs.tissues):
                 for i, tissue in enumerate(self.inputs.tissues):
                     if tissue[2][0]:

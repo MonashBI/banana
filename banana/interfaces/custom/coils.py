@@ -77,7 +77,7 @@ class ToPolarCoords(BaseInterface):
     def _run_interface(self, runtime):
         return runtime
 
-    def _list_outputs(self):  # @UnusedVariable
+    def _list_outputs(self):
         print("in-dir: " + self.inputs.in_dir)
         outputs = self._outputs().get()
         # Get names for output directories
@@ -207,7 +207,7 @@ class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
     phases_dir = Directory(exists=True, desc=(
         "Input directory containing coil phase images."))
     in_fname_re = traits.Str(
-        'coil_(?P<channel>\d+)_(?P<echo>\d+)\.nii\.gz', usedefault=True,
+        r'coil_(?P<channel>\d+)_(?P<echo>\d+)\.nii\.gz', usedefault=True,
         desc=("The format string used to generate the save channel filenames. "
               "Must use the 'channel' and 'echo' field names"))
     magnitude = File(genfile=True, desc="Combined magnitude image")
@@ -232,7 +232,7 @@ class HIPCombineChannels(BaseInterface):
     def _run_interface(self, runtime):
         return runtime
 
-    def _list_outputs(self):  # @UnusedVariable
+    def _list_outputs(self):
         outputs = self._outputs().get()
         mag_fname = outputs['magnitude'] = self._gen_filename('magnitude')
         phase_fname = outputs['phase'] = self._gen_filename('phase')

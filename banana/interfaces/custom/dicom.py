@@ -103,7 +103,7 @@ class DicomHeaderInfoExtraction(BaseInterface):
             pass
         else:
             self.outpt['H'] = list(np.cross(img_orient[0],
-                                                  img_orient[1]))
+                                            img_orient[1]))
             # Get voxel sizes
         try:
             vox_sizes = list(hd.PixelSpacing)
@@ -389,7 +389,7 @@ class PetTimeInfo(BaseInterface):
                 pet_endtime = ((
                     dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
                     dt.timedelta(seconds=pet_duration))
-                                    .strftime('%H%M%S.%f'))
+                    .strftime('%H%M%S.%f'))
                 pet_duration = pet_duration
             else:
                 pet_endtime = None

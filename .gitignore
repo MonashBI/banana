@@ -16,3 +16,6 @@ __pycache__
 /.gitlab-ci.yml
 /build
 /dist
+/docs/source/_build
+/docs/build
+/.pytest_cache/

@@ -5,7 +5,7 @@ from nipype.interfaces.mrtrix3.reconst import (
 
 class GlobalTractographyInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True,
-                    position=-3, desc='input dMRI file')
+                   position=-3, desc='input dMRI file')
     wm_response = File(exists=True, argstr='%s', mandatory=True,
                        position=-2)
     out_file = File(name_template='%s_tracks.tck',

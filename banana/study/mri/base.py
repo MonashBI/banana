@@ -64,7 +64,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             "A dataset that contains correct the header information for the "
             "acquired image. Used to copy geometry over preprocessed "
             "channels"), optional=True),
-        FilesetSpec('mag_preproc', nifti_gz_format, 'prepare_pipeline',
+        FilesetSpec('mag_preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Magnitude after basic preprocessing, such as "
                           "realigning image axis to a standard rotation")),
         FilesetSpec('mag_channels', multi_nifti_gz_format,
@@ -223,6 +223,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc=("The name of the real axis extracted from the channel "
                   "filename"))]
 
+    primary_scan_name = 'magnitude'
+
     @property
     def mni_tmpl_resolution(self):
         if self.parameter('mni_tmpl_resolution') is not None:
@@ -243,7 +245,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if self.provided('header_image'):
             hdr_name = 'header_image'
         else:
-            hdr_name = 'magnitude'
+            hdr_name = self.primary_scan_name
         return hdr_name
 
     @property
@@ -370,8 +372,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         if not (self.provided('coreg_ref') or
                 self.provided('coreg_ref_brain')):
             raise ArcanaOutputNotProducedException(
-                "Cannot co-register {} as reference image "
-                "'{}' has not been provided".format(
+                ("Cannot co-register {} as reference image " +
+                 "'{}' has not been provided").format(
                     pipeline.map_input('coreg_ref')))
         return pipeline
 
@@ -629,7 +631,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def _spm_linear_coreg_pipeline(self, **name_maps):  # @UnusedVariable
+    def _spm_linear_coreg_pipeline(self, **name_maps):
         """
         Coregisters T2 image to T1 image using SPM's "Register" method.
 
@@ -816,7 +818,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    # @UnusedVariable @IgnorePep8
+    # noqa: E501 @UnusedVariable
     def _fnirt_to_tmpl_pipeline(self, **name_maps):
         """
         Registers a MR scan to a refernce MR scan using FSL's nonlinear FNIRT
@@ -885,7 +887,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                     'none'),
                 subsampling_scheme=self.parameter('fnirt_subsampling'),
                 fieldcoeff_file=True,
-                in_fwhm=[8, 6, 5, 4, 3, 2],  # [8, 6, 5, 4.5, 3, 2] This threw an error because of float value @IgnorePep8,
+                in_fwhm=[8, 6, 5, 4, 3, 2],  # noqa: E501 [8, 6, 5, 4.5, 3, 2] This threw an error because of float value,
                 ref_fwhm=[8, 6, 5, 4, 2, 0],
                 regularization_lambda=[300, 150, 100, 50, 40, 30],
                 apply_intensity_mapping=[1, 1, 1, 1, 1, 0],
@@ -1003,7 +1005,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def prepare_pipeline(self, **name_maps):
+    def preprocess_pipeline(self, **name_maps):
         """
         Performs basic preprocessing, such as swapping dimensions into
         standard orientation and resampling (if required)
@@ -1018,7 +1020,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             performed
         """
         pipeline = self.new_pipeline(
-            name='prepare_pipeline',
+            name='preprocess_pipeline',
             name_maps=name_maps,
             desc=("Dimensions swapping to ensure that all the images "
                   "have the same orientations."),
@@ -1135,7 +1137,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             MotionMatCalculation(),
             outputs={
                 'motion_mats': ('motion_mats', motion_mats_format)})
-        if not self.spec('coreg_fsl_mat').derivable:
+        if not self.is_coregistered:
             logger.info("Cannot derive 'coreg_matrix' for {} required for "
                         "motion matrix calculation, assuming that it "
                         "is the reference study".format(self))

@@ -163,7 +163,7 @@ class SignalRegression(BaseInterface):
         if self.inputs.customRegressors:
             cr = np.loadtxt(self.inputs.customRegressors)
             if cr.shape[0] != t:
-                print (
+                print(
                     'custom regressors and input image have a different '
                     'time lenght. They will not be used for the regression.')
             else:
@@ -424,15 +424,14 @@ class PrepareFIXTraining(BaseInterface):
     output_spec = PrepareFIXTrainingOutputSpec
 
     def _run_interface(self, runtime):
-        
+
         epi_number = self.inputs.epi_number
         inputs = self.inputs.inputs_list
         fix_dirs = [inputs[x:x+epi_number] for x in
                     np.arange(0, len(inputs)/2, epi_number, dtype=int)]
         labels = [inputs[x:x+epi_number] for x in
-                    np.arange(len(inputs)/2, len(inputs), epi_number, dtype=int)]
+                  np.arange(len(inputs)/2, len(inputs), epi_number, dtype=int)]
         self.out_dirs = []
-        
 
         if len(labels) != len(fix_dirs):
             raise Exception('The number of subjects provided is different from'
@@ -442,15 +441,17 @@ class PrepareFIXTraining(BaseInterface):
             for j in range(epi_number):
                 with open(label[j], 'r') as f:
                     if 'not_provided' not in f.readline():
-                        shutil.copy2(label[j], fix_dirs[i][j]+'/hand_labels_noise.txt')
+                        shutil.copy2(label[j], fix_dirs[i]
+                                     [j]+'/hand_labels_noise.txt')
                         self.out_dirs.append(fix_dirs[i][j])
         if not self.out_dirs:
-            raise Exception('No non-empty hand_labels_noise.txt file found in the fix_dir '
-                            'provided. In order to run FIX training at least 25 '
-                            'hand_labels_noise.txt files have to be provided. Please '
-                            'go through 25 single-subject MELODIC ICA results, create '
-                            'those text files and upload them on XNAT. Have a look at '
-                            'the documentation to have more information.')
+            raise Exception(
+                'No non-empty hand_labels_noise.txt file found in the fix_dir '
+                'provided. In order to run FIX training at least 25 '
+                'hand_labels_noise.txt files have to be provided. Please '
+                'go through 25 single-subject MELODIC ICA results, create '
+                'those text files and upload them on XNAT. Have a look at '
+                'the documentation to have more information.')
 
         return runtime
 

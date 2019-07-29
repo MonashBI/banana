@@ -297,10 +297,10 @@ class EstimateFOD(MRTrix3Base):
     >>> fod.inputs.response = 'response.txt'
     >>> fod.inputs.in_mask = 'mask.nii.gz'
     >>> fod.inputs.grad_fsl = ('bvecs', 'bvals')
-    >>> fod.cmdline                               # doctest: +ELLIPSIS +ALLOW_UNICODE
+    >>> fod.cmdline
     'dwi2fod -fslgrad bvecs bvals -mask mask.nii.gz dwi.mif response.txt\
  fods.mif'
-    >>> fod.run()                                 # doctest: +SKIP
+    >>> fod.run()
     """
 
     _cmd = 'dwi2fod'

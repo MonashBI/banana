@@ -8,9 +8,9 @@ from pprint import pformat
 from itertools import chain
 from unittest import TestCase
 from arcana.exceptions import ArcanaNameError
-from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo, SingleProc,
-                    Field, Fileset, ModulesEnv, StaticEnv)
-from arcana.data.spec import BaseInputSpec
+from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo,
+                    SingleProc, Field, Fileset, ModulesEnv, StaticEnv)
+from arcana.data.spec import BaseInputSpecMixin
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaMissingDataException)
 from banana.exceptions import BananaTestSetupError, BananaUsageError
@@ -68,6 +68,9 @@ class PipelineTester(TestCase):
     parameters = {}
     warn_missing_tests = True
     environment = ModulesEnv() if USE_MODULES else StaticEnv()
+    name = None
+    study_class = None
+    ref_repo = None
 
     def setUp(self):
         if not hasattr(self, 'study_class'):
@@ -104,7 +107,7 @@ class PipelineTester(TestCase):
                 continue
             self.inputs[spec.name] = inpt
         # Create the reference study
-        self.ref_study = self.study_class(
+        self.ref_study = self.study_class(  # pylint: disable=not-callable
             self.name,
             repository=self.ref_repo,
             processor=self.work_dir,
@@ -161,7 +164,7 @@ class PipelineTester(TestCase):
             except KeyError:
                 pass  # Inputs with a default value
         # Set up output study
-        output_study = self.study_class(
+        output_study = self.study_class(  # pylint: disable=not-callable
             pipeline_getter,
             repository=self.output_repo,
             processor=SingleProc(self.work_dir, reprocess='force'),
@@ -346,7 +349,8 @@ class PipelineTester(TestCase):
                 if not hasattr(base, 'add_data_specs'):
                     continue
                 for spec in base.add_data_specs:
-                    if isinstance(spec, BaseInputSpec) or spec.name in skip:
+                    if isinstance(spec,
+                                  BaseInputSpecMixin) or spec.name in skip:
                         continue
                     if (base is study_class or base in include_bases or
                             spec.pipeline_getter in potentially_overridden):

@@ -32,9 +32,11 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
         dcm = True
 
     if not dcm_files:
-        scan_description = [f for f in os.listdir(input_dir) if (not
-                            f.startswith('.') and os.path.isdir(input_dir+f)
-                            and 'motion_correction_results' not in f)]
+        scan_description = [
+            f for f in os.listdir(input_dir)
+            if (not f.startswith('.') and
+                os.path.isdir(input_dir+f) and
+                'motion_correction_results' not in f)]
         dcm = False
     else:
         dcm = True
@@ -51,8 +53,8 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
         copy = True
     except OSError as e:
         if e.errno == errno.EEXIST:
-            print ('Detected existing working directory. Assuming that a '
-                   'previous process failed. Trying to restart it.')
+            print('Detected existing working directory. Assuming that a '
+                  'previous process failed. Trying to restart it.')
             working_dir = input_dir+'/work_dir/work_sub_dir/work_session_dir/'
             copy = False
 
@@ -140,7 +142,7 @@ def inputs_generation(scan_description, input_dir, siemens=False):
     while not correct_ref:
         ref = input("Please select the reference scan: ").split()
         if not ref:
-            print ('A reference image must be provided!')
+            print('A reference image must be provided!')
         elif ref and len(ref) > 1:
             print(('Only one reference can be provided, you selected {}.'
                    .format(len(ref))))
@@ -171,8 +173,8 @@ def inputs_generation(scan_description, input_dir, siemens=False):
                             .format(' '.join(x for x in dwi if x not in
                                              dwis)))
         else:
-            print ('The DWI images provided were assigned to the following '
-                   'types: \n')
+            print('The DWI images provided were assigned to the following '
+                  'types: \n')
             for dwi in dwis:
                 if dwi[-1] == '0':
                     print(('main diffusion image with multiple directions: '
@@ -281,18 +283,18 @@ def guess_scan_type(scans, input_dir):
         print(('\nChosen reference image: {0} \nReference type: {1}\n'
                .format(ref, ref_type)))
         if t1s:
-            print ('The following scans were identified as T1 weighted: \n')
+            print('The following scans were identified as T1 weighted: \n')
             for t1 in t1s:
                 print(('{}'.format(t1)))
             print('\n')
         if epis:
-            print ('The following scans were identified as 4D BOLD or ASL '
-                   'images:\n')
+            print('The following scans were identified as 4D BOLD or ASL '
+                  'images:\n')
             for epi in epis:
                 print(('{}'.format(epi)))
             print('\n')
         if dwis:
-            print ('The following scans were identified as DWI: \n')
+            print('The following scans were identified as DWI: \n')
             for dwi in dwis:
                 if dwi[-1] == '0':
                     print(('main diffusion image with multiple directions: '
@@ -305,8 +307,8 @@ def guess_scan_type(scans, input_dir):
                            'respect to the main dwi: {}'.format(dwi[0])))
             print('\n')
         if t2s:
-            print ('The following scans were identified as not belonging to '
-                   'any of the previous classes: \n')
+            print('The following scans were identified as not belonging to '
+                  'any of the previous classes: \n')
             for t2 in t2s:
                 print(('{}'.format(t2)))
             print('\n')
@@ -314,7 +316,7 @@ def guess_scan_type(scans, input_dir):
         assigned = [ref]+t1s+t2s+[x[0] for x in dwis]+epis
         not_assigned = [x for x in scans if x not in assigned]
         if not_assigned:
-            print (
+            print(
                 'The following scans could not be assigned to any class.'
                 ' If DWI images are present, this might be due to the '
                 'inhability of the pipeline to find phase encoding information'
@@ -332,9 +334,9 @@ def guess_scan_type(scans, input_dir):
         else:
             inputs = []
     else:
-        print ('Reference image could not be identified from header '
-               'information. You will be prompted to manually group all '
-               'the scans into different classes.')
+        print('Reference image could not be identified from header '
+              'information. You will be prompted to manually group all '
+              'the scans into different classes.')
         inputs = []
 
     return inputs
@@ -369,9 +371,9 @@ def dwi_type_assignment(input_dir, dwi_images):
                     dwi, np.trunc(float(dcm_info.outputs.pe_angle)),
                     dcm_info.outputs.ped])
         else:
-            print ('Could not find phase encoding information from the'
-                   'dwi images header. Distortion correction will not '
-                   'be performed.')
+            print('Could not find phase encoding information from the'
+                  'dwi images header. Distortion correction will not '
+                  'be performed.')
             if len(dim) == 4:
                 main_dwi.append(
                     [dwi, '', ''])
@@ -452,7 +454,7 @@ def check_image_start_time(input_dir, scans):
 
     for i in range(1, len(start_times)):
         diff = ((dt.datetime.strptime(str(start_times[i][0]), '%H%M%S.%f') -
-                dt.datetime.strptime(str(start_times[i-1][0]), '%H%M%S.%f'))
+                 dt.datetime.strptime(str(start_times[i-1][0]), '%H%M%S.%f'))
                 .total_seconds())
         if diff < 5:
             toremove.append(start_times[i][-1])
