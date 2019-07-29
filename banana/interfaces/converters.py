@@ -68,7 +68,7 @@ class Dcm2niix(CommandLine):
             converted = products[-1]
         else:
             raise ArcanaError("No products produced by dcm2niix ({})"
-                                  .format(', '.join(os.listdir(out_dir))))
+                              .format(', '.join(os.listdir(out_dir))))
         outputs['converted'] = converted
         return outputs
 

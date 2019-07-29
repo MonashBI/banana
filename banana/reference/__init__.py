@@ -11,7 +11,7 @@ class BaseReference():
 
     frequency = 'per_study'
 
-    def __init__(self, format, name=None):  # @ReservedAssignment
+    def __init__(self, format, name=None):
         self._name = name
         self._format = format
         self._study = None
@@ -57,7 +57,7 @@ class BaseReference():
         return self.collection.format
 
     @property
-    def path(self):  # @UnusedVariable
+    def path(self):
         return NotImplementedError
 
     def __repr__(self):
@@ -88,7 +88,7 @@ class FslReferenceData(BaseReference):
 
     DEFAULT_SUB_PATH = ('standard',)
 
-    def __init__(self, atlas_name, format, name=None, resolution=1,  # @ReservedAssignment @IgnorePep8
+    def __init__(self, atlas_name, format, name=None, resolution=1,
                  dataset=None, sub_path=DEFAULT_SUB_PATH):
         super().__init__(format, name)
         self._atlas_name = atlas_name
@@ -172,12 +172,12 @@ class LocalReferenceData(BaseReference):
 
     BASE_PATH = op.abspath(op.join(op.dirname(__file__), 'data'))
 
-    def __init__(self, atlas_name, format, name=None):  # @ReservedAssignment
+    def __init__(self, atlas_name, format, name=None):
         super().__init__(format, name)
         self._atlas_name = atlas_name
 
     @property
-    def path(self):  # @UnusedVariable
+    def path(self):
         return op.join(self.BASE_PATH, self._atlas_name + '.nii.gz')
 
     def __eq__(self, other):

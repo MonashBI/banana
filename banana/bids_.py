@@ -186,7 +186,7 @@ class BidsRepo(BasicRepo):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
         return op.join(sess_dir, fname)
 
-    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
         if len(path_parts) != 4 or path_parts[0] != 'derivatives':
             return None
         from_study, subj, sess = path_parts[1:]
@@ -199,7 +199,7 @@ class BaseBidsFileset(object):
 
     derived = False
 
-    def __init__(self, type, modality, task):  # @ReservedAssignment
+    def __init__(self, type, modality, task):
         self._modality = modality
         self._type = type
         self._task = task
@@ -262,7 +262,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         file
     """
 
-    def __init__(self, path, type, subject_id, visit_id, repository,  # @ReservedAssignment @IgnorePep8
+    def __init__(self, path, type, subject_id, visit_id, repository,
                  modality=None, task=None, checksums=None, aux_files=None):
         Fileset.__init__(
             self,
@@ -304,14 +304,14 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         Modality of the filesets
     """
 
-    def __init__(self, spec_name, type, valid_formats=None, task=None,# @ReservedAssignment @IgnorePep8
+    def __init__(self, spec_name, type, valid_formats=None, task=None,
                  modality=None, **kwargs):
         InputFilesets.__init__(
             self, spec_name, pattern=None, valid_formats=valid_formats,
-            frequency='per_session', **kwargs)  # @ReservedAssignment @IgnorePep8
+            frequency='per_session', **kwargs)
         BaseBidsFileset.__init__(self, type, modality, task)
 
-    def _filtered_matches(self, node, valid_formats=None, **kwargs):  # @UnusedVariable @IgnorePep8
+    def _filtered_matches(self, node, valid_formats=None, **kwargs):  # noqa: E501 @UnusedVariable
         matches = [
             f for f in node.filesets
             if (isinstance(f, BidsFileset) and
@@ -350,7 +350,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
     def _check_args(self):
         pass  # Disable check for either pattern or ID in base class
 
-    @BaseBidsFileset.task.setter
+    @BaseBidsFileset.task.setter  # pylint: disable=no-member
     def task(self, task):
         self._task = task
 
@@ -378,10 +378,10 @@ class BidsAssocInputs(InputFilesets):
 
     VALID_ASSOCIATIONS = ('grads', 'phase', 'phasediff', 'epi', 'fieldmap')
 
-    def __init__(self, spec_name, primary, association, type=None, format=None,   # @ReservedAssignment @IgnorePep8
+    def __init__(self, spec_name, primary, association, type=None, format=None,
                  **kwargs):
         InputFilesets.__init__(self, spec_name, format,
-                                 frequency='per_session', **kwargs)
+                               frequency='per_session', **kwargs)
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
             raise BananaUsageError(
@@ -428,7 +428,7 @@ class BidsAssocInputs(InputFilesets):
         unbound_primary = self._primary
         if isinstance(study, MultiStudy) and hasattr(self,
                                                      'prefixed_primary_name'):
-            primary_spec_name = self.prefixed_primary_name
+            primary_spec_name = self.prefixed_primary_name  # noqa pylint: disable=no-member
         else:
             primary_spec_name = self.primary.name
         self._primary = self._primary.bind(study, spec_name=primary_spec_name,
@@ -474,7 +474,7 @@ class BidsAssocInputs(InputFilesets):
                                             return_list=True)
             try:
                 fieldmap = next(f for f in fieldmaps
-                                     if f['type'] == self.association)
+                                if f['type'] == self.association)
             except StopIteration:
                 raise ArcanaInputMissingMatchError(
                     "No \"{}\" field-maps associated with {} (found {})"

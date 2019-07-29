@@ -20,4 +20,3 @@ class TestMRCalcInterface(BaseTestCase):
             self.assertEqual(out_files, [])
         finally:
             os.chdir(orig_dir)
-

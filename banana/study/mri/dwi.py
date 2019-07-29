@@ -1,8 +1,14 @@
 from logging import getLogger
 from nipype.interfaces.utility import Merge
+from nipype.interfaces.fsl import (
+    TOPUP, ApplyTOPUP, BET, FUGUE, Merge as FslMerge)
+from nipype.interfaces import fsl
+from nipype.interfaces.utility import Merge as merge_lists
+from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
+from banana.interfaces.custom.motion_correction import GenTopupConfigFiles
 from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
@@ -33,9 +39,9 @@ from banana.file_format import (
     mrtrix_image_format, nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format,
     fsl_bvals_format, text_format, dicom_format, eddy_par_format,
     mrtrix_track_format, motion_mats_format, text_matrix_format,
-    directory_format, csv_format, zip_format)
+    directory_format, csv_format, zip_format, STD_IMAGE_FORMATS)
 from .base import MriStudy
-from .epi import EpiSeriesStudy
+from .epi import EpiSeriesStudy, EpiStudy
 
 logger = getLogger('banana')
 
@@ -53,6 +59,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         InputFilesetSpec('anat_fs_recon_all', zip_format, optional=True,
                          desc=("Co-registered freesurfer recon-all output. "
                                "Used in building the connectome")),
+        InputFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True),
         FilesetSpec('grad_dirs', fsl_bvecs_format, 'preprocess_pipeline'),
         FilesetSpec('grad_dirs_coreg', fsl_bvecs_format,
                     'series_coreg_pipeline',
@@ -101,7 +108,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                     'global_tracking_pipeline',
                     desc=("")),
         FilesetSpec('connectome', csv_format, 'connectome_pipeline',
-                    desc=(""))]  # @IgnorePep8
+                    desc=(""))]
 
     add_param_specs = [
         ParamSpec('multi_tissue', True,
@@ -126,7 +133,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                    desc=("")),
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt'),
-                    desc=("")),
+                   desc=("")),
         SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd'),
                    desc=("")),
         MriStudy.param_spec('bet_method').with_new_choices('mrtrix'),
@@ -580,7 +587,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         # Connect inputs
         return pipeline
 
-    def tensor_pipeline(self, **name_maps):  # @UnusedVariable
+    def tensor_pipeline(self, **name_maps):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -607,7 +614,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def tensor_metrics_pipeline(self, **name_maps):  # @UnusedVariable
+    def tensor_metrics_pipeline(self, **name_maps):
         """
         Fits the apparrent diffusion tensor (DT) to each voxel of the image
         """
@@ -634,7 +641,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def response_pipeline(self, **name_maps):  # @UnusedVariable
+    def response_pipeline(self, **name_maps):
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -716,7 +723,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def fod_pipeline(self, **name_maps):  # @UnusedVariable
+    def fod_pipeline(self, **name_maps):
         """
         Estimates the fibre orientation distribution (FOD) using constrained
         spherical deconvolution
@@ -731,10 +738,6 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                   " voxel"),
             citations=[mrtrix_cite],
             name_maps=name_maps)
-
-        if self.branch('fod_algorithm', 'msmt_csd'):
-            pipeline.add_input(FilesetSpec('gm_response', text_format))
-            pipeline.add_input(FilesetSpec('csf_response', text_format))
 
         # Create fod fit node
         dwi2fod = pipeline.add(
@@ -764,7 +767,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         # Check inputs/output are connected
         return pipeline
 
-    def extract_b0_pipeline(self, **name_maps):  # @UnusedVariable
+    def extract_b0_pipeline(self, **name_maps):
         """
         Extracts the b0 images from a DWI study and takes their mean
         """
@@ -890,5 +893,115 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             outputs={
                 'connectome': ('out_file', csv_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
+
+        return pipeline
+
+
+class DwiRefStudy(EpiStudy, metaclass=StudyMetaClass):
+
+    add_data_specs = [
+        InputFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True)
+    ]
+
+    desc = ("A special study used in the MR-PET motion correction algorithm to"
+            " perform distortion correction on the reverse-phase/reference b0 "
+            "scans by flipping it around and using the DWI series as the "
+            "reference")
+
+    def preprocess_pipeline(self, **name_maps):
+
+        if self.provided('reverse_phase'):
+            return self._topup_pipeline(**name_maps)
+        else:
+            return super().preprocess_pipeline(**name_maps)
+
+    def _topup_pipeline(self, **name_maps):
+        """
+        Implementation of separate topup pipeline, moved from EPI study as it
+        is only really relevant for spin-echo DWI. Need to work out what to do
+        with it
+        """
+
+        pipeline = self.new_pipeline(
+            name='preprocess_pipeline',
+            desc=("Topup distortion correction pipeline"),
+            citations=[fsl_cite],
+            name_maps=name_maps)
+
+        reorient_epi_in = pipeline.add(
+            'reorient_epi_in',
+            fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('magnitude', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.9')])
+
+        reorient_epi_opposite = pipeline.add(
+            'reorient_epi_opposite',
+            fsl.utils.Reorient2Std(),
+            inputs={
+                'in_file': ('reverse_phase', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.9')])
+
+        prep_dwi = pipeline.add(
+            'prepare_dwi',
+            PrepareDWI(
+                topup=True),
+            inputs={
+                'pe_dir': ('ped', str),
+                'ped_polarity': ('pe_angle', str),
+                'dwi': (reorient_epi_in, 'out_file'),
+                'dwi1': (reorient_epi_opposite, 'out_file')})
+
+        ped = pipeline.add(
+            'gen_config',
+            GenTopupConfigFiles(),
+            inputs={
+                'ped': (prep_dwi, 'pe')})
+
+        merge_outputs = pipeline.add(
+            'merge_files',
+            merge_lists(2),
+            inputs={
+                'in1': (prep_dwi, 'main'),
+                'in2': (prep_dwi, 'secondary')})
+
+        merge = pipeline.add(
+            'FslMerge',
+            FslMerge(
+                dimension='t',
+                output_type='NIFTI_GZ'),
+            inputs={
+                'in_files': (merge_outputs, 'out')},
+            requirements=[fsl_req.v('5.0.9')])
+
+        topup = pipeline.add(
+            'topup',
+            TOPUP(
+                output_type='NIFTI_GZ'),
+            inputs={
+                'in_file': (merge, 'merged_file'),
+                'encoding_file': (ped, 'config_file')},
+            requirements=[fsl_req.v('5.0.9')])
+
+        in_apply_tp = pipeline.add(
+            'in_apply_tp',
+            merge_lists(1),
+            inputs={
+                'in1': (reorient_epi_in, 'out_file')})
+
+        pipeline.add(
+            'applytopup',
+            ApplyTOPUP(
+                method='jac',
+                in_index=[1],
+                output_type='NIFTI_GZ'),
+            inputs={
+                'in_files': (in_apply_tp, 'out'),
+                'encoding_file': (ped, 'apply_topup_config'),
+                'in_topup_movpar': (topup, 'out_movpar'),
+                'in_topup_fieldcoef': (topup, 'out_fieldcoef')},
+            outputs={
+                'mag_preproc': ('out_corrected', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.9')])
 
         return pipeline

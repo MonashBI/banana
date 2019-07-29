@@ -509,7 +509,7 @@ class MultiBoldMixin(MultiStudy):
             name_maps=name_maps)
 
         pipeline.add(
-            'gica',
+            'melodic',
             MELODIC(
                 no_bet=True,
                 bg_threshold=self.parameter('brain_thresh_percent'),

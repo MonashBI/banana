@@ -25,19 +25,19 @@ template_path = os.path.abspath(
 class PetStudy(Study, metaclass=StudyMetaClass):
 
     add_param_specs = [ParamSpec('ica_n_components', 2),
-                        ParamSpec('ica_type', 'spatial'),
-                        ParamSpec('norm_transformation', 's'),
-                        ParamSpec('norm_dim', 3),
-                        ParamSpec('norm_template',
-                                      os.path.join(template_path,
-                                                   'PET_template.nii.gz')),
-                        ParamSpec('crop_xmin', 100),
-                        ParamSpec('crop_xsize', 130),
-                        ParamSpec('crop_ymin', 100),
-                        ParamSpec('crop_ysize', 130),
-                        ParamSpec('crop_zmin', 20),
-                        ParamSpec('crop_zsize', 100),
-                        ParamSpec('image_orientation_check', False)]
+                       ParamSpec('ica_type', 'spatial'),
+                       ParamSpec('norm_transformation', 's'),
+                       ParamSpec('norm_dim', 3),
+                       ParamSpec('norm_template',
+                                 os.path.join(template_path,
+                                              'PET_template.nii.gz')),
+                       ParamSpec('crop_xmin', 100),
+                       ParamSpec('crop_xsize', 130),
+                       ParamSpec('crop_ymin', 100),
+                       ParamSpec('crop_ysize', 130),
+                       ParamSpec('crop_zmin', 20),
+                       ParamSpec('crop_zsize', 100),
+                       ParamSpec('image_orientation_check', False)]
 
     add_data_specs = [
         InputFilesetSpec('list_mode', list_mode_format),
@@ -167,8 +167,8 @@ class PetStudy(Study, metaclass=StudyMetaClass):
         pipeline = self.new_pipeline(
             name='prepare_sinogram',
             desc=('Unlist pet listmode data into several sinograms and '
-                         'perform ssrb compression to prepare data for motion '
-                         'detection using PCA pipeline.'),
+                  'perform ssrb compression to prepare data for motion '
+                  'detection using PCA pipeline.'),
             citations=[],
             **kwargs)
 

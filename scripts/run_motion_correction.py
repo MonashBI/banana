@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from banana.study.multimodal.mrpet import create_motion_correction_class
+from banana.study.multi.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProc

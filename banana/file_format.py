@@ -47,6 +47,9 @@ class MrtrixConverter(Converter):
 
 class ImageFormat(FileFormat, metaclass=ABCMeta):
 
+    INCLUDE_HDR_KEYS = None
+    IGNORE_HDR_KEYS = None
+
     @abstractmethod
     def get_header(self, fileset):
         """
@@ -88,7 +91,7 @@ class ImageFormat(FileFormat, metaclass=ABCMeta):
                                   other_fileset.get_array())
 
     def headers_diff(self, fileset, other_fileset, include_keys=None,
-                     ignore_keys=None, **kwargs):  # @UnusedVariable
+                     ignore_keys=None, **kwargs):
         """
         Check headers to see if all values
         """
@@ -106,14 +109,14 @@ class ImageFormat(FileFormat, metaclass=ABCMeta):
         elif ignore_keys is not None:
             include_keys = hdr_keys - set(ignore_keys)
         else:
-            if hasattr(self, 'INCLUDE_HDR_KEYS'):
-                if hasattr(self, 'IGNORE_HDR_KEYS'):
+            if self.INCLUDE_HDR_KEYS is not None:
+                if self.IGNORE_HDR_KEYS is not None:
                     raise BananaUsageError(
                         "Doesn't make sense to have both 'INCLUDE_HDR_FIELDS'"
                         "and 'IGNORE_HDR_FIELDS' class attributes of class {}"
                         .format(type(self).__name__))
-                include_keys = self.INCLUDE_HDR_KEYS
-            elif hasattr(self, 'IGNORE_HDR_KEYS'):
+                include_keys = self.INCLUDE_HDR_KEYS  # noqa pylint: disable=no-member
+            elif self.IGNORE_HDR_KEYS is not None:
                 include_keys = hdr_keys - set(self.IGNORE_HDR_KEYS)
             else:
                 include_keys = hdr_keys
@@ -235,7 +238,7 @@ class DicomFormat(ImageFormat):
                 dct = [dcm[t].value for t in tags]
         except KeyError as e:
             e.msg = ("{} does not have dicom tag {}".format(
-                     self, e.msg))
+                     self, str(e)))
             raise e
         return dct
 

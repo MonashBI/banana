@@ -8,7 +8,7 @@ from nipype.interfaces.mrtrix3.reconst import (
 from arcana.utils import split_extension
 
 
-# TODO: Write MRtrixBaseInputSpec with all the generic parameters included
+# TODO: Write MRtrixBaseInputSpecMixin with all the generic parameters included
 
 # =============================================================================
 # Extract MR gradients

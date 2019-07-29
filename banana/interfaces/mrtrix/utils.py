@@ -56,8 +56,8 @@ class MRConvertInputSpec(MRTrix3BaseInputSpec):
               "scale * stored_value. By default, the values in the input "
               "image header are passed through to the output image header "
               "when writing to an integer image, and reset to 0,1 (no scaling)"
-              " for floating-point and binary images. Note that his parameter has"
-              " no effect for floating-point and binary images."))
+              " for floating-point and binary images. Note that his parameter "
+              "has no effect for floating-point and binary images."))
     stride = traits.Str(
         mandatory=False, argstr='-stride %s',
         desc=("specify the strides of the output data in memory, as a "
@@ -193,7 +193,7 @@ class MRCropInputSpec(CommandLineInputSpec):
         traits.Int(desc="index"),  # @UndefinedVariable
         traits.Int(desc="start"),  # @UndefinedVariable
         traits.Int(desc='end'),  # @UndefinedVariable
-        mandatory=False, argstr="-axis %s %s %s", # @UndefinedVariable @IgnorePep8
+        mandatory=False, argstr="-axis %s %s %s",  # noqa: E501 @UndefinedVariable
         desc=("crop the input image in the provided axis"))
 
     mask = File(mandatory=False, exists=True, argstr="-mask %s",
@@ -251,10 +251,10 @@ class MRPadInputSpec(CommandLineInputSpec):
                     desc="Extracted DW or b-zero images")
 
     axis = traits.Tuple(
-        traits.Int(desc="index"),  # @UndefinedVariable
-        traits.Int(desc="lower"),  # @UndefinedVariable
-        traits.Int(desc='upper'),  # @UndefinedVariable
-        mandatory=False, argstr="-axis %s %s %s", # @UndefinedVariable @IgnorePep8
+        traits.Int(desc="index"),
+        traits.Int(desc="lower"),
+        traits.Int(desc='upper'),
+        mandatory=False, argstr="-axis %s %s %s",
         desc=("Pad the input image along the provided axis (defined by index)."
               "Lower and upper define the number of voxels to add to the lower"
               " and upper bounds of the axis"))
@@ -315,10 +315,10 @@ class MRMathInputSpec(CommandLineInputSpec):
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
 
-    operation = traits.Str(mandatory=True, argstr='%s', position=-2,  # @UndefinedVariable @IgnorePep8
+    operation = traits.Str(mandatory=True, argstr='%s', position=-2,  # noqa: E501 @UndefinedVariable
                            desc=("Operation to apply to the files"))
 
-    axis = traits.Int(argstr="-axis %s", position=0,  # @UndefinedVariable @IgnorePep8
+    axis = traits.Int(argstr="-axis %s", position=0,  # noqa: E501 @UndefinedVariable
                       desc=("The axis over which to apply the operator"))
 
     quiet = traits.Bool(
@@ -495,9 +495,10 @@ class ExtractFSLGradients(CommandLine):
 # =============================================================================
 
 class ExtractDWIorB0InputSpec(CommandLineInputSpec):
-    in_file = traits.Either(File, Directory, exists=True, argstr='%s',
-                            mandatory=True, position=0,
-                            desc="Diffusion weighted images with graident info")
+    in_file = traits.Either(
+        File, Directory, exists=True, argstr='%s',
+        mandatory=True, position=0,
+        desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
@@ -521,8 +522,8 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
               "gradient, and b gives the b-value in units of s/mm^2."))
 
     fslgrad = traits.Tuple(
-        File(exists=True, desc="gradient directions file (bvec)"),  # @UndefinedVariable @IgnorePep8
-        File(exists=True, desc="b-values (bval)"),  # @UndefinedVariable @IgnorePep8
+        File(exists=True, desc="gradient directions file (bvec)"),  # noqa: E501 @UndefinedVariable
+        File(exists=True, desc="b-values (bval)"),  # noqa: E501 @UndefinedVariable
         argstr='-fslgrad %s %s', mandatory=False,
         desc=("specify the diffusion-weighted gradient scheme used in the "
               "acquisition in FSL bvecs/bvals format."))

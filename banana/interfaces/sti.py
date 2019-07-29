@@ -25,6 +25,8 @@ class BaseSTICommand(MatlabCommand):
     Base interface for STI classes
     """
 
+    func = None
+
     def run(self, **inputs):
         # Set the script input of the matlab spec
         self.inputs.script = self.script(cwd=inputs['cwd'])
@@ -67,10 +69,10 @@ class BaseSTICommand(MatlabCommand):
                 name=name)
         return script
 
-    def _input_fname(self, name, **kwargs):  # @UnusedVariable
+    def _input_fname(self, name, **kwargs):
         return getattr(self.inputs, name)
 
-    def _output_fname(self, name, **kwargs):  # @UnusedVariable
+    def _output_fname(self, name, **kwargs):
         return name
 
     def _create_param_structs(self):
@@ -169,8 +171,8 @@ class UnwrapPhaseInputSpec(BaseSTIInputSpec):
     in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
                    desc="Input file to unwrap")
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                             mandatory=True, keyword=True,
-                             desc="Voxel size of the image")
+                            mandatory=True, keyword=True,
+                            desc="Voxel size of the image")
     padsize = traits.List([12, 12, 12],
                           (traits.Int(), traits.Int(), traits.Int()),
                           usedefault=True, keyword=True,
@@ -200,8 +202,8 @@ class VSharpInputSpec(BaseSTIInputSpec):
         desc=("A format string used to manipulate the mask before it is "
               "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                             mandatory=True, keyword=True,
-                             desc="Voxel size of the image")
+                            mandatory=True, keyword=True,
+                            desc="Voxel size of the image")
 
 
 class VSharpOutputSpec(BaseSTIOutputSpec):
@@ -229,8 +231,8 @@ class QSMiLSQRInputSpec(BaseSTIInputSpec):
         desc=("The format string used to manipulate the mask before it is "
               "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                             mandatory=True, in_struct='params',
-                             desc="Voxel size of the image")
+                            mandatory=True, in_struct='params',
+                            desc="Voxel size of the image")
     padsize = traits.List([12, 12, 12],
                           (traits.Int(), traits.Int(), traits.Int()),
                           usedefault=True, in_struct='params',
@@ -240,8 +242,8 @@ class QSMiLSQRInputSpec(BaseSTIInputSpec):
     B0 = traits.Float(mandatory=True, desc="B0 field strength",
                       in_struct='params')
     H = traits.List((traits.Float(), traits.Float(), traits.Float()),
-                     mandatory=True, desc="Direction of the B0 field",
-                     in_struct='params')
+                    mandatory=True, desc="Direction of the B0 field",
+                    in_struct='params')
 
 
 class QSMiLSQROutputSpec(BaseSTIOutputSpec):
@@ -292,13 +294,13 @@ class BaseBatchSTICommand(BaseSTICommand):
         script += self._exit()
         return script
 
-    def _input_fname(self, name, index, **kwargs):  # @UnusedVariable
+    def _input_fname(self, name, index, **kwargs):
         inpt = super(BaseBatchSTICommand, self)._input_fname(name)
         if isinstance(inpt, list):
             inpt = inpt[index]
         return inpt
 
-    def _output_fname(self, name, index, **kwargs):  # @UnusedVariable
+    def _output_fname(self, name, index, **kwargs):
         return name + str(index)
 
     def _list_outputs(self):

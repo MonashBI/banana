@@ -38,7 +38,7 @@ class BaseMask(MatlabCommand):
         results.outputs.raw_output = stdout
         return results
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         """
         Generate script to perform masking
         """
@@ -73,7 +73,7 @@ class DialateMask(BaseMask):
     input_spec = DialateMaskInputSpec
     output_spec = DialateMaskOutputSpec
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         """
         Generate script to load images, pass them to the STI function along
         with the keyword parameters
@@ -117,7 +117,7 @@ class MaskCoils(BaseMask):
     input_spec = MaskCoilsInputSpec
     output_spec = MaskCoilsOutputSpec
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         """
         Generate script to load images, pass them to the STI function along
         with the keyword parameters
@@ -191,7 +191,7 @@ class MedianInMasks(BaseMask):
     input_spec = MedianInMasksInputSpec
     output_spec = MedianInMasksOutputSpec
 
-    def script(self, **inputs):  # @UnusedVariable
+    def script(self, **inputs):
         """
         Generate script to load images, pass them to the STI function along
         with the keyword parameters

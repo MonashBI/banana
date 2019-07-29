@@ -18,3 +18,4 @@ __pycache__
 /dist
 /docs/source/_build
 /docs/build
+/.pytest_cache/

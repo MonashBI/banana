@@ -38,8 +38,8 @@ class TestMriStudy(PipelineTester):
         self.run_pipeline_test('qform_transform_pipeline',
                                add_inputs=['coreg_ref'])
 
-    def test_prepare_pipeline(self):
-        self.run_pipeline_test('prepare_pipeline')
+    def test_preprocess_pipeline(self):
+        self.run_pipeline_test('preprocess_pipeline')
 
     def test_header_extraction_pipeline(self):
         self.run_pipeline_test('header_extraction_pipeline')

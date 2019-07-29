@@ -32,7 +32,7 @@ class CreateROI(BaseInterface):
     input_spec = CreateROIInputSpec
     output_spec = CreateROIInputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         script = "CreateROI('{}', '{}', '{}');".format(
             self.inputs.in_file, self.inputs.brain_mask,
             self._gen_outfilename())
@@ -102,7 +102,7 @@ class BatchNODDIFitting(BaseInterface):
     input_spec = BatchNODDIFittingInputSpec
     output_spec = BatchNODDIFittingOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         script = """
         protocol = FSL2Protocol('{bvals}', '{bvecs}');
         noddi = MakeModel('{model}');
@@ -187,7 +187,7 @@ class SaveParamsAsNIfTI(BaseInterface):
     input_spec = SaveParamsAsNIfTIInputSpec
     output_spec = SaveParamsAsNIfTIOutputSpec
 
-    def _run_interface(self, runtime):  # @UnusedVariable
+    def _run_interface(self, runtime):
         script = """
         SaveParamsAsNIfTI('{params}', '{roi}', '{brain_mask}', '{prefix}');
         """.format(
