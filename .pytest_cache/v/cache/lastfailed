@@ -1,0 +1,11 @@
+{
+  "test/unittests/interfaces/test_coils.py": true,
+  "test/unittests/study/mri/test_coregistered.py": true,
+  "test/unittests/study/mri/test_dwi.py::TestMriStudy::test_preprocess_channels_pipeline": true,
+  "test/unittests/study/mri/test_mc.py": true,
+  "test/unittests/study/mri/test_t1.py::TestMriStudy::test_aparc_stats_table_pipeline": true,
+  "test/unittests/test_bids.py::TestBids::test_bids_dwi": true,
+  "test/unittests/test_bids.py::TestBids::test_bids_fmri": true,
+  "test/unittests/test_bids.py::TestBids::test_project_info": true,
+  "test/unittests/test_requirement.py": true
+}
