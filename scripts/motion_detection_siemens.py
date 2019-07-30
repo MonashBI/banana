@@ -9,6 +9,7 @@ from banana.utils.moco import (
 import argparse
 import pickle as pkl
 from arcana import SingleProc, ModulesEnv, StaticEnv
+import logging
 
 
 class MoCoDataLoader(object):
@@ -55,13 +56,25 @@ if __name__ == "__main__":
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_dir', '-i', type=str,
                         help=("Path to an existing directory"))
+    # parser.add_argument('--output_dir', '-o', type=str, default=None,
+    #                     help="The output directory")
     parser.add_argument('--environment', choices=('static', 'modules'),
                         default='static',
                         help="The environment to use, modules or static")
+    parser.add_argument('--reprocess', default=False, action='store_true',
+                        help="reprocess the previously generated derivatives")
     args = parser.parse_args()
     input_dir = args.input_dir
     dataloader = MoCoDataLoader(input_dir)
     ref, ref_type, t1s, epis, t2s, dwis = dataloader.load()
+
+    logger = logging.getLogger('nipype.workflow')
+
+    logger.setLevel('INFO')
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(levelname)s - %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     MotionDetection, inputs = create_motion_detection_class(
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dwis=dwis,
@@ -69,8 +82,13 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    repository = BasicRepo(op.join(input_dir, 'work_dir'))
-    work_dir = op.join(input_dir, 'motion_detection_cache')
+    # if args.output_dir is None:
+    #     output_dir = op.join(op.basename(input_dir), 'work_dir')
+    # else:
+    #     output_dir = args.output_dir
+    # os.makedirs(output_dir, exist_ok=True)
+    repository = BasicRepo(input_dir, depth=0)
+    work_dir = op.join(op.dirname(input_dir), 'motion_detection_cache')
     WORK_PATH = work_dir
     try:
         os.makedirs(WORK_PATH)
@@ -79,7 +97,8 @@ if __name__ == "__main__":
             raise
 
     study = MotionDetection(name='MotionDetection',
-                            processor=SingleProc(WORK_PATH),
+                            processor=SingleProc(WORK_PATH,
+                                                 reprocess=args.reprocess),
                             environment=(
                                 ModulesEnv() if args.environment == 'modules'
                                 else StaticEnv()),
