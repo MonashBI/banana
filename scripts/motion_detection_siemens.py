@@ -56,8 +56,10 @@ if __name__ == "__main__":
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--input_dir', '-i', type=str,
                         help=("Path to an existing directory"))
-    # parser.add_argument('--output_dir', '-o', type=str, default=None,
-    #                     help="The output directory")
+    parser.add_argument('--output_dir', '-o', type=str, default=None,
+                        help="The output directory")
+    parser.add_argument('--work_dir', '-w', type=str, default=None,
+                        help="The work directory")
     parser.add_argument('--environment', choices=('static', 'modules'),
                         default='static',
                         help="The environment to use, modules or static")
@@ -80,30 +82,29 @@ if __name__ == "__main__":
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dwis=dwis,
         epis=epis)
 
-    sub_id = 'work_sub_dir'
-    session_id = 'work_session_dir'
-    # if args.output_dir is None:
-    #     output_dir = op.join(op.basename(input_dir), 'work_dir')
-    # else:
-    #     output_dir = args.output_dir
-    # os.makedirs(output_dir, exist_ok=True)
-    repository = BasicRepo(input_dir, depth=0)
-    work_dir = op.join(op.dirname(input_dir), 'motion_detection_cache')
-    WORK_PATH = work_dir
-    try:
-        os.makedirs(WORK_PATH)
-    except OSError as e:
-        if e.errno != errno.EEXIST:
-            raise
+    in_repo = BasicRepo(input_dir, depth=0)
+
+    for inpt in inputs:
+        inpt._repository = in_repo
+
+    output_dir = (args.output_dir if args.output_dir is not None else
+                  op.join(op.dirname(input_dir), 'moco_out_dir'))
+    work_dir = (args.work_dir if args.work_dir is not None else
+                op.join(op.dirname(input_dir), 'moco_work_dir'))
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(work_dir, exist_ok=True)
 
     study = MotionDetection(name='MotionDetection',
-                            processor=SingleProc(WORK_PATH,
+                            repository=BasicRepo(output_dir, depth=0),
+                            processor=SingleProc(work_dir,
                                                  reprocess=args.reprocess),
                             environment=(
                                 ModulesEnv() if args.environment == 'modules'
                                 else StaticEnv()),
-                            repository=repository, inputs=inputs,
-                            subject_ids=[sub_id], visit_ids=[session_id])
+                            inputs=inputs,
+                            subject_ids=[BasicRepo.DEFAULT_SUBJECT_ID],
+                            visit_ids=[BasicRepo.DEFAULT_VISIT_ID],
+                            fill_tree=True)
     study.data('motion_detection_output')
 
 print('Done!')

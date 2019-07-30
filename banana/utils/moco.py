@@ -258,7 +258,7 @@ def guess_scan_type(scans, input_dir):
                'information could not be found in the image header. They '
                'will be treated as T2w:\n{}'
                .format('\n'.join(x for x in unused_b0))))
-        t2s = t2s+unused_b0
+        t2s.append(unused_b0)
     if res_t2:
         ref = [x[0] for x in res_t2 if x[1] <= 1]
         if ref:
