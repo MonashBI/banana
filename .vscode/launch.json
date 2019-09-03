@@ -10,7 +10,8 @@
             "request": "launch",
             "program": "${workspaceFolder}/scripts/motion_detection_siemens.py",
             "console": "internalConsole",
-            "args": ["--input_dir", "${workspaceFolder}/test/data/moco-test"]
+            "args": ["--input_dir", "${workspaceFolder}/test/data/moco-test",
+                     "--environment", "modules"]
         }
     ]
 }
