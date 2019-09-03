@@ -9,8 +9,8 @@
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/motion_detection_siemens.py",
-            "console": "integratedTerminal",
-            "args": ["--input_dir", "/Users/tclose/Data/moco-test",
+            "console": "internalConsole",
+            "args": ["--input_dir", "${workspaceFolder}/test/data/moco-test",
                      "--environment", "modules"]
         }
     ]

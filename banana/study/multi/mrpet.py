@@ -464,7 +464,8 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         pipeline.add(
             'copy2dir',
-            CopyToDir(),
+            CopyToDir(
+                use_original_names=True),
             inputs={
                 'in_files': (merge_inputs, 'out')},
             outputs={
