@@ -13,8 +13,8 @@ from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo,
 from arcana.data.spec import BaseInputSpecMixin
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaMissingDataException)
+from arcana.utils.testing import BaseTestCase  # pylint: disable=unused-import
 from banana.exceptions import BananaTestSetupError, BananaUsageError
-import banana.file_format  # @UnusedImport
 
 
 logger = logging.getLogger('arcana')
@@ -23,11 +23,6 @@ handler = logging.StreamHandler()
 formatter = logging.Formatter("%(levelname)s - %(message)s")
 handler.setFormatter(formatter)
 
-# logger = logging.getLogger('nipype.workflow')
-# logger.setLevel(logging.DEBUG)
-# handler = logging.StreamHandler()
-# formatter = logging.Formatter("%(levelname)s - %(message)s")
-# handler.setFormatter(formatter)
 
 logger.addHandler(handler)
 
@@ -39,6 +34,11 @@ except KeyError:
     TEST_DIR = tempfile.mkdtemp()
 
 USE_MODULES = 'BANANA_TEST_USE_MODULES' in os.environ
+
+if USE_MODULES:
+    TEST_ENV = ModulesEnv()
+else:
+    TEST_ENV = StaticEnv()
 
 
 TEST_CACHE_DIR = op.join(TEST_DIR, 'cache')
@@ -327,9 +327,9 @@ class PipelineTester(TestCase):
                 work_dir, reprocess=reprocess,
                 clean_work_dir_between_runs=clean_work_dir,
                 prov_ignore=(
-                    SingleProc.DEFAULT_PROV_IGNORE +
-                    ['.*/pkg_version',
-                     'workflow/nodes/.*/requirements/.*'])),
+                    SingleProc.DEFAULT_PROV_IGNORE
+                    + ['.*/pkg_version',
+                       'workflow/nodes/.*/requirements/.*'])),
             environment=env,
             inputs=inputs,
             parameters=parameters,
@@ -352,8 +352,8 @@ class PipelineTester(TestCase):
                     if isinstance(spec,
                                   BaseInputSpecMixin) or spec.name in skip:
                         continue
-                    if (base is study_class or base in include_bases or
-                            spec.pipeline_getter in potentially_overridden):
+                    if (base is study_class or base in include_bases
+                            or spec.pipeline_getter in potentially_overridden):
                         include.add(spec.name)
 
         # Generate all derived data

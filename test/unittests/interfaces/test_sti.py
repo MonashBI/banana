@@ -1,21 +1,25 @@
 import os.path as op
-from arcana.utils.testing import BaseTestCase
+import unittest
+from banana.utils.testing import BaseTestCase, TEST_ENV
 import tempfile
-from nipype.pipeline.engine import Node
+from arcana.environment.base import Node
 from banana.interfaces.sti import UnwrapPhase
-# from banana.requirement import sti_req
+from banana.requirement import sti_req, matlab_req
 
 
 class TestMRCalcInterface(BaseTestCase):
 
-    def test_subtract(self):
+    @unittest.skip
+    def test_unwrap(self):
 
         tmp_dir = tempfile.mkdtemp()
         in_file = op.join(tmp_dir, 'in_file.nii.gz')
         with open(in_file, 'w') as f:
             f.write('test')
         out_file = op.join(tmp_dir, 'out_file.nii.gz')
-        unwrap = Node(UnwrapPhase(), name='unwrap')
+        unwrap = TEST_ENV.make_node(UnwrapPhase(), name='unwrap',
+                                    requirements=[matlab_req.v('r2018a'),
+                                                  sti_req.v(2.2)])
         unwrap.inputs.in_file = in_file
         unwrap.inputs.voxelsize = [2.0, 2.0, 2.0]
 #         unwrap.inputs.out_file = out_file

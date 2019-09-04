@@ -147,8 +147,8 @@ class BaseSTICommand(MatlabCommand):
 
     @property
     def has_keywords(self):
-        return (any(i.keyword for i in self.inputs.traits().values()) or
-                list(self.structs))
+        return (any(i.keyword for i in self.inputs.traits().values())
+                or list(self.structs))
 
     @property
     def keyword_args(self):
@@ -308,8 +308,8 @@ class BaseBatchSTICommand(BaseSTICommand):
         for name, _ in self.output_imgs:
             outputs[name] = []
             for i in range(self.batch_size):
-                outputs[name].append(op.abspath(self._output_fname(name, i)) +
-                                     '.nii')
+                outputs[name].append(op.abspath(self._output_fname(name, i))
+                                     + '.nii')
         return outputs
 
 

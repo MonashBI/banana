@@ -4,10 +4,9 @@ import os.path as op
 import platform
 import re
 import xml.etree.ElementTree
-from arcana.environment.requirement import (
+from arcana.environment.requirement import (  # pylint: disable=unused-import
     Version, CliRequirement, MatlabPackageRequirement,
-    PythonPackageRequirement,
-    matlab_req)  # @UnusedImport
+    PythonPackageRequirement, matlab_req)
 from arcana.utils import run_matlab_cmd
 from arcana.exceptions import (
     ArcanaRequirementNotFoundError, ArcanaVersionNotDetectableError)

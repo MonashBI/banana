@@ -2,15 +2,14 @@ from copy import copy
 import itertools
 from nipype.interfaces.freesurfer.preprocess import ReconAll
 # from arcana.utils.interfaces import DummyReconAll as ReconAll
-from nipype.interfaces import fsl, ants, mrtrix3
-from arcana.utils.interfaces import Merge
+from nipype.interfaces import mrtrix3
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
 from arcana.study.base import StudyMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import CopyToDir
-from banana.requirement import freesurfer_req, ants_req, fsl_req, mrtrix_req
-from banana.citation import freesurfer_cites, fsl_cite
+from banana.requirement import freesurfer_req, mrtrix_req
+from banana.citation import freesurfer_cites
 from banana.interfaces.freesurfer import AparcStats
 from banana.interfaces.utility import AppendPath
 from banana.file_format import (
