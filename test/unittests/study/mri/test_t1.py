@@ -3,7 +3,7 @@ from banana.utils.testing import PipelineTester, TEST_CACHE_DIR
 from arcana.repository.xnat import XnatRepo
 
 
-class TestMriStudy(PipelineTester):
+class TestT1wStudy(PipelineTester):
 
     name = 'T1'
     study_class = T1Study

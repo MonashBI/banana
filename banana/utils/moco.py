@@ -24,10 +24,10 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
                            struct2align=None):
     scan_description = []
-    dcm_files = sorted(glob.glob(input_dir+'/*.dcm'))
+    dcm_files = sorted(glob.glob(input_dir + '/*.dcm'))
 
     if not dcm_files:
-        dcm_files = sorted(glob.glob(input_dir+'/*.IMA'))
+        dcm_files = sorted(glob.glob(input_dir + '/*.IMA'))
     else:
         dcm = True
 
@@ -35,7 +35,7 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
         scan_description = [
             f for f in os.listdir(input_dir)
             if (not f.startswith('.') and
-                os.path.isdir(input_dir+f) and
+                os.path.isdir(os.path.join(input_dir, f)) and
                 'motion_correction_results' not in f)]
         dcm = False
     else:
@@ -45,18 +45,13 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
         raise Exception('No DICOM files or folders found in {}'
                         .format(input_dir))
 
-    try:
-        os.mkdir(input_dir+'/work_dir')
-        os.mkdir(input_dir+'/work_dir/work_sub_dir')
-        os.mkdir(input_dir+'/work_dir/work_sub_dir/work_session_dir')
-        working_dir = input_dir+'/work_dir/work_sub_dir/work_session_dir/'
+    working_dir = os.path.join(os.path.dirname(input_dir), 'work_dir')
+
+    if os.path.exists(working_dir):
         copy = True
-    except OSError as e:
-        if e.errno == errno.EEXIST:
-            print('Detected existing working directory. Assuming that a '
-                  'previous process failed. Trying to restart it.')
-            working_dir = input_dir+'/work_dir/work_sub_dir/work_session_dir/'
-            copy = False
+    else:
+        os.makedirs(working_dir)
+        copy = False
 
     if dcm:
         hdr = pydicom.read_file(dcm_files[0])
@@ -74,31 +69,31 @@ def local_motion_detection(input_dir, pet_dir=None, pet_recon=None,
                 files.append(im)
             elif name_scan not in scan_description[-1] and copy:
                 if (os.path.isdir(
-                        working_dir+scan_description[-1]) is False):
-                    os.mkdir(working_dir+scan_description[-1])
+                        os.path.join(working_dir, scan_description[-1])) is False):
+                    os.mkdir(os.path.join(working_dir, scan_description[-1]))
                     for f in files:
-                        shutil.copy(f, working_dir+scan_description[-1])
+                        shutil.copy(f, os.path.join(working_dir, scan_description[-1]))
                 files = [im]
                 scan_description.append(name_scan)
             elif name_scan not in scan_description[-1] and not copy:
                 files = [im]
                 scan_description.append(name_scan)
             if i == len(dcm_files)-1 and copy:
-                if (os.path.isdir(working_dir+scan_description[-1]) is
+                if (os.path.isdir(os.path.join(working_dir, scan_description[-1])) is
                         False):
-                    os.mkdir(working_dir+scan_description[-1])
+                    os.mkdir(os.path.join(working_dir, scan_description[-1]))
                     for f in files:
-                        shutil.copy(f, working_dir+scan_description[-1])
+                        shutil.copy(f, os.path.join(working_dir, scan_description[-1]))
 
     elif not dcm and copy:
         for s in scan_description:
-            shutil.copytree(input_dir+s, working_dir+'/'+s)
+            shutil.copytree(os.path.join(input_dir, s), os.path.join(working_dir, s))
         if pet_dir is not None:
-            shutil.copytree(pet_dir, working_dir+'/pet_data_dir')
+            shutil.copytree(pet_dir, os.path.join(working_dir, '/pet_data_dir'))
         if pet_recon is not None:
-            shutil.copytree(pet_recon, working_dir+'/pet_data_reconstructed')
+            shutil.copytree(pet_recon, os.path.join(working_dir, '/pet_data_reconstructed'))
         if struct2align is not None:
-            shutil.copy2(struct2align, working_dir+'/')
+            shutil.copy2(struct2align, os.path.join(working_dir, '/'))
 
     phase_image_type, no_dicom = check_image_type(input_dir, scan_description)
 
@@ -263,7 +258,7 @@ def guess_scan_type(scans, input_dir):
                'information could not be found in the image header. They '
                'will be treated as T2w:\n{}'
                .format('\n'.join(x for x in unused_b0))))
-        t2s = t2s+unused_b0
+        t2s.append(unused_b0)
     if res_t2:
         ref = [x[0] for x in res_t2 if x[1] <= 1]
         if ref:

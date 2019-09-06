@@ -19,3 +19,8 @@ __pycache__
 /docs/source/_build
 /docs/build
 /.pytest_cache/
+*.dcm
+/scripts/scans
+scripts/MotionCorrection_motion_par.txt
+scripts/MotionCorrection_start_times.txt
+.cache

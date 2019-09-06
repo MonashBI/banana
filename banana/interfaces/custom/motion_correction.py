@@ -518,8 +518,8 @@ class MeanDisplacementCalculation(BaseInterface):
         list_inputs = sorted(list_inputs, key=lambda k: k[1])
         study_start_time = list_inputs[0][1]
         list_inputs = [
-            (x[0], (dt.datetime.strptime(x[1], '%H%M%S.%f') -
-                    dt.datetime.strptime(list_inputs[0][1], '%H%M%S.%f'))
+            (x[0], (dt.datetime.strptime(str(x[1]), '%H%M%S.%f') -
+                    dt.datetime.strptime(str(list_inputs[0][1]), '%H%M%S.%f'))
              .total_seconds(), x[2], x[3], x[4]) for x in list_inputs]
         study_len = int((list_inputs[-1][1] + float(list_inputs[-1][2])) *
                         1000)
@@ -552,7 +552,7 @@ class MeanDisplacementCalculation(BaseInterface):
                                         .format(str(i + 1).zfill(4)))
                     start_times.append((
                         dt.datetime.strptime(
-                            study_start_time, '%H%M%S.%f') +
+                            str(study_start_time), '%H%M%S.%f') +
                         dt.timedelta(seconds=start_scan)).strftime(
                             '%H%M%S.%f'))
                     end_scan = start_scan + tr
@@ -571,7 +571,7 @@ class MeanDisplacementCalculation(BaseInterface):
             elif len(mats) == 1:  # for 3D files
                 volume_names.append(f[-1])
                 start_times.append((
-                    dt.datetime.strptime(study_start_time,
+                    dt.datetime.strptime(str(study_start_time),
                                          '%H%M%S.%f') +
                     dt.timedelta(seconds=start_scan)).strftime('%H%M%S.%f'))
                 end_scan = start_scan + float(f[2])
@@ -587,7 +587,7 @@ class MeanDisplacementCalculation(BaseInterface):
                               int(end_scan * 1000)] = np.array(
                                   [mp, ] * duration).T
         start_times.append((
-            dt.datetime.strptime(study_start_time, '%H%M%S.%f') +
+            dt.datetime.strptime(str(study_start_time), '%H%M%S.%f') +
             dt.timedelta(seconds=end_scan)).strftime('%H%M%S.%f'))
         mean_displacement_consecutive = []
         for i in range(len(all_mats) - 1):
@@ -787,12 +787,12 @@ class MotionFraming(BaseInterface):
         else:
             if isdefined(self.inputs.pet_offset):
                 offset = self.inputs.pet_offset
-                pet_st = (dt.datetime.strptime(pet_st, '%H%M%S.%f') +
+                pet_st = (dt.datetime.strptime(str(pet_st), '%H%M%S.%f') +
                           dt.timedelta(seconds=offset)).strftime('%H%M%S.%f')
             if (isdefined(self.inputs.pet_duration) and
                     self.inputs.pet_duration > 0):
                 pet_len = self.inputs.pet_duration
-                pet_endtime = ((dt.datetime.strptime(pet_st, '%H%M%S.%f') +
+                pet_endtime = ((dt.datetime.strptime(str(pet_st), '%H%M%S.%f') +
                                 dt.timedelta(seconds=pet_len))
                                .strftime('%H%M%S.%f'))
 
@@ -802,8 +802,8 @@ class MotionFraming(BaseInterface):
         frame_st4pet = []
 
         scan_duration = [
-            (dt.datetime.strptime(start_times[i], '%H%M%S.%f') -
-             dt.datetime.strptime(start_times[i - 1], '%H%M%S.%f')
+            (dt.datetime.strptime(str(start_times[i]), '%H%M%S.%f') -
+             dt.datetime.strptime(str(start_times[i - 1]), '%H%M%S.%f')
              ).total_seconds() for i in range(1, len(start_times))]
 
         for i, md in enumerate(mean_displacement[1:]):
@@ -850,10 +850,10 @@ class MotionFraming(BaseInterface):
         if pet_st and pet_endtime:
             frame_st4pet = [
                 x for x in frame_start_times if
-                (dt.datetime.strptime(x, '%H%M%S.%f') >
-                 dt.datetime.strptime(pet_st, '%H%M%S.%f') and
-                 dt.datetime.strptime(x, '%H%M%S.%f') <
-                 dt.datetime.strptime(pet_endtime, '%H%M%S.%f'))]
+                (dt.datetime.strptime(str(x), '%H%M%S.%f') >
+                 dt.datetime.strptime(str(pet_st), '%H%M%S.%f') and
+                 dt.datetime.strptime(str(x), '%H%M%S.%f') <
+                 dt.datetime.strptime(str(pet_endtime), '%H%M%S.%f'))]
             if frame_start_times[0] in frame_st4pet:
                 frame_st4pet.remove(frame_start_times[0])
             if frame_start_times[-1] in frame_st4pet:
@@ -861,12 +861,12 @@ class MotionFraming(BaseInterface):
             frame_st4pet.append(pet_st)
             frame_st4pet.append(pet_endtime)
             frame_st4pet = sorted(frame_st4pet)
-            if ((dt.datetime.strptime(frame_st4pet[1], '%H%M%S.%f') -
-                    dt.datetime.strptime(frame_st4pet[0], '%H%M%S.%f'))
+            if ((dt.datetime.strptime(str(frame_st4pet[1]), '%H%M%S.%f') -
+                    dt.datetime.strptime(str(frame_st4pet[0]), '%H%M%S.%f'))
                     .total_seconds() < 30):
                 frame_st4pet.remove(frame_st4pet[1])
-            if ((dt.datetime.strptime(frame_st4pet[-1], '%H%M%S.%f') -
-                    dt.datetime.strptime(frame_st4pet[-2], '%H%M%S.%f'))
+            if ((dt.datetime.strptime(str(frame_st4pet[-1]), '%H%M%S.%f') -
+                    dt.datetime.strptime(str(frame_st4pet[-2]), '%H%M%S.%f'))
                     .total_seconds() < 30):
                 frame_st4pet.remove(frame_st4pet[-2])
             frame_vol = [i for i in range(len(start_times)) for j in
@@ -1438,7 +1438,7 @@ class FixedBinning(BaseInterface):
             for i in range(len(start_times) - 1)]
         scan_duration = np.cumsum(np.asarray(start_times_diff))
 
-        pet_st = (dt.datetime.strptime(pet_start_time, '%H%M%S.%f') +
+        pet_st = (dt.datetime.strptime(str(pet_start_time), '%H%M%S.%f') +
                   dt.timedelta(seconds=pet_offset))
         PetBins = [pet_st + dt.timedelta(seconds=x) for x in
                    range(0, pet_len, bin_len)]

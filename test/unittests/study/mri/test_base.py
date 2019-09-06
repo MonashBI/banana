@@ -10,12 +10,14 @@ class TestMriStudy(PipelineTester):
     ref_repo = XnatRepo(server='https://mbi-xnat.erc.monash.edu.au',
                         project_id='TESTBANANAMRI',
                         cache_dir=TEST_CACHE_DIR)
+    parameters = {
+        'mni_tmpl_resolution': 1}
 
     def test_preprocess_channels_pipeline(self):
         pass  # Need to upload some raw channel data for this
 
-    def test_linear_coreg_pipeline(self):
-        self.run_pipeline_test('linear_coreg_pipeline')
+    def test_coreg_pipeline(self):
+        self.run_pipeline_test('coreg_pipeline')
 
     def test_brain_extraction_pipeline(self):
         self.run_pipeline_test('brain_extraction_pipeline')
@@ -24,8 +26,12 @@ class TestMriStudy(PipelineTester):
         self.run_pipeline_test('brain_coreg_pipeline',
                                add_inputs=['coreg_ref'])
 
-    def test_coreg_matrix_pipeline(self):
-        self.run_pipeline_test('coreg_matrix_pipeline',
+    def test_coreg_fsl_mat_pipeline(self):
+        self.run_pipeline_test('coreg_fsl_mat_pipeline',
+                               add_inputs=['coreg_ref'])
+
+    def test_coreg_ants_mat_pipeline(self):
+        self.run_pipeline_test('coreg_ants_mat_pipeline',
                                add_inputs=['coreg_ref'])
 
     def test_coreg_to_tmpl_pipeline(self):
