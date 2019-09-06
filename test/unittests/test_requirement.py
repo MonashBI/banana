@@ -13,7 +13,8 @@ all_requirements = {
 
 dependencies = {
     'fix': ['fsl'],
-    'sti': ['matlab']}
+    'stisuite': ['matlab'],
+    'spm': ['matlab']}
 
 
 class TestRequirement(TestCase):

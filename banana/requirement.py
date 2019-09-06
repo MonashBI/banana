@@ -174,7 +174,7 @@ class StiRequirement(MatlabPackageRequirement):
 
 
 spm_req = SpmRequirement('spm', test_func='spm_authors')
-sti_req = StiRequirement('sti', test_func='V_SHARP')
+sti_req = StiRequirement('stisuite', test_func='V_SHARP')
 # noddi_req = MatlabPackageRequirement('noddi')
 
 
