@@ -10,3 +10,6 @@ install_requires = ['arcana>=0.5.0',
                     'pydicom>=1.0',
                     'nibabel>=2.3.0',
                     'pybids>=0.9.1']
+
+tests_require = [
+    'wget>=3.2']

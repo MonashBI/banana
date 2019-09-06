@@ -89,6 +89,7 @@ class AfniRequirement(CliRequirement):
 class FixVersion(Version):
 
     regex = re.compile(r'(\d+)\.(\d)?(\d)?(\d)?')
+    base = '0.000'
 
     def __str__(self):
         return '{}.{}'.format(self._seq[0], ''.join(self._seq[1:]))
