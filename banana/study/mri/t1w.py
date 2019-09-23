@@ -18,10 +18,10 @@ from banana.file_format import (
     nifti_gz_x_format)
 from banana.reference import LocalReferenceData
 from banana.bids_ import BidsInputs
-from .t2 import T2Study
+from .t2w import T2wStudy
 
 
-class T1Study(T2Study, metaclass=StudyMetaClass):
+class T1wStudy(T2wStudy, metaclass=StudyMetaClass):
 
     desc = "T1-weighted MRI contrast"
 
@@ -109,8 +109,8 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
         return pipeline
 
     def segmentation_pipeline(self, **name_maps):
-        pipeline = super(T1Study, self).segmentation_pipeline(img_type=1,
-                                                              **name_maps)
+        pipeline = super(T1wStudy, self).segmentation_pipeline(img_type=1,
+                                                               **name_maps)
         return pipeline
 
     def gen_5tt_pipeline(self, **name_maps):
@@ -264,6 +264,6 @@ class T1Study(T2Study, metaclass=StudyMetaClass):
 #         return pipeline
 
 
-class PreclinicalT1(T1Study, metaclass=StudyMetaClass):
+class PreclinicalT1(T1wStudy, metaclass=StudyMetaClass):
 
     pass

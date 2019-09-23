@@ -3,6 +3,7 @@ import os
 import os.path as op
 import platform
 import re
+import logging
 import xml.etree.ElementTree
 from arcana.environment.requirement import (  # pylint: disable=unused-import
     Version, CliRequirement, MatlabPackageRequirement,
@@ -12,6 +13,7 @@ from arcana.exceptions import (
     ArcanaRequirementNotFoundError, ArcanaVersionNotDetectableError)
 
 # Command line requirements
+logger = logging.getLogger('banana')
 
 
 class FSLRequirement(CliRequirement):
@@ -97,10 +99,11 @@ class FixVersion(Version):
 
 class StirRequirement(CliRequirement):
 
-    def detect_version_str(self):
-        raise ArcanaVersionNotDetectableError(
+    def detect_version(self):
+        logger.warning(
             "Can't automatically detect version of STIR as it isn't saved in "
             "the build process")
+        return (1, 0)
 
 
 mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')

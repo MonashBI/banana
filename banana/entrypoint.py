@@ -7,7 +7,7 @@ from setuptools import find_packages
 from pkgutil import iter_modules
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
-from banana.utils.testing import PipelineTester
+from banana.utils.testing import StudyTester
 from banana.exceptions import BananaUsageError
 from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
@@ -191,8 +191,8 @@ class DeriveCmd():
 
         # Load subject_ids from file if single value is provided with
         # a '/' in the string
-        if (args.subject_ids is not None and len(args.subject_ids) and
-                '/' in args.subject_ids[0]):
+        if (args.subject_ids is not None and len(args.subject_ids)
+                and '/' in args.subject_ids[0]):
             with open(args.subject_ids[0]) as f:
                 subject_ids = f.read().split()
         else:
@@ -200,8 +200,8 @@ class DeriveCmd():
 
         # Load visit_ids from file if single value is provided with
         # a '/' in the string
-        if (args.visit_ids is not None and len(args.visit_ids) and
-                '/' in args.visit_ids[0]):
+        if (args.visit_ids is not None and len(args.visit_ids)
+                and '/' in args.visit_ids[0]):
             with open(args.visit_ids[0]) as f:
                 visit_ids = f.read().split()
         else:
@@ -455,7 +455,7 @@ class TestGenCmd():
             parameters_dct[name] = value
         parameters = parameters_dct
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             study_class=study_class, in_repo=args.in_repo,
             out_repo=args.out_repo, in_server=args.in_server,
             out_server=args.out_server, work_dir=args.work_dir,
@@ -530,8 +530,8 @@ class AvailableCmd():
                     continue
                 cls = getattr(pkg_or_module, cls_name)
                 try:
-                    if (issubclass(cls, (Study, MultiStudy)) and
-                            'desc' in cls.__dict__):
+                    if (issubclass(cls, (Study, MultiStudy))
+                            and 'desc' in cls.__dict__):
                         try:
                             old_path = available[cls]
                         except KeyError:

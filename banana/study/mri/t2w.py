@@ -9,7 +9,7 @@ from banana.file_format import nifti_gz_format, nifti_gz_x_format
 from banana.bids_ import BidsInputs
 
 
-class T2Study(MriStudy, metaclass=StudyMetaClass):
+class T2wStudy(MriStudy, metaclass=StudyMetaClass):
 
     desc = "T2-weighted MRI contrast"
 

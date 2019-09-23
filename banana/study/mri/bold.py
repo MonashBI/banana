@@ -17,7 +17,7 @@ import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.study import ParamSpec
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from banana.study.mri.t1 import T1Study
+from banana.study.mri.t1w import T1wStudy
 from arcana.study.multi import (
     MultiStudy, SubStudySpec, MultiStudyMetaClass)
 from arcana.data import InputFilesets
@@ -559,7 +559,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
             'No field map image provided. Distortion correction will not be'
             'performed.')
 
-    study_specs = [SubStudySpec('t1', T1Study)]
+    study_specs = [SubStudySpec('t1', T1wStudy)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
     inputs.append(InputFilesets('t1_magnitude', t1, dicom_format,
                                 is_regex=True, order=0))

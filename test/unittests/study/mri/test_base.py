@@ -1,9 +1,9 @@
 from banana.study.mri.base import MriStudy
-from banana.utils.testing import PipelineTester, TEST_CACHE_DIR
+from banana.utils.testing import StudyTester, TEST_CACHE_DIR
 from arcana.repository.xnat import XnatRepo
 
 
-class TestMriStudy(PipelineTester):
+class TestMriStudy(StudyTester):
 
     name = 'BaseMri'
     study_class = MriStudy

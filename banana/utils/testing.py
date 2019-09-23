@@ -44,7 +44,7 @@ else:
 TEST_CACHE_DIR = op.join(TEST_DIR, 'cache')
 
 
-class PipelineTester(TestCase):
+class StudyTester(TestCase):
     """
     Runs pipelines within a Study class and compares the results
     against reference data from previous runs
@@ -417,7 +417,7 @@ if __name__ == '__main__':
 
     if 'mri' in args.generate:
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri-work'),
@@ -428,7 +428,7 @@ if __name__ == '__main__':
 
     if 'mri2' in args.generate:
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri2'), 'TESTBANANAMRI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri2-work'),
@@ -441,7 +441,7 @@ if __name__ == '__main__':
 
     if 'base3' in args.generate:
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI3',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri3-work'),
@@ -452,7 +452,7 @@ if __name__ == '__main__':
     if 'bold' in args.generate:
         from banana.study.mri.bold import BoldStudy
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             BoldStudy, op.join(args.data_dir, 'bold'), 'TESTBANANABOLD',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'bold-work'),
@@ -463,10 +463,10 @@ if __name__ == '__main__':
                 'mni_tmpl_resolution': 2})
 
     if 't1' in args.generate:
-        from banana.study.mri.t1 import T1Study
+        from banana.study.mri.t1w import T1wStudy
 
-        PipelineTester.generate_test_data(
-            T1Study, op.join(args.data_dir, 't1'), 'TESTBANANAT1',
+        StudyTester.generate_test_data(
+            T1wStudy, op.join(args.data_dir, 't1'), 'TESTBANANAT1',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't1-work'),
             skip=['t2_coreg'],
@@ -475,10 +475,10 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2' in args.generate:
-        from banana.study.mri.t2 import T2Study
+        from banana.study.mri.t2w import T2wStudy
 
-        PipelineTester.generate_test_data(
-            T2Study, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
+        StudyTester.generate_test_data(
+            T2wStudy, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2-work'),
             reprocess=False, repo_depth=0, modules_env=True,
@@ -487,7 +487,7 @@ if __name__ == '__main__':
     if 't2star' in args.generate:
         from banana.study.mri.t2star import T2starStudy
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             T2starStudy, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2star-work'),
@@ -500,7 +500,7 @@ if __name__ == '__main__':
         from banana.study.mri.dwi import DwiStudy
         from banana.study.mri.epi import EpiSeriesStudy
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi-work'),
@@ -519,7 +519,7 @@ if __name__ == '__main__':
     if 'dwi2' in args.generate:
         from banana.study.mri.dwi import DwiStudy  # @Reimport
 
-        PipelineTester.generate_test_data(
+        StudyTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi2'), 'TESTBANANADWI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi2-work'),
@@ -530,14 +530,14 @@ if __name__ == '__main__':
     if 'dwi3' in args.generate:
         from banana import (MultiStudy, MultiStudyMetaClass, SubStudySpec)
         from banana.study.mri.dwi import DwiStudy  # @Reimport
-        from banana.study.mri.t1 import T1Study  # @Reimport
+        from banana.study.mri.t1w import T1wStudy  # @Reimport
 
-        class DwiT1Study(MultiStudy, metaclass=MultiStudyMetaClass):
+        class DwiT1wStudy(MultiStudy, metaclass=MultiStudyMetaClass):
 
             add_substudy_specs = [
                 SubStudySpec(
                     't1',
-                    T1Study,
+                    T1wStudy,
                     name_map={
                         'coreg_ref': 'dwi_mag_preproc'}),
                 SubStudySpec(
@@ -547,8 +547,8 @@ if __name__ == '__main__':
                         'anat_5tt': 't1_five_tissue_type',
                         'anat_fs_recon_all': 't1_fs_recon_all'})]
 
-        PipelineTester.generate_test_data(
-            DwiT1Study, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',
+        StudyTester.generate_test_data(
+            DwiT1wStudy, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi3-work'),
             include=['dwi_connectome'],
