@@ -14,6 +14,7 @@ from arcana.data.spec import BaseInputSpecMixin
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaMissingDataException)
 from arcana.utils.testing import BaseTestCase  # pylint: disable=unused-import
+import banana
 from banana.exceptions import BananaTestSetupError, BananaUsageError
 
 
@@ -33,6 +34,12 @@ try:
 except KeyError:
     TEST_DIR = tempfile.mkdtemp()
 
+try:
+    TEST_DATA_ROOT = os.environ['BANANA_TEST_DATA_ROOT']
+except KeyError:
+    # Use the path if the repository has been checked out
+    TEST_DATA_ROOT = op.join(banana.__file__, '..', 'test', 'data')
+
 USE_MODULES = 'BANANA_TEST_USE_MODULES' in os.environ
 
 if USE_MODULES:
@@ -45,6 +52,36 @@ TEST_CACHE_DIR = op.join(TEST_DIR, 'cache')
 
 
 class StudyTester(TestCase):
+    """
+    An array of tests to 
+    """
+
+    required_atttrs = (
+        ('study_class', 'class of the study to test'),
+        ('dataset_name', 'select dataset to use for inputs'))
+
+    def setUp(self):
+        for attr, reason in self.required_atttrs:
+            if not hasattr(self, attr):
+                raise BananaTestSetupError(
+                    "{} class doesn't have '{}' class attribute, reqquired"
+                    "to {}".format(self.__class__.__name__, attr, reason))
+        self.repo = BasicRepo(op.join(TEST_DATA_ROOT, self.dataset_name))
+        pipeline_names = set(self.study_class.data_specs())
+
+    def run_test(self, test_name, inputs, parameters):
+        """
+        Run a 
+        """   
+        study = self.study_class(  # pylint: disable=no-member
+            name=self.name, inputs=self.inputs, parameters=self.parameters,  # noqa pylint: disable=no-member
+            repo=  # noqa pylint: disable=no-member
+        all_pipelines = set(
+            study.
+        )
+
+
+class PipelineTester(TestCase):
     """
     Runs pipelines within a Study class and compares the results
     against reference data from previous runs
