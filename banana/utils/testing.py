@@ -76,7 +76,6 @@ class DontRunProc(Processor):
 class StudyTester(TestCase):
 
     required_atttrs = (
-        ('name', 'name of the directory to contain generated outputs'),
         ('study_class', 'class of the study to test'),
         ('dataset_name', 'select dataset to use for inputs'),
         ('inputs', 'inputs for the study'),
@@ -105,6 +104,10 @@ class StudyTester(TestCase):
                 str(e), ("Provenance of reference data no longer matches that "
                          "of generated pipelines for {} test of {} study class"
                          .format(self.name, self.study_class.__name__))))  # noqa pylint: disable=no-member
+
+    @property
+    def name(self):
+        return type(self).__name__
 
     @property
     def repository(self):

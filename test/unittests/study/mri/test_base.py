@@ -4,12 +4,10 @@ from banana import InputFilesets
 from arcana.repository.xnat import XnatRepo
 
 
-class TestMriBase(StudyTester):
+class TestMriBaseDefault(StudyTester):
 
-    name = 'default'
     study_class = MriStudy
-    parameters = {
-        'mni_tmpl_resolution': 1}
+    parameters = {'mni_tmpl_resolution': 1}
     inputs = ['magnitude', 'coreg_ref']
 
 
