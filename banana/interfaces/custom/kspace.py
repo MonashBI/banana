@@ -30,9 +30,9 @@ class BaseKspace(MatlabCommand):
         # Set the script input of the matlab spec
         self.inputs.script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{}'));\n".format(MATLAB_RESOURCES) +
-            self.script(**inputs) +
-            "exit;")
+            "addpath(genpath('{}'));\n".format(MATLAB_RESOURCES)
+            + self.script(**inputs)
+            + "exit;")
         results = super().run(**inputs)
         stdout = results.runtime.stdout
         # Attach stdout to outputs to access matlab results
@@ -55,11 +55,11 @@ class BaseKspace(MatlabCommand):
         return op.realpath(op.abspath(op.join(self.work_dir, 'out_file.nii')))
 
 
-class LoadSiemensKspaceInputSpec(BaseKspaceInputSpec):
+class ConvertSiemensKspaceInputSpec(BaseKspaceInputSpec):
     in_file = File(exists=True, mandatory=True)
 
 
-class LoadSiemensKspace(BaseKspace):
+class ConvertSiemensKspace(BaseKspace):
     """
     Reads a Siemens multi-channel k-space file and saves it in a Matlab
     file with the following variables:
@@ -79,7 +79,7 @@ class LoadSiemensKspace(BaseKspace):
         The number of partitions (slices) in the "full" reconstruction. See
          'num_phase' re partial Fourier encoding
     """
-    input_spec = LoadSiemensKspaceInputSpec
+    input_spec = ConvertSiemensKspaceInputSpec
 
     def script(self, **inputs):
         """
