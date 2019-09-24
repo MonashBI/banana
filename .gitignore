@@ -24,3 +24,4 @@ __pycache__
 scripts/MotionCorrection_motion_par.txt
 scripts/MotionCorrection_start_times.txt
 .cache
+/banana/interfaces/resources/matlab/new_qsm

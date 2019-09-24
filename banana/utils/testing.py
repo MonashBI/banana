@@ -1,3 +1,4 @@
+
 import os
 import os.path as op
 import logging
@@ -7,12 +8,16 @@ from copy import copy
 from pprint import pformat
 from itertools import chain
 from unittest import TestCase
+from nipype.pipeline.plugins import DebugPlugin
 from arcana.exceptions import ArcanaNameError
 from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo,
-                    SingleProc, Field, Fileset, ModulesEnv, StaticEnv)
+                    Field, Fileset, ModulesEnv, StaticEnv, SingleProc,
+                    MultiProc)
 from arcana.data.spec import BaseInputSpecMixin
+from arcana.processor.base import Processor
 from arcana.exceptions import (
-    ArcanaInputMissingMatchError, ArcanaMissingDataException)
+    ArcanaInputMissingMatchError, ArcanaMissingDataException,
+    ArcanaReprocessException)
 from arcana.utils.testing import BaseTestCase  # pylint: disable=unused-import
 import banana
 from banana.exceptions import BananaTestSetupError, BananaUsageError
@@ -51,34 +56,80 @@ else:
 TEST_CACHE_DIR = op.join(TEST_DIR, 'cache')
 
 
+class DontRunProc(Processor):
+    """
+    A thin wrapper around the NiPype DebugPlugin that doesn't run any nodes
+    """
+
+    nipype_plugin_cls = DebugPlugin
+
+    def __init__(self):
+        tmp_dir = tempfile.mkdtemp()
+        super().__init__(work_dir=tmp_dir, reprocess=False,
+                         callable=self.dont_run)
+
+    @classmethod
+    def dont_run(cls, node, graph):
+        pass
+
+
 class StudyTester(TestCase):
-    """
-    An array of tests to 
-    """
 
     required_atttrs = (
+        ('name', 'name of the directory to contain generated outputs'),
         ('study_class', 'class of the study to test'),
-        ('dataset_name', 'select dataset to use for inputs'))
+        ('dataset_name', 'select dataset to use for inputs'),
+        ('inputs', 'inputs for the study'),
+        ('parameters', 'parameters for the study'))
 
-    def setUp(self):
+    def runTest(self):
         for attr, reason in self.required_atttrs:
             if not hasattr(self, attr):
                 raise BananaTestSetupError(
                     "{} class doesn't have '{}' class attribute, reqquired"
                     "to {}".format(self.__class__.__name__, attr, reason))
-        self.repo = BasicRepo(op.join(TEST_DATA_ROOT, self.dataset_name))
-        pipeline_names = set(self.study_class.data_specs())
-
-    def run_test(self, test_name, inputs, parameters):
-        """
-        Run a 
-        """   
         study = self.study_class(  # pylint: disable=no-member
-            name=self.name, inputs=self.inputs, parameters=self.parameters,  # noqa pylint: disable=no-member
-            repo=  # noqa pylint: disable=no-member
+            name=self.name,  # pylint: disable=no-member
+            inputs=self.inputs_dict,
+            parameters=self.parameters,  # pylint: disable=no-member
+            repository=self.repository,
+            processor=DontRunProc())
+
         all_pipelines = set(
-            study.
-        )
+            study.spec(n).pipeline for n in study.data_spec_names())
+
+        try:
+            study.run(*all_pipelines)
+        except ArcanaReprocessException as e:
+            raise self.failureException(self._formatMessage(
+                str(e), ("Provenance of reference data no longer matches that "
+                         "of generated pipelines for {} test of {} study class"
+                         .format(self.name, self.study_class.__name__))))  # noqa pylint: disable=no-member
+
+    @property
+    def repository(self):
+        return BasicRepo(op.join(TEST_DATA_ROOT, self.dataset_name))  # noqa pylint: disable=no-member
+
+    @property
+    def inputs_dict(self):
+        return {i: i for i in self.inputs}  # pylint: disable=no-member
+
+    def generate_reference(self, multi_proc=True, work_dir=None, **kwargs):
+        """
+        Generates reference data and provenance against which the unittests
+        are run against
+        """
+        if multi_proc:
+            processor = MultiProc(**kwargs)
+        else:
+            processor = SingleProc(**kwargs)
+        study = self.study_class(  # pylint: disable=no-member
+            name=self.name,  # pylint: disable=no-member
+            inputs=self.inputs_dict,
+            parameters=self.parameters,  # pylint: disable=no-member
+            repository=self.repository,
+            processor=processor)
+        study.data(*study.data_spec_names())
 
 
 class PipelineTester(TestCase):
@@ -454,7 +505,7 @@ if __name__ == '__main__':
 
     if 'mri' in args.generate:
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri-work'),
@@ -465,7 +516,7 @@ if __name__ == '__main__':
 
     if 'mri2' in args.generate:
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri2'), 'TESTBANANAMRI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri2-work'),
@@ -478,7 +529,7 @@ if __name__ == '__main__':
 
     if 'base3' in args.generate:
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             MriStudy, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI3',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri3-work'),
@@ -489,7 +540,7 @@ if __name__ == '__main__':
     if 'bold' in args.generate:
         from banana.study.mri.bold import BoldStudy
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             BoldStudy, op.join(args.data_dir, 'bold'), 'TESTBANANABOLD',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'bold-work'),
@@ -502,7 +553,7 @@ if __name__ == '__main__':
     if 't1' in args.generate:
         from banana.study.mri.t1w import T1wStudy
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             T1wStudy, op.join(args.data_dir, 't1'), 'TESTBANANAT1',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't1-work'),
@@ -514,7 +565,7 @@ if __name__ == '__main__':
     if 't2' in args.generate:
         from banana.study.mri.t2w import T2wStudy
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             T2wStudy, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2-work'),
@@ -524,7 +575,7 @@ if __name__ == '__main__':
     if 't2star' in args.generate:
         from banana.study.mri.t2star import T2starStudy
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             T2starStudy, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2star-work'),
@@ -537,7 +588,7 @@ if __name__ == '__main__':
         from banana.study.mri.dwi import DwiStudy
         from banana.study.mri.epi import EpiSeriesStudy
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi-work'),
@@ -556,7 +607,7 @@ if __name__ == '__main__':
     if 'dwi2' in args.generate:
         from banana.study.mri.dwi import DwiStudy  # @Reimport
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             DwiStudy, op.join(args.data_dir, 'dwi2'), 'TESTBANANADWI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi2-work'),
@@ -584,7 +635,7 @@ if __name__ == '__main__':
                         'anat_5tt': 't1_five_tissue_type',
                         'anat_fs_recon_all': 't1_fs_recon_all'})]
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             DwiT1wStudy, op.join(args.data_dir, 'dwi3'), 'TESTBANANADWI3',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi3-work'),

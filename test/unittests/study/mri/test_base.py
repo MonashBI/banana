@@ -1,9 +1,19 @@
 from banana.study.mri.base import MriStudy
-from banana.utils.testing import StudyTester, TEST_CACHE_DIR
+from banana.utils.testing import StudyTester, PipelineTester, TEST_CACHE_DIR
+from banana import InputFilesets
 from arcana.repository.xnat import XnatRepo
 
 
-class TestMriStudy(StudyTester):
+class TestMriBase(StudyTester):
+
+    name = 'default'
+    study_class = MriStudy
+    parameters = {
+        'mni_tmpl_resolution': 1}
+    inputs = ['magnitude', 'coreg_ref']
+
+
+class TestMriStudy(PipelineTester):
 
     name = 'BaseMri'
     study_class = MriStudy
