@@ -284,9 +284,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc=("Convert channel signals in complex coords to polar coords "
                   "and combine"))
 
-        if (self.provided('header_image') or
-                self.branch('reorient_to_std') or
-                self.parameter('force_channel_flip') is not None):
+        if (self.provided('header_image')
+                or self.branch('reorient_to_std')
+                or self.parameter('force_channel_flip') is not None):
             # Read channel files reorient them into standard space and then
             # write back to directory
             list_channels = pipeline.add(
@@ -369,11 +369,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             pipeline = self._spm_linear_coreg_pipeline(**name_maps)
         else:
             self.unhandled_branch('coreg_method')
-        if not (self.provided('coreg_ref') or
-                self.provided('coreg_ref_brain')):
+        if not (self.provided('coreg_ref')
+                or self.provided('coreg_ref_brain')):
             raise ArcanaOutputNotProducedException(
-                ("Cannot co-register {} as reference image " +
-                 "'{}' has not been provided").format(
+                ("Cannot co-register {} as reference image "
+                 + "'{}' has not been provided").format(
                     pipeline.map_input('coreg_ref')))
         return pipeline
 
@@ -1026,8 +1026,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "have the same orientations."),
             citations=[fsl_cite])
 
-        if (self.branch('reorient_to_std') or
-                self.parameter('resampled_resolution') is not None):
+        if (self.branch('reorient_to_std')
+                or self.parameter('resampled_resolution') is not None):
             if self.branch('reorient_to_std'):
                 swap = pipeline.add(
                     'fslreorient2std',

@@ -208,8 +208,8 @@ class FillHoles(BaseInterface):
 
     def _run_interface(self, runtime):
         mlab = matlab_cmd(
-            ("fillholes('{in_file}', '{out_file}');\n" +
-             "exit;\n").format(
+            ("fillholes('{in_file}', '{out_file}');\n"
+             + "exit;\n").format(
                 in_file=self.inputs.in_file,
                 out_file=self._gen_filename('out_file')))
         result = mlab.run()

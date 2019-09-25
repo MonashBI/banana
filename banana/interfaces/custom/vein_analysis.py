@@ -31,9 +31,9 @@ class BaseVein(MatlabCommand):
         # Set the script input of the matlab spec
         self.inputs.script = (
             "set_param(0,'CharacterEncoding','UTF-8');\n"
-            "addpath(genpath('{}'));\n".format(MATLAB_RESOURCES) +
-            self.script(**inputs) +
-            "exit;")
+            "addpath(genpath('{}'));\n".format(MATLAB_RESOURCES)
+            + self.script(**inputs)
+            + "exit;")
         results = super().run(**inputs)
         stdout = results.runtime.stdout
         # Attach stdout to outputs to access matlab results

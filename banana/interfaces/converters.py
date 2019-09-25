@@ -1,4 +1,4 @@
-
+import os.path as op
 import os.path
 from nipype.interfaces.base import (
     TraitedSpec, BaseInterface, File, Directory, traits, isdefined,
@@ -10,6 +10,7 @@ import re
 from arcana.exceptions import ArcanaError
 import numpy as np
 from nipype.utils.filemanip import split_filename
+from .matlab import BaseMatlab, BaseMatlabInputSpec
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -174,3 +175,84 @@ class Nii2Dicom(BaseInterface):
                 '_dicom')
             fpath = os.path.join(os.getcwd(), fname)
         return fpath
+
+
+class TwixReaderInputSpec(BaseMatlabInputSpec):
+    in_file = File(exists=True, mandatory=True)
+
+
+class TwixReader(BaseMatlab):
+    """
+    Reads a Siemens TWIX (multi-channel k-space) file and saves it in a Matlab
+    file in 'matlab_kspace' format (see banana.file_format for details)
+    """
+
+    input_spec = TwixReaderInputSpec
+
+    def script(self, **inputs):
+        """
+        Generate script to load Siemens format k-space and save as Matlab
+        arrays
+        """
+        script = """
+            % Read Twix file
+            data_obj = mapVBVD({in_file},'removeOS');
+            % Pick largest data object in file
+            if length(data_obj)>1
+                multi_obj = data_obj;
+                acq_length = cellfun(@(x) x.image.NAcq, multi_obj);
+                [~,ind] = max(acq_length);
+                data_obj = data_obj{{ind}};
+            end
+            header = data_obj.hdr
+
+            % Get data arrays
+            calib_scan = permute(data_obj.refscan{{''}}, [2, 1, 3, 4, 5]);
+            data_scan = permute(data_obj.image{{''}}, [2, 1, 3, 4, 5]);
+
+            % Get full dimensions from header
+            num_freq = data_obj.hdr.Config.NImageCols;
+            num_phase = data_obj.hdr.Config.NPeFTLen;
+            num_partitions = data_obj.hdr.Config.NImagePar;
+            dims = [num_freq, num_phase, num_partitions]
+
+            % Get channel and echo information from header
+            if isfield(header.Config,'RawCha') && ~isempty(header.Config.RawCha)
+                num_channels = header.Config.RawCha;
+            else
+                num_channels = size(data_scan, 1);
+            end
+            if isfield(header.Meas,'RawEcho')
+                num_echos = header.Meas.RawEcho;
+            elseif isfield(header.MeasYaps,'lContrasts')
+                num_echos = header.MeasYaps.lContrasts;
+            else
+                num_echos = size(data_scan, 5);
+            end
+
+            % Get Voxel size
+            voxel_size = [0, 0, 0];
+            slice_array = header.Phoenix.sSliceArray.asSlice{{1}}
+            voxel_size(1) = slice_array.dReadoutFOV / num_freq;
+            voxel_size(2) = slice_array.dPhaseFOV / num_phase;
+            voxel_size(3) = slice_array.dThickness / num_partitions;
+
+            % Get other parameters
+            if isfield(header.Meas,'alTE')
+                TE = header.Meas.alTE(1:num_echos) * 1E-6;
+            elseif isfield(header.MeasYaps,'alTE')
+                TE = [header.MeasYaps.alTE{{1:num_echos}}] * 1E-6;
+            else
+                disp('No header field for echo times');
+                TE = NaN
+            end
+            B0_strength = header.Dicom.flMagneticFieldStrength;
+            B0_dir = [0 0 1];
+            larmor_freq = header.Dicom.lFrequency; % (Hz)
+
+            save({out_file}, calib_scan, data_scan, dims, voxel_size,...
+                 num_channels, num_echos, TE, B0_strength, B0_dir,...
+                 larmor_freq);
+            """.format(in_file=self.inputs.in_file,
+                       out_file=self.inputs.out_file)
+        return script

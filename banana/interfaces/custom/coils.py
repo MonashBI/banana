@@ -132,8 +132,8 @@ class ToPolarCoords(BaseInterface):
                     img_arrays[ax] = img_array
 
                 # Calculate magnitude and phase from coil data
-                cmplx = (img_arrays[self.inputs.real_label] +
-                         img_arrays[self.inputs.imaginary_label] * 1j)
+                cmplx = (img_arrays[self.inputs.real_label]
+                         + img_arrays[self.inputs.imaginary_label] * 1j)
 
                 # Calculate and save magnitude image
                 mag_array = np.abs(cmplx)
