@@ -127,6 +127,8 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   array=True, desc=("")),
         FieldSpec('main_field_strength', float, 'header_extraction_pipeline',
                   desc=("")),
+        FieldSpec('larmor_frequency', float, 'header_extraction_pipeline',
+                  desc=("")),
         FieldSpec('start_time', float, 'header_extraction_pipeline',
                   desc=("")),
         FieldSpec('real_duration', float, 'header_extraction_pipeline',

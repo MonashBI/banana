@@ -35,9 +35,9 @@ class Dcm2niix(CommandLine):
     output_spec = Dcm2niixOutputSpec
 
     def _list_outputs(self):
-        if (not isdefined(self.inputs.compression) or
-                (self.inputs.compression == 'y' or
-                 self.inputs.compression == 'i')):
+        if (not isdefined(self.inputs.compression)
+                or (self.inputs.compression == 'y'
+                    or self.inputs.compression == 'i')):
             im_ext = '.nii.gz'
         else:
             im_ext = '.nii'
@@ -156,7 +156,7 @@ class Nii2Dicom(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_file'] = (
-            os.getcwd()+'/nifti2dicom')
+            os.getcwd() + '/nifti2dicom')
         return outputs
 
     def _gen_filename(self, name):
@@ -171,8 +171,8 @@ class Nii2Dicom(BaseInterface):
             fpath = self.inputs.out_file
         else:
             fname = (
-                split_extension(os.path.basename(self.inputs.in_file))[0] +
-                '_dicom')
+                split_extension(os.path.basename(self.inputs.in_file))[0]
+                + '_dicom')
             fpath = os.path.join(os.getcwd(), fname)
         return fpath
 
@@ -217,7 +217,8 @@ class TwixReader(BaseMatlab):
             dims = [num_freq, num_phase, num_partitions]
 
             % Get channel and echo information from header
-            if isfield(header.Config,'RawCha') && ~isempty(header.Config.RawCha)
+            if isfield(header.Config,'RawCha') &&...
+               ~isempty(header.Config.RawCha)
                 num_channels = header.Config.RawCha;
             else
                 num_channels = size(data_scan, 1);
