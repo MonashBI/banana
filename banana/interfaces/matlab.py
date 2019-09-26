@@ -44,12 +44,3 @@ class BaseMatlab(MatlabCommand):
         Generate script to perform masking
         """
         raise NotImplementedError
-
-    def _list_outputs(self):
-        outputs = self._outputs().get()
-        outputs['out_file'] = self.out_file
-        return outputs
-
-    @property
-    def out_file(self):
-        return op.realpath(op.abspath(op.join(self.work_dir, 'out_file.nii')))

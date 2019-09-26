@@ -43,7 +43,8 @@ try:
     TEST_DATA_ROOT = os.environ['BANANA_TEST_DATA_ROOT']
 except KeyError:
     # Use the path if the repository has been checked out
-    TEST_DATA_ROOT = op.join(banana.__file__, '..', 'test', 'data')
+    TEST_DATA_ROOT = op.join(op.dirname(banana.__file__), '..', 'test',
+                             'ref-data')
 
 USE_MODULES = 'BANANA_TEST_USE_MODULES' in os.environ
 
@@ -117,22 +118,26 @@ class StudyTester(TestCase):
     def inputs_dict(self):
         return {i: i for i in self.inputs}  # pylint: disable=no-member
 
-    def generate_reference(self, multi_proc=True, work_dir=None, **kwargs):
+    def generate_reference_data(self, *spec_names, processor=None,
+                                environment=None, **kwargs):
         """
         Generates reference data and provenance against which the unittests
         are run against
         """
-        if multi_proc:
-            processor = MultiProc(**kwargs)
-        else:
-            processor = SingleProc(**kwargs)
+        if processor is None:
+            processor = SingleProc(work_dir=tempfile.mkdtemp(), **kwargs)
+        if environment is None:
+            environment = StaticEnv()
         study = self.study_class(  # pylint: disable=no-member
             name=self.name,  # pylint: disable=no-member
             inputs=self.inputs_dict,
             parameters=self.parameters,  # pylint: disable=no-member
             repository=self.repository,
+            environment=environment,
             processor=processor)
-        study.data(*study.data_spec_names())
+        if not spec_names:
+            spec_names = study.data_spec_names()
+        study.data(*spec_names)
 
 
 class PipelineTester(TestCase):

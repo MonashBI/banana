@@ -35,7 +35,7 @@ class Grappa(BaseMatlab):
     """
 
     input_spec = GrappaInputSpec
-    output_spec = BaseMatlabOutputSpec
+    output_spec = GrappaOutputSpec
 
     out_sep = '#####'
 
@@ -45,8 +45,8 @@ class Grappa(BaseMatlab):
         channel
         """
         script = """
-            S = load({in_file});
-            [img_recon_ch, smaps] = recon_grappa2(
+            S = load('{in_file}');
+            [img_recon_ch, smaps] = recon_grappa2(...
                 S.calib_scan, S.data_scan, S.dims(2), S.dims(3), 0, {rpe});
 
             % Calculate combined magnitude, and real and imaginary images per
@@ -54,22 +54,22 @@ class Grappa(BaseMatlab):
             mag = squeeze(sqrt(sum(abs(Img_recon_ch).^2,[1 5])));
             out_nii = make_nii(mag, voxel_size, [], [],...
                               'Sum of squares magnitude average across echos');
-            save_nii(out_nii, {out_file});
+            save_nii(out_nii, '{out_file}');
 
             for i=1:size(Img_recon_ch,1)
                 coil = squeeze(Img_recon_ch(i, :, :, :, :));
                 out_nii = make_nii(real(coil), voxel_size, [], [],...
                                    'Real image per coil');
                 save_nii(out_nii, sprintf('%s%sReal_c%d.nii.gz',...
-                                          {channels_dir}, filesep, i));
+                                          '{channels_dir}', filesep, i));
 
                 out_nii = make_nii(imag(coil), voxel_size, [], [],...
                                    'Imaginary image per coil');
                 save_nii(out_nii, sprintf('%s%sImaginary_c%d.nii.gz',...
-                                          {channels_dir}, filesep, i));
+                                          '{channels_dir}', filesep, i));
             end
             % Print out header values so they can be output into traits
-            fprintf('{out_sep}\\n');;
+            fprintf('{out_sep}\\n');
             fprintf('echo_times=');
             for i=1:length(S.TE)
                 fprintf('%f', S.TE(i));
@@ -87,7 +87,8 @@ class Grappa(BaseMatlab):
         return script
 
     def _list_outputs(self):
-        outputs = super()._list_outputs()
+        outputs = self._outputs().get()
+        outputs['out_file'] = self.out_file
         outputs['channels_dir'] = self.channels_dir
         for field in outputs['raw_output'].split(self.out_sep)[1].split('\n'):
             name, val = field.split('=')
@@ -104,3 +105,8 @@ class Grappa(BaseMatlab):
         if not op.exists(channels_dir):
             os.makedirs(channels_dir)
         return channels_dir
+
+    @property
+    def out_file(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.nii.gz')))

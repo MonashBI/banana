@@ -155,8 +155,8 @@ class ImageFormat(FileFormat, metaclass=ABCMeta):
         """
         Return the RMS difference between the image arrays
         """
-        return np.sqrt(np.sum((fileset.get_array() -
-                               other_fileset.get_array()) ** 2))
+        return np.sqrt(np.sum((fileset.get_array()
+                               - other_fileset.get_array()) ** 2))
 
 
 class NiftiFormat(ImageFormat):
@@ -236,8 +236,8 @@ class DicomFormat(ImageFormat):
         dct : Dict[Tuple[str, str], str|int|float]
         """
         try:
-            if (fileset._path is None and fileset._repository is not None and
-                    hasattr(fileset.repository, 'dicom_header')):
+            if (fileset._path is None and fileset._repository is not None
+                    and hasattr(fileset.repository, 'dicom_header')):
                 hdr = fileset.repository.dicom_header(self)
                 dct = [hdr[t] for t in tags]
             else:
@@ -422,6 +422,7 @@ matlab_kspace_format = FileFormat(
 
 matlab_kspace_format.set_converter(twix_vb_format, TwixConverter)
 
+KSPACE_FORMATS = [twix_vb_format, matlab_kspace_format]
 
 # MRS format
 rda_format = FileFormat(name='raw', extension='.rda')

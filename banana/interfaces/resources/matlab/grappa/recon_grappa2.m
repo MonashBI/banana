@@ -19,13 +19,6 @@ function [Img_recon_ch, smaps] = recon_grappa2(ksDataCalib, ksDataScan, I_PE, I_
 % Revision: 0.1 $
 % Institute: Monash Biomedical Imaging, Monash University, Australia, 2019
 
-% ----- Read Data from custom k-space matlab format ----- %
-
-S = load(kspace_matfile)
-ksDataCalib = S.calib_scan
-ksDataScan = S.data_scan
-I_PE = S.num_phase;
-I_PAR = S.num_partitions;
 [CH, FE, PE, PAR, ECHO] = size(ksDataScan);
 
 %  ---- Handle Partial Fourier ---- %

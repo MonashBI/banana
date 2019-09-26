@@ -2,15 +2,17 @@ from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
 from banana.citation import spm_cite
 from banana.file_format import (
-    nifti_format, motion_mats_format, nifti_gz_format,
-    multi_nifti_gz_format, zip_format, STD_IMAGE_FORMATS)
+    nifti_format, motion_mats_format, nifti_gz_format, matlab_kspace_format,
+    multi_nifti_gz_format, zip_format, text_matrix_format, STD_IMAGE_FORMATS,
+    KSPACE_FORMATS)
 from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
 from banana.study import Study, StudyMetaClass
 from banana.citation import fsl_cite, bet_cite, bet2_cite, ants_cite
 from banana.file_format import (
     dicom_format, gif_format, nifti_gz_x_format)
 from nipype.interfaces.utility import IdentityInterface
-from banana.requirement import fsl_req, mrtrix_req, ants_req, spm_req, c3d_req
+from banana.requirement import (
+    fsl_req, mrtrix_req, ants_req, spm_req, c3d_req, matlab_req)
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exceptions import (
     ArcanaOutputNotProducedException, ArcanaMissingDataException)
@@ -20,10 +22,10 @@ from banana.interfaces.custom.dicom import (
 from nipype.interfaces.utility import Merge
 from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
-from banana.file_format import text_matrix_format
 import logging
 from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.custom.coils import ToPolarCoords
+from banana.interfaces.kspace import Grappa
 from arcana.utils.interfaces import ListDir, CopyToDir
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from nipype.interfaces.fsl.preprocess import ApplyXFM
@@ -57,9 +59,11 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                   "before brain extraction if 'coreg_ref' is provided"),
             optional=True),
         InputFilesetSpec(
-            'channels', (multi_nifti_gz_format, zip_format),
-            optional=True, desc=("Reconstructed complex image for each "
-                                 "coil without standardisation.")),
+            'kspace', KSPACE_FORMATS, optional=True, desc="Raw k-space data"),
+        FilesetSpec(
+            'channels', multi_nifti_gz_format, 'grappa_pipeline',
+            desc=("Reconstructed real+imaginary images for each coil without "
+                  "standardisation.")),
         InputFilesetSpec('header_image', dicom_format, desc=(
             "A dataset that contains correct the header information for the "
             "acquired image. Used to copy geometry over preprocessed "
@@ -164,6 +168,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                          desc=(""))]
 
     add_param_specs = [
+        ParamSpec('grappa_acceleration', 2,
+                  desc=("The amount of acceleration that should be used for "
+                        "grappa reconstruction")),
         SwitchSpec('resample_coreg_ref', False,
                    desc=("Whether to resample the coregistration reference "
                          "image to the resolution of the moving image")),
@@ -278,6 +285,25 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         else:
             brain_mask = 'brain_mask'
         return brain_mask
+
+    def grappa_pipeline(self, **name_maps):
+        pipeline = self.new_pipeline(
+            'grappa',
+            name_maps=name_maps,
+            desc=("Perform GRAPPA reconstruction on raw k-space files"))
+
+        pipeline.add(
+            'grappa',
+            Grappa(
+                acceleration=self.parameter('grappa_acceleration')),
+            inputs={
+                'in_file': ('kspace', matlab_kspace_format)},
+            outputs={
+                'magnitude': ('out_file', nifti_gz_format),
+                'channels': ('channels_dir', multi_nifti_gz_format)},
+            requirements=[matlab_req.v('R2018a')])
+
+        return pipeline
 
     def preprocess_channels_pipeline(self, **name_maps):
         pipeline = self.new_pipeline(

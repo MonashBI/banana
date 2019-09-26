@@ -196,7 +196,8 @@ class TwixReader(BaseMatlab):
         """
         script = """
             % Read Twix file
-            data_obj = mapVBVD({in_file},'removeOS');
+            data_obj = mapVBVD('{in_file}','removeOS');
+
             % Pick largest data object in file
             if length(data_obj)>1
                 multi_obj = data_obj;
@@ -204,7 +205,7 @@ class TwixReader(BaseMatlab):
                 [~,ind] = max(acq_length);
                 data_obj = data_obj{{ind}};
             end
-            header = data_obj.hdr
+            header = data_obj.hdr;
 
             % Get data arrays
             calib_scan = permute(data_obj.refscan{{''}}, [2, 1, 3, 4, 5]);
@@ -245,15 +246,25 @@ class TwixReader(BaseMatlab):
                 TE = [header.MeasYaps.alTE{{1:num_echos}}] * 1E-6;
             else
                 disp('No header field for echo times');
-                TE = NaN
+                TE = NaN;
             end
             B0_strength = header.Dicom.flMagneticFieldStrength;
             B0_dir = [0 0 1];
             larmor_freq = header.Dicom.lFrequency; % (Hz)
 
-            save({out_file}, calib_scan, data_scan, dims, voxel_size,...
-                 num_channels, num_echos, TE, B0_strength, B0_dir,...
-                 larmor_freq);
+            save('{out_file}', 'calib_scan', 'data_scan', 'dims',...
+                 'num_channels', 'num_echos', 'voxel_size', 'TE',...
+                 'B0_strength', 'B0_dir', 'larmor_freq', '-v7.3');
             """.format(in_file=self.inputs.in_file,
-                       out_file=self.inputs.out_file)
+                       out_file=self.out_file)
         return script
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_file'] = self.out_file
+        return outputs
+
+    @property
+    def out_file(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.ks.mat')))

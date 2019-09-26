@@ -7,7 +7,7 @@ from setuptools import find_packages
 from pkgutil import iter_modules
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
-from banana.utils.testing import StudyTester
+from banana.utils.testing import StudyTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
@@ -455,7 +455,7 @@ class TestGenCmd():
             parameters_dct[name] = value
         parameters = parameters_dct
 
-        StudyTester.generate_test_data(
+        PipelineTester.generate_test_data(
             study_class=study_class, in_repo=args.in_repo,
             out_repo=args.out_repo, in_server=args.in_server,
             out_server=args.out_server, work_dir=args.work_dir,
@@ -464,6 +464,107 @@ class TestGenCmd():
             reprocess=args.reprocess, repo_depth=args.repo_depth,
             modules_env=(args.environment == 'modules'),
             clean_work_dir=(not args.dont_clean_work_dir))
+
+
+class GenRefDataCmd():
+
+    desc = ("Generate reference data for a test class, which future tests will"
+            "be checked against")
+
+    DEFAULT_TEST_ROOT = op.join(op.dirname(__file__), '..', 'test')
+
+    @classmethod
+    def parser(cls):
+        parser = ArgumentParser(
+            prog='banana gen-ref',
+            description=("Generate reference data for a test class, which "
+                         "future tests will be checked against"))
+        parser.add_argument('test_class',
+                            help=("The path to the test class to test relative"
+                                  " to the root test directory (use '.' to "
+                                  "separate directories)"))
+        parser.add_argument('--specs', default=[], nargs='+',
+                            help=("The specs to generate. If not provided all "
+                                  "data for all specs will be generated"))
+        parser.add_argument('--processor', default=['multi'], nargs='+',
+                            metavar='ARG',
+                            help=("The type of processor to use plus arguments"
+                                  "used to initate it. First arg is the type "
+                                  "(one of 'single', 'multi', 'slurm'). "
+                                  "Additional arguments depend on type: "
+                                  "single [], multi [NUM_PROCS], slurm ["
+                                  "ACCOUNT, PARTITION]"))
+        parser.add_argument('--environment', type=str, default='static',
+                            choices=('modules', 'static'), metavar='TYPE',
+                            help="The type of environment to use")
+        parser.add_argument('--loggers', nargs='+',
+                            default=('nipype.workflow', 'arcana', 'banana'),
+                            help="Loggers to set handlers to stdout for")
+        parser.add_argument('--reprocess', action='store_true', default=False,
+                            help=("Whether to reprocess previously generated "
+                                  "derivatives with mismatching provenance"))
+        parser.add_argument('--scratch', type=str, default=None,
+                            metavar='PATH',
+                            help=("The scratch directory to use for the "
+                                  "workflow and cache"))
+        parser.add_argument('--test_root', default=cls.DEFAULT_TEST_ROOT,
+                            help="The location of the root test directory")
+        parser.add_argument('--quiet', action='store_true', default=False,
+                            help=("Disable logging output"))
+        return parser
+
+    @classmethod
+    def run(cls, args):
+
+        if not args.quiet:
+            set_loggers(args.logger)
+
+        if args.scratch is not None:
+            scratch_dir = args.scratch
+        else:
+            scratch_dir = op.join(op.expanduser('~'), 'banana-scratch')
+
+        # Ensure scratch dir exists
+        os.makedirs(scratch_dir, exist_ok=True)
+
+        work_dir = op.join(scratch_dir, 'work')
+
+        proc_args = {'reprocess': args.reprocess}
+
+        if args.processor[0] == 'single':
+            processor = SingleProc(work_dir, **proc_args)
+        elif args.processor[0] == 'multi':
+            if len(args.processor) > 1:
+                num_processes = args.processor[1]
+            elif len(args.processor) > 2:
+                raise BananaUsageError(
+                    "Unrecognised arguments passed to '--processor' option "
+                    "({}) expected at most 1 additional argument for 'multi' "
+                    "type processor (NUM_PROCS)".format(args.processor))
+            else:
+                num_processes = cpu_count()
+            processor = MultiProc(work_dir, num_processes=num_processes,
+                                  **proc_args)
+        else:
+            raise BananaUsageError(
+                "Unrecognised processor type provided as first argument to "
+                "'--processor' option ({})".format(args.processor[0]))
+
+        if args.environment == 'static':
+            environment = StaticEnv()
+        else:
+            environment = ModulesEnv()
+
+        parts = args.test_class.split('.')
+
+        sys.path.insert(0, op.join(args.test_root, parts[:-2]))
+        module = import_module(parts[-2])
+        sys.path.pop(0)
+
+        test_cls = getattr(module, parts[-1])
+
+        test_cls.generate_reference_data(
+            *args.specs, processor=processor, environment=environment)
 
 
 class HelpCmd():
@@ -579,6 +680,7 @@ class MainCmd():
         'menu': MenuCmd,
         'derive': DeriveCmd,
         'test-gen': TestGenCmd,
+        'gen-ref-data': GenRefDataCmd,
         'help': HelpCmd}
 
     @classmethod
