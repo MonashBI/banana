@@ -1,29 +1,29 @@
 import re
+from logging import getLogger
+from nipype.interfaces import fsl, ants
 from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, InputFilesetSpec
+from arcana.utils import get_class_info
+from arcana.utils.interfaces import ListDir
+from arcana.study import ParamSpec, SwitchSpec
+from arcana.utils.interfaces import Merge
+from banana.interfaces.custom.vein_analysis import (
+    CompositeVeinImage, ShMRF)
+from banana.interfaces.sti import (
+    UnwrapPhase, VSharp, QSMiLSQR, QSMStar, BatchUnwrapPhase, BatchVSharp,
+    BatchQSMiLSQR)
+from banana.interfaces.custom.coils import HIPCombineChannels
+from banana.interfaces.custom.mask import (
+    DialateMask, MaskCoils, MedianInMasks)
 from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
 from banana.citation import (
     fsl_cite, matlab_cite, sti_cites)
 from banana.file_format import (
     nifti_gz_format, nifti_format, text_matrix_format,
     multi_nifti_gz_format, STD_IMAGE_FORMATS)
-from banana.interfaces.custom.vein_analysis import (
-    CompositeVeinImage, ShMRF)
-from arcana.utils.interfaces import Merge
-from .base import MriStudy
-from nipype.interfaces import fsl, ants
-from arcana.utils import get_class_info
-from arcana.utils.interfaces import ListDir
-from banana.interfaces.sti import (
-    UnwrapPhase, VSharp, QSMiLSQR, BatchUnwrapPhase, BatchVSharp,
-    BatchQSMiLSQR)
-from banana.interfaces.custom.coils import HIPCombineChannels
-from banana.interfaces.custom.mask import (
-    DialateMask, MaskCoils, MedianInMasks)
-from arcana.study import ParamSpec, SwitchSpec
 from banana.reference import LocalReferenceData
-from logging import getLogger
+from .base import MriStudy
 
 logger = getLogger('banana')
 
@@ -100,7 +100,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                                                     nifti_gz_format))]
 
     add_param_specs = [
-        SwitchSpec('qsm_dual_echo', False),
+        ParamSpec('qsm_num_echos', 1),
         ParamSpec('qsm_echo', 1,
                   desc=("Which echo (by index starting at 1) to use when "
                         "using single echo")),
@@ -146,7 +146,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # each channel into a single image. Otherwise for single echo sequences
         # we need to perform QSM on each coil separately and then combine
         # afterwards.
-        if self.branch('qsm_dual_echo'):
+        if self.parameter('qsm_num_echos') > 1:
             # Combine channels to produce phase and magnitude images
             channel_combine = pipeline.add(
                 'channel_combine',
@@ -176,23 +176,38 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     'mask': (erosion, 'out_file')},
                 requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
 
-            # Run QSM iLSQR
-            pipeline.add(
-                'qsmrecon',
-                QSMiLSQR(
-                    mask_manip="{}>0",
-                    padsize=self.parameter('qsm_padding')),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'te': ('echo_times', float),
-                    'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float),
-                    'in_file': (vsharp, 'out_file'),
-                    'mask': (vsharp, 'new_mask')},
-                outputs={
-                    'qsm': ('qsm', nifti_format)},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
-
+            if self.parameter('qsm_num_echos') == 2:
+                # Run QSM iLSQR
+                pipeline.add(
+                    'qsmrecon',
+                    QSMiLSQR(
+                        mask_manip="{}>0",
+                        padsize=self.parameter('qsm_padding')),
+                    inputs={
+                        'voxelsize': ('voxel_sizes', float),
+                        'te': ('echo_times', float),
+                        'B0': ('main_field_strength', float),
+                        'H': ('main_field_orient', float),
+                        'in_file': (vsharp, 'out_file'),
+                        'mask': (vsharp, 'new_mask')},
+                    outputs={
+                        'qsm': ('qsm', nifti_format)},
+                    requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
+            else:
+                # Run QSM iLSQR
+                pipeline.add(
+                    'qsmrecon',
+                    QSMStar(
+                        padsize=self.parameter('qsm_padding')),
+                    inputs={
+                        'voxelsize': ('voxel_sizes', float),
+                        'te': ('echo_times', float),
+                        'B0': ('main_field_strength', float),
+                        'H': ('main_field_orient', float),
+                        'in_file': (vsharp, 'out_file')},
+                    outputs={
+                        'qsm': ('qsm', nifti_format)},
+                    requirements=[matlab_req.v('r2017a'), sti_req.v(2.2)])
         else:
             # Dialate eroded mask
             dialate = pipeline.add(
