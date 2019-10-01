@@ -7,7 +7,7 @@ import os.path as op
 from banana.interfaces import MATLAB_RESOURCES
 
 
-class BaseSTIInputSpec(MatlabInputSpec):
+class BaseStiInputSpec(MatlabInputSpec):
 
     # Need to override value in input spec to make it non-mandatory
     script = traits.Str(
@@ -16,11 +16,11 @@ class BaseSTIInputSpec(MatlabInputSpec):
         position=-1)
 
 
-class BaseSTIOutputSpec(TraitedSpec):
+class BaseStiOutputSpec(TraitedSpec):
     raw_output = traits.Str("Raw output of the matlab command")
 
 
-class BaseSTICommand(MatlabCommand):
+class BaseStiCommand(MatlabCommand):
     """
     Base interface for STI classes
     """
@@ -166,7 +166,7 @@ class BaseSTICommand(MatlabCommand):
         return str(index)
 
 
-class UnwrapPhaseInputSpec(BaseSTIInputSpec):
+class UnwrapPhaseInputSpec(BaseStiInputSpec):
 
     in_file = File(exists=True, mandatory=True, argpos=0, formatstr="{}",
                    desc="Input file to unwrap")
@@ -179,20 +179,20 @@ class UnwrapPhaseInputSpec(BaseSTIInputSpec):
                           desc="Padding size for each dimension")
 
 
-class UnwrapPhaseOutputSpec(BaseSTIOutputSpec):
+class UnwrapPhaseOutputSpec(BaseStiOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
 
 
-class UnwrapPhase(BaseSTICommand):
+class UnwrapPhase(BaseStiCommand):
 
     func = 'MRPhaseUnwrap'
     input_spec = UnwrapPhaseInputSpec
     output_spec = UnwrapPhaseOutputSpec
 
 
-class VSharpInputSpec(BaseSTIInputSpec):
+class VSharpInputSpec(BaseStiInputSpec):
 
     in_file = File(exists=True, mandatory=True, argpos=0,
                    desc="Input file to unwrap")
@@ -206,7 +206,7 @@ class VSharpInputSpec(BaseSTIInputSpec):
                             desc="Voxel size of the image")
 
 
-class VSharpOutputSpec(BaseSTIOutputSpec):
+class VSharpOutputSpec(BaseStiOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
@@ -214,22 +214,17 @@ class VSharpOutputSpec(BaseSTIOutputSpec):
                     header_from='mask')
 
 
-class VSharp(BaseSTICommand):
+class VSharp(BaseStiCommand):
 
     func = 'V_SHARP'
     input_spec = VSharpInputSpec
     output_spec = VSharpOutputSpec
 
 
-class QSMiLSQRInputSpec(BaseSTIInputSpec):
+class QSMInputSpec(BaseStiInputSpec):
 
     in_file = File(exists=True, mandatory=True, argpos=0,
                    desc="Input file to unwrap")
-    mask = File(exists=True, mandatory=True, argpos=1,
-                desc="Input file to unwrap", format_str='mask_manip')
-    mask_manip = traits.Str(
-        desc=("The format string used to manipulate the mask before it is "
-              "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
                             mandatory=True, in_struct='params',
                             desc="Voxel size of the image")
@@ -246,134 +241,30 @@ class QSMiLSQRInputSpec(BaseSTIInputSpec):
                     in_struct='params')
 
 
-class QSMiLSQROutputSpec(BaseSTIOutputSpec):
+class QSMOutputSpec(BaseStiOutputSpec):
 
     out_file = File(exists=True, outpos=0, desc="Unwrapped phase image",
                     header_from='in_file')
 
 
-class QSMiLSQR(BaseSTICommand):
+class QSMStar(BaseStiCommand):
+
+    func = 'QSM_star'
+    input_spec = QSMInputSpec
+    output_spec = QSMOutputSpec
+
+
+class QSMiLSQRInputSpec(QSMInputSpec):
+
+    mask = File(exists=True, mandatory=True, argpos=1,
+                desc="Input file to unwrap", format_str='mask_manip')
+    mask_manip = traits.Str(
+        desc=("The format string used to manipulate the mask before it is "
+              "passed as an argument to the function"))
+
+
+class QSMiLSQR(BaseStiCommand):
 
     func = 'QSM_iLSQR'
     input_spec = QSMiLSQRInputSpec
-    output_spec = QSMiLSQROutputSpec
-
-
-class BaseBatchSTICommand(BaseSTICommand):
-    """
-    Runs an STI command in batch mode over a range of input files instead of
-    a single one.
-
-    Although a MapNode could be used instead, it would incur a penalty of
-    opening and closing MATLAB for each iteration of the batch.
-    """
-
-    def run(self, **inputs):
-        # Determine batch size
-        self.batch_size = None
-        for img_name, _ in self.input_imgs:
-            inpt = getattr(self.inputs, img_name)
-            if isinstance(inpt, list):
-                if self.batch_size is None:
-                    self.batch_size = len(inpt)
-                elif self.batch_size != len(inpt):
-                    raise BananaRuntimeError(
-                        "Inconsistent length of batch input lists ({} and {})"
-                        .format(len(inpt), self.batch_size))
-        return super(BaseBatchSTICommand, self).run(**inputs)
-
-    def script(self, cwd, **kwargs):
-        """
-        Generate script to load images, pass them to the STI function along
-        with the keyword parameters
-        """
-        script = self._set_path()
-        script += self._create_param_structs()
-        for i in range(self.batch_size):
-            script += self._process_image(cwd, index=i, **kwargs)
-        script += self._exit()
-        return script
-
-    def _input_fname(self, name, index, **kwargs):
-        inpt = super(BaseBatchSTICommand, self)._input_fname(name)
-        if isinstance(inpt, list):
-            inpt = inpt[index]
-        return inpt
-
-    def _output_fname(self, name, index, **kwargs):
-        return name + str(index)
-
-    def _list_outputs(self):
-        outputs = self._outputs().get()
-        for name, _ in self.output_imgs:
-            outputs[name] = []
-            for i in range(self.batch_size):
-                outputs[name].append(op.abspath(self._output_fname(name, i))
-                                     + '.nii')
-        return outputs
-
-
-class BatchUnwrapPhaseInputSpec(UnwrapPhaseInputSpec):
-
-    in_file = traits.List(
-        File(exists=True), mandatory=True, argpos=0, formatstr="{}",
-        desc="Input file to unwraps")
-
-
-class BatchUnwrapPhaseOutputSpec(UnwrapPhaseOutputSpec):
-
-    out_file = traits.List(File(exists=True),
-                           outpos=0, desc="Unwrapped phase images",
-                           header_from='in_file')
-
-
-class BatchUnwrapPhase(BaseBatchSTICommand, UnwrapPhase):
-
-    input_spec = BatchUnwrapPhaseInputSpec
-    output_spec = BatchUnwrapPhaseOutputSpec
-
-
-class BatchVSharpInputSpec(VSharpInputSpec):
-
-    in_file = traits.List(File(exists=True), mandatory=True, argpos=0,
-                          desc="Input files to unwrap")
-    mask = traits.List(File(exists=True), mandatory=True, argpos=1,
-                       desc="Mask files", format_str='mask_manip')
-
-
-class BatchVSharpOutputSpec(VSharpOutputSpec):
-
-    out_file = traits.List(
-        File(exists=True), outpos=0, desc="Unwrapped phase images",
-        header_from='in_file')
-    new_mask = traits.List(
-        File(exists=True), outpos=1, desc="New masks", header_from='mask')
-
-
-class BatchVSharp(BaseBatchSTICommand, VSharp):
-
-    input_spec = BatchVSharpInputSpec
-    output_spec = BatchVSharpOutputSpec
-
-
-class BatchQSMiLSQRInputSpec(QSMiLSQRInputSpec):
-
-    in_file = traits.List(
-        File(exists=True), mandatory=True, argpos=0,
-        desc="Input files to unwrap")
-    mask = traits.List(
-        File(exists=True), mandatory=True, argpos=1,
-        desc="Input files to unwrap", format_str='mask_manip')
-
-
-class BatchQSMiLSQROutputSpec(QSMiLSQROutputSpec):
-
-    out_file = traits.List(
-        File(exists=True), outpos=0,
-        desc="Unwrapped phase images", header_from='in_file')
-
-
-class BatchQSMiLSQR(BaseBatchSTICommand, QSMiLSQR):
-
-    input_spec = BatchQSMiLSQRInputSpec
-    output_spec = BatchQSMiLSQROutputSpec
+    output_spec = QSMOutputSpec
