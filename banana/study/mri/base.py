@@ -61,7 +61,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         InputFilesetSpec(
             'kspace', KSPACE_FORMATS, optional=True, desc="Raw k-space data"),
         FilesetSpec(
-            'channels', multi_nifti_gz_format, 'grappa_pipeline',
+            'channels', multi_nifti_gz_format, 'kspace_recon_pipeline',
             desc=("Reconstructed real+imaginary images for each coil without "
                   "standardisation.")),
         InputFilesetSpec('header_image', dicom_format, desc=(
@@ -286,22 +286,34 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             brain_mask = 'brain_mask'
         return brain_mask
 
-    def grappa_pipeline(self, **name_maps):
+    def kspace_recon_pipeline(self, **name_maps):
         pipeline = self.new_pipeline(
-            'grappa',
+            'kspace_recon',
             name_maps=name_maps,
-            desc=("Perform GRAPPA reconstruction on raw k-space files"))
+            desc=("Reconstruct raw k-space file into magnitude and channel "
+                  "images"))
 
-        pipeline.add(
+        recon = pipeline.add(
             'grappa',
             Grappa(
-                acceleration=self.parameter('grappa_acceleration')),
+                acceleration=self.parameter('grappa_acceleration'),
+                single_comp_thread=False),
             inputs={
                 'in_file': ('kspace', matlab_kspace_format)},
             outputs={
-                'magnitude': ('out_file', nifti_gz_format),
                 'channels': ('channels_dir', multi_nifti_gz_format)},
             requirements=[matlab_req.v('R2018a')])
+
+        # Bias correct the output magnitude image
+        pipeline.add(
+            'bias_correct',
+            ants.N4BiasFieldCorrection(
+                dimension=3),
+            inputs={
+                'input_file': (recon, 'out_file')},
+            outputs={
+                'magnitude': ('output_file', nifti_gz_format)},
+            requirements=[ants_req.v('2.2.0')])
 
         return pipeline
 
