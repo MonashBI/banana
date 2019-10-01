@@ -15,5 +15,10 @@ class TestT2starDefault(StudyTester):
 
 if __name__ == '__main__':
 
+    from banana.entrypoint import set_loggers
+
+    set_loggers([('banana', 'INFO'), ('arcana', 'INFO'),
+                 ('nipype.workflow', 'INFO')])
+
     TestT2starDefault().generate_reference_data(
         'channels', environment=ModulesEnv(detect_exact_versions=False))

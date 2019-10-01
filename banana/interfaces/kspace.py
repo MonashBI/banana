@@ -48,16 +48,15 @@ class Grappa(BaseMatlab):
             S = load('{in_file}');
             [img_recon_ch, smaps] = recon_grappa2(...
                 S.calib_scan, S.data_scan, S.dims(2), S.dims(3), 0, {rpe});
-
             % Calculate combined magnitude, and real and imaginary images per
             % channel and save to nifti files
-            mag = squeeze(sqrt(sum(abs(Img_recon_ch).^2,[1 5])));
+            mag = squeeze(sqrt(sum(sum(abs(img_recon_ch).^2, 1), 5)));
             out_nii = make_nii(mag, voxel_size, [], [],...
-                              'Sum of squares magnitude average across echos');
+                             'Sum of squares magnitude average across echos');
             save_nii(out_nii, '{out_file}');
 
-            for i=1:size(Img_recon_ch,1)
-                coil = squeeze(Img_recon_ch(i, :, :, :, :));
+            for i=1:size(img_recon_ch, 1)
+                coil = squeeze(img_recon_ch(i, :, :, :, :));
                 out_nii = make_nii(real(coil), voxel_size, [], [],...
                                    'Real image per coil');
                 save_nii(out_nii, sprintf('%s%sReal_c%d.nii.gz',...
@@ -72,6 +71,9 @@ class Grappa(BaseMatlab):
             fprintf('{out_sep}\\n');
             fprintf('echo_times=');
             for i=1:length(S.TE)
+                if i ~= 1
+                    fprintf(', ');
+                end
                 fprintf('%f', S.TE(i));
             end
             fprintf('\\n');

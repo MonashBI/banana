@@ -246,7 +246,7 @@ class TwixReader(BaseMatlab):
                 TE = [header.MeasYaps.alTE{{1:num_echos}}] * 1E-6;
             else
                 disp('No header field for echo times');
-                TE = NaN;
+                TE = [];
             end
             B0_strength = header.Dicom.flMagneticFieldStrength;
             B0_dir = [0 0 1];
