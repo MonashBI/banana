@@ -68,9 +68,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('mag_preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Magnitude after basic preprocessing, such as "
                           "realigning image axis to a standard rotation")),
-        FilesetSpec('channels', multi_nifti_gz_format,
-                    'preprocess_channels_pipeline',
-                    desc=("")),
+        # FilesetSpec('channels', multi_nifti_gz_format,
+        #             'kspace_recon_pipeline',
+        #             desc=("")),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',
                     desc="The brain masked image"),
         FilesetSpec('brain_mask', nifti_gz_format, 'brain_extraction_pipeline',
@@ -300,88 +300,88 @@ class MriStudy(Study, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def preprocess_channels_pipeline(self, **name_maps):
-        pipeline = self.new_pipeline(
-            'preprocess_channels',
-            name_maps=name_maps,
-            desc=("Convert channel signals in complex coords to polar coords "
-                  "and combine"))
+    # def preprocess_channels_pipeline(self, **name_maps):
+    #     pipeline = self.new_pipeline(
+    #         'preprocess_channels',
+    #         name_maps=name_maps,
+    #         desc=("Convert channel signals in complex coords to polar coords "
+    #               "and combine"))
 
-        if (self.provided('header_image')
-                or self.branch('reorient_to_std')
-                or self.parameter('force_channel_flip') is not None):
-            # Read channel files reorient them into standard space and then
-            # write back to directory
-            list_channels = pipeline.add(
-                'list_channels',
-                ListDir(),
-                inputs={
-                    'directory': ('channels', multi_nifti_gz_format)})
+    #     if (self.provided('header_image')
+    #             or self.branch('reorient_to_std')
+    #             or self.parameter('force_channel_flip') is not None):
+    #         # Read channel files reorient them into standard space and then
+    #         # write back to directory
+    #         list_channels = pipeline.add(
+    #             'list_channels',
+    #             ListDir(),
+    #             inputs={
+    #                 'directory': ('channels', multi_nifti_gz_format)})
 
-            if self.parameter('force_channel_flip') is not None:
-                force_flip = pipeline.add(
-                    'flip_dims',
-                    fsl.SwapDimensions(
-                        new_dims=tuple(self.parameter('force_channel_flip'))),
-                    inputs={
-                        'in_file': (list_channels, 'files')},
-                    iterfield=['in_file'])
-                geom_dest_file = (force_flip, 'out_file')
-            else:
-                geom_dest_file = (list_channels, 'files')
+    #         if self.parameter('force_channel_flip') is not None:
+    #             force_flip = pipeline.add(
+    #                 'flip_dims',
+    #                 fsl.SwapDimensions(
+    #                     new_dims=tuple(self.parameter('force_channel_flip'))),
+    #                 inputs={
+    #                     'in_file': (list_channels, 'files')},
+    #                 iterfield=['in_file'])
+    #             geom_dest_file = (force_flip, 'out_file')
+    #         else:
+    #             geom_dest_file = (list_channels, 'files')
 
-            if self.provided('header_image'):
-                # If header image is provided stomp its geometry over the
-                # acquired channels
-                copy_geom = pipeline.add(
-                    'qsm_copy_geometry',
-                    fsl.CopyGeom(
-                        output_type='NIFTI_GZ'),
-                    inputs={
-                        'in_file': ('header_image', nifti_gz_format),
-                        'dest_file': geom_dest_file},
-                    iterfield=(['dest_file']),
-                    requirements=[fsl_req.v('5.0.8')])
-                reorient_in_file = (copy_geom, 'out_file')
-            else:
-                reorient_in_file = geom_dest_file
+    #         if self.provided('header_image'):
+    #             # If header image is provided stomp its geometry over the
+    #             # acquired channels
+    #             copy_geom = pipeline.add(
+    #                 'qsm_copy_geometry',
+    #                 fsl.CopyGeom(
+    #                     output_type='NIFTI_GZ'),
+    #                 inputs={
+    #                     'in_file': ('header_image', nifti_gz_format),
+    #                     'dest_file': geom_dest_file},
+    #                 iterfield=(['dest_file']),
+    #                 requirements=[fsl_req.v('5.0.8')])
+    #             reorient_in_file = (copy_geom, 'out_file')
+    #         else:
+    #             reorient_in_file = geom_dest_file
 
-            if self.branch('reorient_to_std'):
-                reorient = pipeline.add(
-                    'reorient_channel',
-                    fsl.Reorient2Std(
-                        output_type='NIFTI_GZ'),
-                    inputs={
-                        'in_file': reorient_in_file},
-                    iterfield=['in_file'],
-                    requirements=[fsl_req.v('5.0.8')])
-                copy_to_dir_in_files = (reorient, 'out_file')
-            else:
-                copy_to_dir_in_files = reorient_in_file
+    #         if self.branch('reorient_to_std'):
+    #             reorient = pipeline.add(
+    #                 'reorient_channel',
+    #                 fsl.Reorient2Std(
+    #                     output_type='NIFTI_GZ'),
+    #                 inputs={
+    #                     'in_file': reorient_in_file},
+    #                 iterfield=['in_file'],
+    #                 requirements=[fsl_req.v('5.0.8')])
+    #             copy_to_dir_in_files = (reorient, 'out_file')
+    #         else:
+    #             copy_to_dir_in_files = reorient_in_file
 
-            copy_to_dir = pipeline.add(
-                'copy_to_dir',
-                CopyToDir(),
-                inputs={
-                    'in_files': copy_to_dir_in_files,
-                    'file_names': (list_channels, 'files')})
-            to_polar_in_dir = (copy_to_dir, 'out_dir')
-        else:
-            to_polar_in_dir = ('channels', multi_nifti_gz_format)
+    #         copy_to_dir = pipeline.add(
+    #             'copy_to_dir',
+    #             CopyToDir(),
+    #             inputs={
+    #                 'in_files': copy_to_dir_in_files,
+    #                 'file_names': (list_channels, 'files')})
+    #         to_polar_in_dir = (copy_to_dir, 'out_dir')
+    #     else:
+    #         to_polar_in_dir = ('channels', multi_nifti_gz_format)
 
-        pipeline.add(
-            'to_polar',
-            ToPolarCoords(
-                in_fname_re=self.parameter('channel_fname_regex'),
-                real_label=self.parameter('channel_real_label'),
-                imaginary_label=self.parameter('channel_imag_label')),
-            inputs={
-                'in_dir': to_polar_in_dir},
-            outputs={
-                'mag_channels': ('magnitudes_dir', multi_nifti_gz_format),
-                'phase_channels': ('phases_dir', multi_nifti_gz_format)})
+    #     pipeline.add(
+    #         'to_polar',
+    #         ToPolarCoords(
+    #             in_fname_re=self.parameter('channel_fname_regex'),
+    #             real_label=self.parameter('channel_real_label'),
+    #             imaginary_label=self.parameter('channel_imag_label')),
+    #         inputs={
+    #             'in_dir': to_polar_in_dir},
+    #         outputs={
+    #             'mag_channels': ('magnitudes_dir', multi_nifti_gz_format),
+    #             'phase_channels': ('phases_dir', multi_nifti_gz_format)})
 
-        return pipeline
+    #     return pipeline
 
     def coreg_pipeline(self, **name_maps):
         if self.branch('coreg_method', 'flirt'):

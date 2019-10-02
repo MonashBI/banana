@@ -161,8 +161,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'channel_combine',
                 HIPCombineChannels(),
                 inputs={
-                    'magnitudes_dir': ('mag_channels', multi_nifti_gz_format),
-                    'phases_dir': ('phase_channels', multi_nifti_gz_format)})
+                    'channels_dir': ('channels_dir', multi_nifti_gz_format)})
 
             # Unwrap phase using Laplacian unwrapping
             unwrap = pipeline.add(

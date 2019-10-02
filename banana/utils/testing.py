@@ -518,7 +518,7 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri-work'),
             reprocess=False, repo_depth=0, modules_env=True,
-            skip=['channels', 'mag_channels', 'phase_channels'],
+            skip=['channels', 'channels_dir'],
             clean_work_dir=(not args.dont_clean_work_dir),
             parameters={'mni_tmpl_resolution': 1})
 
