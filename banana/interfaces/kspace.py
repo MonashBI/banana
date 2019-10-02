@@ -80,7 +80,7 @@ class Grappa(BaseMatlab):
             fprintf('main_field_strength=%f\\n', S.B0_strength);
             fprintf('main_field_orient=%f, %f, %f\\n',...
                     S.B0_dir(1), S.B0_dir(2), S.B0_dir(3));
-            fprintf('larmor_freq=%f\\n', S.larmor_frequency);
+            fprintf('larmor_freq=%f\\n', S.larmor_freq);
             """.format(in_file=self.inputs.in_file,
                        out_file=self.out_file,
                        out_sep=self.out_sep,
