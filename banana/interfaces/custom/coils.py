@@ -255,37 +255,49 @@ class HIPCombineChannels(BaseInterface):
                     continue
             dct[match.group('channel')][match.group('echo')] = op.join(dpath,
                                                                        fname)
-        if len(mag_paths) != len(phase_paths):
+        if sorted(mag_paths.keys()) != sorted(phase_paths.keys()):
             raise BananaUsageError(
-                "Mismatching number of channels between magnitude and phase "
-                "channels")
+                "Mismatching channel indices  ({} and {}) loaded from "
+                "magnitude and phase directories ({} and {})".format(
+                    sorted(mag_paths.keys()), sorted(phase_paths.keys()),
+                    self.inputs.magnitudes_dir, self.inputs.phases_dir))
         hip = None
         for chann_i in mag_paths:
-            if len(mag_paths[chann_i]) != 2:
-                raise BananaUsageError(
-                    "Expected exactly two echos for channel magnitude {}, "
-                    "found {}".format(chann_i, len(mag_paths[chann_i])))
-            if len(phase_paths[chann_i]) != 2:
-                raise BananaUsageError(
-                    "Expected exactly two echos for channel magnitude {}, "
-                    "found {}".format(chann_i, len(phase_paths[chann_i])))
-            mag1 = nib.load(mag_paths[chann_i][0])
-            phase1 = nib.load(phase_paths[chann_i][0])
-            mag2 = nib.load(mag_paths[chann_i][1])
-            phase2 = nib.load(phase_paths[chann_i][1])
+            # Get the paths to the magnitude and phase images for each
+            # channel
+            chann_mag_paths = mag_paths[chann_i]
+            chann_phase_paths = phase_paths[chann_i]
 
-            # Get array data
-            mag1_array = mag1.get_fdata()
-            phase1_array = phase1.get_fdata()
-            mag2_array = mag2.get_fdata()
-            phase2_array = phase2.get_fdata()
+            echo_indices = sorted(chann_mag_paths.keys())
+            if sorted(chann_phase_paths.keys()) != echo_indices:
+                raise BananaUsageError(
+                    "Mismatching echo indices for channel {} between phase "
+                    "and magnitude image files in from '{}' and '{}' "
+                    "directories, respectively".format(
+                        chann_i, self.inputs.magnitudes_dir,
+                        self.inputs.phases_dir))
+            if len(echo_indices) < 2:
+                raise BananaUsageError(
+                    "At least two echos required for channel magnitude {}, "
+                    "found {}".format(chann_i, len(echo_indices)))
+            for i, j in zip(echo_indices[:-1], echo_indices[1:]):
+                mag1 = nib.load(chann_mag_paths[i])
+                phase1 = nib.load(chann_phase_paths[j])
+                mag2 = nib.load(chann_mag_paths[j])
+                phase2 = nib.load(chann_phase_paths[j])
 
-            if hip is None:
-                hip = np.zeros(mag1_array.shape)
-                sum_mag = np.zeros(mag1_array.shape)
-            hip += mag1_array * mag2_array * np.exp(
-                -1j * (phase1_array - phase2_array))
-            sum_mag += mag1_array * mag2_array
+                # Get array data
+                mag1_array = mag1.get_fdata()
+                phase1_array = phase1.get_fdata()
+                mag2_array = mag2.get_fdata()
+                phase2_array = phase2.get_fdata()
+
+                if hip is None:
+                    hip = np.zeros(mag1_array.shape)
+                    sum_mag = np.zeros(mag1_array.shape)
+                hip += mag1_array * mag2_array * np.exp(-1j * (phase1_array
+                                                               - phase2_array))
+                sum_mag += mag1_array * mag2_array
         # Get magnitude and phase
         phase = np.angle(hip)
         mag = np.abs(hip)
