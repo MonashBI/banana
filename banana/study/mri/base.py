@@ -293,7 +293,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc=("Reconstruct raw k-space file into magnitude and channel "
                   "images"))
 
-        recon = pipeline.add(
+        pipeline.add(
             'grappa',
             Grappa(
                 acceleration=self.parameter('grappa_acceleration'),
@@ -303,17 +303,6 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             outputs={
                 'channels': ('channels_dir', multi_nifti_gz_format)},
             requirements=[matlab_req.v('R2018a')])
-
-        # Bias correct the output magnitude image
-        pipeline.add(
-            'bias_correct',
-            ants.N4BiasFieldCorrection(
-                dimension=3),
-            inputs={
-                'input_image': (recon, 'out_file')},
-            outputs={
-                'magnitude': ('output_image', nifti_gz_format)},
-            requirements=[ants_req.v('2.2.0')])
 
         return pipeline
 

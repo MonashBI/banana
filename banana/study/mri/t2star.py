@@ -70,7 +70,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Set the magnitude to be generated from the preprocess_channels
         # pipeline
         FilesetSpec('magnitude', nifti_gz_format,
-                    'preprocess_channels_pipeline',
+                    'kspace_recon_pipeline',
                     desc=("Generated from separate channel signals, "
                           "provided to 'channels'.")),
         # QSM and phase processing
@@ -112,11 +112,20 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         ParamSpec('bet_f_threshold', 0.1),
         ParamSpec('bet_g_threshold', 0.0)]
 
-    def preprocess_channels_pipeline(self, **name_maps):
-        pipeline = super().preprocess_channels_pipeline(**name_maps)
-        # Connect combined first echo output to the magnitude data spec
-        pipeline.connect_output('magnitude', pipeline.node('to_polar'),
-                                'first_echo', nifti_gz_format)
+    def kspace_recon_pipeline(self, **name_maps):
+        pipeline = super().kspace_recon_pipeline(**name_maps)
+
+        # Bias correct the output magnitude image
+        pipeline.add(
+            'bias_correct',
+            ants.N4BiasFieldCorrection(
+                dimension=3),
+            inputs={
+                'input_image': (pipeline.node('grappa'), 'out_file')},
+            outputs={
+                'magnitude': ('output_image', nifti_gz_format)},
+            requirements=[ants_req.v('2.2.0')])
+
         return pipeline
 
     def qsm_pipeline(self, **name_maps):
