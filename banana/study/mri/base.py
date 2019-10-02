@@ -68,10 +68,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
         FilesetSpec('mag_preproc', nifti_gz_format, 'preprocess_pipeline',
                     desc=("Magnitude after basic preprocessing, such as "
                           "realigning image axis to a standard rotation")),
-        FilesetSpec('mag_channels', multi_nifti_gz_format,
-                    'preprocess_channels_pipeline',
-                    desc=("")),
-        FilesetSpec('phase_channels', multi_nifti_gz_format,
+        FilesetSpec('channels', multi_nifti_gz_format,
                     'preprocess_channels_pipeline',
                     desc=("")),
         FilesetSpec('brain', nifti_gz_format, 'brain_extraction_pipeline',

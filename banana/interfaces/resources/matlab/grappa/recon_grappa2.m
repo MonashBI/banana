@@ -1,4 +1,4 @@
-function [Img_recon_ch, smaps] = recon_grappa2(data_file, ref_file, hdr_file, out_mag_file, out_real_dir, out_img_dir, Rpe, smapFlag)
+function [Img_recon_ch, smaps] = recon_grappa2(data_file, ref_file, hdr_file, out_mag_file, out_channels_dir, Rpe, smapFlag)
 % RECON_SIEMENSDATFILE_GRAPPA2 
 % This function reconstruct images from Siemens Raw data file (*.dat, VB/VD/VE versions)
 % This function works for GRAPPA factor of 2, 3D imaging and mutiple echos
@@ -110,7 +110,7 @@ if smapFlag==1
         [~,smaps(:,:,:,:,curr_echo)] = adapt_array_3d(yn);    
     end
 else
-    smaps = NaN
+    smaps = NaN;
 end
 
 % Calculate combined magnitude, and real and imaginary images per
@@ -124,11 +124,11 @@ for i=1:size(img_recon_ch, 1)
     coil = squeeze(Img_recon_ch(i, :, :, :, :));
     out_nii = make_nii(real(coil), voxel_size, [], [],...
                         'Real image per coil');
-    save_nii(out_nii, sprintf('%s%s%d.nii.gz', out_real_dir, filesep, i));
+    save_nii(out_nii, sprintf('%s%sreal_%d.nii.gz', out_channels_dir, filesep, i));
 
     out_nii = make_nii(imag(coil), voxel_size, [], [],...
                         'Imaginary image per coil');
-    save_nii(out_nii, sprintf('%s%sImaginary_c%d.nii.gz', out_img_dir, filesep, i));
+    save_nii(out_nii, sprintf('%s%simaginary_c%d.nii.gz', out_channels_dir, filesep, i));
 end
     
 end

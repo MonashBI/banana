@@ -15,8 +15,7 @@ class GrappaInputSpec(BaseMatlabInputSpec):
 
 class GrappaOutputSpec(BaseMatlabOutputSpec):
 
-    real_channels_dir = Directory(exists=True)
-    img_channels_dir = Directory(exists=True)
+    channels_dir = Directory(exists=True)
     main_field_strength = traits.Float(
         desc="The orientation of the scanners main magnetic field"),
     main_field_orient = traits.Tuple(
@@ -44,26 +43,26 @@ class Grappa(BaseMatlab):
         channel
         """
         script = ("recon_grappa2('{data_file}', '{ref_file}', '{hdr_file}', "
-                  "'{mag_file}', '{real_dir}', '{img_dir}', {rpe}, 0);"
+                  "'{mag_file}', '{channels_dir}', {rpe}, 0);"
                   .format(
                       data_file=self.inputs.in_file,
                       ref_file=self.ref_file,
                       hdr_file=self.hdr_file,
                       mag_file=self.out_file,
-                      real_dir=self.channels_dir('real'),
-                      img_dir=self.channels_dir('imaginary'),
+                      channels_dir=self.channels_dir,
                       rpe=self.inputs.acceleration))
         return script
 
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_file'] = self.out_file
-        outputs['real_channels_dir'] = self.channels_dir('real')
-        outputs['img_channels_dir'] = self.channels_dir('imaginary')
+        outputs['channels_dir'] = self.channels_dir
         return outputs
 
-    def channels_dir(self, axis):
-        channels_dir = op.realpath(op.abspath(op.join(self.work_dir, axis)))
+    @property
+    def channels_dir(self):
+        channels_dir = op.realpath(op.abspath(op.join(self.work_dir, 
+                                                      'channels')))
         if not op.exists(channels_dir):
             os.makedirs(channels_dir)
         return channels_dir

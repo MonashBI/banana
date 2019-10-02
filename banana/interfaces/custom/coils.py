@@ -202,12 +202,11 @@ class ToPolarCoords(BaseInterface):
 
 class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
 
-    magnitudes_dir = Directory(exists=True, desc=(
-        "Input directory containing coil magnitude images."))
-    phases_dir = Directory(exists=True, desc=(
-        "Input directory containing coil phase images."))
+    channels_dir = Directory(exists=True, desc=(
+        "Input directory containing real and imaginary images for each "
+        "channel."))
     in_fname_re = traits.Str(
-        r'coil_(?P<channel>\d+)_(?P<echo>\d+)\.nii\.gz', usedefault=True,
+        r'(?P<axis>\d+)_(?P<channel>\d+)\.nii\.gz', usedefault=True,
         desc=("The format string used to generate the save channel filenames. "
               "Must use the 'channel' and 'echo' field names"))
     magnitude = File(genfile=True, desc="Combined magnitude image")
@@ -234,53 +233,41 @@ class HIPCombineChannels(BaseInterface):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        mag_fname = outputs['magnitude'] = self._gen_filename('magnitude')
-        phase_fname = outputs['phase'] = self._gen_filename('phase')
-        q_fname = outputs['q'] = self._gen_filename('q')
-        mag_paths = defaultdict(dict)
-        phase_paths = defaultdict(dict)
+        channel_paths = defaultdict(dict)
         # Compile regular expression for extracting channel, echo and
         # complex axis indices from input file names
         fname_re = re.compile(self.inputs.in_fname_re)
-        for dpath, dct in ((self.inputs.magnitudes_dir, mag_paths),
-                           (self.inputs.phases_dir, phase_paths)):
-            for fname in os.listdir(dpath):
-                match = fname_re.match(fname)
-                if match is None:
-                    logger.warning("Skipping '{}' file in '{}' as it doesn't "
-                                   "match expected filename pattern for raw "
-                                   "channel files ('{}')"
-                                   .format(fname, dpath,
-                                           self.inputs.in_fname_re))
-                    continue
-            dct[match.group('channel')][match.group('echo')] = op.join(dpath,
+        for fname in os.listdir(self.inputs.channels_dir):
+            match = fname_re.match(fname)
+            if match is None:
+                logger.warning("Skipping '{}' file in '{}' as it doesn't "
+                               "match expected filename pattern for raw "
+                               "channel files ('{}')"
+                               .format(fname, dpath,
+                                       self.inputs.in_fname_re))
+                continue
+            dct[match.group('channel')][match.group('axis')] = op.join(dpath,
                                                                        fname)
-        if sorted(mag_paths.keys()) != sorted(phase_paths.keys()):
-            raise BananaUsageError(
-                "Mismatching channel indices  ({} and {}) loaded from "
-                "magnitude and phase directories ({} and {})".format(
-                    sorted(mag_paths.keys()), sorted(phase_paths.keys()),
-                    self.inputs.magnitudes_dir, self.inputs.phases_dir))
         hip = None
-        for chann_i in mag_paths:
-            # Get the paths to the magnitude and phase images for each
-            # channel
-            chann_mag_paths = mag_paths[chann_i]
-            chann_phase_paths = phase_paths[chann_i]
-
-            echo_indices = sorted(chann_mag_paths.keys())
-            if sorted(chann_phase_paths.keys()) != echo_indices:
+        for cpaths in channel_paths.values():
+            real_img = nib.load(cpaths['real'])
+            imag_img = nib.load(cpaths['imaginary'])
+            if imag_img.dim(3) != real_img.dim(3):
                 raise BananaUsageError(
                     "Mismatching echo indices for channel {} between phase "
                     "and magnitude image files in from '{}' and '{}' "
-                    "directories, respectively".format(
-                        chann_i, self.inputs.magnitudes_dir,
-                        self.inputs.phases_dir))
-            if len(echo_indices) < 2:
+                    "directories, respectively ({} and {})".format(
+                        chann_i, cpaths['real'], cpaths['imaginary'],
+                        imag_img.dim(3) != real_img.dim(3)))
+            if real_img.dim(3) < 2:
                 raise BananaUsageError(
                     "At least two echos required for channel magnitude {}, "
-                    "found {}".format(chann_i, len(echo_indices)))
-            for i, j in zip(echo_indices[:-1], echo_indices[1:]):
+                    "found {}".format(chann_i, real_img.dim(3)))
+            for i, j in zip(range(0, real_img.dim(3) - 1),
+                            range(1, echo_indices[1:])):
+                real_data = real_img.get_fdata()
+                imag_data = image_img.get_fdata()
+                
                 mag1 = nib.load(chann_mag_paths[i])
                 phase1 = nib.load(chann_phase_paths[j])
                 mag2 = nib.load(chann_mag_paths[j])
@@ -307,9 +294,9 @@ class HIPCombineChannels(BaseInterface):
         mag_img = nib.Nifti1Image(mag, mag1.affine, mag1.header)
         q_img = nib.Nifti1Image(q, mag1.affine, mag1.header)
         # Save NIfTIs
-        nib.save(phase_img, phase_fname)
-        nib.save(mag_img, mag_fname)
-        nib.save(q_img, q_fname)
+        nib.save(phase_img, self._gen_filename('phase'))
+        nib.save(mag_img, self._gen_filename('magnitude'))
+        nib.save(q_img, self._gen_filename('q'))
         return outputs
 
     def _gen_filename(self, name):
