@@ -10,7 +10,7 @@ import re
 from arcana.exceptions import ArcanaError
 import numpy as np
 from nipype.utils.filemanip import split_filename
-from .matlab import BaseMatlab, BaseMatlabInputSpec
+from .matlab import BaseMatlab, BaseMatlabInputSpec, BaseMatlabOutputSpec
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -181,6 +181,12 @@ class TwixReaderInputSpec(BaseMatlabInputSpec):
     in_file = File(exists=True, mandatory=True)
 
 
+class TwixReaderOutputSpec(BaseMatlabOutputSpec):
+
+    out_ref = File(exists=True, desc="Reference scan")
+    out_hdr = File(exists=True, desc="Header information in JSON format")
+
+
 class TwixReader(BaseMatlab):
     """
     Reads a Siemens TWIX (multi-channel k-space) file and saves it in a Matlab
@@ -188,6 +194,7 @@ class TwixReader(BaseMatlab):
     """
 
     input_spec = TwixReaderInputSpec
+    output_spec = TwixReaderOutputSpec
 
     def script(self, **inputs):
         """
@@ -205,6 +212,8 @@ class TwixReader(BaseMatlab):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_file'] = self.out_file
+        outputs['out_ref'] = self.out_ref
+        outputs['out_hdr'] = self.out_hdr
         return outputs
 
     @property
