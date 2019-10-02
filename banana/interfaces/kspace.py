@@ -51,18 +51,18 @@ class Grappa(BaseMatlab):
             % Calculate combined magnitude, and real and imaginary images per
             % channel and save to nifti files
             mag = squeeze(sqrt(sum(sum(abs(img_recon_ch).^2, 1), 5)));
-            out_nii = make_nii(mag, voxel_size, [], [],...
+            out_nii = make_nii(mag, S.voxel_size, [], [],...
                              'Sum of squares magnitude average across echos');
             save_nii(out_nii, '{out_file}');
 
             for i=1:size(img_recon_ch, 1)
                 coil = squeeze(img_recon_ch(i, :, :, :, :));
-                out_nii = make_nii(real(coil), voxel_size, [], [],...
+                out_nii = make_nii(real(coil), S.voxel_size, [], [],...
                                    'Real image per coil');
                 save_nii(out_nii, sprintf('%s%sReal_c%d.nii.gz',...
                                           '{channels_dir}', filesep, i));
 
-                out_nii = make_nii(imag(coil), voxel_size, [], [],...
+                out_nii = make_nii(imag(coil), S.voxel_size, [], [],...
                                    'Imaginary image per coil');
                 save_nii(out_nii, sprintf('%s%sImaginary_c%d.nii.gz',...
                                           '{channels_dir}', filesep, i));
@@ -92,6 +92,7 @@ class Grappa(BaseMatlab):
         outputs = self._outputs().get()
         outputs['out_file'] = self.out_file
         outputs['channels_dir'] = self.channels_dir
+        print(outputs['raw_output'])
         for field in outputs['raw_output'].split(self.out_sep)[1].split('\n'):
             name, val = field.split('=')
             val = parse_value(val)

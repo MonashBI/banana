@@ -9,7 +9,7 @@ from banana.interfaces import MATLAB_RESOURCES
 from .base import (
     BaseStiCommand, UnwrapPhase, VSharp, QSMiLSQR,
     UnwrapPhaseInputSpec, VSharpInputSpec, QSMiLSQRInputSpec,
-    UnwrapPhaseOutputSpec, VSharpOutputSpec, QSMiLSQROutputSpec)
+    UnwrapPhaseOutputSpec, VSharpOutputSpec, QSMOutputSpec)
 
 
 class BaseBatchStiCommand(BaseStiCommand):
@@ -119,7 +119,7 @@ class BatchQSMiLSQRInputSpec(QSMiLSQRInputSpec):
         desc="Input files to unwrap", format_str='mask_manip')
 
 
-class BatchQSMiLSQROutputSpec(QSMiLSQROutputSpec):
+class BatchQSMOutputSpec(QSMOutputSpec):
 
     out_file = traits.List(
         File(exists=True), outpos=0,
@@ -129,4 +129,4 @@ class BatchQSMiLSQROutputSpec(QSMiLSQROutputSpec):
 class BatchQSMiLSQR(BaseBatchStiCommand, QSMiLSQR):
 
     input_spec = BatchQSMiLSQRInputSpec
-    output_spec = BatchQSMiLSQROutputSpec
+    output_spec = BatchQSMOutputSpec
