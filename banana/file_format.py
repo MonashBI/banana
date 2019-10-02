@@ -391,18 +391,23 @@ twix_vb_format = FileFormat(
     desc=("The format that k-space data is saved in from Siemens scanners "
           "with system version vB to (at least) vE"))
 
-matlab_kspace_format = FileFormat(
-    name='matlab_kspace', extension='.ks.mat',
-    resource_names={'xnat': ['KS_MAT']},
-    desc=("""A custom format for saving k-space data in Matlab data files.
+custom_kspace_format = FileFormat(
+    name='custom_kspace', extension='.ks',
+    resource_names={'xnat': ['CUSTOM_KSPACE']},
+    aux_files={'ref': '.ref', 'json': '.json'},
+    desc=("""A custom format for saving k-space data in binary amd JSON files.
 
-    Variables
-    ---------
-    calib_scan : 5-d matrix
-        Data from calibration scan organised in the following dimension order:
+    Binary files
+    ------------
+    primary : 5-d matrix
+        Data from "data" scan organised in the following dimension order:
         channel, freq-encode, phase-encode, partition-encode (slice), echoes
-    data_scan : 5-d matrix
-        Data from "data" scan organised in dimensions order as calibration scan
+    reference : 5-d matrix
+        Data from calibration scan organised in the same dimension order as
+        primary scan
+
+    JSON side-car
+    -------------
     dims : 3-tuple(int)
         The dimensions of the image in freq, phase, partition (slice) order
     voxel_size : 3-tuple(float)
@@ -420,9 +425,9 @@ matlab_kspace_format = FileFormat(
     larmor_freq : float
         The central larmor frequency of the scanner"""))
 
-matlab_kspace_format.set_converter(twix_vb_format, TwixConverter)
+custom_kspace_format.set_converter(twix_vb_format, TwixConverter)
 
-KSPACE_FORMATS = [twix_vb_format, matlab_kspace_format]
+KSPACE_FORMATS = [twix_vb_format, custom_kspace_format]
 
 # MRS format
 rda_format = FileFormat(name='raw', extension='.rda')

@@ -1,4 +1,4 @@
-function convert_twix(in_file, out_file, out_hdr)
+function convert_twix(in_file, out_file, out_ref, out_hdr)
 
 % Read Twix file
 data_obj = mapVBVD(in_file, 'removeOS');
@@ -20,7 +20,7 @@ data_scan = permute(data_obj.image{''}, [2, 1, 3, 4, 5]);
 num_freq = data_obj.hdr.Config.NImageCols;
 num_phase = data_obj.hdr.Config.NPeFTLen;
 num_partitions = data_obj.hdr.Config.NImagePar;
-dims = [num_freq, num_phase, num_partitions]
+dims = [num_freq, num_phase, num_partitions];
 
 % Get channel and echo information from header
 if isfield(header.Config,'RawCha') &&...
@@ -51,7 +51,7 @@ elseif isfield(header.MeasYaps,'alTE')
     TE = [header.MeasYaps.alTE{1:num_echos}] * 1E-6;
 else
     disp('No header field for echo times');
-    TE = [];
+    TE = [0.0];
 end
 B0_strength = header.Dicom.flMagneticFieldStrength;
 B0_dir = [0 0 1];
@@ -61,6 +61,7 @@ larmor_freq = header.Dicom.lFrequency; % (Hz)
 fid = fopen(out_hdr, 'w');
 fprintf(fid, '{"dims": [%d, %d, %d], ', dims(1), dims(2), dims(3));
 fprintf(fid, '"num_channels": %d, ', num_channels);
+fprintf(fid, '"num_echos": %d, ', num_echos);
 fprintf(fid, '"voxel_size": [%f, %f, %f], ', voxel_size(1), voxel_size(2), voxel_size(3));
 fprintf(fid, '"B0_strength": %f, ', B0_strength);
 fprintf(fid, '"B0_dir": [%f, %f, %f], ', B0_dir(1), B0_dir(2), B0_dir(3));
@@ -75,5 +76,11 @@ end
 fprintf(fid, ']}');
 fclose(fid);
 
-% Save data to Matlab file
-% save(out_file, 'calib_scan', 'data_scan', '-v7.3')
+% Save data and calibration scan to binary files
+fid = fopen(out_file, 'w');
+fwrite(fid, data_scan);
+fclose(fid);
+
+fid = fopen(out_ref, 'w');
+fwrite(fid, calib_scan);
+fclose(fid);

@@ -194,10 +194,12 @@ class TwixReader(BaseMatlab):
         Generate script to load Siemens format k-space and save as Matlab
         arrays
         """
-        script = """
-            convert_twix('{in_file}', '{out_file}');
-            """.format(in_file=self.inputs.in_file,
-                       out_file=self.out_file)
+        script = ("convert_twix('{in_file}', '{out_file}', '{out_ref}', "
+                  " '{out_hdr}');").format(
+                      in_file=self.inputs.in_file,
+                      out_file=self.out_file,
+                      out_ref=self.out_ref,
+                      out_hdr=self.out_hdr)
         return script
 
     def _list_outputs(self):
@@ -208,4 +210,14 @@ class TwixReader(BaseMatlab):
     @property
     def out_file(self):
         return op.realpath(op.abspath(
-            op.join(self.work_dir, 'out_file.ks.mat')))
+            op.join(self.work_dir, 'out_file.ks.dat')))
+
+    @property
+    def out_ref(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.ks.ref')))
+
+    @property
+    def out_hdr(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.ks.json')))

@@ -1,4 +1,4 @@
-function [Img_recon_ch, smaps] = recon_grappa2(ksDataCalib, ksDataScan, I_PE, I_PAR, smapFlag, Rpe)
+function [Img_recon_ch, smaps] = recon_grappa2(data_file, ref_file, hdr_file, out_mag_file, out_real_dir, out_img_dir, Rpe, smapFlag)
 % RECON_SIEMENSDATFILE_GRAPPA2 
 % This function reconstruct images from Siemens Raw data file (*.dat, VB/VD/VE versions)
 % This function works for GRAPPA factor of 2, 3D imaging and mutiple echos
@@ -19,7 +19,22 @@ function [Img_recon_ch, smaps] = recon_grappa2(ksDataCalib, ksDataScan, I_PE, I_
 % Revision: 0.1 $
 % Institute: Monash Biomedical Imaging, Monash University, Australia, 2019
 
+% Read header
+hdr = jsondecode(fileread(hdr_file));
+arr_size = [hdr.num_channels, hdr.dims(1), hdr.dims(2), hdr.dims(3), hdr.num_echos];
+
+% Read data files
+fid = fopen(data_file);
+ksDataScan = fread(fid, arr_size);
+fclose(fid);
+
+fid = fopen(ref_file);
+ksDataCalib = fread(fid, arr_size);
+fclose(fid);
+
 [CH, FE, PE, PAR, ECHO] = size(ksDataScan);
+I_PE = hdr.dims(2);
+I_PAR = hdr.dims(3);
 
 %  ---- Handle Partial Fourier ---- %
 
@@ -96,6 +111,24 @@ if smapFlag==1
     end
 else
     smaps = NaN
+end
+
+% Calculate combined magnitude, and real and imaginary images per
+% channel and save to nifti files
+mag = squeeze(sqrt(sum(sum(abs(Img_recon_ch).^2, 1), 5)));
+out_nii = make_nii(mag, voxel_size, [], [],...
+                    'Sum of squares magnitude average across echos');
+save_nii(out_nii, out_mag_file);
+
+for i=1:size(img_recon_ch, 1)
+    coil = squeeze(Img_recon_ch(i, :, :, :, :));
+    out_nii = make_nii(real(coil), voxel_size, [], [],...
+                        'Real image per coil');
+    save_nii(out_nii, sprintf('%s%s%d.nii.gz', out_real_dir, filesep, i));
+
+    out_nii = make_nii(imag(coil), voxel_size, [], [],...
+                        'Imaginary image per coil');
+    save_nii(out_nii, sprintf('%s%sImaginary_c%d.nii.gz', out_img_dir, filesep, i));
 end
     
 end

@@ -1,40 +1,37 @@
+import logging
 from nipype.interfaces import fsl
 from nipype.interfaces.spm.preprocess import Coregister
-from banana.citation import spm_cite
-from banana.file_format import (
-    nifti_format, motion_mats_format, nifti_gz_format, matlab_kspace_format,
-    multi_nifti_gz_format, zip_format, text_matrix_format, STD_IMAGE_FORMATS,
-    KSPACE_FORMATS)
-from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
-from banana.study import Study, StudyMetaClass
-from banana.citation import fsl_cite, bet_cite, bet2_cite, ants_cite
-from banana.file_format import (
-    dicom_format, gif_format, nifti_gz_x_format)
 from nipype.interfaces.utility import IdentityInterface
-from banana.requirement import (
-    fsl_req, mrtrix_req, ants_req, spm_req, c3d_req, matlab_req)
+from nipype.interfaces.utility import Merge
+from nipype.interfaces import ants
+from nipype.interfaces.ants.resampling import ApplyTransforms
+from nipype.interfaces.fsl.preprocess import ApplyXFM
 from nipype.interfaces.fsl import (FLIRT, FNIRT, Reorient2Std)
 from arcana.exceptions import (
     ArcanaOutputNotProducedException, ArcanaMissingDataException)
+from arcana.utils.interfaces import ListDir, CopyToDir
+from arcana import ParamSpec, SwitchSpec
+from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
+from banana.study import Study, StudyMetaClass
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.custom.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
-from nipype.interfaces.utility import Merge
-from nipype.interfaces import ants
 from banana.interfaces.fsl import FSLSlices
-import logging
 from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.custom.coils import ToPolarCoords
 from banana.interfaces.kspace import Grappa
-from arcana.utils.interfaces import ListDir, CopyToDir
-from nipype.interfaces.ants.resampling import ApplyTransforms
-from nipype.interfaces.fsl.preprocess import ApplyXFM
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
-from arcana import ParamSpec, SwitchSpec
 from banana.interfaces.custom.motion_correction import (
     MotionMatCalculation)
 from banana.exceptions import BananaUsageError
 from banana.reference import FslReferenceData
+from banana.file_format import (
+    nifti_format, motion_mats_format, nifti_gz_format, custom_kspace_format,
+    multi_nifti_gz_format, zip_format, text_matrix_format, STD_IMAGE_FORMATS,
+    KSPACE_FORMATS, dicom_format, gif_format, nifti_gz_x_format)
+from banana.citation import fsl_cite, bet_cite, bet2_cite, ants_cite, spm_cite
+from banana.requirement import (
+    fsl_req, mrtrix_req, ants_req, spm_req, c3d_req, matlab_req)
 
 logger = logging.getLogger('arcana')
 
@@ -299,7 +296,7 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 acceleration=self.parameter('grappa_acceleration'),
                 single_comp_thread=False),
             inputs={
-                'in_file': ('kspace', matlab_kspace_format)},
+                'in_file': ('kspace', custom_kspace_format)},
             outputs={
                 'channels': ('channels_dir', multi_nifti_gz_format)},
             requirements=[matlab_req.v('R2018a')])
