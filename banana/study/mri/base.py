@@ -310,9 +310,9 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             ants.N4BiasFieldCorrection(
                 dimension=3),
             inputs={
-                'input_file': (recon, 'out_file')},
+                'input_image': (recon, 'out_file')},
             outputs={
-                'magnitude': ('output_file', nifti_gz_format)},
+                'magnitude': ('output_image', nifti_gz_format)},
             requirements=[ants_req.v('2.2.0')])
 
         return pipeline
