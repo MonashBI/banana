@@ -16,7 +16,7 @@ logger = logging.getLogger('banana')
 class ToPolarCoordsInputSpec(BaseInterfaceInputSpec):
     in_dir = Directory(exists=True, mandatory=True)
     in_fname_re = traits.Str(
-        r'.*_(?P<channel>\d+)_(?P<echo>\d+)_(?P<axis>[A-Z]+)\.nii\.gz',
+        r'(?P<axis>[a-z]+)_(?P<channel>\d+)\.nii\.gz',
         usedefault=True, desc=(
             "Regex to extract the channel, echo and axis "
             "(i.e. real or imaginary) information from the input file name. "
@@ -96,7 +96,7 @@ class ToPolarCoords(BaseInterface):
         coil_phases = outputs['coil_phases'] = []
         # A default dict with three levels of keys to hold the file names
         # sorted into echo, channel and complex axis
-        paths = defaultdict(lambda: defaultdict(dict))
+        paths = defaultdict(dict)
         # Compile regular expression for extracting channel, echo and
         # complex axis indices from input file names
         fname_re = re.compile(self.inputs.in_fname_re)
@@ -109,77 +109,72 @@ class ToPolarCoords(BaseInterface):
                                .format(fname, self.inputs.in_dir,
                                        self.inputs.in_fname_re))
                 continue
-            paths[match.group('echo')][match.group('channel')][
-                match.group('axis')] = op.join(self.inputs.in_dir, fname)
+            paths[match.group('channel')][match.group('axis')] = op.join(
+                self.inputs.in_dir, fname)
 
         first_echo_index = min(paths.keys())
         last_echo_index = max(paths.keys())
 
-        for echo_i, channels in paths.items():
-            # Variables to hold combined coil images
-            combined_array = None
-            normaliser_array = None
-            echo_coil_mags = []
-            echo_coil_phases = []
-            for channel_i, axes in channels.items():
-                # Load image real and imaginary data and remove extreme values
-                img_arrays = {}
-                for ax, fname in axes.items():
-                    img = nib.load(fname)
-                    img_array = img.get_fdata()
-                    # Replace extreme values with random value
-                    img_array[img_array == 2048] = 0.02 * np.random.rand()
-                    img_arrays[ax] = img_array
+        for channel_i, axes in paths.items():
+            # Load image real and imaginary data and remove extreme values
+            img_arrays = {}
+            for ax, fname in axes.items():
+                img = nib.load(fname)
+                img_array = img.get_fdata()
+                # Replace extreme values with random value
+                img_array[img_array == 2048] = 0.02 * np.random.rand()
+                img_arrays[ax] = img_array
 
-                # Calculate magnitude and phase from coil data
-                cmplx = (img_arrays[self.inputs.real_label]
-                         + img_arrays[self.inputs.imaginary_label] * 1j)
+            # Calculate magnitude and phase from coil data
+            cmplx = (img_arrays[self.inputs.real_label]
+                     + img_arrays[self.inputs.imaginary_label] * 1j)
 
-                # Calculate and save magnitude image
-                mag_array = np.abs(cmplx)
+            # Calculate and save magnitude image
+            mag_array = np.abs(cmplx)
+            for echo_i in range(mag_array.shape[4]):
                 mag_img = nib.Nifti1Image(mag_array, img.affine, img.header)
                 mag_path = op.join(
                     mags_dir,
                     self.inputs.out_fname_str.format(channel=channel_i,
-                                                     echo=echo_i))
+                                                    echo=echo_i))
                 echo_coil_mags.append(mag_path)
                 nib.save(mag_img, mag_path)
 
-                # Save phase image
-                phase_array = np.angle(cmplx)
-                phase_img = nib.Nifti1Image(phase_array, img.affine,
-                                            img.header)
-                phase_path = op.join(
-                    phases_dir,
-                    self.inputs.out_fname_str.format(channel=channel_i,
-                                                     echo=echo_i))
-                echo_coil_phases.append(phase_path)
-                nib.save(phase_img, phase_path)
+            # Save phase image
+            phase_array = np.angle(cmplx)
+            phase_img = nib.Nifti1Image(phase_array, img.affine,
+                                        img.header)
+            phase_path = op.join(
+                phases_dir,
+                self.inputs.out_fname_str.format(channel=channel_i,
+                                                    echo=echo_i))
+            echo_coil_phases.append(phase_path)
+            nib.save(phase_img, phase_path)
 
-                # Add coil data to combined coil data
-                if combined_array is None:
-                    combined_array = deepcopy(mag_array) ** 2
-                    normaliser_array = deepcopy(mag_array)
-                else:
-                    combined_array += mag_array ** 2
-                    normaliser_array += mag_array
-            coil_mags.append(echo_coil_mags)
-            coil_phases.append(echo_coil_phases)
-            # Normalise combined sum of squares image, save and append
-            # to list of combined echoes
-            combined_array /= normaliser_array
-            combined_array[np.isnan(combined_array)] = 0
-            # Generate filename and append ot list of combined coil images
-            combined_fname = op.join(combined_dir,
-                                     'echo_{}.nii.gz'.format(echo_i))
-            combined_img = nib.Nifti1Image(combined_array, img.affine,
-                                           img.header)
-            nib.save(combined_img, combined_fname)
-            outputs['combined_images'].append(combined_fname)
-            if echo_i == first_echo_index:
-                outputs['first_echo'] = combined_fname
-            if echo_i == last_echo_index:
-                outputs['last_echo'] = combined_fname
+            # Add coil data to combined coil data
+            if combined_array is None:
+                combined_array = deepcopy(mag_array) ** 2
+                normaliser_array = deepcopy(mag_array)
+            else:
+                combined_array += mag_array ** 2
+                normaliser_array += mag_array
+        coil_mags.append(echo_coil_mags)
+        coil_phases.append(echo_coil_phases)
+        # Normalise combined sum of squares image, save and append
+        # to list of combined echoes
+        combined_array /= normaliser_array
+        combined_array[np.isnan(combined_array)] = 0
+        # Generate filename and append ot list of combined coil images
+        combined_fname = op.join(combined_dir,
+                                 'echo_{}.nii.gz'.format(echo_i))
+        combined_img = nib.Nifti1Image(combined_array, img.affine,
+                                        img.header)
+        nib.save(combined_img, combined_fname)
+        outputs['combined_images'].append(combined_fname)
+        if echo_i == first_echo_index:
+            outputs['first_echo'] = combined_fname
+        if echo_i == last_echo_index:
+            outputs['last_echo'] = combined_fname
         return outputs
 
     def _gen_filename(self, name):
@@ -205,10 +200,6 @@ class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
     channels_dir = Directory(exists=True, desc=(
         "Input directory containing real and imaginary images for each "
         "channel."))
-    in_fname_re = traits.Str(
-        r'(?P<axis>\d+)_(?P<channel>\d+)\.nii\.gz', usedefault=True,
-        desc=("The format string used to generate the save channel filenames. "
-              "Must use the 'channel' and 'echo' field names"))
     magnitude = File(genfile=True, desc="Combined magnitude image")
     phase = File(genfile=True, desc="Combined phase image")
     q = File(genfile=True, desc="Q image")
@@ -233,66 +224,43 @@ class HIPCombineChannels(BaseInterface):
 
     def _list_outputs(self):
         outputs = self._outputs().get()
-        channel_paths = defaultdict(dict)
-        # Compile regular expression for extracting channel, echo and
-        # complex axis indices from input file names
-        fname_re = re.compile(self.inputs.in_fname_re)
-        for fname in os.listdir(self.inputs.channels_dir):
-            match = fname_re.match(fname)
-            if match is None:
-                logger.warning("Skipping '{}' file in '{}' as it doesn't "
-                               "match expected filename pattern for raw "
-                               "channel files ('{}')"
-                               .format(fname, dpath,
-                                       self.inputs.in_fname_re))
-                continue
-            dct[match.group('channel')][match.group('axis')] = op.join(dpath,
-                                                                       fname)
         hip = None
-        for cpaths in channel_paths.values():
-            real_img = nib.load(cpaths['real'])
-            imag_img = nib.load(cpaths['imaginary'])
-            if imag_img.dim(3) != real_img.dim(3):
-                raise BananaUsageError(
-                    "Mismatching echo indices for channel {} between phase "
-                    "and magnitude image files in from '{}' and '{}' "
-                    "directories, respectively ({} and {})".format(
-                        chann_i, cpaths['real'], cpaths['imaginary'],
-                        imag_img.dim(3) != real_img.dim(3)))
-            if real_img.dim(3) < 2:
+        for fname in os.listdir(self.inputs.channels_dir):
+            img = nib.load(op.join(self.inputs.channels_dir, fname))
+            img_data = img.get_fdata()
+            if hip is None:
+                hip = np.zeros(img_data.shape[:3])
+                sum_mag = np.zeros(img_data.shape[:3])
+            num_echos = img_data.shape[3]
+            if num_echos < 2:
                 raise BananaUsageError(
                     "At least two echos required for channel magnitude {}, "
-                    "found {}".format(chann_i, real_img.dim(3)))
-            for i, j in zip(range(0, real_img.dim(3) - 1),
-                            range(1, echo_indices[1:])):
-                real_data = real_img.get_fdata()
-                imag_data = image_img.get_fdata()
-                
-                mag1 = nib.load(chann_mag_paths[i])
-                phase1 = nib.load(chann_phase_paths[j])
-                mag2 = nib.load(chann_mag_paths[j])
-                phase2 = nib.load(chann_phase_paths[j])
-
-                # Get array data
-                mag1_array = mag1.get_fdata()
-                phase1_array = phase1.get_fdata()
-                mag2_array = mag2.get_fdata()
-                phase2_array = phase2.get_fdata()
-
-                if hip is None:
-                    hip = np.zeros(mag1_array.shape)
-                    sum_mag = np.zeros(mag1_array.shape)
-                hip += mag1_array * mag2_array * np.exp(-1j * (phase1_array
-                                                               - phase2_array))
-                sum_mag += mag1_array * mag2_array
+                    "found {}".format(fname, num_echos))
+            cmplx_channels = np.squeeze(img_data[:, :, :, :, 0]
+                                        + 1j * img_data[:, :, :, :, 1])
+            phase_channels = np.angle(cmplx_channels)
+            mag_channels = np.abs(cmplx_channels)
+            for i, j in zip(range(0, num_echos - 1), range(1, num_echos)):
+                # Get successive echos
+                mag_a = mag_channels[:, :, :, i]
+                mag_b = mag_channels[:, :, :, j]
+                phase_a = phase_channels[:, :, :, i]
+                phase_b = phase_channels[:, :, :, j]
+                # Combine HIP and sum and total magnitude
+                hip += mag_a * mag_b * np.exp(-1j * (phase_a - phase_b))
+                sum_mag += mag_a * mag_b
+        if hip is None:
+            raise BananaUsageError(
+                "No channels loaded from channels directory {}"
+                .format(self.inputs.channels_dir))
         # Get magnitude and phase
         phase = np.angle(hip)
         mag = np.abs(hip)
         q = mag / sum_mag
         # Create NIfTI images
-        phase_img = nib.Nifti1Image(phase, phase1.affine, phase1.header)
-        mag_img = nib.Nifti1Image(mag, mag1.affine, mag1.header)
-        q_img = nib.Nifti1Image(q, mag1.affine, mag1.header)
+        phase_img = nib.Nifti1Image(phase, img.affine, img.header)
+        mag_img = nib.Nifti1Image(mag, img.affine, img.header)
+        q_img = nib.Nifti1Image(q, img.affine, img.header)
         # Save NIfTIs
         nib.save(phase_img, self._gen_filename('phase'))
         nib.save(mag_img, self._gen_filename('magnitude'))
