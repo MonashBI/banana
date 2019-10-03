@@ -23,7 +23,7 @@ from arcana.study.multi import (
 from arcana.data import InputFilesets
 from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
-from banana.interfaces.custom.bold import PrepareFIX
+from banana.interfaces.bold import PrepareFIX
 from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError

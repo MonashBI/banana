@@ -8,13 +8,13 @@ from arcana.data import InputFilesetSpec, FilesetSpec, FieldSpec
 from arcana.study.base import StudyMetaClass
 from banana.citation import fsl_cite
 from banana.requirement import fsl_req
-from banana.interfaces.custom.motion_correction import (
+from banana.interfaces.motion_correction import (
     PrepareDWI, GenTopupConfigFiles)
 from banana.file_format import (
     nifti_gz_format, text_matrix_format,
     par_format, motion_mats_format, dicom_format)
-from banana.interfaces.custom.bold import FieldMapTimeInfo
-from banana.interfaces.custom.motion_correction import (
+from banana.interfaces.bold import FieldMapTimeInfo
+from banana.interfaces.motion_correction import (
     MergeListMotionMat, MotionMatCalculation)
 from banana.exceptions import BananaUsageError
 from banana.file_format import STD_IMAGE_FORMATS

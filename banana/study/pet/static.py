@@ -1,7 +1,7 @@
 from .base import PetStudy
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.study.base import StudyMetaClass
-from banana.interfaces.custom.pet import SUVRCalculation
+from banana.interfaces.pet import SUVRCalculation
 from banana.file_format import (nifti_gz_format)
 import os
 

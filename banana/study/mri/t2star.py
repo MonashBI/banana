@@ -5,16 +5,17 @@ from nipype.interfaces.utility import Select
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils import get_class_info
-from arcana.utils.interfaces import ListDir
+from arcana.utils.interfaces import ListDir, CopyToDir
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import Merge
-from banana.interfaces.custom.vein_analysis import (
+from banana.interfaces.vein_analysis import (
     CompositeVeinImage, ShMRF)
 from banana.interfaces.sti import (
     UnwrapPhase, VSharp, QSMiLSQR, QSMStar, BatchUnwrapPhase, BatchVSharp,
     BatchQSMiLSQR)
-from banana.interfaces.custom.coils import HIPCombineChannels
-from banana.interfaces.custom.mask import (
+
+from banana.interfaces.coils import HIPCombineChannels, ToPolarCoords
+from banana.interfaces.mask import (
     DialateMask, MaskCoils, MedianInMasks)
 from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
 from banana.citation import (
@@ -101,6 +102,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     add_param_specs = [
         ParamSpec('qsm_num_echos', 1),
+        MriStudy.param_spec('reorient_to_std').with_new_default(False),
         ParamSpec('qsm_echo', 1,
                   desc=("Which echo (by index starting at 1) to use when "
                         "using single echo")),
@@ -140,7 +142,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite])
 
-        erosion = pipeline.add(
+        pipeline.add(
             'mask_erosion',
             fsl.ErodeImage(
                 kernel_shape='sphere',
@@ -156,160 +158,175 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # we need to perform QSM on each coil separately and then combine
         # afterwards.
         if self.parameter('qsm_num_echos') > 1:
-            # Combine channels to produce phase and magnitude images
-            channel_combine = pipeline.add(
-                'channel_combine',
-                HIPCombineChannels(),
-                inputs={
-                    'channels_dir': ('channels', multi_nifti_gz_format)})
-
-            # Unwrap phase using Laplacian unwrapping
-            unwrap = pipeline.add(
-                'unwrap',
-                UnwrapPhase(
-                    padsize=self.parameter('qsm_padding')),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'in_file': (channel_combine, 'phase')},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-
-            # Remove background noise
-            vsharp = pipeline.add(
-                "vsharp",
-                VSharp(
-                    mask_manip="imerode({}>0, ball(5))"),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'in_file': (unwrap, 'out_file'),
-                    'mask': (erosion, 'out_file')},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-
-            if self.parameter('qsm_num_echos') == 2:
-                # Run QSM iLSQR
-                pipeline.add(
-                    'qsmrecon',
-                    QSMiLSQR(
-                        mask_manip="{}>0",
-                        padsize=self.parameter('qsm_padding')),
-                    inputs={
-                        'voxelsize': ('voxel_sizes', float),
-                        'te': ('echo_times', float),
-                        'B0': ('main_field_strength', float),
-                        'H': ('main_field_orient', float),
-                        'in_file': (vsharp, 'out_file'),
-                        'mask': (vsharp, 'new_mask')},
-                    outputs={
-                        'qsm': ('qsm', nifti_format)},
-                    requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-            else:
-                # Run QSM star
-                pipeline.add(
-                    'qsmrecon',
-                    QSMStar(
-                        padsize=self.parameter('qsm_padding')),
-                    inputs={
-                        'voxelsize': ('voxel_sizes', float),
-                        'te': ('echo_times', float),
-                        'B0': ('main_field_strength', float),
-                        'H': ('main_field_orient', float),
-                        'in_file': (vsharp, 'out_file')},
-                    outputs={
-                        'qsm': ('qsm', nifti_format)},
-                    requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+            self._construct_multi_echo_qsm_pipeline(pipeline)
         else:
-            # Dialate eroded mask
-            dialate = pipeline.add(
-                'dialate',
-                DialateMask(
-                    dialation=self.parameter('qsm_mask_dialation')),
-                inputs={
-                    'in_file': (erosion, 'out_file')},
-                requirements=[matlab_req.v('r2017a')])
+            self._construct_single_echo_qsm_pipeline(pipeline)
+        return pipeline
 
-            # List files for the phases of separate channel
-            list_phases = pipeline.add(
-                'list_phases',
-                ListDir(
-                    sort_key=coil_sort_key,
-                    filter=CoilEchoFilter(self.parameter('qsm_echo'))),
-                inputs={
-                    'directory': ('phase_channels', multi_nifti_gz_format)})
+    def _construct_multi_echo_qsm_pipeline(self, pipeline):
+        # Combine channels to produce phase and magnitude images
+        channel_combine = pipeline.add(
+            'channel_combine',
+            HIPCombineChannels(),
+            inputs={
+                'channels_dir': ('channels', multi_nifti_gz_format)})
 
-            # List files for the phases of separate channel
-            list_mags = pipeline.add(
-                'list_mags',
-                ListDir(
-                    sort_key=coil_sort_key,
-                    filter=CoilEchoFilter(self.parameter('qsm_echo'))),
-                inputs={
-                    'directory': ('mag_channels', multi_nifti_gz_format)})
+        # Unwrap phase using Laplacian unwrapping
+        unwrap = pipeline.add(
+            'unwrap',
+            UnwrapPhase(
+                padsize=self.parameter('qsm_padding')),
+            inputs={
+                'voxelsize': ('voxel_sizes', float),
+                'in_file': (channel_combine, 'phase')},
+            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
 
-            # Generate coil specific masks
-            mask_coils = pipeline.add(
-                'mask_coils',
-                MaskCoils(
-                    dialation=self.parameter('qsm_mask_dialation')),
-                inputs={
-                    'masks': (list_mags, 'files'),
-                    'whole_brain_mask': (dialate, 'out_file')},
-                requirements=[matlab_req.v('r2017a')])
+        # Remove background noise
+        vsharp = pipeline.add(
+            "vsharp",
+            VSharp(
+                mask_manip="imerode({}>0, ball(5))"),
+            inputs={
+                'voxelsize': ('voxel_sizes', float),
+                'in_file': (unwrap, 'out_file'),
+                'mask': (pipeline.node('erosion'), 'out_file')},
+            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
 
-            # Unwrap phase
-            unwrap = pipeline.add(
-                'unwrap',
-                BatchUnwrapPhase(
-                    padsize=self.parameter('qsm_padding')),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'in_file': (list_phases, 'files')},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-
-            # Background phase removal
-            vsharp = pipeline.add(
-                "vsharp",
-                BatchVSharp(
-                    mask_manip='{}>0'),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'mask': (mask_coils, 'out_files'),
-                    'in_file': (unwrap, 'out_file')},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-
-            first_echo_time = pipeline.add(
-                'first_echo',
-                Select(
-                    index=0),
-                inputs={
-                    'inlist': ('echo_times', float)})
-
-            # Perform channel-wise QSM
-            coil_qsm = pipeline.add(
-                'coil_qsmrecon',
-                BatchQSMiLSQR(
+        if self.parameter('qsm_num_echos') == 2:
+            # Run QSM iLSQR
+            pipeline.add(
+                'qsmrecon',
+                QSMiLSQR(
                     mask_manip="{}>0",
                     padsize=self.parameter('qsm_padding')),
                 inputs={
                     'voxelsize': ('voxel_sizes', float),
+                    'te': ('echo_times', float),
                     'B0': ('main_field_strength', float),
                     'H': ('main_field_orient', float),
                     'in_file': (vsharp, 'out_file'),
-                    'mask': (vsharp, 'new_mask'),
-                    'te': (first_echo_time, 'out')},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)],
-                wall_time=45)  # FIXME: Should be dependent on number of coils
-
-            # Combine channel QSM by taking the median coil value
-            pipeline.add(
-                'combine_qsm',
-                MedianInMasks(),
-                inputs={
-                    'channels': (coil_qsm, 'out_file'),
-                    'channel_masks': (vsharp, 'new_mask'),
-                    'whole_brain_mask': (dialate, 'out_file')},
+                    'mask': (vsharp, 'new_mask')},
                 outputs={
-                    'qsm': ('out_file', nifti_format)},
-                requirements=[matlab_req.v('r2017a')])
-        return pipeline
+                    'qsm': ('qsm', nifti_format)},
+                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+        else:
+            # Run QSM star
+            pipeline.add(
+                'qsmrecon',
+                QSMStar(
+                    padsize=self.parameter('qsm_padding')),
+                inputs={
+                    'voxelsize': ('voxel_sizes', float),
+                    'te': ('echo_times', float),
+                    'B0': ('main_field_strength', float),
+                    'H': ('main_field_orient', float),
+                    'in_file': (vsharp, 'out_file')},
+                outputs={
+                    'qsm': ('qsm', nifti_format)},
+                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+
+    def _construct_single_echo_qsm_pipeline(self, pipeline):
+        # Dialate eroded mask
+        dialate = pipeline.add(
+            'dialate',
+            DialateMask(
+                dialation=self.parameter('qsm_mask_dialation')),
+            inputs={
+                'in_file': (pipeline.node('erosion'), 'out_file')},
+            requirements=[matlab_req.v('r2017a')])
+
+        to_polar = pipeline.add(
+            'to_polar',
+            ToPolarCoords(
+                in_fname_re=self.parameter('channel_fname_regex'),
+                real_label=self.parameter('channel_real_label'),
+                imaginary_label=self.parameter('channel_imag_label')),
+            inputs={
+                'in_dir': ('channels', multi_nifti_gz_format)})
+
+        # List files for the phases of separate channel
+        list_phases = pipeline.add(
+            'list_phases',
+            ListDir(
+                sort_key=coil_sort_key,
+                filter=CoilEchoFilter(self.parameter('qsm_echo'))),
+            inputs={
+                'directory': (to_polar, 'phases_dir')})
+
+        # List files for the phases of separate channel
+        list_mags = pipeline.add(
+            'list_mags',
+            ListDir(
+                sort_key=coil_sort_key,
+                filter=CoilEchoFilter(self.parameter('qsm_echo'))),
+            inputs={
+                'directory': (to_polar, 'mag_channels')})
+
+        # Generate coil specific masks
+        mask_coils = pipeline.add(
+            'mask_coils',
+            MaskCoils(
+                dialation=self.parameter('qsm_mask_dialation')),
+            inputs={
+                'masks': (list_mags, 'files'),
+                'whole_brain_mask': (dialate, 'out_file')},
+            requirements=[matlab_req.v('r2017a')])
+
+        # Unwrap phase
+        unwrap = pipeline.add(
+            'unwrap',
+            BatchUnwrapPhase(
+                padsize=self.parameter('qsm_padding')),
+            inputs={
+                'voxelsize': ('voxel_sizes', float),
+                'in_file': (list_phases, 'files')},
+            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+
+        # Background phase removal
+        vsharp = pipeline.add(
+            "vsharp",
+            BatchVSharp(
+                mask_manip='{}>0'),
+            inputs={
+                'voxelsize': ('voxel_sizes', float),
+                'mask': (mask_coils, 'out_files'),
+                'in_file': (unwrap, 'out_file')},
+            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+
+        first_echo_time = pipeline.add(
+            'first_echo',
+            Select(
+                index=0),
+            inputs={
+                'inlist': ('echo_times', float)})
+
+        # Perform channel-wise QSM
+        coil_qsm = pipeline.add(
+            'coil_qsmrecon',
+            BatchQSMiLSQR(
+                mask_manip="{}>0",
+                padsize=self.parameter('qsm_padding')),
+            inputs={
+                'voxelsize': ('voxel_sizes', float),
+                'B0': ('main_field_strength', float),
+                'H': ('main_field_orient', float),
+                'in_file': (vsharp, 'out_file'),
+                'mask': (vsharp, 'new_mask'),
+                'te': (first_echo_time, 'out')},
+            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)],
+            wall_time=45)  # FIXME: Should be dependent on number of coils
+
+        # Combine channel QSM by taking the median coil value
+        pipeline.add(
+            'combine_qsm',
+            MedianInMasks(),
+            inputs={
+                'channels': (coil_qsm, 'out_file'),
+                'channel_masks': (vsharp, 'new_mask'),
+                'whole_brain_mask': (dialate, 'out_file')},
+            outputs={
+                'qsm': ('out_file', nifti_format)},
+            requirements=[matlab_req.v('r2017a')])
 
     def swi_pipeline(self, **name_maps):
 

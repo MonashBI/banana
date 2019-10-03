@@ -8,10 +8,10 @@ from banana.interfaces.sklearn import FastICA
 from banana.interfaces.ants import AntsRegSyn
 import os
 from banana.requirement import fsl_req, mrtrix_req
-from banana.interfaces.custom.pet import PreparePetDir
-from banana.interfaces.custom.dicom import PetTimeInfo
+from banana.interfaces.pet import PreparePetDir
+from banana.interfaces.dicom import PetTimeInfo
 from arcana.study import ParamSpec
-from banana.interfaces.custom.pet import (
+from banana.interfaces.pet import (
     PrepareUnlistingInputs, PETListModeUnlisting, SSRB, MergeUnlistingOutputs)
 from banana.requirement import stir_req
 from banana.exceptions import BananaUsageError

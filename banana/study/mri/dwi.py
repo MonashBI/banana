@@ -8,7 +8,7 @@ from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
-from banana.interfaces.custom.motion_correction import GenTopupConfigFiles
+from banana.interfaces.motion_correction import GenTopupConfigFiles
 from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
     MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
@@ -25,9 +25,9 @@ from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from banana.study import StudyMetaClass
-from banana.interfaces.custom.motion_correction import (
+from banana.interfaces.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
-from banana.interfaces.custom.dwi import TransformGradients
+from banana.interfaces.dwi import TransformGradients
 from banana.interfaces.utility import AppendPath
 from banana.study.base import Study
 from banana.bids_ import BidsInputs, BidsAssocInputs

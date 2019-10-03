@@ -2,7 +2,7 @@ from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
 from banana.file_format import (
     nifti_gz_format, directory_format, text_format, png_format, dicom_format,
     text_matrix_format, motion_mats_format)
-from banana.interfaces.custom.motion_correction import (
+from banana.interfaces.motion_correction import (
     MeanDisplacementCalculation, MotionFraming, PlotMeanDisplacementRC,
     AffineMatAveraging, PetCorrectionFactor, CreateMocoSeries, FixedBinning,
     UmapAlign2Reference, ReorientUmap)
@@ -19,7 +19,7 @@ from arcana.exceptions import ArcanaNameError
 from arcana.data import InputFilesets
 import logging
 from banana.study.pet.base import PetStudy
-from banana.interfaces.custom.pet import (
+from banana.interfaces.pet import (
     CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
     PETFovCropping)
 from arcana.study import ParamSpec, SwitchSpec

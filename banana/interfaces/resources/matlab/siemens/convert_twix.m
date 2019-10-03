@@ -39,7 +39,7 @@ end
 
 % Get Voxel size
 voxel_size = [0, 0, 0];
-slice_array = header.Phoenix.sSliceArray.asSlice{1}
+slice_array = header.Phoenix.sSliceArray.asSlice{1};
 voxel_size(1) = slice_array.dReadoutFOV / num_freq;
 voxel_size(2) = slice_array.dPhaseFOV / num_phase;
 voxel_size(3) = slice_array.dThickness / num_partitions;
@@ -51,7 +51,7 @@ elseif isfield(header.MeasYaps,'alTE')
     TE = [header.MeasYaps.alTE{1:num_echos}] * 1E-6;
 else
     disp('No header field for echo times');
-    TE = [0.0];
+    TE = 0.0;
 end
 B0_strength = header.Dicom.flMagneticFieldStrength;
 B0_dir = [0 0 1];
