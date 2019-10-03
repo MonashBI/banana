@@ -41,6 +41,7 @@ ksDataCalib = S.calib_scan;
 [CH, FE, PE, PAR, ECHO] = size(ksDataScan);
 I_PE = hdr.dims(2);
 I_PAR = hdr.dims(3);
+voxel_size = hdr.voxel_size
 
 %  ---- Handle Partial Fourier ---- %
 
@@ -122,18 +123,16 @@ end
 % Calculate combined magnitude, and real and imaginary images per
 % channel and save to nifti files
 mag = squeeze(sqrt(sum(sum(abs(Img_recon_ch).^2, 1), 5)));
-out_nii = make_nii(mag, voxel_size, [], [],...
-                    'Sum of squares magnitude average across echos');
+out_nii = make_nii(mag, voxel_size, [], [], 'Sum of squares magnitude average across echos');
 save_nii(out_nii, out_mag_file);
 
-for i=1:size(img_recon_ch, 1)
+for i=1:size(Img_recon_ch, 1)
     coil = squeeze(Img_recon_ch(i, :, :, :, :));
-    out_nii = make_nii(real(coil), voxel_size, [], [],...
-                        'Real image per coil');
+
+    out_nii = make_nii(real(coil), voxel_size, [], [], 'Real image per coil');
     save_nii(out_nii, sprintf('%s%sreal_%d.nii.gz', out_channels_dir, filesep, i));
 
-    out_nii = make_nii(imag(coil), voxel_size, [], [],...
-                        'Imaginary image per coil');
+    out_nii = make_nii(imag(coil), voxel_size, [], [], 'Imaginary image per coil');
     save_nii(out_nii, sprintf('%s%simaginary_c%d.nii.gz', out_channels_dir, filesep, i));
 end
     
