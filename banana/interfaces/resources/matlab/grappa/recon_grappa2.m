@@ -128,18 +128,9 @@ save_nii(out_nii, out_mag_file);
 
 for i=1:size(Img_recon_ch, 1)
     coil = squeeze(Img_recon_ch(i, :, :, :, :));
-<<<<<<< HEAD
     cmplx = concat(5, real(coil), imag(coil));
     out_nii = make_nii(cmplx, voxel_size, [], [], 'Complex coil image');
     save_nii(out_nii, sprintf('%s%s%d.nii.gz', out_channels_dir, filesep, i));
-=======
-
-    out_nii = make_nii(real(coil), voxel_size, [], [], 'Real image per coil');
-    save_nii(out_nii, sprintf('%s%sreal_%d.nii.gz', out_channels_dir, filesep, i));
-
-    out_nii = make_nii(imag(coil), voxel_size, [], [], 'Imaginary image per coil');
-    save_nii(out_nii, sprintf('%s%simaginary_c%d.nii.gz', out_channels_dir, filesep, i));
->>>>>>> fafcd02701417ed98ae5b3f3fe721bf78cfa235c
 end
     
 end
