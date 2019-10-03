@@ -161,7 +161,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'channel_combine',
                 HIPCombineChannels(),
                 inputs={
-                    'channels_dir': ('channels_dir', multi_nifti_gz_format)})
+                    'channels_dir': ('channels', multi_nifti_gz_format)})
 
             # Unwrap phase using Laplacian unwrapping
             unwrap = pipeline.add(
@@ -202,7 +202,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                         'qsm': ('qsm', nifti_format)},
                     requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
             else:
-                # Run QSM iLSQR
+                # Run QSM star
                 pipeline.add(
                     'qsmrecon',
                     QSMStar(

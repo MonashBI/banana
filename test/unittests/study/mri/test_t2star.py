@@ -10,7 +10,8 @@ class TestT2starDefault(StudyTester):
     study_class = T2starStudy
     inputs = ['kspace']
     dataset_name = op.join('study', 'mri', 't2star')
-    parameters = {}
+    parameters = {
+        'qsm_num_echos': 3}
 
 
 if __name__ == '__main__':

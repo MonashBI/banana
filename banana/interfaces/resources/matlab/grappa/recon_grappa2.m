@@ -25,11 +25,11 @@ arr_size = [hdr.num_channels, hdr.dims(1), hdr.dims(2), hdr.dims(3), hdr.num_ech
 
 % Read data files
 fid = fopen(data_file);
-ksDataScan = fread(fid, arr_size);
+ksDataScan = reshape(fread(fid), arr_size);
 fclose(fid);
 
 fid = fopen(ref_file);
-ksDataCalib = fread(fid, arr_size);
+ksDataCalib = reshape(fread(fid), arr_size);
 fclose(fid);
 
 [CH, FE, PE, PAR, ECHO] = size(ksDataScan);
