@@ -24,13 +24,19 @@ hdr = jsondecode(fileread(hdr_file));
 arr_size = [hdr.num_channels, hdr.dims(1), hdr.dims(2), hdr.dims(3), hdr.num_echos];
 
 % Read data files
-fid = fopen(data_file);
-ksDataScan = reshape(fread(fid), arr_size);
-fclose(fid);
+S = load(data_file);
+ksDataScan = S.data_scan;
 
-fid = fopen(ref_file);
-ksDataCalib = reshape(fread(fid), arr_size);
-fclose(fid);
+S = load(ref_file);
+ksDataCalib = S.calib_scan;
+
+% fid = fopen(data_file);
+% ksDataScan = reshape(fread(fid), arr_size);
+% fclose(fid);
+
+% fid = fopen(ref_file);
+% ksDataCalib = reshape(fread(fid), arr_size);
+% fclose(fid);
 
 [CH, FE, PE, PAR, ECHO] = size(ksDataScan);
 I_PE = hdr.dims(2);

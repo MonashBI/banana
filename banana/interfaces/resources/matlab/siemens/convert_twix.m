@@ -77,10 +77,14 @@ fprintf(fid, ']}');
 fclose(fid);
 
 % Save data and calibration scan to binary files
-fid = fopen(out_file, 'w');
-fwrite(fid, data_scan);
-fclose(fid);
+% fid = fopen(out_file, 'w');
+% fwrite(fid, data_scan);
+% fclose(fid);
 
-fid = fopen(out_ref, 'w');
-fwrite(fid, calib_scan);
-fclose(fid);
+save(out_file, 'data_scan', '-v7.3');
+
+% fid = fopen(out_ref, 'w');
+% fwrite(fid, calib_scan);
+% fclose(fid);
+
+save (out_ref, 'calib_scan', '-v7.3');
