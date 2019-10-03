@@ -183,8 +183,8 @@ class TwixReaderInputSpec(BaseMatlabInputSpec):
 
 class TwixReaderOutputSpec(BaseMatlabOutputSpec):
 
-    out_ref = File(exists=True, desc="Reference scan")
-    out_hdr = File(exists=True, desc="Header information in JSON format")
+    ref_file = File(exists=True, desc="Reference scan")
+    hdr_file = File(exists=True, desc="Header information in JSON format")
 
 
 class TwixReader(BaseMatlab):
@@ -201,19 +201,19 @@ class TwixReader(BaseMatlab):
         Generate script to load Siemens format k-space and save as Matlab
         arrays
         """
-        script = ("convert_twix('{in_file}', '{out_file}', '{out_ref}', "
-                  " '{out_hdr}');").format(
+        script = ("convert_twix('{in_file}', '{out_file}', '{ref_file}', "
+                  " '{hdr_file}');").format(
                       in_file=self.inputs.in_file,
                       out_file=self.out_file,
-                      out_ref=self.out_ref,
-                      out_hdr=self.out_hdr)
+                      ref_file=self.ref_file,
+                      hdr_file=self.hdr_file)
         return script
 
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_file'] = self.out_file
-        outputs['out_ref'] = self.out_ref
-        outputs['out_hdr'] = self.out_hdr
+        outputs['ref_file'] = self.ref_file
+        outputs['hdr_file'] = self.hdr_file
         return outputs
 
     @property
@@ -222,11 +222,11 @@ class TwixReader(BaseMatlab):
             op.join(self.work_dir, 'out_file.ks.dat')))
 
     @property
-    def out_ref(self):
+    def ref_file(self):
         return op.realpath(op.abspath(
             op.join(self.work_dir, 'out_file.ks.ref')))
 
     @property
-    def out_hdr(self):
+    def hdr_file(self):
         return op.realpath(op.abspath(
             op.join(self.work_dir, 'out_file.ks.json')))
