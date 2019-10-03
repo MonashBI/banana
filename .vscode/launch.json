@@ -12,6 +12,13 @@
             "console": "internalConsole",
             "args": ["--input_dir", "${workspaceFolder}/test/data/moco-test",
                      "--environment", "modules"]
+        },
+        {
+            "name": "Python: T2star Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/unittests/study/mri/test_t2star.py",
+            "console": "internalConsole",
         }
     ]
 }

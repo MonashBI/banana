@@ -8,7 +8,14 @@ from .matlab import BaseMatlab, BaseMatlabInputSpec, BaseMatlabOutputSpec
 class GrappaInputSpec(BaseMatlabInputSpec):
     in_file = File(
         exists=True, mandatory=True,
-        desc="Input file in custom kspace format (see matlab_kspace_format)")
+        desc="The data file of the 'custom_kspace_format'")
+    ref_file = File(
+        exists=True, mandatory=True,
+        desc="The reference file of the 'custom_kspace_format'")
+    hdr_file = File(
+        exists=True, mandatory=True,
+        desc=("The header file of the 'custom_kspace_format'"))
+
     acceleration = traits.Int(2, usedefault=True,
                               desc="The acceleration factor to use")
 
@@ -46,8 +53,8 @@ class Grappa(BaseMatlab):
                   "'{mag_file}', '{channels_dir}', {rpe}, 0);"
                   .format(
                       data_file=self.inputs.in_file,
-                      ref_file=self.ref_file,
-                      hdr_file=self.hdr_file,
+                      ref_file=self.inputs.ref_file,
+                      hdr_file=self.inputs.hdr_file,
                       mag_file=self.out_file,
                       channels_dir=self.channels_dir,
                       rpe=self.inputs.acceleration))
@@ -61,7 +68,7 @@ class Grappa(BaseMatlab):
 
     @property
     def channels_dir(self):
-        channels_dir = op.realpath(op.abspath(op.join(self.work_dir, 
+        channels_dir = op.realpath(op.abspath(op.join(self.work_dir,
                                                       'channels')))
         if not op.exists(channels_dir):
             os.makedirs(channels_dir)
@@ -71,11 +78,3 @@ class Grappa(BaseMatlab):
     def out_file(self):
         return op.realpath(op.abspath(
             op.join(self.work_dir, 'out_file.nii.gz')))
-
-    @property
-    def ref_file(self):
-        return split_extension(self.inputs.in_file)[0] + '.ref'
-
-    @property
-    def hdr_file(self):
-        return split_extension(self.inputs.in_file)[0] + '.json'

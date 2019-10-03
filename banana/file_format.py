@@ -44,6 +44,7 @@ class TwixConverter(Converter):
 
     input = 'in_file'
     output = 'out_file'
+    output_aux_files = {'ref': 'ref_file', 'json': 'hdr_file'}
     requirements = [matlab_req.v('R2018a')]
     interface = TwixReader()
 

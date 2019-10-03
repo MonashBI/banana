@@ -287,28 +287,18 @@ class MriStudy(Study, metaclass=StudyMetaClass):
             desc=("Reconstruct raw k-space file into magnitude and channel "
                   "images"))
 
-        recon = pipeline.add(
+        pipeline.add(
             'grappa',
             Grappa(
                 acceleration=self.parameter('grappa_acceleration'),
                 single_comp_thread=False),
             inputs={
-                'in_file': ('kspace', custom_kspace_format)},
+                'in_file': ('kspace', custom_kspace_format),
+                'ref_file': ('kspace', custom_kspace_format.aux('ref')),
+                'hdr_file': ('kspace', custom_kspace_format.aux('json'))},
             outputs={
                 'channels': ('channels_dir', multi_nifti_gz_format)},
             requirements=[matlab_req.v('R2018a')])
-
-        # WORKAROUND: Add a dummy node to connect the reference and header
-        # files to so they aren't cleaned up after the grappa node is run.
-        # Need to add the ability to explicitly connect auxiliary files
-        # to pipeline input/output nodes
-        pipeline.add(
-            'dummy',
-            IdentityInterface(
-                fields=['hdr', 'ref']),
-            inputs={
-                'hdr': (recon, 'hdr_file'),
-                'ref': (recon, 'ref_file')})
 
         return pipeline
 
