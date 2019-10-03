@@ -133,7 +133,7 @@ for i=1:size(Img_recon_ch, 1)
     save_nii(out_nii, sprintf('%s%sreal_%d.nii.gz', out_channels_dir, filesep, i));
 
     out_nii = make_nii(imag(coil), voxel_size, [], [], 'Imaginary image per coil');
-    save_nii(out_nii, sprintf('%s%simaginary_c%d.nii.gz', out_channels_dir, filesep, i));
+    save_nii(out_nii, sprintf('%s%simaginary_%d.nii.gz', out_channels_dir, filesep, i));
 end
     
 end
