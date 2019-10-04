@@ -109,7 +109,6 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                                                     nifti_gz_format))]
 
     add_param_specs = [
-        ParamSpec('qsm_num_echos', 1),
         MriStudy.param_spec('reorient_to_std').with_new_default(False),
         ParamSpec('qsm_echo', 1,
                   desc=("Which echo (by index starting at 1) to use when "

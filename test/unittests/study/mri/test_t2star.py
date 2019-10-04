@@ -6,13 +6,12 @@ from banana import InputFilesets
 from banana import ModulesEnv
 
 
-class TestT2starDefault(StudyTester):
+class TestT2star(StudyTester):
 
     study_class = T2starStudy
     inputs = ['kspace']
     dataset_name = op.join('study', 'mri', 't2star')
-    parameters = {
-        'qsm_num_echos': 3}
+    parameters = {}
 
 
 if __name__ == '__main__':
@@ -24,10 +23,8 @@ if __name__ == '__main__':
     set_loggers([('banana', 'INFO'), ('arcana', 'INFO'),
                  ('nipype.workflow', 'INFO')])
 
-    TestT2starDefault().generate_reference_data(
-        'qsm', environment=ModulesEnv(detect_exact_versions=False),
+    TestT2star().generate_reference_data(
+        environment=ModulesEnv(detect_exact_versions=False),
         prov_ignore=SingleProc.DEFAULT_PROV_IGNORE + [
             'workflow/nodes/.*/requirements/.*/version'],
         clean_work_dir_between_runs=False)
-    # ,
-    #     work_dir='/private/tmp/tmp6_sre8iy/')
