@@ -138,8 +138,13 @@ class StudyTester(TestCase):
             environment=environment,
             processor=processor)
         if not spec_names:
-            spec_names = study.data_spec_names()
-        study.data(*spec_names)
+            try:
+                skip_specs = self.skip_specs
+            except AttributeError:
+                skip_specs = ()
+            spec_names = [s.name for s in study.data_specs()
+                          if s.derived and s.name not in skip_specs]
+        study.data(spec_names)
 
 
 class PipelineTester(TestCase):

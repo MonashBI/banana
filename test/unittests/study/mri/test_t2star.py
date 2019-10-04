@@ -12,6 +12,7 @@ class TestT2star(StudyTester):
     inputs = ['kspace']
     dataset_name = op.join('study', 'mri', 't2star')
     parameters = {}
+    skip_specs = ['mag_coreg', 'brain_coreg', 'brain_mask_coreg']
 
 
 if __name__ == '__main__':
