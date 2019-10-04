@@ -64,7 +64,7 @@ class CoilEchoFilter():
 
 def calculate_delta_te(echo_times):
     "Get the time difference between echos in miliseconds"
-    return echo_times[1] - echo_times[0] * 1000
+    return (echo_times[1] - echo_times[0]) * 1000
 
 
 class T2starStudy(MriStudy, metaclass=StudyMetaClass):
@@ -83,7 +83,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     desc=("Quantitative susceptibility image resolved "
                           "from T2* coil images")),
-        
+        FilesetSpec('q', nifti_gz_format, 'qsm_pipeline',
+                    desc=("Quality check on coil combination")),
+        FilesetSpec('r2star', nifti_gz_format, 'qsm_pipeline',
+                    desc=("R2* contrast image")),
         # Vein analysis
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
@@ -113,7 +116,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                         "using single echo")),
         ParamSpec('qsm_padding', [12, 12, 12]),
         ParamSpec('qsm_mask_dialation', [11, 11, 11]),
-        ParamSpec('qsm_erosion_size', 10),
+        ParamSpec('qsm_me_erosion_size', 4),
+        ParamSpec('qsm_se_erosion_size', 10),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', False),
         ParamSpec('bet_f_threshold', 0.1),
@@ -143,17 +147,6 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite])
 
-        pipeline.add(
-            'mask_erosion',
-            fsl.ErodeImage(
-                kernel_shape='sphere',
-                kernel_size=self.parameter('qsm_erosion_size'),
-                output_type='NIFTI'),
-            inputs={
-                'in_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')],
-            wall_time=15, mem_gb=12)
-
         # If we have multiple echoes we can combine the phase images from
         # each channel into a single image. Otherwise for single echo sequences
         # we need to perform QSM on each coil separately and then combine
@@ -170,7 +163,11 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             'channel_combine',
             HIPCombineChannels(),
             inputs={
-                'channels_dir': ('channels', multi_nifti_gz_format)})
+                'channels_dir': ('channels', multi_nifti_gz_format),
+                'echo_times': ('echo_times', float)},
+            outputs={
+                'r2star': ('r2star', nifti_gz_format),
+                'q': ('q', nifti_gz_format)})
 
         # Unwrap phase using Laplacian unwrapping
         unwrap = pipeline.add(
@@ -187,12 +184,13 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         vsharp = pipeline.add(
             "vsharp",
             VSharp(
-                mask_manip="imerode({}>0, ball(5))",
+                mask_manip="imerode({{}}>0, ball({}))".format(
+                    self.parameter('qsm_me_erosion_size')),
                 single_comp_thread=False),
             inputs={
                 'voxelsize': ('voxel_sizes', float),
                 'in_file': (unwrap, 'out_file'),
-                'mask': (pipeline.node('mask_erosion'), 'out_file')},
+                'mask': ('brain_mask', nifti_gz_format)},
             requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
         delta_te = pipeline.add(
@@ -223,13 +221,25 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
     def _construct_single_echo_qsm_pipeline(self, pipeline):
+
+        erosion = pipeline.add(
+            'mask_erosion',
+            fsl.ErodeImage(
+                kernel_shape='sphere',
+                kernel_size=self.parameter('qsm_se_erosion_size'),
+                output_type='NIFTI'),
+            inputs={
+                'in_file': ('brain_mask', nifti_gz_format)},
+            requirements=[fsl_req.v('5.0.8')],
+            wall_time=15, mem_gb=12)
+
         # Dialate eroded mask
         dialate = pipeline.add(
             'dialate',
             DialateMask(
                 dialation=self.parameter('qsm_mask_dialation')),
             inputs={
-                'in_file': (pipeline.node('mask_erosion'), 'out_file')},
+                'in_file': (erosion, 'out_file')},
             requirements=[matlab_req.v('r2017a')])
 
         to_polar = pipeline.add(

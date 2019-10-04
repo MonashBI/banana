@@ -127,6 +127,7 @@ class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
     magnitude = File(genfile=True, desc="Combined magnitude image")
     phase = File(genfile=True, desc="Combined phase image")
     q = File(genfile=True, desc="Q image")
+    r2star = File(genfile=True, desc="R2* image")
     echo_times = traits.List(traits.Float, mandatory=True, desc="Echo times")
 
 
@@ -135,6 +136,7 @@ class HIPCombineChannelsOutputSpec(TraitedSpec):
     magnitude = File(exists=True, desc="Combined magnitude image")
     phase = File(exists=True, desc="Combined phase image")
     q = File(exists=True, desc="Q image")
+    r2star = File(exists=True, desc="The R2* image of the combined coils")
 
 
 class HIPCombineChannels(BaseInterface):
@@ -177,9 +179,8 @@ class HIPCombineChannels(BaseInterface):
                 hip += mag_a * mag_b * np.exp(-1j * (phase_a - phase_b))
                 sum_mag += mag_a * mag_b
             # Calculate R2*
-            sum_echo_mags = np.sum(cmplx_coil, axis=3)
-            r2star += (sum_echo_mags
-                       * arlo(self.inputs.echo_times, sum_echo_mags))
+            sum_echo_mags = np.sum(mag_coil, axis=3)
+            r2star += sum_echo_mags * arlo(self.inputs.echo_times, mag_coil)
             mag += sum_echo_mags
         if hip is None:
             raise BananaUsageError(
@@ -193,14 +194,17 @@ class HIPCombineChannels(BaseInterface):
         outputs['phase'] = self._gen_filename('phase')
         outputs['magnitude'] = self._gen_filename('magnitude')
         outputs['q'] = self._gen_filename('q')
+        outputs['r2star'] = self._gen_filename('r2star')
         # Create NIfTI images
         phase_img = nib.Nifti1Image(phase, img.affine, img.header)
         mag_img = nib.Nifti1Image(mag, img.affine, img.header)
         q_img = nib.Nifti1Image(q, img.affine, img.header)
+        r2star_img = nib.Nifti1Image(r2star, img.affine, img.header)
         # Save NIfTIs
         nib.save(phase_img, outputs['phase'])
         nib.save(mag_img, outputs['magnitude'])
         nib.save(q_img, outputs['q'])
+        nib.save(r2star_img, outputs['r2star'])
         return outputs
 
     def _gen_filename(self, name):
@@ -214,6 +218,9 @@ class HIPCombineChannels(BaseInterface):
         elif name == 'q':
             fname = op.abspath(self.inputs.q if isdefined(self.inputs.q)
                                else 'q')
+        elif name == 'r2star':
+            fname = op.abspath(self.inputs.r2star
+                               if isdefined(self.inputs.r2star) else 'r2star')
         else:
             assert False
         if fname.endswith('.nii'):
@@ -276,7 +283,8 @@ def arlo(te, y):
         echo2 = y[:, :, :, j + 2]
 
         # [te[j+2]-te[j]-alpha+gamma alpha-beta-gamma beta]/((te[2]-te[1])/3)
-        y1 = echo0 * (te[j + 2] - te[j] - alpha + gamma) + echo1 * (alpha - beta - gamma) + echo2 * beta
+        y1 = (echo0 * (te[j + 2] - te[j] - alpha + gamma)
+              + echo1 * (alpha - beta - gamma) + echo2 * beta)
         x1 = echo0 - echo2
 
         yy = yy + y1 * y1
