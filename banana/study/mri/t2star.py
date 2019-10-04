@@ -147,17 +147,6 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             desc="Resolve QSM from t2star coils",
             citations=[sti_cites, fsl_cite, matlab_cite])
 
-        # If we have multiple echoes we can combine the phase images from
-        # each channel into a single image. Otherwise for single echo sequences
-        # we need to perform QSM on each coil separately and then combine
-        # afterwards.
-        if self.parameter('qsm_num_echos') > 1:
-            self._construct_multi_echo_qsm_pipeline(pipeline)
-        else:
-            self._construct_single_echo_qsm_pipeline(pipeline)
-        return pipeline
-
-    def _construct_multi_echo_qsm_pipeline(self, pipeline):
         # Combine channels to produce phase and magnitude images
         channel_combine = pipeline.add(
             'channel_combine',
@@ -219,6 +208,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             outputs={
                 'qsm': ('out_file', nifti_gz_format)},
             requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
+
+        return pipeline
 
     def _construct_single_echo_qsm_pipeline(self, pipeline):
 
