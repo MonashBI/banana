@@ -119,13 +119,15 @@ class StudyTester(TestCase):
         return {i: i for i in self.inputs}  # pylint: disable=no-member
 
     def generate_reference_data(self, *spec_names, processor=None,
-                                environment=None, **kwargs):
+                                work_dir=None, environment=None, **kwargs):
         """
         Generates reference data and provenance against which the unittests
         are run against
         """
+        if work_dir is None:
+            work_dir = tempfile.mkdtemp()
         if processor is None:
-            processor = SingleProc(work_dir=tempfile.mkdtemp(), **kwargs)
+            processor = SingleProc(work_dir=work_dir, **kwargs)
         if environment is None:
             environment = StaticEnv()
         study = self.study_class(  # pylint: disable=no-member

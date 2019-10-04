@@ -276,6 +276,60 @@ class NiftixHeaderInfoExtraction(BaseInterface):
         return outputs
 
 
+class KspaceHeaderInfoExtractionInputSpec(BaseInterfaceInputSpec):
+
+    header = File(exists=True,
+                  desc='JSON side-car file containing header info',
+                  mandatory=False)
+
+
+class KspaceHeaderInfoExtractionOutputSpec(TraitedSpec):
+
+    tr = traits.Float(desc='Repetition time.')
+    echo_times = traits.List(traits.Float(), desc='Echo times')
+    voxel_sizes = traits.List(traits.Float(), desc="Voxel sizes")
+    H = traits.List((traits.Float(), traits.Float(), traits.Float),
+                    desc="Main magnetic field ")
+    B0 = traits.Float(desc="Main magnetic field strength")
+    start_time = traits.Float(desc='Scan start time.')
+    real_duration = traits.Float(
+        desc=('For 4D files, this will be the number of '
+              'volumes multiplied by the TR.'))
+    total_duration = traits.Float(
+        desc='Scan duration as extracted from the header.')
+    ped = traits.Str(desc='Phase encoding direction.')
+    pe_angle = traits.Float(desc='Phase angle.')
+    ref_motion_mats = Directory(desc='folder with the reference motion mats')
+
+
+class KspaceHeaderInfoExtraction(BaseInterface):
+
+    input_spec = KspaceHeaderInfoExtractionInputSpec
+    output_spec = KspaceHeaderInfoExtractionOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+
+        outputs = self._outputs().get()
+        with open(self.inputs.header) as f:
+            dct = json.load(f)
+        # Save extracted values to output dictionary
+        outputs['start_time'] = 0.0
+        outputs['tr'] = 0.0
+        outputs['echo_times'] = dct['TE']
+        outputs['voxel_sizes'] = dct['voxel_size']
+        outputs['H'] = dct['B0_dir']
+        outputs['B0'] = dct['B0_strength']
+        outputs['total_duration'] = 0.0
+        outputs['real_duration'] = 0.0
+        outputs['ped'] = ''
+        outputs['pe_angle'] = 0.0
+
+        return outputs
+
+
 class ScanTimesInfoInputSpec(BaseInterfaceInputSpec):
 
     dicom_infos = traits.List(desc='List of dicoms to calculate the difference'

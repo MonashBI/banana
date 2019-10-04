@@ -8,7 +8,7 @@ import os.path as op
 from banana.interfaces import MATLAB_RESOURCES
 from .base import (
     BaseStiCommand, UnwrapPhase, VSharp, QSMiLSQR,
-    UnwrapPhaseInputSpec, VSharpInputSpec, QSMiLSQRInputSpec,
+    UnwrapPhaseInputSpec, VSharpInputSpec, QSMInputSpec,
     UnwrapPhaseOutputSpec, VSharpOutputSpec, QSMOutputSpec)
 
 
@@ -109,7 +109,7 @@ class BatchVSharp(BaseBatchStiCommand, VSharp):
     output_spec = BatchVSharpOutputSpec
 
 
-class BatchQSMiLSQRInputSpec(QSMiLSQRInputSpec):
+class BatchQSMiLSQRInputSpec(QSMInputSpec):
 
     in_file = traits.List(
         File(exists=True), mandatory=True, argpos=0,

@@ -3,6 +3,7 @@ import banana.interfaces
 from nipype.interfaces.base import (
     TraitedSpec, traits, BaseInterface, BaseInterfaceInputSpec, File,
     Directory)
+from .matlab import BaseMatlab, BaseMatlabInputSpec, BaseMatlabOutputSpec
 import os
 import os.path as op
 

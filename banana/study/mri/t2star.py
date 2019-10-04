@@ -1,7 +1,7 @@
 import re
 from logging import getLogger
 from nipype.interfaces import fsl, ants
-from nipype.interfaces.utility import Select
+from nipype.interfaces.utility import Select, Function
 from arcana.study import StudyMetaClass
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils import get_class_info
@@ -13,7 +13,6 @@ from banana.interfaces.vein_analysis import (
 from banana.interfaces.sti import (
     UnwrapPhase, VSharp, QSMiLSQR, QSMStar, BatchUnwrapPhase, BatchVSharp,
     BatchQSMiLSQR)
-
 from banana.interfaces.coils import HIPCombineChannels, ToPolarCoords
 from banana.interfaces.mask import (
     DialateMask, MaskCoils, MedianInMasks)
@@ -63,6 +62,11 @@ class CoilEchoFilter():
                 'echo': self._echo}
 
 
+def calculate_delta_te(echo_times):
+    "Get the time difference between echos in miliseconds"
+    return echo_times[1] - echo_times[0] * 1000
+
+
 class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
     desc = "T2*-weighted MRI contrast"
@@ -79,6 +83,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     desc=("Quantitative susceptibility image resolved "
                           "from T2* coil images")),
+        
         # Vein analysis
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
@@ -131,11 +136,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def qsm_pipeline(self, **name_maps):
-        """
-        Process dual echo data for QSM (TE=[7.38, 22.14])
 
-        NB: Default values come from the STI-Suite
-        """
         pipeline = self.new_pipeline(
             name='qsm_pipeline',
             name_maps=name_maps,
@@ -175,55 +176,51 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         unwrap = pipeline.add(
             'unwrap',
             UnwrapPhase(
-                padsize=self.parameter('qsm_padding')),
+                padsize=self.parameter('qsm_padding'),
+                single_comp_thread=False),
             inputs={
                 'voxelsize': ('voxel_sizes', float),
                 'in_file': (channel_combine, 'phase')},
-            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+            requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
         # Remove background noise
         vsharp = pipeline.add(
             "vsharp",
             VSharp(
-                mask_manip="imerode({}>0, ball(5))"),
+                mask_manip="imerode({}>0, ball(5))",
+                single_comp_thread=False),
             inputs={
                 'voxelsize': ('voxel_sizes', float),
                 'in_file': (unwrap, 'out_file'),
-                'mask': (pipeline.node('erosion'), 'out_file')},
-            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+                'mask': (pipeline.node('mask_erosion'), 'out_file')},
+            requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
-        if self.parameter('qsm_num_echos') == 2:
-            # Run QSM iLSQR
-            pipeline.add(
-                'qsmrecon',
-                QSMiLSQR(
-                    mask_manip="{}>0",
-                    padsize=self.parameter('qsm_padding')),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'te': ('echo_times', float),
-                    'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float),
-                    'in_file': (vsharp, 'out_file'),
-                    'mask': (vsharp, 'new_mask')},
-                outputs={
-                    'qsm': ('qsm', nifti_format)},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-        else:
-            # Run QSM star
-            pipeline.add(
-                'qsmrecon',
-                QSMStar(
-                    padsize=self.parameter('qsm_padding')),
-                inputs={
-                    'voxelsize': ('voxel_sizes', float),
-                    'te': ('echo_times', float),
-                    'B0': ('main_field_strength', float),
-                    'H': ('main_field_orient', float),
-                    'in_file': (vsharp, 'out_file')},
-                outputs={
-                    'qsm': ('qsm', nifti_format)},
-                requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
+        delta_te = pipeline.add(
+            "delta_te",
+            Function(
+                input_names=['echo_times'],
+                output_names=['delta_te'],
+                function=calculate_delta_te),
+            inputs={
+                'echo_times': ('echo_times', float)})
+
+        # Run QSM star
+        pipeline.add(
+            'qsmrecon',
+            QSMStar(
+                padsize=self.parameter('qsm_padding'),
+                mask_manip="{}>0",
+                single_comp_thread=False),
+            inputs={
+                'voxelsize': ('voxel_sizes', float),
+                'mask': (vsharp, 'new_mask'),
+                'TE': (delta_te, 'delta_te'),
+                'B0': ('main_field_strength', float),
+                'H': ('main_field_orient', float),
+                'in_file': (vsharp, 'out_file')},
+            outputs={
+                'qsm': ('out_file', nifti_gz_format)},
+            requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
     def _construct_single_echo_qsm_pipeline(self, pipeline):
         # Dialate eroded mask
@@ -232,7 +229,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
             DialateMask(
                 dialation=self.parameter('qsm_mask_dialation')),
             inputs={
-                'in_file': (pipeline.node('erosion'), 'out_file')},
+                'in_file': (pipeline.node('mask_erosion'), 'out_file')},
             requirements=[matlab_req.v('r2017a')])
 
         to_polar = pipeline.add(

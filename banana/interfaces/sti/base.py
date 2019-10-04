@@ -114,7 +114,7 @@ class BaseStiCommand(MatlabCommand):
             script += "{}_img = {}_img;\n".format(
                 name, trait.header_from)
             script += "{name}_img.img = {name};\n".format(name=name)
-            script += "save_untouch_nii({}_img, '{}.nii');\n".format(
+            script += "save_untouch_nii({}_img, '{}.nii.gz');\n".format(
                 name, op.join(cwd, self._output_fname(name, **kwargs)))
         return script
 
@@ -225,20 +225,25 @@ class QSMInputSpec(BaseStiInputSpec):
 
     in_file = File(exists=True, mandatory=True, argpos=0,
                    desc="Input file to unwrap")
+    mask = File(exists=True, mandatory=True, argpos=1,
+                desc="Input file to unwrap", format_str='mask_manip')
+    mask_manip = traits.Str(
+        desc=("The format string used to manipulate the mask before it is "
+              "passed as an argument to the function"))
     voxelsize = traits.List([traits.Float(), traits.Float(), traits.Float()],
-                            mandatory=True, in_struct='params',
+                            mandatory=True,  keyword=True,
                             desc="Voxel size of the image")
     padsize = traits.List([12, 12, 12],
                           (traits.Int(), traits.Int(), traits.Int()),
-                          usedefault=True, in_struct='params',
+                          usedefault=True, keyword=True,
                           desc="Padding size for each dimension")
-    te = traits.Float(mandatory=True, desc="TE time of acquisition protocol",
-                      in_struct='params')
-    B0 = traits.Float(mandatory=True, desc="B0 field strength",
-                      in_struct='params')
+    TE = traits.Float(
+        mandatory=True, keyword=True,
+        desc="Time difference between echos in miliseconds")
+    B0 = traits.Float(mandatory=True, keyword=True, desc="B0 field strength")
     H = traits.List((traits.Float(), traits.Float(), traits.Float()),
-                    mandatory=True, desc="Direction of the B0 field",
-                    in_struct='params')
+                    mandatory=True, keyword=True,
+                    desc="Direction of the B0 field")
 
 
 class QSMOutputSpec(BaseStiOutputSpec):
@@ -254,17 +259,6 @@ class QSMStar(BaseStiCommand):
     output_spec = QSMOutputSpec
 
 
-class QSMiLSQRInputSpec(QSMInputSpec):
-
-    mask = File(exists=True, mandatory=True, argpos=1,
-                desc="Input file to unwrap", format_str='mask_manip')
-    mask_manip = traits.Str(
-        desc=("The format string used to manipulate the mask before it is "
-              "passed as an argument to the function"))
-
-
-class QSMiLSQR(BaseStiCommand):
+class QSMiLSQR(QSMStar):
 
     func = 'QSM_iLSQR'
-    input_spec = QSMiLSQRInputSpec
-    output_spec = QSMOutputSpec

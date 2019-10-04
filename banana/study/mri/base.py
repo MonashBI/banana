@@ -15,7 +15,8 @@ from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
 from banana.study import Study, StudyMetaClass
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.dicom import (
-    DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction)
+    DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction,
+    KspaceHeaderInfoExtraction)
 from banana.interfaces.fsl import FSLSlices
 from banana.interfaces.ants import AntsRegSyn
 from banana.interfaces.kspace import Grappa
@@ -246,8 +247,15 @@ class MriStudy(Study, metaclass=StudyMetaClass):
     def header_image_spec_name(self):
         if self.provided('header_image'):
             hdr_name = 'header_image'
-        else:
+        elif self.provided(self.primary_scan_name, default_okay=False):
             hdr_name = self.primary_scan_name
+        elif self.provided('kspace'):
+            hdr_name = 'kspace'
+        else:
+            raise BananaUsageError(
+                "No input scan with header information was provided "
+                "(can be either 'header_image', '{}' or 'kspace')".format(
+                    self.primary_scan_name))
         return hdr_name
 
     @property
@@ -1110,6 +1118,23 @@ class MriStudy(Study, metaclass=StudyMetaClass):
                 inputs={
                     'in_file': (self.header_image_spec_name,
                                 nifti_gz_x_format)},
+                outputs={
+                    'tr': ('tr', float),
+                    'start_time': ('start_time', str),
+                    'total_duration': ('total_duration', str),
+                    'real_duration': ('real_duration', str),
+                    'ped': ('ped', str),
+                    'pe_angle': ('pe_angle', str),
+                    'echo_times': ('echo_times', float),
+                    'voxel_sizes': ('voxel_sizes', float),
+                    'main_field_strength': ('B0', float),
+                    'main_field_orient': ('H', float)})
+        elif input_format in KSPACE_FORMATS:
+            pipeline.add(
+                'hd_info_extraction',
+                KspaceHeaderInfoExtraction(),
+                inputs={
+                    'header': ('kspace', custom_kspace_format.aux('json'))},
                 outputs={
                     'tr': ('tr', float),
                     'start_time': ('start_time', str),
