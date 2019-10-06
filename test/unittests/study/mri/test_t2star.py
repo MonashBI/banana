@@ -9,10 +9,10 @@ from banana import ModulesEnv
 class TestT2star(StudyTester):
 
     study_class = T2starStudy
-    inputs = ['kspace']
+    inputs = ['kspace', 'coreg_ref']
     dataset_name = op.join('study', 'mri', 't2star')
     parameters = {}
-    skip_specs = ['mag_coreg', 'brain_coreg', 'brain_mask_coreg']
+    skip_specs = ['swi']
 
 
 if __name__ == '__main__':
