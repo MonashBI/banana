@@ -7,7 +7,7 @@ from banana.exceptions import BananaRuntimeError
 import os.path as op
 from banana.interfaces import MATLAB_RESOURCES
 from .base import (
-    BaseStiCommand, UnwrapPhase, VSharp, QSMiLSQR,
+    BaseStiCommand, UnwrapPhase, VSharp, QsmILSQR,
     UnwrapPhaseInputSpec, VSharpInputSpec, QSMInputSpec,
     UnwrapPhaseOutputSpec, VSharpOutputSpec, QSMOutputSpec)
 
@@ -109,7 +109,7 @@ class BatchVSharp(BaseBatchStiCommand, VSharp):
     output_spec = BatchVSharpOutputSpec
 
 
-class BatchQSMiLSQRInputSpec(QSMInputSpec):
+class BatchQsmILSQRInputSpec(QSMInputSpec):
 
     in_file = traits.List(
         File(exists=True), mandatory=True, argpos=0,
@@ -126,7 +126,7 @@ class BatchQSMOutputSpec(QSMOutputSpec):
         desc="Unwrapped phase images", header_from='in_file')
 
 
-class BatchQSMiLSQR(BaseBatchStiCommand, QSMiLSQR):
+class BatchQsmILSQR(BaseBatchStiCommand, QsmILSQR):
 
-    input_spec = BatchQSMiLSQRInputSpec
+    input_spec = BatchQsmILSQRInputSpec
     output_spec = BatchQSMOutputSpec

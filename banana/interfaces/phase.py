@@ -17,109 +17,7 @@ from banana.exceptions import BananaUsageError
 logger = logging.getLogger('banana')
 
 
-class ToPolarCoordsInputSpec(BaseInterfaceInputSpec):
-    channels = traits.List(File(exists=True), mandatory=True,
-                           desc=("List of channels to "))
-    squeeze = traits.Bool(
-        False, usedefault=True,
-        desc="Whether to squeeze output arrays to remove singleton dims")
-
-
-class ToPolarCoordsOutputSpec(TraitedSpec):
-    channel_mags = traits.List(
-        File(exists=True),
-        desc=("List of magnitude images for each coil for each echo"))
-    channel_phases = traits.List(
-        File(exists=True),
-        desc=("List of phase images for each coil for each echo"))
-
-
-class ToPolarCoords(BaseInterface):
-    """
-    Takes all REAL and IMAGINARY pairs in current directory and prepares
-    them for Phase and QSM processing.
-
-    1. Existence of pairs is checked
-    2. Files are load/save cycled for formatting and rename for consistency
-    3. Magnitude and Phase components are produced
-    4. Coils are combined for single magnitude images per echo
-    """
-    input_spec = ToPolarCoordsInputSpec
-    output_spec = ToPolarCoordsOutputSpec
-
-    def _run_interface(self, runtime):
-        return runtime
-
-    def _list_outputs(self):
-        outputs = self._outputs().get()
-        # Get names for output directories
-        channel_mags = outputs['channel_mags'] = []
-        channel_phases = outputs['channel_phases'] = []
-
-        for channel_i, axes in paths.items():
-            # Load image real and imaginary data and remove extreme values
-            img_arrays = {}
-            for ax, fname in axes.items():
-                img = nib.load(fname)
-                img_array = img.get_fdata()
-                # Replace extreme values with random value
-                img_array[img_array == 2048] = 0.02 * np.random.rand()
-                img_arrays[ax] = img_array
-
-            # Calculate magnitude and phase from coil data
-            cmplx = (img_arrays[self.inputs.real_label]
-                     + img_arrays[self.inputs.imaginary_label] * 1j)
-
-            # Calculate and save magnitude image
-            mag_array = np.abs(cmplx)
-            for echo_i in range(mag_array.shape[4]):
-                mag_img = nib.Nifti1Image(mag_array, img.affine, img.header)
-                mag_path = op.join(
-                    mags_dir,
-                    self.inputs.out_fname_str.format(channel=channel_i,
-                                                    echo=echo_i))
-                echo_coil_mags.append(mag_path)
-                nib.save(mag_img, mag_path)
-
-            # Save phase image
-            phase_array = np.angle(cmplx)
-            phase_img = nib.Nifti1Image(phase_array, img.affine,
-                                        img.header)
-            phase_path = op.join(
-                phases_dir,
-                self.inputs.out_fname_str.format(channel=channel_i,
-                                                    echo=echo_i))
-            echo_coil_phases.append(phase_path)
-            nib.save(phase_img, phase_path)
-
-            # Add coil data to combined coil data
-            if combined_array is None:
-                combined_array = deepcopy(mag_array) ** 2
-                normaliser_array = deepcopy(mag_array)
-            else:
-                combined_array += mag_array ** 2
-                normaliser_array += mag_array
-        return outputs
-
-    def _gen_filename(self, name):
-        if name == 'combined_dir':
-            fname = op.abspath(self.inputs.combined_dir
-                               if isdefined(self.inputs.combined_dir)
-                               else 'combined_images')
-        elif name == 'magnitudes_dir':
-            fname = op.abspath(self.inputs.magnitudes_dir
-                               if isdefined(self.inputs.magnitudes_dir)
-                               else 'magnitudes_dir')
-        elif name == 'phases_dir':
-            fname = op.abspath(self.inputs.phases_dir
-                               if isdefined(self.inputs.phases_dir)
-                               else 'phases_dir')
-        else:
-            assert False
-        return fname
-
-
-class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
+class HipCombineChannelsInputSpec(BaseInterfaceInputSpec):
 
     channels_dir = Directory(exists=True, desc=(
         "Input directory containing real and imaginary images for each "
@@ -131,7 +29,7 @@ class HIPCombineChannelsInputSpec(BaseInterfaceInputSpec):
     echo_times = traits.List(traits.Float, mandatory=True, desc="Echo times")
 
 
-class HIPCombineChannelsOutputSpec(TraitedSpec):
+class HipCombineChannelsOutputSpec(TraitedSpec):
 
     magnitude = File(exists=True, desc="Combined magnitude image")
     phase = File(exists=True, desc="Combined phase image")
@@ -139,12 +37,12 @@ class HIPCombineChannelsOutputSpec(TraitedSpec):
     r2star = File(exists=True, desc="The R2* image of the combined coils")
 
 
-class HIPCombineChannels(BaseInterface):
+class HipCombineChannels(BaseInterface):
     """
     Apply Laplacian unwrapping from STI suite to each coil
     """
-    input_spec = HIPCombineChannelsInputSpec
-    output_spec = HIPCombineChannelsOutputSpec
+    input_spec = HipCombineChannelsInputSpec
+    output_spec = HipCombineChannelsOutputSpec
 
     def _run_interface(self, runtime):
         return runtime
@@ -161,6 +59,11 @@ class HIPCombineChannels(BaseInterface):
                 r2star = np.zeros(img_data.shape[:3])
                 mag = np.zeros(img_data.shape[:3])
             num_echos = img_data.shape[3]
+            if len(self.inputs.echo_times) != num_echos:
+                raise BananaUsageError(
+                    "Number of echos differs from provided dataset ({}) and "
+                    "echo times ({})".format(num_echos,
+                                             self.inputs.echo_times))
             if num_echos < 2:
                 raise BananaUsageError(
                     "At least two echos required for channel magnitude {}, "
@@ -297,3 +200,63 @@ def arlo(te, y):
     # Set NaN and inf values to 0.0
     r2[~np.isfinite(r2)] = 0.0
     return r2
+
+
+class SwiInputSpec(BaseInterfaceInputSpec):
+
+    magnitude = File(genfile=True, desc="Magnitude image")
+    tissue_phase = File(genfile=True, desc="The brain extracted phase image")
+    mask = File(genfile=True, desc="The in which to use the phase image")
+    out_file = File(genfile=True, desc="Path for generated SWI image")
+    alpha = traits.Int(4, usedefault=True,
+                       desc="The power which the phase image is raised to")
+
+
+class SwiOutputSpec(TraitedSpec):
+
+    out_file = File(exists=True, desc="SWI contrast image")
+
+
+class Swi(BaseInterface):
+    """
+    Generate Susceptibiliy weighted from phase and magnitude
+    """
+    input_spec = SwiInputSpec
+    output_spec = SwiOutputSpec
+
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        mag_img = nib.load(self.inputs.magnitude)
+        tissue_phase_img = nib.load(self.inputs.tissue_phase)
+        mask_img = nib.load(self.inputs.mask)
+        mag = mag_img.get_fdata()
+        tissue_phase = tissue_phase_img.get_fdata()
+        mask = mask_img.get_fdata()
+        if mag.shape != tissue_phase.shape:
+            raise BananaUsageError(
+                "Dimensions of provided magnitude and phase images "
+                "differ ({} and {})".format(mag.shape, tissue_phase.shape))
+        pos_mask = np.where(tissue_phase > 0) * mask  # Positive phase mask
+        rho = np.ones(tissue_phase.shape)
+        rho[pos_mask] = np.max(0, np.pi - (tissue_phase[pos_mask] / np.pi))
+        swi = mag * (rho ** self.inputs.alpha)
+        # Set filenames in output spec
+        outputs['out_file'] = self._gen_filename('out_file')
+        out_file_img = nib.Nifti1Image(swi, mag_img.affine, mag_img.header)
+        nib.save(out_file_img, outputs['out_file'])
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'swi':
+            fname = op.abspath(self.inputs.swi if isdefined(self.inputs.swi)
+                               else 'swi')
+        else:
+            assert False
+        if fname.endswith('.nii'):
+            fname += '.gz'
+        elif not fname.endswith('nii.gz'):
+            fname += '.nii.gz'
+        return fname

@@ -1,2 +1,2 @@
-from .base import VSharp, UnwrapPhase, QSMiLSQR, QSMStar
-from .batch import BatchVSharp, BatchUnwrapPhase, BatchQSMiLSQR
+from .base import VSharp, UnwrapPhase, QsmILSQR, QsmStar
+from .batch import BatchVSharp, BatchUnwrapPhase, BatchQsmILSQR

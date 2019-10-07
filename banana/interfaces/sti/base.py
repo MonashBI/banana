@@ -252,13 +252,13 @@ class QSMOutputSpec(BaseStiOutputSpec):
                     header_from='in_file')
 
 
-class QSMStar(BaseStiCommand):
+class QsmStar(BaseStiCommand):
 
     func = 'QSM_star'
     input_spec = QSMInputSpec
     output_spec = QSMOutputSpec
 
 
-class QSMiLSQR(QSMStar):
+class QsmILSQR(QsmStar):
 
     func = 'QSM_iLSQR'

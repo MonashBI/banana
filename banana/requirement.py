@@ -56,6 +56,11 @@ class C3dRequirement(CliRequirement):
         return version_str
 
 
+    # Paul A. Yushkevich, Joseph Piven, Heather Cody Hazlett, Rachel Gimpel Smith, Sean Ho, James C. Gee, and Guido Gerig. User-guided 3D active contour segmentation of anatomical structures: Significantly improved efficiency and reliability. Neuroimage. 2006 Jul 1
+    # 31(3): 1116-28.
+    # [bibtex][medline][doi:10.1016/j.neuroimage.2006.01.015]
+
+
 class FreesurferRequirement(CliRequirement):
 
     def detect_version_str(self):

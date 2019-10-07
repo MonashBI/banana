@@ -11,7 +11,8 @@ class TestT2star(StudyTester):
     study_class = T2starStudy
     inputs = ['kspace', 'coreg_ref']
     dataset_name = op.join('study', 'mri', 't2star')
-    parameters = {}
+    parameters = {
+        'mni_tmpl_resolution': 1}
     skip_specs = ['swi']
 
 

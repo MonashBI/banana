@@ -11,9 +11,9 @@ from arcana.utils.interfaces import Merge
 from banana.interfaces.vein_analysis import (
     CompositeVeinImage, ShMRF)
 from banana.interfaces.sti import (
-    UnwrapPhase, VSharp, QSMiLSQR, QSMStar, BatchUnwrapPhase, BatchVSharp,
-    BatchQSMiLSQR)
-from banana.interfaces.coils import HIPCombineChannels, ToPolarCoords
+    UnwrapPhase, VSharp, QsmILSQR, QsmStar, BatchUnwrapPhase, BatchVSharp,
+    BatchQsmILSQR)
+from banana.interfaces.phase import HipCombineChannels, Swi
 from banana.interfaces.mask import (
     DialateMask, MaskCoils, MedianInMasks)
 from banana.requirement import (fsl_req, matlab_req, ants_req, sti_req)
@@ -79,14 +79,20 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                     desc=("Generated from separate channel signals, "
                           "provided to 'channels'.")),
         # QSM and phase processing
+        FilesetSpec('phase_mask', nifti_gz_format, 'phase_preproc_pipeline',
+                    desc=("An agressive brain mask used to remove boundary "
+                          "effect artefacts from QSM images")),
+        FilesetSpec('tissue_phase', nifti_gz_format, 'phase_preproc_pipeline',
+                    desc=("Phase image of brain tissue masked by "
+                          "'phase_mask'")),
+        FilesetSpec('q', nifti_gz_format, 'phase_preproc_pipeline',
+                    desc=("Quality check on coil combination")),
+        FilesetSpec('r2star', nifti_gz_format, 'phase_preproc_pipeline',
+                    desc=("R2* contrast image")),
         FilesetSpec('swi', nifti_gz_format, 'swi_pipeline'),
         FilesetSpec('qsm', nifti_gz_format, 'qsm_pipeline',
                     desc=("Quantitative susceptibility image resolved "
                           "from T2* coil images")),
-        FilesetSpec('q', nifti_gz_format, 'qsm_pipeline',
-                    desc=("Quality check on coil combination")),
-        FilesetSpec('r2star', nifti_gz_format, 'qsm_pipeline',
-                    desc=("R2* contrast image")),
         # Vein analysis
         FilesetSpec('composite_vein_image', nifti_gz_format, 'cv_pipeline'),
         FilesetSpec('vein_mask', nifti_gz_format, 'shmrf_pipeline'),
@@ -120,7 +126,10 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_robust', False),
         ParamSpec('bet_f_threshold', 0.1),
-        ParamSpec('bet_g_threshold', 0.0)]
+        ParamSpec('bet_g_threshold', 0.0),
+        ParamSpec('swi_power', 4, desc=(
+            "The power which the masked phase image is raised to in the SWI "
+            "calculation"))]
 
     def kspace_recon_pipeline(self, **name_maps):
         pipeline = super().kspace_recon_pipeline(**name_maps)
@@ -138,18 +147,18 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
 
         return pipeline
 
-    def qsm_pipeline(self, **name_maps):
+    def phase_preproc_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
-            name='qsm_pipeline',
+            name='phase_preproc_pipeline',
             name_maps=name_maps,
-            desc="Resolve QSM from t2star coils",
+            desc="Combines coil_channels, unwraps phase and masks phase",
             citations=[sti_cites, fsl_cite, matlab_cite])
 
         # Combine channels to produce phase and magnitude images
         channel_combine = pipeline.add(
             'channel_combine',
-            HIPCombineChannels(),
+            HipCombineChannels(),
             inputs={
                 'channels_dir': ('channels', multi_nifti_gz_format),
                 'echo_times': ('echo_times', float)},
@@ -168,8 +177,8 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'in_file': (channel_combine, 'phase')},
             requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
-        # Remove background noise
-        vsharp = pipeline.add(
+        # Remove background noise and tidy up phase mask
+        pipeline.add(
             "vsharp",
             VSharp(
                 mask_manip="imerode({{}}>0, ball({}))".format(
@@ -179,7 +188,21 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                 'voxelsize': ('voxel_sizes', float),
                 'in_file': (unwrap, 'out_file'),
                 'mask': ('brain_mask', nifti_gz_format)},
+            outputs={
+                'phase_mask': ('new_mask', nifti_gz_format),
+                'tissue_phase': ('out_file', nifti_format)},
             requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
+
+        return pipeline
+
+    def qsm_pipeline(self, **name_maps):
+
+        pipeline = self.new_pipeline(
+            name='qsm_pipeline',
+            name_maps=name_maps,
+            desc=("Calculates Quantitative Susceptibility Mappings (QSM) "
+                  "from tissue phase"),
+            citations=[sti_cites, fsl_cite, matlab_cite])
 
         delta_te = pipeline.add(
             "delta_te",
@@ -193,141 +216,46 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
         # Run QSM star
         pipeline.add(
             'qsmrecon',
-            QSMStar(
+            QsmStar(
                 padsize=self.parameter('qsm_padding'),
                 mask_manip="{}>0",
                 single_comp_thread=False),
             inputs={
+                'in_file': ('tissue_phase', nifti_gz_format),
+                'mask': ('phase_mask', nifti_gz_format),
                 'voxelsize': ('voxel_sizes', float),
-                'mask': (vsharp, 'new_mask'),
                 'TE': (delta_te, 'delta_te'),
                 'B0': ('main_field_strength', float),
-                'H': ('main_field_orient', float),
-                'in_file': (vsharp, 'out_file')},
+                'H': ('main_field_orient', float)},
             outputs={
                 'qsm': ('out_file', nifti_gz_format)},
             requirements=[matlab_req.v('r2018a'), sti_req.v(3.0)])
 
         return pipeline
 
-    def _construct_single_echo_qsm_pipeline(self, pipeline):
-
-        erosion = pipeline.add(
-            'mask_erosion',
-            fsl.ErodeImage(
-                kernel_shape='sphere',
-                kernel_size=self.parameter('qsm_se_erosion_size'),
-                output_type='NIFTI'),
-            inputs={
-                'in_file': ('brain_mask', nifti_gz_format)},
-            requirements=[fsl_req.v('5.0.8')],
-            wall_time=15, mem_gb=12)
-
-        # Dialate eroded mask
-        dialate = pipeline.add(
-            'dialate',
-            DialateMask(
-                dialation=self.parameter('qsm_mask_dialation')),
-            inputs={
-                'in_file': (erosion, 'out_file')},
-            requirements=[matlab_req.v('r2017a')])
-
-        to_polar = pipeline.add(
-            'to_polar',
-            ToPolarCoords(
-                in_fname_re=self.parameter('channel_fname_regex'),
-                real_label=self.parameter('channel_real_label'),
-                imaginary_label=self.parameter('channel_imag_label')),
-            inputs={
-                'in_dir': ('channels', multi_nifti_gz_format)})
-
-        # List files for the phases of separate channel
-        list_phases = pipeline.add(
-            'list_phases',
-            ListDir(
-                sort_key=coil_sort_key,
-                filter=CoilEchoFilter(self.parameter('qsm_echo'))),
-            inputs={
-                'directory': (to_polar, 'phases_dir')})
-
-        # List files for the phases of separate channel
-        list_mags = pipeline.add(
-            'list_mags',
-            ListDir(
-                sort_key=coil_sort_key,
-                filter=CoilEchoFilter(self.parameter('qsm_echo'))),
-            inputs={
-                'directory': (to_polar, 'mag_channels')})
-
-        # Generate coil specific masks
-        mask_coils = pipeline.add(
-            'mask_coils',
-            MaskCoils(
-                dialation=self.parameter('qsm_mask_dialation')),
-            inputs={
-                'masks': (list_mags, 'files'),
-                'whole_brain_mask': (dialate, 'out_file')},
-            requirements=[matlab_req.v('r2017a')])
-
-        # Unwrap phase
-        unwrap = pipeline.add(
-            'unwrap',
-            BatchUnwrapPhase(
-                padsize=self.parameter('qsm_padding')),
-            inputs={
-                'voxelsize': ('voxel_sizes', float),
-                'in_file': (list_phases, 'files')},
-            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-
-        # Background phase removal
-        vsharp = pipeline.add(
-            "vsharp",
-            BatchVSharp(
-                mask_manip='{}>0'),
-            inputs={
-                'voxelsize': ('voxel_sizes', float),
-                'mask': (mask_coils, 'out_files'),
-                'in_file': (unwrap, 'out_file')},
-            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)])
-
-        first_echo_time = pipeline.add(
-            'first_echo',
-            Select(
-                index=0),
-            inputs={
-                'inlist': ('echo_times', float)})
-
-        # Perform channel-wise QSM
-        coil_qsm = pipeline.add(
-            'coil_qsmrecon',
-            BatchQSMiLSQR(
-                mask_manip="{}>0",
-                padsize=self.parameter('qsm_padding')),
-            inputs={
-                'voxelsize': ('voxel_sizes', float),
-                'B0': ('main_field_strength', float),
-                'H': ('main_field_orient', float),
-                'in_file': (vsharp, 'out_file'),
-                'mask': (vsharp, 'new_mask'),
-                'te': (first_echo_time, 'out')},
-            requirements=[matlab_req.v('r2017a'), sti_req.v(3.0)],
-            wall_time=45)  # FIXME: Should be dependent on number of coils
-
-        # Combine channel QSM by taking the median coil value
-        pipeline.add(
-            'combine_qsm',
-            MedianInMasks(),
-            inputs={
-                'channels': (coil_qsm, 'out_file'),
-                'channel_masks': (vsharp, 'new_mask'),
-                'whole_brain_mask': (dialate, 'out_file')},
-            outputs={
-                'qsm': ('out_file', nifti_format)},
-            requirements=[matlab_req.v('r2017a')])
-
     def swi_pipeline(self, **name_maps):
 
-        raise NotImplementedError
+        pipeline = self.new_pipeline(
+            name='swi_pipeline',
+            name_maps=name_maps,
+            desc=("Calculates Susceptibility-weighted images (SWI) from tissue"
+                  " phase and magnitude images"),
+            citations=[])
+        # https://onlinelibrary.wiley.com/doi/full/10.1002/mrm.20198
+
+        # Run SWI
+        pipeline.add(
+            'swi',
+            Swi(
+                alpha=self.parameter('swi_power')),
+            inputs={
+                'tissue_phase': ('tissue_phase', nifti_gz_format),
+                'magnitude': ('magnitude', nifti_gz_format),
+                'mask': ('phase_mask', nifti_gz_format)},
+            outputs={
+                'swi': ('out_file', nifti_gz_format)})
+
+        return pipeline
 
     def cv_pipeline(self, **name_maps):
 
