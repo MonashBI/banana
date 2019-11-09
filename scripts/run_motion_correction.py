@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from banana.study.multi.mrpet import create_motion_correction_class
+from banana.analysis.multi.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProc
@@ -215,10 +215,10 @@ if __name__ == "__main__":
         if e.errno != errno.EEXIST:
             raise
 
-    study = MotionCorrection(name='MotionCorrection',
+    analysis = MotionCorrection(name='MotionCorrection',
                              processor=SingleProc(WORK_PATH),
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])
-    study.data('mean_displacement_plot')
+    analysis.data('mean_displacement_plot')
 print('Done!')

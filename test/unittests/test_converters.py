@@ -2,7 +2,7 @@ from arcana.data import InputFilesetSpec, FilesetSpec, InputFilesets
 from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
-from arcana.study.base import Analysis, AnalysisMetaClass
+from arcana.analysis.base import Analysis, AnalysisMetaClass
 from arcana.utils.testing import BaseTestCase
 from nipype.interfaces.utility import IdentityInterface
 
@@ -73,7 +73,7 @@ class ConversionAnalysis(Analysis, metaclass=AnalysisMetaClass):
 class TestFormatConversions(BaseTestCase):
 
     def test_pipeline_prerequisites(self):
-        study = self.create_study(
+        analysis = self.create_analysis(
             ConversionAnalysis, 'conversion', [
                 InputFilesets('mrtrix', 'mrtrix', text_format),
                 InputFilesets('nifti_gz', text_format,
@@ -84,9 +84,9 @@ class TestFormatConversions(BaseTestCase):
                               't1_mprage_sag_p2_iso_1_ADNI'),
                 InputFilesets('zip', 'zip', zip_format)])
         self.assertFilesetCreated(
-            next(iter(study.data('nifti_gz_from_dicom'))))
+            next(iter(analysis.data('nifti_gz_from_dicom'))))
         self.assertFilesetCreated(
-            next(iter(study.data('mrtrix_from_nifti_gz'))))
-        self.assertFilesetCreated(next(iter(study.data('nifti_from_mrtrix'))))
-        self.assertFilesetCreated(next(iter(study.data('directory_from_zip'))))
-        self.assertFilesetCreated(next(iter(study.data('zip_from_directory'))))
+            next(iter(analysis.data('mrtrix_from_nifti_gz'))))
+        self.assertFilesetCreated(next(iter(analysis.data('nifti_from_mrtrix'))))
+        self.assertFilesetCreated(next(iter(analysis.data('directory_from_zip'))))
+        self.assertFilesetCreated(next(iter(analysis.data('zip_from_directory'))))

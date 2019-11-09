@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from banana.study.multi.mrpet import create_motion_detection_class
+from banana.analysis.multi.mrpet import create_motion_detection_class
 import os
 import os.path as op
 import errno
@@ -94,7 +94,7 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(work_dir, exist_ok=True)
 
-    study = MotionDetection(name='MotionDetection',
+    analysis = MotionDetection(name='MotionDetection',
                             repository=BasicRepo(output_dir, depth=0),
                             processor=SingleProc(work_dir,
                                                  reprocess=args.reprocess),
@@ -105,6 +105,6 @@ if __name__ == "__main__":
                             subject_ids=[BasicRepo.DEFAULT_SUBJECT_ID],
                             visit_ids=[BasicRepo.DEFAULT_VISIT_ID],
                             fill_tree=True)
-    study.data('motion_detection_output')
+    analysis.data('motion_detection_output')
 
 print('Done!')

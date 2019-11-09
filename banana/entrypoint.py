@@ -18,7 +18,7 @@ from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
 
-DEFAULT_STUDY_CLASS_PATH = 'banana.study'
+DEFAULT_STUDY_CLASS_PATH = 'banana.analysis'
 
 DEFAULT_LINE_LENGTH = 79
 DEFAULT_INDENT = 4
@@ -84,10 +84,10 @@ class DeriveCmd():
                             help=("Either the path to the repository if of "
                                   "'bids' or 'basic' types, or the name of the"
                                   " project ID for 'xnat' type"))
-        parser.add_argument('study_class',
+        parser.add_argument('analysis_class',
                             help=("Name of the class to instantiate"))
-        parser.add_argument('study_name',
-                            help=("The name of the study to put the analysis "
+        parser.add_argument('analysis_name',
+                            help=("The name of the analysis to put the analysis "
                                   "under (e.g. parenthood)"))
         parser.add_argument('derivatives', nargs='+',
                             help=("The names of the derivatives to generate"))
@@ -116,11 +116,11 @@ class DeriveCmd():
                             help="The type of environment to use")
         parser.add_argument('--input', '-i', nargs=2, action='append',
                             default=[], metavar=('SPEC', 'PATTERN'),
-                            help=("The inputs to include in the study init. "
+                            help=("The inputs to include in the analysis init. "
                                   "If not provided then all are used"))
         parser.add_argument('--parameter', '-p', nargs=2, action='append',
                             metavar=('NAME', 'VALUE'), default=[],
-                            help="Parameters to pass to the study")
+                            help="Parameters to pass to the analysis")
         parser.add_argument('--subject_ids', nargs='+', default=None,
                             metavar='ID',
                             help=("The subject IDs to include in the analysis."
@@ -169,7 +169,7 @@ class DeriveCmd():
         if not args.quiet:
             set_loggers(args.logger)
 
-        study_class = resolve_class(args.study_class)
+        analysis_class = resolve_class(args.analysis_class)
 
         if args.scratch is not None:
             scratch_dir = args.scratch
@@ -330,15 +330,15 @@ class DeriveCmd():
         parameters = {}
         for name, value in args.parameter:
             parameters[name] = parse_value(
-                value, dtype=study_class.param_spec(name).dtype)
+                value, dtype=analysis_class.param_spec(name).dtype)
 
         if input_repository is not None and input_repository.type == 'bids':
-            inputs = study_class.get_bids_inputs(args.bids_task,
+            inputs = analysis_class.get_bids_inputs(args.bids_task,
                                                  repository=input_repository)
         else:
             inputs = {}
         for name, pattern in args.input:
-            spec = study_class.data_spec(name)
+            spec = analysis_class.data_spec(name)
             if spec.is_fileset:
                 inpt_cls = InputFilesets
             else:
@@ -346,8 +346,8 @@ class DeriveCmd():
             inputs[name] = inpt_cls(name, pattern=pattern, is_regex=True,
                                     repository=input_repository)
 
-        study = study_class(
-            name=args.study_name,
+        analysis = analysis_class(
+            name=args.analysis_name,
             repository=repository,
             processor=processor,
             environment=environment,
@@ -360,21 +360,21 @@ class DeriveCmd():
             bids_task=args.bids_task)
 
         for spec_name in args.cache:
-            spec = study.bound_spec(spec_name)
+            spec = analysis.bound_spec(spec_name)
             if not isinstance(spec, InputFilesets):
                 raise BananaUsageError(
                     "Cannot cache non-input fileset '{}'".format(spec_name))
             spec.cache()
 
         # Generate data
-        study.data(args.derivatives)
+        analysis.data(args.derivatives)
 
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 
 
 class TestGenCmd():
 
-    desc = ("Generate all derivatives from a study in a format compatible "
+    desc = ("Generate all derivatives from a analysis in a format compatible "
             "with Banana's unit-testing framework")
 
     @classmethod
@@ -382,12 +382,12 @@ class TestGenCmd():
         parser = ArgumentParser(
             prog='banana test-gen',
             description=("Generates reference data for the built-in unittest "
-                         "framework given a study class, an input repository "
+                         "framework given a analysis class, an input repository "
                          "containing data named according to the data "
                          "specification of the class and set of parameters"))
-        parser.add_argument('study_class',
-                            help=("The path to the study class to test, e.g. "
-                                  "banana.study.MriAnalysis"))
+        parser.add_argument('analysis_class',
+                            help=("The path to the analysis class to test, e.g. "
+                                  "banana.analysis.MriAnalysis"))
         parser.add_argument('in_repo', help=("The path to repository that "
                                              "houses the input data"))
         parser.add_argument('out_repo',
@@ -405,7 +405,7 @@ class TestGenCmd():
         parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
                             nargs=2, action='append', default=[],
                             help=("Parameters to set when initialising the "
-                                  "study"))
+                                  "analysis"))
         parser.add_argument('--include', '-i', nargs='+', default=[],
                             help=("Spec names to include in the generation "
                                   "process. If not provided all (except "
@@ -438,7 +438,7 @@ class TestGenCmd():
     def run(cls, args):
 
         # Get Analysis class
-        study_class = resolve_class(args.study_class)
+        analysis_class = resolve_class(args.analysis_class)
 
         include_bases = [resolve_class(c) for c in args.bases]
 
@@ -456,7 +456,7 @@ class TestGenCmd():
         parameters = parameters_dct
 
         PipelineTester.generate_test_data(
-            study_class=study_class, in_repo=args.in_repo,
+            analysis_class=analysis_class, in_repo=args.in_repo,
             out_repo=args.out_repo, in_server=args.in_server,
             out_server=args.out_server, work_dir=args.work_dir,
             parameters=parameters, skip=args.skip, include=args.include,
@@ -586,30 +586,30 @@ class HelpCmd():
 
 class MenuCmd():
 
-    desc = ("Display the data and parameter specifications for a given study "
+    desc = ("Display the data and parameter specifications for a given analysis "
             "class")
 
     @classmethod
     def parser(cls):
         parser = ArgumentParser(prog='banana menu',
                                 description=cls.desc)
-        parser.add_argument('study_class',
+        parser.add_argument('analysis_class',
                             help=("Name of the class to display menu for"))
         return parser
 
     @classmethod
     def run(cls, args):
         # Get Analysis class
-        study_class = resolve_class(args.study_class)
-        print(study_class.static_menu())
+        analysis_class = resolve_class(args.analysis_class)
+        print(analysis_class.static_menu())
 
 
 class AvailableCmd():
 
-    desc = ("List all available study classes within Banana and custom search "
+    desc = ("List all available analysis classes within Banana and custom search "
             "paths")
 
-    default_path = 'banana.study'
+    default_path = 'banana.analysis'
 
     desc_start = 22
 
@@ -625,7 +625,7 @@ class AvailableCmd():
     def run(cls, args):
         available = {}
 
-        def find_study_classes(pkg_or_module, pkg_or_module_path):
+        def find_analysis_classes(pkg_or_module, pkg_or_module_path):
             for cls_name in dir(pkg_or_module):
                 if cls_name.startswith('_'):
                     continue
@@ -649,11 +649,11 @@ class AvailableCmd():
             for pkg_name in find_packages(op.dirname(base_module.__file__)):
                 pkg_path = search_path + '.' + pkg_name
                 pkg = import_module(pkg_path)
-                find_study_classes(pkg, pkg_path)
+                find_analysis_classes(pkg, pkg_path)
                 for module_info in iter_modules([op.dirname(pkg.__file__)]):
                     module_path = pkg_path + '.' + module_info.name
                     module = import_module(module_path)
-                    find_study_classes(module, module_path)
+                    find_analysis_classes(module, module_path)
         msg = ("\nThe following Analysis classes are available:")
         to_print = []
         for avail_cls, module_path in sorted(available.items(),

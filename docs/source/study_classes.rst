@@ -7,7 +7,7 @@ Selected :class:`banana.Analysis` subclasses implemented in Banana
 MRI
 ---
 
-.. autoclass:: banana.study.mri.dwi.DwiAnalysis
+.. autoclass:: banana.analysis.mri.dwi.DwiAnalysis
 
 
 
@@ -15,5 +15,5 @@ MRI
 PET
 ---
 
-.. autoclass:: banana.study.pet.static.StaticPetAnalysis
+.. autoclass:: banana.analysis.pet.static.StaticPetAnalysis
 

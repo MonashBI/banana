@@ -10,7 +10,7 @@ from unittest import TestCase
 from arcana.processor import SingleProc
 from banana.bids_ import BidsRepo
 from banana.utils.testing import TEST_DIR, TEST_ENV
-from banana.study.mri import DwiAnalysis, BoldAnalysis
+from banana.analysis.mri import DwiAnalysis, BoldAnalysis
 
 
 wf_logger = logging.getLogger('nipype.workflow')
@@ -74,19 +74,19 @@ class TestBids(TestCase):
             self.assertEqual(len(list(repo.tree().subjects)), num_subjs)
 
     def test_bids_dwi(self):
-        study = DwiAnalysis(
+        analysis = DwiAnalysis(
             'test_dwi',
             repository=BidsRepo(op.join(self.BIDS_EXAMPLES_PATH, 'ds114')),
             processor=SingleProc(self.work_dir),
             environment=TEST_ENV,
             parameters={'preproc_pe_dir': 'RL'})
-        study.pipeline('global_tracking_pipeline')
+        analysis.pipeline('global_tracking_pipeline')
 
     def test_bids_fmri(self):
-        study = BoldAnalysis(
+        analysis = BoldAnalysis(
             'test_fmri',
             repository=BidsRepo(op.join(self.BIDS_EXAMPLES_PATH, 'ds114')),
             processor=SingleProc(self.work_dir),
             environment=TEST_ENV,
             bids_task='covertverbgeneration')
-        study.pipeline('single_subject_melodic_pipeline')
+        analysis.pipeline('single_subject_melodic_pipeline')

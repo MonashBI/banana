@@ -1,5 +1,5 @@
 from arcana.utils.testing import BaseTestCase, BaseMultiSubjectTestCase
-from arcana.study.base import Analysis, AnalysisMetaClass
+from arcana.analysis.base import Analysis, AnalysisMetaClass
 from arcana.data import InputFilesetSpec, FilesetSpec, InputFilesets
 from banana.file_format import (
     dicom_format)
@@ -37,16 +37,16 @@ class TestDicomTagMatch(BaseTestCase):
                       is_regex=True)]
 
     def test_dicom_match(self):
-        study = self.create_study(
+        analysis = self.create_analysis(
             TestMatchAnalysis, 'test_dicom',
             inputs=self.DICOM_MATCH)
-        phase = list(study.data('gre_phase'))[0]
-        mag = list(study.data('gre_mag'))[0]
+        phase = list(analysis.data('gre_phase'))[0]
+        mag = list(analysis.data('gre_mag'))[0]
         self.assertEqual(phase.name, 'gre_field_mapping_3mm_phase')
         self.assertEqual(mag.name, 'gre_field_mapping_3mm_mag')
 
     def test_order_match(self):
-        study = self.create_study(
+        analysis = self.create_analysis(
             TestMatchAnalysis, 'test_dicom',
             inputs=[
                 InputFilesets('gre_phase', valid_formats=dicom_format,
@@ -55,7 +55,7 @@ class TestDicomTagMatch(BaseTestCase):
                 InputFilesets('gre_mag', valid_formats=dicom_format,
                               pattern=self.GRE_PATTERN, order=0,
                               is_regex=True)])
-        phase = list(study.data('gre_phase'))[0]
-        mag = list(study.data('gre_mag'))[0]
+        phase = list(analysis.data('gre_phase'))[0]
+        mag = list(analysis.data('gre_mag'))[0]
         self.assertEqual(phase.name, 'gre_field_mapping_3mm_phase')
         self.assertEqual(mag.name, 'gre_field_mapping_3mm_mag')

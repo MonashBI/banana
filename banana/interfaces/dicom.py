@@ -477,7 +477,7 @@ class Nii2Dicom(BaseInterface):
     """
     Creates two umaps in dicom format
 
-    fully compatible with the UTE study:
+    fully compatible with the UTE analysis:
 
     Attenuation Correction pipeline
 

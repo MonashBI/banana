@@ -11,7 +11,7 @@ Banana
 
 Brain imAgiNg Analysis iN Arcana (Banana): a collection of brain imaging analysis
 workflows implemented in the Arcana_ framework, which can be used to analyse
-study datasets stored in XNAT, BIDS or plain-directory repositories.
+analysis datasets stored in XNAT, BIDS or plain-directory repositories.
 
 Installation
 ------------

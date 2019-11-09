@@ -11,7 +11,7 @@ from arcana.data.input import InputFilesets
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
-from arcana.study.multi import MultiAnalysis
+from arcana.analysis.multi import MultiAnalysis
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
     tsv_format, json_format, nifti_format)
@@ -178,7 +178,7 @@ class BidsRepo(BasicRepo):
             visit_id = fileset.visit_id
         else:
             visit_id = self.SUMMARY_NAME
-        sess_dir = op.join(self.root_dir, 'derivatives', fileset.from_study,
+        sess_dir = op.join(self.root_dir, 'derivatives', fileset.from_analysis,
                            'sub-{}'.format(subject_id),
                            'sess-{}'.format(visit_id))
         # Make session dir if required
@@ -189,10 +189,10 @@ class BidsRepo(BasicRepo):
     def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
         if len(path_parts) != 4 or path_parts[0] != 'derivatives':
             return None
-        from_study, subj, sess = path_parts[1:]
+        from_analysis, subj, sess = path_parts[1:]
         subj_id = subj[len('sub-'):]
         visit_id = sess[len('sess-'):]
-        return subj_id, visit_id, from_study
+        return subj_id, visit_id, from_analysis
 
 
 class BaseBidsFileset(object):
@@ -421,19 +421,19 @@ class BidsAssocInputs(InputFilesets):
                     self._format.name if self._format is not None else None,
                     self.association, self.type))
 
-    def bind(self, study, spec_name=None, **kwargs):
+    def bind(self, analysis, spec_name=None, **kwargs):
         # We need to access a bound primary selector when matching the
         # associated selector so we set the bound version temporarily to
         # self._primary before winding it back after we have done the bind
         unbound_primary = self._primary
-        if isinstance(study, MultiAnalysis) and hasattr(self,
+        if isinstance(analysis, MultiAnalysis) and hasattr(self,
                                                      'prefixed_primary_name'):
             primary_spec_name = self.prefixed_primary_name  # noqa pylint: disable=no-member
         else:
             primary_spec_name = self.primary.name
-        self._primary = self._primary.bind(study, spec_name=primary_spec_name,
+        self._primary = self._primary.bind(analysis, spec_name=primary_spec_name,
                                            **kwargs)
-        bound = super().bind(study, spec_name=spec_name, **kwargs)
+        bound = super().bind(analysis, spec_name=spec_name, **kwargs)
         self._primary = unbound_primary
         return bound
 

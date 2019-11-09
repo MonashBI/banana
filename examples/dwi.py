@@ -2,10 +2,10 @@
 import os.path as op
 from arcana import (
     InputFilesets, BasicRepo, SingleProc, StaticEnv)
-from banana.study.mri.dwi import DwiAnalysis
+from banana.analysis.mri.dwi import DwiAnalysis
 from banana.file_format import dicom_format
 
-study = DwiAnalysis(
+analysis = DwiAnalysis(
     name='example_diffusion',
     repository=BasicRepo(
         op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),
@@ -17,7 +17,7 @@ study = DwiAnalysis(
     parameters={'num_global_tracks': int(1e6)})
 
 # Generate whole brain tracks and return path to cached dataset
-wb_tcks = study.data('global_tracks')
+wb_tcks = analysis.data('global_tracks')
 for sess_tcks in wb_tcks:
     print("Performed whole-brain tractography for {}:{} session, the results "
           "are stored at '{}'"

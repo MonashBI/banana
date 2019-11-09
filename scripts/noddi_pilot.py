@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from arcana.data import InputFilesets
-from banana.study.mri.diffusion import NODDIAnalysis
+from banana.analysis.mri.diffusion import NODDIAnalysis
 from arcana.repository.basic import BasicRepo
 from banana.file_format import mrtrix_image_format
 
@@ -21,7 +21,7 @@ DATASET_NAME = 'noddi'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-study = NODDIAnalysis(
+analysis = NODDIAnalysis(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, repository=BasicRepo(repository_path),
     input_scans=[
@@ -31,4 +31,4 @@ study = NODDIAnalysis(
                      'r_l_noddi_b2000_60_directions'),
         InputFilesets('forward_rpe', 'r_l_noddi_b0_6', mrtrix_image_format),
         InputFilesets('reverse_rpe', 'l_r_noddi_b0_6', mrtrix_image_format)])
-study.noddi_fitting_pipeline().run(work_dir=WORK_PATH)
+analysis.noddi_fitting_pipeline().run(work_dir=WORK_PATH)

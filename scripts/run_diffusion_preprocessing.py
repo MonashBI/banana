@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os.path
 import errno
-from banana.study.mri.dwi import DwiAnalysis
+from banana.analysis.mri.dwi import DwiAnalysis
 from arcana.repository.xnat import XnatRepo
 from banana.file_format import dicom_format
 import logging
@@ -17,7 +17,7 @@ if __name__ == "__main__":
                         help="Subject IDs to process")
     parser.add_argument('--session', type=str, nargs='+', default=None,
                         help="Session IDs to process")
-    parser.add_argument('--study_name', type=str, default='diffusion',
+    parser.add_argument('--analysis_name', type=str, default='diffusion',
                         help="Analysis name to be prepend to the output names "
                         "of all pre-processing results. Default is "
                         "'diffusion'.")
@@ -51,8 +51,8 @@ if __name__ == "__main__":
         InputFilesets('magnitude', dicom_format,
                       'L-R_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2')]
 
-    study = DwiAnalysis(
-        name=args.study_name,
+    analysis = DwiAnalysis(
+        name=args.analysis_name,
         repository=XnatRepo(
             project_id='MRH060', server='https://mbi-xnat.erc.monash.edu.au',
             cache_dir=os.path.join(scratch_dir, 'xnat_cache-mnd')),
@@ -62,6 +62,6 @@ if __name__ == "__main__":
         parameters={'preproc_pe_dir': 'RL'},
         switches={'preproc_denoise': True})
 
-    fods = study.data('wm_odf')
+    fods = analysis.data('wm_odf')
     print(fods[0].path)
     print('Done')

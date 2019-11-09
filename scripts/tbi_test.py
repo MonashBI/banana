@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from arcana.data import InputFilesets
-from banana.study.mri.diffusion import DwiAnalysis
+from banana.analysis.mri.diffusion import DwiAnalysis
 from arcana.repository.basic import BasicRepo
 from banana.file_format import mrtrix_image_format
 
@@ -16,7 +16,7 @@ DATASET_NAME = 'tbi_test'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-study = DwiAnalysis(
+analysis = DwiAnalysis(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
     repository=BasicRepo(repository_path),
@@ -24,6 +24,6 @@ study = DwiAnalysis(
         'dwi_scan': Fileset('R-L_60dir_b2000', mrtrix_image_format),
         'forward_rpe': Fileset('R-L_6dir_b0', mrtrix_image_format),
         'reverse_rpe': Fileset('L-R_6dir_b0', mrtrix_image_format)})
-study.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
-study.fod_pipeline().run(work_dir=WORK_PATH)
-study.fa_pipeline().run(work_dir=WORK_PATH)
+analysis.bias_correct_pipeline(bias_method='fsl').run(work_dir=WORK_PATH)
+analysis.fod_pipeline().run(work_dir=WORK_PATH)
+analysis.fa_pipeline().run(work_dir=WORK_PATH)

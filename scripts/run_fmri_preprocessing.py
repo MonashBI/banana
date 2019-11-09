@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from banana.study.mri.functional.bold import create_multi_fmri_class
+from banana.analysis.mri.functional.bold import create_multi_fmri_class
 from arcana.repository.xnat import XnatRepo
 from arcana.processor.linear import SingleProc
 import os.path
@@ -115,9 +115,9 @@ if __name__ == "__main__":
         user=args.xnat_username, password=args.xnat_password,
         cache_dir=CACHE_PATH)
 
-    study = fMRI(name='fMRI_preprocessing', processor=SingleProc(WORK_PATH),
+    analysis = fMRI(name='fMRI_preprocessing', processor=SingleProc(WORK_PATH),
                  repository=repository, inputs=inputs, subject_ids=args.subject_ids,
                  visit_ids=args.visit_ids)
-    study.data(output_files)
+    analysis.data(output_files)
 
 print('Done!')

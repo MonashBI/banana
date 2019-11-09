@@ -7,7 +7,7 @@ import os
 from argparse import ArgumentParser
 import matplotlib.image as img
 import matplotlib.pyplot as plt
-from banana.study.mri.structural.diffusion import DwiAnalysis
+from banana.analysis.mri.structural.diffusion import DwiAnalysis
 
 parser = ArgumentParser()
 parser.add_argument('workflow', type=str,

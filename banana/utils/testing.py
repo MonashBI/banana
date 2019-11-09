@@ -77,10 +77,10 @@ class DontRunProc(Processor):
 class AnalysisTester(TestCase):
 
     required_atttrs = (
-        ('study_class', 'class of the study to test'),
+        ('analysis_class', 'class of the analysis to test'),
         ('dataset_name', 'select dataset to use for inputs'),
-        ('inputs', 'inputs for the study'),
-        ('parameters', 'parameters for the study'))
+        ('inputs', 'inputs for the analysis'),
+        ('parameters', 'parameters for the analysis'))
 
     def runTest(self):
         for attr, reason in self.required_atttrs:
@@ -88,7 +88,7 @@ class AnalysisTester(TestCase):
                 raise BananaTestSetupError(
                     "{} class doesn't have '{}' class attribute, reqquired"
                     "to {}".format(self.__class__.__name__, attr, reason))
-        study = self.study_class(  # pylint: disable=no-member
+        analysis = self.analysis_class(  # pylint: disable=no-member
             name=self.name,  # pylint: disable=no-member
             inputs=self.inputs_dict,
             parameters=self.parameters,  # pylint: disable=no-member
@@ -96,15 +96,15 @@ class AnalysisTester(TestCase):
             processor=DontRunProc())
 
         all_pipelines = set(
-            study.spec(n).pipeline for n in study.data_spec_names())
+            analysis.spec(n).pipeline for n in analysis.data_spec_names())
 
         try:
-            study.run(*all_pipelines)
+            analysis.run(*all_pipelines)
         except ArcanaReprocessException as e:
             raise self.failureException(self._formatMessage(
                 str(e), ("Provenance of reference data no longer matches that "
-                         "of generated pipelines for {} test of {} study class"
-                         .format(self.name, self.study_class.__name__))))  # noqa pylint: disable=no-member
+                         "of generated pipelines for {} test of {} analysis class"
+                         .format(self.name, self.analysis_class.__name__))))  # noqa pylint: disable=no-member
 
     @property
     def name(self):
@@ -130,7 +130,7 @@ class AnalysisTester(TestCase):
             processor = SingleProc(work_dir=work_dir, **kwargs)
         if environment is None:
             environment = StaticEnv()
-        study = self.study_class(  # pylint: disable=no-member
+        analysis = self.analysis_class(  # pylint: disable=no-member
             name=self.name,  # pylint: disable=no-member
             inputs=self.inputs_dict,
             parameters=self.parameters,  # pylint: disable=no-member
@@ -142,9 +142,9 @@ class AnalysisTester(TestCase):
                 skip_specs = self.skip_specs
             except AttributeError:
                 skip_specs = ()
-            spec_names = [s.name for s in study.data_specs()
+            spec_names = [s.name for s in analysis.data_specs()
                           if s.derived and s.name not in skip_specs]
-        study.data(spec_names)
+        analysis.data(spec_names)
 
 
 class PipelineTester(TestCase):
@@ -157,14 +157,14 @@ class PipelineTester(TestCase):
     name : str
         A unique name (among other unittests to be run in same batch) for the
         test class
-    study_class : type(Analysis)
-        The study class run tests against
+    analysis_class : type(Analysis)
+        The analysis class run tests against
     ref_repo : Repository
         The repository to draw the reference data from
     parameters : dict[str, str | float | int | datetime]
-        The parameters passed to the study when it is initialised
+        The parameters passed to the analysis when it is initialised
     warn_missing_tests : bool
-        Whether to raise a warning if there is a pipeline in the study class
+        Whether to raise a warning if there is a pipeline in the analysis class
         that does not have a test in tester class
     """
 
@@ -172,13 +172,13 @@ class PipelineTester(TestCase):
     warn_missing_tests = True
     environment = ModulesEnv() if USE_MODULES else StaticEnv()
     name = None
-    study_class = None
+    analysis_class = None
     ref_repo = None
 
     def setUp(self):
-        if not hasattr(self, 'study_class'):
+        if not hasattr(self, 'analysis_class'):
             raise BananaTestSetupError(
-                "{} must have a 'study_class' attribute corresponding to the "
+                "{} must have a 'analysis_class' attribute corresponding to the "
                 "Analysis class to test".format(type(self).__name__))
         if not hasattr(self, 'ref_repo'):
             raise BananaTestSetupError(
@@ -191,9 +191,9 @@ class PipelineTester(TestCase):
         os.makedirs(repo_root, exist_ok=True)
         # Create repository to hold outputs
         self.output_repo = BasicRepo(repo_root, depth=2)
-        # Create inputs for reference study
+        # Create inputs for reference analysis
         self.inputs = {}
-        for spec in self.study_class.data_specs():
+        for spec in self.analysis_class.data_specs():
             # Create an input for each entry in the class specificiation
             if spec.is_fileset:
                 inpt = InputFilesets(
@@ -209,8 +209,8 @@ class PipelineTester(TestCase):
             except ArcanaInputMissingMatchError:
                 continue
             self.inputs[spec.name] = inpt
-        # Create the reference study
-        self.ref_study = self.study_class(  # pylint: disable=not-callable
+        # Create the reference analysis
+        self.ref_analysis = self.analysis_class(  # pylint: disable=not-callable
             self.name,
             repository=self.ref_repo,
             processor=self.work_dir,
@@ -220,7 +220,7 @@ class PipelineTester(TestCase):
         # Get set of all pipelines to test
         if self.warn_missing_tests:
             pipelines_to_test = set(
-                s.pipeline_getter for s in self.study_class.data_specs()
+                s.pipeline_getter for s in self.analysis_class.data_specs()
                 if s.derived)
             test_names = [m for m in dir(self) if m.startswith('test_')]
             for pipeline_getter in pipelines_to_test:
@@ -241,7 +241,7 @@ class PipelineTester(TestCase):
         pipeline_getter : str
             The name of the pipeline to test
         add_inputs : list[str]
-            Inputs that are required in the output study for the pipeline to
+            Inputs that are required in the output analysis for the pipeline to
             run, in addition to the direct inputs of the pipeline, i.e. ones
             that are tested for with the 'provided' method in the pipeline
             construction
@@ -256,9 +256,9 @@ class PipelineTester(TestCase):
             test_criteria = {}
         if pipeline_args is None:
             pipeline_args = {}
-        # A study with all inputs provided to determine which inputs are needed
+        # A analysis with all inputs provided to determine which inputs are needed
         # by the pipeline
-        ref_pipeline = self.ref_study.pipeline(pipeline_getter,
+        ref_pipeline = self.ref_analysis.pipeline(pipeline_getter,
                                                pipeline_args=pipeline_args)
         inputs = []
         for spec_name in chain(ref_pipeline.input_names, add_inputs):
@@ -266,21 +266,21 @@ class PipelineTester(TestCase):
                 inputs.append(self.inputs[spec_name])
             except KeyError:
                 pass  # Inputs with a default value
-        # Set up output study
-        output_study = self.study_class(  # pylint: disable=not-callable
+        # Set up output analysis
+        output_analysis = self.analysis_class(  # pylint: disable=not-callable
             pipeline_getter,
             repository=self.output_repo,
             processor=SingleProc(self.work_dir, reprocess='force'),
             environment=self.environment,
             inputs=inputs,
             parameters=self.parameters,
-            subject_ids=self.ref_study.subject_ids,
-            visit_ids=self.ref_study.visit_ids,
+            subject_ids=self.ref_analysis.subject_ids,
+            visit_ids=self.ref_analysis.visit_ids,
             enforce_inputs=False,
             fill_tree=True)
         for spec_name in ref_pipeline.output_names:
-            for ref, test in zip(self.ref_study.data(spec_name),
-                                 output_study.data(spec_name)):
+            for ref, test in zip(self.ref_analysis.data(spec_name),
+                                 output_analysis.data(spec_name)):
                 if ref.is_fileset:
                     try:
                         self.assertTrue(
@@ -288,7 +288,7 @@ class PipelineTester(TestCase):
                                 ref, **test_criteria.get(spec_name, {})),
                             "'{}' fileset generated by {} in {} doesn't match "
                             "reference".format(spec_name, pipeline_getter,
-                                               self.study_class))
+                                               self.analysis_class))
                     except Exception:
                         if hasattr(test, 'headers_diff'):
                             header_diff = test.headers_diff(ref)
@@ -310,23 +310,23 @@ class PipelineTester(TestCase):
                         "value for {} ({}) generated by {} in {} doesn't "
                         "match reference ({})".format(
                             spec_name, test.value, pipeline_getter,
-                            self.study_class, ref.value))
+                            self.analysis_class, ref.value))
 
     @classmethod
-    def generate_test_data(cls, study_class, in_repo, out_repo,
+    def generate_test_data(cls, analysis_class, in_repo, out_repo,
                            in_server=None, out_server=None, work_dir=None,
                            parameters=(), include=None, skip=(),
                            include_bases=(), reprocess=False, repo_depth=0,
                            modules_env=False, clean_work_dir=True,
                            loggers=('nipype.workflow', 'arcana', 'banana')):
         """
-        Generates reference data for a pipeline tester unittests given a study
+        Generates reference data for a pipeline tester unittests given a analysis
         class and set of parameters
 
         Parameters
         ----------
-        study_class : type(Analysis)
-            The path to the study class to test, e.g. banana.study.MriAnalysis
+        analysis_class : type(Analysis)
+            The path to the analysis class to test, e.g. banana.analysis.MriAnalysis
         in_repo : str
             The path to repository that houses the input data
         out_repo : str
@@ -341,7 +341,7 @@ class PipelineTester(TestCase):
         work_dir : str
             The work directory
         parameters : dict[str, *]
-            Parameter to set when initialising the study
+            Parameter to set when initialising the analysis
         include : list[str] | None
             Spec names to include in the output repository. If None all names
             except those listed in 'skip' are included
@@ -374,10 +374,10 @@ class PipelineTester(TestCase):
         else:
             work_dir = work_dir
 
-        if study_class.__name__.endswith('Analysis'):
-            study_name = study_class.__name__[:-len('Analysis')]
+        if analysis_class.__name__.endswith('Analysis'):
+            analysis_name = analysis_class.__name__[:-len('Analysis')]
         else:
-            study_name = study_class.__name__
+            analysis_name = analysis_class.__name__
 
         # Get output repository to write the data to
         if in_server is not None:
@@ -404,10 +404,10 @@ class PipelineTester(TestCase):
                     inpt = InputFields(item.name, item.name, item.dtype,
                                        repository=in_repo)
                 try:
-                    spec = study_class.data_spec(inpt)
+                    spec = analysis_class.data_spec(inpt)
                 except ArcanaNameError:
                     print("Skipping {} as it doesn't match a spec in {}"
-                          .format(item, study_class))
+                          .format(item, analysis_class))
                 else:
                     session_inputs.append(inpt)
             session_inputs = sorted(session_inputs)
@@ -423,8 +423,8 @@ class PipelineTester(TestCase):
         else:
             env = StaticEnv()
 
-        study = study_class(
-            study_name,
+        analysis = analysis_class(
+            analysis_name,
             repository=temp_repo,
             processor=SingleProc(
                 work_dir, reprocess=reprocess,
@@ -444,24 +444,24 @@ class PipelineTester(TestCase):
             # Get set of methods that could override pipeline getters in
             # base classes that are not included
             potentially_overridden = set()
-            for cls in chain(include_bases, [study_class]):
+            for cls in chain(include_bases, [analysis_class]):
                 potentially_overridden.update(cls.__dict__.keys())
 
             include = set()
-            for base in study_class.__mro__:
+            for base in analysis_class.__mro__:
                 if not hasattr(base, 'add_data_specs'):
                     continue
                 for spec in base.add_data_specs:
                     if isinstance(spec,
                                   BaseInputSpecMixin) or spec.name in skip:
                         continue
-                    if (base is study_class or base in include_bases
+                    if (base is analysis_class or base in include_bases
                             or spec.pipeline_getter in potentially_overridden):
                         include.add(spec.name)
 
         # Generate all derived data
         for spec_name in sorted(include):
-            study.data(spec_name)
+            analysis.data(spec_name)
 
         # Get output repository to write the data to
         if out_server is not None:
@@ -471,9 +471,9 @@ class PipelineTester(TestCase):
             out_repo = BasicRepo(out_repo, depth=repo_depth)
 
         # Upload data to repository
-        for spec in study.data_specs():
+        for spec in analysis.data_specs():
             try:
-                data = study.data(spec.name, generate=False)
+                data = analysis.data(spec.name, generate=False)
             except ArcanaMissingDataException:
                 continue
             for item in data:
@@ -501,11 +501,11 @@ class PipelineTester(TestCase):
                 item_cpy.put()
                 logger.info("Uploaded {}".format(item_cpy))
         logger.info("Finished generating and uploading test data for {}"
-                    .format(study_class))
+                    .format(analysis_class))
 
 
 if __name__ == '__main__':
-    from banana.study.mri.base import MriAnalysis
+    from banana.analysis.mri.base import MriAnalysis
     import argparse
 
     parser = argparse.ArgumentParser()
@@ -553,7 +553,7 @@ if __name__ == '__main__':
             include=['brain_coreg'])
 
     if 'bold' in args.generate:
-        from banana.study.mri.bold import BoldAnalysis
+        from banana.analysis.mri.bold import BoldAnalysis
 
         PipelineTester.generate_test_data(
             BoldAnalysis, op.join(args.data_dir, 'bold'), 'TESTBANANABOLD',
@@ -566,7 +566,7 @@ if __name__ == '__main__':
                 'mni_tmpl_resolution': 2})
 
     if 't1' in args.generate:
-        from banana.study.mri.t1w import T1wAnalysis
+        from banana.analysis.mri.t1w import T1wAnalysis
 
         PipelineTester.generate_test_data(
             T1wAnalysis, op.join(args.data_dir, 't1'), 'TESTBANANAT1',
@@ -578,7 +578,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2' in args.generate:
-        from banana.study.mri.t2w import T2wAnalysis
+        from banana.analysis.mri.t2w import T2wAnalysis
 
         PipelineTester.generate_test_data(
             T2wAnalysis, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
@@ -588,7 +588,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2star' in args.generate:
-        from banana.study.mri.t2star import T2starAnalysis
+        from banana.analysis.mri.t2star import T2starAnalysis
 
         PipelineTester.generate_test_data(
             T2starAnalysis, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
@@ -600,8 +600,8 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi' in args.generate:
-        from banana.study.mri.dwi import DwiAnalysis
-        from banana.study.mri.epi import EpiSeriesAnalysis
+        from banana.analysis.mri.dwi import DwiAnalysis
+        from banana.analysis.mri.epi import EpiSeriesAnalysis
 
         PipelineTester.generate_test_data(
             DwiAnalysis, op.join(args.data_dir, 'dwi'), 'TESTBANANADWI',
@@ -620,7 +620,7 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi2' in args.generate:
-        from banana.study.mri.dwi import DwiAnalysis  # @Reimport
+        from banana.analysis.mri.dwi import DwiAnalysis  # @Reimport
 
         PipelineTester.generate_test_data(
             DwiAnalysis, op.join(args.data_dir, 'dwi2'), 'TESTBANANADWI2',
@@ -631,19 +631,19 @@ if __name__ == '__main__':
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi3' in args.generate:
-        from banana import (MultiAnalysis, MultiAnalysisMetaClass, SubAnalysisSpec)
-        from banana.study.mri.dwi import DwiAnalysis  # @Reimport
-        from banana.study.mri.t1w import T1wAnalysis  # @Reimport
+        from banana import (MultiAnalysis, MultiAnalysisMetaClass, SubCompSpec)
+        from banana.analysis.mri.dwi import DwiAnalysis  # @Reimport
+        from banana.analysis.mri.t1w import T1wAnalysis  # @Reimport
 
         class DwiT1wAnalysis(MultiAnalysis, metaclass=MultiAnalysisMetaClass):
 
-            add_substudy_specs = [
-                SubAnalysisSpec(
+            add_subcomp_specs = [
+                SubCompSpec(
                     't1',
                     T1wAnalysis,
                     name_map={
                         'coreg_ref': 'dwi_mag_preproc'}),
-                SubAnalysisSpec(
+                SubCompSpec(
                     'dwi',
                     DwiAnalysis,
                     name_map={

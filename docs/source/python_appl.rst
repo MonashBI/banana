@@ -1,19 +1,19 @@
 In Python 
 =========
 
-An application of the DWI study to a dataset stored in a local directory
+An application of the DWI analysis to a dataset stored in a local directory
 
 .. code-block:: python
 
     from banana import BasicRepo, StaticEnv, SingleProc
-    from banana.study.mri import DwiAnalysis
+    from banana.analysis.mri import DwiAnalysis
     from banana.file_format import dicom_format
 
-    # Initialise study, selecting data corresponding to the data
+    # Initialise analysis, selecting data corresponding to the data
     # specified in the local directory repository and parameters
     # used in the processing
-    your_study = DwiAnalysis(
-        name='your_study',
+    your_analysis = DwiAnalysis(
+        name='your_analysis',
         repository=BasicRepo('/path/to/local/archive'),
         processor=SingleProc('/my/work/dir'),
         environment=StaticEnv(),
@@ -26,4 +26,4 @@ An application of the DWI study to a dataset stored in a local directory
 
     # Execute the pipelines required to generate file 5 and field 2
     # and return handle to generated data
-    fa, global_tracks = study.data(['fa', 'global_tracks'])
+    fa, global_tracks = analysis.data(['fa', 'global_tracks'])
