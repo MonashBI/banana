@@ -2,10 +2,10 @@
 import os.path as op
 from arcana import (
     InputFilesets, BasicRepo, SingleProc, StaticEnv)
-from banana.study.mri.dwi import DwiStudy
+from banana.study.mri.dwi import DwiAnalysis
 from banana.file_format import dicom_format
 
-study = DwiStudy(
+study = DwiAnalysis(
     name='example_diffusion',
     repository=BasicRepo(
         op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),

@@ -1,13 +1,13 @@
 from copy import copy
 from arcana.study import (
-    Study as ArcanaStudy, MultiStudy as ArcanaMultiStudy,
-     StudyMetaClass, MultiStudyMetaClass)  # noqa: E501 @UnusedImport
+    Analysis as ArcanaAnalysis, MultiAnalysis as ArcanaMultiAnalysis,
+     AnalysisMetaClass, MultiAnalysisMetaClass)  # noqa: E501 @UnusedImport
 from banana.bids_ import BidsAssocInputs
 
 
-# Extend Arcana Study class to support implicit BIDS selectors
+# Extend Arcana Analysis class to support implicit BIDS selectors
 
-# TODO: need to extend for MultiStudy's too
+# TODO: need to extend for MultiAnalysis's too
 
 class BidsMixin():
 
@@ -33,7 +33,7 @@ class BidsMixin():
 
     @classmethod
     def get_bids_inputs(cls, task=None, repository=None):
-        if issubclass(cls, MultiStudy):
+        if issubclass(cls, MultiAnalysis):
             default_bids_inputs = {}
             for spec in cls.substudy_specs():
                 if hasattr(spec.study_class, 'default_bids_inputs'):
@@ -64,9 +64,9 @@ class BidsMixin():
         return self._bids_task
 
 
-class Study(BidsMixin, ArcanaStudy):
+class Analysis(BidsMixin, ArcanaAnalysis):
     pass
 
 
-class MultiStudy(BidsMixin, ArcanaMultiStudy):
+class MultiAnalysis(BidsMixin, ArcanaMultiAnalysis):
     pass

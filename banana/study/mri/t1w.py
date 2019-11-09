@@ -5,7 +5,7 @@ from nipype.interfaces.freesurfer.preprocess import ReconAll
 from nipype.interfaces import mrtrix3
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils.interfaces import JoinPath
-from arcana.study.base import StudyMetaClass
+from arcana.study.base import AnalysisMetaClass
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.utils.interfaces import CopyToDir
 from banana.requirement import freesurfer_req, mrtrix_req
@@ -18,10 +18,10 @@ from banana.file_format import (
     nifti_gz_x_format)
 from banana.reference import LocalReferenceData
 from banana.bids_ import BidsInputs
-from .t2w import T2wStudy
+from .t2w import T2wAnalysis
 
 
-class T1wStudy(T2wStudy, metaclass=StudyMetaClass):
+class T1wAnalysis(T2wAnalysis, metaclass=AnalysisMetaClass):
 
     desc = "T1-weighted MRI contrast"
 
@@ -53,7 +53,7 @@ class T1wStudy(T2wStudy, metaclass=StudyMetaClass):
              'foldind', 'curvind'))]
 
     add_param_specs = [
-        # MriStudy.param_spec('bet_method').with_new_choices(default='opti_bet'),
+        # MriAnalysis.param_spec('bet_method').with_new_choices(default='opti_bet'),
         SwitchSpec('bet_robust', False),
         SwitchSpec('bet_reduce_bias', True),
         SwitchSpec('aparc_atlas', 'desikan-killiany',
@@ -109,7 +109,7 @@ class T1wStudy(T2wStudy, metaclass=StudyMetaClass):
         return pipeline
 
     def segmentation_pipeline(self, **name_maps):
-        pipeline = super(T1wStudy, self).segmentation_pipeline(img_type=1,
+        pipeline = super(T1wAnalysis, self).segmentation_pipeline(img_type=1,
                                                                **name_maps)
         return pipeline
 
@@ -264,6 +264,6 @@ class T1wStudy(T2wStudy, metaclass=StudyMetaClass):
 #         return pipeline
 
 
-class PreclinicalT1(T1wStudy, metaclass=StudyMetaClass):
+class PreclinicalT1(T1wAnalysis, metaclass=AnalysisMetaClass):
 
     pass

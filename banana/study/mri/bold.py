@@ -4,7 +4,7 @@ from nipype.interfaces.fsl.utils import ImageMaths, ConvertXFM
 from banana.interfaces.fsl import (FSLFIX, FSLFixTraining,
                                    SignalRegression, PrepareFIXTraining)
 from arcana.data import FilesetSpec, InputFilesetSpec
-from arcana.study.base import StudyMetaClass
+from arcana.study.base import AnalysisMetaClass
 from banana.requirement import (
     afni_req, fix_req, fsl_req, ants_req, c3d_req)
 from banana.citation import fsl_cite
@@ -17,9 +17,9 @@ import os.path as op
 from nipype.interfaces.utility.base import IdentityInterface
 from arcana.study import ParamSpec
 from nipype.interfaces.ants.resampling import ApplyTransforms
-from banana.study.mri.t1w import T1wStudy
+from banana.study.mri.t1w import T1wAnalysis
 from arcana.study.multi import (
-    MultiStudy, SubStudySpec, MultiStudyMetaClass)
+    MultiAnalysis, SubAnalysisSpec, MultiAnalysisMetaClass)
 from arcana.data import InputFilesets
 from arcana.utils.interfaces import CopyToDir
 from nipype.interfaces.afni.preprocess import BlurToFWHM
@@ -28,7 +28,7 @@ from banana.interfaces.c3d import ANTs2FSLMatrixConversion
 import logging
 from arcana.exceptions import ArcanaNameError
 from banana.bids_ import BidsInputs, BidsAssocInputs
-from .epi import EpiSeriesStudy
+from .epi import EpiSeriesAnalysis
 
 logger = logging.getLogger('banana')
 
@@ -41,7 +41,7 @@ PHASE_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'P', 'ND']
 MAG_IMAGE_TYPE = ['ORIGINAL', 'PRIMARY', 'M', 'ND', 'NORM']
 
 
-class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
+class BoldAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
     desc = "Functional MRI BOLD MRI contrast"
 
@@ -377,7 +377,7 @@ class BoldStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class MultiBoldMixin(MultiStudy):
+class MultiBoldMixin(MultiAnalysis):
     """
     A mixin class used for studies with an array of fMRI scans. Can be used to
     perform combined analysis over the array
@@ -559,7 +559,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
             'No field map image provided. Distortion correction will not be'
             'performed.')
 
-    study_specs = [SubStudySpec('t1', T1wStudy)]
+    study_specs = [SubAnalysisSpec('t1', T1wAnalysis)]
     ref_spec = {'t1_brain': 'coreg_ref_brain'}
     inputs.append(InputFilesets('t1_magnitude', t1, dicom_format,
                                 is_regex=True, order=0))
@@ -567,7 +567,7 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                         't1_preproc': 'coreg_ref',
                         'train_data': 'train_data'})
-    study_specs.append(SubStudySpec('epi_0', BoldStudy, epi_refspec))
+    study_specs.append(SubAnalysisSpec('epi_0', BoldAnalysis, epi_refspec))
     if epi_number > 1:
         epi_refspec.update({'t1_wm_seg': 'coreg_ref_wmseg',
                             't1_preproc': 'coreg_ref',
@@ -575,11 +575,11 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
                             'epi_0_coreg_to_tmpl_warp': 'coreg_to_tmpl_warp',
                             'epi_0_coreg_to_tmpl_ants_mat':
                             'coreg_to_tmpl_ants_mat'})
-        study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
+        study_specs.extend(SubAnalysisSpec('epi_{}'.format(i), BoldAnalysis,
                                         epi_refspec)
                            for i in range(1, epi_number))
 
-    study_specs.extend(SubStudySpec('epi_{}'.format(i), BoldStudy,
+    study_specs.extend(SubAnalysisSpec('epi_{}'.format(i), BoldAnalysis,
                                     epi_refspec)
                        for i in range(epi_number))
 
@@ -615,6 +615,6 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
     dct['add_param_specs'] = param_specs
-    dct['__metaclass__'] = MultiStudyMetaClass
-    return (MultiStudyMetaClass(name, (MultiBoldMixin,), dct), inputs,
+    dct['__metaclass__'] = MultiAnalysisMetaClass
+    return (MultiAnalysisMetaClass(name, (MultiBoldMixin,), dct), inputs,
             output_files)

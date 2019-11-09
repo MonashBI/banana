@@ -12,7 +12,7 @@ from arcana.exceptions import (
 from arcana.utils.interfaces import ListDir, CopyToDir
 from arcana import ParamSpec, SwitchSpec
 from arcana.data import FilesetSpec, FieldSpec, InputFilesetSpec
-from banana.study import Study, StudyMetaClass
+from banana.study import Analysis, AnalysisMetaClass
 from banana.interfaces.mrtrix.transform import MRResize
 from banana.interfaces.dicom import (
     DicomHeaderInfoExtraction, NiftixHeaderInfoExtraction,
@@ -36,7 +36,7 @@ from banana.requirement import (
 logger = logging.getLogger('arcana')
 
 
-class MriStudy(Study, metaclass=StudyMetaClass):
+class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('magnitude', STD_IMAGE_FORMATS,

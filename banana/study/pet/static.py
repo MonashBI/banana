@@ -1,6 +1,6 @@
-from .base import PetStudy
+from .base import PetAnalysis
 from arcana.data import FilesetSpec, InputFilesetSpec
-from arcana.study.base import StudyMetaClass
+from arcana.study.base import AnalysisMetaClass
 from banana.interfaces.pet import SUVRCalculation
 from banana.file_format import (nifti_gz_format)
 import os
@@ -10,7 +10,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference'))
 
 
-class StaticPetStudy(PetStudy, metaclass=StudyMetaClass):
+class StaticPetAnalysis(PetAnalysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('pet_image', nifti_gz_format),

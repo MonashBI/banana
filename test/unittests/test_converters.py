@@ -2,12 +2,12 @@ from arcana.data import InputFilesetSpec, FilesetSpec, InputFilesets
 from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
-from arcana.study.base import Study, StudyMetaClass
+from arcana.study.base import Analysis, AnalysisMetaClass
 from arcana.utils.testing import BaseTestCase
 from nipype.interfaces.utility import IdentityInterface
 
 
-class ConversionStudy(Study, metaclass=StudyMetaClass):
+class ConversionAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('mrtrix', text_format),
@@ -74,7 +74,7 @@ class TestFormatConversions(BaseTestCase):
 
     def test_pipeline_prerequisites(self):
         study = self.create_study(
-            ConversionStudy, 'conversion', [
+            ConversionAnalysis, 'conversion', [
                 InputFilesets('mrtrix', 'mrtrix', text_format),
                 InputFilesets('nifti_gz', text_format,
                               'nifti_gz'),

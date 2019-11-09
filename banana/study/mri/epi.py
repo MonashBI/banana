@@ -1,11 +1,11 @@
-from .base import MriStudy
+from .base import MriAnalysis
 from nipype.interfaces.fsl import (
     TOPUP, ApplyTOPUP, Merge as FslMerge, BET, FUGUE, PrepareFieldmap)
 from nipype.interfaces import fsl
 from nipype.interfaces.utility import Merge as merge_lists
 from arcana.study import ParamSpec, SwitchSpec
 from arcana.data import InputFilesetSpec, FilesetSpec, FieldSpec
-from arcana.study.base import StudyMetaClass
+from arcana.study.base import AnalysisMetaClass
 from banana.citation import fsl_cite
 from banana.requirement import fsl_req
 from banana.interfaces.motion_correction import (
@@ -22,7 +22,7 @@ from banana.interfaces.mrtrix import MRConvert
 from banana.requirement import mrtrix_req
 
 
-class EpiStudy(MriStudy, metaclass=StudyMetaClass):
+class EpiAnalysis(MriAnalysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('coreg_ref_wmseg', STD_IMAGE_FORMATS,
@@ -139,7 +139,7 @@ class EpiStudy(MriStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
+class EpiSeriesAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('series', STD_IMAGE_FORMATS,
@@ -167,7 +167,7 @@ class EpiSeriesStudy(EpiStudy, metaclass=StudyMetaClass):
                   'field_map_time_info_pipeline')]
 
     add_param_specs = [
-        MriStudy.param_spec('coreg_method').with_new_choices(
+        MriAnalysis.param_spec('coreg_method').with_new_choices(
             'epireg', fallbacks={'epireg': 'flirt'})]
 
     primary_scan_name = 'series'

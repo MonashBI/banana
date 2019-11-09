@@ -6,11 +6,11 @@ from arcana.exceptions import ArcanaModulesNotInstalledException
 from banana.file_format import (dicom_format, mrtrix_image_format,
                                 nifti_gz_format)
 from banana.utils.testing import TEST_ENV
-from arcana.study.base import Study, StudyMetaClass
+from arcana.study.base import Analysis, AnalysisMetaClass
 from arcana.data import InputFilesets, FilesetSpec, InputFilesetSpec
 
 
-class DummyStudy(Study, metaclass=StudyMetaClass):
+class DummyAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('input_fileset', dicom_format),
@@ -43,7 +43,7 @@ class TestDicom2Niix(BaseTestCase):
 
     def test_dcm2niix(self):
         study = self.create_study(
-            DummyStudy,
+            DummyAnalysis,
             'concatenate',
             environment=TEST_ENV,
             inputs=[

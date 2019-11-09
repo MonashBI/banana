@@ -7,11 +7,11 @@ from setuptools import find_packages
 from pkgutil import iter_modules
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
-from banana.utils.testing import StudyTester, PipelineTester
+from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study, MultiStudy)
+    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Analysis, MultiAnalysis)
 import logging
 from arcana.utils import wrap_text
 from banana.__about__ import __version__
@@ -74,7 +74,7 @@ def resolve_class(class_str, prefixes=(DEFAULT_STUDY_CLASS_PATH,)):
 
 class DeriveCmd():
 
-    desc = "Generate derivatives from a Banana Study class"
+    desc = "Generate derivatives from a Banana Analysis class"
 
     @classmethod
     def parser(cls):
@@ -387,7 +387,7 @@ class TestGenCmd():
                          "specification of the class and set of parameters"))
         parser.add_argument('study_class',
                             help=("The path to the study class to test, e.g. "
-                                  "banana.study.MriStudy"))
+                                  "banana.study.MriAnalysis"))
         parser.add_argument('in_repo', help=("The path to repository that "
                                              "houses the input data"))
         parser.add_argument('out_repo',
@@ -437,7 +437,7 @@ class TestGenCmd():
     @classmethod
     def run(cls, args):
 
-        # Get Study class
+        # Get Analysis class
         study_class = resolve_class(args.study_class)
 
         include_bases = [resolve_class(c) for c in args.bases]
@@ -599,7 +599,7 @@ class MenuCmd():
 
     @classmethod
     def run(cls, args):
-        # Get Study class
+        # Get Analysis class
         study_class = resolve_class(args.study_class)
         print(study_class.static_menu())
 
@@ -618,7 +618,7 @@ class AvailableCmd():
         parser = ArgumentParser(prog='banana avail',
                                 description=cls.desc)
         parser.add_argument('search_paths', nargs='*',
-                            help="packages to search for Study classes")
+                            help="packages to search for Analysis classes")
         return parser
 
     @classmethod
@@ -631,7 +631,7 @@ class AvailableCmd():
                     continue
                 cls = getattr(pkg_or_module, cls_name)
                 try:
-                    if (issubclass(cls, (Study, MultiStudy))
+                    if (issubclass(cls, (Analysis, MultiAnalysis))
                             and 'desc' in cls.__dict__):
                         try:
                             old_path = available[cls]
@@ -654,7 +654,7 @@ class AvailableCmd():
                     module_path = pkg_path + '.' + module_info.name
                     module = import_module(module_path)
                     find_study_classes(module, module_path)
-        msg = ("\nThe following Study classes are available:")
+        msg = ("\nThe following Analysis classes are available:")
         to_print = []
         for avail_cls, module_path in sorted(available.items(),
                                              key=lambda x: x[0].__name__):

@@ -6,13 +6,13 @@ An application of the DWI study to a dataset stored in a local directory
 .. code-block:: python
 
     from banana import BasicRepo, StaticEnv, SingleProc
-    from banana.study.mri import DwiStudy
+    from banana.study.mri import DwiAnalysis
     from banana.file_format import dicom_format
 
     # Initialise study, selecting data corresponding to the data
     # specified in the local directory repository and parameters
     # used in the processing
-    your_study = DwiStudy(
+    your_study = DwiAnalysis(
         name='your_study',
         repository=BasicRepo('/path/to/local/archive'),
         processor=SingleProc('/my/work/dir'),

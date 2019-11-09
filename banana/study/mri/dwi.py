@@ -23,12 +23,12 @@ from arcana.exceptions import ArcanaMissingDataException, ArcanaNameError
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
-from banana.study import StudyMetaClass
+from banana.study import AnalysisMetaClass
 from banana.interfaces.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.interfaces.dwi import TransformGradients
 from banana.interfaces.utility import AppendPath
-from banana.study.base import Study
+from banana.study.base import Analysis
 from banana.bids_ import BidsInputs, BidsAssocInputs
 from banana.exceptions import BananaUsageError
 from banana.citation import (
@@ -39,13 +39,13 @@ from banana.file_format import (
     fsl_bvals_format, text_format, dicom_format, eddy_par_format,
     mrtrix_track_format, motion_mats_format, text_matrix_format,
     directory_format, csv_format, zip_format, STD_IMAGE_FORMATS)
-from .base import MriStudy
-from .epi import EpiSeriesStudy, EpiStudy
+from .base import MriAnalysis
+from .epi import EpiSeriesAnalysis, EpiAnalysis
 
 logger = getLogger('banana')
 
 
-class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
+class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
     desc = "Diffusion-weighted MRI contrast"
 
@@ -135,7 +135,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                    desc=("")),
         SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd'),
                    desc=("")),
-        MriStudy.param_spec('bet_method').with_new_choices('mrtrix'),
+        MriAnalysis.param_spec('bet_method').with_new_choices('mrtrix'),
         SwitchSpec('reorient2std', False,
                    desc=(""))]
 
@@ -529,8 +529,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
             utility.IdentityInterface(
                 ['subject_id', 'visit_id']),
             inputs={
-                'subject_id': (Study.SUBJECT_ID, int),
-                'visit_id': (Study.VISIT_ID, int)})
+                'subject_id': (Analysis.SUBJECT_ID, int),
+                'visit_id': (Analysis.VISIT_ID, int)})
 
         # Set up join nodes
         join_fields = ['dwis', 'masks', 'subject_ids', 'visit_ids']
@@ -578,8 +578,8 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
                 'subject_ids': (join_over_visits, 'subject_ids'),
                 'visit_ids': (join_over_visits, 'visit_ids'),
                 'inlist': (intensity_norm, 'out_files'),
-                'subject_id': (Study.SUBJECT_ID, int),
-                'visit_id': (Study.VISIT_ID, int)},
+                'subject_id': (Analysis.SUBJECT_ID, int),
+                'visit_id': (Analysis.VISIT_ID, int)},
             outputs={
                 'norm_intensity': ('item', mrtrix_image_format)})
 
@@ -896,7 +896,7 @@ class DwiStudy(EpiSeriesStudy, metaclass=StudyMetaClass):
         return pipeline
 
 
-class DwiRefStudy(EpiStudy, metaclass=StudyMetaClass):
+class DwiRefAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('reverse_phase', STD_IMAGE_FORMATS, optional=True)

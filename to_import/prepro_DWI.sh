@@ -3,7 +3,7 @@
 # This general script will call the selected scripts for your DWI data processing. In data_path, you have to set the path to your subjects folder (don't forget to adapt the indices). Then select the scripts you want to run by uncommenting them.
 
 # General structure:
-# StudyX > data
+# AnalysisX > data
 #	     > subject_folder: 1 folder per subject
 #		> data: in this folder you put all your DICOM images  
 #		> results: this folder is made by scripts

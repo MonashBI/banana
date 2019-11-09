@@ -1,1 +1,1 @@
-from .base import Study, MultiStudy, StudyMetaClass, MultiStudyMetaClass
+from .base import Analysis, MultiAnalysis, AnalysisMetaClass, MultiAnalysisMetaClass

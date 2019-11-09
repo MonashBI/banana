@@ -1,6 +1,6 @@
-from .base import PetStudy
+from .base import PetAnalysis
 from arcana.data import FilesetSpec, InputFilesetSpec
-from arcana.study.base import StudyMetaClass
+from arcana.study.base import AnalysisMetaClass
 from nipype.interfaces.fsl import ExtractROI
 from nipype.interfaces.ants.resampling import ApplyTransforms
 from arcana.utils.interfaces import Merge
@@ -15,7 +15,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference'))
 
 
-class DynamicPetStudy(PetStudy, metaclass=StudyMetaClass):
+class DynamicPetAnalysis(PetAnalysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('pet_volumes', nifti_gz_format),

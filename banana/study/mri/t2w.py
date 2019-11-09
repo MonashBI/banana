@@ -1,6 +1,6 @@
-from .base import MriStudy
+from .base import MriAnalysis
 from nipype.interfaces.utility import Split
-from arcana import ParamSpec, SwitchSpec, FilesetSpec, StudyMetaClass
+from arcana import ParamSpec, SwitchSpec, FilesetSpec, AnalysisMetaClass
 from banana.exceptions import BananaUsageError
 from nipype.interfaces import fsl
 from banana.requirement import fsl_req
@@ -9,7 +9,7 @@ from banana.file_format import nifti_gz_format, nifti_gz_x_format
 from banana.bids_ import BidsInputs
 
 
-class T2wStudy(MriStudy, metaclass=StudyMetaClass):
+class T2wAnalysis(MriAnalysis, metaclass=AnalysisMetaClass):
 
     desc = "T2-weighted MRI contrast"
 

@@ -1,4 +1,4 @@
-from arcana.study.base import Study, StudyMetaClass
+from arcana.study.base import Analysis, AnalysisMetaClass
 from arcana.data import (
     FilesetSpec, FieldSpec, InputFilesetSpec, InputFieldSpec)
 from banana.file_format import (
@@ -22,7 +22,7 @@ template_path = os.path.abspath(
                  'arcana', 'reference'))
 
 
-class PetStudy(Study, metaclass=StudyMetaClass):
+class PetAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_param_specs = [ParamSpec('ica_n_components', 2),
                        ParamSpec('ica_type', 'spatial'),

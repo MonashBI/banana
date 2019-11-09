@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from arcana.data import InputFilesets
-from banana.study.mri.diffusion import DwiStudy
+from banana.study.mri.diffusion import DwiAnalysis
 from arcana.repository.basic import BasicRepo
 from banana.file_format import mrtrix_image_format
 
@@ -16,7 +16,7 @@ DATASET_NAME = 'tbi_test'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-study = DwiStudy(
+study = DwiAnalysis(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
     repository=BasicRepo(repository_path),

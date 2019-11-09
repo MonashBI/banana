@@ -11,7 +11,7 @@ from arcana.data.input import InputFilesets
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
-from arcana.study.multi import MultiStudy
+from arcana.study.multi import MultiAnalysis
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
     tsv_format, json_format, nifti_format)
@@ -426,7 +426,7 @@ class BidsAssocInputs(InputFilesets):
         # associated selector so we set the bound version temporarily to
         # self._primary before winding it back after we have done the bind
         unbound_primary = self._primary
-        if isinstance(study, MultiStudy) and hasattr(self,
+        if isinstance(study, MultiAnalysis) and hasattr(self,
                                                      'prefixed_primary_name'):
             primary_spec_name = self.prefixed_primary_name  # noqa pylint: disable=no-member
         else:

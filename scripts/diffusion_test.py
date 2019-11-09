@@ -1,12 +1,12 @@
 from arcana import BasicRepo, SingleProc, InputFilesets
-from banana.study.mri.structural.diffusion import DwiStudy
+from banana.study.mri.structural.diffusion import DwiAnalysis
 from banana.file_format import dicom_format
 import os.path as op
 
 test_dir = op.join(op.dirname(__file__), '..', 'test', 'data',
                    'diffusion-test')
 
-study = DwiStudy(
+study = DwiAnalysis(
     'diffusion',
     BasicRepo(op.join(test_dir, 'study')),
     SingleProc(op.join(test_dir, 'work')),

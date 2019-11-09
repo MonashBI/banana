@@ -1,12 +1,12 @@
-from banana.study.mri.dwi import DwiStudy
-from banana.utils.testing import StudyTester, TEST_CACHE_DIR
+from banana.study.mri.dwi import DwiAnalysis
+from banana.utils.testing import AnalysisTester, TEST_CACHE_DIR
 from arcana.repository.xnat import XnatRepo
 
 
-class TestMriStudy(StudyTester):
+class TestMriAnalysis(AnalysisTester):
 
     name = 'Dwi'
-    study_class = DwiStudy
+    study_class = DwiAnalysis
     ref_repo = XnatRepo(server='https://mbi-xnat.erc.monash.edu.au',
                         project_id='TESTBANANADWI',
                         cache_dir=TEST_CACHE_DIR)

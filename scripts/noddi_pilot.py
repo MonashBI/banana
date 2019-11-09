@@ -2,7 +2,7 @@
 import os.path
 import shutil
 from arcana.data import InputFilesets
-from banana.study.mri.diffusion import NODDIStudy
+from banana.study.mri.diffusion import NODDIAnalysis
 from arcana.repository.basic import BasicRepo
 from banana.file_format import mrtrix_image_format
 
@@ -21,7 +21,7 @@ DATASET_NAME = 'noddi'
 
 shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
-study = NODDIStudy(
+study = NODDIAnalysis(
     name=DATASET_NAME,
     project_id=NODDI_PROJECT, repository=BasicRepo(repository_path),
     input_scans=[

@@ -2,7 +2,7 @@
 import os.path
 import errno
 from arcana.data import InputFilesets
-from banana.study.mri.structural.t2star import T2starStudy
+from banana.study.mri.structural.t2star import T2starAnalysis
 from arcana.repository.xnat import XnatRepo
 from banana.file_format import zip_format
 import argparse
@@ -44,7 +44,7 @@ else:
 
 repository.cache(PROJECT_ID, filesets.values(), subject_ids=ids, visit_ids=visit_ids)
     
-study = T2starStudy(
+study = T2starAnalysis(
     name='qsm',
     project_id=PROJECT_ID, repository=repository, input_filesets=filesets)
 study.qsm_pipeline().submit(subject_ids=ids, visit_ids=visit_ids,

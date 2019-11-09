@@ -2,7 +2,7 @@ import re
 from logging import getLogger
 from nipype.interfaces import fsl, ants
 from nipype.interfaces.utility import Select, Function
-from arcana.study import StudyMetaClass
+from arcana.study import AnalysisMetaClass
 from arcana.data import FilesetSpec, InputFilesetSpec
 from arcana.utils import get_class_info
 from arcana.utils.interfaces import ListDir, CopyToDir
@@ -23,7 +23,7 @@ from banana.file_format import (
     nifti_gz_format, nifti_format, text_matrix_format,
     multi_nifti_gz_format, STD_IMAGE_FORMATS)
 from banana.reference import LocalReferenceData
-from .base import MriStudy
+from .base import MriAnalysis
 
 logger = getLogger('banana')
 
@@ -67,7 +67,7 @@ def calculate_delta_te(echo_times):
     return (echo_times[1] - echo_times[0]) * 1000
 
 
-class T2starStudy(MriStudy, metaclass=StudyMetaClass):
+class T2starAnalysis(MriAnalysis, metaclass=AnalysisMetaClass):
 
     desc = "T2*-weighted MRI contrast"
 
@@ -115,7 +115,7 @@ class T2starStudy(MriStudy, metaclass=StudyMetaClass):
                                                     nifti_gz_format))]
 
     add_param_specs = [
-        MriStudy.param_spec('reorient_to_std').with_new_default(False),
+        MriAnalysis.param_spec('reorient_to_std').with_new_default(False),
         ParamSpec('qsm_echo', 1,
                   desc=("Which echo (by index starting at 1) to use when "
                         "using single echo")),

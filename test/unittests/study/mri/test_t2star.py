@@ -1,14 +1,14 @@
 import os.path as op
 from arcana import SingleProc
-from banana.study.mri.t2star import T2starStudy
-from banana.utils.testing import StudyTester, TEST_CACHE_DIR
+from banana.study.mri.t2star import T2starAnalysis
+from banana.utils.testing import AnalysisTester, TEST_CACHE_DIR
 from banana import InputFilesets
 from banana import ModulesEnv
 
 
-class TestT2star(StudyTester):
+class TestT2star(AnalysisTester):
 
-    study_class = T2starStudy
+    study_class = T2starAnalysis
     inputs = ['kspace', 'coreg_ref']
     dataset_name = op.join('study', 'mri', 't2star')
     parameters = {

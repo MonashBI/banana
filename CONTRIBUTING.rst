@@ -8,5 +8,5 @@ a unittest using the unittesting framework in the *banana.utils.testing* module
 when submitting your request.
 
 Note that project-specific analyses can be implemented in sub-classes of core
-Banana "Study" classes, so it is not always necessary to make changes in Banana
+Banana "Analysis" classes, so it is not always necessary to make changes in Banana
 itself.

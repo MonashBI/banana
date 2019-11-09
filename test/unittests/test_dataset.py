@@ -1,11 +1,11 @@
 from arcana.utils.testing import BaseTestCase, BaseMultiSubjectTestCase
-from arcana.study.base import Study, StudyMetaClass
+from arcana.study.base import Analysis, AnalysisMetaClass
 from arcana.data import InputFilesetSpec, FilesetSpec, InputFilesets
 from banana.file_format import (
     dicom_format)
 
 
-class TestMatchStudy(Study, metaclass=StudyMetaClass):
+class TestMatchAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('gre_phase', dicom_format),
@@ -38,7 +38,7 @@ class TestDicomTagMatch(BaseTestCase):
 
     def test_dicom_match(self):
         study = self.create_study(
-            TestMatchStudy, 'test_dicom',
+            TestMatchAnalysis, 'test_dicom',
             inputs=self.DICOM_MATCH)
         phase = list(study.data('gre_phase'))[0]
         mag = list(study.data('gre_mag'))[0]
@@ -47,7 +47,7 @@ class TestDicomTagMatch(BaseTestCase):
 
     def test_order_match(self):
         study = self.create_study(
-            TestMatchStudy, 'test_dicom',
+            TestMatchAnalysis, 'test_dicom',
             inputs=[
                 InputFilesets('gre_phase', valid_formats=dicom_format,
                               pattern=self.GRE_PATTERN, order=1,

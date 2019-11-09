@@ -1,12 +1,12 @@
-from banana.study.mri.t1w import T1wStudy
-from banana.utils.testing import StudyTester, TEST_CACHE_DIR
+from banana.study.mri.t1w import T1wAnalysis
+from banana.utils.testing import AnalysisTester, TEST_CACHE_DIR
 from arcana.repository.xnat import XnatRepo
 
 
-class TestT1wStudy(StudyTester):
+class TestT1wAnalysis(AnalysisTester):
 
     name = 'T1'
-    study_class = T1wStudy
+    study_class = T1wAnalysis
     ref_repo = XnatRepo(server='https://mbi-xnat.erc.monash.edu.au',
                         project_id='TESTBANANAT1',
                         cache_dir=TEST_CACHE_DIR)

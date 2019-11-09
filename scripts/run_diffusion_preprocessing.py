@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os.path
 import errno
-from banana.study.mri.dwi import DwiStudy
+from banana.study.mri.dwi import DwiAnalysis
 from arcana.repository.xnat import XnatRepo
 from banana.file_format import dicom_format
 import logging
@@ -18,7 +18,7 @@ if __name__ == "__main__":
     parser.add_argument('--session', type=str, nargs='+', default=None,
                         help="Session IDs to process")
     parser.add_argument('--study_name', type=str, default='diffusion',
-                        help="Study name to be prepend to the output names "
+                        help="Analysis name to be prepend to the output names "
                         "of all pre-processing results. Default is "
                         "'diffusion'.")
     args = parser.parse_args()
@@ -51,7 +51,7 @@ if __name__ == "__main__":
         InputFilesets('magnitude', dicom_format,
                       'L-R_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2')]
 
-    study = DwiStudy(
+    study = DwiAnalysis(
         name=args.study_name,
         repository=XnatRepo(
             project_id='MRH060', server='https://mbi-xnat.erc.monash.edu.au',

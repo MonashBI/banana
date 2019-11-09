@@ -131,7 +131,7 @@ class FslReferenceData(BaseReference):
 
         Parameters
         ----------
-        substudy_spec : SubStudySpec
+        substudy_spec : SubAnalysisSpec
             The sub-study that the spec belongs to
         """
         if isinstance(self._resolution, str):

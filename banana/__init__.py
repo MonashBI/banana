@@ -22,7 +22,7 @@ import os
 
 # Import all objects from Arcana used to design and apply Banana studies
 from arcana import (
-    SubStudySpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
+    SubAnalysisSpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
     FilesetSpec, InputFilesets, InputFilesetSpec, FilesetCollection, Field,
     FieldSpec, InputFields, InputFieldSpec, FieldCollection, SingleProc,
     MultiProc, SlurmProc, StaticEnv,
@@ -31,9 +31,9 @@ from arcana import (
 from .bids_ import BidsRepo
 
 
-# Import all Study classes into package root
+# Import all Analysis classes into package root
 from .study.base import (
-    Study, StudyMetaClass, MultiStudy, MultiStudyMetaClass)
+    Analysis, AnalysisMetaClass, MultiAnalysis, MultiAnalysisMetaClass)
 
 # Should be set explicitly in all FSL interfaces, but this squashes the warning
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'

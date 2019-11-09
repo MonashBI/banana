@@ -8,17 +8,17 @@ from banana.interfaces.motion_correction import (
     UmapAlign2Reference, ReorientUmap)
 from banana.citation import fsl_cite
 from arcana.study.multi import (
-    MultiStudy, SubStudySpec, MultiStudyMetaClass)
-from banana.study.mri.epi import EpiSeriesStudy
-from banana.study.mri.t1w import T1wStudy
-from banana.study.mri.t2w import T2wStudy
+    MultiAnalysis, SubAnalysisSpec, MultiAnalysisMetaClass)
+from banana.study.mri.epi import EpiSeriesAnalysis
+from banana.study.mri.t1w import T1wAnalysis
+from banana.study.mri.t2w import T2wAnalysis
 from nipype.interfaces.utility import Merge
-from banana.study.mri.dwi import DwiStudy, DwiRefStudy
+from banana.study.mri.dwi import DwiAnalysis, DwiRefAnalysis
 from banana.requirement import fsl_req, mrtrix_req, ants_req
 from arcana.exceptions import ArcanaNameError
 from arcana.data import InputFilesets
 import logging
-from banana.study.pet.base import PetStudy
+from banana.study.pet.base import PetAnalysis
 from banana.interfaces.pet import (
     CheckPetMCInputs, PetImageMotionCorrection, StaticPETImageGeneration,
     PETFovCropping)
@@ -50,10 +50,10 @@ template_path = os.path.abspath(
                  'banana', 'banana', 'templates'))
 
 
-class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
+class MotionDetectionMixin(MultiAnalysis, metaclass=MultiAnalysisMetaClass):
 
     #     add_substudy_specs = [
-    #         SubStudySpec('pet_mc', PetStudy)]
+    #         SubAnalysisSpec('pet_mc', PetAnalysis)]
 
     add_data_specs = [
         InputFilesetSpec('pet_data_dir', directory_format, optional=True),
@@ -472,10 +472,10 @@ class MotionDetectionMixin(MultiStudy, metaclass=MultiStudyMetaClass):
 
         return pipeline
 
-    prepare_pet_pipeline = MultiStudy.translate(
+    prepare_pet_pipeline = MultiAnalysis.translate(
         'pet_mc', 'pet_data_preparation_pipeline')
 
-    pet_header_extraction_pipeline = MultiStudy.translate(
+    pet_header_extraction_pipeline = MultiAnalysis.translate(
         'pet_mc', 'pet_time_info_extraction_pipeline')
 
     def motion_correction_pipeline(self, **name_maps):
@@ -719,20 +719,20 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
     if not ref:
         raise Exception('A reference image must be provided!')
     if ref_type == 't1':
-        ref_study = T1wStudy
+        ref_study = T1wAnalysis
     elif ref_type == 't2':
-        ref_study = T2wStudy
+        ref_study = T2wAnalysis
     else:
         raise Exception('{} is not a recognized ref_type!The available '
                         'ref_types are t1 or t2.'.format(ref_type))
 
-    study_specs = [SubStudySpec('ref', ref_study)]
+    study_specs = [SubAnalysisSpec('ref', ref_study)]
     ref_spec = {'coreg_ref_brain': 'ref_brain'}
     inputs.append(InputFilesets('ref_magnitude', ref, dicom_format))
 
     if t1s:
         study_specs.extend(
-            [SubStudySpec('t1_{}'.format(i), T1wStudy, ref_spec)
+            [SubAnalysisSpec('t1_{}'.format(i), T1wAnalysis, ref_spec)
              for i in range(len(t1s))])
         inputs.extend(
             InputFilesets('t1_{}_magnitude'.format(i), t1_scan, dicom_format)
@@ -741,7 +741,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
     if t2s:
         study_specs.extend(
-            [SubStudySpec('t2_{}'.format(i), T2wStudy, ref_spec)
+            [SubAnalysisSpec('t2_{}'.format(i), T2wAnalysis, ref_spec)
              for i in range(len(t2s))])
         inputs.extend(InputFilesets('t2_{}_magnitude'.format(i), t2_scan,
                                     dicom_format)
@@ -752,7 +752,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         epi_refspec = ref_spec.copy()
         epi_refspec.update({'coreg_ref_wmseg': 'ref_wm_seg',
                             'coreg_ref': 'ref_mag_preproc'})
-        study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiSeriesStudy,
+        study_specs.extend(SubAnalysisSpec('epi_{}'.format(i), EpiSeriesAnalysis,
                                         epi_refspec)
                            for i in range(len(epis)))
         inputs.extend(
@@ -773,7 +773,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 'motion correction will be performed without distortion '
                 'correction. THIS IS SUB-OPTIMAL!')
             study_specs.extend(
-                SubStudySpec('dwi_{}'.format(i), DwiStudy, ref_spec)
+                SubAnalysisSpec('dwi_{}'.format(i), DwiAnalysis, ref_spec)
                 for i in range(len(dwis_main)))
             inputs.extend(
                 InputFilesets('dwi_{}_series'.format(i),
@@ -781,7 +781,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 for i, dwis_main_scan in enumerate(dwis_main))
         if dwis_main and dwis_opposite:
             study_specs.extend(
-                SubStudySpec('dwi_{}'.format(i), DwiStudy, ref_spec)
+                SubAnalysisSpec('dwi_{}'.format(i), DwiAnalysis, ref_spec)
                 for i in range(len(dwis_main)))
             inputs.extend(
                 InputFilesets(
@@ -799,7 +799,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                               for i in range(len(dwis_main)))
         if dwis_opposite and dwis_main and not dwis_ref:
             study_specs.extend(
-                SubStudySpec('b0_{}'.format(i), DwiRefStudy, b0_refspec)
+                SubAnalysisSpec('b0_{}'.format(i), DwiRefAnalysis, b0_refspec)
                 for i in range(len(dwis_opposite)))
             inputs.extend(InputFilesets('b0_{}_magnitude'.format(i),
                                         dwis_opposite[i][0], dicom_format)
@@ -815,7 +815,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
         elif dwis_opposite and dwis_ref:
             min_index = min(len(dwis_opposite), len(dwis_ref))
             study_specs.extend(
-                SubStudySpec('b0_{}'.format(i), DwiRefStudy, b0_refspec)
+                SubAnalysisSpec('b0_{}'.format(i), DwiRefAnalysis, b0_refspec)
                 for i in range(min_index * 2))
             inputs.extend(
                 InputFilesets('b0_{}_magnitude'.format(i),
@@ -839,7 +839,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
                 'processed os "other" scans.'
                 .format('\n'.join(s[0] for s in unused_dwi)))
             study_specs.extend(
-                SubStudySpec('t2_{}'.format(i), T2wStudy, ref_spec)
+                SubAnalysisSpec('t2_{}'.format(i), T2wAnalysis, ref_spec)
                 for i in range(len(t2s), len(t2s) + len(unused_dwi)))
             inputs.extend(
                 InputFilesets('t2_{}_magnitude'.format(i), scan[0],
@@ -853,9 +853,9 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
     dct['add_substudy_specs'] = study_specs
     dct['add_data_specs'] = data_specs
-    dct['__metaclass__'] = MultiStudyMetaClass
+    dct['__metaclass__'] = MultiAnalysisMetaClass
     dct['add_param_specs'] = param_specs
-    return MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs
+    return MultiAnalysisMetaClass(name, (MotionDetectionMixin,), dct), inputs
 
 
 # def create_motion_correction_class(name, ref=None, ref_type=None, t1s=None,
@@ -897,14 +897,14 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #     if not ref:
 #         raise Exception('A reference image must be provided!')
 #     if ref_type == 't1':
-#         ref_study = T1wStudy
+#         ref_study = T1wAnalysis
 #     elif ref_type == 't2':
-#         ref_study = T2wStudy
+#         ref_study = T2wAnalysis
 #     else:
 #         raise Exception('{} is not a recognized ref_type!The available '
 #                         'ref_types are t1 or t2.'.format(ref_type))
 
-#     study_specs = [SubStudySpec('ref', ref_study)]
+#     study_specs = [SubAnalysisSpec('ref', ref_study)]
 #     ref_spec = {'coreg_ref_brain': 'coreg_ref_brain'}
 #     inputs.append(InputFilesets('ref_magnitude', ref, dicom_format))
 
@@ -914,16 +914,16 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #         else:
 #             umap_ref = umap_ref.split('/')[-1]
 #         if umap_ref in t1s:
-#             umap_ref_study = T1wStudy
+#             umap_ref_study = T1wAnalysis
 #             t1s.remove(umap_ref)
 #         elif umap_ref in t2s:
-#             umap_ref_study = T2wStudy
+#             umap_ref_study = T2wAnalysis
 #             t2s.remove(umap_ref)
 #         else:
 #             umap_ref = None
 
 #     if t1s:
-#         study_specs.extend([SubStudySpec('t1_{}'.format(i), T1wStudy,
+#         study_specs.extend([SubAnalysisSpec('t1_{}'.format(i), T1wAnalysis,
 #                                          ref_spec) for i in range(len(t1s))])
 #         inputs.extend(
 #             InputFilesets('t1_{}_magnitude'.format(i), dicom_format, t1_scan)
@@ -931,7 +931,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #         run_pipeline = True
 
 #     if t2s:
-#         study_specs.extend([SubStudySpec('t2_{}'.format(i), T2wStudy,
+#         study_specs.extend([SubAnalysisSpec('t2_{}'.format(i), T2wAnalysis,
 #                                          ref_spec) for i in range(len(t2s))])
 #         inputs.extend(InputFilesets('t2_{}_magnitude'.format(i),
 #                                     t2_scan, dicom_format)
@@ -950,7 +950,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 # noqa            logger.info('More than one umap provided. Only the first one will '
 #                         'be used.')
 #             umap = umap[0]
-# noqa         study_specs.append(SubStudySpec('umap_ref', umap_ref_study, ref_spec))
+# noqa         study_specs.append(SubAnalysisSpec('umap_ref', umap_ref_study, ref_spec))
 #         inputs.append(InputFilesets('umap_ref_magnitude', dicom_format,
 #                                     umap_ref))
 #         inputs.append(InputFilesets('umap', dicom_format, umap))
@@ -966,7 +966,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #         epi_refspec = ref_spec.copy()
 #         epi_refspec.update({'ref_wm_seg': 'coreg_ref_wmseg',
 #                             'ref_preproc': 'coreg_ref'})
-#         study_specs.extend(SubStudySpec('epi_{}'.format(i), EpiSeriesStudy,
+#         study_specs.extend(SubAnalysisSpec('epi_{}'.format(i), EpiSeriesAnalysis,
 #                                         epi_refspec)
 #                            for i in range(len(epis)))
 #         inputs.extend(
@@ -991,7 +991,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #                 'motion correction will be performed without distortion '
 #                 'correction. THIS IS SUB-OPTIMAL!')
 #             study_specs.extend(
-#                 SubStudySpec('dwi_{}'.format(i), DwiStudy, dwi_refspec)
+#                 SubAnalysisSpec('dwi_{}'.format(i), DwiAnalysis, dwi_refspec)
 #                 for i in range(len(dwis_main)))
 #             inputs.extend(
 #                 InputFilesets('dwi_{}_series'.format(i),
@@ -999,7 +999,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #                 for i, dwis_main_scan in enumerate(dwis_main))
 #         if dwis_main and dwis_opposite:
 #             study_specs.extend(
-#                 SubStudySpec('dwi_{}'.format(i), DwiStudy, dwi_refspec)
+#                 SubAnalysisSpec('dwi_{}'.format(i), DwiAnalysis, dwi_refspec)
 #                 for i in range(len(dwis_main)))
 #             inputs.extend(
 #                 InputFilesets(
@@ -1019,7 +1019,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #                               for i in range(len(dwis_main)))
 #         if dwis_opposite and dwis_main and not dwis_ref:
 #             study_specs.extend(
-#                 SubStudySpec('b0_{}'.format(i), DwiRefStudy, dwi_refspec)
+#                 SubAnalysisSpec('b0_{}'.format(i), DwiRefAnalysis, dwi_refspec)
 #                 for i in range(len(dwis_opposite)))
 #             inputs.extend(InputFilesets('b0_{}_series'.format(i),
 #                                         dwis_opposite[i][0], dicom_format)
@@ -1035,7 +1035,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #         elif dwis_opposite and dwis_ref:
 #             min_index = min(len(dwis_opposite), len(dwis_ref))
 #             study_specs.extend(
-#                 SubStudySpec('b0_{}'.format(i), DwiRefStudy, dwi_refspec)
+#                 SubAnalysisSpec('b0_{}'.format(i), DwiRefAnalysis, dwi_refspec)
 #                 for i in range(min_index * 2))
 #             inputs.extend(
 #                 InputFilesets('b0_{}_series'.format(i), scan[0],
@@ -1059,7 +1059,7 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #                 'processed os "other" scans.'
 #                 .format('\n'.join(s[0] for s in unused_dwi)))
 #             study_specs.extend(
-#                 SubStudySpec('t2_{}'.format(i), T2wStudy, ref_spec)
+#                 SubAnalysisSpec('t2_{}'.format(i), T2wAnalysis, ref_spec)
 #                 for i in range(len(t2s), len(t2s) + len(unused_dwi)))
 #             inputs.extend(
 #                 InputFilesets('t2_{}_magnitude'.format(i), scan[0],
@@ -1073,8 +1073,8 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 
 #     dct['add_substudy_specs'] = study_specs
 #     dct['add_data_specs'] = data_specs
-#     dct['__metaclass__'] = MultiStudyMetaClass
+#     dct['__metaclass__'] = MultiAnalysisMetaClass
 #     dct['add_param_specs'] = param_specs
 #     dct['add_switch_specs'] = switch_specs
-#     return (MultiStudyMetaClass(name, (MotionDetectionMixin,), dct), inputs,
+#     return (MultiAnalysisMetaClass(name, (MotionDetectionMixin,), dct), inputs,
 #             output_data)
