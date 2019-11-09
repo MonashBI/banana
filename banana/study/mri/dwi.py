@@ -2,7 +2,6 @@ from logging import getLogger
 from nipype.interfaces.utility import Merge
 from nipype.interfaces.fsl import (
     TOPUP, ApplyTOPUP, BET, FUGUE, Merge as FslMerge)
-from nipype.interfaces import fsl
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.epi import PrepareFieldmap
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
