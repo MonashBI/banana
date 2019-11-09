@@ -7,7 +7,7 @@ from banana.file_format import (dicom_format, mrtrix_image_format,
                                 nifti_gz_format)
 from banana.utils.testing import TEST_ENV
 from arcana.analysis.base import Analysis, AnalysisMetaClass
-from arcana.data import InputFilesets, FilesetSpec, InputFilesetSpec
+from arcana.data import FilesetFilter, FilesetSpec, InputFilesetSpec
 
 
 class DummyAnalysis(Analysis, metaclass=AnalysisMetaClass):
@@ -47,7 +47,7 @@ class TestDicom2Niix(BaseTestCase):
             'concatenate',
             environment=TEST_ENV,
             inputs=[
-                InputFilesets('input_fileset',
+                FilesetFilter('input_fileset',
                               dicom_format, 't2_tse_tra_p2_448')])
 
         self.assertFilesetCreated(

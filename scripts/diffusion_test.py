@@ -1,4 +1,4 @@
-from arcana import BasicRepo, SingleProc, InputFilesets
+from arcana import BasicRepo, SingleProc, FilesetFilter
 from banana.analysis.mri.structural.diffusion import DwiAnalysis
 from banana.file_format import dicom_format
 import os.path as op
@@ -10,9 +10,9 @@ analysis = DwiAnalysis(
     'diffusion',
     BasicRepo(op.join(test_dir, 'analysis')),
     SingleProc(op.join(test_dir, 'work')),
-    inputs=[InputFilesets('magnitude', dicom_format, '16.*',
+    inputs=[FilesetFilter('magnitude', dicom_format, '16.*',
                          is_regex=True),
-            InputFilesets('reverse_phase', dicom_format, '15.*',
+            FilesetFilter('reverse_phase', dicom_format, '15.*',
                          is_regex=True)])
 
 print('FA: {}'.format(analysis.data('fa').path(subject_id='subject',

@@ -23,8 +23,8 @@ import os
 # Import all objects from Arcana used to design and apply Banana studies
 from arcana import (
     SubCompSpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
-    FilesetSpec, InputFilesets, InputFilesetSpec, FilesetCollection, Field,
-    FieldSpec, InputFields, InputFieldSpec, FieldCollection, SingleProc,
+    FilesetSpec, FilesetFilter, InputFilesetSpec, FilesetCollection, Field,
+    FieldSpec, FieldFilter, InputFieldSpec, FieldCollection, SingleProc,
     MultiProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, XnatRepo)
 

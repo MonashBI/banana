@@ -6,7 +6,7 @@ from arcana.repository.xnat import XnatRepo
 from banana.file_format import dicom_format
 import logging
 import argparse
-from arcana.data.input import InputFilesets
+from arcana.data.input import FilesetFilter
 from arcana.processor.single import SingleProc
 
 
@@ -46,9 +46,9 @@ if __name__ == "__main__":
     logger.addHandler(handler)
 
     inputs = [
-        InputFilesets('series', dicom_format,
+        FilesetFilter('series', dicom_format,
                       'R-L_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2'),
-        InputFilesets('magnitude', dicom_format,
+        FilesetFilter('magnitude', dicom_format,
                       'L-R_MRtrix_60_directions_interleaved_B0_ep2d_diff_p2')]
 
     analysis = DwiAnalysis(

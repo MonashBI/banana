@@ -10,7 +10,7 @@ from arcana.utils import parse_value
 from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
-    InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
+    FilesetFilter, FieldFilter, MultiProc, SingleProc, SlurmProc, StaticEnv,
     ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Analysis, MultiAnalysis)
 import logging
 from arcana.utils import wrap_text
@@ -340,9 +340,9 @@ class DeriveCmd():
         for name, pattern in args.input:
             spec = analysis_class.data_spec(name)
             if spec.is_fileset:
-                inpt_cls = InputFilesets
+                inpt_cls = FilesetFilter
             else:
-                inpt_cls = InputFields
+                inpt_cls = FieldFilter
             inputs[name] = inpt_cls(name, pattern=pattern, is_regex=True,
                                     repository=input_repository)
 
@@ -361,7 +361,7 @@ class DeriveCmd():
 
         for spec_name in args.cache:
             spec = analysis.bound_spec(spec_name)
-            if not isinstance(spec, InputFilesets):
+            if not isinstance(spec, FilesetFilter):
                 raise BananaUsageError(
                     "Cannot cache non-input fileset '{}'".format(spec_name))
             spec.cache()

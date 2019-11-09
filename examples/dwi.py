@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os.path as op
 from arcana import (
-    InputFilesets, BasicRepo, SingleProc, StaticEnv)
+    FilesetFilter, BasicRepo, SingleProc, StaticEnv)
 from banana.analysis.mri.dwi import DwiAnalysis
 from banana.file_format import dicom_format
 
@@ -11,8 +11,8 @@ analysis = DwiAnalysis(
         op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),
     processor=SingleProc(work_dir=op.expanduser('~/work')),
     environment=StaticEnv(),
-    inputs=[InputFilesets('magnitude', 'R_L.*', dicom_format, is_regex=True),
-            InputFilesets('reverse_phase', 'L_R.*', dicom_format,
+    inputs=[FilesetFilter('magnitude', 'R_L.*', dicom_format, is_regex=True),
+            FilesetFilter('reverse_phase', 'L_R.*', dicom_format,
                             is_regex=True)],
     parameters={'num_global_tracks': int(1e6)})
 

@@ -7,7 +7,7 @@ from bids.layout import BIDSLayout
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaUsageError)
 from banana.exceptions import BananaUsageError, BananaUnrecognisedBidsFormat
-from arcana.data.input import InputFilesets
+from arcana.data.input import FilesetFilter
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
 from arcana.repository import BasicRepo
@@ -284,7 +284,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
                         self.visit_id))
 
 
-class BidsInputs(InputFilesets, BaseBidsFileset):
+class BidsInputs(FilesetFilter, BaseBidsFileset):
     """
     A match object for matching filesets from their BIDS attributes and file
     format. If any of the provided attributes are None, then that attribute
@@ -306,7 +306,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
 
     def __init__(self, spec_name, type, valid_formats=None, task=None,
                  modality=None, **kwargs):
-        InputFilesets.__init__(
+        FilesetFilter.__init__(
             self, spec_name, pattern=None, valid_formats=valid_formats,
             frequency='per_session', **kwargs)
         BaseBidsFileset.__init__(self, type, modality, task)
@@ -335,15 +335,15 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
                     self.modality, self.task))
 
     def __eq__(self, other):
-        return (InputFilesets.__eq__(self, other) and
+        return (FilesetFilter.__eq__(self, other) and
                 BaseBidsFileset.__eq__(self, other))
 
     def __hash__(self):
-        return (InputFilesets.__hash__(self) ^
+        return (FilesetFilter.__hash__(self) ^
                 BaseBidsFileset.__hash__(self))
 
     def initkwargs(self):
-        dct = InputFilesets.initkwargs(self)
+        dct = FilesetFilter.initkwargs(self)
         dct.update(BaseBidsFileset.initkwargs(self))
         return dct
 
@@ -355,7 +355,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         self._task = task
 
 
-class BidsAssocInputs(InputFilesets):
+class BidsAssocInputs(FilesetFilter):
     """
     A match object for matching BIDS filesets that are associated with
     another BIDS filesets (e.g. field-maps, bvecs, bvals)
@@ -380,7 +380,7 @@ class BidsAssocInputs(InputFilesets):
 
     def __init__(self, spec_name, primary, association, type=None, format=None,
                  **kwargs):
-        InputFilesets.__init__(self, spec_name, format,
+        FilesetFilter.__init__(self, spec_name, format,
                                frequency='per_session', **kwargs)
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
@@ -392,21 +392,21 @@ class BidsAssocInputs(InputFilesets):
         self._type = type
 
     def __eq__(self, other):
-        return (InputFilesets.__eq__(self, other) and
+        return (FilesetFilter.__eq__(self, other) and
                 self.primary == other.primary and
                 self.format == other.format and
                 self.association == other.association and
                 self._type == other._type)
 
     def __hash__(self):
-        return (InputFilesets.__hash__(self) ^
+        return (FilesetFilter.__hash__(self) ^
                 hash(self.primary) ^
                 hash(self.format) ^
                 hash(self.association) ^
                 hash(self._type))
 
     def initkwargs(self):
-        dct = InputFilesets.initkwargs(self)
+        dct = FilesetFilter.initkwargs(self)
         dct['primary'] = self.primary
         dct['format'] = self.primary
         dct['association'] = self.association

@@ -18,8 +18,8 @@ An application of the DWI analysis to a dataset stored in a local directory
         processor=SingleProc('/my/work/dir'),
         environment=StaticEnv(),
         inputs=[
-            InputFilesets('series', 'RL-epi-diffusion-series', dicom_format),
-            InputFilesets('reverse_phase', 'LR-epi-diffusion-ref',
+            FilesetFilter('series', 'RL-epi-diffusion-series', dicom_format),
+            FilesetFilter('reverse_phase', 'LR-epi-diffusion-ref',
                           dicom_format)],
         parameters={'num_global_tracks': 1e12,
                     'global_tracks_cutoff': 0.01})

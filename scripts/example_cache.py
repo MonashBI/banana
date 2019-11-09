@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import os.path
 import errno
-from arcana.data import InputFilesets
+from arcana.data import FilesetFilter
 from banana.analysis.mri.structural.t2star import T2starAnalysis
 from arcana.repository.xnat import XnatRepo
 from banana.file_format import zip_format
@@ -28,7 +28,7 @@ with open(session_ids_path) as f:
     ids = f.read().split()
 
 PROJECT_ID = 'MRH017'
-filesets = {InputFilesets('coils', 'swi_coils', zip_format)}
+filesets = {FilesetFilter('coils', 'swi_coils', zip_format)}
 visit_ids = visit_ids['MR01']
 
 repository = XnatRepo(cache_dir='/scratch/dq13/xnat_cache3')

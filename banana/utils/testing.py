@@ -10,7 +10,7 @@ from itertools import chain
 from unittest import TestCase
 from nipype.pipeline.plugins import DebugPlugin
 from arcana.exceptions import ArcanaNameError
-from arcana import (InputFilesets, InputFields, BasicRepo, XnatRepo,
+from arcana import (FilesetFilter, FieldFilter, BasicRepo, XnatRepo,
                     Field, Fileset, ModulesEnv, StaticEnv, SingleProc,
                     MultiProc)
 from arcana.data.spec import BaseInputSpecMixin
@@ -196,10 +196,10 @@ class PipelineTester(TestCase):
         for spec in self.analysis_class.data_specs():
             # Create an input for each entry in the class specificiation
             if spec.is_fileset:
-                inpt = InputFilesets(
+                inpt = FilesetFilter(
                     spec.name, spec.name, repository=self.ref_repo)
             else:
-                inpt = InputFields(
+                inpt = FieldFilter(
                     spec.name, spec.name, dtype=spec.dtype,
                     repository=self.ref_repo)
             # Check whether a corresponding data exists in the reference repo
@@ -398,10 +398,10 @@ class PipelineTester(TestCase):
             session_inputs = []
             for item in chain(session.filesets, session.fields):
                 if isinstance(item, Fileset):
-                    inpt = InputFilesets(item.basename, item.basename,
+                    inpt = FilesetFilter(item.basename, item.basename,
                                          item.format, repository=in_repo)
                 else:
-                    inpt = InputFields(item.name, item.name, item.dtype,
+                    inpt = FieldFilter(item.name, item.name, item.dtype,
                                        repository=in_repo)
                 try:
                     spec = analysis_class.data_spec(inpt)
