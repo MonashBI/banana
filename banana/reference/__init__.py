@@ -4,7 +4,7 @@ from copy import copy
 import banana
 from banana.requirement import fsl_req
 from arcana.exceptions import ArcanaError
-from arcana import Fileset, FilesetCollection
+from arcana import Fileset, FilesetSlice
 
 
 class BaseReference():
@@ -46,7 +46,7 @@ class BaseReference():
 
     @property
     def collection(self):
-        return FilesetCollection(
+        return FilesetSlice(
             self.name,
             [Fileset.from_path(self.path, frequency=self.frequency)],
             format=self._format,
