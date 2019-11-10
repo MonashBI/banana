@@ -45,7 +45,7 @@ class BaseReference():
         return hash(self.name)
 
     @property
-    def collection(self):
+    def slice(self):
         return FilesetSlice(
             self.name,
             [Fileset.from_path(self.path, frequency=self.frequency)],
@@ -54,7 +54,7 @@ class BaseReference():
 
     @property
     def format(self):
-        return self.collection.format
+        return self.slice.format
 
     @property
     def path(self):
