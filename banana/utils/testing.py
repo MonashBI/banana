@@ -205,7 +205,7 @@ class PipelineTester(TestCase):
                     dataset=self.ref_dataset)
             # Check whether a corresponding data exists in the reference dataset
             try:
-                inpt.match(self.ref_dataset.cached_tree(),
+                inpt.match(self.ref_dataset.tree,
                            valid_formats=getattr(spec, 'valid_formats', None))
             except ArcanaInputMissingMatchError:
                 continue

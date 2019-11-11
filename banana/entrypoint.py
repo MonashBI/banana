@@ -256,7 +256,7 @@ class DeriveCmd():
 
         if args.output_dataset is not None:
             input_dataset = dataset
-            tree = dataset.repository.cached_tree()
+            tree = dataset.tree
             if subject_ids is None:
                 subject_ids = list(tree.subject_ids)
             if visit_ids is None:
