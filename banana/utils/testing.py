@@ -13,7 +13,7 @@ from arcana.exceptions import ArcanaNameError
 from arcana import (FilesetFilter, FieldFilter, XnatRepo,
                     Field, Fileset, ModulesEnv, StaticEnv, SingleProc,
                     MultiProc)
-from arcana.repository.basic import LocalFileSystemRepo, Dataset
+from arcana.repository import LocalFileSystemRepo, Dataset
 from arcana.data.spec import BaseInputSpecMixin
 from arcana.processor.base import Processor
 from arcana.exceptions import (
@@ -93,7 +93,7 @@ class AnalysisTester(TestCase):
             name=self.name,  # pylint: disable=no-member
             inputs=self.inputs_dict,
             parameters=self.parameters,  # pylint: disable=no-member
-            repository=self.repository,
+            dataset=self.dataset,
             processor=DontRunProc())
 
         all_pipelines = set(
@@ -112,8 +112,8 @@ class AnalysisTester(TestCase):
         return type(self).__name__
 
     @property
-    def repository(self):
-        return LocalFileSystemRepo(op.join(TEST_DATA_ROOT, self.dataset_name))  # noqa pylint: disable=no-member
+    def dataset(self):
+        return Dataset(op.join(TEST_DATA_ROOT, self.dataset_name))  # noqa pylint: disable=no-member
 
     @property
     def inputs_dict(self):
@@ -135,7 +135,7 @@ class AnalysisTester(TestCase):
             name=self.name,  # pylint: disable=no-member
             inputs=self.inputs_dict,
             parameters=self.parameters,  # pylint: disable=no-member
-            repository=self.repository,
+            dataset=self.dataset,
             environment=environment,
             processor=processor)
         if not spec_names:
@@ -160,8 +160,8 @@ class PipelineTester(TestCase):
         test class
     analysis_class : type(Analysis)
         The analysis class run tests against
-    ref_repo : Repository
-        The repository to draw the reference data from
+    ref_dataset : Dataset
+        The dataset to draw the reference data from
     parameters : dict[str, str | float | int | datetime]
         The parameters passed to the analysis when it is initialised
     warn_missing_tests : bool
@@ -174,38 +174,38 @@ class PipelineTester(TestCase):
     environment = ModulesEnv() if USE_MODULES else StaticEnv()
     name = None
     analysis_class = None
-    ref_repo = None
+    ref_dataset = None
 
     def setUp(self):
         if not hasattr(self, 'analysis_class'):
             raise BananaTestSetupError(
                 "{} must have a 'analysis_class' attribute corresponding to the "
                 "Analysis class to test".format(type(self).__name__))
-        if not hasattr(self, 'ref_repo'):
+        if not hasattr(self, 'ref_dataset'):
             raise BananaTestSetupError(
-                "{} must have a 'ref_repo' attribute corresponding to the "
+                "{} must have a 'ref_dataset' attribute corresponding to the "
                 "Analysis class to test".format(type(self).__name__))
         base_test_dir = op.join(TEST_DIR, self.name)
         self.work_dir = op.join(base_test_dir, 'work')
-        repo_root = op.join(base_test_dir, 'repo')
+        dataset_root = op.join(base_test_dir, 'dataset')
         os.makedirs(self.work_dir, exist_ok=True)
-        os.makedirs(repo_root, exist_ok=True)
-        # Create repository to hold outputs
-        self.output_repo = LocalFileSystemRepo(repo_root, depth=2)
+        os.makedirs(dataset_root, exist_ok=True)
+        # Create datasetsitory to hold outputs
+        self.output_dataset = Dataset(dataset_root, depth=2)
         # Create inputs for reference analysis
         self.inputs = {}
         for spec in self.analysis_class.data_specs():
             # Create an input for each entry in the class specificiation
             if spec.is_fileset:
                 inpt = FilesetFilter(
-                    spec.name, spec.name, repository=self.ref_repo)
+                    spec.name, spec.name, dataset=self.ref_dataset)
             else:
                 inpt = FieldFilter(
                     spec.name, spec.name, dtype=spec.dtype,
-                    repository=self.ref_repo)
-            # Check whether a corresponding data exists in the reference repo
+                    dataset=self.ref_dataset)
+            # Check whether a corresponding data exists in the reference dataset
             try:
-                inpt.match(self.ref_repo.cached_tree(),
+                inpt.match(self.ref_dataset.cached_tree(),
                            valid_formats=getattr(spec, 'valid_formats', None))
             except ArcanaInputMissingMatchError:
                 continue
@@ -213,7 +213,7 @@ class PipelineTester(TestCase):
         # Create the reference analysis
         self.ref_analysis = self.analysis_class(  # pylint: disable=not-callable
             self.name,
-            repository=self.ref_repo,
+            repository=self.ref_dataset,
             processor=self.work_dir,
             inputs=self.inputs.values(),
             environment=self.environment,
@@ -260,7 +260,7 @@ class PipelineTester(TestCase):
         # A analysis with all inputs provided to determine which inputs are needed
         # by the pipeline
         ref_pipeline = self.ref_analysis.pipeline(pipeline_getter,
-                                               pipeline_args=pipeline_args)
+                                                  pipeline_args=pipeline_args)
         inputs = []
         for spec_name in chain(ref_pipeline.input_names, add_inputs):
             try:
@@ -270,7 +270,7 @@ class PipelineTester(TestCase):
         # Set up output analysis
         output_analysis = self.analysis_class(  # pylint: disable=not-callable
             pipeline_getter,
-            repository=self.output_repo,
+            datasetsitory=self.output_dataset,
             processor=SingleProc(self.work_dir, reprocess='force'),
             environment=self.environment,
             inputs=inputs,
@@ -314,10 +314,10 @@ class PipelineTester(TestCase):
                             self.analysis_class, ref.value))
 
     @classmethod
-    def generate_test_data(cls, analysis_class, in_repo, out_repo,
+    def generate_test_data(cls, analysis_class, in_dataset, out_dataset,
                            in_server=None, out_server=None, work_dir=None,
                            parameters=(), include=None, skip=(),
-                           include_bases=(), reprocess=False, repo_depth=0,
+                           include_bases=(), reprocess=False, dataset_depth=0,
                            modules_env=False, clean_work_dir=True,
                            loggers=('nipype.workflow', 'arcana', 'banana')):
         """
@@ -328,13 +328,13 @@ class PipelineTester(TestCase):
         ----------
         analysis_class : type(Analysis)
             The path to the analysis class to test, e.g. banana.analysis.MriAnalysis
-        in_repo : str
-            The path to repository that houses the input data
-        out_repo : str
+        in_dataset : str
+            The path to dataset that houses the input data
+        out_dataset : str
             If the 'xnat_server' argument is provided then out
             is interpreted as the project ID to use the XNAT
             server (the project must exist already). Otherwise
-            it is interpreted as the path to a basic repository
+            it is interpreted as the path to a basic dataset
         in_server : str | None
             The server to download the input data from
         out_server : str | None
@@ -344,7 +344,7 @@ class PipelineTester(TestCase):
         parameters : dict[str, *]
             Parameter to set when initialising the analysis
         include : list[str] | None
-            Spec names to include in the output repository. If None all names
+            Spec names to include in the output dataset. If None all names
             except those listed in 'skip' are included
         skip : list[str]
             Spec names to skip in the generation process. Only valid if
@@ -354,8 +354,8 @@ class PipelineTester(TestCase):
             specification are added to the list to include
         reprocess : bool
             Whether to reprocess the generated datasets
-        repo_depth : int
-            The depth of the input repository
+        dataset_depth : int
+            The depth of the input dataset
         modules_env : bool
             Whether to use modules environment or not
         clean_work_dir : bool
@@ -380,30 +380,31 @@ class PipelineTester(TestCase):
         else:
             analysis_name = analysis_class.__name__
 
-        # Get output repository to write the data to
+        # Get output dataset to write the data to
         if in_server is not None:
-            in_repo = XnatRepo(project_id=in_repo, server=in_server,
-                               cache_dir=op.join(work_dir, 'xnat-cache'))
+            in_dataset = XnatRepo(
+                server=in_server,
+                cache_dir=op.join(work_dir, 'xnat-cache')).dataset(in_dataset)
         else:
-            in_repo = LocalFileSystemRepo(in_repo, depth=repo_depth)
+            in_dataset = Dataset(in_dataset, depth=dataset_depth)
 
-        temp_repo_root = op.join(work_dir, 'temp-repo')
-        if os.path.exists(temp_repo_root) and reprocess:
-            shutil.rmtree(temp_repo_root)
-        os.makedirs(temp_repo_root, exist_ok=True)
+        temp_dataset_root = op.join(work_dir, 'temp-dataset')
+        if os.path.exists(temp_dataset_root) and reprocess:
+            shutil.rmtree(temp_dataset_root)
+        os.makedirs(temp_dataset_root, exist_ok=True)
 
-        temp_repo = LocalFileSystemRepo(temp_repo_root, depth=repo_depth)
+        temp_dataset = Dataset(temp_dataset_root, depth=dataset_depth)
 
         inputs = None
-        for session in in_repo.tree().sessions:
+        for session in in_dataset.tree().sessions:
             session_inputs = []
             for item in chain(session.filesets, session.fields):
                 if isinstance(item, Fileset):
                     inpt = FilesetFilter(item.basename, item.basename,
-                                         item.format, repository=in_repo)
+                                         item.format, dataset=in_dataset)
                 else:
                     inpt = FieldFilter(item.name, item.name, item.dtype,
-                                       repository=in_repo)
+                                       dataset=in_dataset)
                 try:
                     spec = analysis_class.data_spec(inpt)
                 except ArcanaNameError:
@@ -415,7 +416,7 @@ class PipelineTester(TestCase):
             if inputs is not None and session_inputs != inputs:
                 raise BananaUsageError(
                     "Inconsistent inputs ({} and {}) found in sessions of {}"
-                    .format(inputs, session_inputs, in_repo))
+                    .format(inputs, session_inputs, in_dataset))
             else:
                 inputs = session_inputs
 
@@ -426,7 +427,7 @@ class PipelineTester(TestCase):
 
         analysis = analysis_class(
             analysis_name,
-            repository=temp_repo,
+            dataset=temp_dataset,
             processor=SingleProc(
                 work_dir, reprocess=reprocess,
                 clean_work_dir_between_runs=clean_work_dir,
@@ -437,8 +438,8 @@ class PipelineTester(TestCase):
             environment=env,
             inputs=inputs,
             parameters=parameters,
-            subject_ids=in_repo.tree().subject_ids,
-            visit_ids=in_repo.tree().visit_ids,
+            subject_ids=in_dataset.tree().subject_ids,
+            visit_ids=in_dataset.tree().visit_ids,
             fill_tree=True)
 
         if include is None:
@@ -464,14 +465,15 @@ class PipelineTester(TestCase):
         for spec_name in sorted(include):
             analysis.data(spec_name)
 
-        # Get output repository to write the data to
+        # Get output dataset to write the data to
         if out_server is not None:
-            out_repo = XnatRepo(project_id=out_repo, server=out_server,
-                                cache_dir=op.join(work_dir, 'xnat-cache'))
+            out_dataset = XnatRepo(
+                server=out_server,
+                cache_dir=op.join(work_dir, 'xnat-cache')).dataset(out_dataset),
         else:
-            out_repo = LocalFileSystemRepo(out_repo, depth=repo_depth)
+            out_dataset = Dataset(out_dataset, depth=dataset_depth)
 
-        # Upload data to repository
+        # Upload data to dataset
         for spec in analysis.data_specs():
             try:
                 data = analysis.data(spec.name, generate=False)
@@ -491,13 +493,13 @@ class PipelineTester(TestCase):
                         frequency=item.frequency, path=item.path,
                         aux_files=copy(item.aux_files),
                         subject_id=item.subject_id, visit_id=item.visit_id,
-                        repository=out_repo, exists=True)
+                        dataset=out_dataset, exists=True)
                 else:
                     item_cpy = Field(
                         name=item.name, value=item.value, dtype=item.dtype,
                         frequency=item.frequency, array=item.array,
                         subject_id=item.subject_id, visit_id=item.visit_id,
-                        repository=out_repo, exists=True)
+                        dataset=out_dataset, exists=True)
                 logger.info("Uploading {}".format(item_cpy))
                 item_cpy.put()
                 logger.info("Uploaded {}".format(item_cpy))
@@ -525,7 +527,7 @@ if __name__ == '__main__':
             MriAnalysis, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri-work'),
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             skip=['channels', 'channels_dir'],
             clean_work_dir=(not args.dont_clean_work_dir),
             parameters={'mni_tmpl_resolution': 1})
@@ -536,7 +538,7 @@ if __name__ == '__main__':
             MriAnalysis, op.join(args.data_dir, 'mri2'), 'TESTBANANAMRI2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri2-work'),
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir),
             include=['brain_coreg'],
             skip=['template', 'template_brain', 'template_mask'],
@@ -549,7 +551,7 @@ if __name__ == '__main__':
             MriAnalysis, op.join(args.data_dir, 'mri'), 'TESTBANANAMRI3',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'mri3-work'),
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir),
             include=['brain_coreg'])
 
@@ -560,7 +562,7 @@ if __name__ == '__main__':
             BoldAnalysis, op.join(args.data_dir, 'bold'), 'TESTBANANABOLD',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'bold-work'),
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir),
             skip=['field_map_delta_te', 'cleaned_file'],
             parameters={
@@ -575,7 +577,7 @@ if __name__ == '__main__':
             work_dir=op.join(args.data_dir, 't1-work'),
             skip=['t2_coreg'],
             include=None,
-            reprocess=False, repo_depth=1, modules_env=True,
+            reprocess=False, dataset_depth=1, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2' in args.generate:
@@ -585,7 +587,7 @@ if __name__ == '__main__':
             T2wAnalysis, op.join(args.data_dir, 't2'), 'TESTBANANAT2',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2-work'),
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 't2star' in args.generate:
@@ -595,7 +597,7 @@ if __name__ == '__main__':
             T2starAnalysis, op.join(args.data_dir, 't2star'), 'TESTBANANAT2S',
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 't2star-work'),
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             parameters={
                 'mni_tmpl_resolution': 2},
             clean_work_dir=(not args.dont_clean_work_dir))
@@ -617,7 +619,7 @@ if __name__ == '__main__':
             include_bases=[EpiSeriesAnalysis],
             parameters={
                 'num_global_tracks': int(1e6)}, include=None,
-            reprocess=False, repo_depth=1, modules_env=True,
+            reprocess=False, dataset_depth=1, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi2' in args.generate:
@@ -628,7 +630,7 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi2-work'),
             include=['wm_odf'],
-            reprocess=False, repo_depth=1, modules_env=True,
+            reprocess=False, dataset_depth=1, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))
 
     if 'dwi3' in args.generate:
@@ -656,5 +658,5 @@ if __name__ == '__main__':
             in_server=None, out_server='https://mbi-xnat.erc.monash.edu.au',
             work_dir=op.join(args.data_dir, 'dwi3-work'),
             include=['dwi_connectome'],
-            reprocess=False, repo_depth=0, modules_env=True,
+            reprocess=False, dataset_depth=0, modules_env=True,
             clean_work_dir=(not args.dont_clean_work_dir))

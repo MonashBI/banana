@@ -3,7 +3,7 @@ from banana.analysis.multi.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProc
-from arcana.repository.basic import LocalFileSystemRepo
+from arcana.repository import LocalFileSystemRepo
 from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse

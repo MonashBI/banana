@@ -237,9 +237,9 @@ class DicomFormat(ImageFormat):
         dct : Dict[Tuple[str, str], str|int|float]
         """
         try:
-            if (fileset._path is None and fileset._repository is not None
-                    and hasattr(fileset.repository, 'dicom_header')):
-                hdr = fileset.repository.dicom_header(self)
+            if (fileset._path is None and fileset._dataset is not None
+                    and hasattr(fileset.dataset.repository, 'dicom_header')):
+                hdr = fileset.dataset.repository.dicom_header(self)
                 dct = [hdr[t] for t in tags]
             else:
                 # Get the DICOM object for the first file in the fileset

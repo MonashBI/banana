@@ -25,7 +25,7 @@ from arcana import (
     SubCompSpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
     FilesetSpec, FilesetFilter, InputFilesetSpec, FilesetSlice, Field,
     FieldSpec, FieldFilter, InputFieldSpec, FieldSlice, SingleProc,
-    MultiProc, SlurmProc, StaticEnv,
+    MultiProc, SlurmProc, StaticEnv, Dataset,
     ModulesEnv, LocalFileSystemRepo, XnatRepo)
 
 from .bids_ import BidsRepo

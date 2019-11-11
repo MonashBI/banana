@@ -10,7 +10,7 @@ from banana.exceptions import BananaUsageError, BananaUnrecognisedBidsFormat
 from arcana.data.input import FilesetFilter
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
-from arcana.repository.basic import LocalFileSystemRepo
+from arcana.repository import LocalFileSystemRepo
 from arcana.analysis.multi import MultiAnalysis
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
@@ -46,42 +46,34 @@ class BidsRepo(LocalFileSystemRepo):
 
     type = 'bids'
 
-    def __init__(self, root_dir, **kwargs):
-        LocalFileSystemRepo.__init__(self, root_dir, depth=2, **kwargs)
+    def derivatives_dir(self, dataset):
+        return op.join(dataset.name, 'derivatives')
 
-    @property
-    def root_dir(self):
-        return self._root_dir
-
-    @property
-    def derivatives_dir(self):
-        return op.join(self.root_dir, 'derivatives')
-
-    @property
-    def metadata_dir(self):
+    def metadata_dir(self, dataset):
         """
         A temporary dir where we write out combined JSON side cars to include
         in extended nifti filesets
         """
-        return op.join(self.derivatives_dir, '__metadata__')
+        return op.join(self.derivatives_dir(dataset), '__metadata__')
 
-    @property
-    def layout(self):
-        return BIDSLayout(self.root_dir)
+    def layout(self, dataset):
+        return BIDSLayout(dataset.name)
 
     def __repr__(self):
-        return "BidsRepo(root_dir='{}')".format(self.root_dir)
+        return "BidsRepo()"
 
     def __hash__(self):
         return super().__hash__()
 
-    def find_data(self, subject_ids=None, visit_ids=None):
+    def find_data(self, dataset, subject_ids=None, visit_ids=None):
         """
         Return subject and session information for a project in the local
         repository
 
         Parameters
         ----------
+        dataset : Dataset
+            The dataset to find the data for
         subject_ids : list(str)
             List of subject IDs with which to filter the tree with. If None all
             are returned
@@ -96,7 +88,7 @@ class BidsRepo(LocalFileSystemRepo):
             the repository
         """
         filesets = []
-        layout = self.layout
+        layout = self.layout(dataset)
         all_subjects = layout.get_subjects()
         all_visits = layout.get_sessions()
         if not all_visits:
@@ -105,7 +97,7 @@ class BidsRepo(LocalFileSystemRepo):
         else:
             self._depth = 2
         for item in layout.get(return_type='object'):
-            if item.path.startswith(self.derivatives_dir):
+            if item.path.startswith(self.derivatives_dir(dataset)):
                 # We handle derivatives using the LocalFileSystemRepo base
                 # class methods
                 continue
@@ -134,7 +126,7 @@ class BidsRepo(LocalFileSystemRepo):
                         # Write out the combined JSON side cars to a temporary
                         # file to include in extended NIfTI filesets
                         metadata_path = op.join(
-                            self.metadata_dir,
+                            self.metadata_dir(dataset),
                             'sub-{}'.format(subject_id),
                             'ses-{}'.format(visit_id),
                             item.filename + '.json')
@@ -148,7 +140,7 @@ class BidsRepo(LocalFileSystemRepo):
                             path=op.join(item.dirname, item.filename),
                             type=item.entities['suffix'],
                             subject_id=subject_id, visit_id=visit_id,
-                            repository=self,
+                            dataset=dataset,
                             modality=item.entities.get('modality', None),
                             task=item.entities.get('task', None),
                             aux_files=aux_files)
@@ -178,7 +170,9 @@ class BidsRepo(LocalFileSystemRepo):
             visit_id = fileset.visit_id
         else:
             visit_id = self.SUMMARY_NAME
-        sess_dir = op.join(self.root_dir, 'derivatives', fileset.from_analysis,
+        sess_dir = op.join(fileset.dataset.name,
+                           'derivatives',
+                           fileset.from_analysis,
                            'sub-{}'.format(subject_id),
                            'sess-{}'.format(visit_id))
         # Make session dir if required
@@ -262,7 +256,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         file
     """
 
-    def __init__(self, path, type, subject_id, visit_id, repository,
+    def __init__(self, path, type, subject_id, visit_id, dataset,
                  modality=None, task=None, checksums=None, aux_files=None):
         Fileset.__init__(
             self,
@@ -272,7 +266,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
             path=path,
             subject_id=subject_id,
             visit_id=visit_id,
-            repository=repository,
+            dataset=dataset,
             checksums=checksums,
             aux_files=aux_files)
         BaseBidsFileset.__init__(self, type, modality, task)
@@ -460,7 +454,7 @@ class BidsAssocInputs(FilesetFilter):
 
     def match_node(self, node, **kwargs):
         primary_match = self.primary.match_node(node, **kwargs)
-        layout = self.primary.repository.layout
+        layout = self.primary.dataset.layout
         if self.association == 'grads':
             if self.type == 'bvec':
                 path = layout.get_bvec(primary_match.path)
@@ -488,6 +482,6 @@ class BidsAssocInputs(FilesetFilter):
                     "'{}' is not a valid type for '{}' associations"
                     .format(self.type, self.association))
         return Fileset.from_path(path, format=self._format,
-                                 repository=self.primary.repository,
+                                 dataset=self.primary.dataset,
                                  subject_id=node.subject_id,
                                  visit_id=node.visit_id)

@@ -2,8 +2,8 @@
 import os.path
 import shutil
 from arcana.data import FilesetFilter
-from banana.analysis.mri.diffusion import NODDIAnalysis
-from arcana.repository.basic import LocalFileSystemRepo
+from banana.analysis.mri.dwi import NODDIAnalysis
+from arcana.repository import LocalFileSystemRepo
 from banana.file_format import mrtrix_image_format
 
 repository_path = os.path.abspath(os.path.join(

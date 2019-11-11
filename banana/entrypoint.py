@@ -11,7 +11,8 @@ from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     FilesetFilter, FieldFilter, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, LocalFileSystemRepo, BidsRepo, XnatRepo, Analysis, MultiAnalysis)
+    ModulesEnv, LocalFileSystemRepo, BidsRepo, XnatRepo, Analysis,
+    MultiAnalysis, Dataset)
 import logging
 from arcana.utils import wrap_text
 from banana.__about__ import __version__
@@ -80,8 +81,8 @@ class DeriveCmd():
     def parser(cls):
         parser = ArgumentParser(prog='banana derive',
                                 description=cls.desc)
-        parser.add_argument('repository_path',
-                            help=("Either the path to the repository if of "
+        parser.add_argument('dataset_path',
+                            help=("Either the path to the dataset if of "
                                   "'bids' or 'basic' types, or the name of the"
                                   " project ID for 'xnat' type"))
         parser.add_argument('analysis_class',
@@ -91,13 +92,13 @@ class DeriveCmd():
                                   "under (e.g. parenthood)"))
         parser.add_argument('derivatives', nargs='+',
                             help=("The names of the derivatives to generate"))
-        parser.add_argument('--repository', nargs='+', default=['bids'],
+        parser.add_argument('--dataset', nargs='+', default=['bids'],
                             metavar='ARG',
-                            help=("Specify the repository type and any options"
+                            help=("Specify the dataset type and any options"
                                   " to be passed to it. First argument "))
-        parser.add_argument('--output_repository', '-o', nargs='+',
+        parser.add_argument('--output_dataset', '-o', nargs='+',
                             metavar='ARG', default=None,
-                            help=("Specify a different output repository "
+                            help=("Specify a different output dataset "
                                   "to place the derivatives in. 1st arg "
                                   "is the type, one of ('basic', 'bids' or "
                                   "'xnat'). If type == 'xnat' then the "
@@ -181,13 +182,13 @@ class DeriveCmd():
 
         work_dir = op.join(scratch_dir, 'work')
 
-        if args.repository is None:
+        if args.dataset is None:
             if args.input:
-                repository_type = 'basic'
+                dataset_type = 'basic'
             else:
-                repository_type = 'bids'
+                dataset_type = 'bids'
         else:
-            repository_type = args.repository[0]
+            dataset_type = args.dataset[0]
 
         # Load subject_ids from file if single value is provided with
         # a '/' in the string
@@ -207,73 +208,73 @@ class DeriveCmd():
         else:
             visit_ids = args.visit_ids
 
-        def init_repo(repo_path, repo_type, option_str, *repo_args,
+        def init_dataset(dataset_path, dataset_type, option_str, *dataset_args,
                       create_root=False):
-            if repo_type == 'bids':
+            if dataset_type == 'bids':
                 if create_root:
-                    os.makedirs(repo_path, exist_ok=True)
-                repo = BidsRepo(repo_path)
-            elif repo_type == 'basic':
-                if len(repo_args) != 1:
+                    os.makedirs(dataset_path, exist_ok=True)
+                dataset = BidsRepo(dataset_path)
+            elif dataset_type == 'basic':
+                if len(dataset_args) != 1:
                     raise BananaUsageError(
                         "Unrecognised arguments passed to '--{}' option "
                         "({}) exactly 1 additional argument is required for "
-                        "'basic' type repository (DEPTH)"
-                        .format(option_str, repo_args))
+                        "'basic' type dataset (DEPTH)"
+                        .format(option_str, dataset_args))
                 if create_root:
-                    os.makedirs(repo_path, exist_ok=True)
-                repo = LocalFileSystemRepo(repo_path, depth=int(repo_args[0]))
-            elif repo_type == 'xnat':
-                nargs = len(repo_args)
+                    os.makedirs(dataset_path, exist_ok=True)
+                dataset = Dataset(dataset_path, depth=int(dataset_args[0]))
+            elif dataset_type == 'xnat':
+                nargs = len(dataset_args)
                 if nargs < 1:
                     raise BananaUsageError(
                         "Not enough arguments passed to '--{}' option "
                         "({}), at least 1 additional argument is required for "
-                        "'xnat' type repository (SERVER)"
-                        .format(option_str, repo_args))
+                        "'xnat' type dataset (SERVER)"
+                        .format(option_str, dataset_args))
                 elif nargs > 3:
                     raise BananaUsageError(
                         "Unrecognised arguments passed to '--{}' option "
                         "({}), at most 3 additional arguments are accepted for"
-                        " 'xnat' type repository (SERVER, USER, PASSWORD)"
-                        .format(option_str, repo_args))
-                repo = XnatRepo(
-                    project_id=repo_path,
-                    server=repo_args[0],
-                    user=(repo_args[1] if nargs > 2 else None),
-                    password=(repo_args[2] if nargs > 3 else None),
-                    cache_dir=op.join(scratch_dir, 'cache'))
+                        " 'xnat' type dataset (SERVER, USER, PASSWORD)"
+                        .format(option_str, dataset_args))
+                dataset = XnatRepo(
+                    server=dataset_args[0],
+                    user=(dataset_args[1] if nargs > 2 else None),
+                    password=(dataset_args[2] if nargs > 3 else None),
+                    cache_dir=op.join(scratch_dir,
+                                      'cache')).dataset(dataset_path)
             else:
                 raise BananaUsageError(
-                    "Unrecognised repository type provided as first argument "
+                    "Unrecognised dataset type provided as first argument "
                     "to '--{}' option ({})".format(option_str,
-                                                   repo_args[0]))
-            return repo
+                                                   dataset_args[0]))
+            return dataset
 
-        repository = init_repo(args.repository_path, repository_type,
-                               'repository', *args.repository[1:])
+        dataset = init_dataset(args.dataset_path, dataset_type,
+                               'dataset', *args.dataset[1:])
 
-        if args.output_repository is not None:
-            input_repository = repository
-            tree = repository.cached_tree()
+        if args.output_dataset is not None:
+            input_dataset = dataset
+            tree = dataset.repository.cached_tree()
             if subject_ids is None:
                 subject_ids = list(tree.subject_ids)
             if visit_ids is None:
                 visit_ids = list(tree.visit_ids)
             fill_tree = True
-            nargs = len(args.output_repository)
+            nargs = len(args.output_dataset)
             if nargs == 1:
-                repo_type = 'basic'
-                out_path = args.output_repository[0]
-                out_repo_args = [input_repository.depth]
+                dataset_type = 'basic'
+                out_path = args.output_dataset[0]
+                out_dataset_args = [input_dataset.depth]
             else:
-                repo_type = args.output_repository[0]
-                out_path = args.output_repository[1]
-                out_repo_args = args.output_repository[2:]
-            repository = init_repo(out_path, repo_type, 'output_repository',
-                                   *out_repo_args, create_root=True)
+                dataset_type = args.output_dataset[0]
+                out_path = args.output_dataset[1]
+                out_dataset_args = args.output_dataset[2:]
+            dataset = init_dataset(out_path, dataset_type, 'output_dataset',
+                                   *out_dataset_args, create_root=True)
         else:
-            input_repository = None
+            input_dataset = None
             fill_tree = False
 
         if args.email is not None:
@@ -332,9 +333,9 @@ class DeriveCmd():
             parameters[name] = parse_value(
                 value, dtype=analysis_class.param_spec(name).dtype)
 
-        if input_repository is not None and input_repository.type == 'bids':
+        if input_dataset is not None and input_dataset.type == 'bids':
             inputs = analysis_class.get_bids_inputs(args.bids_task,
-                                                 repository=input_repository)
+                                                 dataset=input_dataset)
         else:
             inputs = {}
         for name, pattern in args.input:
@@ -344,11 +345,11 @@ class DeriveCmd():
             else:
                 inpt_cls = FieldFilter
             inputs[name] = inpt_cls(name, pattern=pattern, is_regex=True,
-                                    repository=input_repository)
+                                    dataset=input_dataset)
 
         analysis = analysis_class(
             name=args.analysis_name,
-            repository=repository,
+            dataset=dataset,
             processor=processor,
             environment=environment,
             inputs=inputs,
@@ -382,20 +383,20 @@ class TestGenCmd():
         parser = ArgumentParser(
             prog='banana test-gen',
             description=("Generates reference data for the built-in unittest "
-                         "framework given a analysis class, an input repository "
+                         "framework given a analysis class, an input dataset "
                          "containing data named according to the data "
                          "specification of the class and set of parameters"))
         parser.add_argument('analysis_class',
                             help=("The path to the analysis class to test, e.g. "
                                   "banana.analysis.MriAnalysis"))
-        parser.add_argument('in_repo', help=("The path to repository that "
+        parser.add_argument('in_dataset', help=("The path to dataset that "
                                              "houses the input data"))
-        parser.add_argument('out_repo',
+        parser.add_argument('out_dataset',
                             help=("If the 'xnat_server' argument is provided "
                                   "then out is interpreted as the project ID "
                                   "to use the XNAT server (the project must "
                                   "exist already). Otherwise it is interpreted"
-                                  " as the path to a basic repository"))
+                                  " as the path to a basic dataset"))
         parser.add_argument('--in_server', default=None,
                             help="The server to download the input data from")
         parser.add_argument('--out_server', default=None,
@@ -419,9 +420,9 @@ class TestGenCmd():
                                   "defined within them"))
         parser.add_argument('--reprocess', action='store_true', default=False,
                             help=("Whether to reprocess previously generated "
-                                  "datasets in the output repository"))
-        parser.add_argument('--repo_depth', type=int, default=0,
-                            help="The depth of the input repository")
+                                  "datasets in the output dataset"))
+        parser.add_argument('--dataset_depth', type=int, default=0,
+                            help="The depth of the input dataset")
         parser.add_argument('--dont_clean_work_dir', action='store_true',
                             default=False,
                             help=("Whether to clean the Nipype work dir "
@@ -456,12 +457,12 @@ class TestGenCmd():
         parameters = parameters_dct
 
         PipelineTester.generate_test_data(
-            analysis_class=analysis_class, in_repo=args.in_repo,
-            out_repo=args.out_repo, in_server=args.in_server,
+            analysis_class=analysis_class, in_dataset=args.in_dataset,
+            out_dataset=args.out_dataset, in_server=args.in_server,
             out_server=args.out_server, work_dir=args.work_dir,
             parameters=parameters, skip=args.skip, include=args.include,
             include_bases=include_bases,
-            reprocess=args.reprocess, repo_depth=args.repo_depth,
+            reprocess=args.reprocess, dataset_depth=args.dataset_depth,
             modules_env=(args.environment == 'modules'),
             clean_work_dir=(not args.dont_clean_work_dir))
 
