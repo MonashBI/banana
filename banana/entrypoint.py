@@ -11,7 +11,7 @@ from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     FilesetFilter, FieldFilter, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, LocalFileSystemRepo, BidsRepo, XnatRepo, Analysis,
+    ModulesEnv, LocalFileSystemRepo, BidsDataset, XnatRepo, Analysis,
     MultiAnalysis, Dataset)
 import logging
 from arcana.utils import wrap_text
@@ -117,8 +117,8 @@ class DeriveCmd():
                             help="The type of environment to use")
         parser.add_argument('--input', '-i', nargs=2, action='append',
                             default=[], metavar=('SPEC', 'PATTERN'),
-                            help=("The inputs to include in the analysis init. "
-                                  "If not provided then all are used"))
+                            help=("The inputs to include in the analysis init."
+                                  " If not provided then all are used"))
         parser.add_argument('--parameter', '-p', nargs=2, action='append',
                             metavar=('NAME', 'VALUE'), default=[],
                             help="Parameters to pass to the analysis")
@@ -213,7 +213,7 @@ class DeriveCmd():
             if dataset_type == 'bids':
                 if create_root:
                     os.makedirs(dataset_path, exist_ok=True)
-                dataset = BidsRepo(dataset_path)
+                dataset = BidsDataset(dataset_path)
             elif dataset_type == 'basic':
                 if len(dataset_args) != 1:
                     raise BananaUsageError(

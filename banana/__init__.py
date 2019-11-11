@@ -28,7 +28,7 @@ from arcana import (
     MultiProc, SlurmProc, StaticEnv, Dataset,
     ModulesEnv, LocalFileSystemRepo, XnatRepo)
 
-from .bids_ import BidsRepo
+from .bids_ import BidsDataset
 
 
 # Import all Analysis classes into package root

@@ -10,7 +10,7 @@ from banana.exceptions import BananaUsageError, BananaUnrecognisedBidsFormat
 from arcana.data.input import FilesetFilter
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
-from arcana.repository import LocalFileSystemRepo
+from arcana.repository import LocalFileSystemRepo, Dataset
 from arcana.analysis.multi import MultiAnalysis
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
@@ -187,6 +187,16 @@ class BidsRepo(LocalFileSystemRepo):
         subj_id = subj[len('sub-'):]
         visit_id = sess[len('sess-'):]
         return subj_id, visit_id, from_analysis
+
+
+class BidsDataset(Dataset):
+
+    type = 'bids'
+
+    def __init__(self, name, repository=None, **kwargs):
+        if repository is None:
+            repository = BidsRepo()
+        super().__init__(name, repository=repository, **kwargs)
 
 
 class BaseBidsFileset(object):
