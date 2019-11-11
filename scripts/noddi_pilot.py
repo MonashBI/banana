@@ -3,7 +3,7 @@ import os.path
 import shutil
 from arcana.data import FilesetFilter
 from banana.analysis.mri.diffusion import NODDIAnalysis
-from arcana.repository.basic import BasicRepo
+from arcana.repository.basic import LocalFileSystemRepo
 from banana.file_format import mrtrix_image_format
 
 repository_path = os.path.abspath(os.path.join(
@@ -23,7 +23,7 @@ shutil.rmtree(WORK_PATH, ignore_errors=True)
 os.makedirs(WORK_PATH)
 analysis = NODDIAnalysis(
     name=DATASET_NAME,
-    project_id=NODDI_PROJECT, repository=BasicRepo(repository_path),
+    project_id=NODDI_PROJECT, repository=LocalFileSystemRepo(repository_path),
     input_scans=[
         FilesetFilter('low_b_dw_scan', mrtrix_image_format,
                      'r_l_noddi_b700_30_directions'),

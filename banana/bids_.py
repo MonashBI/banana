@@ -10,7 +10,7 @@ from banana.exceptions import BananaUsageError, BananaUnrecognisedBidsFormat
 from arcana.data.input import FilesetFilter
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
-from arcana.repository import BasicRepo
+from arcana.repository.basic import LocalFileSystemRepo
 from arcana.analysis.multi import MultiAnalysis
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
@@ -34,7 +34,7 @@ def detect_format(path, aux_files):
         .format(path, aux_files))
 
 
-class BidsRepo(BasicRepo):
+class BidsRepo(LocalFileSystemRepo):
     """
     A repository class for BIDS datasets
 
@@ -47,7 +47,7 @@ class BidsRepo(BasicRepo):
     type = 'bids'
 
     def __init__(self, root_dir, **kwargs):
-        BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
+        LocalFileSystemRepo.__init__(self, root_dir, depth=2, **kwargs)
 
     @property
     def root_dir(self):
@@ -106,7 +106,7 @@ class BidsRepo(BasicRepo):
             self._depth = 2
         for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir):
-                # We handle derivatives using the BasicRepo base
+                # We handle derivatives using the LocalFileSystemRepo base
                 # class methods
                 continue
             if not hasattr(item, 'entities') or not item.entities.get('suffix',
@@ -157,7 +157,7 @@ class BidsRepo(BasicRepo):
                     else:
                         filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
-        # the method in the BasicRepo base class
+        # the method in the LocalFileSystemRepo base class
         derived_filesets, fields, records = super().find_data(
             subject_ids=subject_ids, visit_ids=visit_ids)
         filesets.extend(derived_filesets)
@@ -205,14 +205,14 @@ class BaseBidsFileset(object):
         self._task = task
 
     def __eq__(self, other):
-        return (self.type == other.type and
-                self.task == other.task and
-                self.modality == other.modality)
+        return (self.type == other.type
+                and self.task == other.task
+                and self.modality == other.modality)
 
     def __hash__(self):
-        return (hash(self.type) ^
-                hash(self.task) ^
-                hash(self.modality))
+        return (hash(self.type)
+                ^ hash(self.task)
+                ^ hash(self.modality))
 
     def initkwargs(self):
         dct = {}
@@ -426,12 +426,13 @@ class BidsAssocInputs(FilesetFilter):
         # associated selector so we set the bound version temporarily to
         # self._primary before winding it back after we have done the bind
         unbound_primary = self._primary
-        if isinstance(analysis, MultiAnalysis) and hasattr(self,
-                                                     'prefixed_primary_name'):
+        if (isinstance(analysis, MultiAnalysis)
+                and hasattr(self, 'prefixed_primary_name')):
             primary_spec_name = self.prefixed_primary_name  # noqa pylint: disable=no-member
         else:
             primary_spec_name = self.primary.name
-        self._primary = self._primary.bind(analysis, spec_name=primary_spec_name,
+        self._primary = self._primary.bind(analysis,
+                                           spec_name=primary_spec_name,
                                            **kwargs)
         bound = super().bind(analysis, spec_name=spec_name, **kwargs)
         self._primary = unbound_primary

@@ -3,7 +3,7 @@ from banana.analysis.multi.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProc
-from arcana.repository.basic import BasicRepo
+from arcana.repository.basic import LocalFileSystemRepo
 from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    repository = BasicRepo(args.input_dir+'/work_dir')
+    repository = LocalFileSystemRepo(args.input_dir+'/work_dir')
     work_dir = os.path.join(args.input_dir, 'motion_detection_cache')
     WORK_PATH = work_dir
     try:

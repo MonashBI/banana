@@ -3,7 +3,7 @@ import os.path
 import shutil
 from arcana.data import FilesetFilter
 from banana.analysis.mri.diffusion import DwiAnalysis
-from arcana.repository.basic import BasicRepo
+from arcana.repository.basic import LocalFileSystemRepo
 from banana.file_format import mrtrix_image_format
 
 repository_path = os.path.abspath(os.path.join(
@@ -19,7 +19,7 @@ os.makedirs(WORK_PATH)
 analysis = DwiAnalysis(
     name=DATASET_NAME,
     project_id='2_vs_2.5',
-    repository=BasicRepo(repository_path),
+    repository=LocalFileSystemRepo(repository_path),
     input_scans={
         'dwi_scan': Fileset('R-L_60dir_b2000', mrtrix_image_format),
         'forward_rpe': Fileset('R-L_6dir_b0', mrtrix_image_format),

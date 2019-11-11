@@ -10,9 +10,10 @@ from itertools import chain
 from unittest import TestCase
 from nipype.pipeline.plugins import DebugPlugin
 from arcana.exceptions import ArcanaNameError
-from arcana import (FilesetFilter, FieldFilter, BasicRepo, XnatRepo,
+from arcana import (FilesetFilter, FieldFilter, XnatRepo,
                     Field, Fileset, ModulesEnv, StaticEnv, SingleProc,
                     MultiProc)
+from arcana.repository.basic import LocalFileSystemRepo, Dataset
 from arcana.data.spec import BaseInputSpecMixin
 from arcana.processor.base import Processor
 from arcana.exceptions import (
@@ -112,7 +113,7 @@ class AnalysisTester(TestCase):
 
     @property
     def repository(self):
-        return BasicRepo(op.join(TEST_DATA_ROOT, self.dataset_name))  # noqa pylint: disable=no-member
+        return LocalFileSystemRepo(op.join(TEST_DATA_ROOT, self.dataset_name))  # noqa pylint: disable=no-member
 
     @property
     def inputs_dict(self):
@@ -190,7 +191,7 @@ class PipelineTester(TestCase):
         os.makedirs(self.work_dir, exist_ok=True)
         os.makedirs(repo_root, exist_ok=True)
         # Create repository to hold outputs
-        self.output_repo = BasicRepo(repo_root, depth=2)
+        self.output_repo = LocalFileSystemRepo(repo_root, depth=2)
         # Create inputs for reference analysis
         self.inputs = {}
         for spec in self.analysis_class.data_specs():
@@ -384,14 +385,14 @@ class PipelineTester(TestCase):
             in_repo = XnatRepo(project_id=in_repo, server=in_server,
                                cache_dir=op.join(work_dir, 'xnat-cache'))
         else:
-            in_repo = BasicRepo(in_repo, depth=repo_depth)
+            in_repo = LocalFileSystemRepo(in_repo, depth=repo_depth)
 
         temp_repo_root = op.join(work_dir, 'temp-repo')
         if os.path.exists(temp_repo_root) and reprocess:
             shutil.rmtree(temp_repo_root)
         os.makedirs(temp_repo_root, exist_ok=True)
 
-        temp_repo = BasicRepo(temp_repo_root, depth=repo_depth)
+        temp_repo = LocalFileSystemRepo(temp_repo_root, depth=repo_depth)
 
         inputs = None
         for session in in_repo.tree().sessions:
@@ -468,7 +469,7 @@ class PipelineTester(TestCase):
             out_repo = XnatRepo(project_id=out_repo, server=out_server,
                                 cache_dir=op.join(work_dir, 'xnat-cache'))
         else:
-            out_repo = BasicRepo(out_repo, depth=repo_depth)
+            out_repo = LocalFileSystemRepo(out_repo, depth=repo_depth)
 
         # Upload data to repository
         for spec in analysis.data_specs():

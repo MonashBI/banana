@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import os.path as op
 from arcana import (
-    FilesetFilter, BasicRepo, SingleProc, StaticEnv)
+    FilesetFilter, LocalFileSystemRepo, SingleProc, StaticEnv)
 from banana.analysis.mri.dwi import DwiAnalysis
 from banana.file_format import dicom_format
 
 analysis = DwiAnalysis(
     name='example_diffusion',
-    repository=BasicRepo(
+    repository=LocalFileSystemRepo(
         op.join(op.expanduser('~'), 'Downloads', 'test-dir'), depth=0),
     processor=SingleProc(work_dir=op.expanduser('~/work')),
     environment=StaticEnv(),

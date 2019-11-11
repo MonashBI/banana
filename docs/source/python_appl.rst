@@ -5,7 +5,7 @@ An application of the DWI analysis to a dataset stored in a local directory
 
 .. code-block:: python
 
-    from banana import BasicRepo, StaticEnv, SingleProc
+    from banana import LocalFileSystemRepo, StaticEnv, SingleProc
     from banana.analysis.mri import DwiAnalysis
     from banana.file_format import dicom_format
 
@@ -14,7 +14,7 @@ An application of the DWI analysis to a dataset stored in a local directory
     # used in the processing
     your_analysis = DwiAnalysis(
         name='your_analysis',
-        repository=BasicRepo('/path/to/local/archive'),
+        repository=LocalFileSystemRepo('/path/to/local/archive'),
         processor=SingleProc('/my/work/dir'),
         environment=StaticEnv(),
         inputs=[

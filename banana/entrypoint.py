@@ -11,7 +11,7 @@ from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     FilesetFilter, FieldFilter, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Analysis, MultiAnalysis)
+    ModulesEnv, LocalFileSystemRepo, BidsRepo, XnatRepo, Analysis, MultiAnalysis)
 import logging
 from arcana.utils import wrap_text
 from banana.__about__ import __version__
@@ -222,7 +222,7 @@ class DeriveCmd():
                         .format(option_str, repo_args))
                 if create_root:
                     os.makedirs(repo_path, exist_ok=True)
-                repo = BasicRepo(repo_path, depth=int(repo_args[0]))
+                repo = LocalFileSystemRepo(repo_path, depth=int(repo_args[0]))
             elif repo_type == 'xnat':
                 nargs = len(repo_args)
                 if nargs < 1:

@@ -1,4 +1,4 @@
-from arcana import BasicRepo, SingleProc, FilesetFilter
+from arcana import LocalFileSystemRepo, SingleProc, FilesetFilter
 from banana.analysis.mri import DwiAnalysis
 from banana.file_format import dicom_format
 import os.path as op
@@ -8,7 +8,7 @@ test_dir = op.join(op.dirname(__file__), '..', 'test', 'data',
 
 analysis = DwiAnalysis(
     'diffusion',
-    BasicRepo(op.join(test_dir, 'analysis')),
+    LocalFileSystemRepo(op.join(test_dir, 'analysis')),
     SingleProc(op.join(test_dir, 'work')),
     inputs=[FilesetFilter('magnitude', dicom_format, '16.*',
                           is_regex=True),
