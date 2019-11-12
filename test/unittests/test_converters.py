@@ -84,9 +84,12 @@ class TestFormatConversions(BaseTestCase):
                               't1_mprage_sag_p2_iso_1_ADNI'),
                 FilesetFilter('zip', 'zip', zip_format)])
         self.assertFilesetCreated(
-            next(iter(analysis.data('nifti_gz_from_dicom'))))
+            next(iter(analysis.data('nifti_gz_from_dicom', derive=True))))
         self.assertFilesetCreated(
-            next(iter(analysis.data('mrtrix_from_nifti_gz'))))
-        self.assertFilesetCreated(next(iter(analysis.data('nifti_from_mrtrix'))))
-        self.assertFilesetCreated(next(iter(analysis.data('directory_from_zip'))))
-        self.assertFilesetCreated(next(iter(analysis.data('zip_from_directory'))))
+            next(iter(analysis.data('mrtrix_from_nifti_gz', derive=True))))
+        self.assertFilesetCreated(
+            next(iter(analysis.data('nifti_from_mrtrix', derive=True))))
+        self.assertFilesetCreated(
+            next(iter(analysis.data('directory_from_zip', derive=True))))
+        self.assertFilesetCreated(
+            next(iter(analysis.data('zip_from_directory', derive=True))))

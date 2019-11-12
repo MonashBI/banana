@@ -105,6 +105,6 @@ if __name__ == "__main__":
                                subject_ids=[LocalFileSystemRepo.DEFAULT_SUBJECT_ID],
                                visit_ids=[LocalFileSystemRepo.DEFAULT_VISIT_ID],
                                fill_tree=True)
-    analysis.data('motion_detection_output')
+    analysis.derive('motion_detection_output')
 
 print('Done!')

@@ -62,6 +62,6 @@ if __name__ == "__main__":
         parameters={'preproc_pe_dir': 'RL'},
         switches={'preproc_denoise': True})
 
-    fods = analysis.data('wm_odf')
+    fods = analysis.derive('wm_odf', derive=True)
     print(fods[0].path)
     print('Done')

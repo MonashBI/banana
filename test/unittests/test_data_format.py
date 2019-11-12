@@ -51,4 +51,4 @@ class TestDicom2Niix(BaseTestCase):
                               dicom_format, 't2_tse_tra_p2_448')])
 
         self.assertFilesetCreated(
-            next(iter(analysis.data('output_fileset'))))
+            next(iter(analysis.data('output_fileset', derive=True))))

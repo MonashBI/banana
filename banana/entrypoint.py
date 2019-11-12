@@ -368,7 +368,7 @@ class DeriveCmd():
             spec.cache()
 
         # Generate data
-        analysis.data(args.derivatives)
+        analysis.derive(args.derivatives)
 
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 

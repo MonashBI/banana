@@ -118,6 +118,6 @@ if __name__ == "__main__":
     analysis = fMRI(name='fMRI_preprocessing', processor=SingleProc(WORK_PATH),
                  repository=repository, inputs=inputs, subject_ids=args.subject_ids,
                  visit_ids=args.visit_ids)
-    analysis.data(output_files)
+    analysis.derive(output_files)
 
 print('Done!')

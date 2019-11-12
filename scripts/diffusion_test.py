@@ -15,8 +15,8 @@ analysis = DwiAnalysis(
             FilesetFilter('reverse_phase', dicom_format, '15.*',
                           is_regex=True)])
 
-print('FA: {}'.format(analysis.data('fa').path(subject_id='subject',
+print('FA: {}'.format(analysis.derive('fa', derive=True).path(subject_id='subject',
                                                visit_id='visit')))
-print('ADC: {}'.format(analysis.data('adc').path(subject_id='subject',
+print('ADC: {}'.format(analysis.derive('adc', derive=True).path(subject_id='subject',
                                                  visit_id='visit')))
-# print('tracking: {}'.format(analysis.data('wb_tracking').path))
+# print('tracking: {}'.format(analysis.derive('wb_tracking').path))

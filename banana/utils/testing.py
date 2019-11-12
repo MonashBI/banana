@@ -145,7 +145,7 @@ class AnalysisTester(TestCase):
                 skip_specs = ()
             spec_names = [s.name for s in analysis.data_specs()
                           if s.derived and s.name not in skip_specs]
-        analysis.data(spec_names)
+        analysis.derive(spec_names)
 
 
 class PipelineTester(TestCase):
@@ -280,8 +280,8 @@ class PipelineTester(TestCase):
             enforce_inputs=False,
             fill_tree=True)
         for spec_name in ref_pipeline.output_names:
-            for ref, test in zip(self.ref_analysis.data(spec_name),
-                                 output_analysis.data(spec_name)):
+            for ref, test in zip(self.ref_analysis.derive(spec_name),
+                                 output_analysis.derive(spec_name)):
                 if ref.is_fileset:
                     try:
                         self.assertTrue(
@@ -463,7 +463,7 @@ class PipelineTester(TestCase):
 
         # Generate all derived data
         for spec_name in sorted(include):
-            analysis.data(spec_name)
+            analysis.derive(spec_name)
 
         # Get output dataset to write the data to
         if out_server is not None:
@@ -476,7 +476,7 @@ class PipelineTester(TestCase):
         # Upload data to dataset
         for spec in analysis.data_specs():
             try:
-                data = analysis.data(spec.name, generate=False)
+                data = analysis.derive(spec.name, generate=False)
             except ArcanaMissingDataException:
                 continue
             for item in data:
