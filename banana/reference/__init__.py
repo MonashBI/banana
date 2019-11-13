@@ -97,12 +97,18 @@ class FslReferenceData(BaseReference):
         self._sub_path = tuple(sub_path.split('/') if isinstance(sub_path, str)
                                else sub_path)
 
-    def __str__(self):
+    def __repr__(self):
         return ("FslReferenceData({},{}{})"
                 .format(self._atlas_name,
                         self._resolution,
                         (',{}'.format(self._dataset)
                          if self._dataset is not None else '')))
+
+    def __str__(self):
+        return ('{}:{}:{}'.format(
+            self._atlas_name,
+            (self._dataset if self._dataset is not None else ''),
+            self._resolution))
 
     @property
     def path(self):

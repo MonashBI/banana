@@ -45,6 +45,8 @@ class BidsRepo(LocalFileSystemRepo):
     """
 
     type = 'bids'
+    
+    DERIVATIVES_PREFIX = 'banana-'
 
     def derivatives_dir(self, dataset):
         return op.join(dataset.name, 'derivatives')
@@ -93,9 +95,9 @@ class BidsRepo(LocalFileSystemRepo):
         all_visits = layout.get_sessions()
         if not all_visits:
             all_visits = [self.DEFAULT_VISIT_ID]
-            self._depth = 1
+            dataset._depth = 1
         else:
-            self._depth = 2
+            dataset._depth = 2
         for item in layout.get(return_type='object'):
             if item.path.startswith(self.derivatives_dir(dataset)):
                 # We handle derivatives using the LocalFileSystemRepo base
@@ -150,9 +152,14 @@ class BidsRepo(LocalFileSystemRepo):
                         filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
         # the method in the LocalFileSystemRepo base class
-        derived_filesets, fields, records = super().find_data(
-            subject_ids=subject_ids, visit_ids=visit_ids)
-        filesets.extend(derived_filesets)
+        for deriv in os.listdir(self.derivatives_dir(dataset)):
+            if deriv.startswith(self.DERIVATIVES_PREFIX):
+                from_analysis = deriv[len(self.DERIVATIVES_PREFIX):]
+                derived_filesets, fields, records = super().find_data(
+                    dataset, subject_ids=subject_ids, visit_ids=visit_ids,
+                    root_dir=self.derivatives_dir(dataset),
+                    all_from_analysis=from_analysis)
+                filesets.extend(derived_filesets)
         return filesets, fields, records
 
     def fileset_path(self, fileset, fname=None):
@@ -172,7 +179,7 @@ class BidsRepo(LocalFileSystemRepo):
             visit_id = self.SUMMARY_NAME
         sess_dir = op.join(fileset.dataset.name,
                            'derivatives',
-                           fileset.from_analysis,
+                           self.DERIVATIVES_PREFIX + fileset.from_analysis,
                            'sub-{}'.format(subject_id),
                            'sess-{}'.format(visit_id))
         # Make session dir if required

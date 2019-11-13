@@ -208,12 +208,12 @@ class DeriveCmd():
         else:
             visit_ids = args.visit_ids
 
-        def init_dataset(dataset_path, dataset_type, option_str, *dataset_args,
-                      create_root=False):
+        def init_dataset(dataset_path, dataset_type, option_str, dataset_args,
+                         create_root=False, **kwargs):
             if dataset_type == 'bids':
                 if create_root:
                     os.makedirs(dataset_path, exist_ok=True)
-                dataset = BidsDataset(dataset_path)
+                dataset = BidsDataset(dataset_path, **kwargs)
             elif dataset_type == 'basic':
                 if len(dataset_args) != 1:
                     raise BananaUsageError(
@@ -223,7 +223,8 @@ class DeriveCmd():
                         .format(option_str, dataset_args))
                 if create_root:
                     os.makedirs(dataset_path, exist_ok=True)
-                dataset = Dataset(dataset_path, depth=int(dataset_args[0]))
+                dataset = Dataset(dataset_path, depth=int(dataset_args[0]),
+                                  **kwargs)
             elif dataset_type == 'xnat':
                 nargs = len(dataset_args)
                 if nargs < 1:
@@ -243,7 +244,7 @@ class DeriveCmd():
                     user=(dataset_args[1] if nargs > 2 else None),
                     password=(dataset_args[2] if nargs > 3 else None),
                     cache_dir=op.join(scratch_dir,
-                                      'cache')).dataset(dataset_path)
+                                      'cache')).dataset(dataset_path, **kwargs)
             else:
                 raise BananaUsageError(
                     "Unrecognised dataset type provided as first argument "
@@ -252,7 +253,9 @@ class DeriveCmd():
             return dataset
 
         dataset = init_dataset(args.dataset_path, dataset_type,
-                               'dataset', *args.dataset[1:])
+                               'dataset', args.dataset[1:],
+                               subject_ids=subject_ids,
+                               visit_ids=visit_ids)
 
         if args.output_dataset is not None:
             input_dataset = dataset
@@ -272,7 +275,11 @@ class DeriveCmd():
                 out_path = args.output_dataset[1]
                 out_dataset_args = args.output_dataset[2:]
             dataset = init_dataset(out_path, dataset_type, 'output_dataset',
-                                   *out_dataset_args, create_root=True)
+                                   out_dataset_args,
+                                   create_root=True,
+                                   subject_ids=subject_ids,
+                                   visit_ids=visit_ids,
+                                   fill_tree=fill_tree)
         else:
             input_dataset = None
             fill_tree = False
@@ -335,7 +342,7 @@ class DeriveCmd():
 
         if input_dataset is not None and input_dataset.type == 'bids':
             inputs = analysis_class.get_bids_inputs(args.bids_task,
-                                                 dataset=input_dataset)
+                                                    dataset=input_dataset)
         else:
             inputs = {}
         for name, pattern in args.input:
@@ -354,10 +361,7 @@ class DeriveCmd():
             environment=environment,
             inputs=inputs,
             parameters=parameters,
-            subject_ids=subject_ids,
-            visit_ids=visit_ids,
             enforce_inputs=args.enforce_inputs,
-            fill_tree=fill_tree,
             bids_task=args.bids_task)
 
         for spec_name in args.cache:
@@ -373,104 +377,103 @@ class DeriveCmd():
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 
 
-class TestGenCmd():
+# class TestGenCmd():
 
-    desc = ("Generate all derivatives from a analysis in a format compatible "
-            "with Banana's unit-testing framework")
+#     desc = ("Generate all derivatives from a analysis in a format compatible "
+#             "with Banana's unit-testing framework")
 
-    @classmethod
-    def parser(cls):
-        parser = ArgumentParser(
-            prog='banana test-gen',
-            description=("Generates reference data for the built-in unittest "
-                         "framework given a analysis class, an input dataset "
-                         "containing data named according to the data "
-                         "specification of the class and set of parameters"))
-        parser.add_argument('analysis_class',
-                            help=("The path to the analysis class to test, e.g. "
-                                  "banana.analysis.MriAnalysis"))
-        parser.add_argument('in_dataset', help=("The path to dataset that "
-                                             "houses the input data"))
-        parser.add_argument('out_dataset',
-                            help=("If the 'xnat_server' argument is provided "
-                                  "then out is interpreted as the project ID "
-                                  "to use the XNAT server (the project must "
-                                  "exist already). Otherwise it is interpreted"
-                                  " as the path to a basic dataset"))
-        parser.add_argument('--in_server', default=None,
-                            help="The server to download the input data from")
-        parser.add_argument('--out_server', default=None,
-                            help="The server to upload the reference data to")
-        parser.add_argument('--work_dir', default=None,
-                            help="The work directory")
-        parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
-                            nargs=2, action='append', default=[],
-                            help=("Parameters to set when initialising the "
-                                  "analysis"))
-        parser.add_argument('--include', '-i', nargs='+', default=[],
-                            help=("Spec names to include in the generation "
-                                  "process. If not provided all (except "
-                                  "those that are explicitly skipped) "
-                                  "are included"))
-        parser.add_argument('--skip', '-s', nargs='+', default=[],
-                            help=("Spec names to skip in the generation "
-                                  "process"))
-        parser.add_argument('--bases', nargs='+', default=[],
-                            help=("Base classes which to include data specs "
-                                  "defined within them"))
-        parser.add_argument('--reprocess', action='store_true', default=False,
-                            help=("Whether to reprocess previously generated "
-                                  "datasets in the output dataset"))
-        parser.add_argument('--dataset_depth', type=int, default=0,
-                            help="The depth of the input dataset")
-        parser.add_argument('--dont_clean_work_dir', action='store_true',
-                            default=False,
-                            help=("Whether to clean the Nipype work dir "
-                                  "between runs"))
-        parser.add_argument('--loggers', nargs='+',
-                            default=('nipype.workflow', 'arcana', 'banana'),
-                            help="Loggers to set handlers to stdout for")
-        parser.add_argument('--environment', type=str, default='static',
-                            choices=('modules', 'static'), metavar='TYPE',
-                            help="The type of environment to use")
-        return parser
+#     @classmethod
+#     def parser(cls):
+#         parser = ArgumentParser(
+#             prog='banana test-gen',
+#             description=("Generates reference data for the built-in unittest "
+#                          "framework given a analysis class, an input dataset "
+#                          "containing data named according to the data "
+#                          "specification of the class and set of parameters"))
+#         parser.add_argument('analysis_class',
+#                             help=("The path to the analysis class to test, e.g. "
+#                                   "banana.analysis.MriAnalysis"))
+#         parser.add_argument('in_dataset', help=("The path to dataset that "
+#                                              "houses the input data"))
+#         parser.add_argument('out_dataset',
+#                             help=("If the 'xnat_server' argument is provided "
+#                                   "then out is interpreted as the project ID "
+#                                   "to use the XNAT server (the project must "
+#                                   "exist already). Otherwise it is interpreted"
+#                                   " as the path to a basic dataset"))
+#         parser.add_argument('--in_server', default=None,
+#                             help="The server to download the input data from")
+#         parser.add_argument('--out_server', default=None,
+#                             help="The server to upload the reference data to")
+#         parser.add_argument('--work_dir', default=None,
+#                             help="The work directory")
+#         parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
+#                             nargs=2, action='append', default=[],
+#                             help=("Parameters to set when initialising the "
+#                                   "analysis"))
+#         parser.add_argument('--include', '-i', nargs='+', default=[],
+#                             help=("Spec names to include in the generation "
+#                                   "process. If not provided all (except "
+#                                   "those that are explicitly skipped) "
+#                                   "are included"))
+#         parser.add_argument('--skip', '-s', nargs='+', default=[],
+#                             help=("Spec names to skip in the generation "
+#                                   "process"))
+#         parser.add_argument('--bases', nargs='+', default=[],
+#                             help=("Base classes which to include data specs "
+#                                   "defined within them"))
+#         parser.add_argument('--reprocess', action='store_true', default=False,
+#                             help=("Whether to reprocess previously generated "
+#                                   "datasets in the output dataset"))
+#         parser.add_argument('--dataset_depth', type=int, default=0,
+#                             help="The depth of the input dataset")
+#         parser.add_argument('--dont_clean_work_dir', action='store_true',
+#                             default=False,
+#                             help=("Whether to clean the Nipype work dir "
+#                                   "between runs"))
+#         parser.add_argument('--loggers', nargs='+',
+#                             default=('nipype.workflow', 'arcana', 'banana'),
+#                             help="Loggers to set handlers to stdout for")
+#         parser.add_argument('--environment', type=str, default='static',
+#                             choices=('modules', 'static'), metavar='TYPE',
+#                             help="The type of environment to use")
+#         return parser
 
-    @classmethod
-    def run(cls, args):
+#     @classmethod
+#     def run(cls, args):
 
-        # Get Analysis class
-        analysis_class = resolve_class(args.analysis_class)
+#         # Get Analysis class
+#         analysis_class = resolve_class(args.analysis_class)
 
-        include_bases = [resolve_class(c) for c in args.bases]
+#         include_bases = [resolve_class(c) for c in args.bases]
 
-        # Convert parameters to dictionary
-        parameters_dct = {}
-        for name, value in args.parameter:
-            try:
-                value = int(value)
-            except ValueError:
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
-            parameters_dct[name] = value
-        parameters = parameters_dct
+#         # Convert parameters to dictionary
+#         parameters_dct = {}
+#         for name, value in args.parameter:
+#             try:
+#                 value = int(value)
+#             except ValueError:
+#                 try:
+#                     value = float(value)
+#                 except ValueError:
+#                     pass
+#             parameters_dct[name] = value
+#         parameters = parameters_dct
 
-        PipelineTester.generate_test_data(
-            analysis_class=analysis_class, in_dataset=args.in_dataset,
-            out_dataset=args.out_dataset, in_server=args.in_server,
-            out_server=args.out_server, work_dir=args.work_dir,
-            parameters=parameters, skip=args.skip, include=args.include,
-            include_bases=include_bases,
-            reprocess=args.reprocess, dataset_depth=args.dataset_depth,
-            modules_env=(args.environment == 'modules'),
-            clean_work_dir=(not args.dont_clean_work_dir))
+#         PipelineTester.generate_test_data(
+#             analysis_class=analysis_class, in_dataset=args.in_dataset,
+#             out_dataset=args.out_dataset, in_server=args.in_server,
+#             out_server=args.out_server, work_dir=args.work_dir,
+#             parameters=parameters, skip=args.skip, include=args.include,
+#             include_bases=include_bases,
+#             reprocess=args.reprocess, dataset_depth=args.dataset_depth,
+#             modules_env=(args.environment == 'modules'),
+#             clean_work_dir=(not args.dont_clean_work_dir))
 
 
 class GenRefDataCmd():
 
-    desc = ("Generate reference data for a test class, which future tests will"
-            "be checked against")
+    desc = ("Generate reference data for unit-tests")
 
     DEFAULT_TEST_ROOT = op.join(op.dirname(__file__), '..', 'test')
 
@@ -564,7 +567,7 @@ class GenRefDataCmd():
 
         test_cls = getattr(module, parts[-1])
 
-        test_cls.generate_reference_data(
+        test_cls().generate_reference_data(
             *args.specs, processor=processor, environment=environment)
 
 
@@ -655,7 +658,7 @@ class AvailableCmd():
                     module_path = pkg_path + '.' + module_info.name
                     module = import_module(module_path)
                     find_analysis_classes(module, module_path)
-        msg = ("\nThe following Analysis classes are available:")
+        msg = ("\nThe following Analysis classes are available:\n")
         to_print = []
         for avail_cls, module_path in sorted(available.items(),
                                              key=lambda x: x[0].__name__):
@@ -680,8 +683,8 @@ class MainCmd():
         'avail': AvailableCmd,
         'menu': MenuCmd,
         'derive': DeriveCmd,
-        'test-gen': TestGenCmd,
-        'gen-ref-data': GenRefDataCmd,
+        # 'test-gen': TestGenCmd,
+        'gen-ref': GenRefDataCmd,
         'help': HelpCmd}
 
     @classmethod

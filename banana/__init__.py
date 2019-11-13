@@ -23,10 +23,10 @@ import os
 # Import all objects from Arcana used to design and apply Banana studies
 from arcana import (
     SubCompSpec, Parameter, ParamSpec, SwitchSpec, FileFormat, Fileset,
-    FilesetSpec, FilesetFilter, InputFilesetSpec, FilesetSlice, Field,
-    FieldSpec, FieldFilter, InputFieldSpec, FieldSlice, SingleProc,
-    MultiProc, SlurmProc, StaticEnv, Dataset,
-    ModulesEnv, LocalFileSystemRepo, XnatRepo)
+    FilesetSpec, FilesetFilter, InputFilesetSpec, OutputFilesetSpec,
+    FilesetSlice, Field, FieldSpec, FieldFilter, InputFieldSpec,
+    OutputFieldSpec, FieldSlice, SingleProc, MultiProc, SlurmProc, StaticEnv,
+    Dataset, ModulesEnv, LocalFileSystemRepo, XnatRepo)
 
 from .bids_ import BidsDataset
 
