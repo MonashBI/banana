@@ -45,8 +45,6 @@ class BidsRepo(LocalFileSystemRepo):
     """
 
     type = 'bids'
-    
-    DERIVATIVES_PREFIX = 'banana-'
 
     def derivatives_dir(self, dataset):
         return op.join(dataset.name, 'derivatives')
@@ -91,10 +89,18 @@ class BidsRepo(LocalFileSystemRepo):
         """
         filesets = []
         layout = self.layout(dataset)
-        all_subjects = layout.get_subjects()
-        all_visits = layout.get_sessions()
-        if not all_visits:
-            all_visits = [self.DEFAULT_VISIT_ID]
+        all_subject_ids = set(layout.get_subjects())
+        all_visit_ids = set(layout.get_sessions())
+        if subject_ids is None:
+            subject_ids = all_subject_ids
+        else:
+            subject_ids = all_subject_ids & set(subject_ids)
+        if visit_ids is None:
+            visit_ids = all_visit_ids
+        else:
+            visit_ids = all_visit_ids & set(visit_ids)
+        if not visit_ids:
+            visit_ids.add(self.DEFAULT_VISIT_ID)
             dataset._depth = 1
         else:
             dataset._depth = 2
@@ -109,19 +115,20 @@ class BidsRepo(LocalFileSystemRepo):
                                .format(op.join(item.dirname, item.filename)))
                 continue  # Ignore hidden file
             try:
-                subject_ids = [item.entities['subject']]
+                item_subject_ids = subject_ids & set(
+                    [item.entities['subject']])
             except KeyError:
                 # If item exists in top-levels of in the directory structure
                 # it is inferred to exist for all subjects in the tree
-                subject_ids = all_subjects
+                item_subject_ids = subject_ids
             try:
-                visit_ids = [item.entities['session']]
+                item_visit_ids = visit_ids & set([item.entities['session']])
             except KeyError:
                 # If item exists in top-levels of in the directory structure
                 # it is inferred to exist for all visits in the tree
-                visit_ids = all_visits
-            for subject_id in subject_ids:
-                for visit_id in visit_ids:
+                item_visit_ids = visit_ids
+            for subject_id in item_subject_ids:
+                for visit_id in item_visit_ids:
                     aux_files = {}
                     metadata = layout.get_metadata(item.path)
                     if metadata and not item.path.endswith('.json'):
@@ -152,21 +159,18 @@ class BidsRepo(LocalFileSystemRepo):
                         filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
         # the method in the LocalFileSystemRepo base class
-        for deriv in os.listdir(self.derivatives_dir(dataset)):
-            if deriv.startswith(self.DERIVATIVES_PREFIX):
-                from_analysis = deriv[len(self.DERIVATIVES_PREFIX):]
-                derived_filesets, fields, records = super().find_data(
-                    dataset, subject_ids=subject_ids, visit_ids=visit_ids,
-                    root_dir=self.derivatives_dir(dataset),
-                    all_from_analysis=from_analysis)
-                filesets.extend(derived_filesets)
+        derived_filesets, fields, records = super().find_data(
+            dataset, subject_ids=subject_ids, visit_ids=visit_ids)
+        filesets.extend(derived_filesets)
         return filesets, fields, records
 
-    def fileset_path(self, fileset, fname=None):
+    def fileset_path(self, fileset, dataset=None, fname=None):
         if not fileset.derived:
             raise ArcanaUsageError(
                 "Can only get automatically get path to derived filesets not "
                 "{}".format(fileset))
+        if dataset is None:
+            dataset = fileset.dataset
         if fname is None:
             fname = fileset.fname
         if fileset.subject_id is not None:
@@ -177,9 +181,9 @@ class BidsRepo(LocalFileSystemRepo):
             visit_id = fileset.visit_id
         else:
             visit_id = self.SUMMARY_NAME
-        sess_dir = op.join(fileset.dataset.name,
+        sess_dir = op.join(dataset.name,
                            'derivatives',
-                           self.DERIVATIVES_PREFIX + fileset.from_analysis,
+                           fileset.from_analysis,
                            'sub-{}'.format(subject_id),
                            'sess-{}'.format(visit_id))
         # Make session dir if required
@@ -187,10 +191,19 @@ class BidsRepo(LocalFileSystemRepo):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
         return op.join(sess_dir, fname)
 
-    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
-        if len(path_parts) != 4 or path_parts[0] != 'derivatives':
+    def _extract_ids_from_path(self, depth, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
+        """
+        Overrides method in LocalFileSystemRepo class to move the analysis
+        directory to be the outer directory (instead of the inner), and ignore
+        all data not in the derivatives directory.
+        """
+        if (len(path_parts) != (depth + 2)
+            or path_parts[0] != 'derivatives'
+            or not path_parts[2].startswith('sub-')
+                or (depth == 2 and not path_parts[3].startswith('ses-'))):
             return None
-        from_analysis, subj, sess = path_parts[1:]
+        from_analysis, subj = path_parts[1:3]
+        sess = path_parts[3] if depth == 2 else None
         subj_id = subj[len('sub-'):]
         visit_id = sess[len('sess-'):]
         return subj_id, visit_id, from_analysis
