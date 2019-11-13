@@ -5,13 +5,24 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: MoCo Test",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/scripts/motion_detection_siemens.py",
             "console": "internalConsole",
-            "args": ["--input_dir", "${workspaceFolder}/test/data/moco-test",
-                     "--environment", "modules"]
+            "args": [
+                "--input_dir",
+                "${workspaceFolder}/test/data/moco-test",
+                "--environment",
+                "modules"
+            ]
         },
         {
             "name": "Python: T2star Test",

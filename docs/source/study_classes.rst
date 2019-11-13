@@ -1,5 +1,5 @@
 Analysis classes
-=============
+================
 
 Selected :class:`banana.Analysis` subclasses implemented in Banana
 

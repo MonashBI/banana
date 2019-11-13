@@ -1,4 +1,4 @@
-__version__ = '0.4.2'
+__version__ = '0.5.0'
 
 __authors__ = [
     ("Thomas G. Close", "tom.g.close@gmail.com"),
@@ -6,7 +6,7 @@ __authors__ = [
     ("Phillip G. D. Ward", "phillipgdward@gmail.com")]
 
 
-install_requires = ['arcana>=0.5.0',
+install_requires = ['arcana>=0.6.0',
                     'pydicom>=1.0',
                     'nibabel>=2.3.0',
                     'pybids>=0.9.1',

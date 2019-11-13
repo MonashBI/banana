@@ -1,4 +1,4 @@
-In Python 
+In Python
 =========
 
 An application of the DWI analysis to a dataset stored in a local directory
