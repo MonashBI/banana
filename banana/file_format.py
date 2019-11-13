@@ -8,15 +8,15 @@ import numpy as np
 from arcana.data.file_format import FileFormat, Converter
 from banana.interfaces.mrtrix import MRConvert
 from banana.requirement import (
-    dcm2niix_req, mrtrix_req)
-from banana.interfaces.converters import Dcm2niix  # @UnusedImport
+    dcm2niix_req, mrtrix_req, matlab_req)
+from banana.interfaces.converters import Dcm2niix, TwixReader
 from banana.exceptions import BananaUsageError
 import nibabel
 # Import base file formats from Arcana for convenience
 from arcana.data.file_format import (
-    text_format, directory_format, zip_format, targz_format,  # @UnusedImport
-    png_format, jpg_format, gif_format, json_format,  # @UnusedImport
-    UnzipConverter, UnTarGzConverter, IdentityConverter)  # @UnusedImport
+    text_format, directory_format, zip_format, targz_format,
+    png_format, jpg_format, gif_format, json_format,
+    UnzipConverter, UnTarGzConverter, IdentityConverter)
 
 
 class Dcm2niixConverter(Converter):
@@ -38,6 +38,15 @@ class MrtrixConverter(Converter):
         return MRConvert(
             out_ext=self.output_format.extension,
             quiet=True)
+
+
+class TwixConverter(Converter):
+
+    input = 'in_file'
+    output = 'out_file'
+    output_aux_files = {'ref': 'ref_file', 'json': 'hdr_file'}
+    requirements = [matlab_req.v('R2018a')]
+    interface = TwixReader()
 
 
 # =====================================================================
@@ -147,8 +156,8 @@ class ImageFormat(FileFormat, metaclass=ABCMeta):
         """
         Return the RMS difference between the image arrays
         """
-        return np.sqrt(np.sum((fileset.get_array() -
-                               other_fileset.get_array()) ** 2))
+        return np.sqrt(np.sum((fileset.get_array()
+                               - other_fileset.get_array()) ** 2))
 
 
 class NiftiFormat(ImageFormat):
@@ -228,9 +237,9 @@ class DicomFormat(ImageFormat):
         dct : Dict[Tuple[str, str], str|int|float]
         """
         try:
-            if (fileset._path is None and fileset._repository is not None and
-                    hasattr(fileset.repository, 'dicom_header')):
-                hdr = fileset.repository.dicom_header(self)
+            if (fileset._path is None and fileset._dataset is not None
+                    and hasattr(fileset.dataset.repository, 'dicom_header')):
+                hdr = fileset.dataset.repository.dicom_header(self)
                 dct = [hdr[t] for t in tags]
             else:
                 # Get the DICOM object for the first file in the fileset
@@ -375,8 +384,51 @@ motion_mats_format = FileFormat(
 # PET formats
 list_mode_format = FileFormat(name='pet_list_mode', extension='.bf')
 
-# Raw formats
-dat_format = FileFormat(name='dat', extension='.dat')
+# K-space formats
+
+twix_vb_format = FileFormat(
+    name='twix_vb', extension='.dat',
+    resource_names={'xnat': ['DAT', 'KSPACE']},
+    desc=("The format that k-space data is saved in from Siemens scanners "
+          "with system version vB to (at least) vE"))
+
+custom_kspace_format = FileFormat(
+    name='custom_kspace', extension='.ks',
+    resource_names={'xnat': ['CUSTOM_KSPACE']},
+    aux_files={'ref': '.ref', 'json': '.json'},
+    desc=("""A custom format for saving k-space data in binary amd JSON files.
+
+    Binary files
+    ------------
+    primary : 5-d matrix
+        Data from "data" scan organised in the following dimension order:
+        channel, freq-encode, phase-encode, partition-encode (slice), echoes
+    reference : 5-d matrix
+        Data from calibration scan organised in the same dimension order as
+        primary scan
+
+    JSON side-car
+    -------------
+    dims : 3-tuple(int)
+        The dimensions of the image in freq, phase, partition (slice) order
+    voxel_size : 3-tuple(float)
+        Size of the voxels in same order as dims
+    num_channels : int
+        Number of channels in the k-space
+    num_echos : int
+        Number of echoes in the acquisition
+    TE : tuple(float)
+        The echo times
+    B0_strength : float
+        Stength of the B0 field
+    B0_dir : 3-tuple(float)
+        Direction of the B0 field
+    larmor_freq : float
+        The central larmor frequency of the scanner"""))
+
+custom_kspace_format.set_converter(twix_vb_format, TwixConverter)
+
+KSPACE_FORMATS = [twix_vb_format, custom_kspace_format]
 
 # MRS format
 rda_format = FileFormat(name='raw', extension='.rda')

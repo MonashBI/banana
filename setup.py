@@ -6,7 +6,7 @@ PACKAGE_NAME = 'banana'
 
 # Get version from module inside package
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), PACKAGE_NAME))
-from __about__ import __version__, install_requires  # @UnresolvedImport @IgnorePep8
+from __about__ import __version__, install_requires, tests_require  # noqa pylint: disable=no-name-in-module
 sys.path.pop(0)
 
 
@@ -24,6 +24,7 @@ setup(
         'framework (arcana.readthedocs.io)'),
     long_description=open('README.rst').read(),
     install_requires=install_requires,
+    tests_require=tests_require,
     entry_points={
         'console_scripts': ['banana = banana.entrypoint:MainCmd.run']},
     classifiers=[

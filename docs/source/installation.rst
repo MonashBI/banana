@@ -32,5 +32,5 @@ typical on many high-performance computer clusters). One advantage of
 installing toolkits in separate environment modules is that you use different
 versions of the same tool in different nodes of the pipeline.
 
-For a given Study class and requested derivative(s) Banana will determine the
+For a given Analysis class and requested derivative(s) Banana will determine the
 toolkits required and check they are available on If toolkits are 

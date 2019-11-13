@@ -4,30 +4,30 @@ from copy import copy
 import banana
 from banana.requirement import fsl_req
 from arcana.exceptions import ArcanaError
-from arcana import Fileset, FilesetCollection
+from arcana import Fileset, FilesetSlice
 
 
 class BaseReference():
 
-    frequency = 'per_study'
+    frequency = 'per_dataset'
 
     def __init__(self, format, name=None):
         self._name = name
         self._format = format
-        self._study = None
+        self._analysis = None
 
-    def bind(self, study):
+    def bind(self, analysis):
         bound = copy(self)
-        bound._study = study
+        bound._analysis = analysis
         return bound
 
     @property
-    def study(self):
-        if self._study is None:
+    def analysis(self):
+        if self._analysis is None:
             raise ArcanaError(
-                "Can't access study property as {} has not been bound"
+                "Can't access analysis property as {} has not been bound"
                 .format(self))
-        return self._study
+        return self._analysis
 
     @property
     def name(self):
@@ -45,8 +45,8 @@ class BaseReference():
         return hash(self.name)
 
     @property
-    def collection(self):
-        return FilesetCollection(
+    def slice(self):
+        return FilesetSlice(
             self.name,
             [Fileset.from_path(self.path, frequency=self.frequency)],
             format=self._format,
@@ -54,7 +54,7 @@ class BaseReference():
 
     @property
     def format(self):
-        return self.collection.format
+        return self.slice.format
 
     @property
     def path(self):
@@ -77,7 +77,7 @@ class FslReferenceData(BaseReference):
         Name of atlas or family of atlases
     resolution : str | float
         The resolution of the atlas to use. Can either be a fixed floating
-        point value or the name of a parameter in the study to draw the
+        point value or the name of a parameter in the analysis to draw the
         value from
     dataset : str | None
         Name of the dataset (i.e. 'brain', 'brain_mask', 'eye_mask', 'edges')
@@ -97,45 +97,51 @@ class FslReferenceData(BaseReference):
         self._sub_path = tuple(sub_path.split('/') if isinstance(sub_path, str)
                                else sub_path)
 
-    def __str__(self):
+    def __repr__(self):
         return ("FslReferenceData({},{}{})"
                 .format(self._atlas_name,
                         self._resolution,
                         (',{}'.format(self._dataset)
                          if self._dataset is not None else '')))
 
+    def __str__(self):
+        return ('{}:{}:{}'.format(
+            self._atlas_name,
+            (self._dataset if self._dataset is not None else ''),
+            self._resolution))
+
     @property
     def path(self):
         # If resolution is a string then it is assumed to be a parameter name
-        # of the study
+        # of the analysis
         if isinstance(self._resolution, str):
-            resolution = getattr(self.study, self._resolution)
+            resolution = getattr(self.analysis, self._resolution)
         else:
             resolution = self._resolution
         full_atlas_name = '{}_{}mm'.format(self._atlas_name, resolution)
         if self._dataset is not None:
             full_atlas_name += '_' + self._dataset
-        fsl_ver = self.study.environment.satisfy(fsl_req.v('5.0.8'))[0]
-        if hasattr(self.study.environment, 'load'):
-            self.study.environment.load(fsl_ver)
+        fsl_ver = self.analysis.environment.satisfy(fsl_req.v('5.0.8'))[0]
+        if hasattr(self.analysis.environment, 'load'):
+            self.analysis.environment.load(fsl_ver)
             fsl_dir = os.environ['FSLDIR']
-            self.study.environment.unload(fsl_ver)
+            self.analysis.environment.unload(fsl_ver)
         else:
             fsl_dir = os.environ['FSLDIR']  # Static environments
         return op.join(fsl_dir, 'data', *self._sub_path,
                        full_atlas_name + '.nii.gz')
 
-    def translate(self, substudy_spec):
+    def translate(self, subcomp_spec):
         """
-        Translate resolution parameter name if used to namespace of multi-study
+        Translate resolution parameter name if used to namespace of multi-analysis
 
         Parameters
         ----------
-        substudy_spec : SubStudySpec
-            The sub-study that the spec belongs to
+        subcomp_spec : SubCompSpec
+            The sub-analysis that the spec belongs to
         """
         if isinstance(self._resolution, str):
-            self._resolution = substudy_spec.map(self._resolution)
+            self._resolution = subcomp_spec.map(self._resolution)
 
     def __eq__(self, other):
         return (
@@ -155,12 +161,12 @@ class FslReferenceData(BaseReference):
     @property
     def _error_msg_loc(self):
         return "'{}' FSL atlas passed to '{}' in {} ".format(
-            self._atlas_name, self.name, self.study)
+            self._atlas_name, self.name, self.analysis)
 
 
 class LocalReferenceData(BaseReference):
     """
-    Several atlases used in the composite-vein analysis in the T2* study,
+    Several atlases used in the composite-vein analysis in the T2* analysis,
     stored within the banana package.
 
     Parameters

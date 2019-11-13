@@ -1,4 +1,4 @@
-
+import os.path as op
 import os.path
 from nipype.interfaces.base import (
     TraitedSpec, BaseInterface, File, Directory, traits, isdefined,
@@ -10,6 +10,7 @@ import re
 from arcana.exceptions import ArcanaError
 import numpy as np
 from nipype.utils.filemanip import split_filename
+from .matlab import BaseMatlab, BaseMatlabInputSpec, BaseMatlabOutputSpec
 
 
 class Dcm2niixInputSpec(CommandLineInputSpec):
@@ -34,9 +35,9 @@ class Dcm2niix(CommandLine):
     output_spec = Dcm2niixOutputSpec
 
     def _list_outputs(self):
-        if (not isdefined(self.inputs.compression) or
-                (self.inputs.compression == 'y' or
-                 self.inputs.compression == 'i')):
+        if (not isdefined(self.inputs.compression)
+                or (self.inputs.compression == 'y'
+                    or self.inputs.compression == 'i')):
             im_ext = '.nii.gz'
         else:
             im_ext = '.nii'
@@ -110,7 +111,7 @@ class Nii2Dicom(BaseInterface):
     """
     Creates two umaps in dicom format
 
-    fully compatible with the UTE study:
+    fully compatible with the UTE analysis:
 
     Attenuation Correction pipeline
 
@@ -155,7 +156,7 @@ class Nii2Dicom(BaseInterface):
     def _list_outputs(self):
         outputs = self._outputs().get()
         outputs['out_file'] = (
-            os.getcwd()+'/nifti2dicom')
+            os.getcwd() + '/nifti2dicom')
         return outputs
 
     def _gen_filename(self, name):
@@ -170,7 +171,62 @@ class Nii2Dicom(BaseInterface):
             fpath = self.inputs.out_file
         else:
             fname = (
-                split_extension(os.path.basename(self.inputs.in_file))[0] +
-                '_dicom')
+                split_extension(os.path.basename(self.inputs.in_file))[0]
+                + '_dicom')
             fpath = os.path.join(os.getcwd(), fname)
         return fpath
+
+
+class TwixReaderInputSpec(BaseMatlabInputSpec):
+    in_file = File(exists=True, mandatory=True)
+
+
+class TwixReaderOutputSpec(BaseMatlabOutputSpec):
+
+    ref_file = File(exists=True, desc="Reference scan")
+    hdr_file = File(exists=True, desc="Header information in JSON format")
+
+
+class TwixReader(BaseMatlab):
+    """
+    Reads a Siemens TWIX (multi-channel k-space) file and saves it in a Matlab
+    file in 'matlab_kspace' format (see banana.file_format for details)
+    """
+
+    input_spec = TwixReaderInputSpec
+    output_spec = TwixReaderOutputSpec
+
+    def script(self, **inputs):
+        """
+        Generate script to load Siemens format k-space and save as Matlab
+        arrays
+        """
+        script = ("convert_twix('{in_file}', '{out_file}', '{ref_file}', "
+                  " '{hdr_file}');").format(
+                      in_file=self.inputs.in_file,
+                      out_file=self.out_file,
+                      ref_file=self.ref_file,
+                      hdr_file=self.hdr_file)
+        return script
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        outputs['out_file'] = self.out_file
+        outputs['ref_file'] = self.ref_file
+        outputs['hdr_file'] = self.hdr_file
+        return outputs
+
+    @property
+    def out_file(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.ks.dat')))
+
+    @property
+    def ref_file(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.ks.ref')))
+
+    @property
+    def hdr_file(self):
+        return op.realpath(op.abspath(
+            op.join(self.work_dir, 'out_file.ks.json')))

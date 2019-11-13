@@ -5,19 +5,12 @@ from banana.interfaces.mrtrix import MRConvert
 from arcana.exceptions import ArcanaModulesNotInstalledException
 from banana.file_format import (dicom_format, mrtrix_image_format,
                                 nifti_gz_format)
-from arcana.study.base import Study, StudyMetaClass
-from arcana.data import InputFilesets, FilesetSpec, InputFilesetSpec
-from arcana.environment import ModulesEnv, StaticEnv
-
-try:
-    ModulesEnv._run_module_cmd('avail')
-except ArcanaModulesNotInstalledException:
-    environment = StaticEnv()
-else:
-    environment = ModulesEnv(fail_on_missing=False)
+from banana.utils.testing import TEST_ENV
+from arcana.analysis.base import Analysis, AnalysisMetaClass
+from arcana.data import FilesetFilter, FilesetSpec, InputFilesetSpec
 
 
-class DummyStudy(Study, metaclass=StudyMetaClass):
+class DummyAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('input_fileset', dicom_format),
@@ -49,13 +42,13 @@ class TestConverterAvailability(TestCase):
 class TestDicom2Niix(BaseTestCase):
 
     def test_dcm2niix(self):
-        study = self.create_study(
-            DummyStudy,
+        analysis = self.create_analysis(
+            DummyAnalysis,
             'concatenate',
-            environment=environment,
+            environment=TEST_ENV,
             inputs=[
-                InputFilesets('input_fileset',
+                FilesetFilter('input_fileset',
                               dicom_format, 't2_tse_tra_p2_448')])
 
         self.assertFilesetCreated(
-            next(iter(study.data('output_fileset'))))
+            next(iter(analysis.data('output_fileset', derive=True))))

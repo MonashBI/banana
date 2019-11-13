@@ -7,18 +7,19 @@ from setuptools import find_packages
 from pkgutil import iter_modules
 from multiprocessing import cpu_count
 from arcana.utils import parse_value
-from banana.utils.testing import PipelineTester
+from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
-    InputFilesets, InputFields, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, BasicRepo, BidsRepo, XnatRepo, Study, MultiStudy)
+    FilesetFilter, FieldFilter, MultiProc, SingleProc, SlurmProc, StaticEnv,
+    ModulesEnv, LocalFileSystemRepo, BidsDataset, XnatRepo, Analysis,
+    MultiAnalysis, Dataset)
 import logging
 from arcana.utils import wrap_text
 from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
 
-DEFAULT_STUDY_CLASS_PATH = 'banana.study'
+DEFAULT_STUDY_CLASS_PATH = 'banana.analysis'
 
 DEFAULT_LINE_LENGTH = 79
 DEFAULT_INDENT = 4
@@ -74,30 +75,30 @@ def resolve_class(class_str, prefixes=(DEFAULT_STUDY_CLASS_PATH,)):
 
 class DeriveCmd():
 
-    desc = "Generate derivatives from a Banana Study class"
+    desc = "Generate derivatives from a Banana Analysis class"
 
     @classmethod
     def parser(cls):
         parser = ArgumentParser(prog='banana derive',
                                 description=cls.desc)
-        parser.add_argument('repository_path',
-                            help=("Either the path to the repository if of "
+        parser.add_argument('dataset_path',
+                            help=("Either the path to the dataset if of "
                                   "'bids' or 'basic' types, or the name of the"
                                   " project ID for 'xnat' type"))
-        parser.add_argument('study_class',
+        parser.add_argument('analysis_class',
                             help=("Name of the class to instantiate"))
-        parser.add_argument('study_name',
-                            help=("The name of the study to put the analysis "
+        parser.add_argument('analysis_name',
+                            help=("The name of the analysis to put the analysis "
                                   "under (e.g. parenthood)"))
         parser.add_argument('derivatives', nargs='+',
                             help=("The names of the derivatives to generate"))
-        parser.add_argument('--repository', nargs='+', default=['bids'],
+        parser.add_argument('--dataset', nargs='+', default=['bids'],
                             metavar='ARG',
-                            help=("Specify the repository type and any options"
+                            help=("Specify the dataset type and any options"
                                   " to be passed to it. First argument "))
-        parser.add_argument('--output_repository', '-o', nargs='+',
+        parser.add_argument('--output_dataset', '-o', nargs='+',
                             metavar='ARG', default=None,
-                            help=("Specify a different output repository "
+                            help=("Specify a different output dataset "
                                   "to place the derivatives in. 1st arg "
                                   "is the type, one of ('basic', 'bids' or "
                                   "'xnat'). If type == 'xnat' then the "
@@ -116,11 +117,11 @@ class DeriveCmd():
                             help="The type of environment to use")
         parser.add_argument('--input', '-i', nargs=2, action='append',
                             default=[], metavar=('SPEC', 'PATTERN'),
-                            help=("The inputs to include in the study init. "
-                                  "If not provided then all are used"))
+                            help=("The inputs to include in the analysis init."
+                                  " If not provided then all are used"))
         parser.add_argument('--parameter', '-p', nargs=2, action='append',
                             metavar=('NAME', 'VALUE'), default=[],
-                            help="Parameters to pass to the study")
+                            help="Parameters to pass to the analysis")
         parser.add_argument('--subject_ids', nargs='+', default=None,
                             metavar='ID',
                             help=("The subject IDs to include in the analysis."
@@ -169,7 +170,7 @@ class DeriveCmd():
         if not args.quiet:
             set_loggers(args.logger)
 
-        study_class = resolve_class(args.study_class)
+        analysis_class = resolve_class(args.analysis_class)
 
         if args.scratch is not None:
             scratch_dir = args.scratch
@@ -181,18 +182,18 @@ class DeriveCmd():
 
         work_dir = op.join(scratch_dir, 'work')
 
-        if args.repository is None:
+        if args.dataset is None:
             if args.input:
-                repository_type = 'basic'
+                dataset_type = 'basic'
             else:
-                repository_type = 'bids'
+                dataset_type = 'bids'
         else:
-            repository_type = args.repository[0]
+            dataset_type = args.dataset[0]
 
         # Load subject_ids from file if single value is provided with
         # a '/' in the string
-        if (args.subject_ids is not None and len(args.subject_ids) and
-                '/' in args.subject_ids[0]):
+        if (args.subject_ids is not None and len(args.subject_ids)
+                and '/' in args.subject_ids[0]):
             with open(args.subject_ids[0]) as f:
                 subject_ids = f.read().split()
         else:
@@ -200,80 +201,87 @@ class DeriveCmd():
 
         # Load visit_ids from file if single value is provided with
         # a '/' in the string
-        if (args.visit_ids is not None and len(args.visit_ids) and
-                '/' in args.visit_ids[0]):
+        if (args.visit_ids is not None and len(args.visit_ids)
+                and '/' in args.visit_ids[0]):
             with open(args.visit_ids[0]) as f:
                 visit_ids = f.read().split()
         else:
             visit_ids = args.visit_ids
 
-        def init_repo(repo_path, repo_type, option_str, *repo_args,
-                      create_root=False):
-            if repo_type == 'bids':
+        def init_dataset(dataset_path, dataset_type, option_str, dataset_args,
+                         create_root=False, **kwargs):
+            if dataset_type == 'bids':
                 if create_root:
-                    os.makedirs(repo_path, exist_ok=True)
-                repo = BidsRepo(repo_path)
-            elif repo_type == 'basic':
-                if len(repo_args) != 1:
+                    os.makedirs(dataset_path, exist_ok=True)
+                dataset = BidsDataset(dataset_path, **kwargs)
+            elif dataset_type == 'basic':
+                if len(dataset_args) != 1:
                     raise BananaUsageError(
                         "Unrecognised arguments passed to '--{}' option "
                         "({}) exactly 1 additional argument is required for "
-                        "'basic' type repository (DEPTH)"
-                        .format(option_str, repo_args))
+                        "'basic' type dataset (DEPTH)"
+                        .format(option_str, dataset_args))
                 if create_root:
-                    os.makedirs(repo_path, exist_ok=True)
-                repo = BasicRepo(repo_path, depth=int(repo_args[0]))
-            elif repo_type == 'xnat':
-                nargs = len(repo_args)
+                    os.makedirs(dataset_path, exist_ok=True)
+                dataset = Dataset(dataset_path, depth=int(dataset_args[0]),
+                                  **kwargs)
+            elif dataset_type == 'xnat':
+                nargs = len(dataset_args)
                 if nargs < 1:
                     raise BananaUsageError(
                         "Not enough arguments passed to '--{}' option "
                         "({}), at least 1 additional argument is required for "
-                        "'xnat' type repository (SERVER)"
-                        .format(option_str, repo_args))
+                        "'xnat' type dataset (SERVER)"
+                        .format(option_str, dataset_args))
                 elif nargs > 3:
                     raise BananaUsageError(
                         "Unrecognised arguments passed to '--{}' option "
                         "({}), at most 3 additional arguments are accepted for"
-                        " 'xnat' type repository (SERVER, USER, PASSWORD)"
-                        .format(option_str, repo_args))
-                repo = XnatRepo(
-                    project_id=repo_path,
-                    server=repo_args[0],
-                    user=(repo_args[1] if nargs > 2 else None),
-                    password=(repo_args[2] if nargs > 3 else None),
-                    cache_dir=op.join(scratch_dir, 'cache'))
+                        " 'xnat' type dataset (SERVER, USER, PASSWORD)"
+                        .format(option_str, dataset_args))
+                dataset = XnatRepo(
+                    server=dataset_args[0],
+                    user=(dataset_args[1] if nargs > 2 else None),
+                    password=(dataset_args[2] if nargs > 3 else None),
+                    cache_dir=op.join(scratch_dir,
+                                      'cache')).dataset(dataset_path, **kwargs)
             else:
                 raise BananaUsageError(
-                    "Unrecognised repository type provided as first argument "
+                    "Unrecognised dataset type provided as first argument "
                     "to '--{}' option ({})".format(option_str,
-                                                   repo_args[0]))
-            return repo
+                                                   dataset_args[0]))
+            return dataset
 
-        repository = init_repo(args.repository_path, repository_type,
-                               'repository', *args.repository[1:])
+        dataset = init_dataset(args.dataset_path, dataset_type,
+                               'dataset', args.dataset[1:],
+                               subject_ids=subject_ids,
+                               visit_ids=visit_ids)
 
-        if args.output_repository is not None:
-            input_repository = repository
-            tree = repository.cached_tree()
+        if args.output_dataset is not None:
+            input_dataset = dataset
+            tree = dataset.tree
             if subject_ids is None:
                 subject_ids = list(tree.subject_ids)
             if visit_ids is None:
                 visit_ids = list(tree.visit_ids)
             fill_tree = True
-            nargs = len(args.output_repository)
+            nargs = len(args.output_dataset)
             if nargs == 1:
-                repo_type = 'basic'
-                out_path = args.output_repository[0]
-                out_repo_args = [input_repository.depth]
+                dataset_type = 'basic'
+                out_path = args.output_dataset[0]
+                out_dataset_args = [input_dataset.depth]
             else:
-                repo_type = args.output_repository[0]
-                out_path = args.output_repository[1]
-                out_repo_args = args.output_repository[2:]
-            repository = init_repo(out_path, repo_type, 'output_repository',
-                                   *out_repo_args, create_root=True)
+                dataset_type = args.output_dataset[0]
+                out_path = args.output_dataset[1]
+                out_dataset_args = args.output_dataset[2:]
+            dataset = init_dataset(out_path, dataset_type, 'output_dataset',
+                                   out_dataset_args,
+                                   create_root=True,
+                                   subject_ids=subject_ids,
+                                   visit_ids=visit_ids,
+                                   fill_tree=fill_tree)
         else:
-            input_repository = None
+            input_dataset = None
             fill_tree = False
 
         if args.email is not None:
@@ -330,140 +338,237 @@ class DeriveCmd():
         parameters = {}
         for name, value in args.parameter:
             parameters[name] = parse_value(
-                value, dtype=study_class.param_spec(name).dtype)
+                value, dtype=analysis_class.param_spec(name).dtype)
 
-        if input_repository is not None and input_repository.type == 'bids':
-            inputs = study_class.get_bids_inputs(args.bids_task,
-                                                 repository=input_repository)
+        if input_dataset is not None and input_dataset.type == 'bids':
+            inputs = analysis_class.get_bids_inputs(args.bids_task,
+                                                    dataset=input_dataset)
         else:
             inputs = {}
         for name, pattern in args.input:
-            spec = study_class.data_spec(name)
+            spec = analysis_class.data_spec(name)
             if spec.is_fileset:
-                inpt_cls = InputFilesets
+                inpt_cls = FilesetFilter
             else:
-                inpt_cls = InputFields
+                inpt_cls = FieldFilter
             inputs[name] = inpt_cls(name, pattern=pattern, is_regex=True,
-                                    repository=input_repository)
+                                    dataset=input_dataset)
 
-        study = study_class(
-            name=args.study_name,
-            repository=repository,
+        analysis = analysis_class(
+            name=args.analysis_name,
+            dataset=dataset,
             processor=processor,
             environment=environment,
             inputs=inputs,
             parameters=parameters,
-            subject_ids=subject_ids,
-            visit_ids=visit_ids,
             enforce_inputs=args.enforce_inputs,
-            fill_tree=fill_tree,
             bids_task=args.bids_task)
 
         for spec_name in args.cache:
-            spec = study.bound_spec(spec_name)
-            if not isinstance(spec, InputFilesets):
+            spec = analysis.bound_spec(spec_name)
+            if not isinstance(spec, FilesetFilter):
                 raise BananaUsageError(
                     "Cannot cache non-input fileset '{}'".format(spec_name))
             spec.cache()
 
         # Generate data
-        study.data(args.derivatives)
+        analysis.derive(args.derivatives)
 
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 
 
-class TestGenCmd():
+# class TestGenCmd():
 
-    desc = ("Generate all derivatives from a study in a format compatible "
-            "with Banana's unit-testing framework")
+#     desc = ("Generate all derivatives from a analysis in a format compatible "
+#             "with Banana's unit-testing framework")
+
+#     @classmethod
+#     def parser(cls):
+#         parser = ArgumentParser(
+#             prog='banana test-gen',
+#             description=("Generates reference data for the built-in unittest "
+#                          "framework given a analysis class, an input dataset "
+#                          "containing data named according to the data "
+#                          "specification of the class and set of parameters"))
+#         parser.add_argument('analysis_class',
+#                             help=("The path to the analysis class to test, e.g. "
+#                                   "banana.analysis.MriAnalysis"))
+#         parser.add_argument('in_dataset', help=("The path to dataset that "
+#                                              "houses the input data"))
+#         parser.add_argument('out_dataset',
+#                             help=("If the 'xnat_server' argument is provided "
+#                                   "then out is interpreted as the project ID "
+#                                   "to use the XNAT server (the project must "
+#                                   "exist already). Otherwise it is interpreted"
+#                                   " as the path to a basic dataset"))
+#         parser.add_argument('--in_server', default=None,
+#                             help="The server to download the input data from")
+#         parser.add_argument('--out_server', default=None,
+#                             help="The server to upload the reference data to")
+#         parser.add_argument('--work_dir', default=None,
+#                             help="The work directory")
+#         parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
+#                             nargs=2, action='append', default=[],
+#                             help=("Parameters to set when initialising the "
+#                                   "analysis"))
+#         parser.add_argument('--include', '-i', nargs='+', default=[],
+#                             help=("Spec names to include in the generation "
+#                                   "process. If not provided all (except "
+#                                   "those that are explicitly skipped) "
+#                                   "are included"))
+#         parser.add_argument('--skip', '-s', nargs='+', default=[],
+#                             help=("Spec names to skip in the generation "
+#                                   "process"))
+#         parser.add_argument('--bases', nargs='+', default=[],
+#                             help=("Base classes which to include data specs "
+#                                   "defined within them"))
+#         parser.add_argument('--reprocess', action='store_true', default=False,
+#                             help=("Whether to reprocess previously generated "
+#                                   "datasets in the output dataset"))
+#         parser.add_argument('--dataset_depth', type=int, default=0,
+#                             help="The depth of the input dataset")
+#         parser.add_argument('--dont_clean_work_dir', action='store_true',
+#                             default=False,
+#                             help=("Whether to clean the Nipype work dir "
+#                                   "between runs"))
+#         parser.add_argument('--loggers', nargs='+',
+#                             default=('nipype.workflow', 'arcana', 'banana'),
+#                             help="Loggers to set handlers to stdout for")
+#         parser.add_argument('--environment', type=str, default='static',
+#                             choices=('modules', 'static'), metavar='TYPE',
+#                             help="The type of environment to use")
+#         return parser
+
+#     @classmethod
+#     def run(cls, args):
+
+#         # Get Analysis class
+#         analysis_class = resolve_class(args.analysis_class)
+
+#         include_bases = [resolve_class(c) for c in args.bases]
+
+#         # Convert parameters to dictionary
+#         parameters_dct = {}
+#         for name, value in args.parameter:
+#             try:
+#                 value = int(value)
+#             except ValueError:
+#                 try:
+#                     value = float(value)
+#                 except ValueError:
+#                     pass
+#             parameters_dct[name] = value
+#         parameters = parameters_dct
+
+#         PipelineTester.generate_test_data(
+#             analysis_class=analysis_class, in_dataset=args.in_dataset,
+#             out_dataset=args.out_dataset, in_server=args.in_server,
+#             out_server=args.out_server, work_dir=args.work_dir,
+#             parameters=parameters, skip=args.skip, include=args.include,
+#             include_bases=include_bases,
+#             reprocess=args.reprocess, dataset_depth=args.dataset_depth,
+#             modules_env=(args.environment == 'modules'),
+#             clean_work_dir=(not args.dont_clean_work_dir))
+
+
+class GenRefDataCmd():
+
+    desc = ("Generate reference data for unit-tests")
+
+    DEFAULT_TEST_ROOT = op.join(op.dirname(__file__), '..', 'test')
 
     @classmethod
     def parser(cls):
         parser = ArgumentParser(
-            prog='banana test-gen',
-            description=("Generates reference data for the built-in unittest "
-                         "framework given a study class, an input repository "
-                         "containing data named according to the data "
-                         "specification of the class and set of parameters"))
-        parser.add_argument('study_class',
-                            help=("The path to the study class to test, e.g. "
-                                  "banana.study.MriStudy"))
-        parser.add_argument('in_repo', help=("The path to repository that "
-                                             "houses the input data"))
-        parser.add_argument('out_repo',
-                            help=("If the 'xnat_server' argument is provided "
-                                  "then out is interpreted as the project ID "
-                                  "to use the XNAT server (the project must "
-                                  "exist already). Otherwise it is interpreted"
-                                  " as the path to a basic repository"))
-        parser.add_argument('--in_server', default=None,
-                            help="The server to download the input data from")
-        parser.add_argument('--out_server', default=None,
-                            help="The server to upload the reference data to")
-        parser.add_argument('--work_dir', default=None,
-                            help="The work directory")
-        parser.add_argument('--parameter', '-p', metavar=('NAME', 'VALUE'),
-                            nargs=2, action='append', default=[],
-                            help=("Parameters to set when initialising the "
-                                  "study"))
-        parser.add_argument('--include', '-i', nargs='+', default=[],
-                            help=("Spec names to include in the generation "
-                                  "process. If not provided all (except "
-                                  "those that are explicitly skipped) "
-                                  "are included"))
-        parser.add_argument('--skip', '-s', nargs='+', default=[],
-                            help=("Spec names to skip in the generation "
-                                  "process"))
-        parser.add_argument('--bases', nargs='+', default=[],
-                            help=("Base classes which to include data specs "
-                                  "defined within them"))
-        parser.add_argument('--reprocess', action='store_true', default=False,
-                            help=("Whether to reprocess previously generated "
-                                  "datasets in the output repository"))
-        parser.add_argument('--repo_depth', type=int, default=0,
-                            help="The depth of the input repository")
-        parser.add_argument('--dont_clean_work_dir', action='store_true',
-                            default=False,
-                            help=("Whether to clean the Nipype work dir "
-                                  "between runs"))
-        parser.add_argument('--loggers', nargs='+',
-                            default=('nipype.workflow', 'arcana', 'banana'),
-                            help="Loggers to set handlers to stdout for")
+            prog='banana gen-ref',
+            description=("Generate reference data for a test class, which "
+                         "future tests will be checked against"))
+        parser.add_argument('test_class',
+                            help=("The path to the test class to test relative"
+                                  " to the root test directory (use '.' to "
+                                  "separate directories)"))
+        parser.add_argument('--specs', default=[], nargs='+',
+                            help=("The specs to generate. If not provided all "
+                                  "data for all specs will be generated"))
+        parser.add_argument('--processor', default=['multi'], nargs='+',
+                            metavar='ARG',
+                            help=("The type of processor to use plus arguments"
+                                  "used to initate it. First arg is the type "
+                                  "(one of 'single', 'multi', 'slurm'). "
+                                  "Additional arguments depend on type: "
+                                  "single [], multi [NUM_PROCS], slurm ["
+                                  "ACCOUNT, PARTITION]"))
         parser.add_argument('--environment', type=str, default='static',
                             choices=('modules', 'static'), metavar='TYPE',
                             help="The type of environment to use")
+        parser.add_argument('--loggers', nargs='+',
+                            default=('nipype.workflow', 'arcana', 'banana'),
+                            help="Loggers to set handlers to stdout for")
+        parser.add_argument('--reprocess', action='store_true', default=False,
+                            help=("Whether to reprocess previously generated "
+                                  "derivatives with mismatching provenance"))
+        parser.add_argument('--scratch', type=str, default=None,
+                            metavar='PATH',
+                            help=("The scratch directory to use for the "
+                                  "workflow and cache"))
+        parser.add_argument('--test_root', default=cls.DEFAULT_TEST_ROOT,
+                            help="The location of the root test directory")
+        parser.add_argument('--quiet', action='store_true', default=False,
+                            help=("Disable logging output"))
         return parser
 
     @classmethod
     def run(cls, args):
 
-        # Get Study class
-        study_class = resolve_class(args.study_class)
+        if not args.quiet:
+            set_loggers(args.logger)
 
-        include_bases = [resolve_class(c) for c in args.bases]
+        if args.scratch is not None:
+            scratch_dir = args.scratch
+        else:
+            scratch_dir = op.join(op.expanduser('~'), 'banana-scratch')
 
-        # Convert parameters to dictionary
-        parameters_dct = {}
-        for name, value in args.parameter:
-            try:
-                value = int(value)
-            except ValueError:
-                try:
-                    value = float(value)
-                except ValueError:
-                    pass
-            parameters_dct[name] = value
-        parameters = parameters_dct
+        # Ensure scratch dir exists
+        os.makedirs(scratch_dir, exist_ok=True)
 
-        PipelineTester.generate_test_data(
-            study_class=study_class, in_repo=args.in_repo,
-            out_repo=args.out_repo, in_server=args.in_server,
-            out_server=args.out_server, work_dir=args.work_dir,
-            parameters=parameters, skip=args.skip, include=args.include,
-            include_bases=include_bases,
-            reprocess=args.reprocess, repo_depth=args.repo_depth,
-            modules_env=(args.environment == 'modules'),
-            clean_work_dir=(not args.dont_clean_work_dir))
+        work_dir = op.join(scratch_dir, 'work')
+
+        proc_args = {'reprocess': args.reprocess}
+
+        if args.processor[0] == 'single':
+            processor = SingleProc(work_dir, **proc_args)
+        elif args.processor[0] == 'multi':
+            if len(args.processor) > 1:
+                num_processes = args.processor[1]
+            elif len(args.processor) > 2:
+                raise BananaUsageError(
+                    "Unrecognised arguments passed to '--processor' option "
+                    "({}) expected at most 1 additional argument for 'multi' "
+                    "type processor (NUM_PROCS)".format(args.processor))
+            else:
+                num_processes = cpu_count()
+            processor = MultiProc(work_dir, num_processes=num_processes,
+                                  **proc_args)
+        else:
+            raise BananaUsageError(
+                "Unrecognised processor type provided as first argument to "
+                "'--processor' option ({})".format(args.processor[0]))
+
+        if args.environment == 'static':
+            environment = StaticEnv()
+        else:
+            environment = ModulesEnv()
+
+        parts = args.test_class.split('.')
+
+        sys.path.insert(0, op.join(args.test_root, parts[:-2]))
+        module = import_module(parts[-2])
+        sys.path.pop(0)
+
+        test_cls = getattr(module, parts[-1])
+
+        test_cls().generate_reference_data(
+            *args.specs, processor=processor, environment=environment)
 
 
 class HelpCmd():
@@ -485,30 +590,30 @@ class HelpCmd():
 
 class MenuCmd():
 
-    desc = ("Display the data and parameter specifications for a given study "
+    desc = ("Display the data and parameter specifications for a given analysis "
             "class")
 
     @classmethod
     def parser(cls):
         parser = ArgumentParser(prog='banana menu',
                                 description=cls.desc)
-        parser.add_argument('study_class',
+        parser.add_argument('analysis_class',
                             help=("Name of the class to display menu for"))
         return parser
 
     @classmethod
     def run(cls, args):
-        # Get Study class
-        study_class = resolve_class(args.study_class)
-        print(study_class.static_menu())
+        # Get Analysis class
+        analysis_class = resolve_class(args.analysis_class)
+        print(analysis_class.static_menu())
 
 
 class AvailableCmd():
 
-    desc = ("List all available study classes within Banana and custom search "
+    desc = ("List all available analysis classes within Banana and custom search "
             "paths")
 
-    default_path = 'banana.study'
+    default_path = 'banana.analysis'
 
     desc_start = 22
 
@@ -517,21 +622,21 @@ class AvailableCmd():
         parser = ArgumentParser(prog='banana avail',
                                 description=cls.desc)
         parser.add_argument('search_paths', nargs='*',
-                            help="packages to search for Study classes")
+                            help="packages to search for Analysis classes")
         return parser
 
     @classmethod
     def run(cls, args):
         available = {}
 
-        def find_study_classes(pkg_or_module, pkg_or_module_path):
+        def find_analysis_classes(pkg_or_module, pkg_or_module_path):
             for cls_name in dir(pkg_or_module):
                 if cls_name.startswith('_'):
                     continue
                 cls = getattr(pkg_or_module, cls_name)
                 try:
-                    if (issubclass(cls, (Study, MultiStudy)) and
-                            'desc' in cls.__dict__):
+                    if (issubclass(cls, (Analysis, MultiAnalysis))
+                            and 'desc' in cls.__dict__):
                         try:
                             old_path = available[cls]
                         except KeyError:
@@ -548,12 +653,12 @@ class AvailableCmd():
             for pkg_name in find_packages(op.dirname(base_module.__file__)):
                 pkg_path = search_path + '.' + pkg_name
                 pkg = import_module(pkg_path)
-                find_study_classes(pkg, pkg_path)
+                find_analysis_classes(pkg, pkg_path)
                 for module_info in iter_modules([op.dirname(pkg.__file__)]):
                     module_path = pkg_path + '.' + module_info.name
                     module = import_module(module_path)
-                    find_study_classes(module, module_path)
-        msg = ("\nThe following Study classes are available:")
+                    find_analysis_classes(module, module_path)
+        msg = ("\nThe following Analysis classes are available:\n")
         to_print = []
         for avail_cls, module_path in sorted(available.items(),
                                              key=lambda x: x[0].__name__):
@@ -578,7 +683,8 @@ class MainCmd():
         'avail': AvailableCmd,
         'menu': MenuCmd,
         'derive': DeriveCmd,
-        'test-gen': TestGenCmd,
+        # 'test-gen': TestGenCmd,
+        'gen-ref': GenRefDataCmd,
         'help': HelpCmd}
 
     @classmethod

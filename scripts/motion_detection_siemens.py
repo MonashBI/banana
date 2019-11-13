@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-from banana.study.multi.mrpet import create_motion_detection_class
+from banana.analysis.multi.mrpet import create_motion_detection_class
 import os
 import os.path as op
 import errno
-from arcana.repository.basic import BasicRepo
+from arcana.repository import LocalFileSystemRepo
 from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
@@ -82,7 +82,7 @@ if __name__ == "__main__":
         'MotionDetection', ref, ref_type, t1s=t1s, t2s=t2s, dwis=dwis,
         epis=epis)
 
-    in_repo = BasicRepo(input_dir, depth=0)
+    in_repo = LocalFileSystemRepo(input_dir, depth=0)
 
     for inpt in inputs:
         inpt._repository = in_repo
@@ -94,17 +94,17 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs(work_dir, exist_ok=True)
 
-    study = MotionDetection(name='MotionDetection',
-                            repository=BasicRepo(output_dir, depth=0),
-                            processor=SingleProc(work_dir,
-                                                 reprocess=args.reprocess),
-                            environment=(
-                                ModulesEnv() if args.environment == 'modules'
-                                else StaticEnv()),
-                            inputs=inputs,
-                            subject_ids=[BasicRepo.DEFAULT_SUBJECT_ID],
-                            visit_ids=[BasicRepo.DEFAULT_VISIT_ID],
-                            fill_tree=True)
-    study.data('motion_detection_output')
+    analysis = MotionDetection(name='MotionDetection',
+                               repository=LocalFileSystemRepo(output_dir, depth=0),
+                               processor=SingleProc(work_dir,
+                                                    reprocess=args.reprocess),
+                               environment=(ModulesEnv()
+                                            if args.environment == 'modules'
+                                            else StaticEnv()),
+                               inputs=inputs,
+                               subject_ids=[LocalFileSystemRepo.DEFAULT_SUBJECT_ID],
+                               visit_ids=[LocalFileSystemRepo.DEFAULT_VISIT_ID],
+                               fill_tree=True)
+    analysis.derive('motion_detection_output')
 
 print('Done!')

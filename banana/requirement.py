@@ -3,6 +3,7 @@ import os
 import os.path as op
 import platform
 import re
+import logging
 import xml.etree.ElementTree
 from arcana.environment.requirement import (  # pylint: disable=unused-import
     Version, CliRequirement, MatlabPackageRequirement,
@@ -12,6 +13,7 @@ from arcana.exceptions import (
     ArcanaRequirementNotFoundError, ArcanaVersionNotDetectableError)
 
 # Command line requirements
+logger = logging.getLogger('banana')
 
 
 class FSLRequirement(CliRequirement):
@@ -54,6 +56,11 @@ class C3dRequirement(CliRequirement):
         return version_str
 
 
+    # Paul A. Yushkevich, Joseph Piven, Heather Cody Hazlett, Rachel Gimpel Smith, Sean Ho, James C. Gee, and Guido Gerig. User-guided 3D active contour segmentation of anatomical structures: Significantly improved efficiency and reliability. Neuroimage. 2006 Jul 1
+    # 31(3): 1116-28.
+    # [bibtex][medline][doi:10.1016/j.neuroimage.2006.01.015]
+
+
 class FreesurferRequirement(CliRequirement):
 
     def detect_version_str(self):
@@ -89,6 +96,7 @@ class AfniRequirement(CliRequirement):
 class FixVersion(Version):
 
     regex = re.compile(r'(\d+)\.(\d)?(\d)?(\d)?')
+    base = '0.000'
 
     def __str__(self):
         return '{}.{}'.format(self._seq[0], ''.join(self._seq[1:]))
@@ -96,10 +104,11 @@ class FixVersion(Version):
 
 class StirRequirement(CliRequirement):
 
-    def detect_version_str(self):
-        raise ArcanaVersionNotDetectableError(
+    def detect_version(self):
+        logger.warning(
             "Can't automatically detect version of STIR as it isn't saved in "
             "the build process")
+        return (1, 0)
 
 
 mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')
@@ -173,7 +182,7 @@ class StiRequirement(MatlabPackageRequirement):
 
 
 spm_req = SpmRequirement('spm', test_func='spm_authors')
-sti_req = StiRequirement('sti', test_func='V_SHARP')
+sti_req = StiRequirement('stisuite', test_func='V_SHARP')
 # noddi_req = MatlabPackageRequirement('noddi')
 
 

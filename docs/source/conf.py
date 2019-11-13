@@ -23,9 +23,9 @@ package_path = op.abspath(
 
 sys.path.insert(0, package_path)
 from banana.__about__ import __version__, __authors__  # @UnresolvedImport @IgnorePep8
-import banana.study.mri
-import banana.study.pet
-import banana.study.multi
+import banana.analysis.mri
+import banana.analysis.pet
+import banana.analysis.multi
 
 
 # If extensions (or modules to document with autodoc) are in another directory,

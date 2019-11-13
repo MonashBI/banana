@@ -7,11 +7,11 @@ from bids.layout import BIDSLayout
 from arcana.exceptions import (
     ArcanaInputMissingMatchError, ArcanaUsageError)
 from banana.exceptions import BananaUsageError, BananaUnrecognisedBidsFormat
-from arcana.data.input import InputFilesets
+from arcana.data.input import FilesetFilter
 from arcana.data.item import Fileset
 from arcana.utils import split_extension
-from arcana.repository import BasicRepo
-from arcana.study.multi import MultiStudy
+from arcana.repository import LocalFileSystemRepo, Dataset
+from arcana.analysis.multi import MultiAnalysis
 from banana.file_format import (
     nifti_gz_format, nifti_gz_x_format, fsl_bvecs_format, fsl_bvals_format,
     tsv_format, json_format, nifti_format)
@@ -34,7 +34,7 @@ def detect_format(path, aux_files):
         .format(path, aux_files))
 
 
-class BidsRepo(BasicRepo):
+class BidsRepo(LocalFileSystemRepo):
     """
     A repository class for BIDS datasets
 
@@ -46,42 +46,34 @@ class BidsRepo(BasicRepo):
 
     type = 'bids'
 
-    def __init__(self, root_dir, **kwargs):
-        BasicRepo.__init__(self, root_dir, depth=2, **kwargs)
+    def derivatives_dir(self, dataset):
+        return op.join(dataset.name, 'derivatives')
 
-    @property
-    def root_dir(self):
-        return self._root_dir
-
-    @property
-    def derivatives_dir(self):
-        return op.join(self.root_dir, 'derivatives')
-
-    @property
-    def metadata_dir(self):
+    def metadata_dir(self, dataset):
         """
         A temporary dir where we write out combined JSON side cars to include
         in extended nifti filesets
         """
-        return op.join(self.derivatives_dir, '__metadata__')
+        return op.join(self.derivatives_dir(dataset), '__metadata__')
 
-    @property
-    def layout(self):
-        return BIDSLayout(self.root_dir)
+    def layout(self, dataset):
+        return BIDSLayout(dataset.name)
 
     def __repr__(self):
-        return "BidsRepo(root_dir='{}')".format(self.root_dir)
+        return "BidsRepo()"
 
     def __hash__(self):
         return super().__hash__()
 
-    def find_data(self, subject_ids=None, visit_ids=None):
+    def find_data(self, dataset, subject_ids=None, visit_ids=None):
         """
         Return subject and session information for a project in the local
         repository
 
         Parameters
         ----------
+        dataset : Dataset
+            The dataset to find the data for
         subject_ids : list(str)
             List of subject IDs with which to filter the tree with. If None all
             are returned
@@ -96,17 +88,25 @@ class BidsRepo(BasicRepo):
             the repository
         """
         filesets = []
-        layout = self.layout
-        all_subjects = layout.get_subjects()
-        all_visits = layout.get_sessions()
-        if not all_visits:
-            all_visits = [self.DEFAULT_VISIT_ID]
-            self._depth = 1
+        layout = self.layout(dataset)
+        all_subject_ids = set(layout.get_subjects())
+        all_visit_ids = set(layout.get_sessions())
+        if subject_ids is None:
+            subject_ids = all_subject_ids
         else:
-            self._depth = 2
+            subject_ids = all_subject_ids & set(subject_ids)
+        if visit_ids is None:
+            visit_ids = all_visit_ids
+        else:
+            visit_ids = all_visit_ids & set(visit_ids)
+        if not visit_ids:
+            visit_ids.add(self.DEFAULT_VISIT_ID)
+            dataset._depth = 1
+        else:
+            dataset._depth = 2
         for item in layout.get(return_type='object'):
-            if item.path.startswith(self.derivatives_dir):
-                # We handle derivatives using the BasicRepo base
+            if item.path.startswith(self.derivatives_dir(dataset)):
+                # We handle derivatives using the LocalFileSystemRepo base
                 # class methods
                 continue
             if not hasattr(item, 'entities') or not item.entities.get('suffix',
@@ -115,26 +115,27 @@ class BidsRepo(BasicRepo):
                                .format(op.join(item.dirname, item.filename)))
                 continue  # Ignore hidden file
             try:
-                subject_ids = [item.entities['subject']]
+                item_subject_ids = subject_ids & set(
+                    [item.entities['subject']])
             except KeyError:
                 # If item exists in top-levels of in the directory structure
                 # it is inferred to exist for all subjects in the tree
-                subject_ids = all_subjects
+                item_subject_ids = subject_ids
             try:
-                visit_ids = [item.entities['session']]
+                item_visit_ids = visit_ids & set([item.entities['session']])
             except KeyError:
                 # If item exists in top-levels of in the directory structure
                 # it is inferred to exist for all visits in the tree
-                visit_ids = all_visits
-            for subject_id in subject_ids:
-                for visit_id in visit_ids:
+                item_visit_ids = visit_ids
+            for subject_id in item_subject_ids:
+                for visit_id in item_visit_ids:
                     aux_files = {}
                     metadata = layout.get_metadata(item.path)
                     if metadata and not item.path.endswith('.json'):
                         # Write out the combined JSON side cars to a temporary
                         # file to include in extended NIfTI filesets
                         metadata_path = op.join(
-                            self.metadata_dir,
+                            self.metadata_dir(dataset),
                             'sub-{}'.format(subject_id),
                             'ses-{}'.format(visit_id),
                             item.filename + '.json')
@@ -148,7 +149,7 @@ class BidsRepo(BasicRepo):
                             path=op.join(item.dirname, item.filename),
                             type=item.entities['suffix'],
                             subject_id=subject_id, visit_id=visit_id,
-                            repository=self,
+                            dataset=dataset,
                             modality=item.entities.get('modality', None),
                             task=item.entities.get('task', None),
                             aux_files=aux_files)
@@ -157,17 +158,19 @@ class BidsRepo(BasicRepo):
                     else:
                         filesets.append(fileset)
         # Get derived filesets, fields and records using the same method using
-        # the method in the BasicRepo base class
+        # the method in the LocalFileSystemRepo base class
         derived_filesets, fields, records = super().find_data(
-            subject_ids=subject_ids, visit_ids=visit_ids)
+            dataset, subject_ids=subject_ids, visit_ids=visit_ids)
         filesets.extend(derived_filesets)
         return filesets, fields, records
 
-    def fileset_path(self, fileset, fname=None):
+    def fileset_path(self, fileset, dataset=None, fname=None):
         if not fileset.derived:
             raise ArcanaUsageError(
                 "Can only get automatically get path to derived filesets not "
                 "{}".format(fileset))
+        if dataset is None:
+            dataset = fileset.dataset
         if fname is None:
             fname = fileset.fname
         if fileset.subject_id is not None:
@@ -178,7 +181,9 @@ class BidsRepo(BasicRepo):
             visit_id = fileset.visit_id
         else:
             visit_id = self.SUMMARY_NAME
-        sess_dir = op.join(self.root_dir, 'derivatives', fileset.from_study,
+        sess_dir = op.join(dataset.name,
+                           'derivatives',
+                           fileset.from_analysis,
                            'sub-{}'.format(subject_id),
                            'sess-{}'.format(visit_id))
         # Make session dir if required
@@ -186,13 +191,32 @@ class BidsRepo(BasicRepo):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
         return op.join(sess_dir, fname)
 
-    def _extract_ids_from_path(self, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
-        if len(path_parts) != 4 or path_parts[0] != 'derivatives':
+    def _extract_ids_from_path(self, depth, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
+        """
+        Overrides method in LocalFileSystemRepo class to move the analysis
+        directory to be the outer directory (instead of the inner), and ignore
+        all data not in the derivatives directory.
+        """
+        if (len(path_parts) != (depth + 2)
+            or path_parts[0] != 'derivatives'
+            or not path_parts[2].startswith('sub-')
+                or (depth == 2 and not path_parts[3].startswith('ses-'))):
             return None
-        from_study, subj, sess = path_parts[1:]
+        from_analysis, subj = path_parts[1:3]
+        sess = path_parts[3] if depth == 2 else None
         subj_id = subj[len('sub-'):]
         visit_id = sess[len('sess-'):]
-        return subj_id, visit_id, from_study
+        return subj_id, visit_id, from_analysis
+
+
+class BidsDataset(Dataset):
+
+    type = 'bids'
+
+    def __init__(self, name, repository=None, **kwargs):
+        if repository is None:
+            repository = BidsRepo()
+        super().__init__(name, repository=repository, **kwargs)
 
 
 class BaseBidsFileset(object):
@@ -205,14 +229,14 @@ class BaseBidsFileset(object):
         self._task = task
 
     def __eq__(self, other):
-        return (self.type == other.type and
-                self.task == other.task and
-                self.modality == other.modality)
+        return (self.type == other.type
+                and self.task == other.task
+                and self.modality == other.modality)
 
     def __hash__(self):
-        return (hash(self.type) ^
-                hash(self.task) ^
-                hash(self.modality))
+        return (hash(self.type)
+                ^ hash(self.task)
+                ^ hash(self.modality))
 
     def initkwargs(self):
         dct = {}
@@ -262,7 +286,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
         file
     """
 
-    def __init__(self, path, type, subject_id, visit_id, repository,
+    def __init__(self, path, type, subject_id, visit_id, dataset,
                  modality=None, task=None, checksums=None, aux_files=None):
         Fileset.__init__(
             self,
@@ -272,7 +296,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
             path=path,
             subject_id=subject_id,
             visit_id=visit_id,
-            repository=repository,
+            dataset=dataset,
             checksums=checksums,
             aux_files=aux_files)
         BaseBidsFileset.__init__(self, type, modality, task)
@@ -284,7 +308,7 @@ class BidsFileset(Fileset, BaseBidsFileset):
                         self.visit_id))
 
 
-class BidsInputs(InputFilesets, BaseBidsFileset):
+class BidsInputs(FilesetFilter, BaseBidsFileset):
     """
     A match object for matching filesets from their BIDS attributes and file
     format. If any of the provided attributes are None, then that attribute
@@ -306,7 +330,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
 
     def __init__(self, spec_name, type, valid_formats=None, task=None,
                  modality=None, **kwargs):
-        InputFilesets.__init__(
+        FilesetFilter.__init__(
             self, spec_name, pattern=None, valid_formats=valid_formats,
             frequency='per_session', **kwargs)
         BaseBidsFileset.__init__(self, type, modality, task)
@@ -335,15 +359,15 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
                     self.modality, self.task))
 
     def __eq__(self, other):
-        return (InputFilesets.__eq__(self, other) and
+        return (FilesetFilter.__eq__(self, other) and
                 BaseBidsFileset.__eq__(self, other))
 
     def __hash__(self):
-        return (InputFilesets.__hash__(self) ^
+        return (FilesetFilter.__hash__(self) ^
                 BaseBidsFileset.__hash__(self))
 
     def initkwargs(self):
-        dct = InputFilesets.initkwargs(self)
+        dct = FilesetFilter.initkwargs(self)
         dct.update(BaseBidsFileset.initkwargs(self))
         return dct
 
@@ -355,7 +379,7 @@ class BidsInputs(InputFilesets, BaseBidsFileset):
         self._task = task
 
 
-class BidsAssocInputs(InputFilesets):
+class BidsAssocInputs(FilesetFilter):
     """
     A match object for matching BIDS filesets that are associated with
     another BIDS filesets (e.g. field-maps, bvecs, bvals)
@@ -380,7 +404,7 @@ class BidsAssocInputs(InputFilesets):
 
     def __init__(self, spec_name, primary, association, type=None, format=None,
                  **kwargs):
-        InputFilesets.__init__(self, spec_name, format,
+        FilesetFilter.__init__(self, spec_name, format,
                                frequency='per_session', **kwargs)
         self._primary = primary
         if association not in self.VALID_ASSOCIATIONS:
@@ -392,21 +416,21 @@ class BidsAssocInputs(InputFilesets):
         self._type = type
 
     def __eq__(self, other):
-        return (InputFilesets.__eq__(self, other) and
+        return (FilesetFilter.__eq__(self, other) and
                 self.primary == other.primary and
                 self.format == other.format and
                 self.association == other.association and
                 self._type == other._type)
 
     def __hash__(self):
-        return (InputFilesets.__hash__(self) ^
+        return (FilesetFilter.__hash__(self) ^
                 hash(self.primary) ^
                 hash(self.format) ^
                 hash(self.association) ^
                 hash(self._type))
 
     def initkwargs(self):
-        dct = InputFilesets.initkwargs(self)
+        dct = FilesetFilter.initkwargs(self)
         dct['primary'] = self.primary
         dct['format'] = self.primary
         dct['association'] = self.association
@@ -421,19 +445,20 @@ class BidsAssocInputs(InputFilesets):
                     self._format.name if self._format is not None else None,
                     self.association, self.type))
 
-    def bind(self, study, spec_name=None, **kwargs):
+    def bind(self, analysis, spec_name=None, **kwargs):
         # We need to access a bound primary selector when matching the
         # associated selector so we set the bound version temporarily to
         # self._primary before winding it back after we have done the bind
         unbound_primary = self._primary
-        if isinstance(study, MultiStudy) and hasattr(self,
-                                                     'prefixed_primary_name'):
+        if (isinstance(analysis, MultiAnalysis)
+                and hasattr(self, 'prefixed_primary_name')):
             primary_spec_name = self.prefixed_primary_name  # noqa pylint: disable=no-member
         else:
             primary_spec_name = self.primary.name
-        self._primary = self._primary.bind(study, spec_name=primary_spec_name,
+        self._primary = self._primary.bind(analysis,
+                                           spec_name=primary_spec_name,
                                            **kwargs)
-        bound = super().bind(study, spec_name=spec_name, **kwargs)
+        bound = super().bind(analysis, spec_name=spec_name, **kwargs)
         self._primary = unbound_primary
         return bound
 
@@ -459,7 +484,7 @@ class BidsAssocInputs(InputFilesets):
 
     def match_node(self, node, **kwargs):
         primary_match = self.primary.match_node(node, **kwargs)
-        layout = self.primary.repository.layout
+        layout = self.primary.dataset.layout
         if self.association == 'grads':
             if self.type == 'bvec':
                 path = layout.get_bvec(primary_match.path)
@@ -487,6 +512,6 @@ class BidsAssocInputs(InputFilesets):
                     "'{}' is not a valid type for '{}' associations"
                     .format(self.type, self.association))
         return Fileset.from_path(path, format=self._format,
-                                 repository=self.primary.repository,
+                                 dataset=self.primary.dataset,
                                  subject_id=node.subject_id,
                                  visit_id=node.visit_id)

@@ -26,5 +26,5 @@ User/Developer Guide
     command_line
     python_appl
     design
-    study_classes
+    analysis_classes
 

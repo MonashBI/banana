@@ -1,13 +1,13 @@
-Study classes
-=============
+Analysis classes
+================
 
-Selected :class:`banana.Study` subclasses implemented in Banana
+Selected :class:`banana.Analysis` subclasses implemented in Banana
 
 
 MRI
 ---
 
-.. autoclass:: banana.study.mri.dwi.DwiStudy
+.. autoclass:: banana.analysis.mri.dwi.DwiAnalysis
 
 
 
@@ -15,5 +15,5 @@ MRI
 PET
 ---
 
-.. autoclass:: banana.study.pet.static.StaticPetStudy
+.. autoclass:: banana.analysis.pet.static.StaticPetAnalysis
 

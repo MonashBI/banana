@@ -1,13 +1,13 @@
-from arcana.data import InputFilesetSpec, FilesetSpec, InputFilesets
+from arcana.data import InputFilesetSpec, FilesetSpec, FilesetFilter
 from banana.file_format import (
     dicom_format, nifti_format, text_format, directory_format,
     zip_format)
-from arcana.study.base import Study, StudyMetaClass
+from arcana.analysis.base import Analysis, AnalysisMetaClass
 from arcana.utils.testing import BaseTestCase
 from nipype.interfaces.utility import IdentityInterface
 
 
-class ConversionStudy(Study, metaclass=StudyMetaClass):
+class ConversionAnalysis(Analysis, metaclass=AnalysisMetaClass):
 
     add_data_specs = [
         InputFilesetSpec('mrtrix', text_format),
@@ -73,20 +73,23 @@ class ConversionStudy(Study, metaclass=StudyMetaClass):
 class TestFormatConversions(BaseTestCase):
 
     def test_pipeline_prerequisites(self):
-        study = self.create_study(
-            ConversionStudy, 'conversion', [
-                InputFilesets('mrtrix', 'mrtrix', text_format),
-                InputFilesets('nifti_gz', text_format,
+        analysis = self.create_analysis(
+            ConversionAnalysis, 'conversion', [
+                FilesetFilter('mrtrix', 'mrtrix', text_format),
+                FilesetFilter('nifti_gz', text_format,
                               'nifti_gz'),
-                InputFilesets('dicom', dicom_format,
+                FilesetFilter('dicom', dicom_format,
                               't1_mprage_sag_p2_iso_1_ADNI'),
-                InputFilesets('directory', directory_format,
+                FilesetFilter('directory', directory_format,
                               't1_mprage_sag_p2_iso_1_ADNI'),
-                InputFilesets('zip', 'zip', zip_format)])
+                FilesetFilter('zip', 'zip', zip_format)])
         self.assertFilesetCreated(
-            next(iter(study.data('nifti_gz_from_dicom'))))
+            next(iter(analysis.data('nifti_gz_from_dicom', derive=True))))
         self.assertFilesetCreated(
-            next(iter(study.data('mrtrix_from_nifti_gz'))))
-        self.assertFilesetCreated(next(iter(study.data('nifti_from_mrtrix'))))
-        self.assertFilesetCreated(next(iter(study.data('directory_from_zip'))))
-        self.assertFilesetCreated(next(iter(study.data('zip_from_directory'))))
+            next(iter(analysis.data('mrtrix_from_nifti_gz', derive=True))))
+        self.assertFilesetCreated(
+            next(iter(analysis.data('nifti_from_mrtrix', derive=True))))
+        self.assertFilesetCreated(
+            next(iter(analysis.data('directory_from_zip', derive=True))))
+        self.assertFilesetCreated(
+            next(iter(analysis.data('zip_from_directory', derive=True))))

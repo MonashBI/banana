@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-from banana.study.multi.mrpet import create_motion_correction_class
+from banana.analysis.multi.mrpet import create_motion_correction_class
 import os.path
 import errno
 # from arcana.processor import MultiProcProc
-from arcana.repository.basic import BasicRepo
+from arcana.repository import LocalFileSystemRepo
 from banana.utils.moco import (
     guess_scan_type, local_motion_detection, inputs_generation)
 import argparse
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     sub_id = 'work_sub_dir'
     session_id = 'work_session_dir'
-    repository = BasicRepo(args.input_dir+'/work_dir')
+    repository = LocalFileSystemRepo(args.input_dir+'/work_dir')
     work_dir = os.path.join(args.input_dir, 'motion_detection_cache')
     WORK_PATH = work_dir
     try:
@@ -215,10 +215,10 @@ if __name__ == "__main__":
         if e.errno != errno.EEXIST:
             raise
 
-    study = MotionCorrection(name='MotionCorrection',
+    analysis = MotionCorrection(name='MotionCorrection',
                              processor=SingleProc(WORK_PATH),
                              repository=repository, inputs=inputs,
                              subject_ids=[sub_id], parameters=mc.parameters,
                              visit_ids=[session_id])
-    study.data('mean_displacement_plot')
+    analysis.derive('mean_displacement_plot')
 print('Done!')

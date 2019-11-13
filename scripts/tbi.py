@@ -1,4 +1,4 @@
-from arcana.mri import DwiStudy
+from banana.analysis.mri import DwiAnalysis
 from argparse import ArgumentParser
 import os
 
@@ -13,6 +13,6 @@ parser.add_argument('--working_dir', type=str, default=None,
                     help=("The directory where the intermediate files are "
                           "stored"))
 args = parser.parse_args()
-processor = DwiStudy('tclose', os.environ['DARIS_PASSWORD'])
+processor = DwiAnalysis('tclose', os.environ['DARIS_PASSWORD'])
 processor.process(args.input_image, args.output_dir,
                   working_dir=args.working_dir)
