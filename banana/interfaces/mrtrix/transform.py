@@ -13,13 +13,14 @@ class MRResizeInputSpec(MRTrix3BaseInputSpec):
 
     size = traits.List(
         traits.Int(),
-        mandatory=False, argstr='-size %s',
+        mandatory=False, argstr='-size %s', sep=',',
         desc=("define the new image size for the output image. "
               "This should be specified as a comma-separated "
               "list."))
 
     voxel = traits.List(
         traits.Float(),
+        sep=',',
         mandatory=False, argstr='-voxel %s',
         desc=("define the new voxel size for the output image."
               "This can be specified either as a single value "

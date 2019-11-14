@@ -185,7 +185,7 @@ class BidsRepo(LocalFileSystemRepo):
                            'derivatives',
                            fileset.from_analysis,
                            'sub-{}'.format(subject_id),
-                           'sess-{}'.format(visit_id))
+                           'ses-{}'.format(visit_id))
         # Make session dir if required
         if not op.exists(sess_dir):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
@@ -205,7 +205,7 @@ class BidsRepo(LocalFileSystemRepo):
         from_analysis, subj = path_parts[1:3]
         sess = path_parts[3] if depth == 2 else None
         subj_id = subj[len('sub-'):]
-        visit_id = sess[len('sess-'):]
+        visit_id = sess[len('ses-'):]
         return subj_id, visit_id, from_analysis
 
 
