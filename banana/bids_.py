@@ -218,6 +218,10 @@ class BidsDataset(Dataset):
             repository = BidsRepo()
         super().__init__(name, repository=repository, **kwargs)
 
+    @property
+    def layout(self):
+        return self.repository.layout(self)
+
 
 class BaseBidsFileset(object):
 

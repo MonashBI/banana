@@ -1,5 +1,5 @@
 FROM ubuntu:bionic
-LABEL MAINTAINER "Tom Close <tom.g.close@gmail.com>""
+LABEL MAINTAINER "Tom Close <tom.g.close@gmail.com>"
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update

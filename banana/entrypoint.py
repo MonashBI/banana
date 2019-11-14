@@ -599,13 +599,16 @@ class MenuCmd():
                                 description=cls.desc)
         parser.add_argument('analysis_class',
                             help=("Name of the class to display menu for"))
+        parser.add_argument('--full', '-f', action='store_true',
+                            help=("Whether to show intermediate derivatives "
+                                  "or not"))
         return parser
 
     @classmethod
     def run(cls, args):
         # Get Analysis class
         analysis_class = resolve_class(args.analysis_class)
-        print(analysis_class.static_menu())
+        print(analysis_class.static_menu(full=args.full))
 
 
 class AvailableCmd():
