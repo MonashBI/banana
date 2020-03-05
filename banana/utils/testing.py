@@ -68,7 +68,7 @@ class DontRunProc(Processor):
     def __init__(self):
         tmp_dir = tempfile.mkdtemp()
         super().__init__(work_dir=tmp_dir, reprocess=False,
-                         callable=self.dont_run)
+                         plugin_args={'callable': self.dont_run})
 
     @classmethod
     def dont_run(cls, node, graph):
