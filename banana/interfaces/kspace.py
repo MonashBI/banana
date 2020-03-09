@@ -50,7 +50,7 @@ class Grappa(BaseMatlab):
         channel
         """
         script = ("recon_grappa2('{data_file}', '{ref_file}', '{hdr_file}', "
-                  "'{mag_file}', '{channels_dir}', {rpe}, 0);"
+                  "'{mag_file}', '{channels_dir}', {rpe});"
                   .format(
                       data_file=self.inputs.in_file,
                       ref_file=self.inputs.ref_file,

@@ -25,7 +25,7 @@
             ]
         },
         {
-            "name": "Python: T2star Test",
+            "name": "Python: Generate T2star Test Data",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/test/unittests/analysis/mri/test_t2star.py",

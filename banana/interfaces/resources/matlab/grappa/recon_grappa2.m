@@ -1,4 +1,4 @@
-function [Img_recon_ch, smaps] = recon_grappa2(data_file, ref_file, hdr_file, out_mag_file, out_channels_dir, Rpe, smapFlag)
+function [Img_recon_ch] = recon_grappa2(data_file, ref_file, hdr_file, out_mag_file, out_channels_dir, Rpe)
 % RECON_SIEMENSDATFILE_GRAPPA2 
 % This function reconstruct images from Siemens Raw data file (*.dat, VB/VD/VE versions)
 % This function works for GRAPPA factor of 2, 3D imaging and mutiple echos
@@ -41,7 +41,7 @@ ksDataCalib = S.calib_scan;
 [CH, FE, PE, PAR, ECHO] = size(ksDataScan);
 I_PE = hdr.dims(2);
 I_PAR = hdr.dims(3);
-voxel_size = hdr.voxel_size
+voxel_size = hdr.voxel_size;
 
 %  ---- Handle Partial Fourier ---- %
 
@@ -95,30 +95,32 @@ for curr_echo = 1:ECHO
 end
 clear ksDataCalib ksDataScan
 
+% Flip dimensions and swap frequency and phase encoding dimensions
+new_Img_recon_ch = zeros(CH, PE, FE, PAR, ECHO);
 for i=1:size(Img_recon_ch,5)
-    Img_recon_ch(:,:,:,:,i) = flip(flip(permute(Img_recon_ch(:,:,:,:,i),[1 3 2 4 5]),2),3);
+    new_Img_recon_ch(:,:,:,:,i) = flip(flip(permute(Img_recon_ch(:,:,:,:,i),[1 3 2 4 5]),2),3);
 end
-
+Img_recon_ch = new_Img_recon_ch;
 
 % ----- Compute Sensitivity Maps ----- %
-if smapFlag==1
-    fprintf('Starting Sensitivity maps estimation\n')
-    smaps = zeros(CH, FE, PE, PAR, ECHO);
-    half_kmax = 64;
-    ksrecon_ch_lowres = zeros(CH, FE, PE, PAR, ECHO);
-    ksrecon_ch_lowres(:,FE/2-half_kmax:FE/2+half_kmax, PE/2-half_kmax:PE/2+half_kmax, :, :)...
-        = ksrecon_ch(:,FE/2-half_kmax:FE/2+half_kmax, PE/2-half_kmax:PE/2+half_kmax, :, :);
-    img_ch_lowres = fftshift(fft(ifftshift(ksrecon_ch_lowres, 2), [], 2), 2);
-    img_ch_lowres = fftshift(fft(ifftshift(img_ch_lowres, 3), [], 3), 3);
-    for curr_echo = 1:ECHO
-        fprintf('Completed Sensitivity maps estimation: %.2f%%\n', (curr_echo-1)/ECHO*100)
-        yn = double(squeeze(img_ch_lowres(:,:,:,:,curr_echo)));
-        yn = permute(yn, [2, 3, 4, 1]);
-        [~,smaps(:,:,:,:,curr_echo)] = adapt_array_3d(yn);    
-    end
-else
-    smaps = NaN;
-end
+% if smapFlag==1
+%     fprintf('Starting Sensitivity maps estimation\n')
+%     smaps = zeros(CH, FE, PE, PAR, ECHO);
+%     half_kmax = 64;
+%     ksrecon_ch_lowres = zeros(CH, FE, PE, PAR, ECHO);
+%     ksrecon_ch_lowres(:,FE/2-half_kmax:FE/2+half_kmax, PE/2-half_kmax:PE/2+half_kmax, :, :)...
+%         = ksrecon_ch(:,FE/2-half_kmax:FE/2+half_kmax, PE/2-half_kmax:PE/2+half_kmax, :, :);
+%     img_ch_lowres = fftshift(fft(ifftshift(ksrecon_ch_lowres, 2), [], 2), 2);
+%     img_ch_lowres = fftshift(fft(ifftshift(img_ch_lowres, 3), [], 3), 3);
+%     for curr_echo = 1:ECHO
+%         fprintf('Completed Sensitivity maps estimation: %.2f%%\n', (curr_echo-1)/ECHO*100)
+%         yn = double(squeeze(img_ch_lowres(:,:,:,:,curr_echo)));
+%         yn = permute(yn, [2, 3, 4, 1]);
+%         [~,smaps(:,:,:,:,curr_echo)] = adapt_array_3d(yn);
+%     end
+% else
+%     smaps = NaN;
+% end
 
 % Calculate combined magnitude, and real and imaginary images per
 % channel and save to nifti files
@@ -128,7 +130,7 @@ save_nii(out_nii, out_mag_file);
 
 for i=1:size(Img_recon_ch, 1)
     coil = squeeze(Img_recon_ch(i, :, :, :, :));
-    cmplx = concat(5, real(coil), imag(coil));
+    cmplx = cat(5, real(coil), imag(coil));
     out_nii = make_nii(cmplx, voxel_size, [], [], 'Complex coil image');
     save_nii(out_nii, sprintf('%s%s%d.nii.gz', out_channels_dir, filesep, i));
 end
