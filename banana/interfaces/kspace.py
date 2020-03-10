@@ -53,7 +53,7 @@ class Grappa(BaseMatlab):
                   "'{mag_file}', '{channels_dir}', {rpe});"
                   .format(
                       data_file=self.inputs.in_file,
-                      ref_file=self.inputs.ref_file,
+                      ref_file=self.inputs.ref_file, 
                       hdr_file=self.inputs.hdr_file,
                       mag_file=self.out_file,
                       channels_dir=self.channels_dir,
