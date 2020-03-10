@@ -12,6 +12,8 @@ if length(data_obj)>1
 end
 header = data_obj.hdr;
 
+data_obj
+
 % Get data arrays
 calib_scan = permute(data_obj.refscan{''}, [2, 1, 3, 4, 5]);
 data_scan = permute(data_obj.image{''}, [2, 1, 3, 4, 5]);
