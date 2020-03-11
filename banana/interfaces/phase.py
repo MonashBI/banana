@@ -234,14 +234,14 @@ class Swi(BaseInterface):
         mask_img = nib.load(self.inputs.mask)
         mag = mag_img.get_fdata()
         tissue_phase = tissue_phase_img.get_fdata()
-        mask = mask_img.get_fdata()
+        mask = np.array(mask_img.get_fdata(), dtype=bool)
         if mag.shape != tissue_phase.shape:
             raise BananaUsageError(
                 "Dimensions of provided magnitude and phase images "
                 "differ ({} and {})".format(mag.shape, tissue_phase.shape))
-        pos_mask = np.where(tissue_phase > 0) * mask  # Positive phase mask
-        rho = np.ones(tissue_phase.shape)
-        rho[pos_mask] = np.max(0, np.pi - (tissue_phase[pos_mask] / np.pi))
+        pos_mask = (tissue_phase > 0) * mask  # Positive phase mask
+        rho = np.pi - (tissue_phase / np.pi)
+        rho[~pos_mask | (rho < 0)] = 1
         swi = mag * (rho ** self.inputs.alpha)
         # Set filenames in output spec
         outputs['out_file'] = self._gen_filename('out_file')
@@ -250,11 +250,12 @@ class Swi(BaseInterface):
         return outputs
 
     def _gen_filename(self, name):
-        if name == 'swi':
-            fname = op.abspath(self.inputs.swi if isdefined(self.inputs.swi)
-                               else 'swi')
+        if name == 'out_file':
+            fname = op.abspath(self.inputs.out_file
+                               if isdefined(self.inputs.out_file) else 'swi')
         else:
-            assert False
+            raise Exception("Unrecognised filename to generate '{}'"
+                            .format(name))
         if fname.endswith('.nii'):
             fname += '.gz'
         elif not fname.endswith('nii.gz'):
