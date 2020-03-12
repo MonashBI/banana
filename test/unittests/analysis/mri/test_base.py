@@ -60,4 +60,3 @@ class TestMriAnalysis(PipelineTester):
 
     def test_motion_mat_pipeline(self):
         self.run_pipeline_test('motion_mat_pipeline')
-

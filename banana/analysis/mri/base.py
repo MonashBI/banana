@@ -1182,4 +1182,3 @@ class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
                 pipeline.connect_input('align_mats', mm, 'align_mats',
                                        motion_mats_format)
         return pipeline
-

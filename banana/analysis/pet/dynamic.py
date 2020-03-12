@@ -129,4 +129,3 @@ class DynamicPetAnalysis(PetAnalysis, metaclass=AnalysisMetaClass):
                 'ts': ('timecourse', png_format)})
 
         return pipeline
-

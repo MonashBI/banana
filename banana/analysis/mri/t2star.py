@@ -369,4 +369,3 @@ class T2starAnalysis(MriAnalysis, metaclass=AnalysisMetaClass):
             wall_time=30, mem_gb=16)
 
         return pipeline
-

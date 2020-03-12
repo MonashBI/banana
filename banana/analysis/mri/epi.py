@@ -367,4 +367,3 @@ class EpiSeriesAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
                                    motion_mats_format)
 
         return pipeline
-

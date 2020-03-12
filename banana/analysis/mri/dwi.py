@@ -1004,4 +1004,3 @@ class DwiRefAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
-

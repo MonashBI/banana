@@ -8,4 +8,3 @@ from .t2star import T2starAnalysis
 # from .ute import Utetudy
 from .epi import EpiSeriesAnalysis
 from .multi import DwiAndT1wAnalysis, T1AndT2wAnalysis
-

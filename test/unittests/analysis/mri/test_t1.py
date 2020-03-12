@@ -17,4 +17,3 @@ class TestT1wAnalysis(AnalysisTester):
         self.run_pipeline_test('aparc_stats_table_pipeline',
                                pipeline_args={'measure': 'thickness',
                                               'hemisphere': 'rh'})
-

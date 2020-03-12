@@ -40,4 +40,3 @@ class StaticPetAnalysis(PetAnalysis, metaclass=AnalysisMetaClass):
 
     def _ica_inputs(self):
         pass
-

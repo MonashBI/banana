@@ -16,4 +16,3 @@ class TestMriAnalysis(AnalysisTester):
 
 #     def test_linear_coreg_pipeline(self):
 #         self.run_pipeline_test('linear_coreg_pipeline')
-

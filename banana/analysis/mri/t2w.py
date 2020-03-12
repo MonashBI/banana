@@ -67,4 +67,3 @@ class T2wAnalysis(MriAnalysis, metaclass=AnalysisMetaClass):
                 'wm_seg': (split_output, nifti_gz_format)})
 
         return pipeline
-

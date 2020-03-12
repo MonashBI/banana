@@ -618,4 +618,3 @@ def create_multi_fmri_class(name, t1, epis, epi_number, echo_spacing,
     dct['__metaclass__'] = MultiAnalysisMetaClass
     return (MultiAnalysisMetaClass(name, (MultiBoldMixin,), dct), inputs,
             output_files)
-

@@ -267,4 +267,3 @@ class T1wAnalysis(T2wAnalysis, metaclass=AnalysisMetaClass):
 class PreclinicalT1(T1wAnalysis, metaclass=AnalysisMetaClass):
 
     pass
-

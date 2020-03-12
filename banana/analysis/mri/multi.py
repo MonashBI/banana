@@ -44,4 +44,3 @@ class T1AndT2wAnalysis(MultiAnalysis, metaclass=MultiAnalysisMetaClass):
             T2wAnalysis,
             name_map={
                 'coreg_ref': 't1_magnitude'})]
-

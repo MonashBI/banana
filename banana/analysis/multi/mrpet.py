@@ -1078,4 +1078,3 @@ def create_motion_detection_class(name, ref=None, ref_type=None, t1s=None,
 #     dct['add_switch_specs'] = switch_specs
 #     return (MultiAnalysisMetaClass(name, (MotionDetectionMixin,), dct), inputs,
 #             output_data)
-

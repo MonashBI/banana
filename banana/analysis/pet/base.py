@@ -211,4 +211,3 @@ class PetAnalysis(Analysis, metaclass=AnalysisMetaClass):
             joinfield=['sinograms'])
 
         return pipeline
-

@@ -30,4 +30,3 @@ if __name__ == '__main__':
         prov_ignore=SingleProc.DEFAULT_PROV_IGNORE + [
             'workflow/nodes/.*/requirements/.*/version'],
         clean_work_dir_between_runs=False)
-
