@@ -10,7 +10,9 @@ install_requires = ['arcana>=0.6.1',
                     'pydicom>=1.0',
                     'nibabel>=2.3.0',
                     'pybids>=0.9.1',
-                    'scipy>=1.1.0']
+                    'scipy>=1.1.0',
+                    'sklearn',
+                    'matplotlib']
 
 tests_require = [
     'wget>=3.2']

@@ -168,16 +168,19 @@ class StiRequirement(MatlabPackageRequirement):
                 .format(pkg_root))
         readme_path = op.join(pkg_root, readmes[0])
         with open(readme_path, 'rb') as f:
-            contents = f.read()
+            contents = f.read().decode('utf-8')
         # Cut out citations text as there can be non-decodable characters in
         # there
-        contents = contents.split(b'TERMS OF USE')[0]
-        if PY3:
-            contents = contents.decode('utf-8')
+        contents = contents.split('TERMS OF USE')[0]
         # Get dummy version so we can use its 'regex' property
         dummy_version_obj = self.version_cls(self, 1)
         versions = dummy_version_obj.regex.findall(contents)
-        latest_version = sorted(versions)[-1]
+        try:
+            latest_version = sorted(versions)[-1]
+        except IndexError:
+            raise ArcanaVersionNotDetectableError(
+                "Did not find any versions listed in README ('{}')"
+                .format(readme_path))
         return latest_version
 
 
