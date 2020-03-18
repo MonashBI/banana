@@ -26,7 +26,7 @@ class GrappaOutputSpec(BaseMatlabOutputSpec):
     main_field_strength = traits.Float(
         desc="The orientation of the scanners main magnetic field"),
     main_field_orient = traits.Tuple(
-        (traits.Int, traits.Int, traits.Int),
+        traits.Int, traits.Int, traits.Int,
         desc="The orientation of the scanners main magnetic field")
     echo_times = traits.Tuple(traits.Int, desc="The echo times in seconds")
     larmor_freq = traits.Float(desc="The larmor frequency of the scanner")

@@ -17,16 +17,19 @@ class MultiChannelSegmentInputSpec(SPMCommandInputSpec):
                                    desc="A list of files to be segmented",
                                    field='channel', copyfile=False,
                                    mandatory=True)
-    channel_info = traits.Tuple(traits.Float(), traits.Float(),
-                                traits.Tuple(traits.Bool, traits.Bool),
-                                desc="""A tuple with the following fields:
+    channel_info = traits.Tuple(
+        traits.Float(),
+        traits.Float(),
+        traits.Tuple(traits.Bool, traits.Bool),
+        desc="""A tuple with the following fields:
             - bias reguralisation (0-10)
             - FWHM of Gaussian smoothness of bias
             - which maps to save (Corrected, Field) - a tuple of two boolean values""",  # noqa
                                 field='channel')
     tissues = traits.List(
         traits.Tuple(traits.Tuple(File(exists=True), traits.Int()),
-                     traits.Int(), traits.Tuple(traits.Bool, traits.Bool),
+                     traits.Int(),
+                     traits.Tuple(traits.Bool, traits.Bool),
                      traits.Tuple(traits.Bool, traits.Bool)),
         desc="""A list of tuples (one per tissue) with the following fields:
             - tissue probability map (4D), 1-based index to frame

@@ -30,6 +30,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/test/unittests/analysis/mri/test_t2star.py",
             "console": "integratedTerminal",
+        },
+        {
+            "name": "Python: Generate DWI Test Data",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/unittests/analysis/mri/test_dwi.py",
+            "console": "integratedTerminal",
         }
     ]
 }

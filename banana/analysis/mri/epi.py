@@ -208,6 +208,7 @@ class EpiSeriesAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
 
     def mag_preproc_pipeline(self, **name_maps):
         return self.extract_magnitude_pipeline(
+            name='mag_preproc',
             input_map={'series': 'series_preproc'},
             output_map={'magnitude': 'mag_preproc'},
             name_maps=name_maps)

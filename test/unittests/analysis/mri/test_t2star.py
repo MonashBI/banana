@@ -9,11 +9,11 @@ from banana import ModulesEnv
 class TestT2star(AnalysisTester):
 
     analysis_class = T2starAnalysis
-    inputs = ['kspace', 'coreg_ref']
+    inputs = ['kspace', 'coreg_ref', 'swi']
     dataset_name = op.join('analysis', 'mri', 't2star')
     parameters = {
         'mni_tmpl_resolution': 1}
-    skip_specs = ['swi']
+    # skip_specs = ['swi']
 
 
 if __name__ == '__main__':

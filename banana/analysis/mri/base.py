@@ -316,7 +316,7 @@ class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
                 'list_channels',
                 ListDir(),
                 inputs={
-                    'directory': (recon, 'channels')})
+                    'directory': (recon, 'channels_dir')})
 
             if self.parameter('force_channel_flip') is not None:
                 force_flip = pipeline.add(

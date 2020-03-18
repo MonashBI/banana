@@ -10,7 +10,7 @@ from nipype.interfaces.mrtrix3.reconst import FitTensor, EstimateFOD
 from banana.interfaces.motion_correction import GenTopupConfigFiles
 from banana.interfaces.mrtrix import (
     DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask)
+    MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask, MergeFslGrads)
 # from nipype.workflows.dwi.fsl.tbss import create_tbss_all
 # from banana.interfaces.noddi import (
 #     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
@@ -133,8 +133,6 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt'),
                    desc=("")),
-        SwitchSpec('fod_algorithm', 'csd', ('csd', 'msmt_csd'),
-                   desc=("")),
         MriAnalysis.param_spec('bet_method').with_new_choices('mrtrix'),
         SwitchSpec('reorient2std', False,
                    desc=(""))]
@@ -171,6 +169,14 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
     def multi_tissue(self):
         return self.branch('response_algorithm',
                            ('msmt_5tt', 'dhollander'))
+        
+    @property
+    def fod_algorithm(self):
+        if self.parameter('response_algorithm') == 'msmt_5tt':
+            algorithm = 'msmt_csd'
+        else:
+            algorithm = 'csd'
+        return algorithm
 
     def fsl_grads(self, pipeline, coregistered=True):
         "Adds and returns a node to the pipeline to merge the FSL grads and "
@@ -185,10 +191,10 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             # Gradient merge node
             fslgrad = pipeline.add(
                 "fslgrad",
-                MergeTuple(2),
+                MergeFslGrads(),
                 inputs={
-                    'in1': (grad_dirs, fsl_bvecs_format),
-                    'in2': ('bvalues', fsl_bvals_format)})
+                    'grad_dirs': (grad_dirs, fsl_bvecs_format),
+                    'bvals': ('bvalues', fsl_bvals_format)})
         return (fslgrad, 'out')
 
     def extract_magnitude_pipeline(self, **name_maps):
@@ -253,15 +259,12 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 ExtractFSLGradients(),
                 inputs={
                     'in_file': ('series', dicom_format)},
-                outputs={
-                    'grad_dirs': ('bvecs_file', fsl_bvecs_format),
-                    'bvalues': ('bvals_file', fsl_bvals_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
-            grad_fsl_inputs = {'in1': (extract_grad, 'bvecs_file'),
-                               'in2': (extract_grad, 'bvals_file')}
+            grad_fsl_inputs = {'grad_dirs': (extract_grad, 'bvecs_file'),
+                               'bvals': (extract_grad, 'bvals_file')}
         elif self.provided('grad_dirs') and self.provided('bvalues'):
-            grad_fsl_inputs = {'in1': ('grad_dirs', fsl_bvecs_format),
-                               'in2': ('bvalues', fsl_bvals_format)}
+            grad_fsl_inputs = {'grad_dirs': ('grad_dirs', fsl_bvecs_format),
+                               'bvals': ('bvalues', fsl_bvals_format)}
         else:
             raise BananaUsageError(
                 "Either input 'magnitude' image needs to be in DICOM format "
@@ -271,7 +274,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         # Gradient merge node
         grad_fsl = pipeline.add(
             "grad_fsl",
-            MergeTuple(2),
+            MergeFslGrads(),
             inputs=grad_fsl_inputs)
 
         gradients = (grad_fsl, 'out')
@@ -384,7 +387,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'dwipreproc',
             DWIPreproc(
                 no_clean_up=True,
-                out_file_ext='.nii.gz',
+                out_file_ext='.mif',
                 # FIXME: Need to determine this programmatically
                 # eddy_parameters = '--data_is_shelled '
                 temp_dir='dwipreproc_tempdir',
@@ -403,9 +406,35 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             BrainMask(
                 out_file='brainmask.nii.gz'),
             inputs={
-                'in_file': (preproc, 'out_file'),
-                'grad_fsl': gradients},
+                'in_file': (preproc, 'out_file')},
             requirements=[mrtrix_req.v('3.0rc3')])
+        
+        to_nifti = pipeline.add(
+            'to_nifti',
+            MRConvert(
+                out_ext='.nii.gz'),
+            inputs={
+                'in_file': (preproc, 'out_file')},
+            requirements=[mrtrix_req.v('3.0rc3')])
+        
+        # Extract gradient directions that have been motion-corrected
+        # by dwipreproc
+        extract_moco_grads = pipeline.add(
+            "extract_moco_grad",
+            ExtractFSLGradients(),
+            inputs={
+                'in_file': (preproc, 'out_file')},
+            outputs={
+                'grad_dirs': ('bvecs_file', fsl_bvecs_format),
+                'bvalues': ('bvals_file', fsl_bvals_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+        
+        moco_grad_fsl = pipeline.add(
+            "grad_fsl",
+            MergeFslGrads(),
+            inputs={
+                'grad_dirs': (extract_moco_grads, 'bvecs_file'),
+                'bvalues': (extract_moco_grads, 'bvals_file')})
 
         # Create bias correct node
         pipeline.add(
@@ -413,8 +442,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             DWIBiasCorrect(
                 method='ants'),
             inputs={
-                'grad_fsl': gradients,  # internal
-                'in_file': (preproc, 'out_file'),
+                'grad_fsl': (moco_grad_fsl, 'out'),  # internal
+                'in_file': (to_nifti, 'out_file'),
                 'mask': (mask, 'out_file')},
             outputs={
                 'series_preproc': ('out_file', nifti_gz_format)},
@@ -742,7 +771,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         dwi2fod = pipeline.add(
             'dwi2fod',
             EstimateFOD(
-                algorithm=self.parameter('fod_algorithm')),
+                algorithm=self.fod_algorithm),
             inputs={
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'wm_txt': ('wm_response', text_format),

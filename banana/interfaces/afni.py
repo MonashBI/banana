@@ -16,10 +16,10 @@ class TprojectInputSpec(AFNICommandInputSpec):
         desc='Remove the 3D+time time series in the specified dataset',
         argstr='-dsort %s', exists=True)
     passband = traits.Tuple(
-        (traits.Float(), traits.Float()), argstr='-passband %f %f',
+        traits.Float(), traits.Float(), argstr='-passband %f %f',
         desc='Remove all frequencies EXCEPT those in the range provided.')
     stopband = traits.Tuple(
-        (traits.Float(), traits.Float()), argstr='-stopband %f %f',
+        traits.Float(), traits.Float(), argstr='-stopband %f %f',
         desc='Remove all frequencies in the range provided.')
     delta_t = traits.Float(desc='time step for frequency calculations',
                            argstr='-dt %f')

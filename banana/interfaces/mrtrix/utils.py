@@ -1,7 +1,7 @@
 import os.path
 from nipype.interfaces.base import (
     CommandLineInputSpec, CommandLine, File, Directory, TraitedSpec, isdefined,
-    traits, InputMultiPath)
+    traits, InputMultiPath, BaseInterface)
 from nipype.interfaces.mrtrix3.reconst import (
     MRTrix3Base, MRTrix3BaseInputSpec)
 from arcana.utils import split_extension
@@ -522,8 +522,8 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
               "gradient, and b gives the b-value in units of s/mm^2."))
 
     fslgrad = traits.Tuple(
-        File(exists=True, desc="gradient directions file (bvec)"),  # noqa: E501 @UndefinedVariable
-        File(exists=True, desc="b-values (bval)"),  # noqa: E501 @UndefinedVariable
+        traits.Str(desc="gradient directions file (bvec)"),  # noqa: E501 @UndefinedVariable File(exists=True, desc="gradient directions file (bvec)"),
+        traits.Str(desc="b-values (bval)"),  # noqa: E501 @UndefinedVariable
         argstr='-fslgrad %s %s', mandatory=False,
         desc=("specify the diffusion-weighted gradient scheme used in the "
               "acquisition in FSL bvecs/bvals format."))
@@ -572,3 +572,30 @@ class ExtractDWIorB0(CommandLine):
             filename = os.path.join(
                 os.getcwd(), "{}_{}{}".format(base, suffix, ext))
         return filename
+
+
+class MergeFslGradsInputSpec(TraitedSpec):
+    grad_dirs = File(exists=True,
+                     desc="File containing FSL gradient direction")
+    bvals = File(exists=True, desc="File containing b values")
+
+
+class MergeFslGradsOutputSpec(TraitedSpec):
+    out = traits.Tuple(File(exists=True),
+                       File(exists=True), desc='Merged output')  # @UndefinedVariable
+
+
+class MergeFslGrads(BaseInterface):
+    """
+    Merge gradients and b-values files into a tuple
+    """
+    input_spec = MergeFslGradsInputSpec
+    output_spec = MergeFslGradsOutputSpec
+    
+    def _run_interface(self, runtime):
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['out'] = (self.inputs.grad_dirs, self.inputs.bvals)
+        return outputs

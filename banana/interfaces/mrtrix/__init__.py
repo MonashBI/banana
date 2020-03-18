@@ -4,5 +4,5 @@ from .preproc import (
     DWIIntensityNorm)
 from .utils import (
     MRConvert, MRCat, MRCrop, MRPad, MRMath, MRCalc, ExtractFSLGradients,
-    ExtractDWIorB0)
+    ExtractDWIorB0, MergeFslGrads)
 from .tracking import GlobalTractography
