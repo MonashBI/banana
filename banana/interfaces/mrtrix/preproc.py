@@ -52,11 +52,21 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
                               desc='Do not delete the temporary folder')
     temp_dir = Directory(genfile=True, argstr='-tempdir %s',
                          desc="Specify the temporay directory")
+    eddyqc_text = Directory(
+        argstr='-eddyqc_text %s',
+        desc="Directory to output Eddy QC statistics text files")
+    eddy_qc_all = Directory(
+        argstr='-eddyqc_all %s',
+        desc="Directory to output all Eddy QC files")
 
 
 class DWIPreprocOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Pre-processed DWI dataset')
     eddy_parameters = File(desc='File with eddy parameters')
+    eddyqc_text = Directory(
+        desc="Directory to output Eddy QC statistics text files")
+    eddy_qc_all = Directory(
+        desc="Directory to output all Eddy QC files")
 
 
 class DWIPreproc(MRTrix3Base):
@@ -71,6 +81,10 @@ class DWIPreproc(MRTrix3Base):
         outputs['out_file'] = os.path.abspath(self._gen_outfilename())
         outputs['eddy_parameters'] = os.path.abspath(os.path.join(
             self._gen_tempdir(), 'dwi_post_eddy.eddy_parameters'))
+        if isdefined(self.inputs.eddyqc_text):
+            outputs['eddyqc_text'] = os.path.abspath(self.inputs.eddyqc_text)
+        if isdefined(self.inputs.eddyqc_all):
+            outputs['eddyqc_all'] = os.path.abspath(self.inputs.eddyqc_all)
         return outputs
 
     def _gen_filename(self, name):

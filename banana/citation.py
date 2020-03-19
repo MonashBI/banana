@@ -43,6 +43,28 @@ eddy_cite = Citation(
     journal="NeuroImage", year=2015, volume=125,
     pages=(1063, 1078)),
 
+eddy_repol_cite = Citation(
+    short_name='eddy_repol',
+    authors=[
+        'Andersson, J. R.',
+        'Graham, M. S.',
+        'Zsoldos, E.',
+        'Sotiropoulos, S. N.'],
+    title=(
+        "Incorporating outlier detection and replacement into a non - "
+        "parametric framework for movement and distortion correction of "
+        "diffusion MR images"),
+    journal="NeuroImage", volume=141, pages=("556", "572"), year=2016)
+
+
+# If you use the slice - to - volume motion model(accessed by the - -mporder option) please also reference
+
+# [Andersson 2017] Jesper L. R. Andersson, Mark S. Graham, Ivana Drobnjak, Hui Zhang, Nicola Filippini and Matteo Bastiani. Towards a comprehensive framework for movement and distortion correction of diffusion MR images: Within volume movement. NeuroImage, 152: 450 - 466, 2017.
+
+# If you use the susceptibility - by - movement correction in eddy(accessed by the option - -estimate_move_by_susceptibility) please also reference
+
+# [Andersson 2018] Jesper L. R. Andersson, Mark S. Graham, Ivana Drobnjak, Hui Zhang and Jon Campbell. Susceptibility - induced distortion that varies due to motion: Correction in diffusion MR without acquiring additional data. NeuroImage, 171: 277 - 295, 2018.
+
 fsl_cite = Citation(
     short_name="FSL",
     authors=["Smith, S. M.", "Jenkinson, M.",
