@@ -443,7 +443,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             requirements=[mrtrix_req.v('3.0rc3')])
         
         moco_grad_fsl = pipeline.add(
-            "grad_fsl",
+            "moco_grad_fsl",
             MergeFslGrads(),
             inputs={
                 'grad_dirs': (extract_moco_grads, 'bvecs_file'),
