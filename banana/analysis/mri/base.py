@@ -1087,7 +1087,7 @@ class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
                   "information from the image header"),
             citations=[])
 
-        input_format = self.input(self.header_image_spec_name).format
+        input_format = self.spec(self.header_image_spec_name).format
 
         if input_format == dicom_format:
 
@@ -1150,7 +1150,7 @@ class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
             raise BananaUsageError(
                 "Can only extract header info if 'magnitude' fileset "
                 "is provided in DICOM or extended NIfTI format (provided {})"
-                .format(self.input(self.header_image_spec_name).format))
+                .format(self.spec(self.header_image_spec_name).format))
 
         return pipeline
 

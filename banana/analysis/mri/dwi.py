@@ -261,7 +261,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             citations=references)
 
         # Create nodes to gradients to FSL format
-        if self.input('series').format == dicom_format:
+        if self.spec('series').format == dicom_format:
             extract_grad = pipeline.add(
                 "extract_grad",
                 ExtractFSLGradients(),
