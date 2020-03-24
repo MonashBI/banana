@@ -54,7 +54,7 @@ class ListToFileOutputSpec(TraitedSpec):
 
 class ListToFile(BaseInterface):
     """
-    Appends a sub-path to an existing directory
+    Writes a list to lines in a text file
     """
     input_spec = ListToFileInputSpec
     output_spec = ListToFileOutputSpec
