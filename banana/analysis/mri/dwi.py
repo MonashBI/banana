@@ -447,7 +447,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             MergeFslGrads(),
             inputs={
                 'grad_dirs': (extract_moco_grads, 'bvecs_file'),
-                'bvalues': (extract_moco_grads, 'bvals_file')})
+                'bvals': (extract_moco_grads, 'bvals_file')})
 
         # Create bias correct node
         pipeline.add(
