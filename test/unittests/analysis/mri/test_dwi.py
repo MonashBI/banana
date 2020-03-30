@@ -11,7 +11,9 @@ class TestDwi(AnalysisTester):
     analysis_class = DwiAnalysis
     inputs = ['series', 'reverse_phase']
     dataset_name = op.join('analysis', 'mri', 'dwi')
-    parameters = {'num_global_tracks': int(1e5)}
+    parameters = {'num_global_tracks': int(1e5),
+                  'eddy_model': 'linear',
+                  'pe_dir': 'RL'}
     skip_specs = ['channels', 'brain_coreg', 'coreg_fsl_mat', 
                   'coreg_ants_mat', 'mag_coreg',
                   'brain_mask_coreg', 'norm_intensity',

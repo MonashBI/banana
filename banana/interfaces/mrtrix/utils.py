@@ -521,7 +521,7 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
               " where [ X Y Z ] describe the direction of the applied  "
               "gradient, and b gives the b-value in units of s/mm^2."))
 
-    fslgrad = traits.Tuple(
+    grad_fsl = traits.Tuple(
         traits.Str(desc="gradient directions file (bvec)"),  # noqa: E501 @UndefinedVariable File(exists=True, desc="gradient directions file (bvec)"),
         traits.Str(desc="b-values (bval)"),  # noqa: E501 @UndefinedVariable
         argstr='-fslgrad %s %s', mandatory=False,

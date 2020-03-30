@@ -79,7 +79,7 @@ class TestBids(TestCase):
             repository=BidsRepo(op.join(self.BIDS_EXAMPLES_PATH, 'ds114')),
             processor=SingleProc(self.work_dir),
             environment=TEST_ENV,
-            parameters={'preproc_pe_dir': 'RL'})
+            parameters={'pe_dir': 'RL'})
         analysis.pipeline('global_tracking_pipeline')
 
     def test_bids_fmri(self):

@@ -59,7 +59,7 @@ if __name__ == "__main__":
         processor=SingleProc(work_dir=os.path.join(scratch_dir,
                                                    'xnat_working_dir-mnd')),
         inputs=inputs, subject_ids=args.subject, visit_ids=args.session,
-        parameters={'preproc_pe_dir': 'RL'},
+        parameters={'pe_dir': 'RL'},
         switches={'preproc_denoise': True})
 
     fods = analysis.derive('wm_odf', derive=True)

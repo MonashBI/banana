@@ -120,8 +120,18 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     desc=(""))]
 
     add_param_specs = [
-        ParamSpec('preproc_pe_dir', None, dtype=str,
+        ParamSpec('pe_dir', None, dtype=str,
                   desc=("")),
+        ParamSpec('slice_moco', True, dtype=bool,
+                  desc=("Whether to perform motion correction within volumes. "
+                        "Requires slice timings to be 'series' header")),
+        ParamSpec('force_shelled', False, dtype=bool,
+                  desc=("Force eddy to treat gradient encoding scheme as "
+                        "being shelled")),
+        ParamSpec('eddy_model', 'none',
+                  choices=('none', 'linear', 'quadratic'),
+                  desc=("Model for how diffusion gradients generate eddy "
+                        "currents.")),
         ParamSpec('tbss_skel_thresh', 0.2,
                   desc=("")),
         ParamSpec('fsl_mask_f', 0.25,
@@ -190,20 +200,20 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         "Adds and returns a node to the pipeline to merge the FSL grads and "
         "bvecs"
         try:
-            fslgrad = pipeline.node('fslgrad')
+            grad_fsl = pipeline.node('grad_fsl')
         except ArcanaNameError:
             if self.is_coregistered and coregistered:
                 grad_dirs = 'grad_dirs_coreg'
             else:
                 grad_dirs = 'grad_dirs'
             # Gradient merge node
-            fslgrad = pipeline.add(
-                "fslgrad",
+            grad_fsl = pipeline.add(
+                "grad_fsl",
                 MergeFslGrads(),
                 inputs={
                     'grad_dirs': (grad_dirs, fsl_bvecs_format),
                     'bvals': ('bvalues', fsl_bvals_format)})
-        return (fslgrad, 'out')
+        return (grad_fsl, 'out')
 
     def extract_magnitude_pipeline(self, **name_maps):
 
@@ -220,7 +230,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 out_ext='.nii.gz'),
             inputs={
                 'in_file': ('series', nifti_gz_format),
-                'fslgrad': self.fsl_grads(pipeline, coregistered=False)},
+                'grad_fsl': self.fsl_grads(pipeline, coregistered=False)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
         pipeline.add(
@@ -260,45 +270,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 "Preprocess dMRI studies using distortion correction"),
             citations=references)
 
-        # Create nodes to gradients to FSL format
-        if self.spec('series').format == dicom_format:
-            extract_grad = pipeline.add(
-                "extract_grad",
-                ExtractFSLGradients(),
-                inputs={
-                    'in_file': ('series', dicom_format)},
-                requirements=[mrtrix_req.v('3.0rc3')])
-            grad_fsl_inputs = {'grad_dirs': (extract_grad, 'bvecs_file'),
-                               'bvals': (extract_grad, 'bvals_file')}
-        elif self.provided('grad_dirs') and self.provided('bvalues'):
-            grad_fsl_inputs = {'grad_dirs': ('grad_dirs', fsl_bvecs_format),
-                               'bvals': ('bvalues', fsl_bvals_format)}
-        else:
-            raise BananaUsageError(
-                "Either input 'magnitude' image needs to be in DICOM format "
-                "or gradient directions and b-values need to be explicitly "
-                "provided to {}".format(self))
-
-        # Gradient merge node
-        grad_fsl = pipeline.add(
-            "grad_fsl",
-            MergeFslGrads(),
-            inputs=grad_fsl_inputs)
-
-        gradients = (grad_fsl, 'out')
-
-        # Create node to reorient preproc out_file
-        if self.branch('reorient2std'):
-            reorient = pipeline.add(
-                'fslreorient2std',
-                fsl.utils.Reorient2Std(
-                    output_type='NIFTI_GZ'),
-                inputs={
-                    'in_file': ('series', nifti_gz_format)},
-                requirements=[fsl_req.v('5.0.9')])
-            reoriented = (reorient, 'out_file')
-        else:
-            reoriented = ('series', nifti_gz_format)
+        dw_series = ('series', mrtrix_image_format)
 
         # Denoise the dwi-scan
         if self.branch('preproc_denoise'):
@@ -307,7 +279,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'denoise',
                 DWIDenoise(),
                 inputs={
-                    'in_file': reoriented},
+                    'in_file': dw_series},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
             # Calculate residual noise
@@ -315,7 +287,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'subtract_operands',
                 Merge(2),
                 inputs={
-                    'in1': reoriented,
+                    'in1': dw_series,
                     'in2': (denoise, 'noise')})
 
             pipeline.add(
@@ -329,12 +301,29 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 requirements=[mrtrix_req.v('3.0rc3')])
             denoised = (denoise, 'out_file')
         else:
-            denoised = reoriented
+            denoised = dw_series
 
         # Preproc kwargs
+        preproc_inputs = {'in_file': denoised}
         preproc_kwargs = {}
-        preproc_inputs = {'in_file': denoised,
-                          'grad_fsl': gradients}
+
+        if self.provided('grad_dirs') and self.provided('bvalues'):
+                # Gradient merge node
+            grad_fsl = pipeline.add(
+                "grad_fsl",
+                MergeFslGrads(),
+                inputs={
+                    'grad_dirs': ('grad_dirs', fsl_bvecs_format),
+                    'bvals': ('bvalues', fsl_bvals_format)})
+
+            preproc_inputs['grad_fsl'] = (grad_fsl, 'out')
+
+        elif self.spec('series').format not in (dicom_format,
+                                                mrtrix_image_format):
+            raise BananaUsageError(
+                "Either input 'series' image needs to gradient directions and "
+                "b-values in its header or they need to be explicitly "
+                "provided to 'grad_dirs' and 'bvalues' {}".format(self))
 
         if self.provided('reverse_phase'):
 
@@ -346,10 +335,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'dwiextract',
                     ExtractDWIorB0(
                         bzero=True,
-                        out_ext='.nii.gz'),
-                    inputs={
-                        'in_file': denoised,
-                        'fslgrad': gradients},
+                        out_ext='.mif'),
+                    inputs=preproc_inputs,
                     requirements=[mrtrix_req.v('3.0rc3')])
 
                 # Get first b=0 from dwi b=0 volumes
@@ -372,37 +359,40 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'second_scan': ('reverse_phase', mrtrix_image_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
-            # Create node to assign the right PED to the diffusion
-            prep_dwi = pipeline.add(
-                'prepare_dwi',
-                PrepareDWI(),
-                inputs={
-                    'pe_dir': ('ped', float),
-                    'ped_polarity': ('pe_angle', float)})
+            # Create node to extract the phase-encoding direction
+            # prep_dwi = pipeline.add(
+            #     'prepare_dwi',
+            #     PrepareDWI(),
+            #     inputs={
+            #         'pe_dir': ('ped', float),
+            #         'ped_polarity': ('pe_angle', float)})
 
             preproc_kwargs['rpe_pair'] = True
 
-            distortion_correction = True
+            # distortion_correction = True
             preproc_inputs['se_epi'] = (combined_images, 'out_file')
         else:
-            distortion_correction = False
+            # distortion_correction = False
             preproc_kwargs['rpe_none'] = True
 
-        if self.parameter('preproc_pe_dir') is not None:
-            preproc_kwargs['pe_dir'] = self.parameter('preproc_pe_dir')
+        if self.parameter('pe_dir') is not None:
+            preproc_kwargs['pe_dir'] = self.parameter('pe_dir')
+            
+        eddy_parameters = '--repol --cnr_maps  -slm={}'.format(
+            self.parameter('eddy_model'))
+        if self.parameter('slice_moco'):
+            eddy_parameters += ' --mporder --estimate_move_by_susceptibility'
+        if self.parameter('force_shelled'):
+            eddy_parameters += ' --data_is_shelled '
 
         preproc = pipeline.add(
             'dwipreproc',
             DWIPreproc(
                 no_clean_up=True,
                 out_file_ext='.mif',
-                # FIXME: Need to determine this programmatically
-                # eddy_parameters = '--data_is_shelled '
-                eddy_parameters=(
-                    '--repol --mporder, --estimate_move_by_susceptibility '
-                    '--cnr_maps'),
+                eddy_parameters=eddy_parameters,
                 eddy_qc_all='qc-all',
-                temp_dir='dwipreproc_tempdir',
+                temp_dir='dwipreproc_tempdir',  # Should be detected ideally
                 **preproc_kwargs),
             inputs=preproc_inputs,
             outputs={
@@ -411,56 +401,58 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('6.0.1')],
             wall_time=60)
 
-        if distortion_correction:
-            pipeline.connect(prep_dwi, 'pe', preproc, 'pe_dir')
+        # if distortion_correction:
+        #     pipeline.connect(prep_dwi, 'pe', preproc, 'pe_dir')
 
         mask = pipeline.add(
             'dwi2mask',
             BrainMask(
-                out_file='brainmask.nii.gz'),
+                out_file='brainmask.mif'),
             inputs={
                 'in_file': (preproc, 'out_file')},
             requirements=[mrtrix_req.v('3.0rc3')])
-        
-        to_nifti = pipeline.add(
-            'to_nifti',
-            MRConvert(
-                out_ext='.nii.gz'),
-            inputs={
-                'in_file': (preproc, 'out_file')},
-            requirements=[mrtrix_req.v('3.0rc3')])
-        
-        # Extract gradient directions that have been motion-corrected
-        # by dwipreproc
-        extract_moco_grads = pipeline.add(
-            "extract_moco_grad",
-            ExtractFSLGradients(),
-            inputs={
-                'in_file': (preproc, 'out_file')},
-            outputs={
-                'grad_dirs': ('bvecs_file', fsl_bvecs_format),
-                'bvalues': ('bvals_file', fsl_bvals_format)},
-            requirements=[mrtrix_req.v('3.0rc3')])
-        
-        moco_grad_fsl = pipeline.add(
-            "moco_grad_fsl",
-            MergeFslGrads(),
-            inputs={
-                'grad_dirs': (extract_moco_grads, 'bvecs_file'),
-                'bvals': (extract_moco_grads, 'bvals_file')})
 
         # Create bias correct node
-        pipeline.add(
+        bias_correct = pipeline.add(
             "bias_correct",
             DWIBiasCorrect(
                 method='ants'),
             inputs={
-                'grad_fsl': (moco_grad_fsl, 'out'),  # internal
-                'in_file': (to_nifti, 'out_file'),
+                'in_file': (preproc, 'out_file'),
                 'mask': (mask, 'out_file')},
             outputs={
                 'series_preproc': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3'), ants_req.v('2.0')])
+
+        # Extract gradient directions that have been motion-corrected
+        # by dwipreproc
+        pipeline.add(
+            "extract_moco_grad",
+            ExtractFSLGradients(),
+            inputs={
+                'in_file': (bias_correct, 'out_file')},
+            outputs={
+                'grad_dirs': ('bvecs_file', fsl_bvecs_format),
+                'bvalues': ('bvals_file', fsl_bvals_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
+        # Create node to reorient preproc out_file
+        if self.branch('reorient2std'):
+            raise NotImplementedError(
+                "Reorientation to standard isn't handle at this stage because "
+                "gradients would also need to be rotated accordingly by a "
+                "bespoke interface")
+            # reorient = pipeline.add(
+            #     'fslreorient2std',
+            #     fsl.utils.Reorient2Std(
+            #         output_type='NIFTI_GZ'),
+            #     inputs={
+            #         'in_file': ('series', nifti_gz_format)},
+            #     requirements=[fsl_req.v('5.0.9')])
+            # reoriented = (reorient, 'out_file')
+        else:
+            pass
+            # reoriented = ('series', nifti_gz_format)
 
         return pipeline
         
@@ -847,7 +839,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 bzero=True,
                 quiet=True),
             inputs={
-                'fslgrad': self.fsl_grads(pipeline),
+                'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
