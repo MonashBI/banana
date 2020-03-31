@@ -55,7 +55,7 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
     eddyqc_text = Directory(
         argstr='-eddyqc_text %s',
         desc="Directory to output Eddy QC statistics text files")
-    eddy_qc_all = Directory(
+    eddyqc_all = Directory(
         argstr='-eddyqc_all %s',
         desc="Directory to output all Eddy QC files")
 
@@ -65,7 +65,7 @@ class DWIPreprocOutputSpec(TraitedSpec):
     eddy_parameters = File(desc='File with eddy parameters')
     eddyqc_text = Directory(
         desc="Directory to output Eddy QC statistics text files")
-    eddy_qc_all = Directory(
+    eddyqc_all = Directory(
         desc="Directory to output all Eddy QC files")
 
 

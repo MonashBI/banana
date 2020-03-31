@@ -396,13 +396,13 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 no_clean_up=True,
                 out_file_ext='.mif',
                 eddy_parameters=eddy_parameters,
-                eddy_qc_all='qc-all',
+                eddyqc_all='qc-all',
                 temp_dir='dwipreproc_tempdir',  # Should be detected ideally
                 **preproc_kwargs),
             inputs=preproc_inputs,
             outputs={
                 'eddy_par': ('eddy_parameters', eddy_par_format),
-                'eddy_qc': ('eddy_qc_all', directory_format)},
+                'eddy_qc': ('eddyqc_all', directory_format)},
             requirements=[mrtrix_req.v('3.0rc3'), fsl_req.v('6.0.1')],
             wall_time=60)
 
