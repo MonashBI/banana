@@ -383,7 +383,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             
         eddy_parameters = '--repol --cnr_maps  --slm={}'.format(
             self.parameter('eddy_model'))
-        if self.parameter('slice_moco_parts') > 0:
+        if self.parameter('intra_moco_parts') > 0:
             eddy_parameters += ' --mporder {}'.format(
                 self.parameter('intra_moco_parts'))
             eddy_parameters += ' --estimate_move_by_susceptibility'
