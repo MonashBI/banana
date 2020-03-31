@@ -122,9 +122,11 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
     add_param_specs = [
         ParamSpec('pe_dir', None, dtype=str,
                   desc=("")),
-        ParamSpec('slice_moco', True, dtype=bool,
-                  desc=("Whether to perform motion correction within volumes. "
-                        "Requires slice timings to be 'series' header")),
+        ParamSpec('intra_moco_parts', 15, dtype=int,
+                  desc=("Number of partitions within a volume to motion "
+                        "correct w.r.t the volume. If == 0, intra-volume MoCo "
+                        "is disabled. Intra-volume MoCo requires slice timings"
+                        " to be found in 'series' header")),
         ParamSpec('force_shelled', False, dtype=bool,
                   desc=("Force eddy to treat gradient encoding scheme as "
                         "being shelled")),
@@ -299,6 +301,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 outputs={
                     'noise_residual': ('out_file', mrtrix_image_format)},
                 requirements=[mrtrix_req.v('3.0rc3')])
+
             denoised = (denoise, 'out_file')
         else:
             denoised = dw_series
@@ -380,8 +383,10 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             
         eddy_parameters = '--repol --cnr_maps  --slm={}'.format(
             self.parameter('eddy_model'))
-        if self.parameter('slice_moco'):
-            eddy_parameters += ' --mporder --estimate_move_by_susceptibility'
+        if self.parameter('slice_moco_parts') > 0:
+            eddy_parameters += ' --mporder {}'.format(
+                self.parameter('intra_moco_parts'))
+            eddy_parameters += ' --estimate_move_by_susceptibility'
         if self.parameter('force_shelled'):
             eddy_parameters += ' --data_is_shelled '
 
