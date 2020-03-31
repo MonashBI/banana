@@ -122,7 +122,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
     add_param_specs = [
         ParamSpec('pe_dir', None, dtype=str,
                   desc=("")),
-        ParamSpec('intra_moco_parts', 15, dtype=int,
+        ParamSpec('intra_moco_parts', 0, dtype=int,
                   desc=("Number of partitions within a volume to motion "
                         "correct w.r.t the volume. If == 0, intra-volume MoCo "
                         "is disabled. Intra-volume MoCo requires slice timings"
@@ -384,7 +384,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         eddy_parameters = '--repol --cnr_maps  -slm={}'.format(
             self.parameter('eddy_model'))
         if self.parameter('slice_moco_parts') > 0:
-            eddy_parameters += ' --mporder {}'.format(
+            eddy_parameters += ' --mporder={}'.format(
                 self.parameter('intra_moco_parts'))
             eddy_parameters += ' --estimate_move_by_susceptibility'
         if self.parameter('force_shelled'):
