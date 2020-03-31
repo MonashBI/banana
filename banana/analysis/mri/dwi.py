@@ -378,7 +378,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         if self.parameter('pe_dir') is not None:
             preproc_kwargs['pe_dir'] = self.parameter('pe_dir')
             
-        eddy_parameters = '--repol --cnr_maps  -slm={}'.format(
+        eddy_parameters = '--repol --cnr_maps  --slm={}'.format(
             self.parameter('eddy_model'))
         if self.parameter('slice_moco'):
             eddy_parameters += ' --mporder --estimate_move_by_susceptibility'
