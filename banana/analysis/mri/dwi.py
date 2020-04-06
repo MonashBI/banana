@@ -121,13 +121,15 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
     add_param_specs = [
         ParamSpec('pe_dir', None, dtype=str,
-                  desc=("")),
+                  desc=("Phase-encoding direction of DW series")),
         ParamSpec('intra_moco_parts', 0, dtype=int,
                   desc=("Number of partitions within a volume to motion "
                         "correct w.r.t the volume. If == 0, intra-volume MoCo "
                         "is disabled. Intra-volume MoCo requires slice timings"
                         " to be found in 'series' header")),
-        ParamSpec('force_shelled', False, dtype=bool,
+        SwitchSpec('eddy_moco_by_suscep', False,
+                  desc="Use susceptibility to determine motion correction"),
+        SwitchSpec('force_shelled', False,
                   desc=("Force eddy to treat gradient encoding scheme as "
                         "being shelled")),
         ParamSpec('eddy_model', 'none',
@@ -386,8 +388,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         if self.parameter('intra_moco_parts') > 0:
             eddy_parameters += ' --mporder={}'.format(
                 self.parameter('intra_moco_parts'))
+        if self.branch('eddy_moco_by_suscep'):
             eddy_parameters += ' --estimate_move_by_susceptibility'
-        if self.parameter('force_shelled'):
+        if self.branch('force_shelled'):
             eddy_parameters += ' --data_is_shelled '
 
         preproc = pipeline.add(
