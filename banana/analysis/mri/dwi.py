@@ -382,7 +382,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         if self.parameter('pe_dir') is not None:
             preproc_kwargs['pe_dir'] = self.parameter('pe_dir')
-            
+
         eddy_parameters = '--repol --cnr_maps  --slm={}'.format(
             self.parameter('eddy_model'))
         if self.parameter('intra_moco_parts') > 0:
@@ -429,7 +429,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'in_file': (preproc, 'out_file'),
                 'mask': (mask, 'out_file')},
             outputs={
-                'series_preproc': ('out_file', nifti_gz_format)},
+                'series_preproc': ('out_file', mrtrix_image_format)},
             requirements=[mrtrix_req.v('3.0rc3'), ants_req.v('2.0')])
 
         # Extract gradient directions that have been motion-corrected
