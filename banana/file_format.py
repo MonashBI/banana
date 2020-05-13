@@ -308,14 +308,14 @@ dicom_format = DicomFormat(name='dicom', extension=None,
                            resource_names={'xnat': ['DICOM', 'secondary']})
 nifti_gz_x_format = NiftixFormat(name='extended_nifti_gz', extension='.nii.gz',
                                  aux_files={'json': '.json'},
-                                 resource_names={'xnat': ['NiFTI_GZ_X',
+                                 resource_names={'xnat': ['NIFTI_GZ_X',
                                                           'NIFTIX_GZ']})
 nifti_format = NiftiFormat(name='nifti', extension='.nii',
-                           resource_names={'xnat': ['NiFTI', 'NIFTI']})
+                           resource_names={'xnat': ['NIFTI', 'NiFTI']})
 
 nifti_gz_format = NiftiFormat(name='nifti_gz', extension='.nii.gz',
-                              resource_names={'xnat': ['NiFTI_GZ',
-                                                       'NIFTI_GZ']})
+                              resource_names={'xnat': ['NIFTI_GZ',
+                                                       'NiFTI_GZ']})
 analyze_format = NiftiFormat(name='analyze', extension='.img',
                              aux_files={'header': '.hdr'})
 mrtrix_image_format = MrtrixImageFormat(name='mrtrix_image', extension='.mif',

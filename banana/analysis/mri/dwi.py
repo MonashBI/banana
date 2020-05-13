@@ -8,10 +8,6 @@ from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import (
     FitTensor, ConstrainedSphericalDeconvolution)
-from banana.interfaces.motion_correction import GenTopupConfigFiles
-from banana.interfaces.mrtrix import (
-    DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
-    MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask, MergeFslGrads)
 # from nipype.workflows.dwi.fsl.tbss import create_tbss_all
 # from banana.interfaces.noddi import (
 #     CreateROI, BatchNODDIFitting, SaveParamsAsNIfTI)
@@ -22,6 +18,10 @@ from arcana.utils.interfaces import SelectSession
 from arcana.analysis import ParamSpec, SwitchSpec
 from arcana.exceptions import ArcanaMissingDataException, ArcanaNameError
 from arcana.data.file_format import pdf_format
+from banana.interfaces.motion_correction import GenTopupConfigFiles
+from banana.interfaces.mrtrix import (
+    DWIPreproc, MRCat, ExtractDWIorB0, MRMath, DWIBiasCorrect, DWIDenoise,
+    MRCalc, DWIIntensityNorm, AverageResponse, DWI2Mask, MergeFslGrads)
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
 from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
@@ -191,7 +191,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
     def multi_tissue(self):
         return self.branch('response_algorithm',
                            ('msmt_5tt', 'dhollander'))
-        
+  
     @property
     def fod_algorithm(self):
         if self.parameter('response_algorithm') == 'msmt_5tt':
@@ -231,7 +231,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'dwiextract',
             ExtractDWIorB0(
                 bzero=True,
-                out_ext='.nii.gz'),
+                out_ext='.nii.gz',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': ('series', nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline, coregistered=False)},
@@ -240,7 +242,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         pipeline.add(
             "extract_first_vol",
             MRConvert(
-                coord=(3, 0)),
+                coord=(3, 0),
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': (dwiextract, 'out_file')},
             outputs={
@@ -281,7 +285,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             # Run denoising
             denoise = pipeline.add(
                 'denoise',
-                DWIDenoise(),
+                DWIDenoise(
+                    nthreads=(self.processor.cpus_per_task
+                              if self.processor.cpus_per_task else 0)),
                 inputs={
                     'in_file': dw_series},
                 requirements=[mrtrix_req.v('3.0rc3')])
@@ -297,7 +303,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             pipeline.add(
                 'subtract',
                 MRCalc(
-                    operation='subtract'),
+                    operation='subtract',
+                    nthreads=(self.processor.cpus_per_task
+                              if self.processor.cpus_per_task else 0)),
                 inputs={
                     'operands': (subtract_operands, 'out')},
                 outputs={
@@ -340,7 +348,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'dwiextract',
                     ExtractDWIorB0(
                         bzero=True,
-                        out_ext='.mif'),
+                        out_ext='.mif',
+                        nthreads=(self.processor.cpus_per_task
+                                  if self.processor.cpus_per_task else 0)),
                     inputs=preproc_inputs,
                     requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -348,7 +358,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 extract_first_b0 = pipeline.add(
                     "extract_first_vol",
                     MRConvert(
-                        coord=(3, 0)),
+                        coord=(3, 0),
+                        nthreads=(self.processor.cpus_per_task
+                                  if self.processor.cpus_per_task else 0)),
                     inputs={
                         'in_file': (dwiextract, 'out_file')},
                     requirements=[mrtrix_req.v('3.0rc3')])
@@ -358,7 +370,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             # Concatenate extracted forward rpe with reverse rpe
             combined_images = pipeline.add(
                 'combined_images',
-                MRCat(),
+                MRCat(
+                    nthreads=(self.processor.cpus_per_task
+                              if self.processor.cpus_per_task else 0)),
                 inputs={
                     'first_scan': dwi_reference,
                     'second_scan': ('reverse_phase', mrtrix_image_format)},
@@ -401,6 +415,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 eddy_parameters=eddy_parameters,
                 eddyqc_all='qc-all',
                 temp_dir='dwipreproc_tempdir',  # Should be detected ideally
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0),
                 **preproc_kwargs),
             inputs=preproc_inputs,
             outputs={
@@ -415,7 +431,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         mask = pipeline.add(
             'dwi2mask',
             BrainMask(
-                out_file='brainmask.mif'),
+                out_file='brainmask.mif',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': (preproc, 'out_file')},
             requirements=[mrtrix_req.v('3.0rc3')])
@@ -512,7 +530,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             masker = pipeline.add(
                 'dwi2mask',
                 BrainMask(
-                    out_file='brain_mask.nii.gz'),
+                    out_file='brain_mask.nii.gz',
+                    nthreads=(self.processor.cpus_per_task
+                              if self.processor.cpus_per_task else 0)),
                 inputs={
                     'in_file': (series, nifti_gz_format),
                     'grad_fsl': self.fsl_grads(pipeline, coregistered=False)},
@@ -530,7 +550,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             pipeline.add(
                 'apply_mask',
                 MRCalc(
-                    operation='multiply'),
+                    operation='multiply',
+                    nthreads=(self.processor.cpus_per_task
+                              if self.processor.cpus_per_task else 0)),
                 inputs={
                     'operands': (merge, 'out')},
                 outputs={
@@ -579,7 +601,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         mrconvert = pipeline.add(
             'mrconvert',
             MRConvert(
-                out_ext='.mif'),
+                out_ext='.mif',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline)},
@@ -624,7 +648,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         # Intensity normalization
         intensity_norm = pipeline.add(
             'dwiintensitynorm',
-            DWIIntensityNorm(),
+            DWIIntensityNorm(
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_files': (join_over_visits, 'dwis'),
                 'masks': (join_over_visits, 'masks')},
@@ -665,7 +691,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         pipeline.add(
             'dwi2tensor',
             FitTensor(
-                out_file='dti.nii.gz'),
+                out_file='dti.nii.gz',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
@@ -724,7 +752,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         response = pipeline.add(
             'response',
             ResponseSD(
-                algorithm=self.parameter('response_algorithm')),
+                algorithm=self.parameter('response_algorithm'),
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
@@ -776,7 +806,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         pipeline.add(
             'avg_response',
-            AverageResponse(),
+            AverageResponse(
+                nthreads=(self.processor.cpus_per_task
+                            if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_files': (join_visits, 'responses')},
             outputs={
@@ -805,7 +837,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         dwi2fod = pipeline.add(
             'dwi2fod',
             ConstrainedSphericalDeconvolution(
-                algorithm=self.fod_algorithm),
+                algorithm=self.fod_algorithm,
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'wm_txt': ('wm_response', text_format),
@@ -845,7 +879,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'extract_b0s',
             ExtractDWIorB0(
                 bzero=True,
-                quiet=True),
+                quiet=True,
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format)},
@@ -858,7 +894,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             MRMath(
                 axis=3,
                 operation='mean',
-                quiet=True),
+                quiet=True,
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_files': (extract_b0s, 'out_file')},
             requirements=[mrtrix_req.v('3.0rc3')])
@@ -887,7 +925,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         mask = pipeline.add(
             'mask',
-            DWI2Mask(),
+            DWI2Mask(
+                nthreads=(self.processor.cpus_per_task
+                        if self.processor.cpus_per_task else 0)),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format)},
@@ -897,7 +937,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'tracking',
             Tractography(
                 select=self.parameter('num_global_tracks'),
-                cutoff=self.parameter('global_tracks_cutoff')),
+                cutoff=self.parameter('global_tracks_cutoff'),
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'seed_image': (mask, 'out_file'),
                 'in_file': ('wm_odf', mrtrix_image_format)},
@@ -948,7 +990,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         pipeline.add(
             'connectome',
-            mrtrix3.BuildConnectome(),
+            mrtrix3.BuildConnectome(
+                nthreads=(self.processor.cpus_per_task
+                            if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': ('global_tracks', mrtrix_track_format),
                 'in_parc': (aseg_path, 'out_path')},

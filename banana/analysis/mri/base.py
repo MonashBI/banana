@@ -1055,7 +1055,9 @@ class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
                 resample = pipeline.add(
                     "resample",
                     MRResize(
-                        voxel=self.parameter('resampled_resolution')),
+                        voxel=self.parameter('resampled_resolution'),
+                        nthreads=(self.processor.cpus_per_task
+                                  if self.processor.cpus_per_task else 0)),
                     inputs={
                         'in_file': (swap, 'out_file')},
                     requirements=[mrtrix_req.v('3.0rc3')])

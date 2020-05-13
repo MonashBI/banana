@@ -132,7 +132,9 @@ class T1wAnalysis(T2wAnalysis, metaclass=AnalysisMetaClass):
             'gen5tt',
             mrtrix3.Generate5tt(
                 algorithm='freesurfer',
-                out_file='5tt.mif'),
+                out_file='5tt.mif',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': (aseg_path, 'out_path')},
             outputs={

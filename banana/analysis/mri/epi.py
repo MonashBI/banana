@@ -191,7 +191,9 @@ class EpiSeriesAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
         pipeline.add(
             "extract_first_vol",
             MRConvert(
-                coord=(3, 0)),
+                coord=(3, 0),
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': ('series', nifti_gz_format)},
             outputs={
