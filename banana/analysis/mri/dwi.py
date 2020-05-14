@@ -231,9 +231,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'dwiextract',
             ExtractDWIorB0(
                 bzero=True,
-                out_ext='.nii.gz',
-                nthreads=(self.processor.cpus_per_task
-                          if self.processor.cpus_per_task else 0)),
+                out_ext='.nii.gz'),
             inputs={
                 'in_file': ('series', nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline, coregistered=False)},
@@ -348,9 +346,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'dwiextract',
                     ExtractDWIorB0(
                         bzero=True,
-                        out_ext='.mif',
-                        nthreads=(self.processor.cpus_per_task
-                                  if self.processor.cpus_per_task else 0)),
+                        out_ext='.mif'),
                     inputs=preproc_inputs,
                     requirements=[mrtrix_req.v('3.0rc3')])
 
@@ -879,9 +875,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'extract_b0s',
             ExtractDWIorB0(
                 bzero=True,
-                quiet=True,
-                nthreads=(self.processor.cpus_per_task
-                          if self.processor.cpus_per_task else 0)),
+                quiet=True),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format)},

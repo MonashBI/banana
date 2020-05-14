@@ -119,7 +119,7 @@ class MRConvert(MRTrix3Base):
         return out_name
 
 
-class MRCatInputSpec(CommandLineInputSpec):
+class MRCatInputSpec(MRTrix3BaseInputSpec):
 
     first_scan = traits.File(
         exists=True, mandatory=True, desc="First input image", argstr="%s",
@@ -147,7 +147,7 @@ class MRCatOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Pre-processed DWI dataset')
 
 
-class MRCat(CommandLine):
+class MRCat(MRTrix3Base):
 
     _cmd = 'mrcat'
     input_spec = MRCatInputSpec
@@ -182,7 +182,7 @@ class MRCat(CommandLine):
 # MR Crop
 # =============================================================================
 
-class MRCropInputSpec(CommandLineInputSpec):
+class MRCropInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
                    desc="Diffusion weighted images with graident info")
 
@@ -209,7 +209,7 @@ class MRCropOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='The resultant image')
 
 
-class MRCrop(CommandLine):
+class MRCrop(MRTrix3Base):
     """
     Extracts the gradient information in MRtrix format from a DWI image
     """
@@ -243,7 +243,7 @@ class MRCrop(CommandLine):
 # MR Pad
 # =============================================================================
 
-class MRPadInputSpec(CommandLineInputSpec):
+class MRPadInputSpec(MRTrix3BaseInputSpec):
     in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
                    desc="Diffusion weighted images with graident info")
 
@@ -272,7 +272,7 @@ class MRPadOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='The resultant image')
 
 
-class MRPad(CommandLine):
+class MRPad(MRTrix3Base):
     """
     Extracts the gradient information in MRtrix format from a DWI image
     """
@@ -306,7 +306,7 @@ class MRPad(CommandLine):
 # MR math
 # =============================================================================
 
-class MRMathInputSpec(CommandLineInputSpec):
+class MRMathInputSpec(MRTrix3BaseInputSpec):
 
     in_files = InputMultiPath(
         File(exists=True), argstr='%s', mandatory=True,
@@ -315,10 +315,10 @@ class MRMathInputSpec(CommandLineInputSpec):
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
 
-    operation = traits.Str(mandatory=True, argstr='%s', position=-2,  # noqa: E501 @UndefinedVariable
+    operation = traits.Str(mandatory=True, argstr='%s', position=-2,
                            desc=("Operation to apply to the files"))
 
-    axis = traits.Int(argstr="-axis %s", position=0,  # noqa: E501 @UndefinedVariable
+    axis = traits.Int(argstr="-axis %s", position=0,
                       desc=("The axis over which to apply the operator"))
 
     quiet = traits.Bool(
@@ -330,7 +330,7 @@ class MRMathOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='The resultant image')
 
 
-class MRMath(CommandLine):
+class MRMath(MRTrix3Base):
     """
     Extracts the gradient information in MRtrix format from a DWI image
     """
@@ -366,7 +366,7 @@ class MRMath(CommandLine):
 # MR math
 # =============================================================================
 
-class MRCalcInputSpec(CommandLineInputSpec):
+class MRCalcInputSpec(MRTrix3BaseInputSpec):
 
     operands = traits.List(
         traits.Any(), argstr='%s',
@@ -395,7 +395,7 @@ class MRCalcOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='The resultant image')
 
 
-class MRCalc(CommandLine):
+class MRCalc(MRTrix3Base):
     """
     Performs a mathematical calculation on the given images
     """
@@ -494,7 +494,7 @@ class ExtractFSLGradients(CommandLine):
 # Extract b0 or DW images
 # =============================================================================
 
-class ExtractDWIorB0InputSpec(CommandLineInputSpec):
+class ExtractDWIorB0InputSpec(MRTrix3BaseInputSpec):
     in_file = traits.Either(
         File, Directory, exists=True, argstr='%s',
         mandatory=True, position=0,
@@ -512,21 +512,21 @@ class ExtractDWIorB0InputSpec(CommandLineInputSpec):
 
     out_ext = traits.Str(desc='Extention of the output file.')
 
-    grad = traits.Str(
-        mandatory=False, argstr='-grad %s',
-        desc=("specify the diffusion-weighted gradient scheme used in the  "
-              "acquisition. The program will normally attempt to use the  "
-              "encoding stored in the image header. This should be supplied  "
-              "as a 4xN text file with each line is in the format [ X Y Z b ],"
-              " where [ X Y Z ] describe the direction of the applied  "
-              "gradient, and b gives the b-value in units of s/mm^2."))
+    # grad = traits.Str(
+    #     mandatory=False, argstr='-grad %s',
+    #     desc=("specify the diffusion-weighted gradient scheme used in the  "
+    #           "acquisition. The program will normally attempt to use the  "
+    #           "encoding stored in the image header. This should be supplied  "
+    #           "as a 4xN text file with each line is in the format [ X Y Z b ],"
+    #           " where [ X Y Z ] describe the direction of the applied  "
+    #           "gradient, and b gives the b-value in units of s/mm^2."))
 
-    grad_fsl = traits.Tuple(
-        traits.Str(desc="gradient directions file (bvec)"),  # noqa: E501 @UndefinedVariable File(exists=True, desc="gradient directions file (bvec)"),
-        traits.Str(desc="b-values (bval)"),  # noqa: E501 @UndefinedVariable
-        argstr='-fslgrad %s %s', mandatory=False,
-        desc=("specify the diffusion-weighted gradient scheme used in the "
-              "acquisition in FSL bvecs/bvals format."))
+    # grad_fsl = traits.Tuple(
+    #     traits.Str(desc="gradient directions file (bvec)"),
+    #     traits.Str(desc="b-values (bval)"),
+    #     argstr='-fslgrad %s %s', mandatory=False,
+    #     desc=("specify the diffusion-weighted gradient scheme used in the "
+    #           "acquisition in FSL bvecs/bvals format."))
 
 
 class ExtractDWIorB0OutputSpec(TraitedSpec):
@@ -534,7 +534,7 @@ class ExtractDWIorB0OutputSpec(TraitedSpec):
     out_file = File(exists=True, desc='Extracted DW or b-zero images')
 
 
-class ExtractDWIorB0(CommandLine):
+class ExtractDWIorB0(MRTrix3Base):
     """
     Extracts the gradient information in MRtrix format from a DWI image
     """
@@ -591,7 +591,7 @@ class MergeFslGrads(BaseInterface):
     """
     input_spec = MergeFslGradsInputSpec
     output_spec = MergeFslGradsOutputSpec
-    
+
     def _run_interface(self, runtime):
         return runtime
 
