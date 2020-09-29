@@ -111,8 +111,19 @@ class StirRequirement(CliRequirement):
         return (1, 0)
 
 
+class AntsRequirement(CliRequirement):
+
+    def detect_version(self):
+        version = super().detect_version()
+        # Handle case where ANTs is built from src and doesn't have a version
+        # string
+        if version.sequence == (0, 0, 0, 0):
+            version = version.requirement.v('2.0')
+        return version
+
+
 mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')
-ants_req = CliRequirement('ants', test_cmd='antsRegistration')
+ants_req = AntsRequirement('ants', test_cmd='antsRegistration')
 dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
 freesurfer_req = FreesurferRequirement('freesurfer', test_cmd='recon-all')
 fix_req = CliRequirement('fix', test_cmd='fix', version_cls=FixVersion)

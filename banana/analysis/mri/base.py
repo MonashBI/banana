@@ -387,7 +387,7 @@ class MriAnalysis(Analysis, metaclass=AnalysisMetaClass):
             raise ArcanaOutputNotProducedException(
                 ("Cannot co-register {} because a reference image "
                  + "'{}' has not been provided").format(
-                    self, pipeline.map_input('coreg_ref')))
+                     self, pipeline.map_input('coreg_ref')))
         return pipeline
 
     def brain_extraction_pipeline(self, **name_maps):

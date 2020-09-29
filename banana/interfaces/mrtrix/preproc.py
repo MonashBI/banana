@@ -50,8 +50,6 @@ class DWIPreprocInputSpec(MRTrix3BaseInputSpec):
         argstr='-eddy_options "%s"', desc='parameters to be passed to eddy')
     no_clean_up = traits.Bool(True, argstr='-nocleanup',
                               desc='Do not delete the temporary folder')
-    temp_dir = Directory(genfile=True, argstr='-tempdir %s',
-                         desc="Specify the temporay directory")
     eddyqc_text = Directory(
         argstr='-eddyqc_text %s',
         desc="Directory to output Eddy QC statistics text files")
@@ -71,7 +69,7 @@ class DWIPreprocOutputSpec(TraitedSpec):
 
 class DWIPreproc(MRTrix3Base):
 
-    _cmd = 'dwipreproc'
+    _cmd = 'dwifslpreproc'
     input_spec = DWIPreprocInputSpec
     output_spec = DWIPreprocOutputSpec
 
@@ -79,19 +77,21 @@ class DWIPreproc(MRTrix3Base):
 
         outputs = self.output_spec().get()
         outputs['out_file'] = os.path.abspath(self._gen_outfilename())
-        outputs['eddy_parameters'] = os.path.abspath(os.path.join(
-            self._gen_tempdir(), 'dwi_post_eddy.eddy_parameters'))
+        qc_dir = None
         if isdefined(self.inputs.eddyqc_text):
-            outputs['eddyqc_text'] = os.path.abspath(self.inputs.eddyqc_text)
+            qc_dir = outputs['eddyqc_text'] = os.path.abspath(
+                self.inputs.eddyqc_text)
         if isdefined(self.inputs.eddyqc_all):
-            outputs['eddyqc_all'] = os.path.abspath(self.inputs.eddyqc_all)
+            qc_dir = outputs['eddyqc_all'] = os.path.abspath(
+                self.inputs.eddyqc_all)
+        if qc_dir:
+            outputs['eddy_parameters'] = os.path.join(
+                qc_dir, 'eddy_parameters')
         return outputs
 
     def _gen_filename(self, name):
         if name == 'out_file':
             gen_name = self._gen_outfilename()
-        elif name == 'temp_dir':
-            gen_name = self._gen_tempdir()
         else:
             assert False
         return gen_name
@@ -108,15 +108,6 @@ class DWIPreproc(MRTrix3Base):
                 extension = ext
             out_name = "{}_preproc{}".format(base, extension)
         return out_name
-
-    def _gen_tempdir(self):
-        if isdefined(self.inputs.temp_dir):
-            temp_dir = self.inputs.temp_dir
-        else:
-            base, _ = split_extension(
-                os.path.basename(self.inputs.in_file))
-            temp_dir = "{}_tempdir".format(base)
-        return temp_dir
 
 
 class DWI2MaskInputSpec(MRTrix3BaseInputSpec):
@@ -172,12 +163,16 @@ class DWI2Mask(MRTrix3Base):
 
 class DWIBiasCorrectInputSpec(MRTrix3BaseInputSpec):
     # Arguments
+    algorithm = traits.Enum(
+        "ants",
+        "fsl",
+        argstr="%s",
+        position=1,
+        mandatory=True,
+        desc="The algorithm to use for bias correction (ants or fsl)")
     mask = File(
         mandatory=True, argstr='-mask %s',
         desc=("Whole brain mask"))
-    method = traits.Str(
-        mandatory=False, argstr='-%s',
-        desc=("Method used to correct for biases (either 'fsl' or 'ants')"))
     bias = File(
         mandatory=False, argstr='-bias %s',
         desc=("Output the estimated bias field"))

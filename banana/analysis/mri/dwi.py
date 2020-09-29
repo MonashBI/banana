@@ -3,7 +3,7 @@ from nipype.interfaces.utility import Merge
 from nipype.interfaces.fsl import (
     TOPUP, ApplyTOPUP, BET, FUGUE, Merge as FslMerge)
 from nipype.interfaces.utility import Merge as merge_lists
-from nipype.interfaces.fsl.epi import PrepareFieldmap, EddyQuad, EddySquad
+from nipype.interfaces.fsl.epi import PrepareFieldmap, EddyQuad  # , EddySquad
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3.utils import BrainMask, TensorMetrics
 from nipype.interfaces.mrtrix3.reconst import (
@@ -83,6 +83,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     desc=("")),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline',
                     desc=("")),
+        FilesetSpec('tensor_residual', nifti_gz_format, 'tensor_pipeline',
+                    desc=("The residual signal after the tensor has been "
+                          "fit to the signal")),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline',
                     desc=("")),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline',
@@ -101,6 +104,9 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     desc=("")),
         FilesetSpec('csf_odf', mrtrix_image_format, 'fod_pipeline',
                     desc=("")),
+        FilesetSpec('wm_odf_residual', nifti_gz_format, 'fod_pipeline',
+                    desc=("The residual signal after the CSD has been applied "
+                          "to the signal")),
         FilesetSpec('norm_intensity', mrtrix_image_format,
                     'intensity_normalisation_pipeline',
                     desc=("")),
@@ -128,10 +134,10 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                         "is disabled. Intra-volume MoCo requires slice timings"
                         " to be found in 'series' header")),
         SwitchSpec('eddy_moco_by_suscep', False,
-                  desc="Use susceptibility to determine motion correction"),
+                   desc="Use susceptibility to determine motion correction"),
         SwitchSpec('force_shelled', False,
-                  desc=("Force eddy to treat gradient encoding scheme as "
-                        "being shelled")),
+                   desc=("Force eddy to treat gradient encoding scheme as "
+                         "being shelled")),
         ParamSpec('eddy_model', 'none',
                   choices=('none', 'linear', 'quadratic'),
                   desc=("Model for how diffusion gradients generate eddy "
@@ -191,7 +197,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
     def multi_tissue(self):
         return self.branch('response_algorithm',
                            ('msmt_5tt', 'dhollander'))
-  
+
     @property
     def fod_algorithm(self):
         if self.parameter('response_algorithm') == 'msmt_5tt':
@@ -319,7 +325,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         preproc_kwargs = {}
 
         if self.provided('grad_dirs') and self.provided('bvalues'):
-                # Gradient merge node
+            # Gradient merge node
             grad_fsl = pipeline.add(
                 "grad_fsl",
                 MergeFslGrads(),
@@ -410,7 +416,6 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 out_file_ext='.mif',
                 eddy_parameters=eddy_parameters,
                 eddyqc_all='qc-all',
-                temp_dir='dwipreproc_tempdir',  # Should be detected ideally
                 nthreads=(self.processor.cpus_per_task
                           if self.processor.cpus_per_task else 0),
                 **preproc_kwargs),
@@ -438,7 +443,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         bias_correct = pipeline.add(
             "bias_correct",
             DWIBiasCorrect(
-                method='ants'),
+                algorithm='ants'),
             inputs={
                 'in_file': (preproc, 'out_file'),
                 'mask': (mask, 'out_file')},
@@ -477,7 +482,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             # reoriented = ('series', nifti_gz_format)
 
         return pipeline
-        
+
     def eddy_qc_summary_pipeline(self, **name_maps):
 
         pipeline = self.new_pipeline(
@@ -496,7 +501,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             requirements=[fsl_req.v('5.0.11')],
             joinfield=['quad_dirs'],
             joinsource=self.SUBJECT_ID)
-        
+
         return pipeline
 
     def brain_extraction_pipeline(self, **name_maps):
@@ -684,18 +689,66 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             name_maps=name_maps)
 
         # Create tensor fit node
-        pipeline.add(
+        tensor = pipeline.add(
             'dwi2tensor',
             FitTensor(
                 out_file='dti.nii.gz',
                 nthreads=(self.processor.cpus_per_task
-                          if self.processor.cpus_per_task else 0)),
+                          if self.processor.cpus_per_task else 0),
+                predicted_signal='predicted.mif'),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
             outputs={
                 'tensor': ('out_file', nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
+        merge = pipeline.add(
+            'merge_operands',
+            Merge(2),
+            inputs={
+                'in1': (self.series_preproc_spec_name, nifti_gz_format),
+                'in2': (tensor, 'predicted_signal')})
+
+        residual = pipeline.add(
+            'residual',
+            MRCalc(
+                operation='subtract'),
+            inputs={
+                'operands': (merge, 'out')})
+
+        merge2 = pipeline.add(
+            'merge_operands2',
+            Merge(1),
+            inputs={
+                'in1': (residual, 'out_file')})
+
+        max_residual = pipeline.add(
+            'max_residual',
+            MRMath(
+                operation='max',
+                axis=3),
+            inputs={
+                'in_files': (merge2, 'out')})
+
+        merge3 = pipeline.add(
+            'merge_operands3',
+            Merge(2),
+            inputs={
+                'in1': (max_residual, 'out_file'),
+                'in2': ('brain_mask', nifti_gz_format)})
+
+        pipeline.add(
+            'apply_mask',
+            MRCalc(
+                operation='multiply',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
+            inputs={
+                'operands': (merge3, 'out')},
+            outputs={
+                'tensor_residual': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
         return pipeline
@@ -804,7 +857,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'avg_response',
             AverageResponse(
                 nthreads=(self.processor.cpus_per_task
-                            if self.processor.cpus_per_task else 0)),
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_files': (join_visits, 'responses')},
             outputs={
@@ -835,7 +888,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             ConstrainedSphericalDeconvolution(
                 algorithm=self.fod_algorithm,
                 nthreads=(self.processor.cpus_per_task
-                          if self.processor.cpus_per_task else 0)),
+                          if self.processor.cpus_per_task else 0),
+                predicted_signal='predicted.mif'),
             inputs={
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'wm_txt': ('wm_response', text_format),
@@ -921,7 +975,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'mask',
             DWI2Mask(
                 nthreads=(self.processor.cpus_per_task
-                        if self.processor.cpus_per_task else 0)),
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'grad_fsl': self.fsl_grads(pipeline),
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format)},
@@ -986,7 +1040,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             'connectome',
             mrtrix3.BuildConnectome(
                 nthreads=(self.processor.cpus_per_task
-                            if self.processor.cpus_per_task else 0)),
+                          if self.processor.cpus_per_task else 0)),
             inputs={
                 'in_file': ('global_tracks', mrtrix_track_format),
                 'in_parc': (aseg_path, 'out_path')},

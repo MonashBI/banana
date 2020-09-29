@@ -3,7 +3,6 @@
         "test"
     ],
     "python.testing.pytestEnabled": true,
-    "python.pythonPath": "/usr/local/opt/python/bin/python3.7",
     "python.testing.unittestEnabled": false,
     "python.testing.nosetestsEnabled": false,
     "python.dataScience.debugJustMyCode": false
