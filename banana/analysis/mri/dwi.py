@@ -1,5 +1,8 @@
+import os
 from logging import getLogger
-from nipype.interfaces.utility import Merge
+import tempfile
+import subprocess as sp
+from nipype.interfaces.utility import Merge, IdentityInterface
 from nipype.interfaces.fsl import (
     TOPUP, ApplyTOPUP, BET, FUGUE, Merge as FslMerge)
 from nipype.interfaces.utility import Merge as merge_lists
@@ -28,7 +31,7 @@ from banana.interfaces.mrtrix import MRConvert, ExtractFSLGradients
 from banana.analysis import AnalysisMetaClass
 from banana.interfaces.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
-from banana.interfaces.dwi import TransformGradients
+from banana.interfaces.dwi import TransformGradients, SelectShell
 from banana.interfaces.utility import AppendPath
 from banana.analysis.base import Analysis
 from banana.bids_ import BidsInputs, BidsAssocInputs
@@ -83,7 +86,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     desc=("")),
         FilesetSpec('tensor', nifti_gz_format, 'tensor_pipeline',
                     desc=("")),
-        FilesetSpec('tensor_residual', nifti_gz_format, 'tensor_pipeline',
+        FilesetSpec('tensor_residual', nifti_gz_format,
+                    'residual_pipeline',
                     desc=("The residual signal after the tensor has been "
                           "fit to the signal")),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline',
@@ -104,9 +108,6 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     desc=("")),
         FilesetSpec('csf_odf', mrtrix_image_format, 'fod_pipeline',
                     desc=("")),
-        FilesetSpec('wm_odf_residual', nifti_gz_format, 'fod_pipeline',
-                    desc=("The residual signal after the CSD has been applied "
-                          "to the signal")),
         FilesetSpec('norm_intensity', mrtrix_image_format,
                     'intensity_normalisation_pipeline',
                     desc=("")),
@@ -161,6 +162,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt'),
                    desc=("")),
+        ParamSpec('num_shells', None, desc=('Number of b-value shells')),
         MriAnalysis.param_spec('bet_method').with_new_choices('mrtrix'),
         SwitchSpec('reorient2std', False,
                    desc=(""))]
@@ -192,6 +194,45 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
     RECOMMENDED_NUM_SESSIONS_FOR_INTENS_NORM = 5
 
     primary_scan_name = 'series'
+
+    def b_shells(self):
+        bpaths = []
+        if 'bvalues' in self.input_names:
+            bpaths = [f.path for f in self.spec('bvalues').slice]
+        elif 'series' in self.input_names:
+            mrtrix_ver = self.environment.satisfy(mrtrix_req.v(3.0))
+            tmp_dir = tempfile.mkdtemp()
+            self.environment.load(mrtrix_ver)
+            try:
+                bpaths = []
+                for fileset in self.spec('series').slice:
+                    bpath = os.path.join(
+                        tmp_dir, '{}__{}'.format(fileset.subject_id,
+                                                    fileset.visit_id))
+                    try:
+                        sp.check_call(
+                            ('mrconvert {} {} -export_grad_fsl {} {}'
+                                .format(fileset.path,
+                                        bpath + '.mif', bpath + '.bvec',
+                                        bpath + '.bval')), shell=True)
+                    except sp.CalledProcessError as e:
+                        logger.error(
+                            ("Could not extract bvalues from series file "
+                                "'%s'"), fileset.path)
+                        raise e
+                    bpaths.append(bpath + '.bval')
+            finally:
+                self.environment.unload(mrtrix_ver)
+        else:
+            raise BananaUsageError(
+                "b-values not provided to study, required to determine "
+                "number of shells")
+        bvalues = set()
+        for bpath in bpaths:
+            with open(bpath) as f:
+                bvalues.update(round(float(b), -1)
+                                for b in f.read().split())
+        return sorted(bvalues)
 
     @property
     def multi_tissue(self):
@@ -369,15 +410,22 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
                 dwi_reference = (extract_first_b0, 'out_file')
 
+            merge_rphase = pipeline.add(
+                'merge_rphase',
+                Merge(2),
+                inputs={
+                    'in1': dwi_reference,
+                    'in2': ('reverse_phase', mrtrix_image_format)})
+
             # Concatenate extracted forward rpe with reverse rpe
             combined_images = pipeline.add(
                 'combined_images',
                 MRCat(
                     nthreads=(self.processor.cpus_per_task
-                              if self.processor.cpus_per_task else 0)),
+                              if self.processor.cpus_per_task else 0),
+                    axis=3),
                 inputs={
-                    'first_scan': dwi_reference,
-                    'second_scan': ('reverse_phase', mrtrix_image_format)},
+                    'input_files': (merge_rphase, 'out')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
             # Create node to extract the phase-encoding direction
@@ -689,7 +737,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             name_maps=name_maps)
 
         # Create tensor fit node
-        tensor = pipeline.add(
+        pipeline.add(
             'dwi2tensor',
             FitTensor(
                 out_file='dti.nii.gz',
@@ -704,11 +752,72 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'tensor': ('out_file', nifti_gz_format)},
             requirements=[mrtrix_req.v('3.0rc3')])
 
-        merge = pipeline.add(
-            'merge_operands',
+        return pipeline
+
+    def residual_pipeline(self, **name_maps):
+        """
+        Fits the apparrent diffusion tensor (DT) to each voxel of the image
+        """
+
+        pipeline = self.new_pipeline(
+            name='residuals',
+            desc=("Calculates the residuals after fitting tensor to each "
+                  "shell"),
+            citations=[],
+            name_maps=name_maps)
+
+        b_shells = set(self.b_shells())
+        b_shells.remove(0.0)
+
+        iterate_shells = pipeline.add(
+            'iterate_shells',
+            IdentityInterface(
+                fields=['b']))
+        iterate_shells.iterables = ('b', b_shells)
+
+        select_shell = pipeline.add(
+            'select_shell',
+            SelectShell(
+                tol=5.0),
+            inputs={
+                'target': (iterate_shells, 'b'),
+                'bvals': ('bvalues', fsl_bvals_format)})
+
+        merge0 = pipeline.add(
+            'merge_axis_n_indices',
+            MergeTuple(2),
+            inputs={
+                'in2': (select_shell, 'indices')})
+        merge0.inputs.in1 = 3
+
+        split_shells = pipeline.add(
+            'split_shells',
+            MRConvert(
+                out_ext='.mif'),
+            inputs={
+                'in_file': (self.series_preproc_spec_name, nifti_gz_format),
+                'grad_fsl': self.fsl_grads(pipeline),
+                'coord': (merge0, 'out')},
+            requirements=[mrtrix_req.v('3.0')])
+
+        # Create tensor fit node
+        tensor = pipeline.add(
+            'dwi2tensor',
+            FitTensor(
+                out_file='dti.nii.gz',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0),
+                predicted_signal='predicted.mif'),
+            inputs={
+                'in_file': (split_shells, 'out_file'),
+                'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0')])
+
+        merge1 = pipeline.add(
+            'merge_tensor_predicted',
             Merge(2),
             inputs={
-                'in1': (self.series_preproc_spec_name, nifti_gz_format),
+                'in1': (split_shells, 'out_file'),
                 'in2': (tensor, 'predicted_signal')})
 
         residual = pipeline.add(
@@ -716,13 +825,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             MRCalc(
                 operation='subtract'),
             inputs={
-                'operands': (merge, 'out')})
-
-        merge2 = pipeline.add(
-            'merge_operands2',
-            Merge(1),
-            inputs={
-                'in1': (residual, 'out_file')})
+                'operands': (merge1, 'out')})
 
         max_residual = pipeline.add(
             'max_residual',
@@ -730,16 +833,16 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 operation='max',
                 axis=3),
             inputs={
-                'in_files': (merge2, 'out')})
+                'in_files': (residual, 'out_file')})
 
         merge3 = pipeline.add(
             'merge_operands3',
             Merge(2),
             inputs={
                 'in1': (max_residual, 'out_file'),
-                'in2': ('brain_mask', nifti_gz_format)})
+                'in2': (self.brain_mask_spec_name, nifti_gz_format)})
 
-        pipeline.add(
+        mask = pipeline.add(
             'apply_mask',
             MRCalc(
                 operation='multiply',
@@ -747,8 +850,20 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                           if self.processor.cpus_per_task else 0)),
             inputs={
                 'operands': (merge3, 'out')},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
+        pipeline.add(
+            'merge_dims',
+            MRCat(
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0),
+                axis=3),
+            inputs={
+                'input_scans': (mask, 'out_file')},
             outputs={
-                'tensor_residual': ('out_file', nifti_gz_format)},
+                'tensor_residual': ('out_file', mrtrix_image_format)},
+            joinsource='iterate_shells',
+            joinfield=['input_scans'],
             requirements=[mrtrix_req.v('3.0rc3')])
 
         return pipeline

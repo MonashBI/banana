@@ -44,3 +44,42 @@ class TransformGradients(BaseInterface):
         else:
             dpath = op.abspath('transformed')
         return dpath
+
+
+class SelectShellInputSpec(TraitedSpec):
+
+    bvals = File(exists=True, mandatory=True,
+                 desc=("The b-values to select from"))
+    target = traits.Float(mandatory=True,
+                          desc="The b-value to select from list")
+    tol = traits.Float(
+        5.0, desc="The tolerance between the target and actual b-values")
+
+
+class SelectShellOutputSpec(TraitedSpec):
+
+    indices = traits.Str(
+        desc="Indices of matching b-values in a comma-delimited list")
+
+
+class SelectShell(BaseInterface):
+    """
+    Selects indices from FSL bval that match the target b-value
+    """
+
+    input_spec = SelectShellInputSpec
+    output_spec = SelectShellOutputSpec
+
+    def _run_interface(self, runtime):
+
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self._outputs().get()
+        with open(self.inputs.bvals) as f:
+            bvals = [float(b) for b in f.read().split()]
+        outputs['indices'] = ','.join(
+            str(i) for i, b in enumerate(bvals)
+            if (abs(b - self.inputs.target) < self.inputs.tol
+                or b < self.inputs.tol))
+        return outputs

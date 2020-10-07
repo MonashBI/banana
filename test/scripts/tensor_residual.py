@@ -20,6 +20,8 @@ analysis = DwiAnalysis(
     enforce_inputs=False,
     parameters={'pe_dir': 'RL'})
 
+# print(analysis.b_shells())
+
 # Generate whole brain tracks and return path to cached dataset
 residual = analysis.data('tensor_residual', derive=True)
 

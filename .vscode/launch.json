@@ -11,6 +11,14 @@
             "program": "${file}",
             "console": "integratedTerminal"
         },
+        
+        {
+            "name": "Python: Tensor residual",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/scripts/tensor_residual.py",
+            "console": "integratedTerminal"
+        },
         {
             "name": "Python: MoCo Test",
             "type": "python",

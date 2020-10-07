@@ -28,8 +28,8 @@ class MRConvertInputSpec(MRTrix3BaseInputSpec):
         desc=("The extension (and therefore the file format) to use when the "
               "output file path isn't provided explicitly"))
     coord = traits.Tuple(
-        traits.Int(), traits.Int(),
-        mandatory=False, argstr='-coord %d %d',
+        traits.Int(), traits.Either(traits.Int(), traits.Str()),
+        mandatory=False, argstr='-coord %d %s',
         desc=("extract data from the input image only at the coordinates "
               "specified."))
     vox = traits.Str(
@@ -121,13 +121,9 @@ class MRConvert(MRTrix3Base):
 
 class MRCatInputSpec(MRTrix3BaseInputSpec):
 
-    first_scan = traits.File(
-        exists=True, mandatory=True, desc="First input image", argstr="%s",
-        position=-3)
-
-    second_scan = traits.File(
-        exists=True, mandatory=True, desc="Second input image", argstr="%s",
-        position=-2)
+    input_scans = InputMultiPath(
+        traits.File(exists=True), mandatory=True,
+        desc="First input image", argstr="%s", position=-2)
 
     out_file = traits.File(
         genfile=True, desc="Output filename", position=-1, hash_files=False,
@@ -169,12 +165,11 @@ class MRCat(MRTrix3Base):
         if isdefined(self.inputs.out_file):
             out_name = self.inputs.out_file
         else:
-            first, ext = split_extension(
-                os.path.basename(self.inputs.first_scan))
-            second, _ = split_extension(
-                os.path.basename(self.inputs.second_scan))
-            out_name = os.path.join(
-                os.getcwd(), "{}_{}_concat{}".format(first, second, ext))
+            out_name = os.path.abspath(
+                '{}_concat{}'.format(
+                    '_'.join(split_extension(os.path.basename(s))[0]
+                             for s in self.inputs.input_scans),
+                    split_extension(self.inputs.input_scans[0])[-1]))
         return out_name
 
 
@@ -309,8 +304,9 @@ class MRPad(MRTrix3Base):
 class MRMathInputSpec(MRTrix3BaseInputSpec):
 
     in_files = InputMultiPath(
-        File(exists=True), argstr='%s', mandatory=True,
-        position=3, desc="Diffusion weighted images with graident info")
+        File(exists=True),
+        argstr='%s', mandatory=True, position=3,
+        desc="Diffusion weighted images with graident info")
 
     out_file = File(genfile=True, argstr='%s', position=-1,
                     desc="Extracted DW or b-zero images")
