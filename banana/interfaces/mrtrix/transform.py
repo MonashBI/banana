@@ -131,6 +131,35 @@ class MRThresholdInputSpec(MRTrix3BaseInputSpec):
                    desc='input files')
     out_file = File(genfile=True, argstr='%s', desc=(""), position=-1)
 
+    abs = traits.Float(desc="specify threshold value as absolute intensity",
+                       argstr='-abs %s')
+
+    percentile = traits.Float(
+        desc=("determine threshold based on some percentile of the image "
+              "intensity"), argstr='-percentile %s')
+
+    top = traits.Float(
+        desc=("determine threshold that will result in selection of some "
+              "number of top-valued voxels"), argstr='-top %s')
+
+    bottom = traits.Float(
+        desc=("determine & apply threshold resulting in selection of some "
+              "number of bottom-valued voxels (note: implies threshold "
+              "application operator of \"le\" unless otherwise specified"),
+        argstr='-bottom %s')
+
+    allvolumes = traits.Bool(
+        desc=("compute a single threshold for all image volumes, rather than "
+              "an individual threshold per volume"), argstr='-allvolumes')
+
+    ignorezero = traits.Bool(
+        desc=("ignore zero-valued input values during threshold "
+              "determination"), argstr='-ignorezero')
+
+    mask = File(
+        desc=("compute the threshold based only on values within an input "
+              "mask image"), argstr='-mask %s', exists=True, mandatory=False)
+
 
 class MRThresholdOutputSpec(TraitedSpec):
     out_file = File(exists=True, desc=(""))

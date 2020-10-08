@@ -852,8 +852,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'operands': (merge3, 'out')},
             requirements=[mrtrix_req.v('3.0rc3')])
 
-        pipeline.add(
-            'merge_dims',
+        merge_shells = pipeline.add(
+            'merge_shells',
             MRCat(
                 nthreads=(self.processor.cpus_per_task
                           if self.processor.cpus_per_task else 0),
@@ -865,6 +865,20 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             joinsource='iterate_shells',
             joinfield=['input_scans'],
             requirements=[mrtrix_req.v('3.0rc3')])
+
+        # mean = pipeline.add(
+        #     'mean',
+        #     MRMath(
+        #         operation='mean'),
+        #     inputs={
+        #         'input_files': (merge_shells, 'out_file')})
+
+        # stddev = pipeline.add(
+        #     'stddev',
+        #     MRMath(
+        #         operation='std'),
+        #     inputs={
+        #         'input_files': (merge_shells, 'out_file')})
 
         return pipeline
 
