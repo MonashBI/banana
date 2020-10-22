@@ -2,6 +2,7 @@ import os
 import os.path as op
 import logging
 import json
+import neurodocker
 from arcana.data import Fileset, Field
 from arcana.pipeline.provenance import Record
 from arcana.exceptions import (
@@ -366,11 +367,31 @@ class XnatCSRepo(LocalFileSystemRepo):
 
     @classmethod
     def dockerfile(cls, name, analysis_cls, derivatives, desc, docker_org,
-                   docker_index="https://index.docker.io/v1/"):
+                   maintainer, docker_index="https://index.docker.io/v1/"):
         image_name = docker_org + '/' + name
         cmd = cls.command_json(name, analysis_cls, derivatives, desc,
                                image_name, docker_index=docker_index)
-        
+        cmd_label = json.dumps(cmd).replace('"', r'\"').replace('$', r'\$')
+        neurodocker_specs = {
+            "pkg_manager": "apt",
+            "instructions": [
+                ["base", "debian:stretch"],
+                ["install", ["git", "vim"]],
+                ["mrtrix3", {"version": "3.0_RC3"}],
+                ["miniconda", {
+                    "create_env": "arcana",
+                    "conda_install": [
+                        "python=3.8",
+                        "numpy",
+                        "traits"],
+                    "pip_install": [
+                        "git+https://github.com/MonashBI/arcana.git@master",
+                        "git+https://github.com/MonashBI/banana.git@master"]}],
+                ["fsl", {"version": "6.0.3"}],
+                ["dcm2niix", {"version": "latest", "method": "source"}],
+                ["label", {"maintainer": maintainer}],
+                ["label", {"org.nrg.commands": '[{' + cmd_label + '}]'}]]}
+        return neurodocker.Dockerfile(neurodocker_specs).render()
 
 
 

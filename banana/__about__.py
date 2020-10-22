@@ -12,7 +12,8 @@ install_requires = ['arcana>=0.6.1',
                     'pybids>=0.9.1',
                     'scipy>=1.1.0',
                     'sklearn',
-                    'matplotlib']
+                    'matplotlib',
+                    'neurodocker>=0.7.0']
 
 tests_require = [
     'wget>=3.2']
