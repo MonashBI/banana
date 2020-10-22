@@ -81,7 +81,7 @@ class DeriveCmd():
     def parser(cls):
         parser = ArgumentParser(prog='banana derive',
                                 description=cls.desc)
-        parser.add_argument('dataset_path',
+        parser.add_argument('dataset_name',
                             help=("Either the path to the dataset if of "
                                   "'bids' or 'basic' types, or the name of the"
                                   " project ID for 'xnat' type"))
@@ -92,9 +92,9 @@ class DeriveCmd():
                                   "under (e.g. parenthood)"))
         parser.add_argument('derivatives', nargs='+',
                             help=("The names of the derivatives to generate"))
-        parser.add_argument('--dataset', nargs='+', default=['bids'],
+        parser.add_argument('--repository', nargs='+', default=['bids'],
                             metavar='ARG',
-                            help=("Specify the dataset type and any options"
+                            help=("Specify the repository type and any options"
                                   " to be passed to it. First argument "))
         parser.add_argument('--output_dataset', '-o', nargs='+',
                             metavar='ARG', default=None,
@@ -107,7 +107,7 @@ class DeriveCmd():
         parser.add_argument('--processor', default=['multi'], nargs='+',
                             metavar='ARG',
                             help=("The type of processor to use plus arguments"
-                                  "used to initate it. First arg is the type "
+                                  " used to initate it. First arg is the type "
                                   "(one of 'single', 'multi', 'slurm'). "
                                   "Additional arguments depend on type: "
                                   "single [], multi [NUM_PROCS], slurm ["
@@ -125,15 +125,27 @@ class DeriveCmd():
         parser.add_argument('--subject_ids', nargs='+', default=None,
                             metavar='ID',
                             help=("The subject IDs to include in the analysis."
-                                  " If a single value with a '/' in it is "
+                                  " If a single value with a '/' is "
                                   "provided then it is interpreted as a text "
                                   "file containing a list of IDs"))
         parser.add_argument('--visit_ids', nargs='+', default=None,
                             metavar='ID',
-                            help=("The visit IDs to include in the analysis"
-                                  "If a single value with a '/' in it is "
+                            help=("The visit IDs to include in the analysis. "
+                                  "If a single value with a '/' is "
                                   "provided then it is interpreted as a text "
                                   "file containing a list of IDs"))
+        parser.add_argument('--session_ids', nargs='+', default=None,
+                            help=("The session IDs to analyse. "
+                                  "If a single value with a '/' is "
+                                  "provided then it is interpreted as a text "
+                                  "file containing a list of IDs. "
+                                  "Note that session IDs doesn't restrict the "
+                                  "breadth of analysis (like subject_ids and "
+                                  "visit ids) just the sessions to be"
+                                  "processed in this run, and if there are "
+                                  "\"summary\" derivitives to be derived "
+                                  "then upstream derivatives will be derived "
+                                  "across the dataset."))
         parser.add_argument('--scratch', type=str, default=None,
                             metavar='PATH',
                             help=("The scratch directory to use for the "
@@ -207,6 +219,15 @@ class DeriveCmd():
                 visit_ids = f.read().split()
         else:
             visit_ids = args.visit_ids
+
+        # Load visit_ids from file if single value is provided with
+        # a '/' in the string
+        if (args.session_ids is not None and len(args.session_ids)
+                and '/' in args.session_ids[0]):
+            with open(args.session_ids[0]) as f:
+                session_ids = f.read().split()
+        else:
+            session_ids = args.visit_ids            
 
         def init_dataset(dataset_path, dataset_type, option_str, dataset_args,
                          create_root=False, **kwargs):
@@ -372,7 +393,7 @@ class DeriveCmd():
             spec.cache()
 
         # Generate data
-        analysis.derive(args.derivatives)
+        analysis.derive(args.derivatives, session_ids=session_ids)
 
         logger.info("Generated derivatives for '{}'".format(args.derivatives))
 

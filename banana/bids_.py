@@ -191,15 +191,15 @@ class BidsRepo(LocalFileSystemRepo):
             os.makedirs(sess_dir, stat.S_IRWXU | stat.S_IRWXG)
         return op.join(sess_dir, fname)
 
-    def _extract_ids_from_path(self, depth, path_parts, *args, **kwargs):  # noqa: E501 @UnusedVariable
+    def _extract_ids_from_path(self, depth, path_parts, *args, **kwargs):
         """
         Overrides method in LocalFileSystemRepo class to move the analysis
         directory to be the outer directory (instead of the inner), and ignore
         all data not in the derivatives directory.
         """
         if (len(path_parts) != (depth + 2)
-            or path_parts[0] != 'derivatives'
-            or not path_parts[2].startswith('sub-')
+                or path_parts[0] != 'derivatives'
+                or not path_parts[2].startswith('sub-')
                 or (depth == 2 and not path_parts[3].startswith('ses-'))):
             return None
         from_analysis, subj = path_parts[1:3]

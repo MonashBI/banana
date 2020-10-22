@@ -17,7 +17,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from .__about__ import __version__, __authors__
 import os
 
 # Import all objects from Arcana used to design and apply Banana studies
@@ -28,7 +27,9 @@ from arcana import (
     OutputFieldSpec, FieldSlice, SingleProc, MultiProc, SlurmProc, StaticEnv,
     Dataset, ModulesEnv, LocalFileSystemRepo, XnatRepo)
 
+from .__about__ import __version__, __authors__
 from .bids_ import BidsDataset
+from .repository.xnat_cs import XnatCSRepo
 
 
 # Import all Analysis classes into package root
