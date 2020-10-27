@@ -208,17 +208,17 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 for fileset in self.spec('series').slice:
                     bpath = os.path.join(
                         tmp_dir, '{}__{}'.format(fileset.subject_id,
-                                                    fileset.visit_id))
+                                                 fileset.visit_id))
                     try:
                         sp.check_call(
                             ('mrconvert {} {} -export_grad_fsl {} {}'
-                                .format(fileset.path,
-                                        bpath + '.mif', bpath + '.bvec',
-                                        bpath + '.bval')), shell=True)
+                             .format(fileset.path,
+                                     bpath + '.mif', bpath + '.bvec',
+                                     bpath + '.bval')), shell=True)
                     except sp.CalledProcessError as e:
                         logger.error(
                             ("Could not extract bvalues from series file "
-                                "'%s'"), fileset.path)
+                             "'%s'"), fileset.path)
                         raise e
                     bpaths.append(bpath + '.bval')
             finally:
@@ -231,7 +231,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         for bpath in bpaths:
             with open(bpath) as f:
                 bvalues.update(round(float(b), -1)
-                                for b in f.read().split())
+                               for b in f.read().split())
         return sorted(bvalues)
 
     @property

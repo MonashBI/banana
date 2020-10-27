@@ -2,6 +2,8 @@ import os
 import os.path as op
 import logging
 import json
+import tempfile
+from unittest.mock import Mock
 import neurodocker
 from arcana.data import Fileset, Field
 from arcana.pipeline.provenance import Record
@@ -255,16 +257,8 @@ class XnatCSRepo(LocalFileSystemRepo):
                     "replacement-key": "#SESSION_ID#"
                 },
                 {
-                    "name": "subject-id",
-                    "description": "",
-                    "type": "string",
-                    "required": True,
-                    "user-settable": False,
-                    "replacement-key": "#SUBJECT_ID#"
-                },
-                {
                     "name": "project-uri",
-                    "description": "Project URI used in any REST calls",
+                    "description": "Project URI used in REST calls",
                     "type": "string",
                     "required": True,
                     "user-settable": False,
@@ -331,7 +325,7 @@ class XnatCSRepo(LocalFileSystemRepo):
                             "derived-from-wrapper-input": "session"
                         },
                         {
-                            "name": "subject-id",
+                            "name": "project-uri",
                             "type": "string",
                             "required": True,
                             "load-children": True,
@@ -347,7 +341,7 @@ class XnatCSRepo(LocalFileSystemRepo):
                             "via-wrapup-command": None,
                             "as-a-child-of": "session",
                             "type": "Resource",
-                            "label": name,
+                            "label": "Derivatives",
                             "format": None
                         },
                         {
@@ -356,7 +350,7 @@ class XnatCSRepo(LocalFileSystemRepo):
                             "via-wrapup-command": None,
                             "as-a-child-of": "session",
                             "type": "Resource",
-                            "label": "{}-work".format(name),
+                            "label": "Work",
                             "format": None
                         }
                     ]
@@ -367,11 +361,44 @@ class XnatCSRepo(LocalFileSystemRepo):
 
     @classmethod
     def dockerfile(cls, name, analysis_cls, derivatives, desc, docker_org,
-                   maintainer, docker_index="https://index.docker.io/v1/"):
+                   maintainer, file_inputs, field_inputs, switches=None,
+                   **kwargs):
+        """
+        Generate a Dockerfile for a XNAT CS container from an Analysis class
+        and a list of derivatives.
+
+        Parameters
+        ----------
+        name : str
+            Name for pipeline
+        analysis_cls : Analysis
+            The Analysis class to use on the data
+        derivatives : list of str
+            The derivatives to generate from the analysis class
+        desc : str
+            A description of the pipeline
+        docker_org : str
+            Name of the Docker org the image will be uploaded to
+        maintainer : str
+            Name and email of the maintainer of the pipeline
+
+        Returns
+        -------
+        str
+            A rendered Dockerfile
+        """
         image_name = docker_org + '/' + name
         cmd = cls.command_json(name, analysis_cls, derivatives, desc,
-                               image_name, docker_index=docker_index)
+                               image_name, **kwargs)
         cmd_label = json.dumps(cmd).replace('"', r'\"').replace('$', r'\$')
+
+        # Create a dummy class in order to access the pipelines required
+        # for 
+        dummpy_inputs = analysis_cls.acquired_data_specs()
+        dummy_dir = tempfile.mkdtemp()
+
+        dummy = analysis_cls('dummy', dummy_dir, Mock(), )
+
         neurodocker_specs = {
             "pkg_manager": "apt",
             "instructions": [
