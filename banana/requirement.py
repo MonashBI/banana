@@ -1,4 +1,3 @@
-from future.utils import PY3
 import os
 import os.path as op
 import platform
@@ -81,14 +80,14 @@ class FreesurferRequirement(CliRequirement):
 
 class MrtrixRequirement(CliRequirement):
 
-    def detect_version_str(self):
+    def detect_version_str(self, **kwargs):
         version_str = super().detect_version_str()
         return re.match(r'== mrinfo (.*) ==', version_str).group(1)
 
 
 class AfniRequirement(CliRequirement):
 
-    def detect_version_str(self):
+    def detect_version_str(self, **kwargs):
         version_str = super().detect_version_str()
         return re.match(r'.*AFNI_([\d\.]+)', version_str).group(1)
 
@@ -102,9 +101,28 @@ class FixVersion(Version):
         return '{}.{}'.format(self._seq[0], ''.join(self._seq[1:]))
 
 
+class MrtrixVersion(Version):
+
+    def __str__(self):
+        s = '.'.join(str(i) for i in self._seq)
+        if self._prerelease is not None:
+            s += '_{}{}'.format(self._prerelease[0].upper(),
+                                self._prerelease[1])
+        return s
+
+
+class AntsVersion(Version):
+
+    def parse(self, version):
+        parsed = super().parse(version)
+        # ensure sequence is of length 3
+        seq = parsed[0] + (0,) * (3 - len(parsed[0]))
+        return (seq,) + parsed[1:]
+
+
 class StirRequirement(CliRequirement):
 
-    def detect_version(self):
+    def detect_version(self, **kwargs):
         logger.warning(
             "Can't automatically detect version of STIR as it isn't saved in "
             "the build process")
@@ -113,7 +131,7 @@ class StirRequirement(CliRequirement):
 
 class AntsRequirement(CliRequirement):
 
-    def detect_version(self):
+    def detect_version(self, **kwargs):
         version = super().detect_version()
         # Handle case where ANTs is built from src and doesn't have a version
         # string
@@ -122,9 +140,14 @@ class AntsRequirement(CliRequirement):
         return version
 
 
-mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo')
-ants_req = AntsRequirement('ants', test_cmd='antsRegistration')
-dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix')
+mrtrix_req = MrtrixRequirement('mrtrix', test_cmd='mrinfo',
+                               neurodocker_name='mrtrix3',
+                               max_neurodocker_version='3.0rc3',
+                               version_cls=MrtrixVersion)
+ants_req = AntsRequirement('ants', test_cmd='antsRegistration',
+                           version_cls=AntsVersion)
+dcm2niix_req = CliRequirement('dcm2niix', test_cmd='dcm2niix',
+                              neurodocker_method='source')
 freesurfer_req = FreesurferRequirement('freesurfer', test_cmd='recon-all')
 fix_req = CliRequirement('fix', test_cmd='fix', version_cls=FixVersion)
 afni_req = AfniRequirement('afni', test_cmd='afni')

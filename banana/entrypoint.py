@@ -1,20 +1,27 @@
 import sys
 import os.path as op
 import os
+import subprocess as sp
+import tempfile
+from collections import defaultdict
+import logging
+import json
+from pkgutil import iter_modules
+from multiprocessing import cpu_count
 from argparse import ArgumentParser
 from importlib import import_module
 from setuptools import find_packages
-from pkgutil import iter_modules
-from multiprocessing import cpu_count
-from arcana.utils import parse_value
-from banana.utils.testing import AnalysisTester, PipelineTester
+import neurodocker
+from arcana.data import Fileset, Field
+from arcana.utils import parse_value, wrap_text
+from arcana.exceptions import ArcanaRequirementVersionsError
+#from banana.utils.testing import AnalysisTester, PipelineTester
 from banana.exceptions import BananaUsageError
 from banana import (
     FilesetFilter, FieldFilter, MultiProc, SingleProc, SlurmProc, StaticEnv,
-    ModulesEnv, LocalFileSystemRepo, BidsDataset, XnatRepo, Analysis,
+    ModulesEnv, BidsDataset, XnatRepo, XnatCSRepo, Analysis,
     MultiAnalysis, Dataset)
-import logging
-from arcana.utils import wrap_text
+from banana.requirement import mrtrix_req, dcm2niix_req
 from banana.__about__ import __version__
 
 logger = logging.getLogger('banana')
@@ -204,7 +211,7 @@ class DeriveCmd():
 
         # Load subject_ids from file if single value is provided with
         # a '/' in the string
-        if (args.subject_ids is not None and len(args.subject_ids)
+        if (args.subject_ids is not None and args.subject_ids
                 and '/' in args.subject_ids[0]):
             with open(args.subject_ids[0]) as f:
                 subject_ids = f.read().split()
@@ -213,7 +220,7 @@ class DeriveCmd():
 
         # Load visit_ids from file if single value is provided with
         # a '/' in the string
-        if (args.visit_ids is not None and len(args.visit_ids)
+        if (args.visit_ids is not None and args.visit_ids
                 and '/' in args.visit_ids[0]):
             with open(args.visit_ids[0]) as f:
                 visit_ids = f.read().split()
@@ -222,12 +229,12 @@ class DeriveCmd():
 
         # Load visit_ids from file if single value is provided with
         # a '/' in the string
-        if (args.session_ids is not None and len(args.session_ids)
+        if (args.session_ids is not None and args.session_ids
                 and '/' in args.session_ids[0]):
             with open(args.session_ids[0]) as f:
                 session_ids = f.read().split()
         else:
-            session_ids = args.visit_ids            
+            session_ids = args.visit_ids
 
         def init_dataset(dataset_path, dataset_type, option_str, dataset_args,
                          create_root=False, **kwargs):
@@ -395,7 +402,7 @@ class DeriveCmd():
         # Generate data
         analysis.derive(args.derivatives, session_ids=session_ids)
 
-        logger.info("Generated derivatives for '{}'".format(args.derivatives))
+        logger.info("Generated derivatives for '%s'", args.derivatives)
 
 
 # class TestGenCmd():
@@ -494,16 +501,14 @@ class DeriveCmd():
 
 class GenRefDataCmd():
 
-    desc = ("Generate reference data for unit-tests")
+    desc = ("Generate reference data for a test class, which "
+            "future tests will be checked against")
 
     DEFAULT_TEST_ROOT = op.join(op.dirname(__file__), '..', 'test')
 
     @classmethod
     def parser(cls):
-        parser = ArgumentParser(
-            prog='banana gen-ref',
-            description=("Generate reference data for a test class, which "
-                         "future tests will be checked against"))
+        parser = ArgumentParser(prog='banana gen-ref', description=cls.desc)
         parser.add_argument('test_class',
                             help=("The path to the test class to test relative"
                                   " to the root test directory (use '.' to "
@@ -590,6 +595,179 @@ class GenRefDataCmd():
 
         test_cls().generate_reference_data(
             *args.specs, processor=processor, environment=environment)
+
+
+
+class BoxCmd():
+
+    desc = ("Create a containerised pipeline from a given set of inputs to "
+            "generate specified derivatives")
+
+    @classmethod
+    def parser(cls):
+        parser = ArgumentParser(prog='banana box', description=cls.desc)
+        parser.add_argument('analysis_class',
+                            help=("The path to the analysis class"))
+        parser.add_argument('image_name',
+                            help=("The name of the Docker image to generate"
+                                  "(with org separated by '/')"))
+        parser.add_argument('derivatives', nargs='+',
+                            help=("The derivatives to generate"))
+        parser.add_argument('--input', '-i', action='append', default=[],
+                            nargs='+', metavar=('NAME', 'FILE_OR_VAR'),
+                            help=("The inputs to provide to the pipeline"))
+        parser.add_argument('--switch', '-s', action='append',
+                            nargs=2, metavar=('NAME', 'VAR'),
+                            help=("Switches provided to the analysis"))
+        parser.add_argument('--xnat', action='store_true',
+                            help="Insert XNAT CS command JSON as a label")
+        parser.add_argument('--maintainer', '-m',
+                            help="Maintainer of the pipeline")
+        parser.add_argument('--description', '-d', default="Not provided",
+                            help="A description of what the pipeline does")
+        parser.add_argument('--build', '-b', action='store_true',
+                            default=False,
+                            help="Build the generated Dockerfile")
+        parser.add_argument('--upload', '-u', default=None,
+                            help=("Upload the generated dockerfile (requires "
+                                  "'-b') to the provided docker index"))
+        parser.add_argument('--version', '-v', default='1.0',
+                            help="The version of the pipeline")
+        parser.add_argument('--file_convertors', action='store_true',
+                            default=False)
+        parser.add_argument('--out_dir', '-o', default=None,
+                            help=("The directory to save the Dockerfile to. "
+                                  "If not provided then a temp dir will be "
+                                  "used instead"))
+        return parser
+
+    @classmethod
+    def run(cls, args):
+
+        set_loggers([('banana', 'INFO')])
+
+        analysis_class = resolve_class(args.analysis_class)
+
+        inputs = []
+        for inpt in args.input:
+            if len(inpt) == 1:
+                inputs.append(inpt[0])
+            elif len(inpt) == 2:
+                name, var = inpt
+                spec = analysis_class.data_spec(name)
+                if spec.is_fileset:
+                    inputs.append((name, Fileset.from_path(var)))
+                else:
+                    inputs.append((name, Field(name, value=var)))
+            else:
+                raise BananaUsageError(
+                    "Inputs should either a single name or a "
+                    "name-(filename|value) pair, not ({})".format(inpt))
+
+        switches = {}
+        for name, val in args.switch:
+            spec = analysis_class.param_spec(name)
+            switches[name] = spec.dtype(val)
+
+        mock_analysis = analysis_class.mock(inputs=inputs,
+                                            switches=switches)
+
+        pipeline_stack = mock_analysis.pipeline_stack(*args.derivatives)
+
+        requirements = defaultdict(set)
+        for pipeline in pipeline_stack:
+            for node in pipeline.nodes:
+                for ver in node.requirements:
+                    requirements[ver.requirement].add(ver)
+
+        # Add requirements needed for file conversions
+        requirements[mrtrix_req].add(mrtrix_req.v('3.0rc3'))
+        requirements[dcm2niix_req].add(dcm2niix_req.v('1.0.20200331'))
+
+        versions = []
+        for req, req_versions in requirements.items():
+            min_ver, max_ver = req.reconcile(req_versions)
+            if req.max_neurodocker_version is not None:
+                if req.max_neurodocker_version < min_ver:
+                    raise ArcanaRequirementVersionsError(
+                        "Minium required version '{}' is greater than max "
+                        "neurodocker version ({})".format(
+                            min_ver, req.max_neurodocker_version))
+                max_ver = req.max_neurodocker_version
+            if max_ver is not None:
+                version = max_ver
+            else:
+                # This is where it would be good to know store the latest
+                # supported version of each tool so we could use the newest
+                # version instead of the min version (i.e. the only one we 
+                # know about here
+                version = min_ver
+            versions.append(version)
+
+        labels = {}
+
+        if args.maintainer:
+            labels["maintainer"] = args.maintainer
+
+        if args.xnat:
+            if args.upload:
+                docker_index = args.upload
+            else:
+                docker_index = "https://index.docker.io/v1/"
+            cmd = XnatCSRepo.command_json(
+                name, analysis_class, args.derivatives, args.description,
+                args.image_name, version=args.version,
+                docker_index=docker_index)
+            cmd_label = json.dumps(cmd).replace('"', r'\"').replace('$', r'\$')
+            labels['org.nrg.commands'] = '[{' + cmd_label + '}]'
+
+        instructions = [
+            ["base", "debian:stretch"],
+            ["install", ["git", "vim"]],
+            ["miniconda", {
+                "create_env": "arcana",
+                "conda_install": [
+                    "python=3.8",
+                    "numpy",
+                    "traits"],
+                "pip_install": [
+                    "git+https://github.com/MonashBI/arcana.git@master",
+                    "git+https://github.com/MonashBI/banana.git@master"]}]]
+
+        for version in versions:
+            props = {'version': str(version)}
+            if version.requirement.neurodocker_method:
+                props['method'] = version.requirement.neurodocker_method
+            instructions.append(
+                [version.requirement.neurodocker_name, props])
+
+        if labels:
+            instructions.append(["label", labels])
+
+        neurodocker_specs = {
+            "pkg_manager": "apt",
+            "instructions": instructions}
+
+        dockerfile = neurodocker.Dockerfile(neurodocker_specs).render()
+
+        if args.out_dir is None:
+            out_dir = tempfile.mkdtemp()
+        else:
+            out_dir = args.out_dir
+
+        os.makedirs(out_dir, exist_ok=True)
+        out_file = os.path.join(out_dir, 'Dockerfile')
+        with open(out_file, 'w') as f:
+            f.write(dockerfile)
+
+        logger.info("Dockerfile generated at %s", out_file)
+
+        if args.build:
+            sp.check_call('docker build -t {} .'.format(args.image_name),
+                          cwd=out_dir, shell=True)
+
+        if args.upload:
+            sp.check_call('docker push {}'.format(args.image_name))
 
 
 class HelpCmd():
@@ -709,12 +887,13 @@ class MainCmd():
         'derive': DeriveCmd,
         # 'test-gen': TestGenCmd,
         'gen-ref': GenRefDataCmd,
+        'box': BoxCmd,
         'help': HelpCmd}
 
     @classmethod
     def parser(cls):
         usage = "banana <command> [<args>]\n\nAvailable commands:"
-        desc_start = max(len(k) for k in cls.commands.keys()) + DEFAULT_SPACER
+        desc_start = max(len(k) for k in cls.commands) + DEFAULT_SPACER
         for name, cmd_cls in cls.commands.items():
             spaces = ' ' * (desc_start - len(name))
             usage += '\n{}{}{}{}'.format(

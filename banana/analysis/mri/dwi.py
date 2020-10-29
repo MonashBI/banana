@@ -200,7 +200,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         if 'bvalues' in self.input_names:
             bpaths = [f.path for f in self.spec('bvalues').slice]
         elif 'series' in self.input_names:
-            mrtrix_ver = self.environment.satisfy(mrtrix_req.v(3.0))
+            mrtrix_ver = self.environment.satisfy(mrtrix_req.v('3.0_RC3'))
             tmp_dir = tempfile.mkdtemp()
             self.environment.load(mrtrix_ver)
             try:
@@ -750,7 +750,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
             outputs={
                 'tensor': ('out_file', nifti_gz_format)},
-            requirements=[mrtrix_req.v('3.0rc3')])
+            requirements=[mrtrix_req.v('3.0_RC3')])
 
         return pipeline
 
@@ -798,7 +798,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                 'in_file': (self.series_preproc_spec_name, nifti_gz_format),
                 'grad_fsl': self.fsl_grads(pipeline),
                 'coord': (merge0, 'out')},
-            requirements=[mrtrix_req.v('3.0')])
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         # Create tensor fit node
         tensor = pipeline.add(
@@ -811,7 +811,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             inputs={
                 'in_file': (split_shells, 'out_file'),
                 'in_mask': (self.brain_mask_spec_name, nifti_gz_format)},
-            requirements=[mrtrix_req.v('3.0')])
+            requirements=[mrtrix_req.v('3.0rc3')])
 
         merge1 = pipeline.add(
             'merge_tensor_predicted',

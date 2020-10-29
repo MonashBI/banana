@@ -11,7 +11,26 @@
             "program": "${file}",
             "console": "integratedTerminal"
         },
-        
+        {
+            "name": "Python: Box",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/banana/entrypoint.py",
+            "console": "integratedTerminal",
+            "args": [
+                "box",
+                "mri.DwiAnalysis",
+                "ais/dwi_qa:latest",
+                "tensor_residual",
+                "--xnat",
+                "-i", "series",
+                "-i", "reverse_phase",
+                "-i", "bvalues", "${workspaceFolder}/test/data/bvals.bval",
+                "-i", "grad_dirs", "${workspaceFolder}/test/data/bvecs.bvec",
+                "-s", "response_algorithm", "dhollander",
+                "--build"
+            ]
+        },
         {
             "name": "Python: Tensor residual",
             "type": "python",
