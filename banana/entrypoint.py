@@ -152,7 +152,8 @@ class DeriveCmd():
                                   "processed in this run, and if there are "
                                   "\"summary\" derivitives to be derived "
                                   "then upstream derivatives will be derived "
-                                  "across the dataset."))
+                                  "across the dataset "
+                                  "(i.e. for other sessions as well)."))
         parser.add_argument('--scratch', type=str, default=None,
                             metavar='PATH',
                             help=("The scratch directory to use for the "
@@ -679,9 +680,10 @@ class BoxCmd():
                     "name-(filename|value) pair, not ({})".format(inpt))
 
         switches = {}
-        for name, val in args.switch:
-            spec = analysis_class.param_spec(name)
-            switches[name] = spec.dtype(val)
+        if args.switch:
+            for name, val in args.switch:
+                spec = analysis_class.param_spec(name)
+                switches[name] = spec.dtype(val)
 
         mock_analysis = analysis_class.mock(inputs=inputs,
                                             switches=switches)
@@ -739,16 +741,7 @@ class BoxCmd():
 
         instructions = [
             ["base", "debian:stretch"],
-            ["install", ["git", "vim"]],
-            ["miniconda", {
-                "create_env": "arcana",
-                "conda_install": [
-                    "python=3.8",
-                    "numpy",
-                    "traits"],
-                "pip_install": [
-                    "git+https://github.com/MonashBI/arcana.git@master",
-                    "git+https://github.com/MonashBI/banana.git@master"]}]]
+            ["install", ["git", "vim"]]]
 
         for version in versions:
             props = {'version': str(version)}
@@ -759,6 +752,17 @@ class BoxCmd():
 
         if labels:
             instructions.append(["label", labels])
+
+        instructions.append(
+            ["miniconda", {
+                "create_env": "arcana",
+                "conda_install": [
+                    "python=3.8",
+                    "numpy",
+                    "traits"],
+                "pip_install": [
+                    "git+https://github.com/MonashBI/arcana.git@master",
+                    "git+https://github.com/MonashBI/banana.git@master"]}])
 
         neurodocker_specs = {
             "pkg_manager": "apt",

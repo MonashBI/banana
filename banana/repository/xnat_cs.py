@@ -2,8 +2,7 @@ import os
 import os.path as op
 import logging
 import json
-import tempfile
-from unittest.mock import Mock
+import xnat
 from arcana.data import Fileset, Field
 from arcana.pipeline.provenance import Record
 from arcana.exceptions import (
@@ -39,10 +38,11 @@ class XnatCSRepo(LocalFileSystemRepo):
     LOCK_SUFFIX = '.lock'
     MAX_DEPTH = 2
 
-    def __init__(self):
+    def __init__(self, project_id, session_id=None):
         super().__init__()
-        self.project_uri = (os.environ['XNAT_HOST']
-                            + os.environ['XNAT_PROJECT_URI'])
+        self.project_id = project_id
+        self.session_id = session_id
+        self.xnat_host = os.environ['XNAT_HOST']
         self.token = os.environ['XNAT_USER']
         self.secret = os.environ['XNAT_PASS']
 
@@ -57,7 +57,8 @@ class XnatCSRepo(LocalFileSystemRepo):
     def prov(self):
         prov = {
             'type': get_class_info(type(self)),
-            'project_uri': self.project_uri}
+            'xnat_host': self.xnat_host,
+            'project_id': self.project_id}
         return prov
 
     def __hash__(self):
@@ -72,18 +73,15 @@ class XnatCSRepo(LocalFileSystemRepo):
 
         Parameters
         ----------
+        dataset : Dataset
+            A dataset from which the root directory will be extracted from its
+            name
         subject_ids : list(str)
             List of subject IDs with which to filter the tree with. If
             None all are returned
         visit_ids : list(str)
             List of visit IDs with which to filter the tree with. If
             None all are returned
-        root_dir : str
-            The root dir to use instead of the 'name' (path) of the dataset.
-            Only for use in sub-classes (e.g. BIDS)
-        all_from_analysis : str
-            Global 'from_analysis' to be applied to every found item.
-            Only for use in sub-classes (e.g. BIDS)
 
         Returns
         -------
@@ -97,6 +95,17 @@ class XnatCSRepo(LocalFileSystemRepo):
         all_filesets = []
         all_fields = []
         all_records = []
+
+        with xnat.connect(self.xnat_host, user=self.token,
+                          password=self.secret) as xlogin:
+            xproject = xlogin.projects[self.project_id]
+            if self.session_id:
+                xsessions = [xproject.experiments[self.session_id]]
+            else:
+                xsessions = xproject.experiment.values()
+
+        for xsession in xsessions:
+            xsubject = xsession.subject()
         # if root_dir is None:
         input_dir = dataset.name
         for session_path, dirs, files in os.walk(root_dir):
@@ -249,25 +258,42 @@ class XnatCSRepo(LocalFileSystemRepo):
                 "user-settable": True,
                 "replacement-key": "#{}_PARAM#".format(param.upper())})
 
-        cmd_inputs.extend([
+        cmd_inputs.append(
             {
-                "name": "session-id",
-                "description": "",
+                "name": "project-id",
+                "description": "Project ID",
                 "type": "string",
                 "required": True,
                 "user-settable": False,
-                "replacement-key": "#SESSION_ID#"
-            },
-            {
-                "name": "project-uri",
-                "description": "Project URI used in REST calls",
-                "type": "string",
-                "required": True,
-                "user-settable": False,
-                "replacement-key": "#PROJECT_URI#"
-            }])
+                "replacement-key": "#PROJECT_ID#"
+            })
 
-        cmd = {
+
+        cmdline = (
+            "banana derive /input {cls} {name} {derivs} {inputs} {params}"
+            " --scratch /work --repository xnat_cs #PROJECT_URI#"
+            .format(
+                cls='.'.join((analysis_cls.__module__, analysis_cls.__name__)),
+                name=analysis_name,
+                derivs=' '.join(derivatives),
+                inputs=' '.join('-i {} #{}_INPUT#'.format(i, i.upper())
+                                for i in input_names),
+                params=' '.join('-p {} #{}_PARAM#'.format(p, p.upper())
+                                for p in parameters)))
+
+        if frequency == 'per_session':
+            cmd_inputs.append(
+                {
+                    "name": "session-id",
+                    "description": "",
+                    "type": "string",
+                    "required": True,
+                    "user-settable": False,
+                    "replacement-key": "#SESSION_ID#"
+                })
+            cmdline += "#SESSION_ID# --session_ids #SESSION_ID# "
+
+        return {
             "name": analysis_name,
             "description": desc,
             "label": analysis_name,
@@ -276,17 +302,7 @@ class XnatCSRepo(LocalFileSystemRepo):
             "image": image_name,
             "index": docker_index,
             "type": "docker",
-            "command-line": (
-                "banana derive /input {} {} {} {} {}"
-                "--repository xnat_cs --scratch /work "
-                "--session_ids #SESSION_ID#"
-                .format('.'.join((analysis_cls.__module__,
-                                  analysis_cls.__name__)),
-                        analysis_name, ' '.join(derivatives),
-                        ' '.join('-i {} #{}_INPUT#'.format(i, i.upper())
-                                 for i in input_names),
-                        ' '.join('-p {} #{}_PARAM#'.format(p, p.upper())
-                                 for p in parameters))),
+            "command-line": cmdline,
             "override-entrypoint": True,
             "mounts": [
                 {
@@ -305,9 +321,6 @@ class XnatCSRepo(LocalFileSystemRepo):
                     "path": "/work"
                 }
             ],
-            "environment-variables": {
-                "XNAT_PROJECT_URI": "#PROJECT_URI#",
-            },
             "ports": {},
             "inputs": cmd_inputs,
             "outputs": [
@@ -369,7 +382,7 @@ class XnatCSRepo(LocalFileSystemRepo):
                             "derived-from-wrapper-input": "session"
                         },
                         {
-                            "name": "project-uri",
+                            "name": "project-id",
                             "type": "string",
                             "required": True,
                             "load-children": True,
@@ -401,48 +414,6 @@ class XnatCSRepo(LocalFileSystemRepo):
                 }
             ]
         }
-        return cmd
-
-    @classmethod
-    def dockerfile(cls, name, analysis_cls, derivatives, desc, docker_org,
-                   maintainer, file_inputs, field_inputs, switches=None,
-                   **kwargs):
-        """
-        Generate a Dockerfile for a XNAT CS container from an Analysis class
-        and a list of derivatives.
-
-        Parameters
-        ----------
-        name : str
-            Name for pipeline
-        analysis_cls : Analysis
-            The Analysis class to use on the data
-        derivatives : list of str
-            The derivatives to generate from the analysis class
-        desc : str
-            A description of the pipeline
-        docker_org : str
-            Name of the Docker org the image will be uploaded to
-        maintainer : str
-            Name and email of the maintainer of the pipeline
-
-        Returns
-        -------
-        str
-            A rendered Dockerfile
-        """
-        image_name = docker_org + '/' + name
-        
-        cmd_label = json.dumps(cmd).replace('"', r'\"').replace('$', r'\$')
-
-        # Create a dummy class in order to access the pipelines required
-        # for 
-        dummpy_inputs = analysis_cls.acquired_data_specs()
-        dummy_dir = tempfile.mkdtemp()
-
-        dummy = analysis_cls('dummy', dummy_dir, Mock(), )
-
-        return neurodocker.Dockerfile(neurodocker_specs).render()
 
 
 

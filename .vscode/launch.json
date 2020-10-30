@@ -20,14 +20,13 @@
             "args": [
                 "box",
                 "mri.DwiAnalysis",
-                "ais/dwi_qa:latest",
+                "australianimagingservice/dwiqa:0.1",
                 "tensor_residual",
                 "--xnat",
                 "-i", "series",
                 "-i", "reverse_phase",
                 "-i", "bvalues", "${workspaceFolder}/test/data/bvals.bval",
                 "-i", "grad_dirs", "${workspaceFolder}/test/data/bvecs.bvec",
-                "-s", "response_algorithm", "dhollander",
                 "--build"
             ]
         },
