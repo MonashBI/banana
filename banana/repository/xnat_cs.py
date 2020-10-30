@@ -10,10 +10,16 @@ from arcana.exceptions import (
     ArcanaRepositoryError)
 from arcana.utils import get_class_info, split_extension
 from arcana.repository import LocalFileSystemRepo
+from banana.exceptions import BananaUsageError
 
 
 logger = logging.getLogger('arcana')
 
+COMMAND_INPUT_TYPES = {
+    bool: 'bool',
+    str: 'string',
+    int: 'number',
+    float: 'number'}
 
 class XnatCSRepo(LocalFileSystemRepo):
     """
@@ -191,29 +197,96 @@ class XnatCSRepo(LocalFileSystemRepo):
                                                record.pipeline_name + '.json'))
 
     @classmethod
-    def command_json(cls, name, analysis_cls, derivatives, desc, docker_image,
-                     docker_index="https://index.docker.io/v1/",
-                     version='1.0', frequency='per_session'):
+    def command_json(cls, image_name, analysis_cls, inputs, derivatives,
+                     parameters, desc, frequency='per_session',
+                     docker_index="https://index.docker.io/v1/"):
 
         if frequency != 'per_session':
             raise NotImplementedError(
                 "Support for frequencies other than '{}' haven't been "
                 "implemented yet".format(frequency))
+        try:
+            analysis_name, version = image_name.split('/')[1].split(':')
+        except (IndexError, ValueError):
+            raise BananaUsageError(
+                "The Docker organisation and tag needs to be provided as part "
+                "of the image, e.g. australianimagingservice/dwiqa:0.1")
+
+        cmd_inputs = []
+        input_names = []
+        for inpt in inputs:
+            input_name = inpt if isinstance(inpt, str) else inpt[0]
+            input_names.append(input_name)
+            spec = analysis_cls.data_spec(input_name)
+            desc = spec.desc if spec.desc else ""
+            if spec.is_fileset:
+                desc = ("Scan match: {} [SCAN_TYPE [ORDER [TAG=VALUE, ...]]]"
+                        .format(desc))
+            else:
+                desc = "Field match: {} [FIELD_NAME]".format(desc)
+            cmd_inputs.append({
+                "name": input_name,
+                "description": desc,
+                "type": "string",
+                "default-value": "",
+                "required": True,
+                "user-settable": True,
+                "replacement-key": "#{}_INPUT#".format(input_name.upper())})
+
+        for param in parameters:
+            spec = analysis_cls.param_spec(param)
+            desc = "Parameter: " + spec.desc
+            if spec.choices:
+                desc += " (choices: {})".format(','.join(spec.choices))
+
+            cmd_inputs.append({
+                "name": param,
+                "description": desc,
+                "type": COMMAND_INPUT_TYPES[spec.dtype],
+                "default-value": (spec.default
+                                  if spec.default is not None else ""),
+                "required": spec.default is None,
+                "user-settable": True,
+                "replacement-key": "#{}_PARAM#".format(param.upper())})
+
+        cmd_inputs.extend([
+            {
+                "name": "session-id",
+                "description": "",
+                "type": "string",
+                "required": True,
+                "user-settable": False,
+                "replacement-key": "#SESSION_ID#"
+            },
+            {
+                "name": "project-uri",
+                "description": "Project URI used in REST calls",
+                "type": "string",
+                "required": True,
+                "user-settable": False,
+                "replacement-key": "#PROJECT_URI#"
+            }])
+
         cmd = {
-            "name": name,
+            "name": analysis_name,
             "description": desc,
-            "label": name,
+            "label": analysis_name,
             "version": version,
             "schema-version": "1.0",
-            "image": docker_image,
+            "image": image_name,
             "index": docker_index,
             "type": "docker",
             "command-line": (
-                "banana derive /input {} #ANALYSIS_NAME# {} "
+                "banana derive /input {} {} {} {} {}"
                 "--repository xnat_cs --scratch /work "
-                "--session_ids #SESSION_ID# #PARAMETERS# "
+                "--session_ids #SESSION_ID#"
                 .format('.'.join((analysis_cls.__module__,
-                                  analysis_cls.__name__)), derivatives)),
+                                  analysis_cls.__name__)),
+                        analysis_name, ' '.join(derivatives),
+                        ' '.join('-i {} #{}_INPUT#'.format(i, i.upper())
+                                 for i in input_names),
+                        ' '.join('-p {} #{}_PARAM#'.format(p, p.upper())
+                                 for p in parameters))),
             "override-entrypoint": True,
             "mounts": [
                 {
@@ -236,34 +309,7 @@ class XnatCSRepo(LocalFileSystemRepo):
                 "XNAT_PROJECT_URI": "#PROJECT_URI#",
             },
             "ports": {},
-            "inputs": [
-                {
-                    "name": "parameters",
-                    "description":
-                        "Custom parameters used for the analysis "
-                        "('-p NAME VALUE')",
-                    "type": "string",
-                    "required": False,
-                    "user-settable": True,
-                    "replacement-key": "#PARAMETERS#"
-                },
-                {
-                    "name": "session-id",
-                    "description": "",
-                    "type": "string",
-                    "required": True,
-                    "user-settable": False,
-                    "replacement-key": "#SESSION_ID#"
-                },
-                {
-                    "name": "project-uri",
-                    "description": "Project URI used in REST calls",
-                    "type": "string",
-                    "required": True,
-                    "user-settable": False,
-                    "replacement-key": "#PROJECT_URI#"
-                }
-            ],
+            "inputs": cmd_inputs,
             "outputs": [
                 {
                     "name": "output",
@@ -284,9 +330,8 @@ class XnatCSRepo(LocalFileSystemRepo):
             ],
             "xnat": [
                 {
-                    "name": name,
-                    "description": "{} run on a session".format(name),
-                    "label": name,
+                    "name": analysis_name,
+                    "description": desc,
                     "contexts": ["xnat:imageSessionData"],
                     "external-inputs": [
                         {

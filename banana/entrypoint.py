@@ -122,7 +122,7 @@ class DeriveCmd():
         parser.add_argument('--environment', type=str, default='static',
                             choices=('modules', 'static'), metavar='TYPE',
                             help="The type of environment to use")
-        parser.add_argument('--input', '-i', nargs=2, action='append',
+        parser.add_argument('--input', '-i', nargs='+', action='append',
                             default=[], metavar=('SPEC', 'PATTERN'),
                             help=("The inputs to include in the analysis init."
                                   " If not provided then all are used"))
@@ -373,14 +373,31 @@ class DeriveCmd():
                                                     dataset=input_dataset)
         else:
             inputs = {}
-        for name, pattern in args.input:
+
+        for inpt in args.input:
+            name, pattern = inpt[:2]
+            order = inpt[2] if (len(input) >= 3 and inpt[2] != '.') else None
+            if len(inpt) > 3:
+                dicom_tags = {}
+                for arg in inpt[3:]:
+                    try:
+                        tag_name, val = arg.split('=')
+                    except ValueError:
+                        raise BananaUsageError(
+                            "Header tags provided to '{}' input matcher need "
+                            "to  in \"name=val\" format (not {})"
+                            .format(name, arg))
+                    dicom_tags[tag_name] = val
+            else:
+                dicom_tags = None
             spec = analysis_class.data_spec(name)
             if spec.is_fileset:
                 inpt_cls = FilesetFilter
             else:
                 inpt_cls = FieldFilter
             inputs[name] = inpt_cls(name, pattern=pattern, is_regex=True,
-                                    dataset=input_dataset)
+                                    dataset=input_dataset, order=order,
+                                    dicom_tags=dicom_tags)
 
         analysis = analysis_class(
             name=args.analysis_name,
@@ -597,7 +614,6 @@ class GenRefDataCmd():
             *args.specs, processor=processor, environment=environment)
 
 
-
 class BoxCmd():
 
     desc = ("Create a containerised pipeline from a given set of inputs to "
@@ -631,8 +647,6 @@ class BoxCmd():
         parser.add_argument('--upload', '-u', default=None,
                             help=("Upload the generated dockerfile (requires "
                                   "'-b') to the provided docker index"))
-        parser.add_argument('--version', '-v', default='1.0',
-                            help="The version of the pipeline")
         parser.add_argument('--file_convertors', action='store_true',
                             default=False)
         parser.add_argument('--out_dir', '-o', default=None,
@@ -709,15 +723,17 @@ class BoxCmd():
         if args.maintainer:
             labels["maintainer"] = args.maintainer
 
+        parameters = [c.args[0] for c in mock_analysis.parameter.mock_calls]
+
         if args.xnat:
             if args.upload:
                 docker_index = args.upload
             else:
                 docker_index = "https://index.docker.io/v1/"
             cmd = XnatCSRepo.command_json(
-                name, analysis_class, args.derivatives, args.description,
-                args.image_name, version=args.version,
-                docker_index=docker_index)
+                args.image_name, analysis_class, inputs, args.derivatives,
+                parameters, args.description, docker_index=docker_index)
+            print(json.dumps(cmd, indent=2))
             cmd_label = json.dumps(cmd).replace('"', r'\"').replace('$', r'\$')
             labels['org.nrg.commands'] = '[{' + cmd_label + '}]'
 
