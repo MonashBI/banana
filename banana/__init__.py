@@ -25,11 +25,10 @@ from arcana import (
     FilesetSpec, FilesetFilter, InputFilesetSpec, OutputFilesetSpec,
     FilesetSlice, Field, FieldSpec, FieldFilter, InputFieldSpec,
     OutputFieldSpec, FieldSlice, SingleProc, MultiProc, SlurmProc, StaticEnv,
-    Dataset, ModulesEnv, LocalFileSystemRepo, XnatRepo)
+    Dataset, ModulesEnv, LocalFileSystemRepo, XnatRepo, XnatCSRepo)
 
 from .__about__ import __version__, __authors__
 from .bids_ import BidsDataset
-from .repository.xnat_cs import XnatCSRepo
 
 
 # Import all Analysis classes into package root
