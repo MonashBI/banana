@@ -761,8 +761,8 @@ class BoxCmd():
                     "numpy",
                     "traits"],
                 "pip_install": [
-                    "git+https://github.com/MonashBI/arcana.git@master",
-                    "git+https://github.com/MonashBI/banana.git@master"]}])
+                    "git+https://github.com/MonashBI/arcana.git@xnat-cs",
+                    "git+https://github.com/MonashBI/banana.git@xnat-cs"]}])
 
         neurodocker_specs = {
             "pkg_manager": "apt",
