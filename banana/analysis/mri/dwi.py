@@ -90,6 +90,10 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'residual_pipeline',
                     desc=("The residual signal after the tensor has been "
                           "fit to the signal")),
+        FilesetSpec('fod_residual', nifti_gz_format,
+                    'fod_pipeline',
+                    desc=("The residual signal after the FOD has been "
+                          "fit to the signal")),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline',
                     desc=("")),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline',
@@ -1029,16 +1033,58 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             requirements=[mrtrix_req.v('3.0rc3')])
 
         if self.multi_tissue:
-            dwi2fod.inputs.gm_odf = 'gm.mif',
-            dwi2fod.inputs.csf_odf = 'csf.mif',
+            dwi2fod.inputs.gm_odf = 'gm.mif'
+            dwi2fod.inputs.csf_odf = 'csf.mif'
             pipeline.connect_input('gm_response', dwi2fod, 'gm_txt',
-                                   text_format),
+                                   text_format)
             pipeline.connect_input('csf_response', dwi2fod, 'csf_txt',
-                                   text_format),
+                                   text_format)
             pipeline.connect_output('gm_odf', dwi2fod, 'gm_odf',
-                                    nifti_gz_format),
+                                    nifti_gz_format)
             pipeline.connect_output('csf_odf', dwi2fod, 'csf_odf',
-                                    nifti_gz_format),
+                                    nifti_gz_format)
+
+        merge = pipeline.add(
+            'merge_predicted',
+            Merge(2),
+            inputs={
+                'in1': (self.series_preproc_spec_name, nifti_gz_format),
+                'in2': (dwi2fod, 'predicted_signal')})
+
+        residual = pipeline.add(
+            'residual',
+            MRCalc(
+                operation='subtract'),
+            inputs={
+                'operands': (merge, 'out')})
+
+        max_residual = pipeline.add(
+            'max_residual',
+            MRMath(
+                operation='max',
+                axis=3),
+            inputs={
+                'in_files': (residual, 'out_file')})
+
+        merge2 = pipeline.add(
+            'merge_operands3',
+            Merge(2),
+            inputs={
+                'in1': (max_residual, 'out_file'),
+                'in2': (self.brain_mask_spec_name, nifti_gz_format)})
+
+        mask = pipeline.add(
+            'apply_mask',
+            MRCalc(
+                operation='multiply',
+                nthreads=(self.processor.cpus_per_task
+                          if self.processor.cpus_per_task else 0)),
+            inputs={
+                'operands': (merge2, 'out')},
+            outputs={
+                'fod_residual': ('out_file', mrtrix_image_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
         # Check inputs/output are connected
         return pipeline
 
