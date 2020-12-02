@@ -486,6 +486,44 @@ class ExtractFSLGradients(CommandLine):
         return filename
 
 
+class ExtractMRtrixGradientsInputSpec(CommandLineInputSpec):
+    in_file = traits.Either(
+        File, Directory, exists=True, argstr='%s', mandatory=True, position=0,
+        desc="Diffusion weighted images with graident info")
+    out_file = traits.File(
+        'out.mif', usedefault=True, argstr='%s', position=-1,
+        desc="Dummy output file, which isn't used.")
+    grad_file = File(genfile=True, argstr='-export_grad_mrtrix %s', position=1,
+                     desc=("Extracted gradient encoding directions in FSL "
+                           "format"))
+
+
+class ExtractMRtrixGradientsOutputSpec(TraitedSpec):
+    grad_file = File(exists=True,
+                     desc='Extracted encoding gradient directions')
+
+
+class ExtractMRtrixGradients(CommandLine):
+    """
+    Extracts the gradient information in MRtrix format from a DWI image
+    """
+    _cmd = 'mrconvert'
+    input_spec = ExtractMRtrixGradientsInputSpec
+    output_spec = ExtractMRtrixGradientsOutputSpec
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        outputs['grad_file'] = self._gen_filename('grad_file')
+        return outputs
+
+    def _gen_filename(self, name):
+        if name == 'grad_file':
+            fname = os.path.abspath('grad.txt')
+        else:
+            assert False
+        return fname
+
+
 # =============================================================================
 # Extract b0 or DW images
 # =============================================================================

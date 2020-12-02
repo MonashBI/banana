@@ -38,6 +38,13 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Python: FOD residual",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/scripts/fod_residual.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: MoCo Test",
             "type": "python",
             "request": "launch",
