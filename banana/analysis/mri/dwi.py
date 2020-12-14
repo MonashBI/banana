@@ -870,6 +870,14 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'wm_txt': ('wm_response', text_format),
                     'mask_file': (self.brain_mask_spec_name, nifti_gz_format)})
 
+            if self.branch('residual_method', 'ss3t_csd'):
+                pipeline.connect_input('gm_response', dwi2fod, 'gm_txt',
+                                       format=text_format)
+                pipeline.connect_input('csf_response', dwi2fod, 'csf_txt',
+                                       format=text_format)
+                dwi2fod.inputs.gm_odf = 'gm.mif'
+                dwi2fod.inputs.csf_odf = 'csf.mif'
+
             extract_dirs = pipeline.add(
                 "extract_moco_grad",
                 ExtractMRtrixGradients(),
