@@ -852,7 +852,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         else:
 
-            if self.branch('residual_method', 'ss3t_csd'):
+            if self.branch('residual_method', 'odf'):
                 csd_interface = ConstrainedSphericalDeconvolution(
                     algorithm=self.fod_algorithm,
                     nthreads=(self.processor.cpus_per_task
