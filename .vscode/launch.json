@@ -31,6 +31,13 @@
             ]
         },
         {
+            "name": "Python: Run residual test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scripts/residual_test.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Tensor residual",
             "type": "python",
             "request": "launch",

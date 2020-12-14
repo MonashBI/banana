@@ -8,6 +8,8 @@ from nipype.interfaces.fsl import (
 from nipype.interfaces.utility import Merge as merge_lists
 from nipype.interfaces.fsl.epi import PrepareFieldmap, EddyQuad  # , EddySquad
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
+from nipype.interfaces.mrtrix3tissue import (
+    SS3TConstrainedSphericalDeconvolution)
 from nipype.interfaces.mrtrix3.utils import (
     BrainMask, TensorMetrics, SHConv, SH2Amp)
 from nipype.interfaces.mrtrix3.reconst import (
@@ -146,7 +148,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                   desc=("Model for how diffusion gradients generate eddy "
                         "currents.")),
         SwitchSpec('residual_method', 'tensor',
-                   choices=('tensor', 'odf'),
+                   choices=('tensor', 'odf', 'ss3t_csd'),
                    desc=("The fitting method to calculate the residual signal "
                          "from")),
         ParamSpec('tbss_skel_thresh', 0.2,
@@ -850,12 +852,19 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         else:
 
-            dwi2fod = pipeline.add(
-                'dwi2fod',
-                ConstrainedSphericalDeconvolution(
+            if self.branch('residual_method', 'ss3t_csd'):
+                csd_interface = ConstrainedSphericalDeconvolution(
                     algorithm=self.fod_algorithm,
                     nthreads=(self.processor.cpus_per_task
-                              if self.processor.cpus_per_task else 0)),
+                              if self.processor.cpus_per_task else 0))
+            else:
+                csd_interface = SS3TConstrainedSphericalDeconvolution(
+                    nthreads=(self.processor.cpus_per_task
+                              if self.processor.cpus_per_task else 0))
+
+            dwi2fod = pipeline.add(
+                'dwi2fod',
+                csd_interface,
                 inputs={
                     'in_file': (split_shells, 'out_file'),
                     'wm_txt': ('wm_response', text_format),
