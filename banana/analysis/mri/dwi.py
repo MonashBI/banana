@@ -885,23 +885,76 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'in_file': (nonbzero, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
-            shconv = pipeline.add(
-                'shconv',
+            wm_shconv = pipeline.add(
+                'wm_shconv',
                 SHConv(),
                 inputs={
                     'in_file': (dwi2fod, 'wm_odf'),
                     'response': ('wm_response', text_format)},
                 requirements=[mrtrix_req.v('3.0')])
 
-            sh2amp = pipeline.add(
-                'sh2amp',
-                SH2Amp(),
+            wm_sh2amp = pipeline.add(
+                'wm_sh2amp',
+                SH2Amp(
+                    gradients_format=True),
                 inputs={
-                    'in_file': (shconv, 'out_file'),
+                    'in_file': (wm_shconv, 'out_file'),
                     'directions': (extract_dirs, 'grad_file')},
                 requirements=[mrtrix_req.v('3.0')])
 
-            predicted = (sh2amp, 'out_file')
+            if self.branch('residual_method', 'ss3t_csd'):
+                gm_shconv = pipeline.add(
+                    'gm_shconv',
+                    SHConv(),
+                    inputs={
+                        'in_file': (dwi2fod, 'gm_odf'),
+                        'response': ('gm_response', text_format)},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                gm_sh2amp = pipeline.add(
+                    'gm_sh2amp',
+                    SH2Amp(
+                        gradients_format=True),
+                    inputs={
+                        'in_file': (gm_shconv, 'out_file'),
+                        'directions': (extract_dirs, 'grad_file')},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                csf_shconv = pipeline.add(
+                    'csf_shconv',
+                    SHConv(),
+                    inputs={
+                        'in_file': (dwi2fod, 'csf_odf'),
+                        'response': ('csf_response', text_format)},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                csf_sh2amp = pipeline.add(
+                    'sh2amp',
+                    SH2Amp(
+                        gradients_format=True),
+                    inputs={
+                        'in_file': (csf_shconv, 'out_file'),
+                        'directions': (extract_dirs, 'grad_file')},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                merge_tissues = pipeline.add(
+                    'merge_tissues',
+                    Merge(3),
+                    inputs={
+                        'in1': (wm_sh2amp, 'out_file'),
+                        'in2': (gm_sh2amp, 'out_file'),
+                        'in3': (csf_sh2amp, 'out_file')})
+
+                sum_tissues = pipeline.add(
+                    'sum_tissues',
+                    MRCalc(
+                        operation='add'),
+                    inputs={
+                        'operands': (merge_tissues, 'out')})
+
+                predicted = (sum_tissues, 'out_file')
+            else:
+                predicted = (wm_sh2amp, 'out_file')
 
         merge1 = pipeline.add(
             'merge_tensor_predicted',
