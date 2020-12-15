@@ -168,8 +168,8 @@ class MRCat(MRTrix3Base):
             out_name = os.path.abspath(
                 '{}_concat{}'.format(
                     '_'.join(split_extension(os.path.basename(s))[0]
-                             for s in self.inputs.input_scans),
-                    split_extension(self.inputs.input_scans[0])[-1]))
+                             for s in self.inputs.in_files),
+                    split_extension(self.inputs.in_files[0])[-1]))
         return out_name
 
 
