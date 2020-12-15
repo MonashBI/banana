@@ -895,8 +895,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
             wm_sh2amp = pipeline.add(
                 'wm_sh2amp',
-                SH2Amp(
-                    gradients_format=True),
+                SH2Amp(),
+                #    gradients_format=True),
                 inputs={
                     'in_file': (wm_shconv, 'out_file'),
                     'directions': (extract_dirs, 'grad_file')},
@@ -913,8 +913,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
                 gm_sh2amp = pipeline.add(
                     'gm_sh2amp',
-                    SH2Amp(
-                        gradients_format=True),
+                    SH2Amp(),
+                        #gradients_format=True),
                     inputs={
                         'in_file': (gm_shconv, 'out_file'),
                         'directions': (extract_dirs, 'grad_file')},
@@ -930,8 +930,8 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
                 csf_sh2amp = pipeline.add(
                     'sh2amp',
-                    SH2Amp(
-                        gradients_format=True),
+                    SH2Amp(),
+                        #gradients_format=True),
                     inputs={
                         'in_file': (csf_shconv, 'out_file'),
                         'directions': (extract_dirs, 'grad_file')},
