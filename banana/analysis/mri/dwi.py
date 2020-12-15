@@ -978,7 +978,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     Merge(2),
                     inputs={
                         'in1': (sum_gwm, 'out_file'),
-                        'in3': (csf_sh2amp, 'out_file')})
+                        'in2': (csf_sh2amp, 'out_file')})
 
                 sum_tissues = pipeline.add(
                     'sum_tissues',
