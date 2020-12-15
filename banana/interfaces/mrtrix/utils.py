@@ -121,7 +121,7 @@ class MRConvert(MRTrix3Base):
 
 class MRCatInputSpec(MRTrix3BaseInputSpec):
 
-    input_scans = InputMultiPath(
+    in_files = InputMultiPath(
         traits.File(exists=True), mandatory=True,
         desc="First input image", argstr="%s", position=-2)
 
@@ -168,8 +168,8 @@ class MRCat(MRTrix3Base):
             out_name = os.path.abspath(
                 '{}_concat{}'.format(
                     '_'.join(split_extension(os.path.basename(s))[0]
-                             for s in self.inputs.input_scans),
-                    split_extension(self.inputs.input_scans[0])[-1]))
+                             for s in self.inputs.in_files),
+                    split_extension(self.inputs.in_files[0])[-1]))
         return out_name
 
 
@@ -429,6 +429,75 @@ class MRCalc(MRTrix3Base):
                 filename += '_' + op_str
             filename += '_' + self.inputs.operation + ext
         return filename
+
+
+# =============================================================================
+# MR stats
+# =============================================================================
+
+class MRStatsInputSpec(MRTrix3BaseInputSpec):
+
+    in_file = File(exists=True, argstr='%s', mandatory=True, position=-2,
+                   desc="Diffusion weighted images with graident info")
+
+    mask = File(
+        desc=("compute the statistics only on values within an input "
+              "mask image"), argstr='-mask %s', exists=True, mandatory=False)
+
+    ignorezero = traits.Bool(
+        argstr='-ignorezero', desc="Ignore zero values during calculation")
+
+    allvolumes = traits.Bool(
+        argstr='-allvolumes',
+        desc=("Include all volumes in the calculation. If not only the first "
+              "volume will be included"))
+
+
+class MRStatsOutputSpec(TraitedSpec):
+    mean = traits.Float(
+        desc="The mean of the voxels in the image")
+
+    median = traits.Float(
+        desc="The median of the voxels in the image")
+
+    std = traits.Float(
+        desc="The std of the voxels in the image")
+
+    std_rv = traits.Float(
+        desc=("The real valued variance (equals sqrt of sum of variances of "
+              "imaginary and real parts of the voxels in the image"))
+
+    min = traits.Float(
+        desc="The minimum of the voxels in the image")
+
+    max = traits.Float(
+        desc="The mean of the voxels in the image")
+
+    count = traits.Float(
+        desc="The mean of the voxels in the image")
+
+
+class MRStats(MRTrix3Base):
+    """
+    Performs a mathematical calculation on the given images
+    """
+    _cmd = 'mrstats'
+    input_spec = MRStatsInputSpec
+    output_spec = MRStatsOutputSpec
+
+    def _run_interface(self, runtime, **kwargs):
+        super()._run_interface(runtime, **kwargs)
+        self.stdout = runtime.stdout
+        return runtime
+
+    def _list_outputs(self):
+        outputs = self.output_spec().get()
+        rows = self.stdout.split('\n')
+        keys = rows[0].split()[1:]  # Get the keys from the first row
+        values = rows[1].split()[3:]
+        for key, value in zip(keys, values):
+            outputs[key] = float(value)
+        return outputs
 
 
 class ExtractFSLGradientsInputSpec(CommandLineInputSpec):

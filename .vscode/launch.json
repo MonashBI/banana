@@ -5,6 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: MRStats Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/scripts/mrstats.py",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: Residual threshold Test",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/scripts/residual_threshold.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
@@ -23,10 +37,16 @@
                 "australianimagingservice/dwiqa:0.1",
                 "tensor_residual",
                 "--xnat",
-                "-i", "series",
-                "-i", "reverse_phase",
-                "-i", "bvalues", "${workspaceFolder}/test/data/bvals.bval",
-                "-i", "grad_dirs", "${workspaceFolder}/test/data/bvecs.bvec",
+                "-i",
+                "series",
+                "-i",
+                "reverse_phase",
+                "-i",
+                "bvalues",
+                "${workspaceFolder}/test/data/bvals.bval",
+                "-i",
+                "grad_dirs",
+                "${workspaceFolder}/test/data/bvecs.bvec",
                 "--build"
             ]
         },

@@ -5,7 +5,7 @@ import subprocess as sp
 from nipype.interfaces.utility import Merge, IdentityInterface
 from nipype.interfaces.fsl import (
     TOPUP, ApplyTOPUP, BET, FUGUE, Merge as FslMerge)
-from nipype.interfaces.utility import Merge as merge_lists
+from nipype.interfaces.utility import Function, Merge as merge_lists
 from nipype.interfaces.fsl.epi import PrepareFieldmap, EddyQuad  # , EddySquad
 from nipype.interfaces.mrtrix3 import ResponseSD, Tractography
 from nipype.interfaces.mrtrix3tissue import (
@@ -31,7 +31,8 @@ from banana.interfaces.mrtrix import (
 from banana.requirement import (
     fsl_req, mrtrix_req, ants_req)
 from banana.interfaces.mrtrix import (
-    MRConvert, ExtractFSLGradients, ExtractMRtrixGradients)
+    MRConvert, ExtractFSLGradients, ExtractMRtrixGradients, MRThreshold,
+    MRStats)
 from banana.analysis import AnalysisMetaClass
 from banana.interfaces.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
@@ -94,6 +95,21 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'residual_pipeline',
                     desc=("The residual signal after the tensor or FOD has "
                           "been fit to the signal")),
+        FilesetSpec('residual_thresholded', nifti_gz_format,
+                    'residual_thresholded_pipeline',
+                    frequency='per_dataset',
+                    desc=("The residual of the tensor/CSD fit, thresholded "
+                          "over the dataset")),
+        FilesetSpec('combined_residual', nifti_gz_format,
+                    'residual_thresholded_pipeline',
+                    frequency='per_dataset',
+                    desc=("The combined residual of the tensor/CSD fit over "
+                          "the dataset")),
+        FilesetSpec('combined_magnitude', nifti_gz_format,
+                    'concat_magnitude_pipeline',
+                    frequency='per_dataset',
+                    desc=("The combined magnitude (b==0) images across "
+                          "the dataset. Used for reference with residuals")),
         FilesetSpec('fa', nifti_gz_format, 'tensor_metrics_pipeline',
                     desc=("")),
         FilesetSpec('adc', nifti_gz_format, 'tensor_metrics_pipeline',
@@ -169,7 +185,13 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                    desc=("")),
         SwitchSpec('response_algorithm', 'tax',
                    ('tax', 'dhollander', 'msmt_5tt'),
-                   desc=("")),
+                   desc=("The algorithm used to calculate the SH response "
+                         "function for different tissue types")),
+        ParamSpec('residual_threshold', 2.5,
+                  desc=(
+                      "The threshold in the above which a voxel is determined "
+                      "to be likely an artefact in standard deviations above "
+                      "the mean")),
         ParamSpec('num_shells', None, desc=('Number of b-value shells')),
         MriAnalysis.param_spec('bet_method').with_new_choices('mrtrix'),
         SwitchSpec('reorient2std', False,
@@ -433,7 +455,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                               if self.processor.cpus_per_task else 0),
                     axis=3),
                 inputs={
-                    'input_files': (merge_rphase, 'out')},
+                    'in_files': (merge_rphase, 'out')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
             # Create node to extract the phase-encoding direction
@@ -937,12 +959,25 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                         'directions': (extract_dirs, 'grad_file')},
                     requirements=[mrtrix_req.v('3.0')])
 
-                merge_tissues = pipeline.add(
-                    'merge_tissues',
-                    Merge(3),
+                merge_gwm = pipeline.add(
+                    'merge_gwm',
+                    Merge(2),
                     inputs={
                         'in1': (wm_sh2amp, 'out_file'),
-                        'in2': (gm_sh2amp, 'out_file'),
+                        'in2': (gm_sh2amp, 'out_file')})
+
+                sum_gwm = pipeline.add(
+                    'sum_gwm',
+                    MRCalc(
+                        operation='add'),
+                    inputs={
+                        'operands': (merge_gwm, 'out')})
+
+                merge_tissues = pipeline.add(
+                    'merge_tissues',
+                    Merge(2),
+                    inputs={
+                        'in1': (sum_gwm, 'out_file'),
                         'in3': (csf_sh2amp, 'out_file')})
 
                 sum_tissues = pipeline.add(
@@ -1004,11 +1039,11 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                               if self.processor.cpus_per_task else 0),
                     axis=3),
                 inputs={
-                    'input_scans': (mask, 'out_file')},
+                    'in_files': (mask, 'out_file')},
                 outputs={
                     'residual': ('out_file', mrtrix_image_format)},
                 joinsource='iterate_shells',
-                joinfield=['input_scans'],
+                joinfield=['in_files'],
                 requirements=[mrtrix_req.v('3.0rc3')])
         else:
 
@@ -1039,6 +1074,127 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
         #         'input_files': (merge_shells, 'out_file')})
 
         return pipeline
+
+    def concat_magnitude_pipeline(self, **name_maps):
+        """Concatenates the magnitude images (i.e. b==0) into a single
+        volume for comparison with residuals
+        """
+
+        pipeline = self.new_pipeline(
+            name='concat_magnitude',
+            desc=("Concatenate magnitude images"),
+            citations=[],
+            name_maps=name_maps)
+
+        merge_subjects = pipeline.add(
+            'merge_subjects',
+            Merge(
+                numinputs=1),
+            inputs={
+                'in1': ('mag_preproc', nifti_gz_format)},
+            joinsource=self.SUBJECT_ID,
+            joinfield='in1')
+
+        merge_visits = pipeline.add(
+            'merge_visits',
+            Merge(
+                numinputs=1,
+                ravel_inputs=True),
+            inputs={
+                'in1': (merge_subjects, 'out')},
+            joinsource=self.VISIT_ID,
+            joinfield='in1')
+
+        pipeline.add(
+            'concat',
+            MRCat(
+                nthreads=(self.processor.cpus_per_task
+                            if self.processor.cpus_per_task else 0),
+                axis=3),
+            inputs={
+                'in_files': (merge_visits, 'out')},
+            outputs={
+                'combined_magnitude': ('out_file', nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
+        return pipeline
+
+
+    def residual_thresholded_pipeline(self, **name_maps):
+        """
+        Fits the apparrent diffusion tensor (DT) to each voxel of the image
+        """
+
+        pipeline = self.new_pipeline(
+            name='residual_thresh',
+            desc=("Threshold residual images"),
+            citations=[],
+            name_maps=name_maps)
+
+        merge_subjects = pipeline.add(
+            'merge_subjects',
+            Merge(
+                numinputs=1),
+            inputs={
+                'in1': ('residual', nifti_gz_format)},
+            joinsource=self.SUBJECT_ID,
+            joinfield='in1')
+
+        merge_visits = pipeline.add(
+            'merge_visits',
+            Merge(
+                numinputs=1,
+                ravel_inputs=True),
+            inputs={
+                'in1': (merge_subjects, 'out')},
+            joinsource=self.VISIT_ID,
+            joinfield='in1')
+
+        cat_residuals = pipeline.add(
+            'cat_residuals',
+            MRCat(
+                nthreads=(self.processor.cpus_per_task
+                            if self.processor.cpus_per_task else 0),
+                axis=3),
+            inputs={
+                'in_files': (merge_visits, 'out')},
+            outputs={
+                'combined_residual': ('out_file', nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
+        stats = pipeline.add(
+            'stats',
+            MRStats(
+                allvolumes=True),
+            inputs={
+                'in_file': (cat_residuals, 'out_file'),
+                'mask': ('brain_mask', nifti_gz_format)},
+            requirements=[mrtrix_req.v('3.0rc3')])
+
+        calc_threshold = pipeline.add(
+            'calc_threshold',
+            Function(
+                input_names=['mean', 'std', 'num_stds'],
+                output_names=['threshold'],
+                function=calc_threshold_from_std),
+            inputs={
+                'mean': (stats, 'mean'),
+                'std': (stats, 'std')})
+
+        calc_threshold.inputs.num_stds = self.parameter('residual_threshold')
+
+        pipeline.add(
+            'thresh',
+            MRThreshold(
+                allvolumes=True),
+            inputs={
+                'in_file': (cat_residuals, 'out_file'),
+                'abs': (calc_threshold, 'threshold')},
+            outputs={
+                'residual_thresholded': ('out_file', nifti_gz_format)})
+
+        return pipeline
+
 
     def tensor_metrics_pipeline(self, **name_maps):
         """
@@ -1446,3 +1602,8 @@ class DwiRefAnalysis(EpiAnalysis, metaclass=AnalysisMetaClass):
             requirements=[fsl_req.v('5.0.9')])
 
         return pipeline
+
+
+def calc_threshold_from_std(mean, std, num_stds):
+    "Calculates the residual threshold from mean and standard deviation"
+    return mean + std * num_stds
