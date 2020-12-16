@@ -37,7 +37,7 @@ from banana.analysis import AnalysisMetaClass
 from banana.interfaces.motion_correction import (
     PrepareDWI, AffineMatrixGeneration)
 from banana.interfaces.dwi import TransformGradients, SelectShell
-from banana.interfaces.utility import AppendPath
+from banana.interfaces.utility import AppendPath, SelectRow
 from banana.analysis.base import Analysis
 from banana.bids_ import BidsInputs, BidsAssocInputs
 from banana.exceptions import BananaUsageError
@@ -907,30 +907,47 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                     'in_file': (nonbzero, 'out_file')},
                 requirements=[mrtrix_req.v('3.0rc3')])
 
-            wm_shconv = pipeline.add(
-                'wm_shconv',
-                SHConv(),
-                inputs={
-                    'in_file': (dwi2fod, 'wm_odf'),
-                    'response': ('wm_response', text_format)},
-                requirements=[mrtrix_req.v('3.0')])
-
-            wm_sh2amp = pipeline.add(
-                'wm_sh2amp',
-                SH2Amp(),
-                #    gradients_format=True),
-                inputs={
-                    'in_file': (wm_shconv, 'out_file'),
-                    'directions': (extract_dirs, 'grad_file')},
-                requirements=[mrtrix_req.v('3.0')])
-
             if self.branch('residual_method', 'ss3t_csd'):
+
+                select_wm_response = pipeline.add(
+                    'select_wm_response',
+                    SelectRow(
+                        index=1,
+                        out_file='out.txt'),
+                    inputs={
+                        'in_file': ('wm_response', text_format)})
+
+                wm_shconv = pipeline.add(
+                    'wm_shconv',
+                    SHConv(),
+                    inputs={
+                        'in_file': (dwi2fod, 'wm_odf'),
+                        'response': (select_wm_response, 'out_file')},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                wm_sh2amp = pipeline.add(
+                    'wm_sh2amp',
+                    SH2Amp(),
+                    #    gradients_format=True),
+                    inputs={
+                        'in_file': (wm_shconv, 'out_file'),
+                        'directions': (extract_dirs, 'grad_file')},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                select_gm_response = pipeline.add(
+                    'select_gm_response',
+                    SelectRow(
+                        index=1,
+                        out_file='out.txt'),
+                    inputs={
+                        'in_file': ('gm_response', text_format)})
+                
                 gm_shconv = pipeline.add(
                     'gm_shconv',
                     SHConv(),
                     inputs={
                         'in_file': (dwi2fod, 'gm_odf'),
-                        'response': ('gm_response', text_format)},
+                        'response': (select_gm_response, 'out_file')},
                     requirements=[mrtrix_req.v('3.0')])
 
                 gm_sh2amp = pipeline.add(
@@ -942,12 +959,20 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                         'directions': (extract_dirs, 'grad_file')},
                     requirements=[mrtrix_req.v('3.0')])
 
+                select_csf_response = pipeline.add(
+                    'select_csf_response',
+                    SelectRow(
+                        index=1,
+                        out_file='out.txt'),
+                    inputs={
+                        'in_file': ('csf_response', text_format)})
+
                 csf_shconv = pipeline.add(
                     'csf_shconv',
                     SHConv(),
                     inputs={
                         'in_file': (dwi2fod, 'csf_odf'),
-                        'response': ('csf_response', text_format)},
+                        'response': (select_csf_response, 'out_file')},
                     requirements=[mrtrix_req.v('3.0')])
 
                 csf_sh2amp = pipeline.add(
@@ -988,7 +1013,26 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
                         'operands': (merge_tissues, 'out')})
 
                 predicted = (sum_tissues, 'out_file')
+
             else:
+
+                wm_shconv = pipeline.add(
+                    'wm_shconv',
+                    SHConv(),
+                    inputs={
+                        'in_file': (dwi2fod, 'wm_odf'),
+                        'response': ('wm_response', text_format)},
+                    requirements=[mrtrix_req.v('3.0')])
+
+                wm_sh2amp = pipeline.add(
+                    'wm_sh2amp',
+                    SH2Amp(),
+                    #    gradients_format=True),
+                    inputs={
+                        'in_file': (wm_shconv, 'out_file'),
+                        'directions': (extract_dirs, 'grad_file')},
+                    requirements=[mrtrix_req.v('3.0')])
+                
                 predicted = (wm_sh2amp, 'out_file')
 
         merge1 = pipeline.add(

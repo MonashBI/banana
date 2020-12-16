@@ -18,10 +18,11 @@ analysis = DwiAnalysis(
     name='ISMRM',
     dataset=Dataset('/Users/tclose/Data/new-test/ABC_0049_RM_LTFU2', depth=0),
     processor=SingleProc(
-        work_dir=op.expanduser('~/work3'),
+        work_dir=op.expanduser('~/work4'),
         prov_ignore=(
             SingleProc.DEFAULT_PROV_IGNORE
             + ['workflow/nodes/.*/requirements/.*/version']),
+        clean_work_dir_between_runs=True,
         reprocess=True),
     environment=StaticEnv(),
     inputs=[FilesetFilter('series', '.*DTI.*', mrtrix_image_format,
