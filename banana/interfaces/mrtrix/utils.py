@@ -420,6 +420,7 @@ class MRCalc(MRTrix3Base):
             else:
                 _, ext = split_extension(
                     os.path.basename(self.inputs.operands[0]))
+            filename = ''
             for op in self.inputs.operands:
                 try:
                     op_str = split_extension(os.path.basename(op))[0]
