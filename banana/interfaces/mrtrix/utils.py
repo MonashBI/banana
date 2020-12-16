@@ -420,15 +420,14 @@ class MRCalc(MRTrix3Base):
             else:
                 _, ext = split_extension(
                     os.path.basename(self.inputs.operands[0]))
-            filename = os.getcwd()
             for op in self.inputs.operands:
                 try:
                     op_str = split_extension(os.path.basename(op))[0]
-                except:
+                except IndexError:
                     op_str = str(float(op))
                 filename += '_' + op_str
             filename += '_' + self.inputs.operation + ext
-        return filename
+        return os.path.abspath(filename)
 
 
 # =============================================================================
