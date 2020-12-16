@@ -18,7 +18,8 @@ analysis = DwiAnalysis(
             'ABC_0016_AS_LTFU2B', 'ABC_0024_DK_LTFU2B', 'ABC_0030_JN_LTFU1',
             'ABC_0006_BO_LTFU1', 'ABC_0009_LC_LTFU3B', 'ABC_0020_PD_LTFU1']),
     processor=SingleProc(
-        work_dir=op.expanduser('~/Data/work5')),
+        work_dir=op.expanduser('~/Data/work5'),
+        reprocess=True),
     environment=StaticEnv(),
     inputs=[FilesetFilter('residual', 'residual-tensor',
                           valid_formats=nifti_gz_format),
@@ -29,11 +30,11 @@ analysis = DwiAnalysis(
     enforce_inputs=False,
     parameters={'pe_dir': pe_dir,
                 'response_algorithm': 'tax',
-                'residual_method': 'odf'})
+                'residual_method': 'odf',
+                'residual_threshold': 3.0})
 
 # Generate whole brain tracks and return path to cached dataset
-residual, comb_mag = analysis.data(
-    ['residual_thresholded', 'combined_magnitude'], derive=True)
+residual = analysis.data('residual_thresholded', derive=True)
 
 for f in residual:
     print("Residual created at {}".format(f.path))

@@ -28,8 +28,12 @@ analysis = DwiAnalysis(
                 # 'residual_method': 'odf'})
 
 # Generate whole brain tracks and return path to cached dataset
-residual = analysis.data('residual', derive=True)
+residual = analysis.data(
+    'residual_thresholded', derive=True,
+    subject_ids=[
+        'ABC_0003_IG_LTFU2', 'ABC_0005_KO_LTFU2B', 'ABC_0009_LC_LTFU3',
+        'ABC_0016_AS_LTFU2B', 'ABC_0024_DK_LTFU2B', 'ABC_0030_JN_LTFU1',
+        'ABC_0006_BO_LTFU1', 'ABC_0009_LC_LTFU3B', 'ABC_0020_PD_LTFU1'])
 
 for f in residual:
     print("Residual created at {}".format(f.path))
-

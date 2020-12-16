@@ -1122,8 +1122,7 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
 
         stats = pipeline.add(
             'stats',
-            MRStats(
-                allvolumes=True),
+            MRStats(),
             inputs={
                 'in_file': ('residual', nifti_gz_format),
                 'mask': ('brain_mask', nifti_gz_format)},
@@ -1134,16 +1133,16 @@ class DwiAnalysis(EpiSeriesAnalysis, metaclass=AnalysisMetaClass):
             Function(
                 input_names=['mean', 'std', 'num_stds'],
                 output_names=['threshold'],
-                function=calc_threshold_from_std,
-                num_stds=self.parameter('residual_threshold')),
+                function=calc_threshold_from_std),
             inputs={
                 'mean': (stats, 'mean'),
                 'std': (stats, 'std')})
 
+        calc_threshold.inputs.num_stds = self.parameter('residual_threshold')
+
         pipeline.add(
             'thresh',
-            MRThreshold(
-                allvolumes=True),
+            MRThreshold(),
             inputs={
                 'in_file': ('residual', nifti_gz_format),
                 'abs': (calc_threshold, 'threshold')},
