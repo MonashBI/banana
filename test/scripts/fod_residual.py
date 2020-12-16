@@ -22,7 +22,7 @@ analysis = DwiAnalysis(
         prov_ignore=(
             SingleProc.DEFAULT_PROV_IGNORE
             + ['workflow/nodes/.*/requirements/.*/version']),
-        clean_work_dir_between_runs=True,
+        clean_work_dir_between_runs=False,
         reprocess=True),
     environment=StaticEnv(),
     inputs=[FilesetFilter('series', '.*DTI.*', mrtrix_image_format,
